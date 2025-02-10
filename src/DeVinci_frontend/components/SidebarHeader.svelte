@@ -20,8 +20,8 @@
     } else {
       $activeChatGlobal = false;
     };
-    if ($location !== "/") {
-      push('/');
+    if ($location !== "/chat") {
+      push('/chat');
     };
     return;
   };

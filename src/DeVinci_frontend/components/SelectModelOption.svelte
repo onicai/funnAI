@@ -187,7 +187,7 @@
     $chatModelIdInitiatedGlobal = modelOptionId;
     chatModelDownloadInProgress = false;
     if ($location !== "/") {
-      push('/');
+      push('/chat');
     };
   };
 

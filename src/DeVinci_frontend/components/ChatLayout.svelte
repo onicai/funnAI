@@ -9,7 +9,6 @@
     import Sidebar from "./SidebarChat.svelte";
     import Navigation from "./NavigationChat.svelte";
     import Breadcrumbs from "./Breadcrumbs.svelte";
-    import Footer from "./Footer.svelte";
     import ChatInterface from "./ChatInterface.svelte";
   
     import UserSettings from "../pages/UserSettings.svelte";
@@ -66,7 +65,6 @@
           </header>
           <Breadcrumbs />
           <Router {routes} />
-          <Footer />
         </main>
       </div>
     {/if}

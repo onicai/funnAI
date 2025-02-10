@@ -25,6 +25,7 @@
   export let modelCallbackFunction;
   export let chatDisplayed;
   export let callbackSearchVectorDbTool;
+  export let autofocus = false;
 
   let newMessageText = '';
   let messages = [];
@@ -259,6 +260,13 @@
   };
 
   onMount(loadChat);
+
+  let inputElement;
+  
+  onMount(() => {
+    // Focus the input when the component mounts
+    inputElement?.focus();
+  });
 </script>
 
 <div class="messages h-[calc(100vh-164px)]" style="overflow:auto;" use:scrollToBottom={messages}>
@@ -270,7 +278,7 @@
   {/each}
 </div>
 
-<footer class="footer fixed bottom-4 left-1/2 transform -translate-x-1/2 w-full md:ml-36 md:w-[calc(100%-18rem)]">
+<footer class="footer fixed bottom-4 px-4 left-1/2 md:left-[calc(50%+18rem)] transform -translate-x-1/2 w-full md:w-[calc(100%-36rem)]">
   <form class="w-full max-w-2xl mx-auto px-1 sm:px-0">
     <label for="chat" class="sr-only">Message DeVinci</label>
     <div class="flex items-center px-3 p-2 rounded-full bg-gray-200">
@@ -310,7 +318,15 @@
             <span class="sr-only">Send message</span>
           </button>
         {:else}
-          <input bind:value={newMessageText} type="text" id="chat" class="block mx-4 p-3 w-full text-sm text-gray-900 bg-white rounded-lg border border-gray-300 focus:ring-2 focus:outline-none focus:ring-[#24292F]/50 " placeholder="Message DeVinci..." />
+          <input 
+            bind:this={inputElement}
+            bind:value={newMessageText} 
+            type="text" 
+            id="chat" 
+            {autofocus}
+            class="block mx-4 p-3 w-full text-sm text-gray-900 bg-white rounded-lg border border-gray-300 focus:ring-2 focus:outline-none focus:ring-[#24292F]/50" 
+            placeholder="Message DeVinci..." 
+          />
           <button disabled class="opacity-55 cursor-not-allowed inline-flex justify-center p-2 text-gray-600 rounded-full">
             <svg class="w-5 h-5 rotate-0 rtl:-rotate-90" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 20">
               <path d="m17.914 18.594-8-18a1 1 0 0 0-1.828 0l-8 18a1 1 0 0 0 1.157 1.376L8 18.281V9a1 1 0 0 1 2 0v9.281l6.758 1.689a1 1 0 0 0 1.156-1.376Z"/>
