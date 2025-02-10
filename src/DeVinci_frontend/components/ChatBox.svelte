@@ -20,6 +20,8 @@
     syncLocalChanges,
   } from "../helpers/local_storage";
 
+  import type { Action } from 'svelte/action';
+
   export let modelCallbackFunction;
   export let chatDisplayed;
   export let callbackSearchVectorDbTool;
@@ -35,13 +37,13 @@
 
   let newLocalChatId;
 
-  const scrollToBottom = node => {
-    const scroll = () => node.scroll({
-      top: node.scrollHeight,
-      behavior: 'smooth',
-    });
+  const scrollToBottom: Action<HTMLElement, any> = (node, messages) => {
+    const scroll = () =>
+      node.scroll({
+        top: node.scrollHeight,
+        behavior: 'smooth'
+      });
     scroll();
-
     return { 
       update: scroll 
     };
@@ -283,7 +285,7 @@
         <img class="h-12 mx-auto p-1 block" src={spinner} alt="loading animation" />
       {/if}
       {#if !$chatModelIdInitiatedGlobal}
-        <input disabled type="text" id="chat" autofocus class="block mx-4 p-3 w-full text-sm text-gray-900 bg-white rounded-lg border border-gray-300 focus:ring-2 focus:outline-none focus:ring-[#24292F]/50 " />
+        <input disabled type="text" id="chat" class="block mx-4 p-3 w-full text-sm text-gray-900 bg-white rounded-lg border border-gray-300 focus:ring-2 focus:outline-none focus:ring-[#24292F]/50 " />
         <button disabled class="opacity-55 cursor-not-allowed inline-flex justify-center p-2 text-gray-600 rounded-full">
           <svg class="w-5 h-5 rotate-0 rtl:-rotate-90" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 20">
             <path d="m17.914 18.594-8-18a1 1 0 0 0-1.828 0l-8 18a1 1 0 0 0 1.157 1.376L8 18.281V9a1 1 0 0 1 2 0v9.281l6.758 1.689a1 1 0 0 0 1.156-1.376Z"/>
