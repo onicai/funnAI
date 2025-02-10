@@ -5,13 +5,13 @@
 
   // Create a derived store for the current page name
   const currentPage = derived(location, $location => {
-    if ($location === '/') return 'Home';
-    const path = $location.split('/')[1];
-    return path.charAt(0).toUpperCase() + path.slice(1);
+    if ($location === '/chat' || $location === '/') return 'Chat';
+    const path = $location.split('/');
+    return path[path.length - 1].charAt(0).toUpperCase() + path[path.length - 1].slice(1);
   });
 
   // Create a derived store to determine if we should show breadcrumbs
-  const showBreadcrumbs = derived(location, $location => $location !== '/');
+  const showBreadcrumbs = derived(location, $location => $location !== '/chat' && $location !== '/');
 </script>
 
 {#if $showBreadcrumbs}
@@ -19,7 +19,7 @@
     <ol class="inline-flex items-center mb-3 space-x-1 md:space-x-2 rtl:space-x-reverse sm:mb-0">
       <li>
         <div class="flex items-center">
-          <a use:link href="/" class="ms-1 text-sm font-medium text-gray-700 hover:text-gray-400 md:ms-2">Chat</a>
+          <a use:link href="/chat" class="ms-1 text-sm font-medium text-gray-700 hover:text-gray-400 md:ms-2">Chat</a>
         </div>
       </li>
       <li aria-current="page">

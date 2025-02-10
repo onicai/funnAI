@@ -1,23 +1,19 @@
 <script lang="ts">
 import { onMount } from 'svelte';
-  import SidebarHeader    from "./SidebarHeader.svelte";
-  import SidebarInfo        from "./SidebarFooter.svelte";
-  import SidebarBottomNav from "./SidebarBottomNav.svelte";
   import { downloadedModels } from "../store";
-  //import Knowledgebase  from "./Knowledgebase.svelte"; TODO
 
   onMount(() => {
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const chat = document.getElementById('chat');
+    const sidebarToggle = document.getElementById('mainSidebarToggle');
+    const mainSidebar = document.getElementById('mainSidebar');
 
     function toggleSidebar(event) {
       event.stopPropagation();
-      chat.classList.toggle('-translate-x-full');
+      mainSidebar.classList.toggle('-translate-x-full');
     };
 
     function closeSidebar(event) {
-      if (!chat.contains(event.target) && !sidebarToggle.contains(event.target)) {
-        chat.classList.add('-translate-x-full');
+      if (!mainSidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
+        mainSidebar.classList.add('-translate-x-full');
       };
     };
 
@@ -27,12 +23,12 @@ import { onMount } from 'svelte';
 
     sidebarToggle.addEventListener('click', toggleSidebar);
     document.body.addEventListener('click', closeSidebar);
-    chat.addEventListener('click', stopPropagation);
+    mainSidebar.addEventListener('click', stopPropagation);
 
     return () => {
       sidebarToggle.removeEventListener('click', toggleSidebar);
       document.body.removeEventListener('click', closeSidebar);
-      chat.removeEventListener('click', stopPropagation);
+      mainSidebar.removeEventListener('click', stopPropagation);
     };
   });
 
@@ -41,10 +37,5 @@ import { onMount } from 'svelte';
 </script>
 
 <div class="sidebar-header flex flex-col items-center justify-between py-4 h-lvh">
-    <SidebarHeader />
-    {#if userHasDownloadedAtLeastOneModel}
-        <SidebarBottomNav />
-    {:else}
-        <SidebarInfo />
-    {/if}
+    funnAI
 </div>

@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import { store } from "../store";
   import { link } from 'svelte-spa-router';
-  import LoginModal from './LoginModal.svelte';
   import InstallToastNotification from './InstallToastNotification.svelte';
 
   let visibleInstallAppToast = false;
@@ -43,7 +42,8 @@
       });
 
       document.body.addEventListener('click', function (event) {
-        if (!dropdownDots.contains(event.target) && !dropdownMenuIconButton.contains(event.target)) {
+        const target = event.target as Node;
+        if (!dropdownDots.contains(target) && !dropdownMenuIconButton.contains(target)) {
           if (!dropdownDots.classList.contains('hidden')) {
             dropdownDots.classList.add('hidden');
           };
@@ -56,22 +56,10 @@
     }
   };
 
-  // User clicked on Logout
-  const logout = async () => {
-    await store.disconnect();
-  };
-
   onMount(() => {
     initializeDropdown();
   });
 </script>
-
-{#if !$store.isAuthed}
-  <button type="button" on:click={() => {toggleModal()}} data-modal-target="crypto-modal" data-modal-toggle="crypto-modal" class="mr-1 text-gray-900 bg-gray-100 hover:bg-gray-100 border border-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-100 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center">
-    <svg aria-hidden="true" class="w-4 h-4 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-    Connect
-  </button>
-{/if}
 
 <div class="relative inline-block">
   <button id="dropdownMenuIconButton" data-dropdown-toggle="dropdownDots" class="inline-flex items-center p-2.5 text-sm font-medium text-center text-gray-900 bg-white rounded-lg hover:bg-gray-100 border border-gray-200 focus:ring-4 focus:outline-none focus:ring-gray-100" type="button">
@@ -92,34 +80,27 @@
   <div id="dropdownDots" class="absolute right-0 top-14 z-10 hidden bg-gray-100 divide-y divide-gray-200 rounded-lg shadow-2xl w-52 border-gray-200 border-4">
     <ul class="py-2 text-sm text-gray-700" aria-labelledby="dropdownMenuIconButton">
       <li>
-        <a use:link href="/" class="block px-4 py-2 hover:bg-white">New Chat</a>
+        <a use:link href="/chat" class="block px-4 py-2 hover:bg-white">New Chat</a>
       </li>
       <li>
-        <a use:link href="/models" class="block px-4 py-2 hover:bg-white">AI Models ✨</a>
+        <a use:link href="/chat/models" class="block px-4 py-2 hover:bg-white">AI Models ✨</a>
       </li>
       <li>
-        <a use:link href="/settings" class="block px-4 py-2 hover:bg-white">Settings</a>
+        <a use:link href="/chat/settings" class="block px-4 py-2 hover:bg-white">Settings</a>
       </li>
       <li>
-        <a use:link href="/about" class="block px-4 py-2 hover:bg-white">About</a>
+        <a use:link href="/chat/about" class="block px-4 py-2 hover:bg-white">About</a>
       </li>
       <li>
-        <a use:link href="/brand" class="block px-4 py-2 hover:bg-white">Brand guide</a>
+        <a use:link href="/chat/brand" class="block px-4 py-2 hover:bg-white">Brand guide</a>
       </li>
     </ul>
     <div>
       <button on:click={() => showInstallAppToast()} class="block px-4 py-2 text-sm text-gray-700 hover:bg-white w-full text-left">Install app</button>
     </div>
-    <div>
-      <button on:click={() => logout()} class="block px-4 py-2 text-sm text-gray-700 hover:bg-white w-full text-left">Disconnect</button>
-    </div>
   </div>
 </div>
 
-<!-- Main modal -->
-<div class={modalIsOpen ? "" : "hidden"}>
-  <LoginModal {toggleModal} />
-</div>
 
 {#key visibleInstallAppToast}
   <InstallToastNotification showToast={visibleInstallAppToast} />
