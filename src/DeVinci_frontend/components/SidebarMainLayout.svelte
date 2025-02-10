@@ -1,54 +1,60 @@
 <script lang="ts">
 import { onMount } from 'svelte';
-  import { downloadedModels } from "../store";
+import { link } from 'svelte-spa-router';
+import { downloadedModels } from "../store";
 
-  onMount(() => {
-    const sidebarToggle = document.getElementById('mainSidebarToggle');
-    const mainSidebar = document.getElementById('mainSidebar');
+onMount(() => {
+  const sidebarToggle = document.getElementById('mainSidebarToggle');
+  const mainSidebar = document.getElementById('mainSidebar');
 
-    function toggleSidebar(event) {
-      event.stopPropagation();
-      mainSidebar.classList.toggle('-translate-x-full');
+  function toggleSidebar(event) {
+    event.stopPropagation();
+    mainSidebar.classList.toggle('-translate-x-full');
+  };
+
+  function closeSidebar(event) {
+    if (!mainSidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
+      mainSidebar.classList.add('-translate-x-full');
     };
+  };
 
-    function closeSidebar(event) {
-      if (!mainSidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
-        mainSidebar.classList.add('-translate-x-full');
-      };
-    };
+  function stopPropagation(event) {
+    event.stopPropagation();
+  };
 
-    function stopPropagation(event) {
-      event.stopPropagation();
-    };
+  sidebarToggle.addEventListener('click', toggleSidebar);
+  document.body.addEventListener('click', closeSidebar);
+  mainSidebar.addEventListener('click', stopPropagation);
 
-    sidebarToggle.addEventListener('click', toggleSidebar);
-    document.body.addEventListener('click', closeSidebar);
-    mainSidebar.addEventListener('click', stopPropagation);
+  return () => {
+    sidebarToggle.removeEventListener('click', toggleSidebar);
+    document.body.removeEventListener('click', closeSidebar);
+    mainSidebar.removeEventListener('click', stopPropagation);
+  };
+});
 
-    return () => {
-      sidebarToggle.removeEventListener('click', toggleSidebar);
-      document.body.removeEventListener('click', closeSidebar);
-      mainSidebar.removeEventListener('click', stopPropagation);
-    };
-  });
+function closeSidebar() {
+  const mainSidebar = document.getElementById('mainSidebar');
+  mainSidebar?.classList.add('-translate-x-full');
+}
 
-  // Reactive statement to check if the user has already downloaded at least one AI model
-  $: userHasDownloadedAtLeastOneModel = $downloadedModels.length > 0;
+// Reactive statement to check if the user has already downloaded at least one AI model
+$: userHasDownloadedAtLeastOneModel = $downloadedModels.length > 0;
 </script>
 
 <div class="sidebar-header flex flex-col items-center py-4 h-lvh">
-    <h1 class="text-2xl font-bold"><a href="/">funnAI</a></h1>
-    <a href="/">
+    <h1 class="text-2xl font-bold"><a use:link href="/">funnAI</a></h1>
+    <a use:link href="/" class="w-full" on:click={closeSidebar}>
       <button type="button" class="disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-800 mr-auto w-full my-5 flex justify-center text-gray-800 hover:text-white border border-gray-800 hover:bg-gray-900 focus:ring-4 focus:outline-none focus:ring-gray-400 font-medium rounded-full text-xs px-3 py-1.5 text-center">
         Dashboard
       </button>
     </a>
-    <a href="/">
+    <a use:link href="/funn" class="w-full" on:click={closeSidebar}>
       <button type="button" class="disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-800 mr-auto w-full my-5 flex justify-center text-gray-800 hover:text-white border border-gray-800 hover:bg-gray-900 focus:ring-4 focus:outline-none focus:ring-gray-400 font-medium rounded-full text-xs px-3 py-1.5 text-center">
         funnAI
       </button>
     </a>
-    <a href="/#/chat">
+    <a use:link href="/chat" class="w-full" on:click={closeSidebar}>
       <button type="button" class="disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-800 mr-auto w-full my-5 flex justify-center text-gray-800 hover:text-white border border-gray-800 hover:bg-gray-900 focus:ring-4 focus:outline-none focus:ring-gray-400 font-medium rounded-full text-xs px-3 py-1.5 text-center">
         Chat
       </button>

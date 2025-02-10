@@ -6,9 +6,11 @@
   import SidebarMainLayout from "./SidebarMainLayout.svelte";
   import ChatLayout from "./ChatLayout.svelte";
   import Dashboard from "../pages/Dashboard.svelte";
+  import funnAI from "../pages/funnAI.svelte";
 
   const routes = {
     "/": Dashboard,
+    "/funn": funnAI,
     "/chat": ChatLayout,
     "/chat/*": ChatLayout,
   };
@@ -35,6 +37,5 @@
       </div>
     </header>
     <Router {routes} />
-    <Footer />
   </main>
 </div> 
