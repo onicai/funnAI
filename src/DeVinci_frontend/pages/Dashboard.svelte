@@ -13,4 +13,13 @@
       <p class="text-gray-600">Start a new chat or continue your previous conversations.</p>
     </div>
   </div>
-</div> 
+</div>
+
+<script context="module">
+  export const Dashboard = (props) => {
+    return {
+      component: Dashboard,
+      props
+    };
+  };
+</script> 

@@ -1,14 +1,14 @@
 <script lang="ts">
+  import type { SvelteComponent } from 'svelte';
   import Router from "svelte-spa-router";
   import { store } from "../store";
   import NavigationMainLayout from "./NavigationMainLayout.svelte";
-  import Footer from "./Footer.svelte";
   import SidebarMainLayout from "./SidebarMainLayout.svelte";
   import ChatLayout from "./ChatLayout.svelte";
   import Dashboard from "../pages/Dashboard.svelte";
   import funnAI from "../pages/funnAI.svelte";
 
-  const routes = {
+  const routes: Record<string, typeof SvelteComponent> = {
     "/": Dashboard,
     "/funn": funnAI,
     "/chat": ChatLayout,

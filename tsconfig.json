@@ -14,7 +14,7 @@
      * correct position, enable source maps by default.
      */
     "sourceMap": true,
-    // "skipLibCheck": true,
+    "skipLibCheck": true,
     //"resolveJsonModule": true,
     "esModuleInterop": true,
     "noEmit": true,
@@ -32,5 +32,6 @@
     "src/DeVinci_frontend/**/*.js",
     "src/DeVinci_frontend/**/*.svelte"
   ],
+  "exclude": ["node_modules"],
   "lib": ["ESNext", "DOM", "WebWorker"]
 }
