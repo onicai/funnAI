@@ -36,6 +36,21 @@ import { onMount } from 'svelte';
   $: userHasDownloadedAtLeastOneModel = $downloadedModels.length > 0;
 </script>
 
-<div class="sidebar-header flex flex-col items-center justify-between py-4 h-lvh">
-    funnAI
+<div class="sidebar-header flex flex-col items-center py-4 h-lvh">
+    <h1 class="text-2xl font-bold"><a href="/">funnAI</a></h1>
+    <a href="/">
+      <button type="button" class="disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-800 mr-auto w-full my-5 flex justify-center text-gray-800 hover:text-white border border-gray-800 hover:bg-gray-900 focus:ring-4 focus:outline-none focus:ring-gray-400 font-medium rounded-full text-xs px-3 py-1.5 text-center">
+        Dashboard
+      </button>
+    </a>
+    <a href="/">
+      <button type="button" class="disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-800 mr-auto w-full my-5 flex justify-center text-gray-800 hover:text-white border border-gray-800 hover:bg-gray-900 focus:ring-4 focus:outline-none focus:ring-gray-400 font-medium rounded-full text-xs px-3 py-1.5 text-center">
+        funnAI
+      </button>
+    </a>
+    <a href="/#/chat">
+      <button type="button" class="disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-800 mr-auto w-full my-5 flex justify-center text-gray-800 hover:text-white border border-gray-800 hover:bg-gray-900 focus:ring-4 focus:outline-none focus:ring-gray-400 font-medium rounded-full text-xs px-3 py-1.5 text-center">
+        Chat
+      </button>
+    </a>
 </div>
