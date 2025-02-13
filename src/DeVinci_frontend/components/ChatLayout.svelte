@@ -44,7 +44,7 @@
       <UnsupportedBrowserBanner />
     {:else}
       <div class="flex flex-row h-screen">
-        <aside id="chatSidebar" class="bg-gradient-to-br from-[#f9fafb] via-[#eef1f6] to-[#dfe3ea] fixed z-50 bg-gray-200 w-72 min-w-72 h-full md:shadow transform -translate-x-full md:translate-x-0 transition-transform duration-150 ease-in">
+        <aside id="chatSidebar" class="bg-white fixed z-50 bg-gray-200 w-72 min-w-72 h-full transform -translate-x-full md:translate-x-0 transition-transform duration-150 ease-in">
           <div class="sidebar-content p-4 pt-0 h-full overflow-hidden">
             <Sidebar />
           </div>
