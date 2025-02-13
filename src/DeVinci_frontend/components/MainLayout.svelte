@@ -7,12 +7,14 @@
   import ChatLayout from "./ChatLayout.svelte";
   import Dashboard from "../pages/Dashboard.svelte";
   import funnAI from "../pages/funnAI.svelte";
+  import Wallet from "../pages/Wallet.svelte";
 
   const routes: Record<string, typeof SvelteComponent> = {
     "/": Dashboard,
     "/funn": funnAI,
     "/chat": ChatLayout,
     "/chat/*": ChatLayout,
+    "/wallet": Wallet,
   };
 </script>
 
