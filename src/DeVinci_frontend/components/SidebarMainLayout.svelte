@@ -2,6 +2,8 @@
 import { onMount } from 'svelte';
 import { link } from 'svelte-spa-router';
 import { downloadedModels } from "../store";
+import { get } from 'svelte/store';
+import { location } from 'svelte-spa-router';
 
 onMount(() => {
   const sidebarToggle = document.getElementById('mainSidebarToggle');
@@ -40,27 +42,40 @@ function closeSidebar() {
 
 // Reactive statement to check if the user has already downloaded at least one AI model
 $: userHasDownloadedAtLeastOneModel = $downloadedModels.length > 0;
+
+// Make location reactive
+$: currentPath = $location;
+
+// Add a console log to debug
+$: console.log('Current path:', currentPath);
+
+function isActive(path) {
+  return currentPath === path;
+}
 </script>
 
 <div class="sidebar-header flex flex-col items-center py-4 h-lvh">
     <h1 class="text-2xl font-bold"><a use:link href="/">funnAI</a></h1>
+    {#if isActive('/')}
+        <p class="hidden">{console.log('Dashboard is active:', isActive('/'))}</p>
+    {/if}
     <a use:link href="/" class="w-full" on:click={closeSidebar}>
-      <button style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button" class="w-full h-16 mt-12 bg-white">
+      <button class={`w-full h-16 mt-12 ${currentPath === '/' ? 'bg-gray-100' : 'bg-white'} hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
         Dashboard
       </button>
     </a>
     <a use:link href="/funn" class="w-full" on:click={closeSidebar}>
-      <button style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button" class="w-full h-16 mt-4 bg-white">
+      <button class={`w-full h-16 mt-4 ${currentPath === '/funn' ? 'bg-gray-100' : 'bg-white'} hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
         funnAI
       </button>
     </a>
     <a use:link href="/wallet" class="w-full" on:click={closeSidebar}>
-      <button style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button" class="w-full h-16 mt-4 bg-white">
+      <button class={`w-full h-16 mt-4 ${currentPath === '/wallet' ? 'bg-gray-100' : 'bg-white'} hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
         Wallet
       </button>
     </a>
     <a use:link href="/chat" class="w-full" on:click={closeSidebar}>
-      <button style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button" class="w-full h-16 mt-4 bg-white">
+      <button class={`w-full h-16 mt-4 ${currentPath === '/chat' ? 'bg-gray-100' : 'bg-white'} hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
         Chat
       </button>
     </a>
