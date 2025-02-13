@@ -45,17 +45,22 @@ $: userHasDownloadedAtLeastOneModel = $downloadedModels.length > 0;
 <div class="sidebar-header flex flex-col items-center py-4 h-lvh">
     <h1 class="text-2xl font-bold"><a use:link href="/">funnAI</a></h1>
     <a use:link href="/" class="w-full" on:click={closeSidebar}>
-      <button type="button" class="disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-800 mr-auto w-full my-5 flex justify-center text-gray-800 hover:text-white border border-gray-800 hover:bg-gray-900 focus:ring-4 focus:outline-none focus:ring-gray-400 font-medium rounded-full text-xs px-3 py-1.5 text-center">
+      <button style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button" class="w-full h-16 mt-12 bg-white">
         Dashboard
       </button>
     </a>
     <a use:link href="/funn" class="w-full" on:click={closeSidebar}>
-      <button type="button" class="disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-800 mr-auto w-full my-5 flex justify-center text-gray-800 hover:text-white border border-gray-800 hover:bg-gray-900 focus:ring-4 focus:outline-none focus:ring-gray-400 font-medium rounded-full text-xs px-3 py-1.5 text-center">
+      <button style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button" class="w-full h-16 mt-4 bg-white">
         funnAI
       </button>
     </a>
+    <a use:link href="/wallet" class="w-full" on:click={closeSidebar}>
+      <button style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button" class="w-full h-16 mt-4 bg-white">
+        Wallet
+      </button>
+    </a>
     <a use:link href="/chat" class="w-full" on:click={closeSidebar}>
-      <button type="button" class="disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-800 mr-auto w-full my-5 flex justify-center text-gray-800 hover:text-white border border-gray-800 hover:bg-gray-900 focus:ring-4 focus:outline-none focus:ring-gray-400 font-medium rounded-full text-xs px-3 py-1.5 text-center">
+      <button style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button" class="w-full h-16 mt-4 bg-white">
         Chat
       </button>
     </a>

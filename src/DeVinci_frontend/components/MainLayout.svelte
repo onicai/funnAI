@@ -17,7 +17,7 @@
 </script>
 
 <div class="flex flex-row h-screen">
-  <aside id="mainSidebar" class="fixed z-50 bg-gray-200 w-72 min-w-72 h-full md:shadow transform -translate-x-full md:translate-x-0 transition-transform duration-150 ease-in">
+  <aside id="mainSidebar" class="bg-[radial-gradient(circle_at_center,_#e6e9f0,_#fafbfc,_#dfe7fd)] fixed z-50 bg-gray-200 w-72 min-w-72 h-full md:shadow transform -translate-x-full md:translate-x-0 transition-transform duration-150 ease-in">
     <div class="sidebar-content p-4 pt-0 h-full overflow-hidden">
       <SidebarMainLayout />
     </div>
