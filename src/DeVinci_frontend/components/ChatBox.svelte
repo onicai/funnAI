@@ -278,7 +278,7 @@
   {/each}
 </div>
 
-<footer class="footer fixed bottom-4 px-4 left-1/2 md:left-[calc(50%+18rem)] transform -translate-x-1/2 w-full md:w-[calc(100%-36rem)]">
+<footer class="footer fixed bottom-4 px-4 left-1/2 md:left-[calc(50%+144px)] transform -translate-x-1/2 w-full md:w-[calc(100%-18rem)]">
   <form class="w-full max-w-2xl mx-auto px-1 sm:px-0">
     <label for="chat" class="sr-only">Message DeVinci</label>
     <div class="flex items-center px-3 p-2 rounded-full bg-gray-200">
