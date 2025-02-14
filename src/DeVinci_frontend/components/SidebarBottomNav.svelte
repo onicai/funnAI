@@ -7,7 +7,7 @@
   };
   </script>
   
-  <div class="fixed bottom-0 left-0 z-50 w-full h-16 bg-white border-t border-gray-200">
+  <div class="fixed bottom-14 left-0 z-50 w-full h-12 bg-white">
     <div class="grid h-full max-w-lg grid-cols-1 mx-auto font-medium">
       <a href="#/models" class="border inline-flex flex-col items-center justify-center px-1 hover:bg-gray-50 group">
         <span class="text-[10px] text-gray-500 group-hover:text-[#cb8bd0] text-left tracking-tight">
