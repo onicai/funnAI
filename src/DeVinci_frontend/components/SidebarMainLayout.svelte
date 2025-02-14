@@ -4,6 +4,7 @@ import { link } from 'svelte-spa-router';
 import { downloadedModels } from "../store";
 import { get } from 'svelte/store';
 import { location } from 'svelte-spa-router';
+import funnailogo from "/funnai.webp";
 
 onMount(() => {
   const sidebarToggle = document.getElementById('mainSidebarToggle');
@@ -54,8 +55,10 @@ function isActive(path) {
 }
 </script>
 
-<div class="sidebar-header flex flex-col items-center py-4 h-lvh">
-    <h1 class="text-2xl font-bold"><a use:link href="/">funnAI</a></h1>
+<div class="sidebar-header font-fredoka flex flex-col items-center py-4 h-lvh">
+    <h1 class="text-2xl font-semibold flex items-center gap-2">
+      <a use:link href="/"><img src={funnailogo} alt="funnAI logo" class="w-24 h-auto"></a>
+    </h1>
     {#if isActive('/')}
         <p class="hidden">{console.log('Dashboard is active:', isActive('/'))}</p>
     {/if}
