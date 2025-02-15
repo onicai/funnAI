@@ -19,13 +19,13 @@
 </script>
 
 <div class="flex flex-row h-screen">
-  <aside id="mainSidebar" class="bg-[radial-gradient(circle_at_center,_#e6e9f0,_#fafbfc,_#dfe7fd)] fixed z-50 bg-gray-200 w-72 min-w-72 h-full md:shadow transform -translate-x-full md:translate-x-0 transition-transform duration-150 ease-in">
+  <aside id="mainSidebar" class="bg-[radial-gradient(circle_at_center,_#300030,_#170017,_#0c000c)] fixed z-50 bg-gray-200 w-72 min-w-72 h-full md:shadow transform -translate-x-full md:translate-x-0 transition-transform duration-150 ease-in">
     <div class="sidebar-content p-4 pt-0 h-full overflow-hidden">
       <SidebarMainLayout />
     </div>
   </aside>
   <main class="main flex flex-col flex-grow ml-0 md:ml-72 transition-all duration-150 ease-in">
-    <header class="header bg-white shadow py-2 px-4">
+    <header class="header bg-[radial-gradient(circle_at_center,_#300030,_#170017,_#0c000c)] shadow py-2 px-4">
       <div class="header-content flex items-center flex-row">
         <button id="mainSidebarToggle" data-drawer-target="mainSidebar" data-drawer-toggle="mainSidebar" aria-controls="mainSidebar" type="button" class="inline-flex items-center p-2 mt-2 ms-3 text-sm text-gray-500 rounded-lg md:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200">
           <span class="sr-only">Open sidebar</span>

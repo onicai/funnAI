@@ -4,7 +4,7 @@ import { link } from 'svelte-spa-router';
 import { downloadedModels } from "../store";
 import { get } from 'svelte/store';
 import { location } from 'svelte-spa-router';
-import funnailogo from "/funnai.webp";
+import funnailogo from "/darwin.svg";
 
 onMount(() => {
   const sidebarToggle = document.getElementById('mainSidebarToggle');
@@ -57,28 +57,28 @@ function isActive(path) {
 
 <div class="sidebar-header font-fredoka flex flex-col items-center py-4 h-lvh">
     <h1 class="text-2xl font-semibold flex items-center gap-2">
-      <a use:link href="/"><img src={funnailogo} alt="funnAI logo" class="w-24 h-auto"></a>
+      <a use:link href="/"><img src={funnailogo} alt="funnAI logo" class="w-36 h-auto"></a>
     </h1>
     {#if isActive('/')}
         <p class="hidden">{console.log('Dashboard is active:', isActive('/'))}</p>
     {/if}
     <a use:link href="/" class="w-full" on:click={closeSidebar}>
-      <button class={`w-full h-16 mt-12 ${currentPath === '/' ? 'bg-gray-100' : 'bg-white'} hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
+      <button class={`w-full h-16 mt-12 ${currentPath === '/' ? 'bg-gray-100 border-2 border-gray-300' : 'bg-white'} bg-opacity-50 hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
         Dashboard
       </button>
     </a>
     <a use:link href="/mainer" class="w-full" on:click={closeSidebar}>
-      <button class={`w-full h-16 mt-4 ${currentPath === '/mainer' ? 'bg-gray-100' : 'bg-white'} hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
+      <button class={`w-full h-16 mt-4 ${currentPath === '/mainer' ? 'bg-gray-100 border-2 border-gray-300' : 'bg-white'} bg-opacity-50 hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
         mAIner
       </button>
     </a>
     <a use:link href="/wallet" class="w-full" on:click={closeSidebar}>
-      <button class={`w-full h-16 mt-4 ${currentPath === '/wallet' ? 'bg-gray-100' : 'bg-white'} hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
+      <button class={`w-full h-16 mt-4 ${currentPath === '/wallet' ? 'bg-gray-100 border-2 border-gray-300' : 'bg-white'} bg-opacity-50 hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
         Wallet
       </button>
     </a>
     <a use:link href="/chat" class="w-full" on:click={closeSidebar}>
-      <button class={`w-full h-16 mt-4 ${currentPath === '/chat' ? 'bg-gray-100' : 'bg-white'} hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
+      <button class={`w-full h-16 mt-4 ${currentPath === '/chat' ? 'bg-gray-100 border-2 border-gray-300' : 'bg-white'} bg-opacity-50 hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
         Chat
       </button>
     </a>
