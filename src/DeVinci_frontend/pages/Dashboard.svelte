@@ -3,16 +3,45 @@
   import Footer from "../components/Footer.svelte";
 </script>
 
-<div class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-8 py-8">
   <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
   
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <!-- Add your dashboard content here -->
-    <div class="bg-white p-6 rounded-lg shadow">
-      <h2 class="text-xl font-semibold mb-4">Welcome</h2>
-      <p class="text-gray-600">Start a new chat or continue your previous conversations.</p>
+    <div class="bg-gray-100 p-6 rounded-lg shadow">
+      <h2 class="text-sm font-semibold mb-4">My mAIners</h2>
+      <div class="card-style p-4 rounded-lg shadow mb-2">
+        #m1
+      </div>
+      <div class="card-style p-4 rounded-lg shadow mb-2">
+        #m2
+      </div>
     </div>
+
+    <div class="bg-gray-100 p-6 rounded-lg shadow">
+      <h2 class="text-sm font-semibold mb-4">Winners</h2>
+      <div class="card-style p-4 rounded-lg shadow mb-2">
+        <ul>
+          <li>#w1</li>
+          <li>#w2</li>
+          <li>#w3</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bg-gray-100 p-6 rounded-lg shadow">
+      <h2 class="text-sm font-semibold mb-4">Statistics</h2>
+      <div class="card-style p-4 rounded-lg shadow mb-2">
+        <ul>
+          <li>#s1</li>
+          <li>#s2</li>
+          <li>#s3</li>
+        </ul>
+      </div>
+    </div>
+
   </div>
+
 </div>
 
 <script context="module">

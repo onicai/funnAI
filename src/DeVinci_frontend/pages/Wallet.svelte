@@ -7,7 +7,7 @@
   
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <!-- Add your dashboard content here -->
-    <div class="bg-white p-6 rounded-lg shadow">
+    <div class="bg-white card-style w-full p-6 rounded-lg shadow">
       <h2 class="text-xl font-semibold mb-4">Welcome to your wallet</h2>
       <p class="text-gray-600">wallet.</p>
     </div>
