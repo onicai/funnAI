@@ -55,9 +55,9 @@
     <div class="pb-5 text-sm text-gray-700 space-y-4 p-4">
       
 
-    <ol class="relative mx-2 text-gray-500 border-s border-gray-200 dark:border-gray-700 dark:text-gray-400">                  
+    <ol class="relative mx-2 text-gray-500 border-s border-gray-200">                  
       <li class="mb-10 ms-6">            
-          <span class="absolute flex items-center justify-center w-8 h-8 {selectedModel ? 'bg-green-200' : 'bg-gray-200'} rounded-full -start-4 ring-4 ring-white dark:ring-gray-900">
+          <span class="absolute flex items-center justify-center w-8 h-8 {selectedModel ? 'bg-green-200' : 'bg-gray-200'} rounded-full -start-4 ring-4 ring-white">
               {#if selectedModel}
                 <!-- Checkmark icon for when model is selected -->
                 <svg class="w-3.5 h-3.5 text-green-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
@@ -71,7 +71,7 @@
               {/if}
           </span>
           <form class="max-w-sm mx-auto">
-            <label for="countries" class="block mb-2 text-sm font-medium text-gray-500 dark:text-white">Choose a model</label>
+            <label for="countries" class="block mb-2 text-sm font-medium text-gray-500">Choose a model</label>
             <select 
               bind:value={selectedModel}
               id="countries" 
@@ -85,13 +85,12 @@
           </form>
       </li>
       <li class="mb-10 ms-6">
-          <span class="absolute flex items-center justify-center w-8 h-8 {addressCopied ? 'bg-green-200' : 'bg-gray-100'} rounded-full -start-4 ring-4 ring-white dark:ring-gray-900">
+          <span class="absolute flex items-center justify-center w-8 h-8 {addressCopied ? 'bg-green-200' : 'bg-gray-100'} rounded-full -start-4 ring-4 ring-white">
               {#if addressCopied}
-              <svg class="w-3.5 h-3.5 text-green-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 5.917 5.724 10.5 15 1.5"/>
-              </svg>
+                <svg class="w-3.5 h-3.5 text-green-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 16 12">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 5.917 5.724 10.5 15 1.5"/>
+                </svg>
               {:else}
-                <!-- Default payment/spin icon -->
                 <svg class="w-4 h-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <line x1="12" y1="2" x2="12" y2="6"/>
                   <line x1="12" y1="18" x2="12" y2="22"/>
@@ -151,16 +150,16 @@
     <div id="content-{agent.id}" class="max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
       <div class="pb-5 text-sm text-gray-700 p-4 bg-gray-5">
         <div class="flex flex-col space-y-2 mb-2">
-          <div class="w-full p-4 text-gray-900 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400" role="alert">
+          <div class="w-full p-4 text-gray-900 bg-gray-100 border border-gray-300 rounded-lg" role="alert">
             <div class="flex items-center justify-between">
                 <h2 class="text-sm mb-2">Top up cycles</h2>
-                <button type="button" class="py-2.5 px-5 me-2 text-xs font-medium text-gray-900 focus:outline-none bg-white rounded-full border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">Top-up</button>
+                <button type="button" class="py-2.5 px-5 me-2 text-xs font-medium text-gray-900 focus:outline-none bg-white rounded-full border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100">Top-up</button>
             </div>
           </div>
         </div>
 
         <div class="flex flex-col space-y-2">
-          <div class="w-full p-4 text-gray-900 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400" role="alert">
+          <div class="w-full p-4 text-gray-900 bg-gray-100 border border-gray-300 rounded-lg" role="alert">
             <div class="flex flex-col">
                 <h2 class="text-sm mb-2">Set daily burn rate</h2>
                 <div class="inline-flex rounded-full shadow-xs w-full justify-end" role="group">
@@ -200,7 +199,7 @@
         </div>
 
         <div class="flex flex-col space-y-2 my-2">
-          <div class="w-full p-4 text-gray-900 bg-gray-100 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400" role="alert">
+          <div class="w-full p-4 text-gray-900 bg-gray-100 border border-gray-300 rounded-lg" role="alert">
             <div class="flex items-center justify-between">
               <h2 class="text-sm">Manage settings</h2>
             </div>
