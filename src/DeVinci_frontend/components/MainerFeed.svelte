@@ -129,7 +129,7 @@
           in:fly="{{ y: 20, duration: 500 }}"
         >
           <div class="flex flex-col flex-1 gap-2">
-            <h4 class="text-base font-medium flex justify-between items-center">
+            <h4 class="text-base font-medium flex justify-between items-center mr-6">
               {item.mainerName}
               <span class="text-xs font-normal text-slate-500">{formatTimestamp(item.timestamp)}</span>
             </h4>
