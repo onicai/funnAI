@@ -17,6 +17,14 @@
       ],
       "type": "assets"
     },
+    "game_state_canister": {
+      "main": "PoAIW/src/GameState/src/Main.mo",
+      "type": "motoko"
+    },
+    "mainer_ctrlb_canister": {
+      "main": "PoAIW/src/mAIner/src/Main.mo",
+      "type": "motoko"
+    },
     "internet_identity": {
       "type": "custom",
       "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",

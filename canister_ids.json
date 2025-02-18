@@ -15,5 +15,13 @@
   },
   "arcmindvectordb": {
     "development": "44ti7-fiaaa-aaaak-qitia-cai"
+  },
+  "game_state_canister": {
+    "development": "",
+    "ic": "xzpy6-hiaaa-aaaaj-az4pq-cai",
+    "local": ""
+  },
+  "mainer_ctrlb_canister": {
+    "ic": "x6o6k-kqaaa-aaaaj-az4pa-cai"
   }
 }
