@@ -2,6 +2,7 @@
   import { store } from "../store";
   import Footer from "../components/Footer.svelte";
   import MainerAccordion from "../components/MainerAccordion.svelte";
+  import MainerFeed from "../components/MainerFeed.svelte";
 </script>
 
 <div class="container mx-auto px-8 py-8">
@@ -12,16 +13,11 @@
       <MainerAccordion />
     </div>
 
-    <div class="bg-gray-100 p-6 rounded-lg shadow">
-      <h2 class="text-sm font-semibold mb-4">Statistics</h2>
+ 
       <div class="card-style p-4 rounded-lg shadow mb-2">
-        <ul>
-          <li>#s1</li>
-          <li>#s2</li>
-          <li>#s3</li>
-        </ul>
+        <MainerFeed />
       </div>
-    </div>
+   
 
   </div>
 
