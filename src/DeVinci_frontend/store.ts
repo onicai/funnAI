@@ -15,6 +15,38 @@ import {
   createActor as createUserKnowledgebaseBackendCanisterActor,
 } from "../declarations/arcmindvectordb";
 
+import {
+  game_state_canister,
+  createActor as createGameStateCanisterActor,
+  canisterId as gameStateCanisterId,
+  idlFactory as gameStateIdlFactory,
+} from "../declarations/game_state_canister";
+
+import {
+  mainer_ctrlb_canister,
+  createActor as createMainerControllerCanisterActor,
+  canisterId as mainerControllerCanisterId,
+  idlFactory as mainerControllerIdlFactory,
+} from "../declarations/mainer_ctrlb_canister";
+
+console.log("DeVinci_backend");
+console.log(DeVinci_backend);
+console.log(createBackendCanisterActor);
+console.log(backendCanisterId);
+console.log(backendIdlFactory);
+
+console.log("game_state_canister");
+console.log(game_state_canister);
+console.log(createGameStateCanisterActor);
+console.log(gameStateCanisterId);
+console.log(gameStateIdlFactory);
+
+console.log("mainer_ctrlb_canister");
+console.log(mainer_ctrlb_canister);
+console.log(createMainerControllerCanisterActor);
+console.log(mainerControllerCanisterId);
+console.log(mainerControllerIdlFactory);
+
 //__________Local vs Mainnet Development____________
 /* export const HOST =
   backendCanisterId === "vee64-zyaaa-aaaai-acpta-cai"
