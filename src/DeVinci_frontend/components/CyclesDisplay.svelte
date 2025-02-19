@@ -1,10 +1,11 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
 
   export let cycles: number;
   export let label: string = "Burned Cycles";
   
   let cyclesCount = 0;
+  let intervalId: NodeJS.Timer;
   
   function animateValue(start: number, end: number, duration: number) {
     const stepTime = 50;
@@ -25,6 +26,16 @@
 
   onMount(() => {
     animateValue(0, cycles, 1000);
+    
+    // Set up interval to increment cycles every 60 seconds
+    intervalId = setInterval(() => {
+      cycles += 1000;
+      animateValue(cyclesCount, cycles, 1000);
+    }, 6000);
+  });
+
+  onDestroy(() => {
+    if (intervalId) clearInterval(intervalId);
   });
 
   $: formattedCycles = cyclesCount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'");
