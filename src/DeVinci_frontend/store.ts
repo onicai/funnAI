@@ -29,6 +29,7 @@ import {
   idlFactory as mainerControllerIdlFactory,
 } from "../declarations/mainer_ctrlb_canister";
 
+// TODO: remove debug print statements
 console.log("DeVinci_backend");
 console.log(DeVinci_backend);
 console.log(createBackendCanisterActor);
@@ -160,6 +161,8 @@ type State = {
   error: string;
   isLoading: boolean;
   userKnowledgebaseCanisterActor: typeof arcmindvectordb;
+  gameStateCanisterActor: typeof game_state_canister;
+  mainerControllerCanisterActor: typeof mainer_ctrlb_canister;
 };
 
 let defaultBackendCanisterId = backendCanisterId;
@@ -177,6 +180,12 @@ const defaultState: State = {
   error: "",
   isLoading: false,
   userKnowledgebaseCanisterActor: null,
+  gameStateCanisterActor: createGameStateCanisterActor(gameStateCanisterId, {
+    agentOptions: { host: HOST },
+  }),
+  mainerControllerCanisterActor: createMainerControllerCanisterActor(mainerControllerCanisterId, {
+    agentOptions: { host: HOST },
+  }),
 };
 
 export const createStore = ({
@@ -387,6 +396,60 @@ export const createStore = ({
     return null; 
   };
 
+  const initGameStateCanisterActor = async (loginType, identity: Identity) => {
+    let canisterId = gameStateCanisterId;
+    
+    if (loginType === "plug") {
+      let gameStateActor = (await window.ic?.plug.createGameStateActor({
+        canisterId: canisterId,
+        interfaceFactory: gameStateIdlFactory,
+      })) as typeof game_state_canister;
+      return gameStateActor;
+    } else if (loginType === "bitfinity") {
+      let gameStateActor = (await window.ic?.infinityWallet.createGameStateActor({
+        canisterId: canisterId,
+        interfaceFactory: gameStateIdlFactory,
+        host,
+      })) as typeof game_state_canister;
+      return gameStateActor;
+    } else {
+      let gameStateActor = createGameStateCanisterActor(canisterId, {
+        agentOptions: {
+          identity,
+          host: HOST,
+        },
+      });
+      return gameStateActor;
+    };
+  };
+
+  const initMainerControllerCanisterActor = async (loginType, identity: Identity) => {
+    let canisterId = mainerControllerCanisterId;
+    
+    if (loginType === "plug") {
+      let mainerControllerActor = (await window.ic?.plug.createMainerControllerActor({
+        canisterId: canisterId,
+        interfaceFactory: mainerControllerIdlFactory,
+      })) as typeof mainer_ctrlb_canister;
+      return mainerControllerActor;
+    } else if (loginType === "bitfinity") {
+      let mainerControllerActor = (await window.ic?.infinityWallet.createMainerControllerActor({
+        canisterId: canisterId,
+        interfaceFactory: mainerControllerIdlFactory,
+        host,
+      })) as typeof mainer_ctrlb_canister;
+      return mainerControllerActor;
+    } else {
+      let mainerControllerActor = createMainerControllerCanisterActor(canisterId, {
+        agentOptions: {
+          identity,
+          host: HOST,
+        },
+      });
+      return mainerControllerActor;
+    };
+  };
+
   const nfidConnect = async () => {
     authClient = await AuthClient.create();
     if (await authClient.isAuthenticated()) {
@@ -425,6 +488,20 @@ export const createStore = ({
 
     await initUserSettings(backendActor);
 
+    const gameStateCanisterActor = await initGameStateCanisterActor("nfid", identity);
+    
+    if (!gameStateCanisterActor) {
+      console.warn("couldn't create Game State actor");
+      return;
+    };
+
+    const mainerControllerCanisterActor = await initMainerControllerCanisterActor("nfid", identity);
+    
+    if (!mainerControllerCanisterActor) {
+      console.warn("couldn't create mAIner Controller actor");
+      return;
+    };
+
     //let accounts = JSON.parse(await identity.accounts());
 
     localStorage.setItem('isAuthed', "nfid"); // Set flag to indicate existing login for future sessions
@@ -436,6 +513,8 @@ export const createStore = ({
       //accountId: accounts[0].address, // we take the default account associated with the identity
       accountId: null,
       isAuthed: "nfid",
+      gameStateCanisterActor,
+      mainerControllerCanisterActor,
     }));
 
     console.info("nfid is authed");
@@ -476,6 +555,20 @@ export const createStore = ({
 
     await initUserSettings(backendActor);
 
+    const gameStateCanisterActor = await initGameStateCanisterActor("internetidentity", identity);
+    
+    if (!gameStateCanisterActor) {
+      console.warn("couldn't create Game State actor");
+      return;
+    };
+
+    const mainerControllerCanisterActor = await initMainerControllerCanisterActor("internetidentity", identity);
+    
+    if (!mainerControllerCanisterActor) {
+      console.warn("couldn't create mAIner Controller actor");
+      return;
+    };
+
     //let accounts = JSON.parse(await identity.accounts());
 
     localStorage.setItem('isAuthed', "internetidentity"); // Set flag to indicate existing login for future sessions
@@ -487,6 +580,8 @@ export const createStore = ({
       //accountId: accounts[0].address, // we take the default account associated with the identity
       accountId: null,
       isAuthed: "internetidentity",
+      gameStateCanisterActor,
+      mainerControllerCanisterActor
     }));
 
     console.info("internetidentity is authed");
@@ -514,6 +609,20 @@ export const createStore = ({
 
     await initUserSettings(backendActor);
 
+    const gameStateCanisterActor = await initGameStateCanisterActor("stoic", identity);
+    
+    if (!gameStateCanisterActor) {
+      console.warn("couldn't create Game State actor");
+      return;
+    };
+
+    const mainerControllerCanisterActor = await initMainerControllerCanisterActor("stoic", identity);
+    
+    if (!mainerControllerCanisterActor) {
+      console.warn("couldn't create mAIner Controller actor");
+      return;
+    };
+
     // the stoic agent provides an `accounts()` method that returns accounts associated with the principal
     let accounts = JSON.parse(await identity.accounts());
 
@@ -525,6 +634,8 @@ export const createStore = ({
       principal: identity.getPrincipal(),
       accountId: accounts[0].address, // we take the default account associated with the identity
       isAuthed: "stoic",
+      gameStateCanisterActor,
+      mainerControllerCanisterActor
     }));
 
     console.info("stoic is authed");
@@ -597,6 +708,20 @@ export const createStore = ({
 
     await initUserSettings(backendActor);
 
+    const gameStateCanisterActor = await initGameStateCanisterActor("plug", null);
+    
+    if (!gameStateCanisterActor) {
+      console.warn("couldn't create Game State actor");
+      return;
+    };
+
+    const mainerControllerCanisterActor = await initMainerControllerCanisterActor("plug", null);
+    
+    if (!mainerControllerCanisterActor) {
+      console.warn("couldn't create mAIner Controller actor");
+      return;
+    };
+
     const principal = await window.ic.plug.agent.getPrincipal();
 
     localStorage.setItem('isAuthed', "plug"); // Set flag to indicate existing login for future sessions
@@ -607,6 +732,8 @@ export const createStore = ({
       principal,
       accountId: window.ic.plug.sessionManager.sessionData.accountId,
       isAuthed: "plug",
+      gameStateCanisterActor,
+      mainerControllerCanisterActor
     }));
 
     console.info("plug is authed");
@@ -676,6 +803,20 @@ export const createStore = ({
       return;
     };
 
+    const gameStateCanisterActor = await initGameStateCanisterActor("bitfinity", null);
+    
+    if (!gameStateCanisterActor) {
+      console.warn("couldn't create Game State actor");
+      return;
+    };
+
+    const mainerControllerCanisterActor = await initMainerControllerCanisterActor("bitfinity", null);
+    
+    if (!mainerControllerCanisterActor) {
+      console.warn("couldn't create mAIner Controller actor");
+      return;
+    };
+
     const principal = await window.ic.infinityWallet.getPrincipal();
 
     localStorage.setItem('isAuthed', "bitfinity"); // Set flag to indicate existing login for future sessions
@@ -686,6 +827,8 @@ export const createStore = ({
       principal,
       //accountId: window.ic.infinityWallet.sessionManager.sessionData.accountId,
       isAuthed: "bitfinity",
+      gameStateCanisterActor,
+      mainerControllerCanisterActor
     }));
 
     console.info("bitfinity is authed");
@@ -852,6 +995,8 @@ declare global {
           host?: string;
         }) => Promise<any>;
         createActor: (options: {}) => Promise<typeof DeVinci_backend>;
+        createGameStateActor: (options: {}) => Promise<typeof game_state_canister>;
+        createMainerControllerActor: (options: {}) => Promise<typeof mainer_ctrlb_canister>;
         isConnected: () => Promise<boolean>;
         disconnect: () => Promise<boolean>;
         createAgent: (args?: {
@@ -899,6 +1044,16 @@ declare global {
           interfaceFactory: any;
           host?: string;
         }) => Promise<typeof DeVinci_backend>;
+        createGameStateActor: (options: {
+          canisterId: string;
+          interfaceFactory: any;
+          host?: string;
+        }) => Promise<typeof game_state_canister>;
+        createMainerControllerActor: (options: {
+          canisterId: string;
+          interfaceFactory: any;
+          host?: string;
+        }) => Promise<typeof mainer_ctrlb_canister>;
         isConnected: () => Promise<boolean>;
         /* disconnect: () => Promise<boolean>;
         createAgent: (args?: {
