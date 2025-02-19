@@ -6,12 +6,10 @@
   import SidebarMainLayout from "./SidebarMainLayout.svelte";
   import ChatLayout from "./ChatLayout.svelte";
   import Dashboard from "../pages/Dashboard.svelte";
-  import mainerAI from "../pages/mAIner.svelte";
   import Wallet from "../pages/Wallet.svelte";
 
   const routes: Record<string, typeof SvelteComponent> = {
     "/": Dashboard,
-    "/mainer": mainerAI,
     "/chat": ChatLayout,
     "/chat/*": ChatLayout,
     "/wallet": Wallet,

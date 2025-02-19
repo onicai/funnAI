@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { fly } from 'svelte/transition';
   import { store } from "../store";
+  import { mockFeedData } from '../helpers/mockFeedData';
 
   interface FeedItem {
     id: string;
@@ -23,9 +24,14 @@
   let currentIndex = 0;
   let updating = false;
 
-  // Use toLocaleTimeString so only the time portion is shown.
+  // Convert milliseconds timestamp to readable time format
   function formatTimestamp(timestamp: number): string {
-    return new Date(timestamp).toLocaleTimeString();
+    const date = new Date(timestamp * 1000); // Convert seconds to milliseconds
+    return date.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit' 
+    });
   }
 
   function getStatusColor(type: string): string {
@@ -41,54 +47,18 @@
   async function getFeedData(): Promise<FeedItem[]> {
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const mockData = [
-      {
-        id: '1',
-        timestamp: Date.now(),
-        type: 'challenge' as const,
-        mainerName: 'mAIner #1',
-        content: {
-          challenge: 'Write a haiku about blockchain'
-        }
-      },
-      {
-        id: '2',
-        timestamp: Date.now(),
-        type: 'response' as const,
-        mainerName: 'mAIner #1',
-        content: {
-          response: 'Digital ledger, Blocks chain together in time, Trust without borders'
-        }
-      },
-      {
-        id: '3',
-        timestamp: Date.now(),
-        type: 'score' as const,
-        mainerName: 'mAIner #1',
-        content: {
-          score: 8.5
-        }
-      },
-      {
-        id: '4',
-        timestamp: Date.now(),
-        type: 'winner' as const,
-        mainerName: 'mAIner #1',
-        content: {
-          placement: '1st place',
-          reward: '100 tokens'
-        }
-      }
-    ];
-    return mockData;
+    return mockFeedData.feedItems;
   }
 
   async function updateFeed() {
     updating = true;
     const allItems = await getFeedData();
     if (currentIndex < allItems.length) {
-      feedItems = [allItems[currentIndex], ...feedItems];
+      const newItem = {
+        ...allItems[currentIndex],
+        timestamp: Math.floor(Date.now() / 1000) // Set current timestamp in seconds
+      };
+      feedItems = [newItem, ...feedItems];
       currentIndex++;
     }
     loading = false;

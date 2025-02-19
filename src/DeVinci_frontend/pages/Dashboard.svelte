@@ -5,7 +5,7 @@
 </script>
 
 <div class="container mx-auto px-8 py-8">
-  <h1 class="text-2xl text-gray-400 font-bold mb-6">My mAIners</h1>
+  <h1 class="text-2xl text-gray-400 font-bold mb-6">My mAIner Agents</h1>
   
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
     <div class="card-style p-6 rounded-lg shadow mb-2">
