@@ -96,6 +96,9 @@
   }
 
   onMount(async () => {
+    let recentWinnerEntries = await $store.gameStateCanisterActor.getRecentChallengeWinners();
+    console.log("MainerFeed recentWinnerEntries");
+    console.log(recentWinnerEntries);
     await updateFeed();
     interval = setInterval(updateFeed, 10000); // Update every 10 seconds
 
