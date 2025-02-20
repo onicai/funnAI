@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fly } from 'svelte/transition';
-  import { store } from "../store";
+  import { store, userMainerAgentCanisterActors, userMainerAgentCanistersInfo } from "../store";
   import { mockFeedData } from '../helpers/mockFeedData';
 
   interface FeedItem {
@@ -66,9 +66,15 @@
   }
 
   onMount(async () => {
-    let recentWinnerEntries = await $store.gameStateCanisterActor.getRecentChallengeWinners();
-    console.log("MainerFeed recentWinnerEntries");
-    console.log(recentWinnerEntries);
+    let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity();
+    console.log("MainerFeed recentProtocolActivityResult");
+    console.log(recentProtocolActivityResult);
+    if ($store.isAuthed) {
+      console.log("MainerAccordion userMainerAgentCanisterActors");
+      console.log(userMainerAgentCanisterActors);
+      console.log("MainerAccordion userMainerAgentCanistersInfo");
+      console.log(userMainerAgentCanistersInfo);
+    };
     await updateFeed();
     interval = setInterval(updateFeed, 10000); // Update every 10 seconds
 

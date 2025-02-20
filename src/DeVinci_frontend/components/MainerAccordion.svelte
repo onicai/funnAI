@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import CyclesDisplay from './CyclesDisplay.svelte';
+  import { userMainerAgentCanisterActors, userMainerAgentCanistersInfo } from "../store";
 
   let agents = [
     { id: 1, name: "mAIner 1", status: "active", burnedCycles: 1234567 },
@@ -35,6 +36,14 @@
   function copyAddress() {
     addressCopied = true;
   }
+
+  onMount(async () => {
+    //let recentWinnerEntries = await $store.gameStateCanisterActor.getRecentChallengeWinners();
+    console.log("MainerAccordion userMainerAgentCanisterActors");
+    console.log(userMainerAgentCanisterActors);
+    console.log("MainerAccordion userMainerAgentCanistersInfo");
+    console.log(userMainerAgentCanistersInfo);
+  });
 </script>
 
 <!-- Create Agent Accordion -->

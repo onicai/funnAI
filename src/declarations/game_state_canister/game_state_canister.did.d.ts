@@ -188,6 +188,7 @@ export interface GameStateCanister {
   'getRandomOpenChallenge' : ActorMethod<[], ChallengeResult>,
   'getRandomOpenChallengeTopic' : ActorMethod<[], ChallengeTopicResult>,
   'getRecentChallengeWinners' : ActorMethod<[], ChallengeWinnersResult>,
+  'getRecentProtocolActivity' : ActorMethod<[], ProtocolActivityResult>,
   'getScoredChallengesAdmin' : ActorMethod<[], ScoredChallengesResult>,
   'getSubmissionsAdmin' : ActorMethod<[], ChallengeResponseSubmissionsResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
@@ -228,6 +229,12 @@ export interface OfficialProtocolCanister {
   'createdBy' : Principal,
   'address' : CanisterAddress,
 }
+export interface ProtocolActivityRecord {
+  'challenges' : Array<Challenge>,
+  'winners' : Array<ChallengeWinnerDeclaration>,
+}
+export type ProtocolActivityResult = { 'Ok' : ProtocolActivityRecord } |
+  { 'Err' : ApiError };
 export type ProtocolCanisterType = { 'MainerAgent' : null } |
   { 'Challenger' : null } |
   { 'Judge' : null } |

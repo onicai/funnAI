@@ -211,6 +211,14 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : IDL.Vec(ChallengeWinnerDeclaration),
     'Err' : ApiError,
   });
+  const ProtocolActivityRecord = IDL.Record({
+    'challenges' : IDL.Vec(Challenge),
+    'winners' : IDL.Vec(ChallengeWinnerDeclaration),
+  });
+  const ProtocolActivityResult = IDL.Variant({
+    'Ok' : ProtocolActivityRecord,
+    'Err' : ApiError,
+  });
   const ScoredResponse = IDL.Record({
     'challengeClosedTimestamp' : IDL.Opt(IDL.Nat64),
     'challengeTopicStatus' : ChallengeTopicStatus,
@@ -329,6 +337,11 @@ export const idlFactory = ({ IDL }) => {
     'getRecentChallengeWinners' : IDL.Func(
         [],
         [ChallengeWinnersResult],
+        ['query'],
+      ),
+    'getRecentProtocolActivity' : IDL.Func(
+        [],
+        [ProtocolActivityResult],
         ['query'],
       ),
     'getScoredChallengesAdmin' : IDL.Func(

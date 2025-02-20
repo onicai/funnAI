@@ -85,6 +85,16 @@ type ProtocolCanisterType =
    MainerCreator;
    Verifier;
  };
+type ProtocolActivityResult = 
+ variant {
+   Err: ApiError;
+   Ok: ProtocolActivityRecord;
+ };
+type ProtocolActivityRecord = 
+ record {
+   challenges: vec Challenge;
+   winners: vec ChallengeWinnerDeclaration;
+ };
 type OfficialProtocolCanister = 
  record {
    address: CanisterAddress;
@@ -151,6 +161,7 @@ type GameStateCanister =
    getRandomOpenChallenge: () -> (ChallengeResult);
    getRandomOpenChallengeTopic: () -> (ChallengeTopicResult);
    getRecentChallengeWinners: () -> (ChallengeWinnersResult) query;
+   getRecentProtocolActivity: () -> (ProtocolActivityResult) query;
    getScoredChallengesAdmin: () -> (ScoredChallengesResult) query;
    getSubmissionsAdmin: () -> (ChallengeResponseSubmissionsResult) query;
    health: () -> (StatusCodeRecordResult) query;
