@@ -169,6 +169,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const AuthRecord = IDL.Record({ 'auth' : IDL.Text });
   const AuthRecordResult = IDL.Variant({ 'Ok' : AuthRecord, 'Err' : ApiError });
+  const CyclesBurntResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
   const ChallengeResult = IDL.Variant({ 'Ok' : Challenge, 'Err' : ApiError });
   const ChallengeParticipationResult = IDL.Variant({
     'ThirdPlace' : IDL.Null,
@@ -219,6 +220,10 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : ProtocolActivityRecord,
     'Err' : ApiError,
   });
+  const SubmissionRetrievalInput = IDL.Record({
+    'challengeId' : IDL.Text,
+    'submissionId' : IDL.Text,
+  });
   const ScoredResponse = IDL.Record({
     'challengeClosedTimestamp' : IDL.Opt(IDL.Nat64),
     'challengeTopicStatus' : ChallengeTopicStatus,
@@ -242,6 +247,10 @@ export const idlFactory = ({ IDL }) => {
     'submissionCyclesRequired' : IDL.Nat,
     'challengeAnswer' : IDL.Text,
     'scoreSeed' : IDL.Nat32,
+  });
+  const ScoredResponseRetrievalResult = IDL.Variant({
+    'Ok' : ScoredResponse,
+    'Err' : ApiError,
   });
   List.fill(IDL.Opt(IDL.Tuple(ScoredResponse, List)));
   const ScoredChallengesResult = IDL.Variant({
@@ -332,6 +341,11 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'getOfficialChallengerCanisters' : IDL.Func([], [AuthRecordResult], []),
+    'getProtocolTotalCyclesBurnt' : IDL.Func(
+        [],
+        [CyclesBurntResult],
+        ['query'],
+      ),
     'getRandomOpenChallenge' : IDL.Func([], [ChallengeResult], []),
     'getRandomOpenChallengeTopic' : IDL.Func([], [ChallengeTopicResult], []),
     'getRecentChallengeWinners' : IDL.Func(
@@ -342,6 +356,11 @@ export const idlFactory = ({ IDL }) => {
     'getRecentProtocolActivity' : IDL.Func(
         [],
         [ProtocolActivityResult],
+        ['query'],
+      ),
+    'getScoreForSubmission' : IDL.Func(
+        [SubmissionRetrievalInput],
+        [ScoredResponseRetrievalResult],
         ['query'],
       ),
     'getScoredChallengesAdmin' : IDL.Func(

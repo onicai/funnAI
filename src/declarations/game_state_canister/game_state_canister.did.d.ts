@@ -147,6 +147,8 @@ export type ChallengeWinnersResult = {
   { 'Err' : ApiError };
 export type ChallengesResult = { 'Ok' : Array<Challenge> } |
   { 'Err' : ApiError };
+export type CyclesBurntResult = { 'Ok' : bigint } |
+  { 'Err' : ApiError };
 export interface GameStateCanister {
   'addChallenge' : ActorMethod<[NewChallengeInput], ChallengeAdditionResult>,
   'addChallengeTopic' : ActorMethod<
@@ -185,10 +187,15 @@ export interface GameStateCanister {
     ChallengeResponseSubmissionResult
   >,
   'getOfficialChallengerCanisters' : ActorMethod<[], AuthRecordResult>,
+  'getProtocolTotalCyclesBurnt' : ActorMethod<[], CyclesBurntResult>,
   'getRandomOpenChallenge' : ActorMethod<[], ChallengeResult>,
   'getRandomOpenChallengeTopic' : ActorMethod<[], ChallengeTopicResult>,
   'getRecentChallengeWinners' : ActorMethod<[], ChallengeWinnersResult>,
   'getRecentProtocolActivity' : ActorMethod<[], ProtocolActivityResult>,
+  'getScoreForSubmission' : ActorMethod<
+    [SubmissionRetrievalInput],
+    ScoredResponseRetrievalResult
+  >,
   'getScoredChallengesAdmin' : ActorMethod<[], ScoredChallengesResult>,
   'getSubmissionsAdmin' : ActorMethod<[], ChallengeResponseSubmissionsResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
@@ -296,12 +303,18 @@ export interface ScoredResponseInput {
 }
 export type ScoredResponseResult = { 'Ok' : ScoredResponseReturn } |
   { 'Err' : ApiError };
+export type ScoredResponseRetrievalResult = { 'Ok' : ScoredResponse } |
+  { 'Err' : ApiError };
 export interface ScoredResponseReturn { 'success' : boolean }
 export type SelectableMainerLLM = { 'Qwen2_5_0_5_B' : null };
 export type StatusCode = number;
 export interface StatusCodeRecord { 'status_code' : StatusCode }
 export type StatusCodeRecordResult = { 'Ok' : StatusCodeRecord } |
   { 'Err' : ApiError };
+export interface SubmissionRetrievalInput {
+  'challengeId' : string,
+  'submissionId' : string,
+}
 export interface _SERVICE extends GameStateCanister {}
 export declare const idlFactory: IDL.InterfaceFactory;
 export declare const init: (args: { IDL: typeof IDL }) => IDL.Type[];

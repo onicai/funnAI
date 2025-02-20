@@ -1,3 +1,8 @@
+type SubmissionRetrievalInput = 
+ record {
+   challengeId: text;
+   submissionId: text;
+ };
 type StatusCodeRecordResult = 
  variant {
    Err: ApiError;
@@ -7,6 +12,11 @@ type StatusCodeRecord = record {status_code: StatusCode;};
 type StatusCode = nat16;
 type SelectableMainerLLM = variant {Qwen2_5_0_5_B;};
 type ScoredResponseReturn = record {success: bool;};
+type ScoredResponseRetrievalResult = 
+ variant {
+   Err: ApiError;
+   Ok: ScoredResponse;
+ };
 type ScoredResponseResult = 
  variant {
    Err: ApiError;
@@ -158,16 +168,24 @@ type GameStateCanister =
    getMainerAgentCanistersForUser: () -> (MainerAgentCanistersResult) query;
    getNextSubmissionToJudge: () -> (ChallengeResponseSubmissionResult);
    getOfficialChallengerCanisters: () -> (AuthRecordResult);
+   getProtocolTotalCyclesBurnt: () -> (CyclesBurntResult) query;
    getRandomOpenChallenge: () -> (ChallengeResult);
    getRandomOpenChallengeTopic: () -> (ChallengeTopicResult);
    getRecentChallengeWinners: () -> (ChallengeWinnersResult) query;
    getRecentProtocolActivity: () -> (ProtocolActivityResult) query;
+   getScoreForSubmission: (SubmissionRetrievalInput) ->
+    (ScoredResponseRetrievalResult) query;
    getScoredChallengesAdmin: () -> (ScoredChallengesResult) query;
    getSubmissionsAdmin: () -> (ChallengeResponseSubmissionsResult) query;
    health: () -> (StatusCodeRecordResult) query;
    setInitialChallengeTopics: () -> (StatusCodeRecordResult);
    submitChallengeResponse: (ChallengeResponseSubmissionInput) ->
     (ChallengeResponseSubmissionMetadataResult);
+ };
+type CyclesBurntResult = 
+ variant {
+   Err: ApiError;
+   Ok: nat;
  };
 type ChallengesResult = 
  variant {

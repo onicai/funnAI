@@ -59,11 +59,20 @@ export interface CyclesBurnRate {
   'cycles' : bigint,
   'timeInterval' : TimeInterval,
 }
+export interface IssueFlagsRecord { 'lowCycleBalance' : boolean }
+export type IssueFlagsRetrievalResult = { 'Ok' : IssueFlagsRecord } |
+  { 'Err' : ApiError };
 export interface MainerAgentCtrlbCanister {
   'add_llm_canister' : ActorMethod<[CanisterIDRecord], StatusCodeRecordResult>,
   'amiController' : ActorMethod<[], StatusCodeRecordResult>,
   'checkAccessToLLMs' : ActorMethod<[], StatusCodeRecordResult>,
   'getGameStateCanisterId' : ActorMethod<[], string>,
+  'getIssueFlagsAdmin' : ActorMethod<[], IssueFlagsRetrievalResult>,
+  'getMainerStatisticsAdmin' : ActorMethod<[], StatisticsRetrievalResult>,
+  'getRecentSubmittedResponsesAdmin' : ActorMethod<
+    [],
+    ChallengeResponseSubmissionsResult
+  >,
   'getRoundRobinCanister' : ActorMethod<[], CanisterIDRecordResult>,
   'getSubmittedResponsesAdmin' : ActorMethod<
     [],
@@ -84,6 +93,13 @@ export interface MainerAgentCtrlbCanister {
   'whoami' : ActorMethod<[], Principal>,
 }
 export interface MainerAgentSettingsInput { 'cyclesBurnRate' : CyclesBurnRate }
+export interface StatisticsRecord {
+  'cycleBalance' : bigint,
+  'totalCyclesBurnt' : bigint,
+  'cyclesBurnRate' : CyclesBurnRate,
+}
+export type StatisticsRetrievalResult = { 'Ok' : StatisticsRecord } |
+  { 'Err' : ApiError };
 export type StatusCode = number;
 export interface StatusCodeRecord { 'status_code' : StatusCode }
 export type StatusCodeRecordResult = { 'Ok' : StatusCodeRecord } |

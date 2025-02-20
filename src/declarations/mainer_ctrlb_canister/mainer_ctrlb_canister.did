@@ -6,6 +6,17 @@ type StatusCodeRecordResult =
  };
 type StatusCodeRecord = record {status_code: StatusCode;};
 type StatusCode = nat16;
+type StatisticsRetrievalResult = 
+ variant {
+   Err: ApiError;
+   Ok: StatisticsRecord;
+ };
+type StatisticsRecord = 
+ record {
+   cycleBalance: nat;
+   cyclesBurnRate: CyclesBurnRate;
+   totalCyclesBurnt: nat;
+ };
 type MainerAgentSettingsInput = record {cyclesBurnRate: CyclesBurnRate;};
 type MainerAgentCtrlbCanister = 
  service {
@@ -13,6 +24,10 @@ type MainerAgentCtrlbCanister =
    amiController: () -> (StatusCodeRecordResult) query;
    checkAccessToLLMs: () -> (StatusCodeRecordResult);
    getGameStateCanisterId: () -> (text) query;
+   getIssueFlagsAdmin: () -> (IssueFlagsRetrievalResult) query;
+   getMainerStatisticsAdmin: () -> (StatisticsRetrievalResult) query;
+   getRecentSubmittedResponsesAdmin: () ->
+    (ChallengeResponseSubmissionsResult) query;
    getRoundRobinCanister: () -> (CanisterIDRecordResult) query;
    getSubmittedResponsesAdmin: () ->
     (ChallengeResponseSubmissionsResult) query;
@@ -28,6 +43,12 @@ type MainerAgentCtrlbCanister =
     (StatusCodeRecordResult);
    whoami: () -> (principal) query;
  };
+type IssueFlagsRetrievalResult = 
+ variant {
+   Err: ApiError;
+   Ok: IssueFlagsRecord;
+ };
+type IssueFlagsRecord = record {lowCycleBalance: bool;};
 type CyclesBurnRate = 
  record {
    cycles: nat;

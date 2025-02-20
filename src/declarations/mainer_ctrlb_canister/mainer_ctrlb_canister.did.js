@@ -15,8 +15,23 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : StatusCodeRecord,
     'Err' : ApiError,
   });
-  const CanisterIDRecordResult = IDL.Variant({
-    'Ok' : CanisterIDRecord,
+  const IssueFlagsRecord = IDL.Record({ 'lowCycleBalance' : IDL.Bool });
+  const IssueFlagsRetrievalResult = IDL.Variant({
+    'Ok' : IssueFlagsRecord,
+    'Err' : ApiError,
+  });
+  const TimeInterval = IDL.Variant({ 'Daily' : IDL.Null });
+  const CyclesBurnRate = IDL.Record({
+    'cycles' : IDL.Nat,
+    'timeInterval' : TimeInterval,
+  });
+  const StatisticsRecord = IDL.Record({
+    'cycleBalance' : IDL.Nat,
+    'totalCyclesBurnt' : IDL.Nat,
+    'cyclesBurnRate' : CyclesBurnRate,
+  });
+  const StatisticsRetrievalResult = IDL.Variant({
+    'Ok' : StatisticsRecord,
     'Err' : ApiError,
   });
   const ChallengeTopicStatus = IDL.Variant({
@@ -65,13 +80,12 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : IDL.Vec(ChallengeResponseSubmission),
     'Err' : ApiError,
   });
+  const CanisterIDRecordResult = IDL.Variant({
+    'Ok' : CanisterIDRecord,
+    'Err' : ApiError,
+  });
   const AuthRecord = IDL.Record({ 'auth' : IDL.Text });
   const AuthRecordResult = IDL.Variant({ 'Ok' : AuthRecord, 'Err' : ApiError });
-  const TimeInterval = IDL.Variant({ 'Daily' : IDL.Null });
-  const CyclesBurnRate = IDL.Record({
-    'cycles' : IDL.Nat,
-    'timeInterval' : TimeInterval,
-  });
   const MainerAgentSettingsInput = IDL.Record({
     'cyclesBurnRate' : CyclesBurnRate,
   });
@@ -84,6 +98,17 @@ export const idlFactory = ({ IDL }) => {
     'amiController' : IDL.Func([], [StatusCodeRecordResult], ['query']),
     'checkAccessToLLMs' : IDL.Func([], [StatusCodeRecordResult], []),
     'getGameStateCanisterId' : IDL.Func([], [IDL.Text], ['query']),
+    'getIssueFlagsAdmin' : IDL.Func([], [IssueFlagsRetrievalResult], ['query']),
+    'getMainerStatisticsAdmin' : IDL.Func(
+        [],
+        [StatisticsRetrievalResult],
+        ['query'],
+      ),
+    'getRecentSubmittedResponsesAdmin' : IDL.Func(
+        [],
+        [ChallengeResponseSubmissionsResult],
+        ['query'],
+      ),
     'getRoundRobinCanister' : IDL.Func([], [CanisterIDRecordResult], ['query']),
     'getSubmittedResponsesAdmin' : IDL.Func(
         [],
