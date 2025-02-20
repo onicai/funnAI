@@ -63,7 +63,7 @@ function isActive(path) {
         <p class="hidden">{console.log('Dashboard is active:', isActive('/'))}</p>
     {/if}
     <a use:link href="/" class="w-full" on:click={closeSidebar}>
-      <button class={`w-full h-16 mt-12 ${currentPath === '/' ? 'bg-gray-100' : 'bg-white'} hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
+      <button class={`w-full text-gray-700 h-16 mt-12 ${currentPath === '/' ? 'bg-gray-100' : 'bg-white'} hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
         mAIner
       </button>
     </a>
@@ -73,12 +73,12 @@ function isActive(path) {
       </button>
     </a> -->
     <a use:link href="/wallet" class="w-full" on:click={closeSidebar}>
-      <button class={`w-full h-16 mt-4 ${currentPath === '/wallet' ? 'bg-gray-100' : 'bg-white'} hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
+      <button class={`w-full text-gray-700 h-16 mt-4 ${currentPath === '/wallet' ? 'bg-gray-100' : 'bg-white'} hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
         Wallet
       </button>
     </a>
     <a use:link href="/chat" class="w-full" on:click={closeSidebar}>
-      <button class={`w-full h-16 mt-4 ${currentPath === '/chat' ? 'bg-gray-100' : 'bg-white'} hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
+      <button class={`w-full text-gray-700 h-16 mt-4 ${currentPath === '/chat' ? 'bg-gray-100' : 'bg-white'} hover:border-2 hover:border-gray-300`} style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
         Chat
       </button>
     </a>

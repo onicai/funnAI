@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import CyclesDisplay from './CyclesDisplay.svelte';
 
   let agents = [
-    { id: 1, name: "mAIner 1", status: "active" },
-    { id: 2, name: "mAIner 2", status: "inactive" }
+    { id: 1, name: "mAIner 1", status: "active", burnedCycles: 1234567 },
+    { id: 2, name: "mAIner 2", status: "inactive", burnedCycles: 890123 }
   ];
 
   let selectedBurnRate: 'Low' | 'Medium' | 'High' = 'Medium'; // Default value
@@ -204,6 +205,9 @@
               <h2 class="text-sm">Manage settings</h2>
             </div>
           </div>
+        </div>
+        <div class="flex flex-col space-y-2 mb-2">
+          <CyclesDisplay cycles={agent.burnedCycles} label="Burned Cycles" />
         </div>
 
       </div>
