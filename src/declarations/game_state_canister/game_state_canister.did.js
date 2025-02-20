@@ -139,6 +139,10 @@ export const idlFactory = ({ IDL }) => {
     'Err' : ApiError,
   });
   const CanisterRetrieveInput = IDL.Record({ 'address' : CanisterAddress });
+  const MainerAgentCanistersResult = IDL.Variant({
+    'Ok' : IDL.Vec(OfficialProtocolCanister),
+    'Err' : ApiError,
+  });
   const ChallengeResponseSubmission = IDL.Record({
     'challengeClosedTimestamp' : IDL.Opt(IDL.Nat64),
     'challengeTopicStatus' : ChallengeTopicStatus,
@@ -307,6 +311,11 @@ export const idlFactory = ({ IDL }) => {
     'getMainerAgentCanisterInfo' : IDL.Func(
         [CanisterRetrieveInput],
         [MainerAgentCanisterResult],
+        ['query'],
+      ),
+    'getMainerAgentCanistersForUser' : IDL.Func(
+        [],
+        [MainerAgentCanistersResult],
         ['query'],
       ),
     'getNextSubmissionToJudge' : IDL.Func(

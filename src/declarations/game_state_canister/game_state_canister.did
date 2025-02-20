@@ -103,6 +103,11 @@ type NewChallengeInput =
    challengeTopicStatus: ChallengeTopicStatus;
  };
 type MainerConfigurationInput = record {aiModel: opt SelectableMainerLLM;};
+type MainerAgentCanistersResult = 
+ variant {
+   Err: ApiError;
+   Ok: vec OfficialProtocolCanister;
+ };
 type MainerAgentCanisterResult = 
  variant {
    Err: ApiError;
@@ -140,6 +145,7 @@ type GameStateCanister =
    getCurrentChallengesAdmin: () -> (ChallengesResult) query;
    getMainerAgentCanisterInfo: (CanisterRetrieveInput) ->
     (MainerAgentCanisterResult) query;
+   getMainerAgentCanistersForUser: () -> (MainerAgentCanistersResult) query;
    getNextSubmissionToJudge: () -> (ChallengeResponseSubmissionResult);
    getOfficialChallengerCanisters: () -> (AuthRecordResult);
    getRandomOpenChallenge: () -> (ChallengeResult);

@@ -176,6 +176,10 @@ export interface GameStateCanister {
     [CanisterRetrieveInput],
     MainerAgentCanisterResult
   >,
+  'getMainerAgentCanistersForUser' : ActorMethod<
+    [],
+    MainerAgentCanistersResult
+  >,
   'getNextSubmissionToJudge' : ActorMethod<
     [],
     ChallengeResponseSubmissionResult
@@ -201,6 +205,10 @@ export interface MainerAgentCanisterInput {
   'address' : CanisterAddress,
 }
 export type MainerAgentCanisterResult = { 'Ok' : OfficialProtocolCanister } |
+  { 'Err' : ApiError };
+export type MainerAgentCanistersResult = {
+    'Ok' : Array<OfficialProtocolCanister>
+  } |
   { 'Err' : ApiError };
 export interface MainerConfigurationInput {
   'aiModel' : [] | [SelectableMainerLLM],

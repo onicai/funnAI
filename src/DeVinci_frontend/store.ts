@@ -133,6 +133,13 @@ userBackendCanisterAddress.subscribe((value) => {
   localStorage.setItem("userBackendCanisterAddress", value)
 });
 
+export let userMainerAgentsCanisters = writable(localStorage.getItem("userMainerAgentsCanisters") || []);
+let userMainerAgentsCanistersValue = localStorage.getItem("userMainerAgentsCanisters") || [];
+userMainerAgentsCanisters.subscribe((value) => {
+  userMainerAgentsCanistersValue = value;
+  localStorage.setItem("userMainerAgentsCanisters", JSON.stringify(value))
+});
+
 export let downloadedModels = writable(JSON.parse(localStorage.getItem("downloadedAiModels") || "[]"));
 downloadedModels.subscribe((value) => {
   localStorage.setItem("downloadedAiModels", JSON.stringify(value));
@@ -450,6 +457,26 @@ export const createStore = ({
     };
   };
 
+  const initializeUserMainerAgentCanisters = async (gameStateCanisterActor: typeof game_state_canister) => {
+    try {
+      const getMainersResult = await gameStateCanisterActor.getMainerAgentCanistersForUser();
+      // @ts-ignore
+      if (getMainersResult.Ok) {
+        // @ts-ignore
+        const userCanisters = getMainersResult.Ok;
+        userMainerAgentsCanisters.set(userCanisters);            
+        return userCanisters;
+      } else {
+        // @ts-ignore
+        console.error("Error retrieving user mAIner agent canisters: ", getMainersResult.Err);
+        // @ts-ignore
+        throw new Error("Error retrieving user mAIner agent canisters: ", getMainersResult.Err);
+      };
+    } catch (error) {
+      console.error("Error in initializeUserMainerAgentCanisters: ", error);
+    };
+  };
+
   const nfidConnect = async () => {
     authClient = await AuthClient.create();
     if (await authClient.isAuthenticated()) {
@@ -495,6 +522,10 @@ export const createStore = ({
       return;
     };
 
+    // Initialize user's mAIner agent (controller) canisters
+    await initializeUserMainerAgentCanisters(gameStateCanisterActor);
+
+    // TODO: determine if general mainerControllerCanisterActor has any value
     const mainerControllerCanisterActor = await initMainerControllerCanisterActor("nfid", identity);
     
     if (!mainerControllerCanisterActor) {
