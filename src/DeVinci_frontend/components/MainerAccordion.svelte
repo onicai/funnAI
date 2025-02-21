@@ -4,6 +4,8 @@
   import { userMainerAgentCanisterActors, userMainerAgentCanistersInfo } from "../store";
 
   let agents = [
+    // Add the agent entries dynamically via the calls in onMount
+    // TODO: remove these dummy entries
     { id: 1, name: "mAIner 1", status: "active", burnedCycles: 1234567 },
     { id: 2, name: "mAIner 2", status: "inactive", burnedCycles: 890123 }
   ];
@@ -25,24 +27,84 @@
     } else {
       content.style.maxHeight = content.scrollHeight + 'px';
       icon.style.transform = 'rotate(0deg)';
-    }
-  }
+    };
+  };
 
   function createAgent() {
     // TODO: Implement agent creation
     console.log("Creating new agent...");
-  }
+  };
 
   function copyAddress() {
     addressCopied = true;
-  }
+  };
 
   onMount(async () => {
-    //let recentWinnerEntries = await $store.gameStateCanisterActor.getRecentChallengeWinners();
-    console.log("MainerAccordion userMainerAgentCanisterActors");
-    console.log(userMainerAgentCanisterActors);
-    console.log("MainerAccordion userMainerAgentCanistersInfo");
-    console.log(userMainerAgentCanistersInfo);
+    console.log("MainerAccordion userMainerAgentCanisterActors", $userMainerAgentCanisterActors);
+    console.log("MainerAccordion userMainerAgentCanistersInfo", $userMainerAgentCanistersInfo);
+    // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
+    agents = await Promise.all(
+      // for each agent in the array userMainerAgentCanisterActors, add an entry to the agents array
+      $userMainerAgentCanisterActors.map(async (agentActor, index) => {
+        // userMainerAgentCanistersInfo is an array with each element being an object with info on an agent, it has the same order of agents as userMainerAgentCanisterActors
+        // each entry in userMainerAgentCanistersInfo looks like so:
+          /* type OfficialProtocolCanister = {
+              address : CanisterAddress;
+              canisterType: ProtocolCanisterType;
+              creationTimestamp : Nat64;
+              createdBy : Principal;
+              ownedBy: Principal;
+          }; */
+        // use address as the agent's id
+        // use mAIner 1, mAIner 2, mAIner 3, etc as the name by incrementing the number
+        const canisterInfo = $userMainerAgentCanistersInfo[index];
+        let status = "active";
+        let burnedCycles = 0;
+        let cycleBalance = 0;
+        let cyclesBurnRate = {};
+
+        try {
+          // Retrieve flags that indicate any issues with the agent's canister
+          const issueFlagsResult = await agentActor.getIssueFlagsAdmin();
+          // IssueFlagsRetrievalResult looks like: type IssueFlagsRetrievalResult = { 'Ok' : IssueFlagsRecord } | { 'Err' : ApiError };
+          // and interface IssueFlagsRecord { 'lowCycleBalance' : boolean }
+          // if there is an issue, set status on the agent's entry to "inactive", otherwise "active"
+          if ('Ok' in issueFlagsResult && issueFlagsResult.Ok.lowCycleBalance) {
+            status = "inactive";
+          };
+        } catch (error) {
+          console.error("Error fetching issue flags: ", error);
+          status = "inactive";
+        };
+
+        try {
+          // Retrieve cycle statistics
+          const statsResult = await agentActor.getMainerStatisticsAdmin();
+          // StatisticsRetrievalResult looks like: type StatisticsRetrievalResult = { 'Ok' : StatisticsRecord } |  { 'Err' : ApiError };
+            /*  and interface StatisticsRecord {
+              'cycleBalance' : bigint,
+              'totalCyclesBurnt' : bigint,
+              'cyclesBurnRate' : CyclesBurnRate,
+            }; */
+          if ('Ok' in statsResult) {
+            burnedCycles = statsResult.Ok.totalCyclesBurnt;
+            cycleBalance = statsResult.Ok.cycleBalance;
+            cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
+          };
+        } catch (error) {
+          console.error("Error fetching statistics: ", error);
+        };
+
+        return {
+          id: canisterInfo.address,
+          name: `mAIner ${index + 1}`,
+          status,
+          burnedCycles,
+          cycleBalance,
+          cyclesBurnRate
+        };
+      })
+    );
   });
 </script>
 
