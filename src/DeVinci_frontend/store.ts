@@ -133,7 +133,7 @@ userBackendCanisterAddress.subscribe((value) => {
   localStorage.setItem("userBackendCanisterAddress", value)
 });
 
-export let userMainerAgentCanistersInfo = writable(localStorage.getItem("userMainerAgentCanistersInfo") || []);
+export let userMainerAgentCanistersInfo = writable(localStorage.getItem("userMainerAgentCanistersInfo"));
 let userMainerAgentCanistersInfoValue = localStorage.getItem("userMainerAgentCanistersInfo") || [];
 userMainerAgentCanistersInfo.subscribe((value) => {
   userMainerAgentCanistersInfoValue = value;
