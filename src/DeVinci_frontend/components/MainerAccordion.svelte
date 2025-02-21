@@ -57,7 +57,7 @@
           }; */
         // use address as the agent's id
         // use mAIner 1, mAIner 2, mAIner 3, etc as the name by incrementing the number
-        const canisterInfo = $userMainerAgentCanistersInfo[index];
+        const canisterInfo = JSON.parse($userMainerAgentCanistersInfo)[index];
         let status = "active";
         let burnedCycles = 0;
         let cycleBalance = 0;
