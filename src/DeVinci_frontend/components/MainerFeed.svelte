@@ -16,7 +16,7 @@
       placement?: string;
       reward?: string;
     };
-  }
+  };
 
   let feedItems: FeedItem[] = [];
   let loading = true;
@@ -32,7 +32,7 @@
       minute: '2-digit', 
       second: '2-digit' 
     });
-  }
+  };
 
   function getStatusColor(type: string): string {
     switch(type) {
@@ -41,14 +41,201 @@
       case 'score': return 'before:bg-orange-500';
       case 'winner': return 'before:bg-emerald-500';
       default: return 'before:bg-gray-500';
-    }
-  }
+    };
+  };
 
   async function getFeedData(): Promise<FeedItem[]> {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return mockFeedData.feedItems;
-  }
+    // Get activity data for the feed from the backend canisters
+    // Challenges and winners from Game State
+    let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity();
+    console.log("MainerFeed recentProtocolActivityResult");
+    console.log(recentProtocolActivityResult);
+    let newFeedItems: FeedItem[] = [];
+    // recentProtocolActivityResult looks like so: type ProtocolActivityResult = { 'Ok' : ProtocolActivityRecord } | { 'Err' : ApiError };
+      /* export interface ProtocolActivityRecord {
+        'challenges' : Array<Challenge>,
+        'winners' : Array<ChallengeWinnerDeclaration>,
+      } */
+      /* interface Challenge {
+        'challengeClosedTimestamp' : [] | [bigint],
+        'challengeTopicStatus' : ChallengeTopicStatus,
+        'challengeTopicCreationTimestamp' : bigint,
+        'challengeCreationTimestamp' : bigint,
+        'challengeCreatedBy' : CanisterAddress,
+        'challengeTopicId' : string,
+        'challengeStatus' : ChallengeStatus,
+        'challengeQuestionSeed' : number,
+        'challengeQuestion' : string,
+        'challengeId' : string,
+        'challengeTopic' : string,
+        'submissionCyclesRequired' : bigint,
+      } */
+      /* interface ChallengeWinnerDeclaration {
+        'participants' : List_1,
+        'thirdPlace' : ChallengeParticipantEntry,
+        'winner' : ChallengeParticipantEntry,
+        'secondPlace' : ChallengeParticipantEntry,
+        'finalizedTimestamp' : bigint,
+        'challengeId' : string,
+      } */
+
+    if ('Ok' in recentProtocolActivityResult) {
+      const { challenges, winners } = recentProtocolActivityResult.Ok;
+      // all challenges in challenges are open, for each challenge create an entry for feedItems
+      // including challengeCreationTimestamp as timestamp and challengeQuestion as content
+      // as mainerName use "Protocol"
+      challenges.forEach(challenge => {
+        newFeedItems.push({
+          id: challenge.challengeId,
+          timestamp: Number(challenge.challengeCreationTimestamp),
+          type: 'challenge',
+          mainerName: 'Protocol',
+          content: { challenge: challenge.challengeQuestion }
+        });
+      });
+
+      // for each ChallengeWinnerDeclaration in winners, create several entries for feedItems
+      // one feedItems entry for the winner
+      // one feedItems entry for the secondPlace
+      // one feedItems entry for the thirdPlace (if there is a thirdPlace)
+      /* use the fields on winner, secondPlace and thirdPlace: interface ChallengeParticipantEntry {
+        'result' : ChallengeParticipationResult,
+        'reward' : ChallengeWinnerReward,
+        'ownedBy' : Principal,
+        'submittedBy' : Principal,
+        'submissionId' : string,
+      } */
+     // submittedBy on ChallengeParticipantEntry is the mAIner agent that submitted it, compare it to the address field of the entries in $userMainerAgentCanistersInfo (which is an array with each element being an object with info on an agent) and use the index as mainerName (e.g. "mAIner 1", "mAIner 2")
+      winners.forEach(winnerDeclaration => {
+        const placements = [
+          { position: 'Winner', entry: winnerDeclaration.winner },
+          { position: 'Second Place', entry: winnerDeclaration.secondPlace },
+          ...(winnerDeclaration.thirdPlace ? [{ position: 'Third Place', entry: winnerDeclaration.thirdPlace }] : [])
+        ];
+
+        placements.forEach(({ position, entry }) => {
+          const mainerIndex = JSON.parse($userMainerAgentCanistersInfo).findIndex(agent => agent.address === entry.submittedBy);
+          const mainerName = mainerIndex !== -1 ? `mAIner ${mainerIndex + 1}` : 'Unknown';
+
+          newFeedItems.push({
+            id: entry.submissionId,
+            timestamp: Number(winnerDeclaration.finalizedTimestamp),
+            type: 'winner',
+            mainerName,
+            content: {
+              placement: position,
+              reward: entry.reward.amount.toString()
+            }
+          });
+        });
+      });
+    };
+
+    
+    if ($store.isAuthed) {
+      console.log("MainerAccordion userMainerAgentCanisterActors");
+      console.log(userMainerAgentCanisterActors);
+      console.log("MainerAccordion userMainerAgentCanistersInfo");
+      console.log(userMainerAgentCanistersInfo);
+      // Add user's mAIner agents' submissions and scores (for submissions) to newFeedItems
+      // for each agent in the array userMainerAgentCanisterActors, retrieve the agent's submissions
+      for (const [index, agent] of $userMainerAgentCanisterActors.entries()) {
+        try {
+          const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
+          // ChallengeResponseSubmissionsResult looks like so: type ChallengeResponseSubmissionsResult = { 'Ok' : Array<ChallengeResponseSubmission> } | { 'Err' : ApiError };
+            /* interface ChallengeResponseSubmission {
+              'challengeClosedTimestamp' : [] | [bigint],
+              'challengeTopicStatus' : ChallengeTopicStatus,
+              'challengeTopicCreationTimestamp' : bigint,
+              'challengeCreationTimestamp' : bigint,
+              'challengeCreatedBy' : CanisterAddress,
+              'challengeTopicId' : string,
+              'submittedTimestamp' : bigint,
+              'submittedBy' : Principal,
+              'challengeStatus' : ChallengeStatus,
+              'challengeQuestionSeed' : number,
+              'submissionStatus' : ChallengeResponseSubmissionStatus,
+              'challengeQuestion' : string,
+              'challengeId' : string,
+              'challengeTopic' : string,
+              'submissionId' : string,
+              'challengeAnswerSeed' : number,
+              'submissionCyclesRequired' : bigint,
+              'challengeAnswer' : string,
+            } */
+
+          // for each ChallengeResponseSubmission add an entry to newFeedItems
+          if ('Ok' in submissionsResult) {
+            for (const submission of submissionsResult.Ok) {
+              const mainerName = `mAIner ${index + 1}`;
+              newFeedItems.push({
+                id: submission.submissionId,
+                timestamp: Number(submission.submittedTimestamp),
+                type: 'response',
+                mainerName,
+                content: { response: submission.challengeAnswer }
+              });
+
+              // then (also for each ChallengeResponseSubmission) retrieve the score this submission received
+                /*   interface SubmissionRetrievalInput {
+                    'challengeId' : string,
+                    'submissionId' : string,
+                  } */
+                // which returns type ScoredResponseRetrievalResult = { 'Ok' : ScoredResponse } | { 'Err' : ApiError };
+                /*   interface ScoredResponse {
+                    'challengeClosedTimestamp' : [] | [bigint],
+                    'challengeTopicStatus' : ChallengeTopicStatus,
+                    'challengeTopicCreationTimestamp' : bigint,
+                    'challengeCreationTimestamp' : bigint,
+                    'challengeCreatedBy' : CanisterAddress,
+                    'challengeTopicId' : string,
+                    'judgedBy' : Principal,
+                    'submittedTimestamp' : bigint,
+                    'submittedBy' : Principal,
+                    'challengeStatus' : ChallengeStatus,
+                    'challengeQuestionSeed' : number,
+                    'submissionStatus' : ChallengeResponseSubmissionStatus,
+                    'score' : bigint,
+                    'challengeQuestion' : string,
+                    'challengeId' : string,
+                    'challengeTopic' : string,
+                    'judgedTimestamp' : bigint,
+                    'submissionId' : string,
+                    'challengeAnswerSeed' : number,
+                    'submissionCyclesRequired' : bigint,
+                    'challengeAnswer' : string,
+                    'scoreSeed' : number,
+                  } */
+                // note that the submission might not have received a score yet (ScoredResponseRetrievalResult returns an Err in that case)
+
+                // if there's a score for the submission, add the score as an entry to newFeedItems
+              try {
+                const scoreResult = await $store.gameStateCanisterActor.getScoreForSubmission({
+                  challengeId: submission.challengeId,
+                  submissionId: submission.submissionId
+                });
+
+                if ('Ok' in scoreResult) {
+                  newFeedItems.push({
+                    id: `${submission.submissionId}-score`,
+                    timestamp: Number(scoreResult.Ok.judgedTimestamp),
+                    type: 'score',
+                    mainerName,
+                    content: { score: Number(scoreResult.Ok.score) }
+                  });
+                };
+              } catch (error) {
+                console.error("Error fetching score for submission", error);
+              };
+            };
+          };
+        } catch (error) {
+          console.error("Error fetching submissions", error);
+        };
+      };
+    };
+    return newFeedItems;
+  };
 
   async function updateFeed() {
     updating = true;
@@ -60,21 +247,12 @@
       };
       feedItems = [newItem, ...feedItems];
       currentIndex++;
-    }
+    };
     loading = false;
     updating = false;
-  }
+  };
 
   onMount(async () => {
-    let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity();
-    console.log("MainerFeed recentProtocolActivityResult");
-    console.log(recentProtocolActivityResult);
-    if ($store.isAuthed) {
-      console.log("MainerAccordion userMainerAgentCanisterActors");
-      console.log(userMainerAgentCanisterActors);
-      console.log("MainerAccordion userMainerAgentCanistersInfo");
-      console.log(userMainerAgentCanistersInfo);
-    };
     await updateFeed();
     interval = setInterval(updateFeed, 10000); // Update every 10 seconds
 
