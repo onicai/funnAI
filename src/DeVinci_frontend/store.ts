@@ -558,7 +558,7 @@ export const createStore = ({
     };
 
     // Initialize user's mAIner agent (controller) canisters
-    await initializeUserMainerAgentCanisters(gameStateCanisterActor);
+    await initializeUserMainerAgentCanisters(gameStateCanisterActor, "nfid", identity);
 
     // TODO: determine if general mainerControllerCanisterActor has any value
     const mainerControllerCanisterActor = await initMainerControllerCanisterActor("nfid", identity);
@@ -628,6 +628,9 @@ export const createStore = ({
       return;
     };
 
+    // Initialize user's mAIner agent (controller) canisters
+    await initializeUserMainerAgentCanisters(gameStateCanisterActor, "internetidentity", identity);
+
     const mainerControllerCanisterActor = await initMainerControllerCanisterActor("internetidentity", identity);
     
     if (!mainerControllerCanisterActor) {
@@ -681,6 +684,9 @@ export const createStore = ({
       console.warn("couldn't create Game State actor");
       return;
     };
+
+    // Initialize user's mAIner agent (controller) canisters
+    await initializeUserMainerAgentCanisters(gameStateCanisterActor, "stoic", identity);
 
     const mainerControllerCanisterActor = await initMainerControllerCanisterActor("stoic", identity);
     
@@ -781,6 +787,9 @@ export const createStore = ({
       return;
     };
 
+    // Initialize user's mAIner agent (controller) canisters
+    await initializeUserMainerAgentCanisters(gameStateCanisterActor, "plug", null);
+
     const mainerControllerCanisterActor = await initMainerControllerCanisterActor("plug", null);
     
     if (!mainerControllerCanisterActor) {
@@ -875,6 +884,9 @@ export const createStore = ({
       console.warn("couldn't create Game State actor");
       return;
     };
+
+    // Initialize user's mAIner agent (controller) canisters
+    await initializeUserMainerAgentCanisters(gameStateCanisterActor, "bitfinity", null);
 
     const mainerControllerCanisterActor = await initMainerControllerCanisterActor("bitfinity", null);
     
