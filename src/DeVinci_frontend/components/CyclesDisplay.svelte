@@ -37,7 +37,7 @@
     // @ts-ignore
     if (protocolTotalCyclesBurntResult.Ok) {
       // @ts-ignore
-      cycles = protocolTotalCyclesBurntResult.Ok;
+      cycles = Number(protocolTotalCyclesBurntResult.Ok);
     };
     animateValue(0, cycles, 1000);
     
