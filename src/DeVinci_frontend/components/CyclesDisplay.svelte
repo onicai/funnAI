@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
+  import { store } from "../store";
 
   export let cycles: number;
   export let label: string = "Burned Cycles";
@@ -24,12 +25,25 @@
     }, stepTime);
   }
 
-  onMount(() => {
+  onMount(async () => {
+    let protocolTotalCyclesBurntResult = await $store.gameStateCanisterActor.getProtocolTotalCyclesBurnt();
+    // @ts-ignore
+    if (protocolTotalCyclesBurntResult.Ok) {
+      // @ts-ignore
+      cycles = protocolTotalCyclesBurntResult.Ok;
+    };
     animateValue(0, cycles, 1000);
     
     // Set up interval to increment cycles every 60 seconds
-    intervalId = setInterval(() => {
-      cycles += 1000;
+    intervalId = setInterval(async () => {
+      let protocolTotalCyclesBurntResult = await $store.gameStateCanisterActor.getProtocolTotalCyclesBurnt();
+      // @ts-ignore
+      if (protocolTotalCyclesBurntResult.Ok) {
+        // @ts-ignore
+        cycles = protocolTotalCyclesBurntResult.Ok;
+      } else {
+        cycles += 1000;
+      };
       animateValue(cyclesCount, cycles, 1000);
     }, 6000);
   });
