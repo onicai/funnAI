@@ -46,6 +46,9 @@
     agents = await Promise.all(
       // for each agent in the array userMainerAgentCanisterActors, add an entry to the agents array
       $userMainerAgentCanisterActors.map(async (agentActor, index) => {
+        console.log("in MainerAccordion $userMainerAgentCanisterActors.map index ", index);
+        console.log("in MainerAccordion $userMainerAgentCanisterActors.map agentActor");
+        console.log(agentActor);
         // userMainerAgentCanistersInfo is an array with each element being an object with info on an agent, it has the same order of agents as userMainerAgentCanisterActors
         // each entry in userMainerAgentCanistersInfo looks like so:
           /* type OfficialProtocolCanister = {
@@ -58,6 +61,8 @@
         // use address as the agent's id
         // use mAIner 1, mAIner 2, mAIner 3, etc as the name by incrementing the number
         const canisterInfo = JSON.parse($userMainerAgentCanistersInfo)[index];
+        console.log("in MainerAccordion $userMainerAgentCanisterActors.map canisterInfo");
+        console.log(canisterInfo);
         let status = "active";
         let burnedCycles = 0;
         let cycleBalance = 0;
@@ -66,6 +71,8 @@
         try {
           // Retrieve flags that indicate any issues with the agent's canister
           const issueFlagsResult = await agentActor.getIssueFlagsAdmin();
+          console.log("in MainerAccordion $userMainerAgentCanisterActors.map issueFlagsResult");
+        console.log(issueFlagsResult);
           // IssueFlagsRetrievalResult looks like: type IssueFlagsRetrievalResult = { 'Ok' : IssueFlagsRecord } | { 'Err' : ApiError };
           // and interface IssueFlagsRecord { 'lowCycleBalance' : boolean }
           // if there is an issue, set status on the agent's entry to "inactive", otherwise "active"
@@ -80,6 +87,8 @@
         try {
           // Retrieve cycle statistics
           const statsResult = await agentActor.getMainerStatisticsAdmin();
+          console.log("in MainerAccordion $userMainerAgentCanisterActors.map statsResult");
+        console.log(statsResult);
           // StatisticsRetrievalResult looks like: type StatisticsRetrievalResult = { 'Ok' : StatisticsRecord } |  { 'Err' : ApiError };
             /*  and interface StatisticsRecord {
               'cycleBalance' : bigint,
