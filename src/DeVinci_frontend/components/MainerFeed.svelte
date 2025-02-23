@@ -82,8 +82,6 @@
 
     if ('Ok' in recentProtocolActivityResult) {
       const { challenges, winners } = recentProtocolActivityResult.Ok;
-      console.log("in MainerFeed getFeedData challenges");
-        console.log(challenges);
         console.log("in MainerFeed getFeedData winners");
         console.log(winners);
       // all challenges in challenges are open, for each challenge create an entry for feedItems
@@ -98,8 +96,6 @@
           content: { challenge: challenge.challengeQuestion }
         });
       });
-      console.log("in MainerFeed getFeedData newFeedItems after challenges");
-        console.log(newFeedItems);
 
       // for each ChallengeWinnerDeclaration in winners, create several entries for feedItems
       // one feedItems entry for the winner
@@ -154,9 +150,9 @@
 
     
     if ($store.isAuthed) {
-      console.log("MainerAccordion userMainerAgentCanisterActors");
+      console.log("MainerFeed userMainerAgentCanisterActors");
       console.log(userMainerAgentCanisterActors);
-      console.log("MainerAccordion userMainerAgentCanistersInfo");
+      console.log("MainerFeed userMainerAgentCanistersInfo");
       console.log(userMainerAgentCanistersInfo);
       // Add user's mAIner agents' submissions and scores (for submissions) to newFeedItems
       // for each agent in the array userMainerAgentCanisterActors, retrieve the agent's submissions
@@ -287,7 +283,7 @@
 
   onMount(async () => {
     await updateFeed();
-    interval = setInterval(updateFeed, 10000); // Update every 10 seconds
+    interval = setInterval(updateFeed, 30000); // Update every 30 seconds
 
     return () => {
       if (interval) clearInterval(interval);
