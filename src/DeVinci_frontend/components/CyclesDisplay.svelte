@@ -9,9 +9,6 @@
   let intervalId: NodeJS.Timer;
   
   function animateValue(start: number, end: number, duration: number) {
-    console.log("in CyclesDisplay animateValue start ", start);
-    console.log("in CyclesDisplay animateValue end ", end);
-    console.log("in CyclesDisplay animateValue duration ", duration);
     const stepTime = 50;
     const steps = duration / stepTime;
     const increment = (end - start) / steps;
@@ -29,11 +26,7 @@
   }
 
   onMount(async () => {
-    console.log("in CyclesDisplay onMount");
     let protocolTotalCyclesBurntResult = await $store.gameStateCanisterActor.getProtocolTotalCyclesBurnt();
-    console.log("in CyclesDisplay onMount protocolTotalCyclesBurntResult");
-    console.log(protocolTotalCyclesBurntResult);
-    console.log(protocolTotalCyclesBurntResult.Ok);
     // @ts-ignore
     if (protocolTotalCyclesBurntResult.Ok) {
       // @ts-ignore
@@ -43,15 +36,11 @@
     
     // Set up interval to increment cycles every 60 seconds
     intervalId = setInterval(async () => {
-      console.log("in CyclesDisplay setInterval");
       let protocolTotalCyclesBurntResult = await $store.gameStateCanisterActor.getProtocolTotalCyclesBurnt();
-      console.log("in CyclesDisplay setInterval protocolTotalCyclesBurntResult");
-      console.log(protocolTotalCyclesBurntResult);
-      console.log(protocolTotalCyclesBurntResult.Ok);
       // @ts-ignore
       if (protocolTotalCyclesBurntResult.Ok) {
         // @ts-ignore
-        cycles = protocolTotalCyclesBurntResult.Ok;
+        cycles = Number(protocolTotalCyclesBurntResult.Ok);
       } else {
         cycles += 1000;
       };
