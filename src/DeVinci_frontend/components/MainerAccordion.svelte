@@ -3,11 +3,14 @@
   import CyclesDisplay from './CyclesDisplay.svelte';
   import { userMainerAgentCanisterActors, userMainerAgentCanistersInfo } from "../store";
 
+  $: agentCanisterActors = JSON.parse(JSON.stringify($userMainerAgentCanisterActors));
+  $: agentCanistersInfo = JSON.parse(JSON.stringify($userMainerAgentCanistersInfo));
+
   let agents = [
     // Add the agent entries dynamically via the calls in onMount
     // TODO: remove these dummy entries
-    { id: 1, name: "mAIner 1", status: "active", burnedCycles: 1234567 },
-    { id: 2, name: "mAIner 2", status: "inactive", burnedCycles: 890123 }
+    /* { id: 1, name: "mAIner 1", status: "active", burnedCycles: 1234567 },
+    { id: 2, name: "mAIner 2", status: "inactive", burnedCycles: 890123 } */
   ];
 
   let selectedBurnRate: 'Low' | 'Medium' | 'High' = 'Medium'; // Default value
@@ -40,17 +43,17 @@
   };
 
   onMount(async () => {
-    console.log("MainerAccordion userMainerAgentCanisterActors", $userMainerAgentCanisterActors);
-    console.log("MainerAccordion userMainerAgentCanistersInfo", $userMainerAgentCanistersInfo);
+    console.log("MainerAccordion agentCanisterActors", agentCanisterActors);
+    console.log("MainerAccordion agentCanistersInfo", agentCanistersInfo);
     // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
     agents = await Promise.all(
-      // for each agent in the array userMainerAgentCanisterActors, add an entry to the agents array
-      $userMainerAgentCanisterActors.map(async (agentActor, index) => {
-        console.log("in MainerAccordion $userMainerAgentCanisterActors.map index ", index);
-        console.log("in MainerAccordion $userMainerAgentCanisterActors.map agentActor");
+      // for each agent in the array agentCanisterActors, add an entry to the agents array
+      agentCanisterActors.map(async (agentActor, index) => {
+        console.log("in MainerAccordion agentCanisterActors.map index ", index);
+        console.log("in MainerAccordion agentCanisterActors.map agentActor");
         console.log(agentActor);
-        // userMainerAgentCanistersInfo is an array with each element being an object with info on an agent, it has the same order of agents as userMainerAgentCanisterActors
-        // each entry in userMainerAgentCanistersInfo looks like so:
+        // agentCanistersInfo is an array with each element being an object with info on an agent, it has the same order of agents as agentCanisterActors
+        // each entry in agentCanistersInfo looks like so:
           /* type OfficialProtocolCanister = {
               address : CanisterAddress;
               canisterType: ProtocolCanisterType;
@@ -60,8 +63,8 @@
           }; */
         // use address as the agent's id
         // use mAIner 1, mAIner 2, mAIner 3, etc as the name by incrementing the number
-        const canisterInfo = JSON.parse($userMainerAgentCanistersInfo)[index];
-        console.log("in MainerAccordion $userMainerAgentCanisterActors.map canisterInfo");
+        const canisterInfo = agentCanistersInfo[index];
+        console.log("in MainerAccordion agentCanisterActors.map canisterInfo");
         console.log(canisterInfo);
         let status = "active";
         let burnedCycles = 0;
@@ -71,7 +74,7 @@
         try {
           // Retrieve flags that indicate any issues with the agent's canister
           const issueFlagsResult = await agentActor.getIssueFlagsAdmin();
-          console.log("in MainerAccordion $userMainerAgentCanisterActors.map issueFlagsResult");
+          console.log("in MainerAccordion agentCanisterActors.map issueFlagsResult");
         console.log(issueFlagsResult);
           // IssueFlagsRetrievalResult looks like: type IssueFlagsRetrievalResult = { 'Ok' : IssueFlagsRecord } | { 'Err' : ApiError };
           // and interface IssueFlagsRecord { 'lowCycleBalance' : boolean }
@@ -87,7 +90,7 @@
         try {
           // Retrieve cycle statistics
           const statsResult = await agentActor.getMainerStatisticsAdmin();
-          console.log("in MainerAccordion $userMainerAgentCanisterActors.map statsResult");
+          console.log("in MainerAccordion agentCanisterActors.map statsResult");
         console.log(statsResult);
           // StatisticsRetrievalResult looks like: type StatisticsRetrievalResult = { 'Ok' : StatisticsRecord } |  { 'Err' : ApiError };
             /*  and interface StatisticsRecord {
