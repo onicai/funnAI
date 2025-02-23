@@ -133,6 +133,14 @@ userBackendCanisterAddress.subscribe((value) => {
   localStorage.setItem("userBackendCanisterAddress", value)
 });
 
+declare global {
+  interface BigInt {
+    toJSON(): Number;
+  }
+};
+
+BigInt.prototype.toJSON = function () { return Number(this) };
+
 export let userMainerAgentCanistersInfo = writable(localStorage.getItem("userMainerAgentCanistersInfo"));
 let userMainerAgentCanistersInfoValue = localStorage.getItem("userMainerAgentCanistersInfo") || [];
 userMainerAgentCanistersInfo.subscribe((value) => {
@@ -140,7 +148,12 @@ userMainerAgentCanistersInfo.subscribe((value) => {
   localStorage.setItem("userMainerAgentCanistersInfo", JSON.stringify(value))
 });
 
-export let userMainerAgentCanisterActors = writable([]);
+export let userMainerAgentCanisterActors = writable(localStorage.getItem("userMainerAgentCanisterActors"));
+let userMainerAgentCanisterActorsValue = localStorage.getItem("userMainerAgentCanisterActors") || [];
+userMainerAgentCanisterActors.subscribe((value) => {
+  userMainerAgentCanisterActorsValue = value;
+  localStorage.setItem("userMainerAgentCanisterActors", JSON.stringify(value))
+});
 
 export let downloadedModels = writable(JSON.parse(localStorage.getItem("downloadedAiModels") || "[]"));
 downloadedModels.subscribe((value) => {
@@ -460,7 +473,11 @@ export const createStore = ({
   };
 
   const initMainerAgentCanisterActor = async (userMainerCanisterInfo, loginType, identity: Identity) => {
+    console.log("in initMainerAgentCanisterActor userMainerCanisterInfo");
+      console.log(userMainerCanisterInfo);
     let canisterId = userMainerCanisterInfo.address;
+    console.log("in initMainerAgentCanisterActor canisterId");
+      console.log(canisterId);
     
     if (loginType === "plug") {
       let mainerControllerActor = (await window.ic?.plug.createMainerControllerActor({
@@ -487,18 +504,29 @@ export const createStore = ({
   };
 
   const initializeUserMainerAgentCanisters = async (gameStateCanisterActor: typeof game_state_canister, loginType, identity: Identity) => {
+    console.log("in initializeUserMainerAgentCanisters gameStateCanisterActor");
+    console.log(gameStateCanisterActor);
     try {
       const getMainersResult = await gameStateCanisterActor.getMainerAgentCanistersForUser();
+      console.log("in initializeUserMainerAgentCanisters getMainersResult");
+      console.log(getMainersResult);
+      console.log(getMainersResult.Ok);
       // @ts-ignore
       if (getMainersResult.Ok) {
         // @ts-ignore
         const userCanisters = getMainersResult.Ok;
+        console.log("in initializeUserMainerAgentCanisters userCanisters");
+      console.log(userCanisters);
         userMainerAgentCanistersInfo.set(userCanisters); 
         let initPromises = [];
-        userCanisters.array.forEach(userCanister => {
+        userCanisters.forEach(userCanister => {
+          console.log("in initializeUserMainerAgentCanisters userCanister");
+      console.log(userCanister);
           initPromises.push(initMainerAgentCanisterActor(userCanister, loginType, identity)); 
         });
         let mainerActors = await Promise.all(initPromises);
+        console.log("in initializeUserMainerAgentCanisters mainerActors");
+      console.log(mainerActors);
         userMainerAgentCanisterActors.set(mainerActors);
         return userCanisters;
       } else {
