@@ -148,13 +148,6 @@ userMainerAgentCanistersInfo.subscribe((value) => {
   localStorage.setItem("userMainerAgentCanistersInfo", JSON.stringify(value))
 });
 
-export let userMainerAgentCanisterActors = writable(localStorage.getItem("userMainerAgentCanisterActors"));
-let userMainerAgentCanisterActorsValue = localStorage.getItem("userMainerAgentCanisterActors") || [];
-userMainerAgentCanisterActors.subscribe((value) => {
-  userMainerAgentCanisterActorsValue = value;
-  localStorage.setItem("userMainerAgentCanisterActors", JSON.stringify(value))
-});
-
 export let downloadedModels = writable(JSON.parse(localStorage.getItem("downloadedAiModels") || "[]"));
 downloadedModels.subscribe((value) => {
   localStorage.setItem("downloadedAiModels", JSON.stringify(value));
@@ -185,6 +178,7 @@ type State = {
   userKnowledgebaseCanisterActor: typeof arcmindvectordb;
   gameStateCanisterActor: typeof game_state_canister;
   mainerControllerCanisterActor: typeof mainer_ctrlb_canister;
+  userMainerCanisterActors: any[];
 };
 
 let defaultBackendCanisterId = backendCanisterId;
@@ -208,6 +202,7 @@ const defaultState: State = {
   mainerControllerCanisterActor: createMainerControllerCanisterActor(mainerControllerCanisterId, {
     agentOptions: { host: HOST },
   }),
+  userMainerCanisterActors: [],
 };
 
 export const createStore = ({
@@ -527,8 +522,7 @@ export const createStore = ({
         let mainerActors = await Promise.all(initPromises);
         console.log("in initializeUserMainerAgentCanisters mainerActors");
       console.log(mainerActors);
-        userMainerAgentCanisterActors.set(mainerActors);
-        return userCanisters;
+        return mainerActors;
       } else {
         // @ts-ignore
         console.error("Error retrieving user mAIner agent canisters: ", getMainersResult.Err);
@@ -586,7 +580,7 @@ export const createStore = ({
     };
 
     // Initialize user's mAIner agent (controller) canisters
-    await initializeUserMainerAgentCanisters(gameStateCanisterActor, "nfid", identity);
+    const userMainerCanisterActors = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "nfid", identity);
 
     // TODO: determine if general mainerControllerCanisterActor has any value
     const mainerControllerCanisterActor = await initMainerControllerCanisterActor("nfid", identity);
@@ -609,6 +603,7 @@ export const createStore = ({
       isAuthed: "nfid",
       gameStateCanisterActor,
       mainerControllerCanisterActor,
+      userMainerCanisterActors,
     }));
 
     console.info("nfid is authed");
@@ -657,7 +652,7 @@ export const createStore = ({
     };
 
     // Initialize user's mAIner agent (controller) canisters
-    await initializeUserMainerAgentCanisters(gameStateCanisterActor, "internetidentity", identity);
+    const userMainerCanisterActors = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "internetidentity", identity);
 
     const mainerControllerCanisterActor = await initMainerControllerCanisterActor("internetidentity", identity);
     
@@ -678,7 +673,8 @@ export const createStore = ({
       accountId: null,
       isAuthed: "internetidentity",
       gameStateCanisterActor,
-      mainerControllerCanisterActor
+      mainerControllerCanisterActor,
+      userMainerCanisterActors
     }));
 
     console.info("internetidentity is authed");
@@ -714,7 +710,7 @@ export const createStore = ({
     };
 
     // Initialize user's mAIner agent (controller) canisters
-    await initializeUserMainerAgentCanisters(gameStateCanisterActor, "stoic", identity);
+    const userMainerCanisterActors = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "stoic", identity);
 
     const mainerControllerCanisterActor = await initMainerControllerCanisterActor("stoic", identity);
     
@@ -735,7 +731,8 @@ export const createStore = ({
       accountId: accounts[0].address, // we take the default account associated with the identity
       isAuthed: "stoic",
       gameStateCanisterActor,
-      mainerControllerCanisterActor
+      mainerControllerCanisterActor,
+      userMainerCanisterActors
     }));
 
     console.info("stoic is authed");
@@ -816,7 +813,7 @@ export const createStore = ({
     };
 
     // Initialize user's mAIner agent (controller) canisters
-    await initializeUserMainerAgentCanisters(gameStateCanisterActor, "plug", null);
+    const userMainerCanisterActors = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "plug", null);
 
     const mainerControllerCanisterActor = await initMainerControllerCanisterActor("plug", null);
     
@@ -836,7 +833,8 @@ export const createStore = ({
       accountId: window.ic.plug.sessionManager.sessionData.accountId,
       isAuthed: "plug",
       gameStateCanisterActor,
-      mainerControllerCanisterActor
+      mainerControllerCanisterActor,
+      userMainerCanisterActors
     }));
 
     console.info("plug is authed");
@@ -914,7 +912,7 @@ export const createStore = ({
     };
 
     // Initialize user's mAIner agent (controller) canisters
-    await initializeUserMainerAgentCanisters(gameStateCanisterActor, "bitfinity", null);
+    const userMainerCanisterActors = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "bitfinity", null);
 
     const mainerControllerCanisterActor = await initMainerControllerCanisterActor("bitfinity", null);
     
@@ -934,7 +932,8 @@ export const createStore = ({
       //accountId: window.ic.infinityWallet.sessionManager.sessionData.accountId,
       isAuthed: "bitfinity",
       gameStateCanisterActor,
-      mainerControllerCanisterActor
+      mainerControllerCanisterActor,
+      userMainerCanisterActors
     }));
 
     console.info("bitfinity is authed");
