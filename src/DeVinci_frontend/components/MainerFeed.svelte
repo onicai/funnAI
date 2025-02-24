@@ -46,6 +46,10 @@
     };
   };
 
+  function sortFeedItemsByTimestamp(feedItems: FeedItem[]): FeedItem[] {
+    return feedItems.sort((a, b) => a.timestamp - b.timestamp);
+  };
+
   async function getFeedData(): Promise<FeedItem[]> {
     //console.log("in MainerFeed getFeedData");
     // Get activity data for the feed from the backend canisters
@@ -266,7 +270,7 @@
     };
     console.log("in MainerFeed getFeedData newFeedItems before return");
         console.log(newFeedItems);
-    return newFeedItems;
+    return sortFeedItemsByTimestamp(newFeedItems);
   };
 
   async function updateFeed() {
@@ -274,7 +278,8 @@
     if (updateCounter % 10 === 0) {
       console.log("Time to run getFeedData again");
       allItems = await getFeedData();
-      // TODO: logic to sort by activity timestamp
+      console.log("after getFeedData allItems");
+      console.log(allItems);
     };
     // TODO: only add new items to feed
     if (currentIndex < allItems.length) {
