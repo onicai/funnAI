@@ -26,26 +26,7 @@
   }
 
   onMount(async () => {
-    let protocolTotalCyclesBurntResult = await $store.gameStateCanisterActor.getProtocolTotalCyclesBurnt();
-    // @ts-ignore
-    if (protocolTotalCyclesBurntResult.Ok) {
-      // @ts-ignore
-      cycles = Number(protocolTotalCyclesBurntResult.Ok);
-    };
     animateValue(0, cycles, 1000);
-    
-    // Set up interval to increment cycles every 60 seconds
-    intervalId = setInterval(async () => {
-      let protocolTotalCyclesBurntResult = await $store.gameStateCanisterActor.getProtocolTotalCyclesBurnt();
-      // @ts-ignore
-      if (protocolTotalCyclesBurntResult.Ok) {
-        // @ts-ignore
-        cycles = Number(protocolTotalCyclesBurntResult.Ok);
-      } else {
-        cycles += 1000;
-      };
-      animateValue(cyclesCount, cycles, 1000);
-    }, 6000);
   });
 
   onDestroy(() => {

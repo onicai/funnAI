@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import CyclesDisplay from './CyclesDisplay.svelte';
+  import CyclesDisplayAgent from './CyclesDisplayAgent.svelte';
   import { store, userMainerAgentCanistersInfo } from "../store";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
@@ -35,103 +35,29 @@
 
   function createAgent() {
     // TODO: Implement agent creation
-    console.log("Creating new agent...");
+    //console.log("Creating new agent...");
   };
 
   function copyAddress() {
     addressCopied = true;
   };
 
-  $: {
-    console.log("MainerAccordion agentCanisterActors", agentCanisterActors);
-    console.log("MainerAccordion agentCanistersInfo", agentCanistersInfo);
-
-    (async () => {
-      agents = await Promise.all(
-        agentCanisterActors.map(async (agentActor, index) => {
-          console.log("in MainerAccordion agentCanisterActors.map index ", index);
-          console.log("in MainerAccordion agentCanisterActors.map agentActor", agentActor);
-          
-          const canisterInfo = agentCanistersInfo[index];
-          console.log("in MainerAccordion agentCanisterActors.map canisterInfo", canisterInfo);
-          let status = "active";
-          let burnedCycles = 0;
-          let cycleBalance = 0;
-          let cyclesBurnRate = {};
-
-          try {
-            const issueFlagsResult = await agentActor.getIssueFlagsAdmin();
-            console.log("in MainerAccordion agentCanisterActors.map issueFlagsResult", issueFlagsResult);
-            if ('Ok' in issueFlagsResult && issueFlagsResult.Ok.lowCycleBalance) {
-              status = "inactive";
-            };
-          } catch (error) {
-            console.error("Error fetching issue flags: ", error);
-            status = "inactive";
-          };
-
-          try {
-            const statsResult = await agentActor.getMainerStatisticsAdmin();
-            console.log("in MainerAccordion agentCanisterActors.map statsResult", statsResult);
-            if ('Ok' in statsResult) {
-              burnedCycles = statsResult.Ok.totalCyclesBurnt;
-              cycleBalance = statsResult.Ok.cycleBalance;
-              cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
-            };
-          } catch (error) {
-            console.error("Error fetching statistics: ", error);
-          };
-
-          return {
-            id: canisterInfo.address,
-            name: `mAIner ${index + 1}`,
-            status,
-            burnedCycles,
-            cycleBalance,
-            cyclesBurnRate
-          };
-        })
-      );
-    })();
-  };
-
-  onMount(async () => {
-    console.log("MainerAccordion agentCanisterActors", agentCanisterActors);
-    console.log("MainerAccordion agentCanistersInfo", agentCanistersInfo);
-    // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
-    agents = await Promise.all(
-      // for each agent in the array agentCanisterActors, add an entry to the agents array
+  async function loadAgents() {
+    return await Promise.all(
       agentCanisterActors.map(async (agentActor, index) => {
-        console.log("in MainerAccordion agentCanisterActors.map index ", index);
-        console.log("in MainerAccordion agentCanisterActors.map agentActor");
-        console.log(agentActor);
-        // agentCanistersInfo is an array with each element being an object with info on an agent, it has the same order of agents as agentCanisterActors
-        // each entry in agentCanistersInfo looks like so:
-          /* type OfficialProtocolCanister = {
-              address : CanisterAddress;
-              canisterType: ProtocolCanisterType;
-              creationTimestamp : Nat64;
-              createdBy : Principal;
-              ownedBy: Principal;
-          }; */
-        // use address as the agent's id
-        // use mAIner 1, mAIner 2, mAIner 3, etc as the name by incrementing the number
+        //console.log("in MainerAccordion agentCanisterActors.map index ", index);
+        //console.log("in MainerAccordion agentCanisterActors.map agentActor", agentActor);
+        
         const canisterInfo = agentCanistersInfo[index];
-        console.log("in MainerAccordion agentCanisterActors.map canisterInfo");
-        console.log(canisterInfo);
+        //console.log("in MainerAccordion agentCanisterActors.map canisterInfo", canisterInfo);
         let status = "active";
         let burnedCycles = 0;
         let cycleBalance = 0;
         let cyclesBurnRate = {};
 
         try {
-          // Retrieve flags that indicate any issues with the agent's canister
           const issueFlagsResult = await agentActor.getIssueFlagsAdmin();
-          console.log("in MainerAccordion agentCanisterActors.map issueFlagsResult");
-        console.log(issueFlagsResult);
-          // IssueFlagsRetrievalResult looks like: type IssueFlagsRetrievalResult = { 'Ok' : IssueFlagsRecord } | { 'Err' : ApiError };
-          // and interface IssueFlagsRecord { 'lowCycleBalance' : boolean }
-          // if there is an issue, set status on the agent's entry to "inactive", otherwise "active"
+          console.log("in MainerAccordion agentCanisterActors.map issueFlagsResult", issueFlagsResult);
           if ('Ok' in issueFlagsResult && issueFlagsResult.Ok.lowCycleBalance) {
             status = "inactive";
           };
@@ -141,24 +67,23 @@
         };
 
         try {
-          // Retrieve cycle statistics
           const statsResult = await agentActor.getMainerStatisticsAdmin();
-          console.log("in MainerAccordion agentCanisterActors.map statsResult");
-        console.log(statsResult);
-          // StatisticsRetrievalResult looks like: type StatisticsRetrievalResult = { 'Ok' : StatisticsRecord } |  { 'Err' : ApiError };
-            /*  and interface StatisticsRecord {
-              'cycleBalance' : bigint,
-              'totalCyclesBurnt' : bigint,
-              'cyclesBurnRate' : CyclesBurnRate,
-            }; */
+          console.log("in MainerAccordion agentCanisterActors.map statsResult", statsResult);
           if ('Ok' in statsResult) {
-            burnedCycles = statsResult.Ok.totalCyclesBurnt;
-            cycleBalance = statsResult.Ok.cycleBalance;
+            burnedCycles = Number(statsResult.Ok.totalCyclesBurnt);
+            cycleBalance = Number(statsResult.Ok.cycleBalance);
             cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
           };
         } catch (error) {
           console.error("Error fetching statistics: ", error);
         };
+
+        //console.log("in MainerAccordion agentCanisterActors.map before return id ", canisterInfo.address);
+        //console.log("in MainerAccordion agentCanisterActors.map before return name ", `mAIner ${index + 1}`);
+        //console.log("in MainerAccordion agentCanisterActors.map before return status ", status);
+        //console.log("in MainerAccordion agentCanisterActors.map before return burnedCycles ", burnedCycles);
+        //console.log("in MainerAccordion agentCanisterActors.map before return cycleBalance ", cycleBalance);
+        //console.log("in MainerAccordion agentCanisterActors.map before return cyclesBurnRate ", cyclesBurnRate);
 
         return {
           id: canisterInfo.address,
@@ -170,6 +95,23 @@
         };
       })
     );
+  };
+
+  $: {
+    console.log("MainerAccordion reactive agentCanisterActors", agentCanisterActors);
+    console.log("MainerAccordion reactive agentCanistersInfo", agentCanistersInfo);
+
+    (async () => {
+      agents = await loadAgents();
+    })();
+  };
+
+  onMount(async () => {
+    //console.log("MainerAccordion onMount agentCanisterActors", agentCanisterActors);
+    //console.log("MainerAccordion onMount agentCanistersInfo", agentCanistersInfo);
+    // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
+    agents = await loadAgents();
+    //console.log("MainerAccordion onMount agents", agents);
   });
 </script>
 
@@ -266,7 +208,7 @@
 <!-- Existing Agents -->
 {#each agents as agent}
   <div class="border-b border-gray-300 bg-white">
-    <button on:click={() => toggleAccordion(agent.id.toString())} class="w-full flex justify-between items-center py-5 px-4 text-gray-800 hover:bg-gray-50">
+    <button on:click={() => toggleAccordion(agent?.id?.toString())} class="w-full flex justify-between items-center py-5 px-4 text-gray-800 hover:bg-gray-50">
       <span class="flex items-center font-medium text-sm">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
@@ -343,7 +285,7 @@
           </div>
         </div>
         <div class="flex flex-col space-y-2 mb-2">
-          <CyclesDisplay cycles={agent.burnedCycles} label="Burned Cycles" />
+          <CyclesDisplayAgent cycles={agent.burnedCycles} label="Burned Cycles" />
         </div>
 
       </div>
