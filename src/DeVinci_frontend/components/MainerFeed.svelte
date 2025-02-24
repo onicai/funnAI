@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fly } from 'svelte/transition';
-  import { store, userMainerAgentCanisterActors, userMainerAgentCanistersInfo } from "../store";
+  import { store, userMainerAgentCanistersInfo } from "../store";
   import { mockFeedData } from '../helpers/mockFeedData';
 
   interface FeedItem {
@@ -150,20 +150,20 @@
 
     
     if ($store.isAuthed) {
-      console.log("MainerFeed userMainerAgentCanisterActors");
-      console.log(userMainerAgentCanisterActors);
+      console.log("MainerFeed $store.userMainerCanisterActors");
+      console.log($store.userMainerCanisterActors);
       console.log("MainerFeed userMainerAgentCanistersInfo");
       console.log(userMainerAgentCanistersInfo);
       // Add user's mAIner agents' submissions and scores (for submissions) to newFeedItems
-      // for each agent in the array userMainerAgentCanisterActors, retrieve the agent's submissions
-      for (const [index, agent] of $userMainerAgentCanisterActors.entries()) {
-        console.log("in MainerFeed getFeedData userMainerAgentCanisterActors entries index");
+      // for each agent in the array $store.userMainerCanisterActors, retrieve the agent's submissions
+      for (const [index, agent] of $store.userMainerCanisterActors.entries()) {
+        console.log("in MainerFeed getFeedData $store.userMainerCanisterActors entries index");
         console.log(index);
-        console.log("in MainerFeed getFeedData userMainerAgentCanisterActors entries agent");
+        console.log("in MainerFeed getFeedData $store.userMainerCanisterActors entries agent");
         console.log(agent);
         try {
           const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
-          console.log("in MainerFeed getFeedData userMainerAgentCanisterActors entries submissionsResult");
+          console.log("in MainerFeed getFeedData $store.userMainerCanisterActors entries submissionsResult");
         console.log(submissionsResult);
           // ChallengeResponseSubmissionsResult looks like so: type ChallengeResponseSubmissionsResult = { 'Ok' : Array<ChallengeResponseSubmission> } | { 'Err' : ApiError };
             /* interface ChallengeResponseSubmission {
@@ -190,7 +190,7 @@
           // for each ChallengeResponseSubmission add an entry to newFeedItems
           if ('Ok' in submissionsResult) {
             for (const submission of submissionsResult.Ok) {
-              console.log("in MainerFeed getFeedData userMainerAgentCanisterActors entries submission");
+              console.log("in MainerFeed getFeedData $store.userMainerCanisterActors entries submission");
         console.log(submission);
               const mainerName = `mAIner ${index + 1}`;
               newFeedItems.push({
@@ -239,7 +239,7 @@
                   challengeId: submission.challengeId,
                   submissionId: submission.submissionId
                 });
-                console.log("in MainerFeed getFeedData userMainerAgentCanisterActors entries scoreResult");
+                console.log("in MainerFeed getFeedData $store.userMainerCanisterActors entries scoreResult");
         console.log(scoreResult);
 
                 if ('Ok' in scoreResult) {
