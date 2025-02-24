@@ -52,7 +52,7 @@
     if (intervalId) clearInterval(intervalId);
   });
 
-  $: formattedCycles = cyclesCount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+  $: formattedCycles = cyclesCount?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'");
 </script>
 
 <div class="flex items-center justify-between p-4 bg-gradient-to-r from-orange-100 to-orange-50 rounded-lg shadow-sm border border-orange-200">
