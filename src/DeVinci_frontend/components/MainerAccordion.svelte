@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import CyclesDisplay from './CyclesDisplay.svelte';
-  import { userMainerAgentCanisterActors, userMainerAgentCanistersInfo } from "../store";
+  import { store, userMainerAgentCanistersInfo } from "../store";
 
-  $: agentCanisterActors = JSON.parse(JSON.stringify($userMainerAgentCanisterActors));
+  $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = JSON.parse(JSON.stringify($userMainerAgentCanistersInfo));
 
   let agents = [
@@ -40,6 +40,59 @@
 
   function copyAddress() {
     addressCopied = true;
+  };
+
+  $: {
+    console.log("MainerAccordion agentCanisterActors", agentCanisterActors);
+    console.log("MainerAccordion agentCanistersInfo", agentCanistersInfo);
+
+    (async () => {
+      agents = await Promise.all(
+        agentCanisterActors.map(async (agentActor, index) => {
+          console.log("in MainerAccordion agentCanisterActors.map index ", index);
+          console.log("in MainerAccordion agentCanisterActors.map agentActor", agentActor);
+          
+          const canisterInfo = agentCanistersInfo[index];
+          console.log("in MainerAccordion agentCanisterActors.map canisterInfo", canisterInfo);
+          let status = "active";
+          let burnedCycles = 0;
+          let cycleBalance = 0;
+          let cyclesBurnRate = {};
+
+          try {
+            const issueFlagsResult = await agentActor.getIssueFlagsAdmin();
+            console.log("in MainerAccordion agentCanisterActors.map issueFlagsResult", issueFlagsResult);
+            if ('Ok' in issueFlagsResult && issueFlagsResult.Ok.lowCycleBalance) {
+              status = "inactive";
+            };
+          } catch (error) {
+            console.error("Error fetching issue flags: ", error);
+            status = "inactive";
+          };
+
+          try {
+            const statsResult = await agentActor.getMainerStatisticsAdmin();
+            console.log("in MainerAccordion agentCanisterActors.map statsResult", statsResult);
+            if ('Ok' in statsResult) {
+              burnedCycles = statsResult.Ok.totalCyclesBurnt;
+              cycleBalance = statsResult.Ok.cycleBalance;
+              cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
+            };
+          } catch (error) {
+            console.error("Error fetching statistics: ", error);
+          };
+
+          return {
+            id: canisterInfo.address,
+            name: `mAIner ${index + 1}`,
+            status,
+            burnedCycles,
+            cycleBalance,
+            cyclesBurnRate
+          };
+        })
+      );
+    })();
   };
 
   onMount(async () => {
