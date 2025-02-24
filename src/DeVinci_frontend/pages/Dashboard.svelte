@@ -12,7 +12,7 @@
       <MainerAccordion />
     </div>
     <div class="card-style p-4 rounded-lg shadow mb-2">
-      <CyclesDisplay cycles={2124690} />
+      <CyclesDisplay cycles={21246900000000} />
       <MainerFeed />
     </div>
   </div>

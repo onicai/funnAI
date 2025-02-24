@@ -36,7 +36,7 @@
   $: formattedCycles = cyclesCount?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'");
 </script>
 
-<div class="flex items-center justify-between p-4 bg-gradient-to-r from-orange-100 to-orange-50 rounded-lg shadow-sm border border-orange-200">
+<div class="flex items-center p-4 bg-gradient-to-r from-orange-100 to-orange-50 rounded-lg shadow-sm border border-orange-200">
   <span class="text-orange-600 font-semibold">{label}</span>
-  <span class="text-xl font-bold text-orange-500 font-mono w-[8ch] text-right">{formattedCycles}</span>
+  <span class="ml-4 text-xl font-bold text-orange-500 font-mono w-[8ch] text-right">{formattedCycles}</span>
 </div> 
