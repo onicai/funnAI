@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import CyclesDisplayAgent from './CyclesDisplayAgent.svelte';
-  import { store, userMainerAgentCanistersInfo } from "../store";
+  import { store } from "../store";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
-  $: agentCanistersInfo = JSON.parse(JSON.stringify($userMainerAgentCanistersInfo));
+  $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
 
   let agents = [
     // Add the agent entries dynamically via the calls in onMount

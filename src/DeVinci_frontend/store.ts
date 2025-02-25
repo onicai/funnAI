@@ -141,13 +141,6 @@ declare global {
 
 BigInt.prototype.toJSON = function () { return Number(this) };
 
-export let userMainerAgentCanistersInfo = writable(localStorage.getItem("userMainerAgentCanistersInfo"));
-let userMainerAgentCanistersInfoValue = localStorage.getItem("userMainerAgentCanistersInfo") || [];
-userMainerAgentCanistersInfo.subscribe((value) => {
-  userMainerAgentCanistersInfoValue = value;
-  localStorage.setItem("userMainerAgentCanistersInfo", JSON.stringify(value))
-});
-
 export let downloadedModels = writable(JSON.parse(localStorage.getItem("downloadedAiModels") || "[]"));
 downloadedModels.subscribe((value) => {
   localStorage.setItem("downloadedAiModels", JSON.stringify(value));
@@ -179,6 +172,7 @@ type State = {
   gameStateCanisterActor: typeof game_state_canister;
   mainerControllerCanisterActor: typeof mainer_ctrlb_canister;
   userMainerCanisterActors: any[];
+  userMainerAgentCanistersInfo: any[];
 };
 
 let defaultBackendCanisterId = backendCanisterId;
@@ -203,6 +197,7 @@ const defaultState: State = {
     agentOptions: { host: HOST },
   }),
   userMainerCanisterActors: [],
+  userMainerAgentCanistersInfo: [],
 };
 
 export const createStore = ({
@@ -512,7 +507,6 @@ export const createStore = ({
         const userCanisters = getMainersResult.Ok;
         console.log("in initializeUserMainerAgentCanisters userCanisters");
       console.log(userCanisters);
-        userMainerAgentCanistersInfo.set(userCanisters); 
         let initPromises = [];
         userCanisters.forEach(userCanister => {
           console.log("in initializeUserMainerAgentCanisters userCanister");
@@ -522,7 +516,7 @@ export const createStore = ({
         let mainerActors = await Promise.all(initPromises);
         console.log("in initializeUserMainerAgentCanisters mainerActors");
       console.log(mainerActors);
-        return mainerActors;
+        return { mainerActors, userCanisters };
       } else {
         // @ts-ignore
         console.error("Error retrieving user mAIner agent canisters: ", getMainersResult.Err);
@@ -580,7 +574,9 @@ export const createStore = ({
     };
 
     // Initialize user's mAIner agent (controller) canisters
-    const userMainerCanisterActors = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "nfid", identity);
+    const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "nfid", identity);
+    const userMainerCanisterActors = mainerActors;
+    const userMainerAgentCanistersInfo = userCanisters;
 
     // TODO: determine if general mainerControllerCanisterActor has any value
     const mainerControllerCanisterActor = await initMainerControllerCanisterActor("nfid", identity);
@@ -604,6 +600,7 @@ export const createStore = ({
       gameStateCanisterActor,
       mainerControllerCanisterActor,
       userMainerCanisterActors,
+      userMainerAgentCanistersInfo
     }));
 
     console.info("nfid is authed");
@@ -652,7 +649,10 @@ export const createStore = ({
     };
 
     // Initialize user's mAIner agent (controller) canisters
-    const userMainerCanisterActors = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "internetidentity", identity);
+    const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "internetidentity", identity);
+    
+    const userMainerCanisterActors = mainerActors;
+    const userMainerAgentCanistersInfo = userCanisters;
 
     const mainerControllerCanisterActor = await initMainerControllerCanisterActor("internetidentity", identity);
     
@@ -674,7 +674,8 @@ export const createStore = ({
       isAuthed: "internetidentity",
       gameStateCanisterActor,
       mainerControllerCanisterActor,
-      userMainerCanisterActors
+      userMainerCanisterActors,
+      userMainerAgentCanistersInfo
     }));
 
     console.info("internetidentity is authed");
@@ -710,7 +711,10 @@ export const createStore = ({
     };
 
     // Initialize user's mAIner agent (controller) canisters
-    const userMainerCanisterActors = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "stoic", identity);
+    const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "stoic", identity);
+
+    const userMainerCanisterActors = mainerActors;
+    const userMainerAgentCanistersInfo = userCanisters;
 
     const mainerControllerCanisterActor = await initMainerControllerCanisterActor("stoic", identity);
     
@@ -732,7 +736,8 @@ export const createStore = ({
       isAuthed: "stoic",
       gameStateCanisterActor,
       mainerControllerCanisterActor,
-      userMainerCanisterActors
+      userMainerCanisterActors,
+      userMainerAgentCanistersInfo
     }));
 
     console.info("stoic is authed");
@@ -813,7 +818,10 @@ export const createStore = ({
     };
 
     // Initialize user's mAIner agent (controller) canisters
-    const userMainerCanisterActors = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "plug", null);
+    const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "plug", null);
+
+    const userMainerCanisterActors = mainerActors;
+    const userMainerAgentCanistersInfo = userCanisters;
 
     const mainerControllerCanisterActor = await initMainerControllerCanisterActor("plug", null);
     
@@ -834,7 +842,8 @@ export const createStore = ({
       isAuthed: "plug",
       gameStateCanisterActor,
       mainerControllerCanisterActor,
-      userMainerCanisterActors
+      userMainerCanisterActors,
+      userMainerAgentCanistersInfo
     }));
 
     console.info("plug is authed");
@@ -912,7 +921,10 @@ export const createStore = ({
     };
 
     // Initialize user's mAIner agent (controller) canisters
-    const userMainerCanisterActors = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "bitfinity", null);
+    const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "bitfinity", null);
+
+    const userMainerCanisterActors = mainerActors;
+    const userMainerAgentCanistersInfo = userCanisters;
 
     const mainerControllerCanisterActor = await initMainerControllerCanisterActor("bitfinity", null);
     
@@ -933,7 +945,8 @@ export const createStore = ({
       isAuthed: "bitfinity",
       gameStateCanisterActor,
       mainerControllerCanisterActor,
-      userMainerCanisterActors
+      userMainerCanisterActors,
+      userMainerAgentCanistersInfo
     }));
 
     console.info("bitfinity is authed");

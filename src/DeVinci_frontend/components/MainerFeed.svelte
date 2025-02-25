@@ -1,8 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fly } from 'svelte/transition';
-  import { store, userMainerAgentCanistersInfo } from "../store";
+  import { store } from "../store";
   import { mockFeedData } from '../helpers/mockFeedData';
+
+  $: agentCanisterActors = $store.userMainerCanisterActors;
+  $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
 
   interface FeedItem {
     id: string;
@@ -54,7 +57,9 @@
     //console.log("in MainerFeed getFeedData");
     // Get activity data for the feed from the backend canisters
     // Challenges and winners from Game State
-    let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity();
+    //let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity();
+    // TODO: replace mockup function
+    let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity_mockup();
     console.log("MainerFeed recentProtocolActivityResult");
     console.log(recentProtocolActivityResult);
     let newFeedItems: FeedItem[] = [];
@@ -114,8 +119,11 @@
         'submittedBy' : Principal,
         'submissionId' : string,
       } */
-     // submittedBy on ChallengeParticipantEntry is the mAIner agent that submitted it, compare it to the address field of the entries in $userMainerAgentCanistersInfo (which is an array with each element being an object with info on an agent) and use the index as mainerName (e.g. "mAIner 1", "mAIner 2")
-      winners.forEach(winnerDeclaration => {
+     // submittedBy on ChallengeParticipantEntry is the mAIner agent that submitted it, compare it to the address field of the entries in agentCanistersInfo (which is an array with each element being an object with info on an agent) and use the index as mainerName (e.g. "mAIner 1", "mAIner 2")
+     console.log("in MainerFeed getFeedData agentCanistersInfo before winners");
+        console.log(agentCanistersInfo); 
+        console.log(agentCanistersInfo[0]); 
+     winners.forEach(winnerDeclaration => {
         //console.log("in MainerFeed getFeedData winners winnerDeclaration");
         //console.log(winnerDeclaration);
         const placements = [
@@ -131,13 +139,12 @@
         //console.log(position);
         console.log("in MainerFeed getFeedData winners placements entry");
         console.log(entry);
-          const mainerIndex = JSON.parse($userMainerAgentCanistersInfo).findIndex(agent => agent.address === entry.submittedBy);
+          const mainerIndex = agentCanistersInfo.findIndex(agent => agent.address === entry.submittedBy);
           const mainerName = mainerIndex !== -1 ? `mAIner ${mainerIndex + 1}` : 'Unknown';
           //console.log("in MainerFeed getFeedData winners placements mainerIndex");
         //console.log(mainerIndex);
         //console.log("in MainerFeed getFeedData winners placements mainerName");
         //console.log(mainerName);
-        
 
           newFeedItems.push({
             id: entry.submissionId,
@@ -157,20 +164,20 @@
 
     
     if ($store.isAuthed) {
-      console.log("MainerFeed $store.userMainerCanisterActors");
-      console.log($store.userMainerCanisterActors);
-      //console.log("MainerFeed userMainerAgentCanistersInfo");
-      //console.log(userMainerAgentCanistersInfo);
+      console.log("MainerFeed agentCanisterActors");
+      console.log(agentCanisterActors);
+      //console.log("MainerFeed agentCanistersInfo");
+      //console.log(agentCanistersInfo);
       // Add user's mAIner agents' submissions and scores (for submissions) to newFeedItems
-      // for each agent in the array $store.userMainerCanisterActors, retrieve the agent's submissions
-      for (const [index, agent] of $store.userMainerCanisterActors.entries()) {
-        console.log("in MainerFeed getFeedData $store.userMainerCanisterActors entries index");
+      // for each agent in the array agentCanisterActors, retrieve the agent's submissions
+      for (const [index, agent] of agentCanisterActors.entries()) {
+        console.log("in MainerFeed getFeedData agentCanisterActors entries index");
         console.log(index);
-        //console.log("in MainerFeed getFeedData $store.userMainerCanisterActors entries agent");
+        //console.log("in MainerFeed getFeedData agentCanisterActors entries agent");
         //console.log(agent);
         try {
           const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
-          console.log("in MainerFeed getFeedData $store.userMainerCanisterActors entries submissionsResult");
+          console.log("in MainerFeed getFeedData agentCanisterActors entries submissionsResult");
         console.log(submissionsResult);
           // ChallengeResponseSubmissionsResult looks like so: type ChallengeResponseSubmissionsResult = { 'Ok' : Array<ChallengeResponseSubmission> } | { 'Err' : ApiError };
             /* interface ChallengeResponseSubmission {
@@ -197,7 +204,7 @@
           // for each ChallengeResponseSubmission add an entry to newFeedItems
           if ('Ok' in submissionsResult) {
             for (const submission of submissionsResult.Ok) {
-              //console.log("in MainerFeed getFeedData $store.userMainerCanisterActors entries submission");
+              //console.log("in MainerFeed getFeedData agentCanisterActors entries submission");
         //console.log(submission);
               const mainerName = `mAIner ${index + 1}`;
               newFeedItems.push({
@@ -242,11 +249,16 @@
 
                 // if there's a score for the submission, add the score as an entry to newFeedItems
               try {
-                const scoreResult = await $store.gameStateCanisterActor.getScoreForSubmission({
+                /* const scoreResult = await $store.gameStateCanisterActor.getScoreForSubmission({
+                  challengeId: submission.challengeId,
+                  submissionId: submission.submissionId
+                }); */ //TODO: replace mockup function
+                const scoreResult = await $store.gameStateCanisterActor.getScoreForSubmission_mockup({
                   challengeId: submission.challengeId,
                   submissionId: submission.submissionId
                 });
-                console.log("in MainerFeed getFeedData $store.userMainerCanisterActors entries scoreResult");
+                
+                console.log("in MainerFeed getFeedData agentCanisterActors entries scoreResult");
         console.log(scoreResult);
 
                 if ('Ok' in scoreResult) {
