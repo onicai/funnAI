@@ -122,6 +122,11 @@ type NewChallengeInput =
    challengeTopicId: text;
    challengeTopicStatus: ChallengeTopicStatus;
  };
+type NatResult = 
+ variant {
+   Err: ApiError;
+   Ok: nat;
+ };
 type MainerConfigurationInput = record {aiModel: opt SelectableMainerLLM;};
 type MainerAgentCanistersResult = 
  variant {
@@ -149,6 +154,18 @@ type List =
        ScoredResponse;
        List;
      };
+type GameStateTresholdsResult = 
+ variant {
+   Err: ApiError;
+   Ok: GameStateTresholds;
+ };
+type GameStateTresholds = 
+ record {
+   thresholdArchiveClosedChallenges: nat;
+   thresholdMaxOpenChallenges: nat;
+   thresholdMaxOpenSubmissions: nat;
+   thresholdScoredResponsesPerChallenge: nat;
+ };
 type GameStateCanister = 
  service {
    addChallenge: (NewChallengeInput) -> (ChallengeAdditionResult);
@@ -163,11 +180,17 @@ type GameStateCanister =
     (MainerAgentCanisterResult);
    getCurrentChallenges: () -> (ChallengesResult) query;
    getCurrentChallengesAdmin: () -> (ChallengesResult) query;
+   getGameStateThresholdsAdmin: () -> (GameStateTresholdsResult) query;
    getMainerAgentCanisterInfo: (CanisterRetrieveInput) ->
     (MainerAgentCanisterResult) query;
    getMainerAgentCanistersForUser: () -> (MainerAgentCanistersResult) query;
    getNextSubmissionToJudge: () -> (ChallengeResponseSubmissionResult);
+   getNumCurrentChallengesAdmin: () -> (NatResult) query;
+   getNumOpenSubmissionsAdmin: () -> (NatResult) query;
+   getNumScoredChallengesAdmin: () -> (NatResult) query;
+   getNumSubmissionsAdmin: () -> (NatResult) query;
    getOfficialChallengerCanisters: () -> (AuthRecordResult);
+   getOpenSubmissionsAdmin: () -> (ChallengeResponseSubmissionsResult) query;
    getProtocolTotalCyclesBurnt: () -> (CyclesBurntResult) query;
    getRandomOpenChallenge: () -> (ChallengeResult);
    getRandomOpenChallengeTopic: () -> (ChallengeTopicResult);
@@ -178,6 +201,8 @@ type GameStateCanister =
    getScoredChallengesAdmin: () -> (ScoredChallengesResult) query;
    getSubmissionsAdmin: () -> (ChallengeResponseSubmissionsResult) query;
    health: () -> (StatusCodeRecordResult) query;
+   setGameStateThresholdsAdmin: (GameStateTresholds) ->
+    (StatusCodeRecordResult);
    setInitialChallengeTopics: () -> (StatusCodeRecordResult);
    submitChallengeResponse: (ChallengeResponseSubmissionInput) ->
     (ChallengeResponseSubmissionMetadataResult);

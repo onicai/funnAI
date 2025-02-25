@@ -1,3 +1,57 @@
+# funnAI
+
+# Setup instructions
+
+First follow all instructions of PoAIW/README.md
+
+Then, do the following:
+
+```bash
+# Use conda environment
+conda activate llama_cpp_canister
+
+# from folder: funnAI
+
+# Fresh deploy of GameState
+scripts/deploy-gamestate.sh --mode install
+
+# If not yet done, deploy Challenger, Judge & mAIners
+scripts/deploy-all.sh --mode install
+
+# This step only needed first time deploying everything
+# Just to link the GameState correctly
+scripts/deploy-gamestate.sh --mode reinstall
+
+# Deploy DeVinci backend (not used):
+dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" DeVinci_backend
+
+# Deploy DeVinci frontend:
+dfx deploy DeVinci_frontend
+```
+
+Use the local UI: http://cbopz-duaaa-aaaaa-qaaka-cai.localhost:4943/ 
+
+# The GameState Thresholds
+
+The Thresholds are stored in stable memory.
+
+The following endpoints allow to set & get the values:
+
+```bash
+# From folder: funnAI
+dfx canister call game_state_canister getGameStateThresholdsAdmin --output json [--ic] 
+
+dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
+        thresholdArchiveClosedChallenges = 30 : nat;
+        thresholdMaxOpenChallenges= 2 : nat;
+        thresholdMaxOpenSubmissions = 5 : nat;
+        thresholdScoredResponsesPerChallenge = 3 : nat;
+    }
+)' [--ic]
+```
+
+---
+
 # DeVinci
 
 ## Try DeVinci
