@@ -371,7 +371,7 @@
             {:else if item.type === 'response'}
               <p class="text-slate-500">Submitted response: {item.content.response}</p>
             {:else if item.type === 'score'}
-              <p class="text-slate-500">Received score: {item.content.score}/10</p>
+              <p class="text-slate-500">Received score: {item.content.score}/5</p>
             {:else if item.type === 'winner'}
               <p class="text-slate-500">Achieved {item.content.placement} and earned {item.content.reward}</p>
             {/if}
