@@ -196,7 +196,10 @@ type GameStateCanister =
    getRandomOpenChallengeTopic: () -> (ChallengeTopicResult);
    getRecentChallengeWinners: () -> (ChallengeWinnersResult) query;
    getRecentProtocolActivity: () -> (ProtocolActivityResult) query;
+   getRecentProtocolActivity_mockup: () -> (ProtocolActivityResult) query;
    getScoreForSubmission: (SubmissionRetrievalInput) ->
+    (ScoredResponseRetrievalResult) query;
+   getScoreForSubmission_mockup: (SubmissionRetrievalInput) ->
     (ScoredResponseRetrievalResult) query;
    getScoredChallengesAdmin: () -> (ScoredChallengesResult) query;
    getSubmissionsAdmin: () -> (ChallengeResponseSubmissionsResult) query;

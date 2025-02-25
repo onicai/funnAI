@@ -383,7 +383,17 @@ export const idlFactory = ({ IDL }) => {
         [ProtocolActivityResult],
         ['query'],
       ),
+    'getRecentProtocolActivity_mockup' : IDL.Func(
+        [],
+        [ProtocolActivityResult],
+        ['query'],
+      ),
     'getScoreForSubmission' : IDL.Func(
+        [SubmissionRetrievalInput],
+        [ScoredResponseRetrievalResult],
+        ['query'],
+      ),
+    'getScoreForSubmission_mockup' : IDL.Func(
         [SubmissionRetrievalInput],
         [ScoredResponseRetrievalResult],
         ['query'],

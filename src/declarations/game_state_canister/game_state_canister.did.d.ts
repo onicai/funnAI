@@ -201,7 +201,12 @@ export interface GameStateCanister {
   'getRandomOpenChallengeTopic' : ActorMethod<[], ChallengeTopicResult>,
   'getRecentChallengeWinners' : ActorMethod<[], ChallengeWinnersResult>,
   'getRecentProtocolActivity' : ActorMethod<[], ProtocolActivityResult>,
+  'getRecentProtocolActivity_mockup' : ActorMethod<[], ProtocolActivityResult>,
   'getScoreForSubmission' : ActorMethod<
+    [SubmissionRetrievalInput],
+    ScoredResponseRetrievalResult
+  >,
+  'getScoreForSubmission_mockup' : ActorMethod<
     [SubmissionRetrievalInput],
     ScoredResponseRetrievalResult
   >,
