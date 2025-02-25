@@ -299,7 +299,7 @@
 
   async function updateFeed(forceUpdate = false) {
     updating = true;
-    if (forceUpdate || updateCounter % 10 === 0) {
+    if (forceUpdate || updateCounter % 6 === 0) { // Retrieve items from backend every 6th time (e.g. 6 * 10sec = 1min)
       console.log("Time to run getFeedData again");
       allItems = await getFeedData();
       console.log("after getFeedData allItems");
