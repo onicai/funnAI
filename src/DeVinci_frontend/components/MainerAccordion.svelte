@@ -35,7 +35,7 @@
 
   function createAgent() {
     // TODO: Implement agent creation
-    //console.log("Creating new agent...");
+    console.log("Creating new agent...");
   };
 
   function copyAddress() {
@@ -57,7 +57,7 @@
 
         try {
           const issueFlagsResult = await agentActor.getIssueFlagsAdmin();
-          console.log("in MainerAccordion agentCanisterActors.map issueFlagsResult", issueFlagsResult);
+          //console.log("in MainerAccordion agentCanisterActors.map issueFlagsResult", issueFlagsResult);
           if ('Ok' in issueFlagsResult && issueFlagsResult.Ok.lowCycleBalance) {
             status = "inactive";
           };
@@ -68,7 +68,7 @@
 
         try {
           const statsResult = await agentActor.getMainerStatisticsAdmin();
-          console.log("in MainerAccordion agentCanisterActors.map statsResult", statsResult);
+          //console.log("in MainerAccordion agentCanisterActors.map statsResult", statsResult);
           if ('Ok' in statsResult) {
             burnedCycles = Number(statsResult.Ok.totalCyclesBurnt);
             cycleBalance = Number(statsResult.Ok.cycleBalance);
