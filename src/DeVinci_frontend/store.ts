@@ -32,21 +32,11 @@ import {
 // TODO: remove debug print statements
 console.log("DeVinci_backend");
 console.log(DeVinci_backend);
-console.log(createBackendCanisterActor);
 console.log(backendCanisterId);
-console.log(backendIdlFactory);
 
 console.log("game_state_canister");
 console.log(game_state_canister);
-console.log(createGameStateCanisterActor);
 console.log(gameStateCanisterId);
-console.log(gameStateIdlFactory);
-
-console.log("mainer_ctrlb_canister");
-console.log(mainer_ctrlb_canister);
-console.log(createMainerControllerCanisterActor);
-console.log(mainerControllerCanisterId);
-console.log(mainerControllerIdlFactory);
 
 //__________Local vs Mainnet Development____________
 /* export const HOST =
@@ -463,11 +453,9 @@ export const createStore = ({
   };
 
   const initMainerAgentCanisterActor = async (userMainerCanisterInfo, loginType, identity: Identity) => {
-    console.log("in initMainerAgentCanisterActor userMainerCanisterInfo");
-      console.log(userMainerCanisterInfo);
+    //console.log("in initMainerAgentCanisterActor userMainerCanisterInfo");
+      //console.log(userMainerCanisterInfo);
     let canisterId = userMainerCanisterInfo.address;
-    console.log("in initMainerAgentCanisterActor canisterId");
-      console.log(canisterId);
     
     if (loginType === "plug") {
       let mainerControllerActor = (await window.ic?.plug.createMainerControllerActor({
@@ -494,28 +482,24 @@ export const createStore = ({
   };
 
   const initializeUserMainerAgentCanisters = async (gameStateCanisterActor: typeof game_state_canister, loginType, identity: Identity) => {
-    console.log("in initializeUserMainerAgentCanisters gameStateCanisterActor");
-    console.log(gameStateCanisterActor);
+    //console.log("in initializeUserMainerAgentCanisters gameStateCanisterActor");
+    //console.log(gameStateCanisterActor);
     try {
       const getMainersResult = await gameStateCanisterActor.getMainerAgentCanistersForUser();
-      console.log("in initializeUserMainerAgentCanisters getMainersResult");
-      console.log(getMainersResult);
-      console.log(getMainersResult.Ok);
+      //console.log("in initializeUserMainerAgentCanisters getMainersResult");
+      //console.log(getMainersResult);
+      //console.log(getMainersResult.Ok);
       // @ts-ignore
       if (getMainersResult.Ok) {
         // @ts-ignore
         const userCanisters = getMainersResult.Ok;
-        console.log("in initializeUserMainerAgentCanisters userCanisters");
-      console.log(userCanisters);
         let initPromises = [];
         userCanisters.forEach(userCanister => {
-          console.log("in initializeUserMainerAgentCanisters userCanister");
-      console.log(userCanister);
           initPromises.push(initMainerAgentCanisterActor(userCanister, loginType, identity)); 
         });
         let mainerActors = await Promise.all(initPromises);
-        console.log("in initializeUserMainerAgentCanisters mainerActors");
-      console.log(mainerActors);
+        //console.log("in initializeUserMainerAgentCanisters mainerActors");
+      //console.log(mainerActors);
         return { mainerActors, userCanisters };
       } else {
         // @ts-ignore
