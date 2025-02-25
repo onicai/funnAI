@@ -31,6 +31,24 @@ dfx deploy DeVinci_frontend
 
 Use the local UI: http://cbopz-duaaa-aaaaa-qaaka-cai.localhost:4943/ 
 
+# The GameState Thresholds
+
+The Thresholds are stored in stable memory.
+
+The following endpoints allow to set & get the values:
+
+```bash
+# From folder: funnAI
+dfx canister call game_state_canister getGameStateThresholdsAdmin --output json [--ic] 
+
+dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
+        thresholdArchiveClosedChallenges = 30 : nat;
+        thresholdMaxOpenChallenges= 2 : nat;
+        thresholdMaxOpenSubmissions = 5 : nat;
+        thresholdScoredResponsesPerChallenge = 3 : nat;
+    }
+)' [--ic]
+```
 
 ---
 
