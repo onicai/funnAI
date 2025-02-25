@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { Principal } from "@dfinity/principal";
+
   import { onMount } from 'svelte';
   import { fly } from 'svelte/transition';
   import { store } from "../store";
@@ -57,11 +59,10 @@
     //console.log("in MainerFeed getFeedData");
     // Get activity data for the feed from the backend canisters
     // Challenges and winners from Game State
-    //let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity();
-    // TODO: replace mockup function
-    let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity_mockup();
-    console.log("MainerFeed recentProtocolActivityResult");
-    console.log(recentProtocolActivityResult);
+    let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity();
+    //let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity_mockup();
+    //console.log("MainerFeed recentProtocolActivityResult");
+    //console.log(recentProtocolActivityResult);
     let newFeedItems: FeedItem[] = [];
     // recentProtocolActivityResult looks like so: type ProtocolActivityResult = { 'Ok' : ProtocolActivityRecord } | { 'Err' : ApiError };
       /* export interface ProtocolActivityRecord {
@@ -120,65 +121,76 @@
         'submissionId' : string,
       } */
      // submittedBy on ChallengeParticipantEntry is the mAIner agent that submitted it, compare it to the address field of the entries in agentCanistersInfo (which is an array with each element being an object with info on an agent) and use the index as mainerName (e.g. "mAIner 1", "mAIner 2")
-     console.log("in MainerFeed getFeedData agentCanistersInfo before winners");
-        console.log(agentCanistersInfo); 
-        console.log(agentCanistersInfo[0]); 
-     winners.forEach(winnerDeclaration => {
-        //console.log("in MainerFeed getFeedData winners winnerDeclaration");
-        //console.log(winnerDeclaration);
-        const placements = [
-          { position: 'Winner', entry: winnerDeclaration.winner },
-          { position: 'Second Place', entry: winnerDeclaration.secondPlace },
-          ...(winnerDeclaration.thirdPlace ? [{ position: 'Third Place', entry: winnerDeclaration.thirdPlace }] : [])
-        ];
-        //console.log("in MainerFeed getFeedData winners placements");
-        //console.log(placements);
+     //console.log("in MainerFeed getFeedData agentCanistersInfo before winners");
+        //console.log(agentCanistersInfo); 
+        //console.log(agentCanistersInfo[0]); 
+      
+      if ($store.isAuthed) {
+        winners.forEach(winnerDeclaration => {
+          //console.log("in MainerFeed getFeedData winners winnerDeclaration");
+          //console.log(winnerDeclaration);
+          const placements = [
+            { position: 'First Place', entry: winnerDeclaration.winner },
+            { position: 'Second Place', entry: winnerDeclaration.secondPlace },
+            ...(winnerDeclaration.thirdPlace ? [{ position: 'Third Place', entry: winnerDeclaration.thirdPlace }] : [])
+          ];
+          //console.log("in MainerFeed getFeedData winners placements");
+          //console.log(placements);
 
-        placements.forEach(({ position, entry }) => {
-          //console.log("in MainerFeed getFeedData winners placements position");
-        //console.log(position);
-        console.log("in MainerFeed getFeedData winners placements entry");
-        console.log(entry);
-          const mainerIndex = agentCanistersInfo.findIndex(agent => agent.address === entry.submittedBy);
-          const mainerName = mainerIndex !== -1 ? `mAIner ${mainerIndex + 1}` : 'Unknown';
-          //console.log("in MainerFeed getFeedData winners placements mainerIndex");
-        //console.log(mainerIndex);
-        //console.log("in MainerFeed getFeedData winners placements mainerName");
-        //console.log(mainerName);
+          placements.forEach(({ position, entry }) => {
+            //console.log("in MainerFeed getFeedData winners placements position");
+          //console.log(position);
+          //console.log("in MainerFeed getFeedData winners placements entry");
+          //console.log(entry);
+          //console.log(entry.submittedBy);
+          //console.log(entry.submittedBy.toString());
+          //console.log("in MainerFeed getFeedData agentCanistersInfo address");
+        //console.log(agentCanistersInfo[0].address); 
+        //console.log(agentCanistersInfo[1]?.address); 
+          //console.log(agentCanistersInfo[0].address === entry.submittedBy.toString());
+          //console.log(agentCanistersInfo[1].address === entry.submittedBy.toString());
+            const mainerIndex = agentCanistersInfo.findIndex(agent => agent.address === entry.submittedBy.toString());
+            //console.log("in MainerFeed getFeedData winners placements mainerIndex");
+          //console.log(mainerIndex);
+            const mainerName = mainerIndex !== -1 ? `mAIner ${mainerIndex + 1}` : `Other User's Agent`;
+            //console.log("in MainerFeed getFeedData winners placements mainerIndex");
+          //console.log(mainerIndex);
+          //console.log("in MainerFeed getFeedData winners placements mainerName");
+          //console.log(mainerName);
 
-          newFeedItems.push({
-            id: entry.submissionId,
-            timestamp: Number(winnerDeclaration.finalizedTimestamp),
-            type: 'winner',
-            mainerName,
-            content: {
-              placement: position,
-              reward: entry.reward.amount.toString()
-            }
+            newFeedItems.push({
+              id: `${entry.submissionId}-winner`,
+              timestamp: Number(winnerDeclaration.finalizedTimestamp),
+              type: 'winner',
+              mainerName,
+              content: {
+                placement: position,
+                reward: entry.reward.amount.toString()
+              }
+            });
           });
         });
-      });
+      };
+      //console.log("in MainerFeed getFeedData newFeedItems after winners");
+      //console.log(newFeedItems);
     };
-    console.log("in MainerFeed getFeedData newFeedItems after winners");
-        console.log(newFeedItems);
-
     
     if ($store.isAuthed) {
-      console.log("MainerFeed agentCanisterActors");
-      console.log(agentCanisterActors);
+      //console.log("MainerFeed agentCanisterActors");
+      //console.log(agentCanisterActors);
       //console.log("MainerFeed agentCanistersInfo");
       //console.log(agentCanistersInfo);
       // Add user's mAIner agents' submissions and scores (for submissions) to newFeedItems
       // for each agent in the array agentCanisterActors, retrieve the agent's submissions
       for (const [index, agent] of agentCanisterActors.entries()) {
-        console.log("in MainerFeed getFeedData agentCanisterActors entries index");
-        console.log(index);
+        //console.log("in MainerFeed getFeedData agentCanisterActors entries index");
+        //console.log(index);
         //console.log("in MainerFeed getFeedData agentCanisterActors entries agent");
         //console.log(agent);
         try {
           const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
-          console.log("in MainerFeed getFeedData agentCanisterActors entries submissionsResult");
-        console.log(submissionsResult);
+          //console.log("in MainerFeed getFeedData agentCanisterActors entries submissionsResult");
+        //console.log(submissionsResult);
           // ChallengeResponseSubmissionsResult looks like so: type ChallengeResponseSubmissionsResult = { 'Ok' : Array<ChallengeResponseSubmission> } | { 'Err' : ApiError };
             /* interface ChallengeResponseSubmission {
               'challengeClosedTimestamp' : [] | [bigint],
@@ -249,17 +261,17 @@
 
                 // if there's a score for the submission, add the score as an entry to newFeedItems
               try {
-                /* const scoreResult = await $store.gameStateCanisterActor.getScoreForSubmission({
-                  challengeId: submission.challengeId,
-                  submissionId: submission.submissionId
-                }); */ //TODO: replace mockup function
-                const scoreResult = await $store.gameStateCanisterActor.getScoreForSubmission_mockup({
+                const scoreResult = await $store.gameStateCanisterActor.getScoreForSubmission({
                   challengeId: submission.challengeId,
                   submissionId: submission.submissionId
                 });
+                /* const scoreResult = await $store.gameStateCanisterActor.getScoreForSubmission_mockup({
+                  challengeId: submission.challengeId,
+                  submissionId: submission.submissionId
+                }); */
                 
-                console.log("in MainerFeed getFeedData agentCanisterActors entries scoreResult");
-        console.log(scoreResult);
+                //console.log("in MainerFeed getFeedData agentCanisterActors entries scoreResult");
+        //console.log(scoreResult);
 
                 if ('Ok' in scoreResult) {
                   newFeedItems.push({
@@ -280,14 +292,14 @@
         };
       };
     };
-    console.log("in MainerFeed getFeedData newFeedItems before return");
-        console.log(newFeedItems);
+    //console.log("in MainerFeed getFeedData newFeedItems before return");
+        //console.log(newFeedItems);
     return sortFeedItemsByTimestamp(newFeedItems);
   };
 
-  async function updateFeed() {
+  async function updateFeed(forceUpdate = false) {
     updating = true;
-    if (updateCounter % 10 === 0) {
+    if (forceUpdate || updateCounter % 10 === 0) {
       console.log("Time to run getFeedData again");
       allItems = await getFeedData();
       console.log("after getFeedData allItems");
@@ -305,6 +317,15 @@
     loading = false;
     updating = false;
     updateCounter++;
+  };
+
+  $: {
+    console.log("MainerFeed reactive agentCanisterActors", agentCanisterActors);
+    console.log("MainerFeed reactive agentCanistersInfo", agentCanistersInfo);
+
+    (async () => {
+      await updateFeed(true);
+    })();
   };
 
   onMount(async () => {
