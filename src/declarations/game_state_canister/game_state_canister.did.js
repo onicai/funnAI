@@ -138,6 +138,16 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : IDL.Vec(Challenge),
     'Err' : ApiError,
   });
+  const GameStateTresholds = IDL.Record({
+    'thresholdMaxOpenSubmissions' : IDL.Nat,
+    'thresholdMaxOpenChallenges' : IDL.Nat,
+    'thresholdArchiveClosedChallenges' : IDL.Nat,
+    'thresholdScoredResponsesPerChallenge' : IDL.Nat,
+  });
+  const GameStateTresholdsResult = IDL.Variant({
+    'Ok' : GameStateTresholds,
+    'Err' : ApiError,
+  });
   const CanisterRetrieveInput = IDL.Record({ 'address' : CanisterAddress });
   const MainerAgentCanistersResult = IDL.Variant({
     'Ok' : IDL.Vec(OfficialProtocolCanister),
@@ -167,8 +177,13 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : ChallengeResponseSubmission,
     'Err' : ApiError,
   });
+  const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
   const AuthRecord = IDL.Record({ 'auth' : IDL.Text });
   const AuthRecordResult = IDL.Variant({ 'Ok' : AuthRecord, 'Err' : ApiError });
+  const ChallengeResponseSubmissionsResult = IDL.Variant({
+    'Ok' : IDL.Vec(ChallengeResponseSubmission),
+    'Err' : ApiError,
+  });
   const CyclesBurntResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
   const ChallengeResult = IDL.Variant({ 'Ok' : Challenge, 'Err' : ApiError });
   const ChallengeParticipationResult = IDL.Variant({
@@ -257,10 +272,6 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : IDL.Vec(IDL.Tuple(IDL.Text, List)),
     'Err' : ApiError,
   });
-  const ChallengeResponseSubmissionsResult = IDL.Variant({
-    'Ok' : IDL.Vec(ChallengeResponseSubmission),
-    'Err' : ApiError,
-  });
   const ChallengeResponseSubmissionInput = IDL.Record({
     'challengeClosedTimestamp' : IDL.Opt(IDL.Nat64),
     'challengeTopicStatus' : ChallengeTopicStatus,
@@ -325,6 +336,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getCurrentChallenges' : IDL.Func([], [ChallengesResult], ['query']),
     'getCurrentChallengesAdmin' : IDL.Func([], [ChallengesResult], ['query']),
+    'getGameStateThresholdsAdmin' : IDL.Func(
+        [],
+        [GameStateTresholdsResult],
+        ['query'],
+      ),
     'getMainerAgentCanisterInfo' : IDL.Func(
         [CanisterRetrieveInput],
         [MainerAgentCanisterResult],
@@ -340,7 +356,16 @@ export const idlFactory = ({ IDL }) => {
         [ChallengeResponseSubmissionResult],
         [],
       ),
+    'getNumCurrentChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
+    'getNumOpenSubmissionsAdmin' : IDL.Func([], [NatResult], ['query']),
+    'getNumScoredChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
+    'getNumSubmissionsAdmin' : IDL.Func([], [NatResult], ['query']),
     'getOfficialChallengerCanisters' : IDL.Func([], [AuthRecordResult], []),
+    'getOpenSubmissionsAdmin' : IDL.Func(
+        [],
+        [ChallengeResponseSubmissionsResult],
+        ['query'],
+      ),
     'getProtocolTotalCyclesBurnt' : IDL.Func(
         [],
         [CyclesBurntResult],
@@ -374,6 +399,11 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
+    'setGameStateThresholdsAdmin' : IDL.Func(
+        [GameStateTresholds],
+        [StatusCodeRecordResult],
+        [],
+      ),
     'setInitialChallengeTopics' : IDL.Func([], [StatusCodeRecordResult], []),
     'submitChallengeResponse' : IDL.Func(
         [ChallengeResponseSubmissionInput],

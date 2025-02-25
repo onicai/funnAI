@@ -174,6 +174,7 @@ export interface GameStateCanister {
   >,
   'getCurrentChallenges' : ActorMethod<[], ChallengesResult>,
   'getCurrentChallengesAdmin' : ActorMethod<[], ChallengesResult>,
+  'getGameStateThresholdsAdmin' : ActorMethod<[], GameStateTresholdsResult>,
   'getMainerAgentCanisterInfo' : ActorMethod<
     [CanisterRetrieveInput],
     MainerAgentCanisterResult
@@ -186,7 +187,15 @@ export interface GameStateCanister {
     [],
     ChallengeResponseSubmissionResult
   >,
+  'getNumCurrentChallengesAdmin' : ActorMethod<[], NatResult>,
+  'getNumOpenSubmissionsAdmin' : ActorMethod<[], NatResult>,
+  'getNumScoredChallengesAdmin' : ActorMethod<[], NatResult>,
+  'getNumSubmissionsAdmin' : ActorMethod<[], NatResult>,
   'getOfficialChallengerCanisters' : ActorMethod<[], AuthRecordResult>,
+  'getOpenSubmissionsAdmin' : ActorMethod<
+    [],
+    ChallengeResponseSubmissionsResult
+  >,
   'getProtocolTotalCyclesBurnt' : ActorMethod<[], CyclesBurntResult>,
   'getRandomOpenChallenge' : ActorMethod<[], ChallengeResult>,
   'getRandomOpenChallengeTopic' : ActorMethod<[], ChallengeTopicResult>,
@@ -199,12 +208,24 @@ export interface GameStateCanister {
   'getScoredChallengesAdmin' : ActorMethod<[], ScoredChallengesResult>,
   'getSubmissionsAdmin' : ActorMethod<[], ChallengeResponseSubmissionsResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
+  'setGameStateThresholdsAdmin' : ActorMethod<
+    [GameStateTresholds],
+    StatusCodeRecordResult
+  >,
   'setInitialChallengeTopics' : ActorMethod<[], StatusCodeRecordResult>,
   'submitChallengeResponse' : ActorMethod<
     [ChallengeResponseSubmissionInput],
     ChallengeResponseSubmissionMetadataResult
   >,
 }
+export interface GameStateTresholds {
+  'thresholdMaxOpenSubmissions' : bigint,
+  'thresholdMaxOpenChallenges' : bigint,
+  'thresholdArchiveClosedChallenges' : bigint,
+  'thresholdScoredResponsesPerChallenge' : bigint,
+}
+export type GameStateTresholdsResult = { 'Ok' : GameStateTresholds } |
+  { 'Err' : ApiError };
 export type List = [] | [[ScoredResponse, List]];
 export type List_1 = [] | [[ChallengeParticipantEntry, List_1]];
 export interface MainerAgentCanisterInput {
@@ -221,6 +242,8 @@ export type MainerAgentCanistersResult = {
 export interface MainerConfigurationInput {
   'aiModel' : [] | [SelectableMainerLLM],
 }
+export type NatResult = { 'Ok' : bigint } |
+  { 'Err' : ApiError };
 export interface NewChallengeInput {
   'challengeTopicStatus' : ChallengeTopicStatus,
   'challengeTopicCreationTimestamp' : bigint,
