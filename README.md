@@ -10,6 +10,9 @@ Then, do the following:
 # Use conda environment
 conda activate llama_cpp_canister
 
+# Note: on WSL, you might first have to run
+sudo sysctl -w vm.max_map_count=2097152
+
 # from folder: funnAI
 
 # Fresh deploy of GameState
@@ -22,7 +25,10 @@ scripts/deploy-all.sh --mode install
 # Just to link the GameState correctly
 scripts/deploy-gamestate.sh --mode reinstall
 
-# Deploy DeVinci backend (not used):
+# Note: when redeploying changes, you can run the above commands with --mode upgrade
+# to avoid reuploading the models and thus saving a lot of time
+
+# Deploy DeVinci backend (only used for chat):
 dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" DeVinci_backend
 
 # Deploy DeVinci frontend:
