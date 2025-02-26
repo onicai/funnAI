@@ -16,23 +16,23 @@ sudo sysctl -w vm.max_map_count=2097152
 # from folder: funnAI
 
 # Fresh deploy of GameState
-scripts/deploy-gamestate.sh --mode install
+scripts/deploy-gamestate.sh --mode install [--network ic]
 
 # If not yet done, deploy Challenger, Judge & mAIners
-scripts/deploy-all.sh --mode install
+scripts/deploy-all.sh --mode install [--network ic]
 
 # This step only needed first time deploying everything
 # Just to link the GameState correctly
-scripts/deploy-gamestate.sh --mode reinstall
+scripts/deploy-gamestate.sh --mode reinstall [--network ic]
 
 # Note: when redeploying changes, you can run the above commands with --mode upgrade
 # to avoid reuploading the models and thus saving a lot of time
 
 # Deploy DeVinci backend (only used for chat):
-dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" DeVinci_backend
+dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" DeVinci_backend [--ic]
 
 # Deploy DeVinci frontend:
-dfx deploy DeVinci_frontend
+dfx deploy DeVinci_frontend [--ic]
 ```
 
 Use the local UI: http://cbopz-duaaa-aaaaa-qaaka-cai.localhost:4943/ 
