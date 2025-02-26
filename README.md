@@ -56,6 +56,13 @@ dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
 )' [--ic]
 ```
 
+# Start & Stop the Game
+
+See instructions in PoAIW/README.md, the sections:
+
+- Full system test with timers
+- Test components individually
+
 ---
 
 # DeVinci
