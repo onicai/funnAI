@@ -1,15 +1,29 @@
 <script lang="ts">
+  import WalletTable from '../components/WalletTable.svelte';
   
+  const transactions = [
+    {
+      coin: "Internet Computer",
+      symbol: "ICP",
+      amount: "11.15",
+      icon: "/icp-rounded.svg"
+    },
+    {
+      coin: "FunnAI",
+      symbol: "FUNN",
+      amount: "1110.4",
+      icon: "/coin.webp"
+    }
+  ];
 </script>
 
-<div class="container mx-auto px-4 py-8">
-  <h1 class="text-2xl font-bold mb-6">Wallet</h1>
+<div class="container mx-auto px-8 py-8">
+  <h1 class="text-2xl text-gray-400 font-bold mb-6">Wallet</h1>
   
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <!-- Add your dashboard content here -->
-    <div class="bg-white card-style w-full p-6 rounded-lg shadow">
-      <h2 class="text-xl font-semibold mb-4">Welcome to your wallet</h2>
-      <p class="text-gray-600">wallet.</p>
+  <div class="flex justify-center">
+    <div class="w-full md:w-3/4 bg-white card-style p-6 rounded-lg shadow">
+      <h2 class="text-xl font-semibold mb-4">Your Assets</h2>
+      <WalletTable {transactions} />
     </div>
   </div>
 </div>
