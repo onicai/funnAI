@@ -12,14 +12,36 @@
   let isReceiveModalOpen = false;
   let selectedTransaction: typeof transactions[0] | null = null;
   
-  // Generate a random receive address (just for demo)
-  const generateReceiveAddress = () => {
-    return '0x' + Array.from({length: 40}, () => 
-      Math.floor(Math.random() * 16).toString(16)
-    ).join('');
+  // Generate a random ICP-like principal ID
+  const generatePrincipalId = () => {
+    const characters = '23456789abcdefghijkmnpqrstuvwxyz'; // base32 alphabet without 1, l, o, 0
+    const length = 63; // typical length for principal IDs
+    let result = '';
+    
+    // Generate segments with hyphens
+    const segments = [10, 5, 5, 5, 5, 5, 5, 5, 8]; // typical segmentation
+    
+    segments.forEach((segmentLength, index) => {
+      for (let i = 0; i < segmentLength; i++) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+      }
+      if (index < segments.length - 1) {
+        result += '-';
+      }
+    });
+    
+    return result;
+  };
+
+  // Generate a random ICP account ID (hex format)
+  const generateAccountId = () => {
+    const length = 64; // 32 bytes represented in hex
+    const hex = '0123456789abcdef';
+    return Array.from({length}, () => hex[Math.floor(Math.random() * hex.length)]).join('');
   };
   
-  let receiveAddress = generateReceiveAddress();
+  let receivePrincipalId = generatePrincipalId();
+  let receiveAccountId = generateAccountId();
 
   // Update modal functions
   function openSendModal(transaction: typeof transactions[0]) {
@@ -30,7 +52,8 @@
   function openReceiveModal(transaction: typeof transactions[0]) {
     selectedTransaction = transaction;
     isReceiveModalOpen = true;
-    receiveAddress = generateReceiveAddress(); // Generate new address each time
+    receivePrincipalId = generatePrincipalId();
+    receiveAccountId = generateAccountId();
   }
 
   function closeModals() {
@@ -125,8 +148,23 @@
         <div class="p-6 space-y-6">
           <form class="space-y-4">
             <div>
-              <label for="recipient" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Recipient Address</label>
-              <input type="text" id="recipient" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" placeholder="0x..." required>
+              <label for="recipient" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Principal ID</label>
+              <input 
+                type="text" 
+                id="recipient" 
+                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white font-mono" 
+                placeholder="aaaaa-bbbbb-ccccc-..." 
+                required
+              >
+            </div>
+            <div>
+              <label for="account" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Account ID (Optional)</label>
+              <input 
+                type="text" 
+                id="account" 
+                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white font-mono" 
+                placeholder="Enter account ID..."
+              >
             </div>
             <div>
               <label for="amount" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Amount</label>
@@ -180,31 +218,52 @@
         </div>
         <!-- Modal body -->
         <div class="p-6 space-y-6">
-          <div class="flex flex-col items-center space-y-4">
+          <div class="flex flex-col items-center space-y-6">
             <!-- QR Code -->
             <div class="bg-white p-4 rounded-lg">
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${receiveAddress}`}
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${receivePrincipalId}`}
                 alt="QR Code"
                 class="w-48 h-48"
               />
             </div>
-            <!-- Address -->
+            <!-- Principal ID -->
             <div class="w-full">
               <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                Your {selectedTransaction?.coin ?? ''} Address
+                Principal ID
               </label>
               <div class="flex">
                 <input 
                   type="text" 
                   readonly 
-                  value={receiveAddress}
-                  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                  value={receivePrincipalId}
+                  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white font-mono"
                 >
                 <button 
                   type="button"
                   class="ms-2 text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:outline-none focus:ring-purple-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-800"
-                  on:click={() => navigator.clipboard.writeText(receiveAddress)}
+                  on:click={() => navigator.clipboard.writeText(receivePrincipalId)}
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+            <!-- Account ID -->
+            <div class="w-full">
+              <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                Account ID
+              </label>
+              <div class="flex">
+                <input 
+                  type="text" 
+                  readonly 
+                  value={receiveAccountId}
+                  class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white font-mono"
+                >
+                <button 
+                  type="button"
+                  class="ms-2 text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:outline-none focus:ring-purple-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-800"
+                  on:click={() => navigator.clipboard.writeText(receiveAccountId)}
                 >
                   Copy
                 </button>
