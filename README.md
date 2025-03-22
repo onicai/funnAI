@@ -33,6 +33,11 @@ dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" DeVinci_
 
 # Deploy DeVinci frontend:
 dfx deploy DeVinci_frontend [--ic]
+
+# Deploy the token ledger canister:
+# from folder: PoAIW/src/TokenLedger
+dfx deploy
+# follow the manual steps in PoAIW/src/TokenLedger/README to set canister ids and test the token ledger setup
 ```
 
 Use the local UI: http://cbopz-duaaa-aaaaa-qaaka-cai.localhost:4943/ 
