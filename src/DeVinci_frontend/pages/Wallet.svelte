@@ -1,5 +1,6 @@
 <script lang="ts">
   import WalletTable from '../components/WalletTable.svelte';
+  import WalletStatus from '../components/WalletStatus.svelte';
   
   const transactions = [
     {
@@ -21,10 +22,14 @@
   <h1 class="text-2xl text-gray-400 font-bold mb-6">Wallet</h1>
   
   <div class="flex justify-center">
+    <div class="w-full md:w-1/4 bg-white card-style p-6 rounded-lg shadow">
+      <WalletStatus />
+    </div>
     <div class="w-full md:w-3/4 bg-white card-style p-6 rounded-lg shadow">
       <h2 class="text-xl font-semibold mb-4">Your Assets</h2>
-      <WalletTable {transactions} />
+      <WalletTable {transactions} />  
     </div>
+    
   </div>
 </div>
 
