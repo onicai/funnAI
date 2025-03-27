@@ -1,9 +1,10 @@
 <script lang="ts">
   import WalletTable from '../components/WalletTable.svelte';
   import WalletStatus from '../components/WalletStatus.svelte';
+  import LoginModal from '../components/LoginModal.svelte';
+  import { store } from "../store";
   
-  let isAuthed = false;
-  let principal = null;
+  let modalIsOpen = false;
   
   const transactions = [
     {
@@ -20,8 +21,12 @@
     }
   ];
 
+  const toggleModal = () => {
+    modalIsOpen = !modalIsOpen;
+  };
+
   function connect() {
-    console.log('Connecting wallet...');
+    toggleModal();
   }
 </script>
 
@@ -32,7 +37,7 @@
       <WalletStatus />
     <div class="w-full bg-white card-style p-6 rounded-lg shadow mt-5">
       <h2 class="text-xl font-semibold mb-4">Your Assets</h2>
-      {#if isAuthed}
+      {#if $store.isAuthed}
         <WalletTable {transactions} />
       {:else}
         <div class="text-center py-8 bg-gray-50 rounded-lg">
@@ -49,11 +54,13 @@
           </button>
         </div>
       {/if}
-
     </div>
-    
   </div>
 </div>
+
+{#if modalIsOpen}
+  <LoginModal {toggleModal} />
+{/if}
 
 <script context="module">
   export const Wallet = (props) => {
