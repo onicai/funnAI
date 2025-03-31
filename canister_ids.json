@@ -1,12 +1,12 @@
 {
-  "DeVinci_backend": {
+  "funnai_backend": {
     "backup": "",
     "development": "",
     "ic": "yekds-uqaaa-aaaaj-az5la-cai",
     "test": "",
     "testing": ""
   },
-  "DeVinci_frontend": {
+  "funnai_frontend": {
     "backup": "",
     "development": "",
     "ic": "ydlfg-ziaaa-aaaaj-az5lq-cai",

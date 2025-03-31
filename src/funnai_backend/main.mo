@@ -12,10 +12,10 @@ import Utils "./Utils";
 
 import Types "./Types";
 
-shared actor class DeVinciBackend(custodian: Principal) = Self {
+shared actor class FunnAIBackend(custodian: Principal) = Self {
   stable var custodians = List.make<Principal>(custodian);
 
-  stable var canisterIsPrivate : Bool = false; // variable to indicate whether this is the shared DeVinci backend (false) or a user's own backend (true)
+  stable var canisterIsPrivate : Bool = false; // variable to indicate whether this is the shared backend (false) or a user's own backend (true)
 
   /* public shared({ caller }) func updateCanisterIsPrivate(newIsPrivateValue : Bool) : async Bool {
     // don't allow anonymous Principal

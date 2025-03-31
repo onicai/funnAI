@@ -27,10 +27,10 @@
     "paths": { "canisters/*": [".dfx/local/canisters/*"] }
   },
   "include": [
-    "src/DeVinci_frontend/**/*.d.ts",
-    "src/DeVinci_frontend/**/*.ts",
-    "src/DeVinci_frontend/**/*.js",
-    "src/DeVinci_frontend/**/*.svelte"
+    "src/funnai_frontend/**/*.d.ts",
+    "src/funnai_frontend/**/*.ts",
+    "src/funnai_frontend/**/*.js",
+    "src/funnai_frontend/**/*.svelte"
   ],
   "exclude": ["node_modules"],
   "lib": ["ESNext", "DOM", "WebWorker"]

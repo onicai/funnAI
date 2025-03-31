@@ -1,8 +1,8 @@
 {
-  "name": "DeVinci_frontend",
+  "name": "funnai_frontend",
   "version": "0.1.0",
   "type": "module",
-  "description": "Truly personal AI assistants on the Internet Computer",
+  "description": "Truly self-sovereign AI agents on the Internet Computer",
   "keywords": [
     "Internet Computer",
     "Motoko",

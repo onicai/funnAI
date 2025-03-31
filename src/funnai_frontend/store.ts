@@ -5,11 +5,11 @@ import { StoicIdentity } from "ic-stoic-identity";
 import { AuthClient } from "@dfinity/auth-client";
 import UAParser from 'ua-parser-js';
 import {
-  DeVinci_backend,
+  funnai_backend,
   createActor as createBackendCanisterActor,
   canisterId as backendCanisterId,
   idlFactory as backendIdlFactory,
-} from "../declarations/DeVinci_backend";
+} from "../declarations/funnai_backend";
 import {
   arcmindvectordb,
   createActor as createUserKnowledgebaseBackendCanisterActor,
@@ -30,8 +30,8 @@ import {
 } from "../declarations/mainer_ctrlb_canister";
 
 // TODO: remove debug print statements
-console.log("DeVinci_backend");
-console.log(DeVinci_backend);
+console.log("funnai_backend");
+console.log(funnai_backend);
 console.log(backendCanisterId);
 
 console.log("game_state_canister");
@@ -142,7 +142,7 @@ export let vectorStore = writable(null);
 export let installAppDeferredPrompt = writable(null); // the installAppDeferredPrompt event cannot be stored across sessions
 
 let authClient : AuthClient;
-const APPLICATION_NAME = "DeVinci";
+const APPLICATION_NAME = "funnai";
 const APPLICATION_LOGO_URL = "https://x6occ-biaaa-aaaai-acqzq-cai.icp0.io/devinci512.png";
 
 const AUTH_PATH = "/authenticate/?applicationName="+APPLICATION_NAME+"&applicationLogo="+APPLICATION_LOGO_URL+"#authorize";
@@ -153,7 +153,7 @@ const nanosecondsPerHour = BigInt(3600000000000);
 
 type State = {
   isAuthed: "plug" | "stoic" | "nfid" | "bitfinity" | "internetidentity" | null;
-  backendActor: typeof DeVinci_backend;
+  backendActor: typeof funnai_backend;
   principal: Principal;
   accountId: string;
   error: string;
@@ -303,7 +303,7 @@ export const createStore = ({
       let backendActor = (await window.ic?.plug.createActor({
         canisterId: canisterId,
         interfaceFactory: backendIdlFactory,
-      })) as typeof DeVinci_backend;
+      })) as typeof funnai_backend;
       /* if (!userBackendCanisterAddressValue || userBackendCanisterAddressValue === null) {
         // The user might have an own backend canister
         const canisterIdResponse = await getUserBackendCanisterId(backendActor);
@@ -312,7 +312,7 @@ export const createStore = ({
           backendActor = (await window.ic?.plug.createActor({
             canisterId: canisterId,
             interfaceFactory: backendIdlFactory,
-          })) as typeof DeVinci_backend;
+          })) as typeof funnai_backend;
         };
       }; */
       return backendActor;
@@ -321,7 +321,7 @@ export const createStore = ({
         canisterId: canisterId,
         interfaceFactory: backendIdlFactory,
         host,
-      })) as typeof DeVinci_backend;
+      })) as typeof funnai_backend;
       /* if (!userBackendCanisterAddressValue || userBackendCanisterAddressValue === null) {
         // The user might have an own backend canister
         const canisterIdResponse = await getUserBackendCanisterId(backendActor);
@@ -331,7 +331,7 @@ export const createStore = ({
             canisterId: canisterId,
             interfaceFactory: backendIdlFactory,
             host,
-          })) as typeof DeVinci_backend;
+          })) as typeof funnai_backend;
         };
       }; */
       return backendActor;
@@ -370,13 +370,13 @@ export const createStore = ({
         backendActor = (await window.ic?.plug.createActor({
           canisterId: newBackendCanisterId,
           interfaceFactory: backendIdlFactory,
-        })) as typeof DeVinci_backend;
+        })) as typeof funnai_backend;
       } else if (globalState.isAuthed === "bitfinity") {
         backendActor = (await window.ic?.infinityWallet.createActor({
           canisterId: newBackendCanisterId,
           interfaceFactory: backendIdlFactory,
           host,
-        })) as typeof DeVinci_backend;
+        })) as typeof funnai_backend;
       } else {
         backendActor = createBackendCanisterActor(newBackendCanisterId, {
           agentOptions: {
@@ -1097,7 +1097,7 @@ declare global {
           whitelist?: string[];
           host?: string;
         }) => Promise<any>;
-        createActor: (options: {}) => Promise<typeof DeVinci_backend>;
+        createActor: (options: {}) => Promise<typeof funnai_backend>;
         createGameStateActor: (options: {}) => Promise<typeof game_state_canister>;
         createMainerControllerActor: (options: {}) => Promise<typeof mainer_ctrlb_canister>;
         isConnected: () => Promise<boolean>;
@@ -1146,7 +1146,7 @@ declare global {
           canisterId: string;
           interfaceFactory: any;
           host?: string;
-        }) => Promise<typeof DeVinci_backend>;
+        }) => Promise<typeof funnai_backend>;
         createGameStateActor: (options: {
           canisterId: string;
           interfaceFactory: any;
