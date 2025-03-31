@@ -513,31 +513,32 @@ export const createStore = ({
   };
 
   const nfidConnect = async () => {
-    authClient = await AuthClient.create();
-    if (await authClient.isAuthenticated()) {
-      const identity = await authClient.getIdentity();
-      initNfid(identity);
-    } else {
-      await authClient.login({
-        onSuccess: async () => {
-          const identity = await authClient.getIdentity();
-          initNfid(identity);
-        },
-        identityProvider: "https://nfid.one" + AUTH_PATH,
-          /* process.env.DFX_NETWORK === "ic"
-            ? "https://nfid.one" + AUTH_PATH
-            : process.env.LOCAL_NFID_CANISTER + AUTH_PATH, */
-        // Maximum authorization expiration is 30 days
-        maxTimeToLive: days * hours * nanosecondsPerHour,
-        windowOpenerFeatures:
-          `left=${window.screen.width / 2 - 525 / 2}, `+
-          `top=${window.screen.height / 2 - 705 / 2},` +
-          `toolbar=0,location=0,menubar=0,width=525,height=705`,
-        // See https://docs.nfid.one/multiple-domains
-        // for instructions on how to use derivationOrigin
-        // derivationOrigin: "https://<canister_id>.ic0.app"
-      });
-    };
+    try {
+      authClient = await AuthClient.create();
+      if (await authClient.isAuthenticated()) {
+        const identity = await authClient.getIdentity();
+        await initNfid(identity);
+      } else {
+        await authClient.login({
+          onSuccess: async () => {
+            const identity = await authClient.getIdentity();
+            await initNfid(identity);
+          },
+          identityProvider: "https://nfid.one" + AUTH_PATH,
+          maxTimeToLive: days * hours * nanosecondsPerHour,
+          windowOpenerFeatures:
+            `left=${window.screen.width / 2 - 525 / 2}, `+
+            `top=${window.screen.height / 2 - 705 / 2},` +
+            `toolbar=0,location=0,menubar=0,width=525,height=705`,
+        });
+      }
+    } catch (error) {
+      console.error("Error in nfidConnect:", error);
+      update((state) => ({
+        ...state,
+        error: "Failed to connect with NFID"
+      }));
+    }
   };
 
   const initNfid = async (identity: Identity) => {

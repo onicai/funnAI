@@ -60,11 +60,15 @@ export interface ChallengeResponseSubmission {
   'submissionStatus' : ChallengeResponseSubmissionStatus,
   'challengeQuestion' : string,
   'challengeId' : string,
+  'challengeQueuedBy' : Principal,
+  'challengeQueuedId' : string,
+  'challengeQueuedTo' : Principal,
   'challengeTopic' : string,
   'submissionId' : string,
   'challengeAnswerSeed' : number,
   'submissionCyclesRequired' : bigint,
   'challengeAnswer' : string,
+  'challengeQueuedTimestamp' : bigint,
 }
 export interface ChallengeResponseSubmissionInput {
   'challengeClosedTimestamp' : [] | [bigint],
@@ -78,10 +82,14 @@ export interface ChallengeResponseSubmissionInput {
   'challengeQuestionSeed' : number,
   'challengeQuestion' : string,
   'challengeId' : string,
+  'challengeQueuedBy' : Principal,
+  'challengeQueuedId' : string,
+  'challengeQueuedTo' : Principal,
   'challengeTopic' : string,
   'challengeAnswerSeed' : number,
   'submissionCyclesRequired' : bigint,
   'challengeAnswer' : string,
+  'challengeQueuedTimestamp' : bigint,
 }
 export interface ChallengeResponseSubmissionMetadata {
   'submittedTimestamp' : bigint,
@@ -298,12 +306,16 @@ export interface ScoredResponse {
   'score' : bigint,
   'challengeQuestion' : string,
   'challengeId' : string,
+  'challengeQueuedBy' : Principal,
+  'challengeQueuedId' : string,
+  'challengeQueuedTo' : Principal,
   'challengeTopic' : string,
   'judgedTimestamp' : bigint,
   'submissionId' : string,
   'challengeAnswerSeed' : number,
   'submissionCyclesRequired' : bigint,
   'challengeAnswer' : string,
+  'challengeQueuedTimestamp' : bigint,
   'scoreSeed' : number,
 }
 export interface ScoredResponseInput {
@@ -322,11 +334,15 @@ export interface ScoredResponseInput {
   'score' : bigint,
   'challengeQuestion' : string,
   'challengeId' : string,
+  'challengeQueuedBy' : Principal,
+  'challengeQueuedId' : string,
+  'challengeQueuedTo' : Principal,
   'challengeTopic' : string,
   'submissionId' : string,
   'challengeAnswerSeed' : number,
   'submissionCyclesRequired' : bigint,
   'challengeAnswer' : string,
+  'challengeQueuedTimestamp' : bigint,
   'scoreSeed' : number,
 }
 export type ScoredResponseResult = { 'Ok' : ScoredResponseReturn } |

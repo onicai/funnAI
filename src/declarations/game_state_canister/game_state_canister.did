@@ -32,6 +32,10 @@ type ScoredResponseInput =
    challengeId: text;
    challengeQuestion: text;
    challengeQuestionSeed: nat32;
+   challengeQueuedBy: principal;
+   challengeQueuedId: text;
+   challengeQueuedTimestamp: nat64;
+   challengeQueuedTo: principal;
    challengeStatus: ChallengeStatus;
    challengeTopic: text;
    challengeTopicCreationTimestamp: nat64;
@@ -56,6 +60,10 @@ type ScoredResponse =
    challengeId: text;
    challengeQuestion: text;
    challengeQuestionSeed: nat32;
+   challengeQueuedBy: principal;
+   challengeQueuedId: text;
+   challengeQueuedTimestamp: nat64;
+   challengeQueuedTo: principal;
    challengeStatus: ChallengeStatus;
    challengeTopic: text;
    challengeTopicCreationTimestamp: nat64;
@@ -315,6 +323,10 @@ type ChallengeResponseSubmissionInput =
    challengeId: text;
    challengeQuestion: text;
    challengeQuestionSeed: nat32;
+   challengeQueuedBy: principal;
+   challengeQueuedId: text;
+   challengeQueuedTimestamp: nat64;
+   challengeQueuedTo: principal;
    challengeStatus: ChallengeStatus;
    challengeTopic: text;
    challengeTopicCreationTimestamp: nat64;
@@ -333,6 +345,10 @@ type ChallengeResponseSubmission =
    challengeId: text;
    challengeQuestion: text;
    challengeQuestionSeed: nat32;
+   challengeQueuedBy: principal;
+   challengeQueuedId: text;
+   challengeQueuedTimestamp: nat64;
+   challengeQueuedTo: principal;
    challengeStatus: ChallengeStatus;
    challengeTopic: text;
    challengeTopicCreationTimestamp: nat64;
