@@ -3,8 +3,6 @@
 
   import InternetIdentityButton from "./InternetIdentityButton.svelte";
   import NfidButton from "./NfidButton.svelte";
-  import BitfinityButton from "./BitfinityButton.svelte";
-  import PlugButton from "./PlugButton.svelte";
 
   export let toggleModal;
 
@@ -58,12 +56,6 @@
           </li>
           <li>
             <NfidButton bind:loading {toggleModal} />
-          </li>
-          <li>
-            <BitfinityButton bind:loading {toggleModal} />
-          </li>
-          <li>
-            <PlugButton bind:loading {toggleModal} />
           </li>
         </ul>
       </div>
