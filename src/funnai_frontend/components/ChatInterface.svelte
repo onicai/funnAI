@@ -9,11 +9,7 @@
   } from "../store";
   import InstallToastNotification from './InstallToastNotification.svelte';
   import {
-    getSearchVectorDbTool,
-    searchUserKnowledgebase,
-    //storeEmbeddings,
-    //loadExistingVectorStore,
-    //checkUserHasKnowledgeBase
+    getSearchVectorDbTool
   } from "../helpers/vector_database";
   import SelectModel from "./SelectModel.svelte";
   import ChatBox from "./ChatBox.svelte";
@@ -103,23 +99,6 @@
                 const additionalEntry = vectorDbSearchToolResponse.existingChatsFoundInLocalDatabase[index];
                 additionalContentToProvide += "  ";
                 additionalContentToProvide += additionalEntry.content;
-              };
-            } catch (error) {
-              console.error("Error in getChatModelResponse vectorDbSearchTool");
-              console.error(error.toString());
-              /* debugOutput += " final prompt and additionalContentEntry error ";
-              debugOutput += error.toString();
-                debugOutput += error.name;
-                debugOutput += error.message;
-              setLabel("debug-label", debugOutput);  */
-            };
-          };
-          if ($useKnowledgeBase) {
-            try {
-              let userKnowledgeBaseResponse = await searchUserKnowledgebase(promptContent);
-              if (userKnowledgeBaseResponse) {
-                additionalContentToProvide += "  ";
-                additionalContentToProvide += userKnowledgeBaseResponse;
               };
             } catch (error) {
               console.error("Error in getChatModelResponse vectorDbSearchTool");

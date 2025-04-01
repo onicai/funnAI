@@ -10,10 +10,6 @@ import {
   canisterId as backendCanisterId,
   idlFactory as backendIdlFactory,
 } from "../declarations/funnai_backend";
-import {
-  arcmindvectordb,
-  createActor as createUserKnowledgebaseBackendCanisterActor,
-} from "../declarations/arcmindvectordb";
 
 import {
   game_state_canister,
@@ -110,19 +106,6 @@ useKnowledgeBase.subscribe((value) => {
   localStorage.setItem("useKnowledgeBase", value)
 });
 
-export let userKnowledgebaseCanisterAddress = writable(localStorage.getItem("userKnowledgebaseCanisterAddress") || null);
-let userKnowledgebaseCanisterAddressValue = localStorage.getItem("userKnowledgebaseCanisterAddress") || null;
-userKnowledgebaseCanisterAddress.subscribe((value) => {
-  userKnowledgebaseCanisterAddressValue = value;
-  localStorage.setItem("userKnowledgebaseCanisterAddress", value)
-});
-export let userBackendCanisterAddress = writable(localStorage.getItem("userBackendCanisterAddress") || null);
-let userBackendCanisterAddressValue = localStorage.getItem("userBackendCanisterAddress") || null;
-userBackendCanisterAddress.subscribe((value) => {
-  userBackendCanisterAddressValue = value;
-  localStorage.setItem("userBackendCanisterAddress", value)
-});
-
 declare global {
   interface BigInt {
     toJSON(): Number;
@@ -158,7 +141,6 @@ type State = {
   accountId: string;
   error: string;
   isLoading: boolean;
-  userKnowledgebaseCanisterActor: typeof arcmindvectordb;
   gameStateCanisterActor: typeof game_state_canister;
   mainerControllerCanisterActor: typeof mainer_ctrlb_canister;
   userMainerCanisterActors: any[];
@@ -179,7 +161,6 @@ const defaultState: State = {
   accountId: "",
   error: "",
   isLoading: false,
-  userKnowledgebaseCanisterActor: null,
   gameStateCanisterActor: createGameStateCanisterActor(gameStateCanisterId, {
     agentOptions: { host: HOST },
   }),
@@ -272,49 +253,13 @@ export const createStore = ({
   };
 
   const initBackendCanisterActor = async (loginType, identity: Identity) => {
-    /* const getUserBackendCanisterId = async (backendActor) => {
-      try {
-        const canisterEntryResponse = await backendActor.getUserCanistersEntry({ 'canisterType' : { 'Backend' : null } });
-        // @ts-ignore
-        if (canisterEntryResponse.Ok) {
-          // Update backend canister info with user's own canister
-          // @ts-ignore
-          const userCanisterId = canisterEntryResponse.Ok?.userCanister?.canisterAddress;
-          userBackendCanisterAddress.set(userCanisterId);            
-          return userCanisterId;
-        } else {
-          // @ts-ignore
-          console.error("Error retrieving user backend canister: ", canisterEntryResponse.Err);
-          // @ts-ignore
-          throw new Error("Error retrieving user backend canister: ", canisterEntryResponse.Err);
-        };
-      } catch (error) {
-        console.error("Error in getUserBackendCanisterId: ", error);
-      };
-      return null; // no user backend canister
-    }; */
-
     let canisterId = backendCanisterId;
-    /* if (userBackendCanisterAddressValue && userBackendCanisterAddressValue !== null && userBackendCanisterAddressValue.length > 5) {
-      canisterId = userBackendCanisterAddressValue;
-    }; */
     
     if (loginType === "plug") {
       let backendActor = (await window.ic?.plug.createActor({
         canisterId: canisterId,
         interfaceFactory: backendIdlFactory,
       })) as typeof funnai_backend;
-      /* if (!userBackendCanisterAddressValue || userBackendCanisterAddressValue === null) {
-        // The user might have an own backend canister
-        const canisterIdResponse = await getUserBackendCanisterId(backendActor);
-        if (canisterIdResponse && canisterIdResponse !== canisterId) {
-          canisterId = canisterIdResponse;
-          backendActor = (await window.ic?.plug.createActor({
-            canisterId: canisterId,
-            interfaceFactory: backendIdlFactory,
-          })) as typeof funnai_backend;
-        };
-      }; */
       return backendActor;
     } else if (loginType === "bitfinity") {
       let backendActor = (await window.ic?.infinityWallet.createActor({
@@ -322,18 +267,6 @@ export const createStore = ({
         interfaceFactory: backendIdlFactory,
         host,
       })) as typeof funnai_backend;
-      /* if (!userBackendCanisterAddressValue || userBackendCanisterAddressValue === null) {
-        // The user might have an own backend canister
-        const canisterIdResponse = await getUserBackendCanisterId(backendActor);
-        if (canisterIdResponse && canisterIdResponse !== canisterId) {
-          canisterId = canisterIdResponse;
-          backendActor = (await window.ic?.infinityWallet.createActor({
-            canisterId: canisterId,
-            interfaceFactory: backendIdlFactory,
-            host,
-          })) as typeof funnai_backend;
-        };
-      }; */
       return backendActor;
     } else {
       let backendActor = createBackendCanisterActor(canisterId, {
@@ -342,19 +275,6 @@ export const createStore = ({
           host: HOST,
         },
       });
-      /* if (!userBackendCanisterAddressValue || userBackendCanisterAddressValue === null) {
-        // The user might have an own backend canister
-        const canisterIdResponse = await getUserBackendCanisterId(backendActor);
-        if (canisterIdResponse && canisterIdResponse !== canisterId) {
-          canisterId = canisterIdResponse;
-          backendActor = createBackendCanisterActor(canisterId, {
-            agentOptions: {
-              identity,
-              host: HOST,
-            },
-          });
-        };
-      }; */
       return backendActor;
     };
   };
@@ -1018,49 +938,6 @@ export const createStore = ({
     };
   };
 
-  const getActorForUserKnowledgebaseCanister = async () => {
-    if (globalState.userKnowledgebaseCanisterActor) {
-      return globalState.userKnowledgebaseCanisterActor;
-    };
-    if (authClient) {
-      const identity = await authClient.getIdentity();
-
-      if (!userKnowledgebaseCanisterAddressValue) {
-        try {
-          const canisterEntryResponse = await globalState.backendActor.getUserCanistersEntry({ 'canisterType' : { 'Knowledgebase' : null } });
-          // @ts-ignore
-          if (canisterEntryResponse.Ok) {
-            // @ts-ignore
-            userKnowledgebaseCanisterAddress.set(canisterEntryResponse.Ok?.userCanister?.canisterAddress);
-          } else {
-            // @ts-ignore
-            console.error("Error retrieving user knowledgebase canister: ", canisterEntryResponse.Err);
-            // @ts-ignore
-            throw new Error("Error retrieving user knowledgebase canister: ", canisterEntryResponse.Err);
-          };
-        } catch (error) {
-          console.error("Error in getActorForUserKnowledgebaseCanister: ", error);
-          return null;
-        };
-      };
-
-      const userKnowledgebaseCanisterActor = createUserKnowledgebaseBackendCanisterActor(userKnowledgebaseCanisterAddressValue, {
-        agentOptions: {
-          identity,
-          host: HOST,
-        },
-      });
-      update((state) => {
-        return {
-          ...state,
-          userKnowledgebaseCanisterActor,
-        };
-      });
-      return userKnowledgebaseCanisterActor;
-    };
-    return null;    
-  };
-
   return {
     subscribe,
     update,
@@ -1071,7 +948,6 @@ export const createStore = ({
     internetIdentityConnect,
     disconnect,
     checkExistingLoginAndConnect,
-    getActorForUserKnowledgebaseCanister,
     updateBackendCanisterActor,
   };
 };
