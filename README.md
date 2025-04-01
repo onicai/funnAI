@@ -108,7 +108,6 @@ dfx deploy --network development --argument "( principal\"$(dfx identity get-pri
 dfx canister call funnai_backend --network development setCanisterCreationCanisterId '("wyx7t-zqaaa-aaaam-qb5ga-cai")'
 
 dfx deploy --network development funnai_frontend
-dfx deploy --network development arcmindvectordb
 ```
 
 For setting up stages, see [Notes on Stages](./notes/NotesOnStages.md)

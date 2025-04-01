@@ -38,16 +38,6 @@
           "development": "rdmx6-jaaaa-aaaaa-aaadq-cai"
         }
       }
-    },
-    "arcmindvectordb": {
-      "candid": "src/arcmindvectordb/arcmindvectordb.did",
-      "package": "arcmindvectordb",
-      "type": "rust",
-      "optimize": "cycles",
-      "gzip": true,
-      "declarations": {
-        "node_compatibility": true
-      }
     }
   },
   "defaults": {
