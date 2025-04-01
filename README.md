@@ -15,18 +15,21 @@ sudo sysctl -w vm.max_map_count=2097152
 
 # from folder: funnAI
 
-# Fresh deploy of GameState
-scripts/deploy-gamestate.sh --mode install [--network ic]
-
-# If not yet done, deploy Challenger, Judge & mAIners
+# This script does it all:
+# (-) Deploys GameState, mAInerCreator, Challenger, Judge
+# (-) Registers the canisters properly with each other
+# (-) Deploys a demo set of mAIners via calls to mAInerCreator
+#     -> One mAIner  of type #Own, with 1 LLM
+#     -> One mAIner  of type #ShareService, with 1 LLM
+#     -> Two mAIners of type #ShareAgent
 scripts/deploy-all.sh --mode install [--network ic]
 
-# This step only needed first time deploying everything
-# Just to link the GameState correctly
-scripts/deploy-gamestate.sh --mode reinstall [--network ic]
-
-# Note: when redeploying changes, you can run the above commands with --mode upgrade
-# to avoid reuploading the models and thus saving a lot of time
+# Notes: 
+# (-) when redeploying changes, you can run the above command with --mode upgrade
+#     to avoid reuploading the models and thus saving a lot of time
+# (-) to reset the gamestate, run `scripts/deploy-gamestate.sh --mode reinstall`, 
+#     followed by                 `scripts/deploy-all.sh --mode upgrade`
+#     -> This will erase all data: canisters/challenges/responses/etc.
 
 # Deploy DeVinci backend (only used for chat):
 dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" DeVinci_backend [--ic]

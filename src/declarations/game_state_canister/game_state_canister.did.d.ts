@@ -60,11 +60,15 @@ export interface ChallengeResponseSubmission {
   'submissionStatus' : ChallengeResponseSubmissionStatus,
   'challengeQuestion' : string,
   'challengeId' : string,
+  'challengeQueuedBy' : Principal,
+  'challengeQueuedId' : string,
+  'challengeQueuedTo' : Principal,
   'challengeTopic' : string,
   'submissionId' : string,
   'challengeAnswerSeed' : number,
   'submissionCyclesRequired' : bigint,
   'challengeAnswer' : string,
+  'challengeQueuedTimestamp' : bigint,
 }
 export interface ChallengeResponseSubmissionInput {
   'challengeClosedTimestamp' : [] | [bigint],
@@ -78,10 +82,14 @@ export interface ChallengeResponseSubmissionInput {
   'challengeQuestionSeed' : number,
   'challengeQuestion' : string,
   'challengeId' : string,
+  'challengeQueuedBy' : Principal,
+  'challengeQueuedId' : string,
+  'challengeQueuedTo' : Principal,
   'challengeTopic' : string,
   'challengeAnswerSeed' : number,
   'submissionCyclesRequired' : bigint,
   'challengeAnswer' : string,
+  'challengeQueuedTimestamp' : bigint,
 }
 export interface ChallengeResponseSubmissionMetadata {
   'submittedTimestamp' : bigint,
@@ -236,10 +244,15 @@ export type List_1 = [] | [[ChallengeParticipantEntry, List_1]];
 export interface MainerAgentCanisterInput {
   'canisterType' : ProtocolCanisterType,
   'ownedBy' : Principal,
+  'mainerAgentCanisterType' : MainerAgentCanisterType,
   'address' : CanisterAddress,
 }
 export type MainerAgentCanisterResult = { 'Ok' : OfficialProtocolCanister } |
   { 'Err' : ApiError };
+export type MainerAgentCanisterType = { 'NA' : null } |
+  { 'Own' : null } |
+  { 'ShareAgent' : null } |
+  { 'ShareService' : null };
 export type MainerAgentCanistersResult = {
     'Ok' : Array<OfficialProtocolCanister>
   } |
@@ -271,6 +284,7 @@ export interface ProtocolActivityRecord {
 export type ProtocolActivityResult = { 'Ok' : ProtocolActivityRecord } |
   { 'Err' : ApiError };
 export type ProtocolCanisterType = { 'MainerAgent' : null } |
+  { 'MainerLlm' : null } |
   { 'Challenger' : null } |
   { 'Judge' : null } |
   { 'Verifier' : null } |
@@ -298,12 +312,16 @@ export interface ScoredResponse {
   'score' : bigint,
   'challengeQuestion' : string,
   'challengeId' : string,
+  'challengeQueuedBy' : Principal,
+  'challengeQueuedId' : string,
+  'challengeQueuedTo' : Principal,
   'challengeTopic' : string,
   'judgedTimestamp' : bigint,
   'submissionId' : string,
   'challengeAnswerSeed' : number,
   'submissionCyclesRequired' : bigint,
   'challengeAnswer' : string,
+  'challengeQueuedTimestamp' : bigint,
   'scoreSeed' : number,
 }
 export interface ScoredResponseInput {
@@ -322,11 +340,15 @@ export interface ScoredResponseInput {
   'score' : bigint,
   'challengeQuestion' : string,
   'challengeId' : string,
+  'challengeQueuedBy' : Principal,
+  'challengeQueuedId' : string,
+  'challengeQueuedTo' : Principal,
   'challengeTopic' : string,
   'submissionId' : string,
   'challengeAnswerSeed' : number,
   'submissionCyclesRequired' : bigint,
   'challengeAnswer' : string,
+  'challengeQueuedTimestamp' : bigint,
   'scoreSeed' : number,
 }
 export type ScoredResponseResult = { 'Ok' : ScoredResponseReturn } |

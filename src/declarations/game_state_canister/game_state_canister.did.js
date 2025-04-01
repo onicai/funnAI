@@ -63,14 +63,22 @@ export const idlFactory = ({ IDL }) => {
   });
   const ProtocolCanisterType = IDL.Variant({
     'MainerAgent' : IDL.Null,
+    'MainerLlm' : IDL.Null,
     'Challenger' : IDL.Null,
     'Judge' : IDL.Null,
     'Verifier' : IDL.Null,
     'MainerCreator' : IDL.Null,
   });
+  const MainerAgentCanisterType = IDL.Variant({
+    'NA' : IDL.Null,
+    'Own' : IDL.Null,
+    'ShareAgent' : IDL.Null,
+    'ShareService' : IDL.Null,
+  });
   const MainerAgentCanisterInput = IDL.Record({
     'canisterType' : ProtocolCanisterType,
     'ownedBy' : IDL.Principal,
+    'mainerAgentCanisterType' : MainerAgentCanisterType,
     'address' : CanisterAddress,
   });
   const OfficialProtocolCanister = IDL.Record({
@@ -118,11 +126,15 @@ export const idlFactory = ({ IDL }) => {
     'score' : IDL.Nat,
     'challengeQuestion' : IDL.Text,
     'challengeId' : IDL.Text,
+    'challengeQueuedBy' : IDL.Principal,
+    'challengeQueuedId' : IDL.Text,
+    'challengeQueuedTo' : IDL.Principal,
     'challengeTopic' : IDL.Text,
     'submissionId' : IDL.Text,
     'challengeAnswerSeed' : IDL.Nat32,
     'submissionCyclesRequired' : IDL.Nat,
     'challengeAnswer' : IDL.Text,
+    'challengeQueuedTimestamp' : IDL.Nat64,
     'scoreSeed' : IDL.Nat32,
   });
   const ScoredResponseReturn = IDL.Record({ 'success' : IDL.Bool });
@@ -167,11 +179,15 @@ export const idlFactory = ({ IDL }) => {
     'submissionStatus' : ChallengeResponseSubmissionStatus,
     'challengeQuestion' : IDL.Text,
     'challengeId' : IDL.Text,
+    'challengeQueuedBy' : IDL.Principal,
+    'challengeQueuedId' : IDL.Text,
+    'challengeQueuedTo' : IDL.Principal,
     'challengeTopic' : IDL.Text,
     'submissionId' : IDL.Text,
     'challengeAnswerSeed' : IDL.Nat32,
     'submissionCyclesRequired' : IDL.Nat,
     'challengeAnswer' : IDL.Text,
+    'challengeQueuedTimestamp' : IDL.Nat64,
   });
   const ChallengeResponseSubmissionResult = IDL.Variant({
     'Ok' : ChallengeResponseSubmission,
@@ -255,12 +271,16 @@ export const idlFactory = ({ IDL }) => {
     'score' : IDL.Nat,
     'challengeQuestion' : IDL.Text,
     'challengeId' : IDL.Text,
+    'challengeQueuedBy' : IDL.Principal,
+    'challengeQueuedId' : IDL.Text,
+    'challengeQueuedTo' : IDL.Principal,
     'challengeTopic' : IDL.Text,
     'judgedTimestamp' : IDL.Nat64,
     'submissionId' : IDL.Text,
     'challengeAnswerSeed' : IDL.Nat32,
     'submissionCyclesRequired' : IDL.Nat,
     'challengeAnswer' : IDL.Text,
+    'challengeQueuedTimestamp' : IDL.Nat64,
     'scoreSeed' : IDL.Nat32,
   });
   const ScoredResponseRetrievalResult = IDL.Variant({
@@ -284,10 +304,14 @@ export const idlFactory = ({ IDL }) => {
     'challengeQuestionSeed' : IDL.Nat32,
     'challengeQuestion' : IDL.Text,
     'challengeId' : IDL.Text,
+    'challengeQueuedBy' : IDL.Principal,
+    'challengeQueuedId' : IDL.Text,
+    'challengeQueuedTo' : IDL.Principal,
     'challengeTopic' : IDL.Text,
     'challengeAnswerSeed' : IDL.Nat32,
     'submissionCyclesRequired' : IDL.Nat,
     'challengeAnswer' : IDL.Text,
+    'challengeQueuedTimestamp' : IDL.Nat64,
   });
   const ChallengeResponseSubmissionMetadata = IDL.Record({
     'submittedTimestamp' : IDL.Nat64,
