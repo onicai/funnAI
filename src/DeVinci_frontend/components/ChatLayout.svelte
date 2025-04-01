@@ -44,13 +44,13 @@
       <UnsupportedBrowserBanner />
     {:else}
       <div class="flex flex-row h-screen">
-        <aside id="chatSidebar" class="bg-gray-50 fixed right-0 z-50 bg-gray-200 w-72 min-w-72 h-full md:shadow transform translate-x-full transition-transform duration-150 ease-in">
+        <!-- <aside id="chatSidebar" class="bg-gray-50 fixed right-0 z-50 bg-gray-200 w-72 min-w-72 h-full md:shadow transform translate-x-full transition-transform duration-150 ease-in">
           <div class="sidebar-content p-4 pt-0 h-full overflow-hidden">
             <Sidebar />
           </div>
-        </aside>
+        </aside> -->
         <main class="main flex flex-col flex-grow ml-0 transition-all duration-150 ease-in">
-          <header class="header bg-white shadow py-2 px-4">
+          <!-- <header class="header bg-white shadow py-2 px-4">
             <div class="header-content flex items-center flex-row">
               <div class="flex ml-auto">
                 <Navigation />
@@ -63,7 +63,7 @@
               </button>
             </div>
           </header>
-          <Breadcrumbs />
+          <Breadcrumbs /> -->
           <Router {routes} />
         </main>
       </div>

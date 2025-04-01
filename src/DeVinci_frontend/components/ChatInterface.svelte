@@ -1,4 +1,51 @@
-<script lang="ts">
+<div class="container mx-auto px-4 py-8 max-w-7xl">
+  <div class="flex items-center p-4 mt-4 mb-6 text-md text-yellow-800 border border-yellow-300 rounded-lg bg-yellow-50" role="alert">
+    <svg class="shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+      <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+    </svg>
+    <span class="sr-only">Info</span>
+    <div>
+      <span class="font-medium">Heads up!</span> 
+      Chat functionality is coming soon! In the meantime, you can experience the future of private AI with <strong>DeVinci</strong> — the end-to-end decentralized AI chat app — and explore <strong>ICGPT</strong>, the world’s first on-chain Large Language Models.
+    </div>
+  </div>
+  <div class="space-y-16">
+    <a href="https://devinci.onicai.com/" target='_blank' rel="noreferrer" class="block w-full">
+      <div class="card flex flex-col pt-16 pb-12 md:p-8 items-center rounded-[32px] shadow md:flex-row border-gray-700 bg-opacity-90" style="background: linear-gradient(48deg, rgba(203, 139, 208, 0.71) -32.7%, rgba(152, 98, 207, 0.85) 33.06%, rgba(42, 19, 95, 1) 129.51%);">
+        <img class="object-cover rounded-t-lg mx-8 h-48 mb-12 md:mb-0 md:h-auto md:w-48 md:rounded-none md:rounded-s-lg rotate-on-hover" src="./shape_7.svg" alt="">
+        <div class="flex flex-col justify-between p-4 leading-normal">
+          <h5 class="mb-2 text-3xl font-bold tracking-tight text-[#f7e5d1]">DeVinci</h5>
+          <p class="mb-3 text-4xl font-normal text-[#e7d7ea]">The end-to-end decentralized AI chat app.</p>
+          <p class="mb-3 text-xl font-normal text-gray-800">Enjoy full privacy and control with state-of-the-art open-source AI models running directly on your device through the browser. Being in control of your AI experiences has never been easier. Powered by ICP.</p>
+          <img src="./north_east_icon.svg" class="w-8 h-8 ml-auto rotate-on-hover" alt="Link Icon" />
+        </div>
+      </div>
+    </a>
+
+    <a href="https://icgpt.onicai.com/" target='_blank' rel="noreferrer" class="block w-full">
+      <div class="card flex flex-col pt-16 pb-12 md:p-8 items-center rounded-[32px] shadow md:flex-row border-gray-700 bg-opacity-90" style="background: linear-gradient(48deg, #4DEDD3 -32.7%, #31A782 33.06%, #3B00B9 129.51%)">
+        <img class="object-cover rounded-t-lg mx-8 h-48 mb-12 md:mb-0 md:h-auto md:w-48 md:rounded-none md:rounded-s-lg rotate-on-hover" src="./shape_9.svg" alt="">
+        <div class="flex flex-col justify-between p-4 leading-normal">
+          <h5 class="mb-2 text-3xl font-bold tracking-tight text-[#f7e5d1]">ICGPT</h5>
+          <p class="mb-3 text-4xl font-normal text-[#e7d7ea]">The first ever on-chain Large Language Models</p>
+          <p class="mb-3 text-xl font-normal text-gray-800">August 8, 2023 marks the global birthday of on-chain generative AI as we released our first Large Language Model on ICP.</p>
+          <img src="./north_east_icon.svg" class="w-8 h-8 ml-auto rotate-on-hover" alt="Link Icon" />
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<style>
+  .card:hover .rotate-on-hover {
+      transform: rotate(45deg);
+      transition: transform 0.3s ease;
+  }
+</style>
+
+
+
+<!-- <script lang="ts">
   import { onMount, afterUpdate } from 'svelte';
   import {
     chatModelGlobal,
@@ -251,4 +298,4 @@
 
 {#key showToast}
   <InstallToastNotification showToast={showToast} />
-{/key}
+{/key} -->
