@@ -65,12 +65,16 @@ module {
   
   public type UserInfo = UserInfoInput and {
     isPremiumAccount : Bool;
-    createdAt: Nat64;
+    createdAt : Nat64;
   };
 
   public type UserInfoResult = Result<UserInfo, ApiError>;
 
   public type UpdateUserInfoResult = Result<Bool, ApiError>;
+
+  public type PaymentInfoInput = {
+    block_index : Nat64;
+  };
   
   public type Dip721NonFungibleToken = {
     logo: LogoResult;

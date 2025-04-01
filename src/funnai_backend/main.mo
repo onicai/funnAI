@@ -329,6 +329,35 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     };
   };
 
+  public shared({ caller }) func make_caller_account_premium(paymentInfoObject : Types.PaymentInfoInput) : async Types.UpdateUserInfoResult {
+    // don't allow anonymous Principal
+    if (Principal.isAnonymous(caller)) {
+      return #Err(#Unauthorized);
+		};
+
+    // Only Principals registered as custodians can access this function
+    // TODO: replace this with a payment check (via block_index in paymentInfoObject)
+    if (List.some(custodians, func (custodian : Principal) : Bool { custodian == caller })) {
+      switch (getUserInfo(caller)) {
+        case (null) {
+          // No settings stored yet
+          return #Err(#InvalidId);
+        };
+        case (?userInfo) {
+          let updatedUserInfo : Types.UserInfo = {
+            emailAddress : ?Text = userInfo.emailAddress;
+            isPremiumAccount : Bool = true;
+            createdAt : Nat64 = userInfo.createdAt;
+          };
+
+          let infoUpdated = putUserInfo(caller, updatedUserInfo);
+          return #Ok(infoUpdated);
+        };
+      };
+    };
+    return #Err(#Unauthorized);
+  };
+
 // Chat Settings
 
   /**
