@@ -4,7 +4,7 @@ import { link } from 'svelte-spa-router';
 import { downloadedModels } from "../store";
 import { get } from 'svelte/store';
 import { location } from 'svelte-spa-router';
-import funnailogo from "/funnai.webp";
+import funnailogo from "/funnai_black.svg";
 import icLogoHex from "/ic_logo_hex.svg";
 
 onMount(() => {
