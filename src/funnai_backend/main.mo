@@ -324,56 +324,11 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     return #Ok(settingsUpdated);
   };
 
-// Knowledgebase
-  //let knowledgebaseCanisterId : Text = "bkyz2-fmaaa-aaaaa-qaaaq-cai"; // for local dev
-  let knowledgebaseCanisterId : Text = "44ti7-fiaaa-aaaak-qitia-cai"; // for development, TODO: dynamically chose correct address for stage/local dev 
-  type VecDoc = { content : Text; embeddings : Types.Embeddings };
-  type VecQuery = { #Embeddings : Types.Embeddings };
-  type PlainDoc = { content : Text };
-
-  /* public shared({ caller }) func add_to_user_knowledgebase(content: Text, embeddings: Types.Embeddings) : async Types.MemoryVectorsStoredResult {
-    // don't allow anonymous Principal
-    if (Principal.isAnonymous(caller)) {
-      return #Err(#Unauthorized);
-		};
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return #Err(#Unauthorized);
-    };
-    
-    let knowledgebaseCanister = actor(knowledgebaseCanisterId): actor { add: (VecDoc) -> async Text };
-    let result = await knowledgebaseCanister.add({content=content ; embeddings=embeddings});
-
-    return #Ok(true);
-  };
-
-  public shared ({caller}) func search_user_knowledgebase(embeddings: Types.Embeddings) : async Types.SearchKnowledgeBaseResult {
-    // don't allow anonymous Principal
-    if (Principal.isAnonymous(caller)) {
-      return #Err(#Unauthorized);
-		};
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return #Err(#Unauthorized);
-    };
-
-    //search(vec_query: VecQuery, k: usize) -> Option<Vec<PlainDoc>>
-    let knowledgebaseCanister = actor(knowledgebaseCanisterId): actor { search: (VecQuery, Nat64) -> async ?[PlainDoc] };
-    let result = await knowledgebaseCanister.search(#Embeddings(embeddings), 1);
-    switch (result) {
-      case (null) { return #Err(#Other("none found")); };
-      case (?resultDocs) {
-        if (resultDocs.size() > 0) {
-          return #Ok(resultDocs[0].content);
-        };
-        return #Err(#Other("none found"));
-      };
-    };   
-  };
-
 // User created canisters
   let canisterCreationCanister = actor (CANISTER_CREATION_CANISTER_ID) : actor {
       amiController() : async Types.AuthRecordResult;
       createCanister : (configurationInput : Types.CanisterCreationConfiguration) -> async Types.CanisterCreationResult;
-  }; */
+  };
 
   // Map each user Principal to a record with the info about the created canisters
   private var createdCanistersByUser = HashMap.HashMap<Principal, [Types.UserCanisterEntry]>(0, Principal.equal, Principal.hash);
