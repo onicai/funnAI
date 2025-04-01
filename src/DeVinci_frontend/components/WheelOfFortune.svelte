@@ -10,6 +10,8 @@
   let spinTimeTotal = 0;
   let audio: HTMLAudioElement;
   let lastTickPosition = 0;
+  let hasWon = false;
+  let email = '';
 
   const segments = [
     { fillStyle: '#ff223e', text: 'win' },
@@ -35,6 +37,14 @@
     audio.volume = 0.5;
     audio.preload = 'auto';
   });
+
+  function handleSubmit() {
+    // Here you would typically send the email to your backend
+    console.log('Submitting email:', email);
+    // Reset the form
+    email = '';
+    hasWon = false;
+  }
 
   function drawWheel() {
     const centerX = canvas.width / 2;
@@ -156,7 +166,6 @@
   function stopRotateWheel() {
     spinning = false;
     
-    // Determine winning segment - no need for 180 degree adjustment since indicator is back on right side
     const degrees = currentAngle * 180 / Math.PI % 360;
     const segmentIndex = Math.floor(segments.length - (degrees / (360 / segments.length)) % segments.length);
     const winner = segments[segmentIndex];
@@ -165,7 +174,7 @@
       if (winner.text === 'lose') {
         alert('Try again!');
       } else {
-        alert(`You have won!`); //${winner.text}!
+        hasWon = true;
       }
     }, 500);
   }
@@ -187,22 +196,64 @@
       </div>
     </div>
 
-    <!-- Text Column -->
+    <!-- Text/Form Column -->
     <div class="text-center md:text-left flex-1">
+      {#if hasWon}
+        <div class="animate-fade-in">
+          <h2 class="text-2xl font-bold text-white mb-4">You won the chance, please input your raffle email</h2>
+          <form on:submit|preventDefault={handleSubmit} class="w-full">
+            <input
+              type="email"
+              bind:value={email}
+              placeholder="Enter your email"
+              class="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              autofocus
+              required
+            />
+          </form>
+        </div>
+      {:else}
         <h2 class="text-2xl font-bold text-white mb-4">Unlock exclusive access to funnAI!</h2>
         <p class="text-gray-300">
-            Spin the wheel to unlock your shot at joining the exclusive funnAI early access raffle — a limited opportunity reserved for the lucky few who dare to take a chance!
+          Spin the wheel to unlock your shot at joining the exclusive funnAI early access raffle — a limited opportunity reserved for the lucky few who dare to take a chance!
         </p>
+      {/if}
     </div>
 
     <!-- Button Column -->
     <div class="flex items-center">
-      <button
-        class="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-md font-semibold"
-        on:click={spin}
-        disabled={spinning}>
-        I'm feeling lucky!
-      </button>
+      {#if hasWon}
+        <button
+          class="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-md font-semibold"
+          on:click={handleSubmit}
+          disabled={!email}>
+          Send your raffle email
+        </button>
+      {:else}
+        <button
+          class="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-md font-semibold"
+          on:click={spin}
+          disabled={spinning}>
+          I'm feeling lucky!
+        </button>
+      {/if}
     </div>
   </div>
-</div> 
+</div>
+
+<style>
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style> 
