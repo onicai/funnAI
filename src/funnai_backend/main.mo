@@ -26,8 +26,8 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
 // Project-specific functions
   stable var userChatsStorageStable : [(Principal, List.List<Text>)] = [];
   var userChatsStorage : HashMap.HashMap<Principal, List.List<Text>> = HashMap.HashMap(0, Principal.equal, Principal.hash);
-  stable var userSettingsStorageStable : [(Principal, Types.UserSettings)] = [];
-  var userSettingsStorage : HashMap.HashMap<Principal, Types.UserSettings> = HashMap.HashMap(0, Principal.equal, Principal.hash);
+  stable var userChatSettingsStorageStable : [(Principal, Types.UserChatSettings)] = [];
+  var userChatSettingsStorage : HashMap.HashMap<Principal, Types.UserChatSettings> = HashMap.HashMap(0, Principal.equal, Principal.hash);
   stable var chatsStorageStable : [(Text, Types.Chat)] = [];
   var chatsStorage : HashMap.HashMap<Text, Types.Chat> = HashMap.HashMap(0, Text.equal, Text.hash);
 
@@ -267,60 +267,64 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
 // User Settings
+// General Settings
+// TODO
+
+// Chat Settings
 
   /**
-   * A simple function to retrieve the user's settings, this provides no protection so should only be called if
+   * A simple function to retrieve the user's chat settings, this provides no protection so should only be called if
    * the caller has permissions to read the settings data
    *
    * @return The user's settings if they exist, otherwise an empty List
   */
-  private func getUserSettings(user : Principal) : ?Types.UserSettings {
-    switch (userSettingsStorage.get(user)) {
+  private func getUserChatSettings(user : Principal) : ?Types.UserChatSettings {
+    switch (userChatSettingsStorage.get(user)) {
       case (null) { return null; };
-      case (?userSettings) { return ?userSettings; };
+      case (?userChatSettings) { return ?userChatSettings; };
     };
   };
 
   /**
-   * Simple function to store user settings in the database. There are no protections so this function should only
+   * Simple function to store user chat settings in the database. There are no protections so this function should only
    * be called if the caller has permissions to store the user settings to the database
    *
    * @return Confirmation that the user settings were stored successfully
   */
-  private func putUserSettings(user : Principal, userSettings : Types.UserSettings) : Bool {
-    userSettingsStorage.put(user, userSettings);
+  private func putUserChatSettings(user : Principal, userChatSettings : Types.UserChatSettings) : Bool {
+    userChatSettingsStorage.put(user, userChatSettings);
     return true;
   };
 
-  public shared query ({caller}) func get_caller_settings() : async Types.UserSettingsResult {
+  public shared query ({caller}) func get_caller_chat_settings() : async Types.UserChatSettingsResult {
     // don't allow anonymous Principal
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
 
-    switch (getUserSettings(caller)) {
+    switch (getUserChatSettings(caller)) {
       case (null) {
         // No settings stored yet, return default
-        let userSettings : Types.UserSettings = {
+        let userChatSettings : Types.UserChatSettings = {
           temperature = 0.6;
           responseLength = "Long";
           saveChats = true;
           selectedAiModelId = "";
           systemPrompt = "You are a helpful, respectful and honest assistant.";
         };
-        return #Ok(userSettings);
+        return #Ok(userChatSettings);
       };
-      case (?userSettings) { return #Ok(userSettings); };
+      case (?userChatSettings) { return #Ok(userChatSettings); };
     };   
   };
 
-  public shared({ caller }) func update_caller_settings(updatedSettingsObject : Types.UserSettings) : async Types.UpdateUserSettingsResult {
+  public shared({ caller }) func update_caller_chat_settings(updatedSettingsObject : Types.UserChatSettings) : async Types.UpdateUserChatSettingsResult {
     // don't allow anonymous Principal
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
 
-    let settingsUpdated = putUserSettings(caller, updatedSettingsObject);
+    let settingsUpdated = putUserChatSettings(caller, updatedSettingsObject);
     return #Ok(settingsUpdated);
   };
 
@@ -393,7 +397,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
 // Upgrade Hooks
   system func preupgrade() {
     userChatsStorageStable := Iter.toArray(userChatsStorage.entries());
-    userSettingsStorageStable := Iter.toArray(userSettingsStorage.entries());
+    userChatSettingsStorageStable := Iter.toArray(userChatSettingsStorage.entries());
     chatsStorageStable := Iter.toArray(chatsStorage.entries());
     emailSubscribersStorageStable := Iter.toArray(emailSubscribersStorage.entries());
   };
@@ -401,8 +405,8 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   system func postupgrade() {
     userChatsStorage := HashMap.fromIter(Iter.fromArray(userChatsStorageStable), userChatsStorageStable.size(), Principal.equal, Principal.hash);
     userChatsStorageStable := [];
-    userSettingsStorage := HashMap.fromIter(Iter.fromArray(userSettingsStorageStable), userSettingsStorageStable.size(), Principal.equal, Principal.hash);
-    userSettingsStorageStable := [];    
+    userChatSettingsStorage := HashMap.fromIter(Iter.fromArray(userChatSettingsStorageStable), userChatSettingsStorageStable.size(), Principal.equal, Principal.hash);
+    userChatSettingsStorageStable := [];    
     chatsStorage := HashMap.fromIter(Iter.fromArray(chatsStorageStable), chatsStorageStable.size(), Text.equal, Text.hash);
     chatsStorageStable := [];
     emailSubscribersStorage := HashMap.fromIter(Iter.fromArray(emailSubscribersStorageStable), emailSubscribersStorageStable.size(), Text.equal, Text.hash);

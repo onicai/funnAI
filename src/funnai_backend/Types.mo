@@ -47,17 +47,17 @@ module {
 
   public type ChatsPreviewResult = Result<[ChatPreview], ApiError>;
 
-  public type UserSettings = {
+  public type UserChatSettings = {
     selectedAiModelId : Text;
     temperature : Float;
     responseLength : Text;
-    saveChats : Bool;    
+    saveChats : Bool;   
     systemPrompt : Text;
   };
 
-  public type UserSettingsResult = Result<UserSettings, ApiError>;
+  public type UserChatSettingsResult = Result<UserChatSettings, ApiError>;
 
-  public type UpdateUserSettingsResult = Result<Bool, ApiError>;
+  public type UpdateUserChatSettingsResult = Result<Bool, ApiError>;
   
   public type Dip721NonFungibleToken = {
     logo: LogoResult;
