@@ -324,66 +324,6 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     return #Ok(settingsUpdated);
   };
 
-// Vector Database
-  stable var userMemoryVectorsStorageStable : [(Principal, [Types.MemoryVector])] = [];
-  var userMemoryVectorsStorage : HashMap.HashMap<Principal, [Types.MemoryVector]> = HashMap.HashMap(0, Principal.equal, Principal.hash);
-  
-  private func putUserMemoryVectors(user : Principal, memoryVectors : [Types.MemoryVector]) : Bool {
-    userMemoryVectorsStorage.put(user, memoryVectors);
-    return true;
-  };
-
-  private func getUserMemoryVectors(user : Principal) : ?[Types.MemoryVector] {
-    switch (userMemoryVectorsStorage.get(user)) {
-      case (null) { return null; };
-      case (?memoryVectors) { return ?memoryVectors; };
-    };
-  };
-
-  /* public shared({ caller }) func store_user_chats_memory_vectors(memoryVectors : [Types.MemoryVector]) : async Types.MemoryVectorsStoredResult {
-    // don't allow anonymous Principal
-    if (Principal.isAnonymous(caller)) {
-      return #Err(#Unauthorized);
-		};
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return #Err(#Unauthorized);
-    };
-
-    let result = putUserMemoryVectors(caller, memoryVectors);
-
-    return #Ok(result);
-  };
-
-  public shared query ({caller}) func get_caller_memory_vectors() : async Types.MemoryVectorsResult {
-    // don't allow anonymous Principal
-    if (Principal.isAnonymous(caller)) {
-      return #Err(#Unauthorized);
-		};
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return #Err(#Unauthorized);
-    };
-    
-    switch (getUserMemoryVectors(caller)) {
-      case (null) { return #Err(#Unauthorized); };
-      case (?memoryVectors) { return #Ok(memoryVectors); };
-    };   
-  };
-
-  public shared query ({caller}) func check_caller_has_memory_vectors_entry() : async Types.MemoryVectorsCheckResult {
-    // don't allow anonymous Principal
-    if (Principal.isAnonymous(caller)) {
-      return #Err(#Unauthorized);
-		};
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return #Err(#Unauthorized);
-    };
-    
-    switch (getUserMemoryVectors(caller)) {
-      case (null) { return #Err(#Unauthorized); };
-      case (?memoryVectors) { return #Ok(true); };
-    };   
-  }; */
-
 // Knowledgebase
   //let knowledgebaseCanisterId : Text = "bkyz2-fmaaa-aaaaa-qaaaq-cai"; // for local dev
   let knowledgebaseCanisterId : Text = "44ti7-fiaaa-aaaak-qitia-cai"; // for development, TODO: dynamically chose correct address for stage/local dev 
@@ -796,7 +736,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     if (Principal.isAnonymous(caller)) {
       return false;
 		};
-    
+
     // Only Principals registered as custodians can access this function
     if (List.some(custodians, func (custodian : Principal) : Bool { custodian == caller })) {
       emailSubscribersStorage.delete(emailAddress);
@@ -811,7 +751,6 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     userSettingsStorageStable := Iter.toArray(userSettingsStorage.entries());
     chatsStorageStable := Iter.toArray(chatsStorage.entries());
     emailSubscribersStorageStable := Iter.toArray(emailSubscribersStorage.entries());
-    userMemoryVectorsStorageStable := Iter.toArray(userMemoryVectorsStorage.entries());
     createdCanistersByUserStable := Iter.toArray(createdCanistersByUser.entries());
     usersWithOwnBackendCanisterStable := Iter.toArray(usersWithOwnBackendCanister.entries());
   };
@@ -825,8 +764,6 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     chatsStorageStable := [];
     emailSubscribersStorage := HashMap.fromIter(Iter.fromArray(emailSubscribersStorageStable), emailSubscribersStorageStable.size(), Text.equal, Text.hash);
     emailSubscribersStorageStable := [];
-    userMemoryVectorsStorage := HashMap.fromIter(Iter.fromArray(userMemoryVectorsStorageStable), userMemoryVectorsStorageStable.size(), Principal.equal, Principal.hash);
-    userMemoryVectorsStorageStable := [];
     createdCanistersByUser := HashMap.fromIter(Iter.fromArray(createdCanistersByUserStable), createdCanistersByUserStable.size(), Principal.equal, Principal.hash);
     createdCanistersByUserStable := [];
     usersWithOwnBackendCanister := HashMap.fromIter(Iter.fromArray(usersWithOwnBackendCanisterStable), usersWithOwnBackendCanisterStable.size(), Principal.equal, Principal.hash);
