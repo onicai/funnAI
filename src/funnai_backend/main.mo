@@ -31,6 +31,9 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   stable var chatsStorageStable : [(Text, Types.Chat)] = [];
   var chatsStorage : HashMap.HashMap<Text, Types.Chat> = HashMap.HashMap(0, Text.equal, Text.hash);
 
+  stable var userInfoStorageStable : [(Principal, Types.UserInfo)] = [];
+  var userInfoStorage : HashMap.HashMap<Principal, Types.UserInfo> = HashMap.HashMap(0, Principal.equal, Principal.hash);
+
   /**
    * Simple function to store a chat in the database. There are no protections so this function should only
    * be called if the caller has permissions to store the chat to the database
@@ -171,7 +174,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     let chat = getChat(chatId);
     switch (chat) {
       case (null) {
-        return #Err(#InvalidTokenId);
+        return #Err(#InvalidId);
       };
       case (?chat) {
         if (caller != chat.owner) {
@@ -190,7 +193,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
 
     switch (getChat(updateChatObject.id)) {
       case (null) {
-        return #Err(#InvalidTokenId);
+        return #Err(#InvalidId);
       };
       case (?chat) {
         // only owner may update
@@ -221,7 +224,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
 
     switch (getChat(chatId)) {
       case (null) {
-        return #Err(#InvalidTokenId);
+        return #Err(#InvalidId);
       };
       case (?chat) {
         // only owner may update
@@ -253,7 +256,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     let chat = getChat(chatId);
     switch (chat) {
       case (null) {
-        return #Err(#InvalidTokenId);
+        return #Err(#InvalidId);
       };
       case (?chat) {
         if (caller != chat.owner) {
@@ -266,9 +269,65 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     };
   };
 
-// User Settings
-// General Settings
-// TODO
+// User Info and Settings
+// User Info
+  private func getUserInfo(user : Principal) : ?Types.UserInfo {
+    switch (userInfoStorage.get(user)) {
+      case (null) { return null; };
+      case (?userInfo) { return ?userInfo; };
+    };
+  };
+
+  private func putUserInfo(user : Principal, userInfo : Types.UserInfo) : Bool {
+    userInfoStorage.put(user, userInfo);
+    return true;
+  };
+
+  public shared query ({caller}) func get_caller_user_info() : async Types.UserInfoResult {
+    // don't allow anonymous Principal
+    if (Principal.isAnonymous(caller)) {
+      return #Err(#Unauthorized);
+		};
+
+    switch (getUserInfo(caller)) {
+      case (null) {
+        // No settings stored yet
+        return #Err(#InvalidId);
+      };
+      case (?userInfo) { return #Ok(userInfo); };
+    };   
+  };
+
+  public shared({ caller }) func update_caller_user_info(updatedInfoObject : Types.UserInfoInput) : async Types.UpdateUserInfoResult {
+    // don't allow anonymous Principal
+    if (Principal.isAnonymous(caller)) {
+      return #Err(#Unauthorized);
+		};
+
+    switch (getUserInfo(caller)) {
+      case (null) {
+        // No settings stored yet, create new entry  
+        let newUserInfo : Types.UserInfo = {
+          emailAddress : ?Text = updatedInfoObject.emailAddress;
+          isPremiumAccount : Bool = false;
+          createdAt : Nat64 = Nat64.fromNat(Int.abs(Time.now()));
+        };
+
+        let infoCreated = putUserInfo(caller, newUserInfo);
+        return #Ok(infoCreated);
+      };
+      case (?userInfo) {
+        let updatedUserInfo : Types.UserInfo = {
+          emailAddress : ?Text = updatedInfoObject.emailAddress;
+          isPremiumAccount : Bool = userInfo.isPremiumAccount;
+          createdAt : Nat64 = userInfo.createdAt;
+        };
+
+        let infoUpdated = putUserInfo(caller, updatedUserInfo);
+        return #Ok(infoUpdated);
+      };
+    };
+  };
 
 // Chat Settings
 
@@ -400,6 +459,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     userChatSettingsStorageStable := Iter.toArray(userChatSettingsStorage.entries());
     chatsStorageStable := Iter.toArray(chatsStorage.entries());
     emailSubscribersStorageStable := Iter.toArray(emailSubscribersStorage.entries());
+    userInfoStorageStable := Iter.toArray(userInfoStorage.entries());
   };
 
   system func postupgrade() {
@@ -411,5 +471,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     chatsStorageStable := [];
     emailSubscribersStorage := HashMap.fromIter(Iter.fromArray(emailSubscribersStorageStable), emailSubscribersStorageStable.size(), Text.equal, Text.hash);
     emailSubscribersStorageStable := [];
+    userInfoStorage := HashMap.fromIter(Iter.fromArray(userInfoStorageStable), userInfoStorageStable.size(), Principal.equal, Principal.hash);
+    userInfoStorageStable := [];
   };
 };

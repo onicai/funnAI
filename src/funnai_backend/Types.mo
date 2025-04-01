@@ -58,6 +58,19 @@ module {
   public type UserChatSettingsResult = Result<UserChatSettings, ApiError>;
 
   public type UpdateUserChatSettingsResult = Result<Bool, ApiError>;
+
+  public type UserInfoInput = {
+    emailAddress: ?Text;
+  };
+  
+  public type UserInfo = UserInfoInput and {
+    isPremiumAccount : Bool;
+    createdAt: Nat64;
+  };
+
+  public type UserInfoResult = Result<UserInfo, ApiError>;
+
+  public type UpdateUserInfoResult = Result<Bool, ApiError>;
   
   public type Dip721NonFungibleToken = {
     logo: LogoResult;
@@ -68,7 +81,7 @@ module {
 
   public type ApiError = {
     #Unauthorized;
-    #InvalidTokenId;
+    #InvalidId;
     #ZeroAddress;
     #Other: Text;
   };
