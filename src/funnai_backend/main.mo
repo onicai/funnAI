@@ -15,31 +15,6 @@ import Types "./Types";
 shared actor class FunnAIBackend(custodian: Principal) = Self {
   stable var custodians = List.make<Principal>(custodian);
 
-  stable var canisterIsPrivate : Bool = false; // variable to indicate whether this is the shared backend (false) or a user's own backend (true)
-
-  /* public shared({ caller }) func updateCanisterIsPrivate(newIsPrivateValue : Bool) : async Bool {
-    // don't allow anonymous Principal
-    if (Principal.isAnonymous(caller)) {
-      return false;
-		};
-    if (not Principal.isController(caller)) {
-      return false;
-    };
-    canisterIsPrivate := newIsPrivateValue;
-    return true;
-  }; */
-
-  //stable var CANISTER_CREATION_CANISTER_ID : Text = "bkyz2-fmaaa-aaaaa-qaaaq-cai"; // local dev: "bkyz2-fmaaa-aaaaa-qaaaq-cai";
-
-  /* public shared (msg) func setCanisterCreationCanisterId(_canister_creation_canister_id : Text) : async Types.AuthRecordResult {
-    if (not Principal.isController(msg.caller)) {
-      return #Err(#Unauthorized);
-    };
-    CANISTER_CREATION_CANISTER_ID := _canister_creation_canister_id;
-    let authRecord = { auth = "You set the creation canister for this canister." };
-    return #Ok(authRecord);
-  }; */
-
 // TODO: instead add functions to manage cycles balance and gather stats
   public func greet(name : Text) : async Text {
     return "Hello, " # name # "!";
@@ -135,9 +110,6 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return #Err(#Unauthorized);
-    };
 
     let newId : Text = await Utils.newRandomUniqueId();
 
@@ -166,9 +138,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return #Err(#Unauthorized);
-    };
+
     let chats = getUserChats(caller);
     return #Ok(List.toArray(chats)); 
   };
@@ -178,9 +148,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return #Err(#Unauthorized);
-    };
+
     let chats = getUserChats(caller);
     var chatsPreview : List.List<Types.ChatPreview> = List.nil<Types.ChatPreview>();
     chatsPreview := List.map<Types.Chat, Types.ChatPreview>(chats, func (chat : Types.Chat) : Types.ChatPreview {
@@ -199,9 +167,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return #Err(#Unauthorized);
-    };
+
     let chat = getChat(chatId);
     switch (chat) {
       case (null) {
@@ -221,9 +187,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return #Err(#Unauthorized);
-    };
+
     switch (getChat(updateChatObject.id)) {
       case (null) {
         return #Err(#InvalidTokenId);
@@ -254,9 +218,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return #Err(#Unauthorized);
-    };
+
     switch (getChat(chatId)) {
       case (null) {
         return #Err(#InvalidTokenId);
@@ -287,9 +249,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return #Err(#Unauthorized);
-    };
+
     let chat = getChat(chatId);
     switch (chat) {
       case (null) {
@@ -337,9 +297,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return #Err(#Unauthorized);
-    };
+
     switch (getUserSettings(caller)) {
       case (null) {
         // No settings stored yet, return default
@@ -361,9 +319,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return #Err(#Unauthorized);
-    };
+
     let settingsUpdated = putUserSettings(caller, updatedSettingsObject);
     return #Ok(settingsUpdated);
   };
@@ -802,9 +758,6 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   // User can submit a form to sign up for email updates
     // For now, we only capture the email address provided by the user and on which page they submitted the form
   public shared ({caller}) func submit_signup_form(submittedSignUpForm : Types.SignUpFormInput) : async Text {
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return "not supported";
-    };
     switch(getEmailSubscriber(submittedSignUpForm.emailAddress)) {
       case null {
         // New subscriber
@@ -829,9 +782,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     if (Principal.isAnonymous(caller)) {
       return [];
 		};
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return [];
-    };
+
     // Only Principals registered as custodians can access this function
     if (List.some(custodians, func (custodian : Principal) : Bool { custodian == caller })) {
       return Iter.toArray(emailSubscribersStorage.entries());
@@ -845,9 +796,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     if (Principal.isAnonymous(caller)) {
       return false;
 		};
-    if (canisterIsPrivate and not Principal.isController(caller)) {
-      return false;
-    };
+    
     // Only Principals registered as custodians can access this function
     if (List.some(custodians, func (custodian : Principal) : Bool { custodian == caller })) {
       emailSubscribersStorage.delete(emailAddress);
