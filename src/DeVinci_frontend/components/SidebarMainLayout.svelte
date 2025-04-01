@@ -5,6 +5,7 @@ import { downloadedModels } from "../store";
 import { get } from 'svelte/store';
 import { location } from 'svelte-spa-router';
 import funnailogo from "/funnai.webp";
+import icLogoHex from "/ic_logo_hex.svg";
 
 onMount(() => {
   const sidebarToggle = document.getElementById('mainSidebarToggle');
@@ -76,4 +77,8 @@ function isActive(path) {
         Chat
       </button>
     </a>
+    
+    <div class="mt-auto mb-2">
+      <img src={icLogoHex} alt="IC Logo" class="w-20 h-auto">
+    </div>
 </div>
