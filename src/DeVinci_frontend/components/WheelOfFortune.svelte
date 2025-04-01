@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Toast from './Toast.svelte';
+  import { submitEmailSignUpForm } from "../helpers/utils.js";
+  import { location } from 'svelte-spa-router';
 
   let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D;
@@ -16,6 +18,7 @@
   let showToast = false;
   let toastMessage = '';
   let toastType: 'success' | 'error' = 'success';
+  let isSubmitting = false;
 
   const segments = [
     { fillStyle: '#ff223e', text: 'win' },
@@ -52,13 +55,29 @@
     showToast = false;
   }
 
-  function handleSubmit() {
-    // Here you would typically send the email to your backend
-    console.log('Submitting email:', email);
-    showToastMessage('Your email has been submitted successfully!', 'success');
-    // Reset the form
-    email = '';
-    hasWon = false;
+  function validateEmail(email: string) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  }
+
+  async function handleSubmit() {
+    if (!validateEmail(email)) {
+      showToastMessage('Please enter a valid email address', 'error');
+      return;
+    }
+
+    isSubmitting = true;
+    try {
+      const result = await submitEmailSignUpForm(email, $location);
+      showToastMessage(result || 'Your email has been submitted successfully!', 'success');
+      // Reset the form
+      email = '';
+      hasWon = false;
+    } catch (error) {
+      showToastMessage('Failed to submit email. Please try again.', 'error');
+    } finally {
+      isSubmitting = false;
+    }
   }
 
   function drawWheel() {
@@ -243,8 +262,8 @@
           style="margin-top:44px;"
           class="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-md font-semibold"
           on:click={handleSubmit}
-          disabled={!email}>
-          Send your raffle email
+          disabled={!email || isSubmitting}>
+          {isSubmitting ? 'Sending...' : 'Send your raffle email'}
         </button>
       {:else}
         <button
