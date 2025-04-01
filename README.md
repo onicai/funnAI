@@ -22,6 +22,9 @@ sudo sysctl -w vm.max_map_count=2097152
 #     -> One mAIner  of type #Own, with 1 LLM
 #     -> One mAIner  of type #ShareService, with 1 LLM
 #     -> Two mAIners of type #ShareAgent
+# (-) The timers of the mAIners are started immediately
+# (-) The timers of the Challenger & Judge are not started.
+#     -> Do this manually in the next step
 scripts/deploy-all.sh --mode install [--network ic]
 
 # Notes: 
@@ -63,7 +66,7 @@ dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
 
 See instructions in PoAIW/README.md, the sections:
 
-- Full system test with timers
+- Full system test with timers (Note that mAIner timers are already active...)
 - Test components individually
 
 ---
