@@ -57,6 +57,26 @@ export const device = result.device.model || 'Unknown Device';
 export let deviceType = result.device.type; // Will return 'mobile' for mobile devices, 'tablet' for tablets, and undefined for desktops
 let osName = result.os.name; // Get the operating system name
 
+// Theme state management
+export const theme = writable(localStorage.getItem("theme") || "dark");
+theme.subscribe(value => {
+  localStorage.setItem("theme", value);
+  
+  // Update document class for Tailwind dark mode
+  if (typeof document !== 'undefined') {
+    if (value === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }
+});
+
+// Toggle theme function for convenience
+export const toggleTheme = () => {
+  theme.update(currentTheme => currentTheme === 'light' ? 'dark' : 'light');
+};
+
 export const currentModelName = writable<string>("No model selected");
 
 if (!deviceType) {
