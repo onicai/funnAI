@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import Toast from './Toast.svelte';
 
   let canvas: HTMLCanvasElement;
   let ctx: CanvasRenderingContext2D;
@@ -12,6 +13,9 @@
   let lastTickPosition = 0;
   let hasWon = false;
   let email = '';
+  let showToast = false;
+  let toastMessage = '';
+  let toastType: 'success' | 'error' = 'success';
 
   const segments = [
     { fillStyle: '#ff223e', text: 'win' },
@@ -38,9 +42,20 @@
     audio.preload = 'auto';
   });
 
+  function showToastMessage(message: string, type: 'success' | 'error' = 'success') {
+    toastMessage = message;
+    toastType = type;
+    showToast = true;
+  }
+
+  function handleToastClose() {
+    showToast = false;
+  }
+
   function handleSubmit() {
     // Here you would typically send the email to your backend
     console.log('Submitting email:', email);
+    showToastMessage('Your email has been submitted successfully!', 'success');
     // Reset the form
     email = '';
     hasWon = false;
@@ -172,9 +187,10 @@
     
     setTimeout(() => {
       if (winner.text === 'lose') {
-        alert('Try again!');
+        showToastMessage('Try again!', 'error');
       } else {
         hasWon = true;
+        showToastMessage('Congratulations! You won the chance to enter the raffle!', 'success');
       }
     }, 500);
   }
@@ -206,7 +222,7 @@
               type="email"
               bind:value={email}
               placeholder="Enter your email"
-              class="w-full px-4 py-2 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               autofocus
               required
             />
@@ -224,6 +240,7 @@
     <div class="flex items-center">
       {#if hasWon}
         <button
+          style="margin-top:44px;"
           class="px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-md font-semibold"
           on:click={handleSubmit}
           disabled={!email}>
@@ -240,6 +257,14 @@
     </div>
   </div>
 </div>
+
+{#if showToast}
+  <Toast
+    message={toastMessage}
+    type={toastType}
+    onClose={handleToastClose}
+  />
+{/if}
 
 <style>
   .animate-fade-in {
