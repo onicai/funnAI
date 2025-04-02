@@ -21,17 +21,17 @@
   let isSubmitting = false;
 
   const segments = [
-    { fillStyle: '#7e22ce', text: 'win', textFillStyle: '#ffffff' },  // Purple (primary app color)
+    { fillStyle: '#22c55e', text: 'win', textFillStyle: '#ffffff' },  // Green (success/winning)
     { fillStyle: '#475569', text: 'lose', textFillStyle: '#ffffff' }, // Slate (dark gray)
-    { fillStyle: '#8b5cf6', text: 'win', textFillStyle: '#ffffff' },  // Violet (lighter purple)
+    { fillStyle: '#0ea5e9', text: 'win', textFillStyle: '#ffffff' },  // Sky blue (excitement)
     { fillStyle: '#64748b', text: 'lose', textFillStyle: '#ffffff' }, // Slate (medium gray)
-    { fillStyle: '#a855f7', text: 'win', textFillStyle: '#ffffff' },  // Purple (medium)
+    { fillStyle: '#f59e0b', text: 'win', textFillStyle: '#ffffff' },  // Amber (attention-grabbing)
     { fillStyle: '#334155', text: 'lose', textFillStyle: '#ffffff' }, // Slate (darker gray)
-    { fillStyle: '#6366f1', text: 'win', textFillStyle: '#ffffff' },  // Indigo (purple-blue)
+    { fillStyle: '#14b8a6', text: 'win', textFillStyle: '#ffffff' },  // Teal (fresh, engaging)
     { fillStyle: '#475569', text: 'lose', textFillStyle: '#ffffff' }, // Slate (dark gray)
-    { fillStyle: '#9333ea', text: 'win', textFillStyle: '#ffffff' },  // Purple (vibrant)
+    { fillStyle: '#f97316', text: 'win', textFillStyle: '#ffffff' },  // Orange (energy & excitement)
     { fillStyle: '#1e293b', text: 'lose', textFillStyle: '#ffffff' }, // Slate (very dark)
-    { fillStyle: '#7c3aed', text: 'win', textFillStyle: '#ffffff' },  // Violet (vibrant)
+    { fillStyle: '#06b6d4', text: 'win', textFillStyle: '#ffffff' },  // Cyan (bright, eye-catching)
     { fillStyle: '#64748b', text: 'lose', textFillStyle: '#ffffff' }, // Slate (medium gray)
   ];
 
