@@ -21,18 +21,18 @@
   let isSubmitting = false;
 
   const segments = [
-    { fillStyle: '#ff223e', text: 'win' },
-    { fillStyle: '#fcac2e', text: 'lose' },
-    { fillStyle: '#29ccfd', text: 'win' },
-    { fillStyle: '#448f13', text: 'lose' },
-    { fillStyle: '#ff223e', text: 'win' },
-    { fillStyle: '#fcac2e', text: 'lose', textFillStyle: '#ffffff' },
-    { fillStyle: '#448f13', text: 'win' },
-    { fillStyle: '#68c317', text: 'lose' },
-    { fillStyle: '#fcac2e', text: 'win' },
-    { fillStyle: '#e44902', text: 'lose' },
-    { fillStyle: '#ff223e', text: 'win' },
-    { fillStyle: '#448f13', text: 'lose' },
+    { fillStyle: '#7e22ce', text: 'win', textFillStyle: '#ffffff' },  // Purple (primary app color)
+    { fillStyle: '#475569', text: 'lose', textFillStyle: '#ffffff' }, // Slate (dark gray)
+    { fillStyle: '#8b5cf6', text: 'win', textFillStyle: '#ffffff' },  // Violet (lighter purple)
+    { fillStyle: '#64748b', text: 'lose', textFillStyle: '#ffffff' }, // Slate (medium gray)
+    { fillStyle: '#a855f7', text: 'win', textFillStyle: '#ffffff' },  // Purple (medium)
+    { fillStyle: '#334155', text: 'lose', textFillStyle: '#ffffff' }, // Slate (darker gray)
+    { fillStyle: '#6366f1', text: 'win', textFillStyle: '#ffffff' },  // Indigo (purple-blue)
+    { fillStyle: '#475569', text: 'lose', textFillStyle: '#ffffff' }, // Slate (dark gray)
+    { fillStyle: '#9333ea', text: 'win', textFillStyle: '#ffffff' },  // Purple (vibrant)
+    { fillStyle: '#1e293b', text: 'lose', textFillStyle: '#ffffff' }, // Slate (very dark)
+    { fillStyle: '#7c3aed', text: 'win', textFillStyle: '#ffffff' },  // Violet (vibrant)
+    { fillStyle: '#64748b', text: 'lose', textFillStyle: '#ffffff' }, // Slate (medium gray)
   ];
 
   onMount(() => {
@@ -104,7 +104,7 @@
       ctx.fillStyle = segments[i].fillStyle;
       ctx.fill();
       
-      ctx.strokeStyle = '#fff';
+      ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 2;
       ctx.stroke();
       
@@ -115,7 +115,7 @@
       
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = segments[i].textFillStyle || '#fff';
+      ctx.fillStyle = segments[i].textFillStyle || '#ffffff';
       ctx.font = 'bold 14px Arial';
       
       ctx.fillText(segments[i].text, textRadius, 0);
@@ -125,13 +125,13 @@
     // Draw center circle
     ctx.beginPath();
     ctx.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI);
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = '#ffffff';
     ctx.fill();
     
     // Draw outer circle
     ctx.beginPath();
     ctx.arc(centerX, centerY, outerRadius, 0, 2 * Math.PI);
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 3;
     ctx.stroke();
     
@@ -143,9 +143,9 @@
     ctx.lineTo(centerX + outerRadius + 10, centerY - 10);
     ctx.lineTo(centerX + outerRadius + 10, centerY + 10);
     ctx.closePath();
-    ctx.fillStyle = 'gold';
+    ctx.fillStyle = '#a855f7';
     ctx.fill();
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
     ctx.stroke();
   }
@@ -227,7 +227,7 @@
     <div class="relative">
       <canvas bind:this={canvas} width="217" height="217"></canvas>
       <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-        <img src="/coin.webp" alt="Wheel of Fortune" class="w-16 h-16">
+        <img src="/coin.webp" alt="Wheel of Fortune" class="w-20 h-20">
       </div>
     </div>
 
