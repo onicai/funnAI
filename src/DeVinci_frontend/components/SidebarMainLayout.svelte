@@ -129,9 +129,9 @@ function handleThemeToggle() {
     
     <div class="mt-auto mb-2">
       {#if $theme === 'dark'}
-        <img src={icLogoHexWhite} alt="IC Logo" class="w-20 h-auto">
+        <img src={icLogoHexWhite} alt="IC Logo" class="w-24 h-auto">
       {:else}
-        <img src={icLogoHex} alt="IC Logo" class="w-20 h-auto">
+        <img src={icLogoHex} alt="IC Logo" class="w-24 h-auto">
       {/if}
     </div>
 </div>
