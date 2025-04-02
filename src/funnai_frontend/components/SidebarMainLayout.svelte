@@ -4,10 +4,10 @@ import { link } from 'svelte-spa-router';
 import { downloadedModels, theme, toggleTheme } from "../store";
 import { get } from 'svelte/store';
 import { location } from 'svelte-spa-router';
-import funnailogo from "/funnai_black.svg";
-import icLogoHex from "/ic_logo_hex.svg";
-import funnailogoWhite from "/funnai_white.svg";
-import icLogoHexWhite from "/ic_logo_hex_white.svg";
+import funnailogo from "../assets/funnai_black.svg";
+import icLogoHex from "../assets/ic_logo_hex.svg";
+import funnailogoWhite from "../assets/funnai_white.svg";
+import icLogoHexWhite from "../assets/ic_logo_hex_white.svg";
 
 // Get the current theme from the store
 let currentTheme;

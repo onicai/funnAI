@@ -13,12 +13,24 @@
   onMount(() => {
     // Set dark mode as default if no preference is stored
     const savedTheme = localStorage.getItem("theme") || "dark";
-    if (savedTheme === "dark") {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    theme.set(savedTheme);
+    applyTheme(savedTheme);
   });
+  
+  // React to theme changes
+  theme.subscribe(newTheme => {
+    applyTheme(newTheme);
+  });
+  
+  function applyTheme(currentTheme) {
+    if (typeof document !== 'undefined') {
+      if (currentTheme === "dark") {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  }
 
   const routes: Record<string, typeof SvelteComponent> = {
     "/": Dashboard,

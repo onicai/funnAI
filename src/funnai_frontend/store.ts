@@ -171,6 +171,28 @@ const defaultState: State = {
   userMainerAgentCanistersInfo: [],
 };
 
+// Add theme support
+export const theme = writable(localStorage.getItem('theme') || 'dark');
+
+// Toggle theme function
+export const toggleTheme = () => {
+  theme.update(currentTheme => {
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    localStorage.setItem('theme', newTheme);
+    
+    // Apply theme to document
+    if (typeof document !== 'undefined') {
+      if (newTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+    
+    return newTheme;
+  });
+};
+
 export const createStore = ({
   whitelist,
   host,
