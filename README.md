@@ -41,7 +41,10 @@ dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" DeVinci_
 dfx deploy DeVinci_frontend [--ic]
 ```
 
-Use the local UI: http://cbopz-duaaa-aaaaa-qaaka-cai.localhost:4943/ 
+Use the local UI: http://cbopz-duaaa-aaaaa-qaaka-cai.localhost:4943/:
+- The feed will allways show the Protocol updates, namely Challenges & Winners
+- The feed will show mAIner related items (Submissions & Scores) for the logged in user (!)
+  - You can login using NFID with your Google account.
 
 # The GameState Thresholds
 
