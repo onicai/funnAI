@@ -248,7 +248,7 @@
           </form>
         </div>
       {:else}
-        <h2 class="text-2xl font-bold text-white mb-4">Unlock exclusive access to funnAI!</h2>
+        <h2 class="text-3xl font-bold text-white mb-4">Unlock exclusive access to funnAI!</h2>
         <p class="text-gray-300">
           Spin the wheel to unlock your shot at joining the exclusive funnAI early access raffle — a limited opportunity reserved for the lucky few who dare to take a chance!
         </p>

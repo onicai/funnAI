@@ -46,8 +46,8 @@
       <SidebarMainLayout />
     </div>
   </aside>
-  <main class="main flex flex-col flex-grow ml-0 md:ml-72 transition-all duration-150 ease-in dark:bg-gray-900 dark:text-gray-200">
-    <header class="header bg-white dark:bg-gray-800 shadow py-2 px-4">
+  <main class="main flex flex-col flex-grow ml-0 md:ml-72 transition-all duration-150 ease-in dark:bg-gray-900 dark:text-gray-200 min-h-screen w-full">
+    <header class="header bg-white dark:bg-gray-800 shadow py-2 px-4 h-[60px]">
       <div class="header-content flex items-center flex-row">
         <button id="mainSidebarToggle" data-drawer-target="mainSidebar" data-drawer-toggle="mainSidebar" aria-controls="mainSidebar" type="button" class="inline-flex items-center p-2 mt-2 ms-3 text-sm text-gray-500 dark:text-gray-400 rounded-lg md:hidden hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600">
           <span class="sr-only">Open sidebar</span>
@@ -60,6 +60,8 @@
         </div>
       </div>
     </header>
-    <Router {routes} />
+    <div class="flex-grow flex flex-col">
+      <Router {routes} />
+    </div>
   </main>
 </div> 

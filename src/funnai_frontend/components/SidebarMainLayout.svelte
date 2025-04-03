@@ -105,8 +105,8 @@ function handleThemeToggle() {
       </button>
     </a>
     
-    <!-- Theme Toggle -->
-    <div class="mt-6 flex flex-col items-center">
+    <!-- Theme Toggle moved to the bottom -->
+    <div class="mt-auto mb-0">
       <label for="theme-toggle" class="inline-flex items-center cursor-pointer mb-2 text-gray-700 dark:text-gray-200">
         <span class="mr-3 flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -125,13 +125,5 @@ function handleThemeToggle() {
           </svg>
         </span>
       </label>
-    </div>
-    
-    <div class="mt-auto mb-2">
-      {#if $theme === 'dark'}
-        <img src={icLogoHexWhite} alt="IC Logo" class="w-24 h-auto">
-      {:else}
-        <img src={icLogoHex} alt="IC Logo" class="w-24 h-auto">
-      {/if}
     </div>
 </div>
