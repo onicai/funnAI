@@ -70,6 +70,11 @@ function handleThemeToggle() {
 </script>
 
 <div class="sidebar-header font-fredoka flex flex-col items-center py-4 h-lvh">
+    <!-- Preview only banner -->
+    <div class="absolute top-[34px] left-2 bg-black/70 px-3 py-1 rounded-md z-10 transform -rotate-12 origin-top-left">
+      <span class="text-yellow-300 font-bold uppercase text-xs tracking-wider" style="text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Preview only</span>
+    </div>
+    
     <h1 class="text-2xl font-semibold flex items-center gap-2">
       <a use:link href="/">
         {#if $theme === 'dark'}
