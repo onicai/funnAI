@@ -460,11 +460,12 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
       return [];
 		};
 
-    // Only Principals registered as custodians can access this function
-    if (List.some(custodians, func (custodian : Principal) : Bool { custodian == caller })) {
-      return Iter.toArray(emailSubscribersStorage.entries());
+    // Only Controllers can access this function
+    if (not Principal.isController(caller)) {
+      return [];
     };
-    return [];
+    
+    return Iter.toArray(emailSubscribersStorage.entries());
   };
 
   // Function for custodian to delete an email subscriber
