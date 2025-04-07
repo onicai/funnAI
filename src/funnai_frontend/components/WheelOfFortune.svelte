@@ -221,7 +221,7 @@
   }
 </script>
 
-<div class="w-full bg-gray-800 rounded-lg p-6 mb-6">
+<div class="w-full bg-gray-800 rounded-lg border border-yellow-300 p-6 mb-6">
   <div class="flex flex-col md:flex-row items-center justify-between gap-6">
     <!-- Wheel Column -->
     <div class="relative">
@@ -248,7 +248,7 @@
           </form>
         </div>
       {:else}
-        <h2 class="text-3xl font-bold text-white mb-4">Unlock exclusive access to funnAI!</h2>
+        <h2 class="text-3xl font-bold text-yellow-400 mb-4">Unlock exclusive access to funnAI!</h2>
         <p class="text-gray-300">
           Spin the wheel to unlock your shot at joining the exclusive funnAI early access raffle — a limited opportunity reserved for the lucky few who dare to take a chance!
         </p>

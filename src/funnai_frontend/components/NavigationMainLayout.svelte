@@ -75,10 +75,16 @@
   <!-- <TokensDisplay icpBalance={199} funnaiBalance={1929} /> -->
 
   {#if !$store.isAuthed}
-    <button type="button" on:click={() => {toggleModal()}} data-modal-target="crypto-modal" data-modal-toggle="crypto-modal" class="mr-1 text-gray-700 bg-gray-100 dark:text-gray-200 dark:bg-gray-700 border-2 border-gray-200 hover:border-2 hover:border-gray-300 dark:hover:border-gray-600 border focus:ring-4 focus:outline-none focus:ring-gray-100 dark:focus:ring-gray-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center" style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;">
-      <svg aria-hidden="true" class="w-4 h-4 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-      Connect
-    </button>
+    <div class="flex items-center gap-2">
+      <div class="flex flex-col items-center bg-black text-white px-3 py-2 rounded-lg border-2 border-yellow-400 z-10">
+        <span class="text-yellow-400 font-bold">⚠️ UNDER CONSTRUCTION</span>
+        <span class="text-xs text-yellow-300">try exclusive access below</span>
+      </div>
+      <button type="button" on:click={() => {toggleModal()}} data-modal-target="crypto-modal" data-modal-toggle="crypto-modal" class="mr-1 text-gray-700 bg-gray-100 dark:text-gray-200 dark:bg-gray-700 border-2 border-gray-200 hover:border-2 hover:border-gray-300 dark:hover:border-gray-600 border focus:ring-4 focus:outline-none focus:ring-gray-100 dark:focus:ring-gray-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center" style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;">
+        <svg aria-hidden="true" class="w-4 h-4 me-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+        Connect
+      </button>
+    </div>
   {:else}
     <div class="flex gap-2">
       <a href="#" class="mr-1 cursor-not-allowed text-white dark:text-orange-500 bg-gray-500 dark:bg-gray-700 border-2 border-orange-500 hover:border-2 hover:border-orange-400 dark:hover:border-orange-700 focus:ring-4 focus:outline-none focus:ring-orange-200 dark:focus:ring-orange-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center" style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;">
