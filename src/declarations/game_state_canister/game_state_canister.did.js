@@ -63,14 +63,22 @@ export const idlFactory = ({ IDL }) => {
   });
   const ProtocolCanisterType = IDL.Variant({
     'MainerAgent' : IDL.Null,
+    'MainerLlm' : IDL.Null,
     'Challenger' : IDL.Null,
     'Judge' : IDL.Null,
     'Verifier' : IDL.Null,
     'MainerCreator' : IDL.Null,
   });
+  const MainerAgentCanisterType = IDL.Variant({
+    'NA' : IDL.Null,
+    'Own' : IDL.Null,
+    'ShareAgent' : IDL.Null,
+    'ShareService' : IDL.Null,
+  });
   const MainerAgentCanisterInput = IDL.Record({
     'canisterType' : ProtocolCanisterType,
     'ownedBy' : IDL.Principal,
+    'mainerAgentCanisterType' : MainerAgentCanisterType,
     'address' : CanisterAddress,
   });
   const OfficialProtocolCanister = IDL.Record({

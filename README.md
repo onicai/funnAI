@@ -15,27 +15,41 @@ sudo sysctl -w vm.max_map_count=2097152
 
 # from folder: funnAI
 
-# Fresh deploy of GameState
-scripts/deploy-gamestate.sh --mode install [--network ic]
-
-# If not yet done, deploy Challenger, Judge & mAIners
+# This script does it all:
+# (-) Deploys GameState, mAInerCreator, Challenger, Judge
+# (-) Registers the canisters properly with each other
+# (-) Deploys a demo set of mAIners via calls to mAInerCreator
+#     -> One mAIner  of type #Own, with 1 LLM
+#     -> One mAIner  of type #ShareService, with 1 LLM
+#     -> Two mAIners of type #ShareAgent
+# (-) The timers of the mAIners are started immediately
+# (-) The timers of the Challenger & Judge are not started.
+#     -> Do this manually in the next step
 scripts/deploy-all.sh --mode install [--network ic]
 
-# This step only needed first time deploying everything
-# Just to link the GameState correctly
-scripts/deploy-gamestate.sh --mode reinstall [--network ic]
-
-# Note: when redeploying changes, you can run the above commands with --mode upgrade
-# to avoid reuploading the models and thus saving a lot of time
+# Notes: 
+# (-) when redeploying changes, you can run the above command with --mode upgrade
+#     to avoid reuploading the models and thus saving a lot of time
+# (-) to reset the gamestate, run `scripts/deploy-gamestate.sh --mode reinstall`, 
+#     followed by                 `scripts/deploy-all.sh --mode upgrade`
+#     -> This will erase all data: canisters/challenges/responses/etc.
 
 # Deploy funnai backend (used mainly for chat):
 dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_backend [--ic]
 
 # Deploy funnai frontend:
 dfx deploy funnai_frontend [--ic]
+
+# Deploy the token ledger canister:
+# from folder: PoAIW/src/TokenLedger
+dfx deploy
+# follow the manual steps in PoAIW/src/TokenLedger/README to set canister ids and test the token ledger setup
 ```
 
-Use the local UI: http://cbopz-duaaa-aaaaa-qaaka-cai.localhost:4943/ 
+Use the local UI: http://cbopz-duaaa-aaaaa-qaaka-cai.localhost:4943/:
+- The feed will allways show the Protocol updates, namely Challenges & Winners
+- The feed will show mAIner related items (Submissions & Scores) for the logged in user (!)
+  - You can login using NFID with your Google account.
 
 # The GameState Thresholds
 
@@ -60,7 +74,7 @@ dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
 
 See instructions in PoAIW/README.md, the sections:
 
-- Full system test with timers
+- Full system test with timers (Note that mAIner timers are already active...)
 - Test components individually
 
 ---

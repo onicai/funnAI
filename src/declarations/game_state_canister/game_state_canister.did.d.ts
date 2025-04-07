@@ -244,10 +244,15 @@ export type List_1 = [] | [[ChallengeParticipantEntry, List_1]];
 export interface MainerAgentCanisterInput {
   'canisterType' : ProtocolCanisterType,
   'ownedBy' : Principal,
+  'mainerAgentCanisterType' : MainerAgentCanisterType,
   'address' : CanisterAddress,
 }
 export type MainerAgentCanisterResult = { 'Ok' : OfficialProtocolCanister } |
   { 'Err' : ApiError };
+export type MainerAgentCanisterType = { 'NA' : null } |
+  { 'Own' : null } |
+  { 'ShareAgent' : null } |
+  { 'ShareService' : null };
 export type MainerAgentCanistersResult = {
     'Ok' : Array<OfficialProtocolCanister>
   } |
@@ -279,6 +284,7 @@ export interface ProtocolActivityRecord {
 export type ProtocolActivityResult = { 'Ok' : ProtocolActivityRecord } |
   { 'Err' : ApiError };
 export type ProtocolCanisterType = { 'MainerAgent' : null } |
+  { 'MainerLlm' : null } |
   { 'Challenger' : null } |
   { 'Judge' : null } |
   { 'Verifier' : null } |

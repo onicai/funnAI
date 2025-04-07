@@ -1,10 +1,10 @@
 <script lang="ts">
   import { Principal } from "@dfinity/principal";
 
-  import { onMount } from 'svelte';
-  import { fly } from 'svelte/transition';
+  import { onMount } from "svelte";
+  import { fly } from "svelte/transition";
   import { store } from "../store";
-  import { mockFeedData } from '../helpers/mockFeedData';
+  import { mockFeedData } from "../helpers/mockFeedData";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -12,7 +12,7 @@
   interface FeedItem {
     id: string;
     timestamp: number;
-    type: 'challenge' | 'response' | 'score' | 'winner';
+    type: "challenge" | "response" | "score" | "winner";
     mainerName: string;
     content: {
       challenge?: string;
@@ -21,7 +21,7 @@
       placement?: string;
       reward?: string;
     };
-  };
+  }
 
   let feedItems: FeedItem[] = [];
   let allItems: FeedItem[] = [];
@@ -34,42 +34,48 @@
   // Convert milliseconds timestamp to readable time format
   function formatTimestamp(timestamp: number): string {
     const date = new Date(timestamp * 1000); // Convert seconds to milliseconds
-    return date.toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit' 
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     });
-  };
+  }
 
   function getStatusColor(type: string): string {
-    switch(type) {
-      case 'challenge': return 'before:bg-blue-500';
-      case 'response': return 'before:bg-purple-500';
-      case 'score': return 'before:bg-orange-500';
-      case 'winner': return 'before:bg-emerald-500';
-      default: return 'before:bg-gray-500';
-    };
-  };
+    switch (type) {
+      case "challenge":
+        return "before:bg-blue-500";
+      case "response":
+        return "before:bg-purple-500";
+      case "score":
+        return "before:bg-orange-500";
+      case "winner":
+        return "before:bg-emerald-500";
+      default:
+        return "before:bg-gray-500";
+    }
+  }
 
   function sortFeedItemsByTimestamp(feedItems: FeedItem[]): FeedItem[] {
     return feedItems.sort((a, b) => a.timestamp - b.timestamp);
-  };
+  }
 
   async function getFeedData(): Promise<FeedItem[]> {
     //console.log("in MainerFeed getFeedData");
     // Get activity data for the feed from the backend canisters
     // Challenges and winners from Game State
-    let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity();
+    let recentProtocolActivityResult =
+      await $store.gameStateCanisterActor.getRecentProtocolActivity();
     //let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity_mockup();
     //console.log("MainerFeed recentProtocolActivityResult");
     //console.log(recentProtocolActivityResult);
     let newFeedItems: FeedItem[] = [];
     // recentProtocolActivityResult looks like so: type ProtocolActivityResult = { 'Ok' : ProtocolActivityRecord } | { 'Err' : ApiError };
-      /* export interface ProtocolActivityRecord {
+    /* export interface ProtocolActivityRecord {
         'challenges' : Array<Challenge>,
         'winners' : Array<ChallengeWinnerDeclaration>,
       } */
-      /* interface Challenge {
+    /* interface Challenge {
         'challengeClosedTimestamp' : [] | [bigint],
         'challengeTopicStatus' : ChallengeTopicStatus,
         'challengeTopicCreationTimestamp' : bigint,
@@ -83,7 +89,7 @@
         'challengeTopic' : string,
         'submissionCyclesRequired' : bigint,
       } */
-      /* interface ChallengeWinnerDeclaration {
+    /* interface ChallengeWinnerDeclaration {
         'participants' : List_1,
         'thirdPlace' : ChallengeParticipantEntry,
         'winner' : ChallengeParticipantEntry,
@@ -92,20 +98,20 @@
         'challengeId' : string,
       } */
 
-    if ('Ok' in recentProtocolActivityResult) {
+    if ("Ok" in recentProtocolActivityResult) {
       const { challenges, winners } = recentProtocolActivityResult.Ok;
-        //console.log("in MainerFeed getFeedData winners");
-        //console.log(winners);
+      //console.log("in MainerFeed getFeedData winners");
+      //console.log(winners);
       // all challenges in challenges are open, for each challenge create an entry for feedItems
       // including challengeCreationTimestamp as timestamp and challengeQuestion as content
       // as mainerName use "Protocol"
-      challenges.forEach(challenge => {
+      challenges.forEach((challenge) => {
         newFeedItems.push({
           id: challenge.challengeId,
           timestamp: Number(challenge.challengeCreationTimestamp),
-          type: 'challenge',
-          mainerName: 'Protocol',
-          content: { challenge: challenge.challengeQuestion }
+          type: "challenge",
+          mainerName: "Protocol",
+          content: { challenge: challenge.challengeQuestion },
         });
       });
 
@@ -120,61 +126,73 @@
         'submittedBy' : Principal,
         'submissionId' : string,
       } */
-     // submittedBy on ChallengeParticipantEntry is the mAIner agent that submitted it, compare it to the address field of the entries in agentCanistersInfo (which is an array with each element being an object with info on an agent) and use the index as mainerName (e.g. "mAIner 1", "mAIner 2")
-     //console.log("in MainerFeed getFeedData agentCanistersInfo before winners");
-        //console.log(agentCanistersInfo); 
-        //console.log(agentCanistersInfo[0]); 
-      
+      // submittedBy on ChallengeParticipantEntry is the mAIner agent that submitted it, compare it to the address field of the entries in agentCanistersInfo (which is an array with each element being an object with info on an agent) and use the index as mainerName (e.g. "mAIner 1", "mAIner 2")
+      //console.log("in MainerFeed getFeedData agentCanistersInfo before winners");
+      //console.log(agentCanistersInfo);
+      //console.log(agentCanistersInfo[0]);
+
       if ($store.isAuthed) {
-        winners.forEach(winnerDeclaration => {
+        winners.forEach((winnerDeclaration) => {
           //console.log("in MainerFeed getFeedData winners winnerDeclaration");
           //console.log(winnerDeclaration);
           const placements = [
-            { position: 'First Place', entry: winnerDeclaration.winner },
-            { position: 'Second Place', entry: winnerDeclaration.secondPlace },
-            ...(winnerDeclaration.thirdPlace ? [{ position: 'Third Place', entry: winnerDeclaration.thirdPlace }] : [])
+            { position: "First Place", entry: winnerDeclaration.winner },
+            { position: "Second Place", entry: winnerDeclaration.secondPlace },
+            ...(winnerDeclaration.thirdPlace
+              ? [
+                  {
+                    position: "Third Place",
+                    entry: winnerDeclaration.thirdPlace,
+                  },
+                ]
+              : []),
           ];
           //console.log("in MainerFeed getFeedData winners placements");
           //console.log(placements);
 
           placements.forEach(({ position, entry }) => {
             //console.log("in MainerFeed getFeedData winners placements position");
-          //console.log(position);
-          //console.log("in MainerFeed getFeedData winners placements entry");
-          //console.log(entry);
-          //console.log(entry.submittedBy);
-          //console.log(entry.submittedBy.toString());
-          //console.log("in MainerFeed getFeedData agentCanistersInfo address");
-        //console.log(agentCanistersInfo[0].address); 
-        //console.log(agentCanistersInfo[1]?.address); 
-          //console.log(agentCanistersInfo[0].address === entry.submittedBy.toString());
-          //console.log(agentCanistersInfo[1].address === entry.submittedBy.toString());
-            const mainerIndex = agentCanistersInfo.findIndex(agent => agent.address === entry.submittedBy.toString());
+            //console.log(position);
+            //console.log("in MainerFeed getFeedData winners placements entry");
+            //console.log(entry);
+            //console.log(entry.submittedBy);
+            //console.log(entry.submittedBy.toString());
+            //console.log("in MainerFeed getFeedData agentCanistersInfo address");
+            //console.log(agentCanistersInfo[0].address);
+            //console.log(agentCanistersInfo[1]?.address);
+            //console.log(agentCanistersInfo[0].address === entry.submittedBy.toString());
+            //console.log(agentCanistersInfo[1].address === entry.submittedBy.toString());
+            const mainerIndex = agentCanistersInfo.findIndex(
+              (agent) => agent.address === entry.submittedBy.toString(),
+            );
             //console.log("in MainerFeed getFeedData winners placements mainerIndex");
-          //console.log(mainerIndex);
-            const mainerName = mainerIndex !== -1 ? `mAIner ${mainerIndex + 1}` : `Other User's Agent`;
+            //console.log(mainerIndex);
+            const mainerName =
+              mainerIndex !== -1
+                ? `mAIner ${mainerIndex + 1}`
+                : `Other User's Agent`;
             //console.log("in MainerFeed getFeedData winners placements mainerIndex");
-          //console.log(mainerIndex);
-          //console.log("in MainerFeed getFeedData winners placements mainerName");
-          //console.log(mainerName);
+            //console.log(mainerIndex);
+            //console.log("in MainerFeed getFeedData winners placements mainerName");
+            //console.log(mainerName);
 
             newFeedItems.push({
               id: `${entry.submissionId}-winner`,
               timestamp: Number(winnerDeclaration.finalizedTimestamp),
-              type: 'winner',
+              type: "winner",
               mainerName,
               content: {
                 placement: position,
-                reward: entry.reward.amount.toString()
-              }
+                reward: entry.reward.amount.toString(),
+              },
             });
           });
         });
-      };
+      }
       //console.log("in MainerFeed getFeedData newFeedItems after winners");
       //console.log(newFeedItems);
-    };
-    
+    }
+
     if ($store.isAuthed) {
       //console.log("MainerFeed agentCanisterActors");
       //console.log(agentCanisterActors);
@@ -188,11 +206,12 @@
         //console.log("in MainerFeed getFeedData agentCanisterActors entries agent");
         //console.log(agent);
         try {
-          const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
+          const submissionsResult =
+            await agent.getRecentSubmittedResponsesAdmin();
           //console.log("in MainerFeed getFeedData agentCanisterActors entries submissionsResult");
-        //console.log(submissionsResult);
+          //console.log(submissionsResult);
           // ChallengeResponseSubmissionsResult looks like so: type ChallengeResponseSubmissionsResult = { 'Ok' : Array<ChallengeResponseSubmission> } | { 'Err' : ApiError };
-            /* interface ChallengeResponseSubmission {
+          /* interface ChallengeResponseSubmission {
               'challengeClosedTimestamp' : [] | [bigint],
               'challengeTopicStatus' : ChallengeTopicStatus,
               'challengeTopicCreationTimestamp' : bigint,
@@ -210,30 +229,34 @@
               'submissionId' : string,
               'challengeAnswerSeed' : number,
               'submissionCyclesRequired' : bigint,
+              'challengeQueuedId' : string,
+              'challengeQueuedBy' : Principal,
+              'challengeQueuedTo' : Principal,
+              'challengeQueuedTimestamp' : bigint,
               'challengeAnswer' : string,
             } */
 
           // for each ChallengeResponseSubmission add an entry to newFeedItems
-          if ('Ok' in submissionsResult) {
+          if ("Ok" in submissionsResult) {
             for (const submission of submissionsResult.Ok) {
               //console.log("in MainerFeed getFeedData agentCanisterActors entries submission");
-        //console.log(submission);
+              //console.log(submission);
               const mainerName = `mAIner ${index + 1}`;
               newFeedItems.push({
                 id: submission.submissionId,
                 timestamp: Number(submission.submittedTimestamp),
-                type: 'response',
+                type: "response",
                 mainerName,
-                content: { response: submission.challengeAnswer }
+                content: { response: submission.challengeAnswer },
               });
 
               // then (also for each ChallengeResponseSubmission) retrieve the score this submission received
-                /*   interface SubmissionRetrievalInput {
+              /*   interface SubmissionRetrievalInput {
                     'challengeId' : string,
                     'submissionId' : string,
                   } */
-                // which returns type ScoredResponseRetrievalResult = { 'Ok' : ScoredResponse } | { 'Err' : ApiError };
-                /*   interface ScoredResponse {
+              // which returns type ScoredResponseRetrievalResult = { 'Ok' : ScoredResponse } | { 'Err' : ApiError };
+              /*   interface ScoredResponse {
                     'challengeClosedTimestamp' : [] | [bigint],
                     'challengeTopicStatus' : ChallengeTopicStatus,
                     'challengeTopicCreationTimestamp' : bigint,
@@ -254,70 +277,76 @@
                     'submissionId' : string,
                     'challengeAnswerSeed' : number,
                     'submissionCyclesRequired' : bigint,
+                    'challengeQueuedId' : string,
+                    'challengeQueuedBy' : Principal,
+                    'challengeQueuedTo' : Principal,
+                    'challengeQueuedTimestamp' : bigint,
                     'challengeAnswer' : string,
                     'scoreSeed' : number,
                   } */
-                // note that the submission might not have received a score yet (ScoredResponseRetrievalResult returns an Err in that case)
+              // note that the submission might not have received a score yet (ScoredResponseRetrievalResult returns an Err in that case)
 
-                // if there's a score for the submission, add the score as an entry to newFeedItems
+              // if there's a score for the submission, add the score as an entry to newFeedItems
               try {
-                const scoreResult = await $store.gameStateCanisterActor.getScoreForSubmission({
-                  challengeId: submission.challengeId,
-                  submissionId: submission.submissionId
-                });
+                const scoreResult =
+                  await $store.gameStateCanisterActor.getScoreForSubmission({
+                    challengeId: submission.challengeId,
+                    submissionId: submission.submissionId,
+                  });
                 /* const scoreResult = await $store.gameStateCanisterActor.getScoreForSubmission_mockup({
                   challengeId: submission.challengeId,
                   submissionId: submission.submissionId
                 }); */
-                
-                //console.log("in MainerFeed getFeedData agentCanisterActors entries scoreResult");
-        //console.log(scoreResult);
 
-                if ('Ok' in scoreResult) {
+                //console.log("in MainerFeed getFeedData agentCanisterActors entries scoreResult");
+                //console.log(scoreResult);
+
+                if ("Ok" in scoreResult) {
                   newFeedItems.push({
                     id: `${submission.submissionId}-score`,
                     timestamp: Number(scoreResult.Ok.judgedTimestamp),
-                    type: 'score',
+                    type: "score",
                     mainerName,
-                    content: { score: Number(scoreResult.Ok.score) }
+                    content: { score: Number(scoreResult.Ok.score) },
                   });
-                };
+                }
               } catch (error) {
                 console.error("Error fetching score for submission", error);
-              };
-            };
-          };
+              }
+            }
+          }
         } catch (error) {
           console.error("Error fetching submissions", error);
-        };
-      };
-    };
+        }
+      }
+    }
     //console.log("in MainerFeed getFeedData newFeedItems before return");
-        //console.log(newFeedItems);
+    //console.log(newFeedItems);
     return sortFeedItemsByTimestamp(newFeedItems);
-  };
+  }
 
   async function updateFeed(forceUpdate = false) {
     updating = true;
-    if (forceUpdate || updateCounter % 6 === 0) { // Retrieve items from backend every 6th time (e.g. 6 * 10sec = 1min)
+    if (forceUpdate || updateCounter % 6 === 0) {
+      // Retrieve items from backend every 6th time (e.g. 6 * 10sec = 1min)
       console.log("Time to run getFeedData again");
       allItems = await getFeedData();
       console.log("after getFeedData allItems");
       console.log(allItems);
-    };
+    }
     // TODO: only add new items to feed
     if (currentIndex < allItems.length) {
       const newItem = {
         ...allItems[currentIndex],
-        timestamp: Math.floor(Date.now() / 1000) // Set current timestamp in seconds
+        timestamp: Math.floor(Date.now() / 1000), // Set current timestamp in seconds
       };
       feedItems = [newItem, ...feedItems];
       currentIndex++;
-    };
+    }
     loading = false;
     updating = false;
     updateCounter++;
-  };
+  }
 
   $: {
     console.log("MainerFeed reactive agentCanisterActors", agentCanisterActors);
@@ -326,7 +355,7 @@
     (async () => {
       await updateFeed(true);
     })();
-  };
+  }
 
   onMount(async () => {
     await updateFeed();
@@ -362,7 +391,9 @@
           in:fly="{{ y: 20, duration: 500 }}"
         >
           <div class="flex flex-col flex-1 gap-2">
-            <h4 class="text-base font-medium flex justify-between items-center mr-6">
+            <h4
+              class="text-base font-medium flex justify-between items-center mr-6"
+            >
               {item.mainerName}
               <span class="text-xs font-normal text-slate-500 dark:text-slate-400">{formatTimestamp(item.timestamp)}</span>
             </h4>
@@ -384,8 +415,14 @@
 
 <style>
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .animate-fadeIn {

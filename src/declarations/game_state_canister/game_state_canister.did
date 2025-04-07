@@ -101,6 +101,7 @@ type ProtocolCanisterType =
    Judge;
    MainerAgent;
    MainerCreator;
+   MainerLlm;
    Verifier;
  };
 type ProtocolActivityResult = 
@@ -141,6 +142,13 @@ type MainerAgentCanistersResult =
    Err: ApiError;
    Ok: vec OfficialProtocolCanister;
  };
+type MainerAgentCanisterType = 
+ variant {
+   NA;
+   Own;
+   ShareAgent;
+   ShareService;
+ };
 type MainerAgentCanisterResult = 
  variant {
    Err: ApiError;
@@ -150,6 +158,7 @@ type MainerAgentCanisterInput =
  record {
    address: CanisterAddress;
    canisterType: ProtocolCanisterType;
+   mainerAgentCanisterType: MainerAgentCanisterType;
    ownedBy: principal;
  };
 type List_1 = 
