@@ -15,6 +15,10 @@ sudo sysctl -w vm.max_map_count=2097152
 
 # from folder: funnAI
 
+# To monitor the logs, run this script
+# -> It will write to the screen & also write individual files in scripts/logs/
+scripts/logs.sh --network ic
+
 # This script does it all:
 # (-) Deploys GameState, mAInerCreator, Challenger, Judge
 # (-) Registers the canisters properly with each other
