@@ -15,6 +15,25 @@ ENV_PATH = os.path.join(SCRIPT_DIR, "canister_ids.env")
 env_config = dotenv_values(ENV_PATH)
 CANISTERS = {key: value.strip('"') for key, value in env_config.items() if value}
 
+# Pick visually distinct 256-color codes (avoid 0-15 for standard colors, go higher for vivid ones)
+COLOR_CODES_256 = [
+    27, 33, 39, 45, 51,     # blues, cyans
+    82, 118, 154, 190,      # greens
+    196, 202, 208, 214,     # reds/oranges
+    129, 135, 141, 177,     # purples/pinks
+    226, 220, 190           # yellows
+]
+
+def make_ansi_color(code):
+    return f"\033[38;5;{code}m"
+
+RESET_COLOR = "\033[0m"
+
+CANISTER_COLORS = {
+    name: make_ansi_color(COLOR_CODES_256[i % len(COLOR_CODES_256)])
+    for i, name in enumerate(sorted(CANISTERS.keys()))
+}
+
 # Log directory (also relative to script location)
 LOG_DIR = os.path.join(SCRIPT_DIR, "logs")
 COMMON_LOG_FILE = os.path.join(LOG_DIR, "combined_logs.log")
@@ -61,8 +80,8 @@ def main(network):
                     for line in new_lines:
                         f_individual.write(line + "\n")
                         f_common.write(line + "\n")
-                        print(line)
-
+                        # print(line)
+                        print(f"{CANISTER_COLORS[name]}[{name}]{RESET_COLOR} {line}")
         time.sleep(1)
 
 if __name__ == "__main__":
