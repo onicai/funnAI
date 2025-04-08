@@ -81,7 +81,7 @@ def main(network):
                         f_individual.write(line + "\n")
                         f_common.write(line + "\n")
                         # print(line)
-                        print(f"{CANISTER_COLORS[name]}[{name}]{RESET_COLOR} {line}")
+                        print(f"{CANISTER_COLORS[name]}[{name}({canister_id})]{RESET_COLOR} {line}")
         time.sleep(1)
 
 if __name__ == "__main__":
