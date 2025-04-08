@@ -29,21 +29,16 @@ Variable - installed via mAInerCreator
   - ctrlb canister      : "hqdyd-iqaaa-aaaaj-az7da-cai"
   - ctrlb canister      : "hxc6x-fiaaa-aaaaj-az7dq-cai"
 
+-> Copy/Paste this into your terminal...
 ```bash
-# Handy settings...
-# These are fixed
 GAMESTATE="xzpy6-hiaaa-aaaaj-az4pq-cai"
 MAINER_CREATOR="movk5-tyaaa-aaaaj-az64q-cai"
-
 CHALLENGER="lxb3x-jyaaa-aaaaj-azzta-cai"
 CHALLENGER_LLM_0="lmehs-taaaa-aaaaj-azzrq-cai"
 CHALLENGER_LLM_1="l6cql-7qaaa-aaaaj-azzsq-cai"
-
 JUDGE="xxnvw-4yaaa-aaaaj-az4oq-cai"
 JUDGE_LLM_0="xljph-lyaaa-aaaaj-az4mq-cai"
 JUDGE_LLM_1="xcke3-5qaaa-aaaaj-az4na-cai"
-
-# These vary
 MAINER_OWN="hmhcs-7qaaa-aaaaj-az7ba-cai"
 MAINER_OWN_LLM="hlgeg-siaaa-aaaaj-az7bq-cai"
 MAINER_SERVICE="h6bvl-taaaa-aaaaj-az7ca-cai"
