@@ -1,12 +1,12 @@
 {
   "canisters": {
-    "DeVinci_backend": {
-      "main": "src/DeVinci_backend/main.mo",
+    "funnai_backend": {
+      "main": "src/funnai_backend/main.mo",
       "type": "motoko"
     },
-    "DeVinci_frontend": {
+    "funnai_frontend": {
       "dependencies": [
-        "DeVinci_backend"
+        "funnai_backend"
       ],
       "frontend": {
         "entrypoint": "dist/index.html"
@@ -16,6 +16,14 @@
         "src/assets"
       ],
       "type": "assets"
+    },
+    "game_state_canister": {
+      "main": "PoAIW/src/GameState/src/Main.mo",
+      "type": "motoko"
+    },
+    "mainer_ctrlb_canister": {
+      "main": "PoAIW/src/mAIner/src/Main.mo",
+      "type": "motoko"
     },
     "internet_identity": {
       "type": "custom",
@@ -29,16 +37,6 @@
           "testing": "rdmx6-jaaaa-aaaaa-aaadq-cai",
           "development": "rdmx6-jaaaa-aaaaa-aaadq-cai"
         }
-      }
-    },
-    "arcmindvectordb": {
-      "candid": "src/arcmindvectordb/arcmindvectordb.did",
-      "package": "arcmindvectordb",
-      "type": "rust",
-      "optimize": "cycles",
-      "gzip": true,
-      "declarations": {
-        "node_compatibility": true
       }
     }
   },
@@ -68,5 +66,6 @@
       "type": "persistent"
     }
   },
+  "output_env_file": ".env",
   "version": 1
 }

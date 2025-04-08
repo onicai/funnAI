@@ -1,19 +1,27 @@
 {
-  "DeVinci_backend": {
-    "backup": "cs45n-5iaaa-aaaaj-aztsq-cai",
-    "development": "sbflw-gyaaa-aaaal-qcbeq-cai",
-    "ic": "xzpew-mqaaa-aaaai-acqza-cai",
-    "test": "x56rt-nqaaa-aaaal-qcb3a-cai",
-    "testing": "xmiv3-nyaaa-aaaai-acq2q-cai"
+  "funnai_backend": {
+    "backup": "",
+    "development": "",
+    "ic": "yekds-uqaaa-aaaaj-az5la-cai",
+    "test": "",
+    "testing": ""
   },
-  "DeVinci_frontend": {
-    "backup": "c37wr-laaaa-aaaaj-aztta-cai",
-    "development": "yi77p-fyaaa-aaaap-qblxa-cai",
-    "ic": "x6occ-biaaa-aaaai-acqzq-cai",
-    "test": "4clue-eaaaa-aaaao-a2gwq-cai",
-    "testing": "xfl6h-3qaaa-aaaai-acq3a-cai"
+  "funnai_frontend": {
+    "backup": "",
+    "development": "",
+    "ic": "ydlfg-ziaaa-aaaaj-az5lq-cai",
+    "test": "",
+    "testing": ""
   },
   "arcmindvectordb": {
     "development": "44ti7-fiaaa-aaaak-qitia-cai"
+  },
+  "game_state_canister": {
+    "development": "",
+    "ic": "xzpy6-hiaaa-aaaaj-az4pq-cai",
+    "local": ""
+  },
+  "mainer_ctrlb_canister": {
+    "ic": "x6o6k-kqaaa-aaaaj-az4pa-cai"
   }
 }

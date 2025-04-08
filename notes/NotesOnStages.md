@@ -13,8 +13,8 @@ Process to create another stage:
 - Copy the id of the new canister
 - Paste the canister's id in the file canister_ids.json (under the new entry for the stage, the entry's key needs to match the network name given in dfx.json) 
 - Create a new networks entry in dfx.json (with the network's name being the same key as given in canister_ids.json)
-- If there are multiple canisters for a stage, create as many canisters as needed (e.g. DeVinci_backend and DeVinci_frontend)
+- If there are multiple canisters for a stage, create as many canisters as needed (e.g. funnai_backend and funnai_frontend)
 - Add the CLI command/s in Readme for the new stage (with the correct network name)
 - Make sure that all code relevant for stages/networks has been changed (e.g. search for network and check all relevant results in the project files)
 - Run the new CLI command/s in Readme and make sure everything works as expected (just just deploy the new canister/s)
-- If you have any other projects depending on the canisters or that the canisters depend on, make sure to handle this accordingly (e.g. Bebb Protocol canisters: create a corresponding stage canister there and deploy it, make sure the canisters here reference that canister then for the correct stage, e.g. in dfx.json and look for Different Stages in motoko files)
+- If you have any other projects depending on the canisters or that the canisters depend on, make sure to handle this accordingly

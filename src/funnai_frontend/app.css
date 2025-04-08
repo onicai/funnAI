@@ -1,0 +1,10 @@
+/* Write your global styles here, in PostCSS syntax */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+.card-style {
+    box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; 
+    border-radius: 16px;
+}

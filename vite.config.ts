@@ -65,10 +65,11 @@ const canisterDefinitions = Object.entries(canisterIds).reduce(
   {},
 );
 
+// TODO: update everything to funnAI
 const pwaManifest = {
-  short_name: "DeVinci",
-  name: "DeVinci AI Chat App",
-  description: "Your decentralized AI Chat app served from the Internet Computer and running on your device through the browser.",
+  short_name: "funnAI",
+  name: "funnAI App",
+  description: "Join funnAI, the first Proof-of-AI-Work Protocol implementation to run autonomous AI agents on-chain that earn rewards.",
   display: "standalone",
   scope: "/",
   start_url: "/",
@@ -77,7 +78,7 @@ const pwaManifest = {
   lang: "en",
   dir: "ltr",
   orientation: "any",
-  categories: ["productivity", "ai", "chatbot"], 
+  categories: ["productivity", "ai", "PoAIW"], 
   icons: [
     {
       src: './devinci192.png',
@@ -120,7 +121,7 @@ const pwaOptions = {
   injectRegister: null,
   // for own service worker (not auto-generated)
   strategies: 'injectManifest',
-  srcDir: 'src/DeVinci_frontend',
+  srcDir: 'src/funnai_frontend',
   filename: 'service-worker.ts',
   outDir: './dist/',
   injectManifest: {
@@ -150,8 +151,8 @@ export default defineConfig({
       ...aliases,
     },
   },
-  //publicDir: "./src/DeVinci_frontend/public",
-  publicDir: "./src/DeVinci_frontend/assets",
+  //publicDir: "./src/funnai_frontend/public",
+  publicDir: "./src/funnai_frontend/assets",
   server: {
     host: true,
     fs: {
