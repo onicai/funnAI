@@ -126,8 +126,8 @@ export let installAppDeferredPrompt = writable(null); // the installAppDeferredP
 
 let authClient : AuthClient;
 const APPLICATION_NAME = "funnai";
-const APPLICATION_LOGO_URL = "https://x6occ-biaaa-aaaai-acqzq-cai.icp0.io/devinci512.png";
-
+const APPLICATION_LOGO_URL = "https://x6occ-biaaa-aaaai-acqzq-cai.icp0.io/devinci512.png"; //TODO: update
+//TODO: double check
 const AUTH_PATH = "/authenticate/?applicationName="+APPLICATION_NAME+"&applicationLogo="+APPLICATION_LOGO_URL+"#authorize";
 
 const days = BigInt(30);
@@ -135,7 +135,7 @@ const hours = BigInt(24);
 const nanosecondsPerHour = BigInt(3600000000000);
 
 type State = {
-  isAuthed: "plug" | "stoic" | "nfid" | "bitfinity" | "internetidentity" | null;
+  isAuthed: "nfid" | "internetidentity" | null;
   backendActor: typeof funnai_backend;
   principal: Principal;
   accountId: string;
@@ -148,9 +148,6 @@ type State = {
 };
 
 let defaultBackendCanisterId = backendCanisterId;
-/* if (userBackendCanisterAddressValue && userBackendCanisterAddressValue !== null && userBackendCanisterAddressValue.length > 5) {
-  defaultBackendCanisterId = userBackendCanisterAddressValue;
-}; */
 
 const defaultState: State = {
   isAuthed: null,
@@ -276,29 +273,13 @@ export const createStore = ({
 
   const initBackendCanisterActor = async (loginType, identity: Identity) => {
     let canisterId = backendCanisterId;
-    
-    if (loginType === "plug") {
-      let backendActor = (await window.ic?.plug.createActor({
-        canisterId: canisterId,
-        interfaceFactory: backendIdlFactory,
-      })) as typeof funnai_backend;
-      return backendActor;
-    } else if (loginType === "bitfinity") {
-      let backendActor = (await window.ic?.infinityWallet.createActor({
-        canisterId: canisterId,
-        interfaceFactory: backendIdlFactory,
-        host,
-      })) as typeof funnai_backend;
-      return backendActor;
-    } else {
-      let backendActor = createBackendCanisterActor(canisterId, {
-        agentOptions: {
-          identity,
-          host: HOST,
-        },
-      });
-      return backendActor;
-    };
+    let backendActor = createBackendCanisterActor(canisterId, {
+      agentOptions: {
+        identity,
+        host: HOST,
+      },
+    });
+    return backendActor;
   };
 
   const updateBackendCanisterActor = async (newBackendCanisterId) => {
@@ -308,25 +289,13 @@ export const createStore = ({
     if (authClient) {
       const identity = await authClient.getIdentity();
       let backendActor;
-      if (globalState.isAuthed === "plug") {
-        backendActor = (await window.ic?.plug.createActor({
-          canisterId: newBackendCanisterId,
-          interfaceFactory: backendIdlFactory,
-        })) as typeof funnai_backend;
-      } else if (globalState.isAuthed === "bitfinity") {
-        backendActor = (await window.ic?.infinityWallet.createActor({
-          canisterId: newBackendCanisterId,
-          interfaceFactory: backendIdlFactory,
-          host,
-        })) as typeof funnai_backend;
-      } else {
-        backendActor = createBackendCanisterActor(newBackendCanisterId, {
-          agentOptions: {
-            identity,
-            host: HOST,
-          },
-        });
-      };
+      
+      backendActor = createBackendCanisterActor(newBackendCanisterId, {
+        agentOptions: {
+          identity,
+          host: HOST,
+        },
+      });
       if (backendActor) {
         update((state) => {
           return {
@@ -343,94 +312,42 @@ export const createStore = ({
   const initGameStateCanisterActor = async (loginType, identity: Identity) => {
     let canisterId = gameStateCanisterId;
     
-    if (loginType === "plug") {
-      let gameStateActor = (await window.ic?.plug.createGameStateActor({
-        canisterId: canisterId,
-        interfaceFactory: gameStateIdlFactory,
-      })) as typeof game_state_canister;
-      return gameStateActor;
-    } else if (loginType === "bitfinity") {
-      let gameStateActor = (await window.ic?.infinityWallet.createGameStateActor({
-        canisterId: canisterId,
-        interfaceFactory: gameStateIdlFactory,
-        host,
-      })) as typeof game_state_canister;
-      return gameStateActor;
-    } else {
-      let gameStateActor = createGameStateCanisterActor(canisterId, {
-        agentOptions: {
-          identity,
-          host: HOST,
-        },
-      });
-      return gameStateActor;
-    };
+    let gameStateActor = createGameStateCanisterActor(canisterId, {
+      agentOptions: {
+        identity,
+        host: HOST,
+      },
+    });
+    return gameStateActor;
   };
 
   const initMainerControllerCanisterActor = async (loginType, identity: Identity) => {
     let canisterId = mainerControllerCanisterId;
     
-    if (loginType === "plug") {
-      let mainerControllerActor = (await window.ic?.plug.createMainerControllerActor({
-        canisterId: canisterId,
-        interfaceFactory: mainerControllerIdlFactory,
-      })) as typeof mainer_ctrlb_canister;
-      return mainerControllerActor;
-    } else if (loginType === "bitfinity") {
-      let mainerControllerActor = (await window.ic?.infinityWallet.createMainerControllerActor({
-        canisterId: canisterId,
-        interfaceFactory: mainerControllerIdlFactory,
-        host,
-      })) as typeof mainer_ctrlb_canister;
-      return mainerControllerActor;
-    } else {
-      let mainerControllerActor = createMainerControllerCanisterActor(canisterId, {
-        agentOptions: {
-          identity,
-          host: HOST,
-        },
-      });
-      return mainerControllerActor;
-    };
+    let mainerControllerActor = createMainerControllerCanisterActor(canisterId, {
+      agentOptions: {
+        identity,
+        host: HOST,
+      },
+    });
+    return mainerControllerActor;
   };
 
   const initMainerAgentCanisterActor = async (userMainerCanisterInfo, loginType, identity: Identity) => {
-    //console.log("in initMainerAgentCanisterActor userMainerCanisterInfo");
-      //console.log(userMainerCanisterInfo);
     let canisterId = userMainerCanisterInfo.address;
     
-    if (loginType === "plug") {
-      let mainerControllerActor = (await window.ic?.plug.createMainerControllerActor({
-        canisterId: canisterId,
-        interfaceFactory: mainerControllerIdlFactory,
-      })) as typeof mainer_ctrlb_canister;
-      return mainerControllerActor;
-    } else if (loginType === "bitfinity") {
-      let mainerControllerActor = (await window.ic?.infinityWallet.createMainerControllerActor({
-        canisterId: canisterId,
-        interfaceFactory: mainerControllerIdlFactory,
-        host,
-      })) as typeof mainer_ctrlb_canister;
-      return mainerControllerActor;
-    } else {
-      let mainerControllerActor = createMainerControllerCanisterActor(canisterId, {
-        agentOptions: {
-          identity,
-          host: HOST,
-        },
-      });
-      return mainerControllerActor;
-    };
+    let mainerControllerActor = createMainerControllerCanisterActor(canisterId, {
+      agentOptions: {
+        identity,
+        host: HOST,
+      },
+    });
+    return mainerControllerActor;
   };
 
   const initializeUserMainerAgentCanisters = async (gameStateCanisterActor: typeof game_state_canister, loginType, identity: Identity) => {
-    //console.log("in initializeUserMainerAgentCanisters gameStateCanisterActor");
-    //console.log(gameStateCanisterActor);
     try {
       const getMainersResult = await gameStateCanisterActor.getMainerAgentCanistersForUser();
-      //console.log("in initializeUserMainerAgentCanisters getMainersResult");
-      //console.log(getMainersResult);
-      //console.log(getMainersResult.Ok);
       // @ts-ignore
       if (getMainersResult.Ok) {
         // @ts-ignore
@@ -440,8 +357,6 @@ export const createStore = ({
           initPromises.push(initMainerAgentCanisterActor(userCanister, loginType, identity)); 
         });
         let mainerActors = await Promise.all(initPromises);
-        //console.log("in initializeUserMainerAgentCanisters mainerActors");
-      //console.log(mainerActors);
         return { mainerActors, userCanisters };
       } else {
         // @ts-ignore
@@ -505,14 +420,6 @@ export const createStore = ({
     const userMainerCanisterActors = mainerActors;
     const userMainerAgentCanistersInfo = userCanisters;
 
-    // TODO: determine if general mainerControllerCanisterActor has any value
-    const mainerControllerCanisterActor = await initMainerControllerCanisterActor("nfid", identity);
-    
-    if (!mainerControllerCanisterActor) {
-      console.warn("couldn't create mAIner Controller actor");
-      return;
-    };
-
     //let accounts = JSON.parse(await identity.accounts());
 
     localStorage.setItem('isAuthed', "nfid"); // Set flag to indicate existing login for future sessions
@@ -525,7 +432,6 @@ export const createStore = ({
       accountId: null,
       isAuthed: "nfid",
       gameStateCanisterActor,
-      mainerControllerCanisterActor,
       userMainerCanisterActors,
       userMainerAgentCanistersInfo
     }));
@@ -581,13 +487,6 @@ export const createStore = ({
     const userMainerCanisterActors = mainerActors;
     const userMainerAgentCanistersInfo = userCanisters;
 
-    const mainerControllerCanisterActor = await initMainerControllerCanisterActor("internetidentity", identity);
-    
-    if (!mainerControllerCanisterActor) {
-      console.warn("couldn't create mAIner Controller actor");
-      return;
-    };
-
     //let accounts = JSON.parse(await identity.accounts());
 
     localStorage.setItem('isAuthed', "internetidentity"); // Set flag to indicate existing login for future sessions
@@ -600,7 +499,6 @@ export const createStore = ({
       accountId: null,
       isAuthed: "internetidentity",
       gameStateCanisterActor,
-      mainerControllerCanisterActor,
       userMainerCanisterActors,
       userMainerAgentCanistersInfo
     }));
@@ -608,299 +506,9 @@ export const createStore = ({
     console.info("internetidentity is authed");
   };
 
-  const stoicConnect = () => {
-    StoicIdentity.load().then(async (identity) => {
-      if (identity !== false) {
-        // ID is a already connected wallet!
-      } else {
-        // No existing connection, lets make one!
-        identity = await StoicIdentity.connect();
-      }
-      initStoic(identity);
-    });
-  };
-
-  const initStoic = async (identity: Identity & { accounts(): string }) => {
-    const backendActor = await initBackendCanisterActor("stoic", identity);
-
-    if (!backendActor) {
-      console.warn("couldn't create backend actor");
-      return;
-    };
-
-    await initUserSettings(backendActor);
-
-    const gameStateCanisterActor = await initGameStateCanisterActor("stoic", identity);
-    
-    if (!gameStateCanisterActor) {
-      console.warn("couldn't create Game State actor");
-      return;
-    };
-
-    // Initialize user's mAIner agent (controller) canisters
-    const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "stoic", identity);
-
-    const userMainerCanisterActors = mainerActors;
-    const userMainerAgentCanistersInfo = userCanisters;
-
-    const mainerControllerCanisterActor = await initMainerControllerCanisterActor("stoic", identity);
-    
-    if (!mainerControllerCanisterActor) {
-      console.warn("couldn't create mAIner Controller actor");
-      return;
-    };
-
-    // the stoic agent provides an `accounts()` method that returns accounts associated with the principal
-    let accounts = JSON.parse(await identity.accounts());
-
-    localStorage.setItem('isAuthed', "stoic"); // Set flag to indicate existing login for future sessions
-
-    update((state) => ({
-      ...state,
-      backendActor,
-      principal: identity.getPrincipal(),
-      accountId: accounts[0].address, // we take the default account associated with the identity
-      isAuthed: "stoic",
-      gameStateCanisterActor,
-      mainerControllerCanisterActor,
-      userMainerCanisterActors,
-      userMainerAgentCanistersInfo
-    }));
-
-    console.info("stoic is authed");
-  };
-
-  const plugConnect = async () => {
-    // check if plug is installed in the browser
-    if (window.ic?.plug === undefined) {
-      window.open("https://plugwallet.ooo/", "_blank");
-      return;
-    };
-
-    // check if plug is connected
-    const plugConnected = await window.ic?.plug?.isConnected();
-    if (!plugConnected) {
-      try {
-        console.info({
-          whitelist,
-          host,
-        });
-        await window.ic?.plug.requestConnect({
-          whitelist,
-          host,
-        });
-        console.info("plug connected");
-      } catch (e) {
-        console.warn(e);
-        return;
-      };
-    };
-
-    await initPlug();
-  };
-
-  const initPlug = async () => {
-    // check whether agent is present
-    // if not create it
-    if (!window.ic?.plug?.agent) {
-      console.warn("no agent found");
-      const result = await window.ic?.plug?.createAgent({
-        whitelist,
-        host,
-      });
-      result
-        ? console.info("agent created")
-        : console.warn("agent creation failed");
-    };
-    // check if createActor method is available
-    if (!window.ic?.plug?.createActor) {
-      console.warn("no createActor found");
-      return;
-    }
-
-    // Fetch root key for certificate validation during development
-    if (process.env.DFX_NETWORK !== "ic") {
-      window.ic.plug.agent.fetchRootKey().catch((err) => {
-        console.warn(
-          "Unable to fetch root key. Check to ensure that your local replica is running",
-        );
-        console.error(err);
-      });
-    };
-
-    const backendActor = await initBackendCanisterActor("plug", null);
-
-    if (!backendActor) {
-      console.warn("couldn't create backend actor");
-      return;
-    };
-
-    await initUserSettings(backendActor);
-
-    const gameStateCanisterActor = await initGameStateCanisterActor("plug", null);
-    
-    if (!gameStateCanisterActor) {
-      console.warn("couldn't create Game State actor");
-      return;
-    };
-
-    // Initialize user's mAIner agent (controller) canisters
-    const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "plug", null);
-
-    const userMainerCanisterActors = mainerActors;
-    const userMainerAgentCanistersInfo = userCanisters;
-
-    const mainerControllerCanisterActor = await initMainerControllerCanisterActor("plug", null);
-    
-    if (!mainerControllerCanisterActor) {
-      console.warn("couldn't create mAIner Controller actor");
-      return;
-    };
-
-    const principal = await window.ic.plug.agent.getPrincipal();
-
-    localStorage.setItem('isAuthed', "plug"); // Set flag to indicate existing login for future sessions
-
-    update((state) => ({
-      ...state,
-      backendActor,
-      principal,
-      accountId: window.ic.plug.sessionManager.sessionData.accountId,
-      isAuthed: "plug",
-      gameStateCanisterActor,
-      mainerControllerCanisterActor,
-      userMainerCanisterActors,
-      userMainerAgentCanistersInfo
-    }));
-
-    console.info("plug is authed");
-  };
-
-  const bitfinityConnect = async () => {
-    // check if Bitfinity is installed in the browser
-    if (window.ic?.infinityWallet === undefined) {
-      window.open("https://wallet.bitfinity.network/", "_blank");
-      return;
-    };
-
-    // check if bitfinity is connected
-    const bitfinityConnected = await window.ic?.infinityWallet?.isConnected();
-    if (!bitfinityConnected) {
-      try {
-        console.info({
-          whitelist,
-          host,
-        });
-        await window.ic?.infinityWallet.requestConnect({
-          whitelist,
-          //host,
-        });
-      } catch (e) {
-        console.warn(e);
-        return;
-      };
-    };
-
-    await initBitfinity();
-  };
-
-  const initBitfinity = async () => {
-    // check whether agent is present
-    // if not create it
-    /* if (!window.ic?.infinityWallet?.agent) {
-      console.warn("no agent found");
-      const result = await window.ic?.infinityWallet?.createAgent({
-        whitelist,
-        host,
-      });
-      result
-        ? console.info("agent created")
-        : console.warn("agent creation failed");
-    }; */
-    // check if createActor method is available
-    if (!window.ic?.infinityWallet?.createActor) {
-      console.warn("no createActor found");
-      return;
-    };
-
-    // Fetch root key for certificate validation during development
-    if (process.env.DFX_NETWORK === "local") {
-      /* window.ic.infinityWallet.agent.fetchRootKey().catch((err) => {
-        console.warn(
-          "Unable to fetch root key. Check to ensure that your local replica is running",
-        );
-        console.error(err);
-      }); */
-    }
-
-    const backendActor = await initBackendCanisterActor("bitfinity", null);
-
-    if (!backendActor) {
-      console.warn("couldn't create backend actor");
-      return;
-    };
-
-    const gameStateCanisterActor = await initGameStateCanisterActor("bitfinity", null);
-    
-    if (!gameStateCanisterActor) {
-      console.warn("couldn't create Game State actor");
-      return;
-    };
-
-    // Initialize user's mAIner agent (controller) canisters
-    const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "bitfinity", null);
-
-    const userMainerCanisterActors = mainerActors;
-    const userMainerAgentCanistersInfo = userCanisters;
-
-    const mainerControllerCanisterActor = await initMainerControllerCanisterActor("bitfinity", null);
-    
-    if (!mainerControllerCanisterActor) {
-      console.warn("couldn't create mAIner Controller actor");
-      return;
-    };
-
-    const principal = await window.ic.infinityWallet.getPrincipal();
-
-    localStorage.setItem('isAuthed', "bitfinity"); // Set flag to indicate existing login for future sessions
-
-    update((state) => ({
-      ...state,
-      backendActor,
-      principal,
-      //accountId: window.ic.infinityWallet.sessionManager.sessionData.accountId,
-      isAuthed: "bitfinity",
-      gameStateCanisterActor,
-      mainerControllerCanisterActor,
-      userMainerCanisterActors,
-      userMainerAgentCanistersInfo
-    }));
-
-    console.info("bitfinity is authed");
-  };
-
   const disconnect = async () => {
     // Check isAuthed to determine which method to use to disconnect
-    if (globalState.isAuthed === "plug") {
-      try {
-        await window.ic?.plug?.disconnect();
-        // wait for 500ms to ensure that the disconnection is complete
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        const plugConnected = await window.ic?.plug?.isConnected();
-        if (plugConnected) {
-          console.info("plug disconnect failed, trying once more");
-          await window.ic?.plug?.disconnect();
-        };
-      } catch (error) {
-        console.error("Plug disconnect error: ", error);
-      };
-    } else if (globalState.isAuthed === "stoic") {
-      try {
-        StoicIdentity.disconnect();
-      } catch (error) {
-        console.error("StoicIdentity disconnect error: ", error);
-      };
-    } else if (globalState.isAuthed === "nfid") {
+    if (globalState.isAuthed === "nfid") {
       try {
         await authClient.logout();
       } catch (error) {
@@ -912,19 +520,6 @@ export const createStore = ({
       } catch (error) {
         console.error("Internet Identity disconnect error: ", error);
       };
-    } else if (globalState.isAuthed === "bitfinity") {
-      /* try {
-        await window.ic?.infinityWallet?.disconnect();
-        // wait for 500ms to ensure that the disconnection is complete
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        const bitfinityConnected = await window.ic?.infinityWallet?.isConnected();
-        if (bitfinityConnected) {
-          console.info("Bitfinity disconnect failed, trying once more");
-          await window.ic?.infinityWallet?.disconnect();
-        };
-      } catch (error) {
-        console.error("Bitfinity disconnect error: ", error);
-      }; */
     };
 
     update((prevState) => {
@@ -946,15 +541,6 @@ export const createStore = ({
         } else if (isAuthed === "internetidentity") {
           console.info("Internet Identity connection detected");
           internetIdentityConnect();
-        } else if (isAuthed === "plug") {
-          console.info("Plug connection detected");
-          plugConnect();
-        } else if (isAuthed === "bitfinity") {
-          console.info("Bitfinity connection detected");
-          bitfinityConnect();
-        } else if (isAuthed === "stoic") {
-          console.info("Stoic connection detected");
-          stoicConnect();
         };
       };
     };
@@ -963,10 +549,7 @@ export const createStore = ({
   return {
     subscribe,
     update,
-    plugConnect,
-    stoicConnect,
     nfidConnect,
-    bitfinityConnect,
     internetIdentityConnect,
     disconnect,
     checkExistingLoginAndConnect,
@@ -975,117 +558,6 @@ export const createStore = ({
 };
 
 export const store = createStore({
-  whitelist: [backendCanisterId],
+  whitelist: [backendCanisterId, gameStateCanisterId],
   host: HOST,
 });
-
-declare global {
-  interface Window {
-    ic: {
-      plug: {
-        agent: HttpAgent;
-        sessionManager: {
-          sessionData: {
-            accountId: string;
-          };
-        };
-        getPrincipal: () => Promise<Principal>;
-        deleteAgent: () => void;
-        requestConnect: (options?: {
-          whitelist?: string[];
-          host?: string;
-        }) => Promise<any>;
-        createActor: (options: {}) => Promise<typeof funnai_backend>;
-        createGameStateActor: (options: {}) => Promise<typeof game_state_canister>;
-        createMainerControllerActor: (options: {}) => Promise<typeof mainer_ctrlb_canister>;
-        isConnected: () => Promise<boolean>;
-        disconnect: () => Promise<boolean>;
-        createAgent: (args?: {
-          whitelist: string[];
-          host?: string;
-        }) => Promise<undefined>;
-        requestBalance: () => Promise<
-          Array<{
-            amount: number;
-            canisterId: string | null;
-            image: string;
-            name: string;
-            symbol: string;
-            value: number | null;
-          }>
-        >;
-        requestTransfer: (arg: {
-          to: string;
-          amount: number;
-          opts?: {
-            fee?: number;
-            memo?: string;
-            from_subaccount?: number;
-            created_at_time?: {
-              timestamp_nanos: number;
-            };
-          };
-        }) => Promise<{ height: number }>;
-      };
-      infinityWallet: {
-        /* agent: HttpAgent;
-        sessionManager: {
-          sessionData: {
-            accountId: string;
-          };
-        }; */
-        getPrincipal: () => Promise<Principal>;
-        //deleteAgent: () => void;
-        requestConnect: (options?: {
-          whitelist?: string[];
-          //host?: string;
-        }) => Promise<any>;
-        createActor: (options: {
-          canisterId: string;
-          interfaceFactory: any;
-          host?: string;
-        }) => Promise<typeof funnai_backend>;
-        createGameStateActor: (options: {
-          canisterId: string;
-          interfaceFactory: any;
-          host?: string;
-        }) => Promise<typeof game_state_canister>;
-        createMainerControllerActor: (options: {
-          canisterId: string;
-          interfaceFactory: any;
-          host?: string;
-        }) => Promise<typeof mainer_ctrlb_canister>;
-        isConnected: () => Promise<boolean>;
-        /* disconnect: () => Promise<boolean>;
-        createAgent: (args?: {
-          whitelist: string[];
-          host?: string;
-        }) => Promise<undefined>;
-        requestBalance: () => Promise<
-          Array<{
-            amount: number;
-            canisterId: string | null;
-            image: string;
-            name: string;
-            symbol: string;
-            value: number | null;
-          }>
-        >;
-        requestTransfer: (arg: {
-          to: string;
-          amount: number;
-          opts?: {
-            fee?: number;
-            memo?: string;
-            from_subaccount?: number;
-            created_at_time?: {
-              timestamp_nanos: number;
-            };
-          };
-        }) => Promise<{ height: number }>; */
-        getUserAssets: () => Promise<any>;
-        batchTransactions: () => Promise<any>;
-      };
-    };
-  }
-}
