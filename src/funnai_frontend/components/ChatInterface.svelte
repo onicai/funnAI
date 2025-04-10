@@ -1,14 +1,4 @@
 <div class="container mx-auto px-8 py-8 flex-grow dark:bg-gray-900">
-  <div class="flex items-center p-4 mt-0 mb-6 text-md text-yellow-800 border border-yellow-300 rounded-lg bg-yellow-50 dark:bg-gray-800 dark:border-yellow-600 dark:text-yellow-300" role="alert">
-    <svg class="shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-      <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
-    </svg>
-    <span class="sr-only">Info</span>
-    <div>
-      <span class="font-medium">Heads up!</span> 
-      Chat functionality is coming soon! In the meantime, you can experience the future of private AI with <strong>DeVinci</strong> — the end-to-end decentralized AI chat app — and explore <strong>ICGPT</strong>, the world's first on-chain Large Language Models.
-    </div>
-  </div>
   
   <div class="space-y-6">
     <a href="https://devinci.onicai.com/" target='_blank' rel="noreferrer" class="block w-full">
