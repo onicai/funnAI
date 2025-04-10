@@ -1,72 +1,59 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import BigNumber from "bignumber.js";
-  import Modal from "$lib/components/common/Modal.svelte";
-  import { formatBalance } from "$lib/utils/numberFormatUtils";
+  import Modal from "./CommonModal.svelte";
+  import { formatBalance } from "../helpers/utils/numberFormatUtils";
   import { ArrowRight, Check, AlertTriangle } from "lucide-svelte";
   import { fly, fade } from 'svelte/transition';
 
-  // Props type definition
-  type TransferConfirmationModalProps = {
-    isOpen: boolean;
-    onClose: () => void;
-    onConfirm: () => void;
-    amount: string;
-    token: FE.Token;
-    tokenFee: bigint;
-    isValidating?: boolean;
-    toPrincipal: string;
-  };
+  // Props
+  export let isOpen: boolean = false;
+  export let onClose: () => void = () => {};
+  export let onConfirm: () => void = () => {};
+  export let amount: string;
+  export let token: FE.Token;
+  export let tokenFee: bigint;
+  export let isValidating: boolean = false;
+  export let toPrincipal: string;
 
-  // Destructure props with defaults
-  let { 
-    isOpen = false,
-    onClose = () => {},
-    onConfirm = () => {},
-    amount,
-    token,
-    tokenFee,
-    isValidating = false,
-    toPrincipal
-  }: TransferConfirmationModalProps = $props();
+  // State variables
+  let receiverAmount: string = "";
+  let totalAmount: string = "";
+  let formattedFee: string = "";
+  let usdValue: string = "0.00";
+  let truncatedAddress: string = "";
+  let showSuccess: boolean = false;
 
-  // Derived values using Svelte 5 syntax
-  let receiverAmount = $state<string>("");
-  let totalAmount = $state<string>("");
-  let formattedFee = $state<string>("");
-  let usdValue = $state<string>("0.00");
-  let truncatedAddress = $state<string>("");
-  
-  // Compute derived values when inputs change
-  $effect(() => {
+  // Reactive calculation
+  $: {
     try {
       receiverAmount = new BigNumber(amount).toString();
+
       totalAmount = new BigNumber(amount)
         .plus(new BigNumber(tokenFee?.toString() || "10000").dividedBy(10 ** token.decimals))
         .toString();
+
       formattedFee = formatBalance(tokenFee?.toString() || "10000", token.decimals);
-      
-      // Calculate USD value if price is available
+
       if (token.metrics?.price) {
-        usdValue = new BigNumber(amount).multipliedBy(token.metrics.price).toFixed(2);
+        usdValue = new BigNumber(amount)
+          .multipliedBy(token.metrics.price)
+          .toFixed(2);
       }
-      
-      // Create truncated address for display
+
       if (toPrincipal && toPrincipal.length > 16) {
         truncatedAddress = `${toPrincipal.substring(0, 8)}...${toPrincipal.substring(toPrincipal.length - 8)}`;
       } else {
         truncatedAddress = toPrincipal;
       }
+
     } catch (error) {
       console.error('Error calculating amounts:', error);
       receiverAmount = amount;
       totalAmount = amount;
       formattedFee = '0';
     }
-  });
-
-  // Animation state
-  let showSuccess = $state(false);
+  }
   
   function handleConfirm() {
     showSuccess = true;
@@ -217,175 +204,312 @@
   </div>
 </Modal>
 
-<style scoped lang="postcss">
+<style scoped>
   .confirm-container {
-    @apply flex flex-col gap-3 px-3 py-2;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
   }
-  
-  /* Transfer Header Styles */
-  .transfer-header {
-    @apply flex flex-col gap-3 items-center justify-center p-3 
-           bg-kong-surface-dark/80 rounded-lg border border-kong-border/30;
-  }
-  
-  .token-info {
-    @apply flex items-center gap-2;
-  }
-  
-  .token-logo {
-    @apply w-10 h-10 rounded-full overflow-hidden 
-           bg-kong-bg-light p-1 border border-kong-border/20
-           flex items-center justify-center
-           sm:w-12 sm:h-12;
-  }
-  
-  .token-image {
-    @apply w-8 h-8 rounded-full object-contain
-           sm:w-10 sm:h-10;
-  }
-  
-  .token-details {
-    @apply flex flex-col;
-  }
-  
-  .token-name {
-    @apply text-kong-text-primary font-medium;
-  }
-  
-  .token-symbol {
-    @apply text-sm text-kong-text-secondary;
-  }
-  
-  .transfer-amount {
-    @apply flex flex-col items-center;
-  }
-  
-  .amount-value {
-    @apply text-2xl font-medium text-kong-text-primary;
-  }
-  
-  .usd-value {
-    @apply text-sm text-kong-text-secondary;
-  }
-  
-  /* Transfer Details Styles */
-  .transfer-details {
-    @apply flex flex-col gap-4;
-  }
-  
-  .detail-section {
-    @apply bg-kong-surface-dark/50 rounded-lg p-3 
-           border border-kong-border/20
-           sm:p-4;
-  }
-  
-  .section-title {
-    @apply text-sm font-medium text-kong-text-primary/90 mb-2
-           sm:mb-3;
-  }
-  
-  .detail-rows {
-    @apply flex flex-col gap-2;
-  }
-  
-  .detail-row {
-    @apply flex justify-between items-center;
-    
-    &.total {
-      @apply mt-2 pt-2 border-t border-kong-border/10 
-             font-medium text-kong-text-primary;
-    }
-  }
-  
-  .detail-label {
-    @apply text-sm text-kong-text-secondary;
-  }
-  
-  .detail-value {
-    @apply text-sm text-kong-text-primary;
-    
-    &.fee {
-      @apply text-kong-text-secondary;
-    }
-  }
-  
-  .recipient-address {
-    @apply flex flex-col gap-2;
-  }
-  
-  .address-display {
-    @apply bg-kong-bg-light/50 rounded-lg p-3 
-           border border-kong-border/30;
-  }
-  
-  .address-value {
-    @apply text-xs font-mono text-kong-text-primary break-all;
-  }
-  
-  .address-type {
-    @apply text-xs text-kong-text-secondary mt-1 px-1;
-  }
-  
-  .warning-section {
-    @apply flex items-start gap-2 p-2.5 rounded-lg
-           bg-kong-accent-yellow/10 border border-kong-accent-yellow/20
-           text-xs text-kong-text-primary/80
-           sm:p-3;
-  }
-  
-  .warning-icon {
-    @apply text-kong-accent-yellow flex-shrink-0 mt-0.5;
-  }
-  
-  /* Action Buttons */
-  .action-buttons {
-    @apply grid grid-cols-2 gap-2 mt-2
-           sm:gap-3;
-  }
-  
-  .cancel-button {
-    @apply h-10 rounded-lg font-medium
-           bg-kong-bg-light/80 text-kong-text-primary/80
-           hover:bg-kong-bg-light hover:text-kong-text-primary
-           disabled:opacity-50 disabled:cursor-not-allowed
-           transition-all duration-200
-           sm:h-12;
-  }
-  
-  .confirm-button {
-    @apply h-10 rounded-lg font-medium
-           flex items-center justify-center gap-2
-           bg-kong-primary text-white
-           hover:bg-kong-primary-hover
-           disabled:opacity-70 disabled:cursor-not-allowed
-           transition-all duration-200
-           sm:h-12;
 
-    &.loading {
-      @apply bg-kong-primary/90;
-    }
-    
-    &.success {
-      @apply bg-kong-accent-green;
+  .transfer-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem;
+    background-color: rgba(var(--color-kong-surface-dark-rgb), 0.8);
+    border-radius: 0.5rem;
+    border: 1px solid rgba(var(--color-kong-border-rgb), 0.3);
+  }
+
+  .token-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .token-logo {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+    overflow: hidden;
+    background-color: var(--color-kong-bg-light);
+    padding: 0.25rem;
+    border: 1px solid rgba(var(--color-kong-border-rgb), 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @media (min-width: 640px) {
+    .token-logo {
+      width: 3rem;
+      height: 3rem;
     }
   }
-  
+
+  .token-image {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    object-fit: contain;
+  }
+
+  @media (min-width: 640px) {
+    .token-image {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+  }
+
+  .token-details {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .token-name {
+    color: var(--color-kong-text-primary);
+    font-weight: 500;
+  }
+
+  .token-symbol {
+    font-size: 0.875rem;
+    color: var(--color-kong-text-secondary);
+  }
+
+  .transfer-amount {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .amount-value {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--color-kong-text-primary);
+  }
+
+  .usd-value {
+    font-size: 0.875rem;
+    color: var(--color-kong-text-secondary);
+  }
+
+  .transfer-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .detail-section {
+    background-color: rgba(var(--color-kong-surface-dark-rgb), 0.5);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid rgba(var(--color-kong-border-rgb), 0.2);
+  }
+
+  @media (min-width: 640px) {
+    .detail-section {
+      padding: 1rem;
+    }
+  }
+
+  .section-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(var(--color-kong-text-primary-rgb), 0.9);
+    margin-bottom: 0.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .section-title {
+      margin-bottom: 0.75rem;
+    }
+  }
+
+  .detail-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .detail-row.total {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(var(--color-kong-border-rgb), 0.1);
+    font-weight: 500;
+    color: var(--color-kong-text-primary);
+  }
+
+  .detail-label {
+    font-size: 0.875rem;
+    color: var(--color-kong-text-secondary);
+  }
+
+  .detail-value {
+    font-size: 0.875rem;
+    color: var(--color-kong-text-primary);
+  }
+
+  .detail-value.fee {
+    color: var(--color-kong-text-secondary);
+  }
+
+  .recipient-address {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .address-display {
+    background-color: rgba(var(--color-kong-bg-light-rgb), 0.5);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid rgba(var(--color-kong-border-rgb), 0.3);
+  }
+
+  .address-value {
+    font-size: 0.75rem;
+    font-family: monospace;
+    color: var(--color-kong-text-primary);
+    word-break: break-word;
+  }
+
+  .address-type {
+    font-size: 0.75rem;
+    color: var(--color-kong-text-secondary);
+    margin-top: 0.25rem;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+
+  .warning-section {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.625rem;
+    border-radius: 0.5rem;
+    background-color: rgba(var(--color-kong-accent-yellow-rgb), 0.1);
+    border: 1px solid rgba(var(--color-kong-accent-yellow-rgb), 0.2);
+    font-size: 0.75rem;
+    color: rgba(var(--color-kong-text-primary-rgb), 0.8);
+  }
+
+  @media (min-width: 640px) {
+    .warning-section {
+      padding: 0.75rem;
+    }
+  }
+
+  .warning-icon {
+    color: var(--color-kong-accent-yellow);
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  .action-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .action-buttons {
+      gap: 0.75rem;
+    }
+  }
+
+  .cancel-button {
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    background-color: rgba(var(--color-kong-bg-light-rgb), 0.8);
+    color: rgba(var(--color-kong-text-primary-rgb), 0.8);
+    transition: all 0.2s ease;
+  }
+
+  .cancel-button:hover {
+    background-color: var(--color-kong-bg-light);
+    color: var(--color-kong-text-primary);
+  }
+
+  .cancel-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  @media (min-width: 640px) {
+    .cancel-button {
+      height: 3rem;
+    }
+  }
+
+  .confirm-button {
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background-color: var(--color-kong-primary);
+    color: white;
+    transition: all 0.2s ease;
+  }
+
+  .confirm-button:hover {
+    background-color: var(--color-kong-primary-hover);
+  }
+
+  .confirm-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  @media (min-width: 640px) {
+    .confirm-button {
+      height: 3rem;
+    }
+  }
+
+  .confirm-button.loading {
+    background-color: rgba(var(--color-kong-primary-rgb), 0.9);
+  }
+
+  .confirm-button.success {
+    background-color: var(--color-kong-accent-green);
+  }
+
   .spinner {
-    @apply w-5 h-5 border-2 border-t-transparent border-white rounded-full;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 2px solid white;
+    border-top-color: transparent;
+    border-radius: 9999px;
     animation: spin 0.8s linear infinite;
   }
-  
+
   .success-icon {
-    @apply flex items-center justify-center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     animation: pop 0.3s ease-out;
   }
-  
+
   @keyframes spin {
     to {
       transform: rotate(360deg);
     }
   }
-  
+
   @keyframes pop {
     0% {
       transform: scale(0.5);
@@ -399,4 +523,4 @@
       opacity: 1;
     }
   }
-</style> 
+</style>

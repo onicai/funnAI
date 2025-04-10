@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import Modal from "./Modal.svelte";
+  import Modal from "./CommonModal.svelte";
   import TokenImages from "./TokenImages.svelte";
   import TransferConfirmationModal from "./TransferConfirmationModal.svelte";
   import { 
@@ -38,57 +38,42 @@
     onSuccess?: (txId: string) => void;
   };
 
-  // Destructure props with defaults
-  let { 
-    token, 
-    isOpen = false,
-    onClose = () => {},
-    onSuccess = () => {}
-  }: SendTokenModalProps = $props();
+  export let token: any;
+  export let isOpen: boolean = false;
+  export let onClose: () => void = () => {};
+  export let onSuccess: () => void = () => {};
 
-  // State for sending tokens
-  let recipientAddress = $state("");
-  let amount = $state("");
-  let isValidating = $state(false);
-  let errorMessage = $state("");
-  let tokenFee = $state<bigint>(BigInt(0));
-  let showScanner = $state(false);
-  let hasCamera = $state(false);
-  let accounts = $state({
-    subaccount: "",
-    main: "",
-  });
+  let recipientAddress: string = "";
+  let amount: string = "";
+  let isValidating: boolean = false;
+  let errorMessage: string = "";
+  let tokenFee: bigint = BigInt(0);
+  let showScanner: boolean = false;
+  let hasCamera: boolean = false;
+  let accounts: { subaccount: string; main: string } = { subaccount: "", main: "" };
 
-  // For transfer confirmation
-  let showConfirmation = $state(false);
-  let transferDetails = $state<{
+  let showConfirmation: boolean = false;
+  let transferDetails: {
     amount: string;
     token: any;
     tokenFee: bigint;
     toPrincipal: string;
-  } | null>(null);
+  } | null = null;
 
-  // Validation state
-  let balances = $state<{ default: bigint, subaccount?: bigint }>(getInitialBalances(token?.symbol));
-  let addressValidation = $state({ isValid: false, errorMessage: "", addressType: null });
-  let amountValidation = $state({ isValid: false, errorMessage: "" });
+  let balances: { default: bigint; subaccount?: bigint } = getInitialBalances(token?.symbol);
+  let addressValidation = { isValid: false, errorMessage: "", addressType: null };
+  let amountValidation = { isValid: false, errorMessage: "" };
 
-  // Modal visibility handling to make animations work better
-  let mounted = $state(false);
-  let closing = $state(false);
-  
-  $effect(() => {
-    if (!mounted && isOpen) {
-      mounted = true;
-    }
-  });
-  
-  // Watch isOpen changes
-  $effect(() => {
-    if (!isOpen && mounted) {
-      closing = true;
-    }
-  });
+  let mounted: boolean = false;
+  let closing: boolean = false;
+
+  $: if (!mounted && isOpen) {
+    mounted = true;
+  }
+
+  $: if (!isOpen && mounted) {
+    closing = true;
+  }
 
   // Close the modal with animation
   function handleClose() {
@@ -133,9 +118,7 @@
   }
 
   // Calculate max amount user can send
-  const maxAmount = $derived(
-    calculateMaxAmount(balances.default, token.decimals, tokenFee)
-  );
+  $: maxAmount = calculateMaxAmount(balances.default, token.decimals, tokenFee);
 
   // Handle amount input
   function handleAmountInput(event: Event) {
@@ -257,7 +240,9 @@
         }
       );
 
+      //@ts-ignore
       if (result?.Ok) {
+        //@ts-ignore
         const txId = result.Ok.toString();
         
         // Update local state first
@@ -274,17 +259,23 @@
         
         // Show success message and trigger callbacks
         //toastStore.success(`Successfully sent ${token.symbol}`);
+        //@ts-ignore
         onSuccess(txId);
         
         // Close modal last
         onClose();
+        //@ts-ignore
       } else if (result?.Err) {
         const errMsg =
+        //@ts-ignore
           typeof result.Err === "object"
+          //@ts-ignore
             ? Object.keys(result.Err)[0]
+            //@ts-ignore
             : String(result.Err);
         errorMessage = `Transfer failed: ${errMsg}`;
         //toastStore.error(errorMessage);
+        //@ts-ignore
         console.error("Transfer error details:", result.Err);
       }
     } catch (err) {
@@ -297,7 +288,7 @@
   }
 
   // Validate address
-  $effect(() => {
+  $ : (() => {
     if (recipientAddress) {
       addressValidation = validateAddress(recipientAddress, token.symbol, token.name);
     } else {
@@ -306,7 +297,7 @@
   });
 
   // Validate amount
-  $effect(() => {
+  $ : (() => {
     if (amount) {
       const currentBalance = balances.default;
       amountValidation = validateTokenAmount(amount, currentBalance, token.decimals, tokenFee);
@@ -316,7 +307,7 @@
   });
 
   // Update error message based on validations (separate effect to avoid circular dependencies)
-  $effect(() => {
+  $ : (() => {
     if (addressValidation.errorMessage) {
       errorMessage = addressValidation.errorMessage;
     } else if (amountValidation.errorMessage) {
@@ -327,7 +318,7 @@
   });
 
   // Check if form is valid
-  const isFormValid = $derived(
+  $: isFormValid = Boolean(
     amount &&
     recipientAddress &&
     !errorMessage &&

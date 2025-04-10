@@ -1,30 +1,23 @@
 <script lang="ts">
     import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
     import { onDestroy, onMount } from 'svelte';
-    import Modal from './Modal.svelte';
+    import Modal from './CommonModal.svelte';
     //import { toastStore } from "$lib/stores/toastStore";
     import { Principal } from "@dfinity/principal";
 
-    // Props type definition
-    type QrScannerProps = {
-        isOpen: boolean;
-        onClose: () => void;
-        onScan: (text: string) => void;
-    };
+    // Props
+    export let isOpen: boolean = false;
+    export let onClose: () => void = () => {};
+    export let onScan: (text: string) => void = () => {};
 
-    // Destructure props
-    let { 
-        isOpen = false, 
-        onClose = () => {}, 
-        onScan = () => {}
-    }: QrScannerProps = $props();
 
-    // State variables using Svelte 5 syntax
-    let scanner = $state<Html5Qrcode | null>(null);
-    let scannedData = $state<string | null>(null);
-    let showConfirmation = $state(false);
-    let modalMounted = $state(false);
+    // State variables
+    let scanner: Html5Qrcode | null = null;
+    let scannedData: string | null = null;
+    let showConfirmation: boolean = false;
+    let modalMounted: boolean = false;
     let fileInput: HTMLInputElement;
+
 
     async function checkCameraSupport() {
         try {
@@ -195,20 +188,19 @@
         closeScanner();
     });
 
-    // Use $effect instead of reactivity statements
-    $effect(() => {
+    // Reactive statements
+    $: {
         if (isOpen) {
             setTimeout(() => modalMounted = true, 100);
         } else {
             modalMounted = false;
         }
-    });
+    }
 
-    $effect(() => {
-        if (isOpen && modalMounted) {
-            initializeScanner();
-        }
-    });
+    $: if (isOpen && modalMounted) {
+        initializeScanner();
+    }
+
 </script>
 
 {#if isOpen}
@@ -308,148 +300,254 @@
 </Modal>
 {/if}
 
-<style scoped lang="postcss">
+<style scoped>
     .scanner-container {
-        @apply p-4 flex flex-col items-center gap-4;
-        min-height: 400px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      min-height: 400px;
     }
-
+  
     .hidden {
-        display: none;
+      display: none;
     }
-
+  
     :global(#qr-reader) {
-        @apply w-full max-w-[300px] mx-auto bg-black/20 rounded-lg overflow-hidden;
-        min-height: 300px;
-        position: relative;
-        
-        :global(video) {
-            @apply rounded-lg w-full h-full object-cover;
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
-        :global(#qr-reader__header_message),
-        :global(#qr-reader__filescan_input),
-        :global(#qr-reader__dashboard_section_csr),
-        :global(#qr-reader__status_span),
-        :global(button.html5-qrcode-element) {
-            @apply hidden;
-        }
-
-        :global(#qr-reader__scan_region) {
-            @apply bg-transparent rounded-lg relative;
-            border: 2px solid theme('colors.indigo.500') !important;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1;
-        }
+      width: 100%;
+      max-width: 300px;
+      margin-left: auto;
+      margin-right: auto;
+      background-color: rgba(0, 0, 0, 0.2);
+      border-radius: 0.5rem;
+      overflow: hidden;
+      min-height: 300px;
+      position: relative;
     }
-
+  
+    :global(#qr-reader video) {
+      border-radius: 0.5rem;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  
+    :global(#qr-reader__header_message),
+    :global(#qr-reader__filescan_input),
+    :global(#qr-reader__dashboard_section_csr),
+    :global(#qr-reader__status_span),
+    :global(button.html5-qrcode-element) {
+      display: none;
+    }
+  
+    :global(#qr-reader__scan_region) {
+      background-color: transparent;
+      border-radius: 0.5rem;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1;
+      border: 2px solid #6366f1; /* indigo-500 */
+    }
+  
     .scanner-controls {
-        @apply flex flex-col gap-3 mt-4 w-full max-w-[300px];
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      width: 100%;
+      max-width: 300px;
     }
-
+  
     .primary-controls {
-        @apply flex gap-3 justify-center;
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
     }
-
+  
     .file-upload {
-        @apply flex justify-center mt-2;
+      display: flex;
+      justify-content: center;
+      margin-top: 0.5rem;
     }
-
+  
     .file-upload-btn {
-        @apply px-4 py-2 bg-indigo-600/80 hover:bg-indigo-600 
-               text-white rounded-lg cursor-pointer transition-colors;
+      padding: 0.5rem 1rem;
+      background-color: rgba(99, 102, 241, 0.8); /* indigo-600/80 */
+      color: white;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
     }
-
+  
+    .file-upload-btn:hover {
+      background-color: #6366f1; /* indigo-600 */
+    }
+  
     .switch-camera-btn {
-        @apply px-4 py-2 bg-white/10 hover:bg-white/15 text-white/90 
-               rounded-lg flex items-center justify-center;
+      padding: 0.5rem 1rem;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.9);
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-
+  
     .cancel-scan-btn {
-        @apply px-4 py-2 bg-white/10 hover:bg-white/15 text-white/90 rounded-lg;
+      padding: 0.5rem 1rem;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.9);
+      border-radius: 0.5rem;
     }
-
+  
     .confirmation-dialog {
-        @apply w-full max-w-[300px] flex flex-col gap-6;
+      width: 100%;
+      max-width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
     }
-
+  
     .confirmation-dialog h3 {
-        @apply text-xl font-medium text-white/90 text-center;
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.9);
+      text-align: center;
     }
-
+  
     .scanned-data {
-        @apply bg-black/20 rounded-xl p-6 flex flex-col gap-4;
+      background-color: rgba(0, 0, 0, 0.2);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
     }
-
+  
     .address-type {
-        @apply flex justify-center;
+      display: flex;
+      justify-content: center;
     }
-
+  
     .badge {
-        @apply px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
-
+  
     .icon {
-        @apply w-4 h-4;
+      width: 1rem;
+      height: 1rem;
     }
-
+  
     .badge.principal {
-        @apply bg-indigo-500/20 text-indigo-300 border border-indigo-500/30;
+      background-color: rgba(99, 102, 241, 0.2);
+      color: #c7d2fe;
+      border: 1px solid rgba(99, 102, 241, 0.3);
     }
-
+  
     .badge.account {
-        @apply bg-green-500/20 text-green-300 border border-green-500/30;
+      background-color: rgba(34, 197, 94, 0.2);
+      color: #bbf7d0;
+      border: 1px solid rgba(34, 197, 94, 0.3);
     }
-
+  
     .badge.unknown {
-        @apply bg-red-500/20 text-red-300 border border-red-500/30;
+      background-color: rgba(239, 68, 68, 0.2);
+      color: #fecaca;
+      border: 1px solid rgba(239, 68, 68, 0.3);
     }
-
+  
     .address-display {
-        @apply flex flex-col gap-4;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
     }
-
+  
     .formatted-address {
-        @apply font-mono text-xl text-white/90 text-center tracking-wide;
+      font-family: monospace;
+      font-size: 1.25rem;
+      color: rgba(255, 255, 255, 0.9);
+      text-align: center;
+      letter-spacing: 0.05em;
     }
-
+  
     .divider {
-        @apply h-px bg-white/10 w-full;
+      height: 1px;
+      background-color: rgba(255, 255, 255, 0.1);
+      width: 100%;
     }
-
+  
     .full-address-container {
-        @apply flex flex-col gap-1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
     }
-
+  
     .label {
-        @apply text-xs text-white/50 uppercase tracking-wider text-center;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      text-align: center;
     }
-
+  
     .full-address {
-        @apply font-mono text-xs text-white/70 break-all text-center bg-black/20 
-               rounded-lg p-3 border border-white/5;
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.7);
+      word-break: break-word;
+      text-align: center;
+      background-color: rgba(0, 0, 0, 0.2);
+      border-radius: 0.5rem;
+      padding: 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
-
+  
     .confirmation-buttons {
-        @apply flex gap-3 justify-center;
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
     }
-
+  
     .confirmation-buttons button {
-        @apply px-6 py-2.5 rounded-lg transition-colors font-medium;
+      padding: 0.625rem 1.5rem;
+      border-radius: 0.5rem;
+      transition: background-color 0.2s;
+      font-weight: 500;
     }
-
+  
     .confirm-btn {
-        @apply bg-indigo-600 hover:bg-indigo-500 text-white 
-               disabled:opacity-50 disabled:cursor-not-allowed;
+      background-color: #4f46e5; /* indigo-600 */
+      color: white;
     }
-
+  
+    .confirm-btn:hover {
+      background-color: #4338ca; /* indigo-500 */
+    }
+  
+    .confirm-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  
     .reject-btn {
-        @apply bg-white/10 hover:bg-white/15 text-white/90;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.9);
     }
-</style> 
+  
+    .reject-btn:hover {
+      background-color: rgba(255, 255, 255, 0.15);
+    }
+</style>
+  

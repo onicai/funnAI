@@ -71,7 +71,8 @@
     "workbox-routing": "7.0.0",
     "workbox-strategies": "7.0.0",
     "workbox-window": "7.0.0",
-    "lucide-svelte": "0.486.0"
+    "lucide-svelte": "0.486.0",
+    "svelte-portal": "2.2.1"
   },
   "engines": {
     "node": "^12 || ^14 || ^16 || ^18"
