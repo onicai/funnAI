@@ -1,5 +1,5 @@
 <script lang="ts">
-  import LoginModal from "./LoginModal.svelte";
+  import LoginModal from "./login/LoginModal.svelte";
 
   let openModal = false;
 

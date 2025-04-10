@@ -1,7 +1,7 @@
 <script lang="ts">
   import WalletTable from '../components/WalletTable.svelte';
   import WalletStatus from '../components/WalletStatus.svelte';
-  import LoginModal from '../components/LoginModal.svelte';
+  import LoginModal from '../components/login/LoginModal.svelte';
   import { store } from "../store";
   
   let modalIsOpen = false;

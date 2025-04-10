@@ -4,7 +4,7 @@
   import { store, theme } from "../store";
   import NavigationMainLayout from "./NavigationMainLayout.svelte";
   import SidebarMainLayout from "./SidebarMainLayout.svelte";
-  import ChatLayout from "./ChatLayout.svelte";
+  import ChatLayout from "./chat/ChatLayout.svelte";
   import Dashboard from "../pages/Dashboard.svelte";
   import Wallet from "../pages/Wallet.svelte";
   import { onMount } from 'svelte';

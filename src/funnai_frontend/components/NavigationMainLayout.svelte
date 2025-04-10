@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { store, theme } from "../store";
   import { link } from 'svelte-spa-router';
-  import LoginModal from './LoginModal.svelte';
+  import LoginModal from './login/LoginModal.svelte';
   import TokensDisplay  from './TokensDisplay.svelte';
 
   let visibleInstallAppToast = false;
@@ -83,12 +83,12 @@
     </div>
   {:else}
     <div class="flex gap-2">
-      <a href="#" class="mr-1 cursor-not-allowed text-white dark:text-orange-500 bg-gray-500 dark:bg-gray-700 border-2 border-orange-500 hover:border-2 hover:border-orange-400 dark:hover:border-orange-700 focus:ring-4 focus:outline-none focus:ring-orange-200 dark:focus:ring-orange-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center" style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;">
+      <button disabled class="mr-1 cursor-not-allowed text-white dark:text-orange-500 bg-gray-500 dark:bg-gray-700 border-2 border-orange-500 hover:border-2 hover:border-orange-400 dark:hover:border-orange-700 focus:ring-4 focus:outline-none focus:ring-orange-200 dark:focus:ring-orange-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center" style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 me-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
         </svg>
-        Wallet (WIP)
-      </a>
+        Connect Wallet
+      </button>
     </div>
   {/if}
 
