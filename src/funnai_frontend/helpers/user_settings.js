@@ -5,7 +5,7 @@ import {
   responseLengthDefaultSetting,
   systemPromptDefaultSetting,
   saveChatsDefaultSetting
-} from "../store";
+} from "../stores/store";
 import { syncLocalChanges, setUserSettingsSyncFlag } from "./local_storage";
 
 let storeState;

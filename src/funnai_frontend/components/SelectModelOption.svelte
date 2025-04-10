@@ -10,7 +10,7 @@
     chatModelIdInitiatedGlobal,
     currentModelName,
     downloadedModels
-  } from "../store";
+  } from "../stores/store";
   import {
     setLocalFlag,
     getLocalFlag

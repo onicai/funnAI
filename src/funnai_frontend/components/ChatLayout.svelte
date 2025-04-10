@@ -1,8 +1,8 @@
 <script lang="ts">
     import Router from "svelte-spa-router";
     import { onMount } from "svelte";
-    import { store, theme } from "../store";
-    import { deviceType, supportsWebGpu } from "../store";
+    import { store, theme } from "../stores/store";
+    import { deviceType, supportsWebGpu } from "../stores/store";
   
     import UnsupportedBrowserBanner from "./UnsupportedBrowserBanner.svelte";
     import UnsupportedDeviceBanner from "./UnsupportedDeviceBanner.svelte";

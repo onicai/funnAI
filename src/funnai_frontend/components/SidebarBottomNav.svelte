@@ -1,5 +1,5 @@
 <script lang="ts"> 
-  import { currentModelName, useKnowledgeBase } from "../store";
+  import { currentModelName, useKnowledgeBase } from "../stores/store";
   
   function handleChange(event) {
     // Toggle useKnowledgeBase based on the checkbox's checked state

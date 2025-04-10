@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { userSettings } from "../store";
+  import { userSettings } from "../stores/store";
 
   import {
     setLocalFlag,

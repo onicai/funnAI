@@ -2,7 +2,7 @@ import {
   store,
   saveChatsUserSelection,
   downloadedModels 
-} from "../store";
+} from "../stores/store";
 
 let storeState;
 store.subscribe((value) => storeState = value);

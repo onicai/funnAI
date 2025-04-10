@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { SvelteComponent } from 'svelte';
   import Router from "svelte-spa-router";
-  import { store, theme } from "../store";
+  import { store, theme } from "../stores/store";
   import NavigationMainLayout from "./NavigationMainLayout.svelte";
   import SidebarMainLayout from "./SidebarMainLayout.svelte";
   import ChatLayout from "./ChatLayout.svelte";

@@ -2,7 +2,7 @@
   import {
     deviceType,
     downloadedModels
-  } from "../store";
+  } from "../stores/store";
 
   import SelectModelOption from './SelectModelOption.svelte';
   import Entertainment from "./Entertainment.svelte";

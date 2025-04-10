@@ -1,7 +1,7 @@
 import { writable } from "svelte/store";
 import type { Principal } from "@dfinity/principal";
-import type { HttpAgent, Identity } from "@dfinity/agent";
-import { StoicIdentity } from "ic-stoic-identity";
+import type { Identity } from "@dfinity/agent";
+import { HttpAgent, Actor } from "@dfinity/agent";
 import { AuthClient } from "@dfinity/auth-client";
 import UAParser from 'ua-parser-js';
 import {
@@ -9,21 +9,37 @@ import {
   createActor as createBackendCanisterActor,
   canisterId as backendCanisterId,
   idlFactory as backendIdlFactory,
-} from "../declarations/funnai_backend";
+} from "../../declarations/funnai_backend";
 
 import {
   game_state_canister,
   createActor as createGameStateCanisterActor,
   canisterId as gameStateCanisterId,
   idlFactory as gameStateIdlFactory,
-} from "../declarations/game_state_canister";
+} from "../../declarations/game_state_canister";
 
 import {
   mainer_ctrlb_canister,
   createActor as createMainerControllerCanisterActor,
   canisterId as mainerControllerCanisterId,
   idlFactory as mainerControllerIdlFactory,
-} from "../declarations/mainer_ctrlb_canister";
+} from "../../declarations/mainer_ctrlb_canister";
+
+import { ICRC2_IDL as icrc2IDL } from "../helpers/idls/icrc2.idl.js";
+import { idlFactory as icpIDL } from "../helpers/idls/icp.idl.js";
+
+export const canisterIds = {
+  backendCanisterId,
+  gameStateCanisterId
+};
+
+export const canisterIDLs = {
+  backendIdlFactory,
+  gameStateIdlFactory,
+  icrc1: icrc2IDL,
+  icrc2: icrc2IDL,
+  ICP: icpIDL,
+};
 
 // TODO: remove debug print statements
 console.log("funnai_backend");
@@ -545,6 +561,56 @@ export const createStore = ({
       };
     };
   };
+  
+  const getActor = async (canisterId, canisterIDL, options = {}) => {
+    // Anonymous agent (non-authenticated calls)
+    let agent = new HttpAgent({
+      host: HOST,
+    });
+
+    //@ts-ignore
+    if (!options.anon) {
+      // Create an agent with the logged in user's identity (for authenticated calls)
+      try {
+        authClient = await AuthClient.create();
+        if (await authClient.isAuthenticated()) {
+          const identity = await authClient.getIdentity();
+          agent = new HttpAgent({
+            identity,
+            host: HOST,
+          });
+        };
+      } catch (error) {
+        console.error("Error in getActor:", error);
+        update((state) => ({
+          ...state,
+          error: "Failed to getActor"
+        }));
+      };
+    };
+  
+    /* if (options.agent && options.agentOptions) {
+      console.warn(
+        "Detected both agent and agentOptions passed to getActor. Ignoring agentOptions and proceeding with the provided agent."
+      );
+    } */
+  
+    // Fetch root key for certificate validation during development
+    if (process.env.DFX_NETWORK !== "ic") {
+      agent.fetchRootKey().catch((err) => {
+        console.warn(
+          "Unable to fetch root key. Check to ensure that your local replica is running"
+        );
+        console.error(err);
+      });
+    }
+  
+    // Creates an actor with using the candid interface and the HttpAgent
+    return Actor.createActor(canisterIDL, {
+      agent,
+      canisterId,
+    });
+  };
 
   return {
     subscribe,
@@ -554,6 +620,7 @@ export const createStore = ({
     disconnect,
     checkExistingLoginAndConnect,
     updateBackendCanisterActor,
+    getActor,
   };
 };
 

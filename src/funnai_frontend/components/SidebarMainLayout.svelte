@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount } from 'svelte';
 import { link } from 'svelte-spa-router';
-import { downloadedModels, theme, toggleTheme } from "../store";
+import { downloadedModels, theme, toggleTheme } from "../stores/store";
 import { get } from 'svelte/store';
 import { location } from 'svelte-spa-router';
 import funnailogo from "../assets/funnai_black.svg";

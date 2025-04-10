@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { store, chatModelIdInitiatedGlobal, chatModelGlobal, activeChatGlobal } from "../store";
+  import { store, chatModelIdInitiatedGlobal, chatModelGlobal, activeChatGlobal } from "../stores/store";
   import { push } from 'svelte-spa-router';
 
   import { now } from "svelte/internal";

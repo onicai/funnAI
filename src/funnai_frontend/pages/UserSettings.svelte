@@ -4,7 +4,7 @@
     selectedAiModelId,
     deviceType,
     userSettings
-  } from "../store";
+  } from "../stores/store";
 
   import InOutSaveChats   from "../components/InOutSaveChats.svelte";
   import OwnCanister      from "../components/OwnCanister.svelte";

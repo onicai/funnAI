@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Toast from './Toast.svelte';
-  import { submitEmailSignUpForm } from "../helpers/utils.js";
+  import { submitEmailSignUpForm } from "../helpers/utils/utils.js";
   import { location } from 'svelte-spa-router';
 
   let canvas: HTMLCanvasElement;

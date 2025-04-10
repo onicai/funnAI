@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import {
     installAppDeferredPrompt
-  } from "../store";
+  } from "../stores/store";
 
   let deferredPrompt = $installAppDeferredPrompt;
   installAppDeferredPrompt.subscribe((value) => deferredPrompt = value); // needed to persist the prompt across reloads of this component

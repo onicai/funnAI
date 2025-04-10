@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { store } from "../store";
+  import { store } from "../stores/store";
   import { fly, scale } from 'svelte/transition';
   import { quadOut } from 'svelte/easing';
   import { Hamburger } from 'svelte-hamburgers';

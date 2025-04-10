@@ -4,7 +4,7 @@
   import CyclesDisplay from "../components/CyclesDisplay.svelte";
   import WheelOfFortune from "../components/WheelOfFortune.svelte";
   import Footer from "../components/Footer.svelte";
-  import { theme } from "../store";
+  import { theme } from "../stores/store";
 </script>
 
 <div class="flex flex-col h-full min-h-[calc(100vh-60px)] dark:bg-gray-900">

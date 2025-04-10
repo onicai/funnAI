@@ -2,7 +2,7 @@
   import WalletTable from '../components/WalletTable.svelte';
   import WalletStatus from '../components/WalletStatus.svelte';
   import LoginModal from '../components/LoginModal.svelte';
-  import { store } from "../store";
+  import { store } from "../stores/store";
   
   let modalIsOpen = false;
   
