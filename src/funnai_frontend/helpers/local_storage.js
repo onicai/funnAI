@@ -304,7 +304,7 @@ export async function syncLocalChanges() {
     if (userSettingsToSync) {
       try {
         const updatedSettingsObject = JSON.parse(userSettingsToSync);
-        const settingsUpdatedResponse = await storeState.backendActor.update_caller_settings(updatedSettingsObject);            
+        const settingsUpdatedResponse = await storeState.backendActor.update_caller_chat_settings(updatedSettingsObject);            
         // @ts-ignore
         if (settingsUpdatedResponse.Err) {
           // @ts-ignore

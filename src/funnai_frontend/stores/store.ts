@@ -222,7 +222,7 @@ export const createStore = ({
       // Especially selected AI model to be used for chat
     if (navigator.onLine) {
       try {
-        const retrievedSettingsResponse = await backendActor.get_caller_settings();
+        const retrievedSettingsResponse = await backendActor.get_caller_chat_settings();
         // @ts-ignore
         if (retrievedSettingsResponse.Ok) {
           userSettings.set(retrievedSettingsResponse.Ok);
@@ -362,27 +362,28 @@ export const createStore = ({
   };
 
   const initializeUserMainerAgentCanisters = async (gameStateCanisterActor: typeof game_state_canister, loginType, identity: Identity) => {
+    let userCanisters = [];
+    let mainerActors = [];
     try {
       const getMainersResult = await gameStateCanisterActor.getMainerAgentCanistersForUser();
       // @ts-ignore
       if (getMainersResult.Ok) {
         // @ts-ignore
-        const userCanisters = getMainersResult.Ok;
+        userCanisters = getMainersResult.Ok;
         let initPromises = [];
         userCanisters.forEach(userCanister => {
           initPromises.push(initMainerAgentCanisterActor(userCanister, loginType, identity)); 
         });
-        let mainerActors = await Promise.all(initPromises);
+        mainerActors = await Promise.all(initPromises);
         return { mainerActors, userCanisters };
       } else {
         // @ts-ignore
         console.error("Error retrieving user mAIner agent canisters: ", getMainersResult.Err);
-        // @ts-ignore
-        throw new Error("Error retrieving user mAIner agent canisters: ", getMainersResult.Err);
       };
     } catch (error) {
       console.error("Error in initializeUserMainerAgentCanisters: ", error);
     };
+    return { mainerActors, userCanisters };
   };
 
   const nfidConnect = async () => {

@@ -19,7 +19,7 @@
 
   const loadUserSettings = async () => {
     try {
-      const retrievedSettingsResponse = await $store.backendActor.get_caller_settings();
+      const retrievedSettingsResponse = await $store.backendActor.get_caller_chat_settings();
       // @ts-ignore
       if (retrievedSettingsResponse.Ok) {
         // @ts-ignore
