@@ -3,7 +3,7 @@
   import { store } from "../../store";
   import { link } from 'svelte-spa-router';
   import LoginModal from '../login/LoginModal.svelte';
-  import TokensDisplay  from './TokensDisplay.svelte';
+  import MessageCenter from './NotificationsCenter.svelte';
 
   let visibleInstallAppToast = false;
 
@@ -72,8 +72,6 @@
   });
 </script>
 
-  <!-- <TokensDisplay icpBalance={199} funnaiBalance={1929} /> -->
-
   {#if !$store.isAuthed}
     <div class="flex items-center gap-2">
       <button type="button" on:click={() => {toggleModal()}} data-modal-target="crypto-modal" data-modal-toggle="crypto-modal" class="mr-1 text-gray-700 bg-gray-100 dark:text-gray-200 dark:bg-gray-700 border-2 border-gray-200 hover:border-2 hover:border-gray-300 dark:hover:border-gray-600 border focus:ring-4 focus:outline-none focus:ring-gray-100 dark:focus:ring-gray-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center" style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;">
@@ -82,7 +80,10 @@
       </button>
     </div>
   {:else}
-    <div class="flex gap-2">
+    <div class="flex items-center gap-2">
+      <div class="relative mr-2">
+        <MessageCenter />
+      </div>
       <a use:link href="/wallet" class="mr-1 text-white dark:text-orange-500 bg-gray-500 dark:bg-gray-700 border-2 border-orange-500 hover:border-2 hover:border-orange-400 dark:hover:border-orange-700 focus:ring-4 focus:outline-none focus:ring-orange-200 dark:focus:ring-orange-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center" style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 me-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />

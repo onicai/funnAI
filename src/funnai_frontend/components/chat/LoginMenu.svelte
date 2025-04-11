@@ -5,7 +5,7 @@
   import { Hamburger } from 'svelte-hamburgers';
 
   import Login from "../Login.svelte";
-  import Modal from "../Modal.svelte";
+  import Modal from "../_widgets/Modal.svelte";
 
   // Whether hamburger menu is open
   let open;
