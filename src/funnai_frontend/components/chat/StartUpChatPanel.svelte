@@ -1,5 +1,5 @@
 <script lang="ts">
-  import devincilogo from "/devinci-logo.svg";
+  import devincilogo from "/chat/devinci-logo.svg";
 
   export let sendMessageCallbackFunction;
 

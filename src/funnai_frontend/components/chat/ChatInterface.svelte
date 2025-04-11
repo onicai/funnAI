@@ -3,7 +3,7 @@
   <div class="space-y-6">
     <a href="https://devinci.onicai.com/" target='_blank' rel="noreferrer" class="block w-full">
       <div class="card flex flex-col pt-16 pb-12 md:p-8 items-center rounded-[32px] shadow md:flex-row border-gray-700 bg-opacity-90 dark:bg-opacity-100 dark:border-purple-900" style="background: linear-gradient(48deg, rgba(203, 139, 208, 0.71) -32.7%, rgba(152, 98, 207, 0.85) 33.06%, rgba(42, 19, 95, 1) 129.51%);">
-        <img class="object-cover rounded-t-lg mx-8 h-48 mb-12 md:mb-0 md:h-auto md:w-48 md:rounded-none md:rounded-s-lg rotate-on-hover" src="./shape_7.svg" alt="">
+        <img class="object-cover rounded-t-lg mx-8 h-48 mb-12 md:mb-0 md:h-auto md:w-48 md:rounded-none md:rounded-s-lg rotate-on-hover" src="./chat/shape_7.svg" alt="">
         <div class="flex flex-col justify-between p-4 leading-normal">
           <h5 class="mb-2 text-3xl font-bold tracking-tight text-[#f7e5d1]">DeVinci</h5>
           <p class="mb-3 text-4xl font-normal text-[#e7d7ea]">The end-to-end decentralized AI chat app.</p>
@@ -15,7 +15,7 @@
 
     <a href="https://icgpt.onicai.com/" target='_blank' rel="noreferrer" class="block w-full">
       <div class="card flex flex-col pt-16 pb-12 md:p-8 items-center rounded-[32px] shadow md:flex-row border-gray-700 bg-opacity-90 dark:bg-opacity-100 dark:border-teal-900" style="background: linear-gradient(48deg, #4DEDD3 -32.7%, #31A782 33.06%, #3B00B9 129.51%)">
-        <img class="object-cover rounded-t-lg mx-8 h-48 mb-12 md:mb-0 md:h-auto md:w-48 md:rounded-none md:rounded-s-lg rotate-on-hover" src="./shape_9.svg" alt="">
+        <img class="object-cover rounded-t-lg mx-8 h-48 mb-12 md:mb-0 md:h-auto md:w-48 md:rounded-none md:rounded-s-lg rotate-on-hover" src="./chat/shape_9.svg" alt="">
         <div class="flex flex-col justify-between p-4 leading-normal">
           <h5 class="mb-2 text-3xl font-bold tracking-tight text-[#f7e5d1]">ICGPT</h5>
           <p class="mb-3 text-4xl font-normal text-[#e7d7ea]">The first ever on-chain Large Language Models</p>

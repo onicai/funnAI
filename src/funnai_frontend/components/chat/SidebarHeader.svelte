@@ -7,7 +7,7 @@
 
   import ChatHistory from "./chat/ChatHistory.svelte";
 
-  import devincilogo from "/devinci-logo.svg";
+  import devincilogo from "/chat/devinci-logo.svg";
   import { downloadedModels } from '../store';
 
   // Reactive statement to check if the user has already downloaded at least one AI model

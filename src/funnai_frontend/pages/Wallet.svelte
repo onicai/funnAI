@@ -1,6 +1,6 @@
 <script lang="ts">
-  import WalletTable from '../components/WalletTable.svelte';
-  import WalletStatus from '../components/WalletStatus.svelte';
+  import WalletTable from '../components/funnai/WalletTable.svelte';
+  import WalletStatus from '../components/funnai/WalletStatus.svelte';
   import LoginModal from '../components/login/LoginModal.svelte';
   import { store } from "../store";
   

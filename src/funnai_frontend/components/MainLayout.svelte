@@ -2,8 +2,8 @@
   import type { SvelteComponent } from 'svelte';
   import Router from "svelte-spa-router";
   import { store, theme } from "../store";
-  import NavigationMainLayout from "./NavigationMainLayout.svelte";
-  import SidebarMainLayout from "./SidebarMainLayout.svelte";
+  import NavigationMainLayout from "./funnai/NavigationMainLayout.svelte";
+  import SidebarMainLayout from "./funnai/SidebarMainLayout.svelte";
   import ChatLayout from "./chat/ChatLayout.svelte";
   import Dashboard from "../pages/Dashboard.svelte";
   import Wallet from "../pages/Wallet.svelte";

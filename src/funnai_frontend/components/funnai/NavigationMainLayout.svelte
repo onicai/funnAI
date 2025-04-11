@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { store, theme } from "../store";
+  import { store } from "../../store";
   import { link } from 'svelte-spa-router';
-  import LoginModal from './login/LoginModal.svelte';
+  import LoginModal from '../login/LoginModal.svelte';
   import TokensDisplay  from './TokensDisplay.svelte';
 
   let visibleInstallAppToast = false;

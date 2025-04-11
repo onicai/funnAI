@@ -1,6 +1,6 @@
 <script lang="ts">
   import { marked } from 'marked';
-  import devinciLogo from "/devinci.png";
+  import devinciLogo from "/chat/devinci.png";
 
   export let messageContent;
 

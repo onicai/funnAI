@@ -3,8 +3,8 @@
 
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
-  import { store } from "../store";
-  import { mockFeedData } from "../helpers/mockFeedData";
+  import { store } from "../../store";
+  import { mockFeedData } from "../../helpers/mockFeedData";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;

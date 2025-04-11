@@ -1,6 +1,6 @@
 <script lang="ts">
   import Newsletter from "../../components/chat/Newsletter.svelte";
-  import devincilogo from "/devinci.svg";
+  import devincilogo from "/chat/devinci.svg";
 </script>
 
 <div class="flex justify-between px-4 mx-auto max-w-screen-xl ">

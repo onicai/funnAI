@@ -1,6 +1,6 @@
 <script lang="ts">
   import { marked } from 'marked';
-  import devincilogobit from "/android-chrome-192x192.png";
+  import devincilogobit from "../assets/chat/devinci192.png";
 
   export let messageContent;
 

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import devincilogo from "/devinci.svg";
-  import devincilogosvgdownload from "/devinci.zip?url";
-  import devincilogopngdownload from "/devinci.png.zip?url";
+  import devincilogo from "/chat/devinci.svg";
+  import devincilogosvgdownload from "/chat/devinci.zip?url";
+  import devincilogopngdownload from "/chat/devinci.png.zip?url";
 </script>
 
 

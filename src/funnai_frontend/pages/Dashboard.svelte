@@ -1,9 +1,9 @@
 <script lang="ts">
-  import MainerAccordion from "../components/MainerAccordion.svelte";
-  import MainerFeed from "../components/MainerFeed.svelte";
-  import CyclesDisplay from "../components/CyclesDisplay.svelte";
-  import WheelOfFortune from "../components/WheelOfFortune.svelte";
-  import Footer from "../components/Footer.svelte";
+  import MainerAccordion from "../components/funnai/MainerAccordion.svelte";
+  import MainerFeed from "../components/funnai/MainerFeed.svelte";
+  import CyclesDisplay from "../components/funnai/CyclesDisplay.svelte";
+  import WheelOfFortune from "../components/funnai/WheelOfFortune.svelte";
+  import Footer from "../components/funnai/Footer.svelte";
   import { theme } from "../store";
 </script>
 
