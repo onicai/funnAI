@@ -22,7 +22,9 @@
   let hasAttemptedTokenLoad = false;
 
   // Reactive derived values
-  $: walletData = get(walletDataStore);
+  //$: walletData = get(walletDataStore);
+  let walletData;
+  walletDataStore.subscribe((value) => walletData = value);
 
   $: tokensWithBalance = walletData.tokens.filter(token => {
     const balance = walletData.balances[token.canister_id];
@@ -30,15 +32,15 @@
   }) || [];
 
   $: totalTokenValue = Object.values(walletData.balances).reduce(
-    (sum, balance) => sum + Number(balance?.in_usd || "0"),
+    (sum: number, balance) => sum + Number(balance?.in_usd || "0"),
     0
   );
 
   $: isDataLoading =
     isLoading ||
     isLoadingHistory ||
-    walletData.isLoading ||
-    (walletData.tokens.length > 0 && Object.keys(walletData.balances).length === 0);
+    walletData.isLoading /* ||
+    (walletData.tokens.length > 0 && Object.keys(walletData.balances).length === 0) */;
 
   // Format currency 
   function formatCurrency(value: number): string {
@@ -104,7 +106,9 @@
   }
 
   onMount(async () => {
-    await WalletDataService.initializeWallet($store.principal.toString());
+    console.log("in Wallet $store.principal.toString() ", $store?.principal?.toString());
+    await WalletDataService.initializeWallet($store?.principal?.toString());
+    console.log("in Wallet walletData ", walletData);
   });
 
   const transactions = [
@@ -225,8 +229,10 @@
       
       <!-- Content -->
       {#if isDataLoading}
+        <h3 class="text-sm uppercase font-medium text-kong-text-primary">isDataLoading</h3>
         <LoadingIndicator text={"Loading wallet data..."} size={24} />
       {:else if loadingError}
+        <h3 class="text-sm uppercase font-medium text-kong-text-primary">loadingError</h3>
         <div class="text-kong-accent-red mb-4">{loadingError}</div>
         <button
           class="text-sm text-kong-primary hover:text-opacity-80 transition-colors"
@@ -235,14 +241,18 @@
           Try Again
         </button>
       {:else if walletData.tokens.length === 0}
+        <h3 class="text-sm uppercase font-medium text-kong-text-primary">no tokens</h3>
         <LoadingIndicator text="Loading token data..." size={24} />
       {:else}
-        <WalletTokenList 
-          tokens={walletData.tokens} 
-          showHeader={false} 
-          showOnlyWithBalance={true}
-          isLoading={isDataLoading}
-        />        
+        <h3 class="text-sm uppercase font-medium text-kong-text-primary">WalletTokenList</h3>
+        {#key walletData}
+          <WalletTokenList 
+            tokens={walletData.tokens} 
+            showHeader={false} 
+            showOnlyWithBalance={false}
+            isLoading={isDataLoading}
+          />
+        {/key}      
       {/if}
     </div>
   </Panel>

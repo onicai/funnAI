@@ -11,12 +11,12 @@ export const createAnonymousActorHelper = (canisterId: string, idl: any) => {
 
   const agent = new HttpAgent({
     host:
-      process.env.DFX_NETWORK !== "ic"
+      process.env.DFX_NETWORK === "local"
         ? "http://localhost:4943"
         : "https://icp0.io",
   });
 
-  if (process.env.DFX_NETWORK !== "ic") {
+  if (process.env.DFX_NETWORK === "local") {
     agent.fetchRootKey();
   }
 
