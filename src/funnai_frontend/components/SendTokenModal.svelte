@@ -355,19 +355,15 @@
   <div class="p-4 flex flex-col gap-4">
     <!-- Token Info Banner -->
     <div 
-      class="flex items-center gap-3 p-3 rounded-lg bg-kong-bg-light/10 border border-kong-border/30 transition-all duration-300"
+      class="flex items-center gap-3 p-3 rounded-lg bg-gray-100 border border-gray-300 transition-all duration-300"
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '10px')});"
     >
-      <div class="w-10 h-10 rounded-full bg-kong-bg-light p-1 border border-kong-border/20 flex-shrink-0">
-        <TokenImages
-          tokens={[token]}
-          size={32}
-          showSymbolFallback={true}
-        />
+      <div class="w-10 h-10 rounded-full bg-white p-1 border border-gray-200 flex-shrink-0">
+        <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
       </div>
       <div class="flex flex-col">
-        <div class="text-kong-text-primary font-medium">{token.name}</div>
-        <div class="text-sm text-kong-text-secondary">Balance: {formatBalance(balances.default.toString(), token.decimals)} {token.symbol}</div>
+        <div class="text-gray-900 font-medium">{token.name}</div>
+        <div class="text-sm text-gray-500">Balance: {formatBalance(balances.default.toString(), token.decimals)} {token.symbol}</div>
       </div>
     </div>
 
@@ -379,29 +375,28 @@
     >
       <!-- Recipient Address Input -->
       <div>
-        <label for="recipient-address" class="block text-xs text-kong-text-secondary mb-1.5">Recipient Address</label>
+        <label for="recipient-address" class="block text-xs text-gray-500 mb-1.5">Recipient Address</label>
         <div class="relative">
           <input
             id="recipient-address"
             type="text"
-            class="w-full py-2 px-3 bg-kong-bg-light/30 border {addressValidation.isValid
-              ? 'border-kong-primary/40'
-              : recipientAddress
-              ? 'border-kong-accent-red/40'
-              : 'border-kong-border/50'} rounded-md text-sm text-kong-text-primary"
+            class="w-full py-2 px-3 bg-white border rounded-md text-sm text-gray-900"
+            class:border-green-400={addressValidation.isValid}
+            class:border-red-400={!addressValidation.isValid && recipientAddress}
+            class:border-gray-300={!recipientAddress}
             placeholder="Enter Canister ID, Principal ID, or Account ID"
             bind:value={recipientAddress}
             on:input={handleAddressInput}
           />
           <div class="absolute inset-y-0 right-0 flex items-center gap-0.5">
             {#if addressValidation.isValid}
-              <div class="p-1.5 text-kong-accent-green">
+              <div class="p-1.5 text-green-500">
                 <Check size={16} />
               </div>
             {/if}
             <button
               type="button"
-              class="p-1.5 text-kong-text-secondary hover:text-kong-text-primary"
+              class="p-1.5 text-gray-400 hover:text-gray-700"
               on:click={handleAddressPaste}
               use:tooltip={{ text: "Paste from clipboard", direction: "top" }}
             >
@@ -410,7 +405,7 @@
             {#if hasCamera}
               <button
                 type="button"
-                class="p-1.5 text-kong-text-secondary hover:text-kong-text-primary"
+                class="p-1.5 text-gray-400 hover:text-gray-700"
                 on:click={handleScanClick}
                 use:tooltip={{ text: "Scan QR code", direction: "top" }}
               >
@@ -420,7 +415,7 @@
           </div>
         </div>
         {#if addressValidation.addressType && addressValidation.isValid}
-          <div class="mt-1 text-xs text-kong-accent-green">
+          <div class="mt-1 text-xs text-green-500">
             Valid {addressValidation.addressType} address
           </div>
         {/if}
@@ -429,10 +424,10 @@
       <!-- Amount Input -->
       <div>
         <div class="flex justify-between items-center mb-1.5">
-          <label for="amount-input" class="block text-xs text-kong-text-secondary">Amount</label>
+          <label for="amount-input" class="block text-xs text-gray-500">Amount</label>
           <button
             type="button"
-            class="text-xs text-kong-primary hover:text-kong-primary/80"
+            class="text-xs text-blue-600 hover:text-blue-500"
             on:click={handleSendMax}
           >
             Send Max
@@ -442,24 +437,23 @@
           <input
             id="amount-input"
             type="text"
-            class="w-full py-2 px-3 bg-kong-bg-light/30 border {amountValidation.isValid
-              ? 'border-kong-primary/40'
-              : amount
-              ? 'border-kong-accent-red/40'
-              : 'border-kong-border/50'} rounded-md text-sm text-kong-text-primary"
+            class="w-full py-2 px-3 bg-white border rounded-md text-sm text-gray-900"
+            class:border-green-400={amountValidation.isValid}
+            class:border-red-400={!amountValidation.isValid && amount}
+            class:border-gray-300={!amount}
             placeholder="0.00"
             bind:value={amount}
             on:input={handleAmountInput}
           />
           <div class="absolute inset-y-0 right-0 flex items-center pr-3">
-            <span class="text-kong-text-secondary">{token.symbol}</span>
+            <span class="text-gray-500">{token.symbol}</span>
           </div>
         </div>
         <div class="mt-1 text-xs flex justify-between items-center">
-          <div class="text-kong-text-secondary">
+          <div class="text-gray-500">
             Max: {maxAmount} {token.symbol}
           </div>
-          <div class="flex items-center gap-1 text-kong-text-secondary/70">
+          <div class="flex items-center gap-1 text-gray-400">
             <Info size={12} />
             <span>Fee: {tokenFee ? formatBalance(tokenFee, token.decimals) : "..."} {token.symbol}</span>
           </div>
@@ -468,7 +462,7 @@
 
       {#if errorMessage}
         <div 
-          class="px-3 py-2 bg-kong-accent-red/10 border border-kong-accent-red/20 rounded-md text-sm text-kong-accent-red transition-all duration-300"
+          class="px-3 py-2 bg-red-100 border border-red-300 rounded-md text-sm text-red-600 transition-all duration-300"
           style="opacity: {closing ? 0 : (mounted ? 1 : 0)};"
         >
           {errorMessage}
@@ -478,17 +472,17 @@
       <!-- Submit Button -->
       <button
         type="submit"
-        class="w-full py-3 px-4 mt-2 rounded-md flex items-center justify-center gap-2 font-medium text-white
-               {isFormValid 
-                 ? 'bg-kong-primary hover:bg-kong-primary/90' 
-                 : 'bg-kong-primary/40 cursor-not-allowed'} 
-               transition-all duration-300"
+        class="w-full py-3 px-4 mt-2 rounded-md flex items-center justify-center gap-2 font-medium text-white transition-all duration-300"
+        class:bg-blue-600={isFormValid}
+        class:hover\:bg-blue-500={isFormValid}
+        class:bg-blue-300={!isFormValid}
+        class:cursor-not-allowed={!isFormValid || isValidating}
         style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '10px')}); transition-delay: {closing ? '0ms' : '250ms'};"
         disabled={!isFormValid || isValidating}
         use:tooltip={{
           text: getTooltipMessage(),
           direction: "top",
-          background: errorMessage ? "bg-kong-accent-red" : "bg-kong-bg-dark",
+          background: errorMessage ? "bg-red-600" : "bg-gray-900",
         }}
       >
         {#if isValidating}
@@ -527,11 +521,9 @@
 {/if}
 
 <style>
-  /* Add global CSS for the modal transitions */
   :global(.send-token-modal) {
     animation: fadeIn 0.25s ease-out;
   }
-
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -542,12 +534,9 @@
       transform: translateY(0);
     }
   }
-
-  /* This will be applied when the modal is closing */
   :global(.modal-closing) {
     animation: fadeOut 0.2s ease-out forwards !important;
   }
-
   @keyframes fadeOut {
     from {
       opacity: 1;
@@ -558,4 +547,4 @@
       transform: translateY(20px);
     }
   }
-</style> 
+</style>

@@ -270,7 +270,7 @@
                 </slot>
               </div>
               <button
-                class="!flex !items-center hover:text-kong-accent-red !border-0 !shadow-none group relative ml-2"
+                class="!flex !items-center hover:text-red-600 !border-0 !shadow-none group relative ml-2"
                 on:click={(e) => handleClose(e)}
                 aria-label="Close modal"
               >

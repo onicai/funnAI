@@ -2,9 +2,9 @@ import localForage from 'localforage';
 import { browser } from '../../stores/store';
 
 // Configuration constants
-const STORAGE_NAME = 'kong_storage';
+const STORAGE_NAME = 'funnAI_storage';
 const STORAGE_VERSION = 1.0;
-const STORAGE_DESCRIPTION = 'KongSwap Local Storage';
+const STORAGE_DESCRIPTION = 'funnAI Local Storage';
 
 // Storage keys/namespaces
 export const STORAGE_KEYS = {
@@ -32,7 +32,7 @@ export function configureStorage() {
       name: STORAGE_NAME,
       version: STORAGE_VERSION,
       description: STORAGE_DESCRIPTION,
-      storeName: 'kong_main_store',
+      storeName: 'funnAI_main_store',
       size: 10485760 // 10MB
     });
 

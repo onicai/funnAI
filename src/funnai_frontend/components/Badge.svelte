@@ -25,12 +25,12 @@
 
   // Computed styles based on variant
   const variantStyles = {
-    blue: "bg-kong-accent-blue/20 text-kong-accent-blue",
-    green: "bg-kong-accent-green/20 text-kong-accent-green",
-    red: "bg-kong-accent-red/20 text-kong-accent-red",
-    yellow: "bg-kong-accent-yellow/20 text-kong-accent-yellow",
-    purple: "bg-kong-accent-purple/20 text-kong-accent-purple",
-    gray: "bg-kong-text-secondary/20 text-kong-text-secondary"
+    blue: "bg-blue-100 text-blue-600",
+    green: "bg-green-100 text-green-600",
+    red: "bg-red-100 text-red-600",
+    yellow: "bg-yellow-100 text-yellow-600",
+    purple: "bg-purple-100 text-purple-600",
+    gray: "bg-gray-200 text-gray-600"
   };
 
   // Size styles

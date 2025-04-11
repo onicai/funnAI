@@ -8,7 +8,7 @@
   export let imageWrapperClass: string = "";
   export let overlap: boolean = false;
   export let maxDisplay: number = 5;
-  export let countBgColor: string = "bg-kong-primary";
+  export let countBgColor: string = "bg-blue-600";
   export let countTextColor: string = "text-white";
   export let tooltip: { text: string; direction: "top" | "bottom" | "left" | "right" } = { text: "", direction: "top" };
   export let showSymbolFallback: boolean = true;
@@ -74,7 +74,7 @@
     >
       {#if hasValidImage(token)}
         <img
-          class="w-full h-full rounded-full bg-transparent ring-2 ring-kong-bg-dark ring-opacity-40"
+          class="w-full h-full rounded-full bg-transparent ring-2 ring-gray-900/40"
           src={token?.logo_url || DEFAULT_IMAGE}
           alt={getTokenAlt(token)}
           loading="eager"
@@ -82,9 +82,9 @@
           on:load={() => handleImageLoad(token)}
         />
       {:else if showSymbolFallback}
-        <div class="w-full h-full rounded-full bg-kong-text-primary/10 flex items-center justify-center ring-2 ring-kong-bg-dark ring-opacity-40">
+        <div class="w-full h-full rounded-full bg-gray-500/10 flex items-center justify-center ring-2 ring-gray-900/40">
           <span
-            class="font-bold text-kong-primary truncate max-w-[80%] text-center"
+            class="font-bold text-blue-600 truncate max-w-[80%] text-center"
             style="font-size: min(calc({size}px * 0.3), .75rem);"
           >
             {getTokenSymbol(token)}
@@ -92,7 +92,7 @@
         </div>
       {:else}
         <img
-          class="w-full h-full rounded-full bg-transparent ring-2 ring-kong-bg-dark ring-opacity-40"
+          class="w-full h-full rounded-full bg-transparent ring-2 ring-gray-900/40"
           src={DEFAULT_IMAGE}
           alt={getTokenAlt(token)}
           loading="eager"
@@ -103,11 +103,11 @@
   {/each}
 
   {#if remainingCount > 0}
-    <div
-      style="height: {size}px; width: {size}px; z-index: 0;"
-      class="flex items-center justify-center rounded-full {countBgColor} {overlap ? `mr-[-${Math.floor(size * 0.3)}px]` : ''} relative border border-kong-border shadow-md group-hover:hover:translate-y-[-2px] transition-transform duration-150"
-    >
-      <span class="text-[.625rem] font-bold {countTextColor}">+{remainingCount}</span>
-    </div>
+  <div
+    style="height: {size}px; width: {size}px; z-index: 0;"
+    class="flex items-center justify-center rounded-full {countBgColor} {overlap ? `mr-[-${Math.floor(size * 0.3)}px]` : ''} relative border border-gray-300 shadow-md group-hover:hover:translate-y-[-2px] transition-transform duration-150"
+  >
+    <span class="text-[.625rem] font-bold {countTextColor}">+{remainingCount}</span>
+  </div>
   {/if}
-</div>
+  </div>

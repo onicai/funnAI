@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let color = "text-kong-text-primary";
+  export let color = "text-gray-600";
   export let size = "text-lg";
 </script>
 

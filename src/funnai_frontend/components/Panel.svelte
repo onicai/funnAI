@@ -75,114 +75,112 @@
 {/if}
 
 <style lang="postcss" scoped>
-.panel {
-  position: relative;
-  color: var(--color-kong-text-primary); /* assuming this is a CSS variable */
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.panel.animated {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Base solid panel styling - uses theme variables */
-.panel.solid {
-  background-color: var(--color-kong-bg-dark);
-  border: 1px solid var(--color-kong-border);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-}
-
-/* Main panel styling - slightly different for primary panels */
-.panel.solid.main {
-  border-color: var(--color-kong-border);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-/* Sidebar panel specific style */
-.panel.solid.sidebar-panel,
-.panel.solid.main.sidebar-panel {
-  border-color: rgba(var(--color-kong-border-rgb), 0.8); /* Simulating /80 */
-  border-width: 1px;
-}
-
-/* Transparent panel styling */
-.panel.transparent {
-  background-color: rgba(var(--color-kong-bg-dark-rgb), 0.85);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(var(--color-kong-border-rgb), 0.5);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); /* Tailwind's shadow-sm approximation */
-}
-
-/* Interactive panel styles */
-.panel.interactive {
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.panel.interactive:hover {
-  transform: scale(1.02);
-}
-
-.panel.interactive.solid:hover,
-.panel.interactive.transparent:hover {
-  border-color: rgba(var(--color-kong-primary-rgb), 0.6);
-}
-
-/* Active state for interactive panels */
-.panel.interactive.active {
-  border-color: var(--color-kong-primary);
-  background-color: var(--color-kong-primary-hover);
-  color: var(--color-kong-text-on-primary);
-}
-
-/* Hover effect for transparent panels */
-.panel.transparent:hover,
-.panel.transparent:has(.panel:hover) {
-  border-color: rgba(var(--color-kong-border-rgb), 0.7);
-  background-color: rgba(var(--color-kong-bg-dark-rgb), 0.9);
-}
-
-/* Premium edge highlight for solid variant - uses theme text color */
-.panel.solid:not(.rounded-none)::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  padding: 1px;
-  background: linear-gradient(to bottom right,
-    rgba(var(--color-kong-text-primary-rgb), 0.04),
-    rgba(var(--color-kong-text-primary-rgb), 0.02),
-    rgba(var(--color-kong-text-primary-rgb), 0.01)
-  );
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  border-radius: inherit;
-}
-
-/* Inner glow effect - uses theme text color */
-.panel.solid::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    circle,
-    rgba(var(--color-kong-text-primary-rgb), 0.01),
-    transparent
-  );
-  pointer-events: none;
-}
-
-/* Special styling for swap panels */
-.panel.transparent.swap-panel::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(to right bottom, rgba(255, 255, 255, 0.03), transparent);
-  pointer-events: none;
-}
-</style>
+  .panel {
+    position: relative;
+    color: #1f2937; /* neutral-800 */
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  
+  .panel.animated {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* Solid panel base */
+  .panel.solid {
+    background-color: #111827; /* neutral-900 */
+    border: 1px solid #374151; /* neutral-700 */
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  }
+  
+  /* Main solid panel */
+  .panel.solid.main {
+    border-color: #374151;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Sidebar panel */
+  .panel.solid.sidebar-panel,
+  .panel.solid.main.sidebar-panel {
+    border-color: rgba(55, 65, 81, 0.8); /* neutral-700 @ 80% */
+    border-width: 1px;
+  }
+  
+  /* Transparent panel */
+  .panel.transparent {
+    background-color: rgba(17, 24, 39, 0.85); /* neutral-900 @ 85% */
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(55, 65, 81, 0.5); /* neutral-700 @ 50% */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Interactive states */
+  .panel.interactive {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .panel.interactive:hover {
+    transform: scale(1.02);
+  }
+  
+  .panel.interactive.solid:hover,
+  .panel.interactive.transparent:hover {
+    border-color: rgba(59, 130, 246, 0.6); /* blue-500 @ 60% */
+  }
+  
+  .panel.interactive.active {
+    border-color: #3b82f6; /* blue-500 */
+    background-color: #2563eb; /* blue-600 */
+    color: white;
+  }
+  
+  .panel.transparent:hover,
+  .panel.transparent:has(.panel:hover) {
+    border-color: rgba(55, 65, 81, 0.7); /* neutral-700 @ 70% */
+    background-color: rgba(17, 24, 39, 0.9); /* neutral-900 @ 90% */
+  }
+  
+  /* Solid edge glow */
+  .panel.solid:not(.rounded-none)::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    background: linear-gradient(to bottom right,
+      rgba(31, 41, 55, 0.04),  /* neutral-800 @ 4% */
+      rgba(31, 41, 55, 0.02),  /* neutral-800 @ 2% */
+      rgba(31, 41, 55, 0.01)   /* neutral-800 @ 1% */
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+  
+  /* Solid inner glow */
+  .panel.solid::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      circle,
+      rgba(31, 41, 55, 0.01),  /* neutral-800 @ 1% */
+      transparent
+    );
+    pointer-events: none;
+  }
+  
+  /* Swap panel */
+  .panel.transparent.swap-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(to right bottom, rgba(255, 255, 255, 0.03), transparent);
+    pointer-events: none;
+  }
+</style>  

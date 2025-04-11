@@ -128,10 +128,10 @@
   <div class="p-4 flex flex-col gap-4">
     <!-- Token Info Banner -->
     <div 
-      class="flex items-center gap-3 p-3 rounded-lg bg-kong-bg-light/10 border border-kong-border/30 transition-all duration-300"
+      class="flex items-center gap-3 p-3 rounded-lg transition-all duration-300"
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '10px')});"
     >
-      <div class="w-10 h-10 rounded-full bg-kong-bg-light p-1 border border-kong-border/20 flex-shrink-0">
+      <div class="w-10 h-10 rounded-full flex-shrink-0">
         <TokenImages
           tokens={[token]}
           size={32}
@@ -139,8 +139,8 @@
         />
       </div>
       <div class="flex flex-col">
-        <div class="text-kong-text-primary font-medium">{token.name}</div>
-        <div class="text-sm text-kong-text-secondary">Your receive address information</div>
+        <div class="font-medium">{token.name}</div>
+        <div class="text-sm">Your receive address information</div>
       </div>
     </div>
 
@@ -150,9 +150,9 @@
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '20px')});"
     >
       <!-- Principal ID -->
-      <div class="bg-kong-bg-light/10 rounded-lg border border-kong-border/30 p-4">
+      <div class="rounded-lg border p-4">
         <div class="flex justify-between items-center mb-2">
-          <h3 class="text-sm font-medium text-kong-text-primary">Principal ID</h3>
+          <h3 class="text-sm font-medium">Principal ID</h3>
           {#if principalQrCode}
             <div class="flex">
               <img 
@@ -165,31 +165,31 @@
           {/if}
         </div>
         <div class="relative">
-          <div class="bg-kong-bg-light/30 rounded border border-kong-border/50 p-2.5 pr-10 text-sm text-kong-text-secondary break-all font-mono">
+          <div class="rounded border p-2.5 pr-10 text-sm break-all font-mono">
             {principal || "Loading..."}
           </div>
           <button 
-            class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-kong-text-secondary hover:text-kong-primary transition-colors"
+            class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-colors"
             on:click={() => copyToClipboard(principal, 'principal')}
             use:tooltip={{ text: principalCopied ? "Copied!" : "Copy to clipboard", direction: "top" }}
           >
             {#if principalCopied}
-              <Check size={16} class="text-kong-accent-green" />
+              <Check size={16} class="" />
             {:else}
               <Copy size={16} />
             {/if}
           </button>
         </div>
-        <p class="text-xs text-kong-text-secondary mt-2">
+        <p class="text-xs mt-2">
           Use this Principal ID to receive {token.symbol === "ICP" ? "non-ICP tokens" : "tokens"}
         </p>
       </div>
 
       {#if token.symbol === "ICP" && accountId}
         <!-- Account ID for ICP -->
-        <div class="bg-kong-bg-light/10 rounded-lg border border-kong-border/30 p-4">
+        <div class="rounded-lg border p-4">
           <div class="flex justify-between items-center mb-2">
-            <h3 class="text-sm font-medium text-kong-text-primary">Account ID</h3>
+            <h3 class="text-sm font-medium">Account ID</h3>
             {#if accountIdQrCode}
               <div class="flex">
                 <img 
@@ -202,32 +202,32 @@
             {/if}
           </div>
           <div class="relative">
-            <div class="bg-kong-bg-light/30 rounded border border-kong-border/50 p-2.5 pr-10 text-sm text-kong-text-secondary break-all font-mono">
+            <div class="rounded border p-2.5 pr-10 text-sm break-all font-mono">
               {accountId || "Loading..."}
             </div>
             <button 
-              class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-kong-text-secondary hover:text-kong-primary transition-colors"
+              class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-colors"
               on:click={() => copyToClipboard(accountId, 'accountId')}
               use:tooltip={{ text: accountIdCopied ? "Copied!" : "Copy to clipboard", direction: "top" }}
             >
               {#if accountIdCopied}
-                <Check size={16} class="text-kong-accent-green" />
+                <Check size={16} class="" />
               {:else}
                 <Copy size={16} />
               {/if}
             </button>
           </div>
-          <p class="text-xs text-kong-text-secondary mt-2">
+          <p class="text-xs mt-2">
             Use this Account ID to receive ICP tokens (recommended for exchanges)
           </p>
         </div>
       {/if}
       
       <!-- Instructions -->
-      <div class="bg-kong-accent-blue/10 rounded-lg border border-kong-accent-blue/20 p-3 text-sm text-kong-text-secondary">
+      <div class="rounded-lg border p-3 text-sm">
         <div class="flex items-center gap-2 mb-1.5">
-          <QrCode size={16} class="text-kong-accent-blue" />
-          <span class="text-kong-text-primary">How to receive {token.symbol}</span>
+          <QrCode size={16} class="" />
+          <span class="">How to receive {token.symbol}</span>
         </div>
         <p class="ml-6">
           {#if token.symbol === "ICP"}
@@ -251,18 +251,18 @@
       style="z-index: 999999;"
     >
       <div 
-        class="relative bg-kong-bg-dark p-4 rounded-xl max-w-md w-full flex flex-col items-center"
+        class="relative p-4 rounded-xl max-w-md w-full flex flex-col items-center"
         on:click|stopPropagation={() => {}}
       >
         <button 
-          class="absolute top-3 right-3 p-1.5 text-kong-text-secondary hover:text-kong-text-primary bg-kong-bg-light/20 rounded-full"
+          class="absolute top-3 right-3 p-1.5 rounded-full"
           on:click={closeEnlargedQrCode}
         >
           <X size={20} />
         </button>
         
         <div class="text-center mb-4">
-          <h3 class="text-lg font-medium text-kong-text-primary">{enlargedQrCode.alt}</h3>
+          <h3 class="text-lg font-medium">{enlargedQrCode.alt}</h3>
         </div>
         
         <div class="bg-white p-6 rounded-lg">
@@ -274,7 +274,7 @@
         </div>
         
         <button
-          class="mt-4 px-4 py-2 bg-kong-primary text-white rounded-md hover:bg-kong-primary/90 transition-colors"
+          class="mt-4 px-4 py-2 text-white rounded-md transition-colors"
           on:click={closeEnlargedQrCode}
         >
           Close

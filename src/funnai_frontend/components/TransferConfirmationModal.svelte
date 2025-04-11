@@ -219,9 +219,9 @@
     align-items: center;
     justify-content: center;
     padding: 0.75rem;
-    background-color: rgba(var(--color-kong-surface-dark-rgb), 0.8);
+    background-color: rgba(39, 39, 42, 0.8);
     border-radius: 0.5rem;
-    border: 1px solid rgba(var(--color-kong-border-rgb), 0.3);
+    border: 1px solid rgba(82, 82, 91, 0.3);
   }
 
   .token-info {
@@ -235,9 +235,9 @@
     height: 2.5rem;
     border-radius: 9999px;
     overflow: hidden;
-    background-color: var(--color-kong-bg-light);
+    background-color: #f3f4f6;
     padding: 0.25rem;
-    border: 1px solid rgba(var(--color-kong-border-rgb), 0.2);
+    border: 1px solid rgba(209, 213, 219, 1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -270,13 +270,13 @@
   }
 
   .token-name {
-    color: var(--color-kong-text-primary);
+    color: #f3f4f6;
     font-weight: 500;
   }
 
   .token-symbol {
     font-size: 0.875rem;
-    color: var(--color-kong-text-secondary);
+    color: #9ca3af;
   }
 
   .transfer-amount {
@@ -288,12 +288,12 @@
   .amount-value {
     font-size: 1.5rem;
     font-weight: 500;
-    color: var(--color-kong-text-primary);
+    color: #f3f4f6;
   }
 
   .usd-value {
     font-size: 0.875rem;
-    color: var(--color-kong-text-secondary);
+    color: #9ca3af;
   }
 
   .transfer-details {
@@ -303,10 +303,10 @@
   }
 
   .detail-section {
-    background-color: rgba(var(--color-kong-surface-dark-rgb), 0.5);
+    background-color: rgba(39, 39, 42, 0.5);
     border-radius: 0.5rem;
     padding: 0.75rem;
-    border: 1px solid rgba(var(--color-kong-border-rgb), 0.2);
+    border: 1px solid rgba(82, 82, 91, 0.2);
   }
 
   @media (min-width: 640px) {
@@ -318,7 +318,7 @@
   .section-title {
     font-size: 0.875rem;
     font-weight: 500;
-    color: rgba(var(--color-kong-text-primary-rgb), 0.9);
+    color: rgba(243, 244, 246, 0.9);
     margin-bottom: 0.5rem;
   }
 
@@ -343,23 +343,23 @@
   .detail-row.total {
     margin-top: 0.5rem;
     padding-top: 0.5rem;
-    border-top: 1px solid rgba(var(--color-kong-border-rgb), 0.1);
+    border-top: 1px solid rgba(75, 85, 99, 0.1);
     font-weight: 500;
-    color: var(--color-kong-text-primary);
+    color: #f3f4f6;
   }
 
   .detail-label {
     font-size: 0.875rem;
-    color: var(--color-kong-text-secondary);
+    color: #9ca3af;
   }
 
   .detail-value {
     font-size: 0.875rem;
-    color: var(--color-kong-text-primary);
+    color: #f3f4f6;
   }
 
   .detail-value.fee {
-    color: var(--color-kong-text-secondary);
+    color: #9ca3af;
   }
 
   .recipient-address {
@@ -369,22 +369,22 @@
   }
 
   .address-display {
-    background-color: rgba(var(--color-kong-bg-light-rgb), 0.5);
+    background-color: rgba(243, 244, 246, 0.5);
     border-radius: 0.5rem;
     padding: 0.75rem;
-    border: 1px solid rgba(var(--color-kong-border-rgb), 0.3);
+    border: 1px solid rgba(209, 213, 219, 1);
   }
 
   .address-value {
     font-size: 0.75rem;
     font-family: monospace;
-    color: var(--color-kong-text-primary);
+    color: #f3f4f6;
     word-break: break-word;
   }
 
   .address-type {
     font-size: 0.75rem;
-    color: var(--color-kong-text-secondary);
+    color: #9ca3af;
     margin-top: 0.25rem;
     padding-left: 0.25rem;
     padding-right: 0.25rem;
@@ -396,10 +396,10 @@
     gap: 0.5rem;
     padding: 0.625rem;
     border-radius: 0.5rem;
-    background-color: rgba(var(--color-kong-accent-yellow-rgb), 0.1);
-    border: 1px solid rgba(var(--color-kong-accent-yellow-rgb), 0.2);
+    background-color: rgba(254, 249, 195, 0.1);
+    border: 1px solid rgba(253, 224, 71, 0.2);
     font-size: 0.75rem;
-    color: rgba(var(--color-kong-text-primary-rgb), 0.8);
+    color: rgba(243, 244, 246, 0.8);
   }
 
   @media (min-width: 640px) {
@@ -409,7 +409,7 @@
   }
 
   .warning-icon {
-    color: var(--color-kong-accent-yellow);
+    color: #facc15;
     flex-shrink: 0;
     margin-top: 0.125rem;
   }
@@ -431,14 +431,14 @@
     height: 2.5rem;
     border-radius: 0.5rem;
     font-weight: 500;
-    background-color: rgba(var(--color-kong-bg-light-rgb), 0.8);
-    color: rgba(var(--color-kong-text-primary-rgb), 0.8);
+    background-color: rgba(243, 244, 246, 0.8);
+    color: rgba(55, 65, 81, 0.8);
     transition: all 0.2s ease;
   }
 
   .cancel-button:hover {
-    background-color: var(--color-kong-bg-light);
-    color: var(--color-kong-text-primary);
+    background-color: #f3f4f6;
+    color: #111827;
   }
 
   .cancel-button:disabled {
@@ -460,13 +460,13 @@
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    background-color: var(--color-kong-primary);
+    background-color: #2563eb;
     color: white;
     transition: all 0.2s ease;
   }
 
   .confirm-button:hover {
-    background-color: var(--color-kong-primary-hover);
+    background-color: #3b82f6;
   }
 
   .confirm-button:disabled {
@@ -481,11 +481,11 @@
   }
 
   .confirm-button.loading {
-    background-color: rgba(var(--color-kong-primary-rgb), 0.9);
+    background-color: rgba(59, 130, 246, 0.9);
   }
 
   .confirm-button.success {
-    background-color: var(--color-kong-accent-green);
+    background-color: #22c55e;
   }
 
   .spinner {
