@@ -1,20 +1,20 @@
 {
   "funnai_backend": {
     "backup": "",
-    "development": "",
+    "development": "bom4f-cyaaa-aaaah-qqa2a-cai",
     "ic": "yekds-uqaaa-aaaaj-az5la-cai",
     "test": "",
     "testing": ""
   },
   "funnai_frontend": {
     "backup": "",
-    "development": "",
+    "development": "zlbtt-2yaaa-aaaak-qufwa-cai",
     "ic": "ydlfg-ziaaa-aaaaj-az5lq-cai",
     "test": "",
     "testing": ""
   },
   "game_state_canister": {
-    "development": "",
+    "development": "ciqqv-4iaaa-aaaag-auara-cai",
     "ic": "xzpy6-hiaaa-aaaaj-az4pq-cai",
     "local": ""
   },
