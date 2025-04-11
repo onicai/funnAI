@@ -1,11 +1,112 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
+  import { Coins, DollarSign, TrendingUp, ArrowUp, ArrowDown } from "lucide-svelte";
+
   import WalletTable from '../components/WalletTable.svelte';
   import WalletStatus from '../components/WalletStatus.svelte';
   import LoginModal from '../components/LoginModal.svelte';
+  import WalletTokenList from "../components/WalletTokenList.svelte";
+  import Panel from "../components/Panel.svelte";
+  import LoadingIndicator from "../components/LoadingIndicator.svelte";
+  import LoadingEllipsis from "../components/LoadingEllipsis.svelte";
+
   import { store } from "../stores/store";
-  
+  import { WalletDataService, walletDataStore } from "../helpers/WalletDataService";
+
+  // State variables
   let modalIsOpen = false;
-  
+  let isLoading = false;
+  let isLoadingHistory = false;
+  let loadingError: string | null = null;
+  let hasAttemptedTokenLoad = false;
+
+  // Reactive derived values
+  $: walletData = get(walletDataStore);
+
+  $: tokensWithBalance = walletData.tokens.filter(token => {
+    const balance = walletData.balances[token.canister_id];
+    return balance && Number(balance.in_tokens || "0") > 0;
+  }) || [];
+
+  $: totalTokenValue = Object.values(walletData.balances).reduce(
+    (sum, balance) => sum + Number(balance?.in_usd || "0"),
+    0
+  );
+
+  $: isDataLoading =
+    isLoading ||
+    isLoadingHistory ||
+    walletData.isLoading ||
+    (walletData.tokens.length > 0 && Object.keys(walletData.balances).length === 0);
+
+  // Format currency 
+  function formatCurrency(value: number): string {
+    return value.toLocaleString('en-US', { 
+      style: 'currency', 
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2 
+    });
+  };
+
+  // Format percentage
+  function formatPercentage(value: number): string {
+    return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
+  };
+
+  // Load wallet data
+  async function loadTokensOnly(principalId: string) {
+    if (isLoading || !principalId) return;
+    
+    try {
+      isLoading = true;
+      loadingError = null;
+      
+      await WalletDataService.loadTokensOnly(principalId);
+      console.log(`Loaded tokens for wallet ${principalId}`);
+    } catch (error) {
+      console.error("Failed to load tokens:", error);
+      loadingError = error instanceof Error ? error.message : "Failed to load token metadata";
+    } finally {
+      isLoading = false;
+    }
+  };
+
+  $: {
+    const principal = $store.principal;
+    const walletState = get(walletDataStore); // Use store via get()
+
+    const hasBalances = Object.keys(walletState.balances).length > 0;
+    const hasTokens = walletState.tokens.length > 0;
+    const isStoreLoading = walletState.isLoading;
+
+    // Update local error state
+    loadingError = walletState.error;
+
+    // Update local loading state
+    const shouldBeLoading = isStoreLoading;
+    if (isLoading !== shouldBeLoading) {
+      isLoading = shouldBeLoading;
+    }
+
+    if (principal && walletState.currentWallet === principal.toString() && !isStoreLoading && hasTokens && !hasBalances) {
+      console.log(`Tokens page: Have tokens, no balances for ${principal}. Waiting.`);
+    } else if (principal && walletState.currentWallet !== principal.toString() && !isStoreLoading) {
+      console.log(`Tokens page: Store loaded for ${walletState.currentWallet}, expecting ${principal}. Waiting for layout.`);
+    } else if (isStoreLoading) {
+      console.log(`Tokens page: Wallet store is loading for ${walletState.currentWallet}. Waiting.`);
+    }
+  };
+
+  $: if ($store.isAuthed) {
+    WalletDataService.initializeWallet($store.principal.toString());
+  }
+
+  onMount(async () => {
+    await WalletDataService.initializeWallet($store.principal.toString());
+  });
+
   const transactions = [
     {
       coin: "Internet Computer",
@@ -27,7 +128,7 @@
 
   function connect() {
     toggleModal();
-  }
+  };
 </script>
 
 <div class="container mx-auto px-8 py-8">
@@ -61,6 +162,91 @@
 {#if modalIsOpen}
   <LoginModal {toggleModal} />
 {/if}
+
+<svelte:head>
+  <title>Token balances for {$store.principal}</title>
+</svelte:head>
+
+<div class="space-y-6">
+  <!-- Tokens Overview Panel -->
+  <Panel>
+    <div class="flex items-center justify-between">
+      <h3 class="text-sm uppercase font-medium text-kong-text-primary">Tokens Overview</h3>
+      <div class="p-2 rounded-lg">
+        <Coins class="w-3 h-3 text-kong-primary" />
+      </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6 mt-4">
+      <div class="flex flex-col p-3 sm:p-4 rounded-lg">
+        <div class="flex items-center gap-2 text-kong-text-secondary text-sm mb-1">
+          <DollarSign class="w-3 h-3 sm:w-4 sm:h-4" />
+          <span>Total Value</span>
+        </div>
+        <div class="text-lg sm:text-xl font-medium">
+          {#if isDataLoading}
+            <span class="flex items-center">
+              <LoadingEllipsis color="text-kong-text-primary" size="text-lg" />
+            </span>
+          {:else}
+            {formatCurrency(totalTokenValue)}
+          {/if}
+        </div>
+      </div>
+      
+      <div class="flex flex-col p-3 sm:p-4 rounded-lg">
+        <div class="flex items-center gap-2 text-kong-text-secondary text-sm mb-1">
+          <Coins class="w-3 h-3 sm:w-4 sm:h-4" />
+          <span>Active Tokens</span>
+        </div>
+        <div class="text-lg sm:text-xl font-medium">
+          {#if isDataLoading}
+            <span class="flex items-center">
+              <LoadingEllipsis color="text-kong-text-primary" size="text-lg" />
+            </span>
+          {:else}
+            {tokensWithBalance.length}
+          {/if}
+        </div>
+      </div>
+    </div>
+  </Panel>
+  
+  <!-- Token List Panel -->
+  <Panel variant="transparent">
+    <div class="flex flex-col gap-4">
+      <!-- Header with Filter Toggle -->
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm uppercase font-medium text-kong-text-primary">Token Balances</h3>
+        <div class="p-2 rounded-lg">
+          <Coins class="w-3 h-3 text-kong-primary" />
+        </div>
+      </div>
+      
+      <!-- Content -->
+      {#if isDataLoading}
+        <LoadingIndicator text={"Loading wallet data..."} size={24} />
+      {:else if loadingError}
+        <div class="text-kong-accent-red mb-4">{loadingError}</div>
+        <button
+          class="text-sm text-kong-primary hover:text-opacity-80 transition-colors"
+          on:click={() => $store.principal && loadTokensOnly($store.principal.toString())}
+        >
+          Try Again
+        </button>
+      {:else if walletData.tokens.length === 0}
+        <LoadingIndicator text="Loading token data..." size={24} />
+      {:else}
+        <WalletTokenList 
+          tokens={walletData.tokens} 
+          showHeader={false} 
+          showOnlyWithBalance={true}
+          isLoading={isDataLoading}
+        />        
+      {/if}
+    </div>
+  </Panel>
+</div>
 
 <script context="module">
   export const Wallet = (props) => {

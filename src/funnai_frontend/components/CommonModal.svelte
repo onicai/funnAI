@@ -215,6 +215,7 @@
       aria-labelledby="modal-title"
       style="z-index: {zIndex};"
     >
+      <!-- svelte-ignore a11y-click-events-have-key-events -->
       <div
         class="fixed inset-0 bg-black/60 backdrop-blur-md"
         on:click={handleBackdropClick}
@@ -222,6 +223,7 @@
         transition:fade={{ duration: 120, easing: cubicOut }}
       />
 
+      <!-- svelte-ignore a11y-click-events-have-key-events -->
       <div
         bind:this={modalElement}
         class="relative will-change-transform max-w-full {isPadded ? 'px-4' : ''} max-h-[calc(100vh-40px)] flex flex-col overflow-hidden"

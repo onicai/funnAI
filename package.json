@@ -40,7 +40,8 @@
     "ua-parser-js": "^1.0.35",
     "localforage": "^1.10.0",
     "@dfinity/ledger-icp": "2.6.10",
-    "html5-qrcode": "2.3.8"
+    "html5-qrcode": "2.3.8",
+    "qrcode": "1.5.4"
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^2.0.2",

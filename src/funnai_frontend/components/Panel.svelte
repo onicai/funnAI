@@ -22,7 +22,6 @@
   export let interactive: boolean = false;
   export let transition: 'fade' | 'slide' | null = null;
   export let transitionParams: TransitionConfig = {};
-  export let children: () => any;
 
   // Default transition parameters
   const defaultSlideParams = { duration: 300, delay: 200, axis: 'x' };
@@ -42,26 +41,17 @@
     : roundness || themeRoundness;
 
   $: interactiveClass = interactive ? 'interactive' : '';
-  
-  // Function to render content
-  function renderContent() {
-    return children ? children() : () => content;
-  }
 </script>
 
 {#if transition === 'slide'}
-  <div 
+  <div
     class="panel {unpadded ? '' : 'p-4'} {variant} {type} {className} {roundnessClass} {animated ? 'animated' : ''} {isSwapPanel ? 'swap-panel' : ''} {isSidebar ? 'sidebar-panel' : ''} {interactiveClass}"
     style="width: {width}; height: {height}; z-index: {zIndex};"
-    transition:slide={params}
     on:click
     on:keydown
-  >
-    {#if children}
-      <slot />
-    {:else}
-      {content}
-    {/if}
+    transition:slide={params}
+    >
+    <slot>{content}</slot>
   </div>
 {:else if transition === 'fade'}
   <div 
@@ -71,11 +61,7 @@
     on:click
     on:keydown
   >
-    {#if children}
-      <slot />
-    {:else}
-      {content}
-    {/if}
+    <slot>{content}</slot>
   </div>
 {:else}
   <div 
@@ -84,11 +70,7 @@
     on:click
     on:keydown
   >
-    {#if children}
-      <slot />
-    {:else}
-      {content}
-    {/if}
+    <slot>{content}</slot>
   </div>
 {/if}
 
