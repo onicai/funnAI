@@ -89,9 +89,9 @@
 
   function getPriceChangeColor(change: string) {
     const num = Number(change);
-    if (num > 0) return "text-kong-text-accent-green";
-    if (num < 0) return "text-kong-text-accent-red";
-    return "text-kong-text-secondary";
+    if (num > 0) return "text-green-900";
+    if (num < 0) return "text-red-900";
+    return "text-gray-900";
   }
 
   // Format percentage of total supply
@@ -120,19 +120,18 @@
 <div>
   {#if showHeader}
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-sm uppercase font-medium text-kong-text-primary">
+      <h3 class="text-sm uppercase font-medium text-gray-100">
         Token Balances
       </h3>
-      <div class="p-2 rounded-lg bg-kong-primary/10">
-        <Coins class="w-3 h-3 text-kong-primary" />
+      <div class="p-2 rounded-lg bg-blue-600/10">
+        <Coins class="w-3 h-3 text-blue-600" />
       </div>
     </div>
   {/if}
 
-  <!-- Grid Headers - Hidden on mobile, visible on tablet and above -->
   {#if !isLoadingBalances && formattedTokens.length > 0}
     <div
-      class="hidden sm:grid sm:grid-cols-[2fr,1.5fr,1fr,1fr,1fr] gap-4 px-4 py-2 text-sm text-kong-text-secondary font-medium border-b border-kong-border"
+      class="hidden sm:grid sm:grid-cols-[2fr,1.5fr,1fr,1fr,1fr] gap-4 px-4 py-2 text-sm text-gray-400 font-medium border-b border-gray-700"
     >
       <div>Token</div>
       <div class="text-right">Balance</div>
@@ -148,7 +147,7 @@
         <LoadingIndicator text="Loading token balances..." size={24} />
       </div>
     {:else if formattedTokens.length === 0}
-      <div class="text-center py-8 text-kong-text-secondary">
+      <div class="text-center py-8 text-gray-400">
         {#if showOnlyWithBalance}
           No tokens with balance found in this wallet
         {:else}
@@ -156,62 +155,54 @@
         {/if}
       </div>
     {:else}
-      <!-- Grid Body -->
-      <div class="divide-y divide-kong-border">
+      <div class="divide-y divide-gray-700">
         {#each formattedTokens as token (token.canister_id)}
           <div
             animate:flip={{ duration: 300 }}
-            class="sm:grid sm:grid-cols-[2fr,1.5fr,1fr,1fr,1fr] sm:gap-4 sm:items-center p-4 hover:bg-kong-bg-dark/30 transition-colors cursor-pointer"
+            class="sm:grid sm:grid-cols-[2fr,1.5fr,1fr,1fr,1fr] sm:gap-4 sm:items-center p-4 hover:bg-zinc-800/30 transition-colors cursor-pointer"
           >
-            <!-- Mobile View - Card-like layout -->
             <div class="flex flex-col gap-3 sm:hidden">
-              <!-- Token and Value in a row -->
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2">
                   <TokenImages tokens={[token]} size={28} />
                   <div class="flex flex-col">
                     <div class="flex items-center gap-1">
-                      <span class="font-semibold text-kong-text-primary"
-                        >{token.symbol}</span
-                      >
+                      <span class="font-semibold text-gray-100">{token.symbol}</span>
                       {#if token.isWhale}
-                        <Badge 
-                          variant="blue" 
-                          icon="🐋" 
-                          size="xs" 
+                        <Badge
+                          variant="blue"
+                          icon="🐋"
+                          size="xs"
                           tooltipText={whaleTooltipText}
                         >
                           {formatSupplyPercentage(token.percentOfSupply)}
                         </Badge>
                       {/if}
                     </div>
-                    <span class="text-xs text-kong-text-secondary"
-                      >{token.name}</span
-                    >
+                    <span class="text-xs text-gray-400">{token.name}</span>
                   </div>
                 </div>
                 <div class="text-right">
-                  <div class="font-medium text-kong-text-primary">
+                  <div class="font-medium text-gray-100">
                     ${formatToNonZeroDecimal(token.formattedUsdValue)}
                   </div>
                 </div>
               </div>
 
-              <!-- Balance, Price and 24h Change in a row -->
               <div class="flex justify-between items-center text-sm">
                 <div>
-                  <span class="text-kong-text-secondary">Balance: </span>
+                  <span class="text-gray-400">Balance: </span>
                   <span class="font-medium">
                     {Number(token.balanceAmount) < 0.00001
-                    ? "&lt;0.001"
-                    : formatBalance(token.balanceAmount.toString(), token.decimals)}
+                      ? "&lt;0.001"
+                      : formatBalance(token.balanceAmount.toString(), token.decimals)}
                   </span>
                 </div>
                 <div>
-                  <span class="text-kong-text-secondary">Price: </span>
-                  <span class="font-medium"
-                    >${formatToNonZeroDecimal(token.price)}</span
-                  >
+                  <span class="text-gray-400">Price: </span>
+                  <span class="font-medium">
+                    ${formatToNonZeroDecimal(token.price)}
+                  </span>
                 </div>
                 <div class={getPriceChangeColor(token.priceChange24h)}>
                   {formatPriceChange(token.priceChange24h)}
@@ -224,57 +215,49 @@
               </div>
             </div>
 
-            <!-- Desktop View - Grid layout -->
-            <!-- Token -->
             <div class="hidden sm:flex items-center gap-3">
               <TokenImages tokens={[token]} size={32} />
               <div class="flex flex-col">
                 <div class="flex items-center gap-1">
-                  <span class="font-semibold text-kong-text-primary"
-                    >{token.symbol}</span
-                  >
+                  <span class="font-semibold text-gray-100">{token.symbol}</span>
                   {#if token.isWhale}
-                    <Badge 
-                      variant="blue" 
-                      icon="🐋" 
-                      size="xs" 
+                    <Badge
+                      variant="blue"
+                      icon="🐋"
+                      size="xs"
                       tooltipText={whaleTooltipText}
                     >
                       {formatSupplyPercentage(token.percentOfSupply)}
                     </Badge>
                   {/if}
                 </div>
-                <span class="text-xs text-kong-text-secondary"
-                  >{token.name}</span
-                >
+                <span class="text-xs text-gray-400">{token.name}</span>
               </div>
             </div>
 
-            <!-- Balance -->
             <div class="hidden sm:block text-right">
-              <div class="font-medium text-kong-text-primary">
+              <div class="font-medium text-gray-100">
                 {#if token.balanceAmount === BigInt(0) && Number(token.formattedUsdValue) > 0}
                   &lt;0.001 {token.symbol}
                 {:else}
                   {
-                  Number(formatBalance(token.balanceAmount.toString(), token.decimals)) < 0.00001
-                  ? "<0.00001"
-                  : formatBalance(token.balanceAmount.toString(), token.decimals)}
+                    Number(formatBalance(token.balanceAmount.toString(), token.decimals)) < 0.00001
+                    ? "<0.00001"
+                    : formatBalance(token.balanceAmount.toString(), token.decimals)
+                  }
                   {token.symbol}
                 {/if}
               </div>
             </div>
 
-            <!-- Price -->
             <div class="hidden sm:block text-right">
-              <div class="font-medium text-kong-text-primary">
+              <div class="font-medium text-gray-100">
                 {Number(token.price) < 0.00001
                   ? "<$0.00001"
                   : "$" + formatToNonZeroDecimal(token.price)}
               </div>
             </div>
 
-            <!-- 24h Change -->
             <div class="hidden sm:block text-right">
               <div class={getPriceChangeColor(token.priceChange24h)}>
                 {formatPriceChange(token.priceChange24h)}
@@ -286,30 +269,27 @@
               </div>
             </div>
 
-            <!-- Value -->
             <div class="hidden sm:block text-right">
-              <div class="font-medium text-kong-text-primary">
+              <div class="font-medium text-gray-100">
                 {Number(token.formattedUsdValue) < 0.01
                   ? "<$0.01"
                   : "$" + formatToNonZeroDecimal(token.formattedUsdValue)}
               </div>
             </div>
 
-            <!-- Receive Button -->
             <div class="mt-2 sm:mt-0 sm:col-span-full flex justify-end">
               <button
                 on:click={() => openReceiveModal(token)}
-                class="text-sm font-medium px-3 py-1.5 text-white rounded-lg transition"
+                class="text-sm font-medium px-3 py-1.5 bg-gray-700 text-white hover:bg-gray-600 rounded-lg transition"
               >
                 Receive
               </button>
             </div>
 
-            <!-- Send Button -->
             <div class="mt-2 sm:mt-0 sm:col-span-full flex justify-end">
               <button
                 on:click={() => openSendModal(token)}
-                class="text-sm font-medium px-3 py-1.5 text-white rounded-lg transition"
+                class="text-sm font-medium px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-500 rounded-lg transition"
               >
                 Send
               </button>

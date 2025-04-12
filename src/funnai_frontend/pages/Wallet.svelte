@@ -175,38 +175,38 @@
   <!-- Tokens Overview Panel -->
   <Panel>
     <div class="flex items-center justify-between">
-      <h3 class="text-sm uppercase font-medium text-kong-text-primary">Tokens Overview</h3>
+      <h3 class="text-sm uppercase font-medium text-gray-100">Tokens Overview</h3>
       <div class="p-2 rounded-lg">
-        <Coins class="w-3 h-3 text-kong-primary" />
+        <Coins class="w-3 h-3 text-blue-600" />
       </div>
     </div>
-    
+
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6 mt-4">
       <div class="flex flex-col p-3 sm:p-4 rounded-lg">
-        <div class="flex items-center gap-2 text-kong-text-secondary text-sm mb-1">
+        <div class="flex items-center gap-2 text-gray-400 text-sm mb-1">
           <DollarSign class="w-3 h-3 sm:w-4 sm:h-4" />
           <span>Total Value</span>
         </div>
         <div class="text-lg sm:text-xl font-medium">
           {#if isDataLoading}
             <span class="flex items-center">
-              <LoadingEllipsis color="text-kong-text-primary" size="text-lg" />
+              <LoadingEllipsis color="text-gray-100" size="text-lg" />
             </span>
           {:else}
             {formatCurrency(totalTokenValue)}
           {/if}
         </div>
       </div>
-      
+
       <div class="flex flex-col p-3 sm:p-4 rounded-lg">
-        <div class="flex items-center gap-2 text-kong-text-secondary text-sm mb-1">
+        <div class="flex items-center gap-2 text-gray-400 text-sm mb-1">
           <Coins class="w-3 h-3 sm:w-4 sm:h-4" />
           <span>Active Tokens</span>
         </div>
         <div class="text-lg sm:text-xl font-medium">
           {#if isDataLoading}
             <span class="flex items-center">
-              <LoadingEllipsis color="text-kong-text-primary" size="text-lg" />
+              <LoadingEllipsis color="text-gray-100" size="text-lg" />
             </span>
           {:else}
             {tokensWithBalance.length}
@@ -215,36 +215,36 @@
       </div>
     </div>
   </Panel>
-  
+
   <!-- Token List Panel -->
   <Panel variant="transparent">
     <div class="flex flex-col gap-4">
       <!-- Header with Filter Toggle -->
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-sm uppercase font-medium text-kong-text-primary">Token Balances</h3>
+        <h3 class="text-sm uppercase font-medium text-gray-100">Token Balances</h3>
         <div class="p-2 rounded-lg">
-          <Coins class="w-3 h-3 text-kong-primary" />
+          <Coins class="w-3 h-3 text-blue-600" />
         </div>
       </div>
-      
+
       <!-- Content -->
       {#if isDataLoading}
-        <h3 class="text-sm uppercase font-medium text-kong-text-primary">isDataLoading</h3>
+        <h3 class="text-sm uppercase font-medium text-gray-100">isDataLoading</h3>
         <LoadingIndicator text={"Loading wallet data..."} size={24} />
       {:else if loadingError}
-        <h3 class="text-sm uppercase font-medium text-kong-text-primary">loadingError</h3>
-        <div class="text-kong-accent-red mb-4">{loadingError}</div>
+        <h3 class="text-sm uppercase font-medium text-gray-100">loadingError</h3>
+        <div class="text-red-500 mb-4">{loadingError}</div>
         <button
-          class="text-sm text-kong-primary hover:text-opacity-80 transition-colors"
+          class="text-sm text-blue-600 hover:opacity-80 transition-colors"
           on:click={() => $store.principal && loadTokensOnly($store.principal.toString())}
         >
           Try Again
         </button>
       {:else if walletData.tokens.length === 0}
-        <h3 class="text-sm uppercase font-medium text-kong-text-primary">no tokens</h3>
+        <h3 class="text-sm uppercase font-medium text-gray-100">no tokens</h3>
         <LoadingIndicator text="Loading token data..." size={24} />
       {:else}
-        <h3 class="text-sm uppercase font-medium text-kong-text-primary">WalletTokenList</h3>
+        <h3 class="text-sm uppercase font-medium text-gray-100">WalletTokenList</h3>
         {#key walletData}
           <WalletTokenList 
             tokens={walletData.tokens} 
@@ -252,7 +252,7 @@
             showOnlyWithBalance={false}
             isLoading={isDataLoading}
           />
-        {/key}      
+        {/key}
       {/if}
     </div>
   </Panel>
