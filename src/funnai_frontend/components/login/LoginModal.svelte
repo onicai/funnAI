@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
 
   import InternetIdentityButton from "./InternetIdentityButton.svelte";
-  import NfidButton from "../../components/login/NfidButton.svelte";
+  import NfidButton from "./NfidButton.svelte";
 
   export let toggleModal;
 

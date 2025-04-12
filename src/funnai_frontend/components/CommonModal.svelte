@@ -4,7 +4,7 @@
   import { fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import Portal from "svelte-portal";
-  import Toast from "./Toast.svelte";
+  import Toast from "./_widgets/Toast.svelte";
   import { tick } from "svelte";
   import { X } from "lucide-svelte";
   import { modalStack } from "../stores/modalStore";

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import Card from "./chat/Card.svelte";
+    import Card from "../chat/Card.svelte";
 
     export let toggleModal;
     export let title;

@@ -1,15 +1,15 @@
 <script>
-    import { store } from "../stores/store";
+    import { store } from "../../stores/store";
 
-    import Topnav from "../components/chat/Topnav.svelte";
-    import Footer from "../components/Footer.svelte";
-    import LoginMenu from "../components/chat/LoginMenu.svelte";
+    import Topnav from "../../components/chat/Topnav.svelte";
+    import Footer from "../../components/funnai/Footer.svelte";
+    import LoginMenu from "../../components/chat/LoginMenu.svelte";
 
     import {
         getLocallyStoredChatHistory,
         storeChatHistoryLocally,
         syncLocalChanges
-    } from "../helpers/local_storage";
+    } from "../../helpers/local_storage";
 
     let chats = [];
     let hasLoadedChats = false;

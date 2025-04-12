@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { store } from "../stores/store";
+  import { store } from "../../stores/store";
 
   import {
     getLocallyStoredChatHistory,
     storeChatHistoryLocally,
     syncLocalChanges
-  } from "../helpers/local_storage";
+  } from "../../helpers/local_storage";
 
   export let selectedChat;
 

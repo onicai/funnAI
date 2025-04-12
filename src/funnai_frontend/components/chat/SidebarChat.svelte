@@ -1,8 +1,8 @@
 <script lang="ts">
 import { onMount } from 'svelte';
-  import SidebarHeader    from "../SidebarHeader.svelte";
+  import SidebarHeader    from "./SidebarHeader.svelte";
   import SidebarInfo     from "./SidebarFooter.svelte";
-  import SidebarBottomNav from "../SidebarBottomNav.svelte";
+  import SidebarBottomNav from "./SidebarBottomNav.svelte";
   import { downloadedModels } from "../../stores/store";
 
   onMount(() => {
