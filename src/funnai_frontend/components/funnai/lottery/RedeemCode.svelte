@@ -1,10 +1,25 @@
 <script lang="ts">
   import { store } from "../../../store";
+  import { onMount } from 'svelte';
   
   let code = "";
   let isSubmitting = false;
   let error = "";
   let success = "";
+  let inputElement;
+  
+  onMount(() => {
+    // Focus the input element when the component mounts
+    if (inputElement) {
+      inputElement.focus();
+    }
+  });
+  
+  // Focus directive
+  function focusOnInit(node) {
+    node.focus();
+    return {};
+  }
   
   const redeemCode = async () => {
     if (!code) {
@@ -40,9 +55,12 @@
         <input 
           type="text" 
           bind:value={code}
+          bind:this={inputElement}
           placeholder="Enter access code" 
           class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
           disabled={isSubmitting}
+          autofocus
+          use:focusOnInit
         />
       </div>
       <button 

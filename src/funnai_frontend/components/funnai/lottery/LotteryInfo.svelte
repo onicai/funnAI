@@ -1,5 +1,4 @@
 <script lang="ts">
-  // Store import removed as it's not being used in this component
   
   // Props
   export let lottery: {

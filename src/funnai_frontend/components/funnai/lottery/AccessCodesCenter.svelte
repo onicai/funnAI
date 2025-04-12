@@ -3,11 +3,16 @@
   import { store } from "../../../store";
   import { push } from 'svelte-spa-router';
   // Import components
-  import RedeemCode from './RedeemCode.svelte';
   import LotteryInfo from './LotteryInfo.svelte';
+  import RedeemCode from './RedeemCode.svelte';
 
   let dropdownOpen = false;
-
+  
+  // Toggle dropdown visibility
+  const toggleDropdown = () => {
+    dropdownOpen = !dropdownOpen;
+  };
+  
   // Sample lottery data - would be replaced with data from backend
   let lotteries = [
     {
@@ -63,11 +68,6 @@
       claimed: false
     }
   ];
-
-  // Toggle dropdown visibility
-  const toggleDropdown = () => {
-    dropdownOpen = !dropdownOpen;
-  };
 
   // Format date to readable string
   const formatDate = (date) => {
@@ -126,11 +126,11 @@
     {/if}
   </button>
 
-  <!-- Dropdown menu -->
+  <!-- Dropdown menu - positioned based on screen size -->
   <div 
     id="dropdownAccessCodes" 
-    class={`z-20 ${dropdownOpen ? '' : 'hidden'} w-full bg-white divide-y divide-gray-100 rounded-lg shadow-lg dark:bg-gray-800 dark:divide-gray-700 absolute right-0 mt-2 border border-gray-200 dark:border-gray-700`} 
-    style="min-width: 380px; right:0;"
+    class={`z-20 ${dropdownOpen ? '' : 'hidden'} bg-white divide-y divide-gray-100 rounded-lg shadow-lg dark:bg-gray-800 dark:divide-gray-700 mt-2 border border-gray-200 dark:border-gray-700 absolute`} 
+    style="width: min(380px, calc(100vw - 20px)); max-height: 90vh; left: -50%; top: 100%;"
     aria-labelledby="dropdownAccessCodesButton"
   >
     <div class="flex justify-between items-center px-4 py-3 font-medium text-gray-700 rounded-t-lg bg-blue-50 dark:bg-blue-900/30 dark:text-white border-b-2 border-blue-100 dark:border-blue-800">
