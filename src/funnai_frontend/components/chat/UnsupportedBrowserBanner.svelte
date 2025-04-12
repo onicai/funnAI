@@ -1,5 +1,5 @@
 <script>
-  import { webGpuSupportedBrowsers } from "../../store";
+  import { webGpuSupportedBrowsers } from "../../stores/store";
   import devincilogo from "/chat/devinci-logo.svg";
 </script>
 

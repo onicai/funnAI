@@ -2,8 +2,8 @@ import type { Principal } from '@dfinity/principal';
 import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
-export type ApiError = { 'ZeroAddress' : null } |
-  { 'InvalidTokenId' : null } |
+export type ApiError = { 'InvalidId' : null } |
+  { 'ZeroAddress' : null } |
   { 'Unauthorized' : null } |
   { 'Other' : string };
 export interface Chat {
@@ -40,35 +40,55 @@ export interface FunnAIBackend {
   'delete_chat' : ActorMethod<[string], ChatResult>,
   'delete_email_subscriber' : ActorMethod<[string], boolean>,
   'get_caller_chat_history' : ActorMethod<[], ChatsPreviewResult>,
+  'get_caller_chat_settings' : ActorMethod<[], UserChatSettingsResult>,
   'get_caller_chats' : ActorMethod<[], ChatsResult>,
-  'get_caller_settings' : ActorMethod<[], UserSettingsResult>,
+  'get_caller_user_info' : ActorMethod<[], UserInfoResult>,
   'get_chat' : ActorMethod<[string], ChatResult>,
   'get_email_subscribers' : ActorMethod<[], Array<[string, EmailSubscriber]>>,
   'greet' : ActorMethod<[string], string>,
+  'make_caller_account_premium' : ActorMethod<
+    [PaymentInfoInput],
+    UpdateUserInfoResult
+  >,
   'submit_signup_form' : ActorMethod<[SignUpFormInput], string>,
-  'update_caller_settings' : ActorMethod<
-    [UserSettings],
-    UpdateUserSettingsResult
+  'update_caller_chat_settings' : ActorMethod<
+    [UserChatSettings],
+    UpdateUserChatSettingsResult
+  >,
+  'update_caller_user_info' : ActorMethod<
+    [UserInfoInput],
+    UpdateUserInfoResult
   >,
   'update_chat_messages' : ActorMethod<[string, Array<Message>], ChatIdResult>,
   'update_chat_metadata' : ActorMethod<[UpdateChatObject], ChatIdResult>,
 }
 export interface Message { 'content' : string, 'sender' : string }
+export interface PaymentInfoInput { 'block_index' : bigint }
 export interface SignUpFormInput {
   'emailAddress' : string,
   'pageSubmittedFrom' : string,
 }
 export interface UpdateChatObject { 'id' : string, 'chatTitle' : string }
-export type UpdateUserSettingsResult = { 'Ok' : boolean } |
+export type UpdateUserChatSettingsResult = { 'Ok' : boolean } |
   { 'Err' : ApiError };
-export interface UserSettings {
+export type UpdateUserInfoResult = { 'Ok' : boolean } |
+  { 'Err' : ApiError };
+export interface UserChatSettings {
   'responseLength' : string,
   'temperature' : number,
   'selectedAiModelId' : string,
   'systemPrompt' : string,
   'saveChats' : boolean,
 }
-export type UserSettingsResult = { 'Ok' : UserSettings } |
+export type UserChatSettingsResult = { 'Ok' : UserChatSettings } |
+  { 'Err' : ApiError };
+export interface UserInfo {
+  'createdAt' : bigint,
+  'isPremiumAccount' : boolean,
+  'emailAddress' : [] | [string],
+}
+export interface UserInfoInput { 'emailAddress' : [] | [string] }
+export type UserInfoResult = { 'Ok' : UserInfo } |
   { 'Err' : ApiError };
 export interface _SERVICE extends FunnAIBackend {}
 export declare const idlFactory: IDL.InterfaceFactory;

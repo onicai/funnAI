@@ -1,9 +1,21 @@
-type UserSettingsResult = 
+type UserInfoResult = 
  variant {
    Err: ApiError;
-   Ok: UserSettings;
+   Ok: UserInfo;
  };
-type UserSettings = 
+type UserInfoInput = record {emailAddress: opt text;};
+type UserInfo = 
+ record {
+   createdAt: nat64;
+   emailAddress: opt text;
+   isPremiumAccount: bool;
+ };
+type UserChatSettingsResult = 
+ variant {
+   Err: ApiError;
+   Ok: UserChatSettings;
+ };
+type UserChatSettings = 
  record {
    responseLength: text;
    saveChats: bool;
@@ -11,7 +23,12 @@ type UserSettings =
    systemPrompt: text;
    temperature: float64;
  };
-type UpdateUserSettingsResult = 
+type UpdateUserInfoResult = 
+ variant {
+   Err: ApiError;
+   Ok: bool;
+ };
+type UpdateUserChatSettingsResult = 
  variant {
    Err: ApiError;
    Ok: bool;
@@ -26,6 +43,7 @@ type SignUpFormInput =
    emailAddress: text;
    pageSubmittedFrom: text;
  };
+type PaymentInfoInput = record {block_index: nat64;};
 type Message = 
  record {
    content: text;
@@ -37,16 +55,20 @@ type FunnAIBackend =
    delete_chat: (text) -> (ChatResult);
    delete_email_subscriber: (text) -> (bool);
    get_caller_chat_history: () -> (ChatsPreviewResult) query;
+   get_caller_chat_settings: () -> (UserChatSettingsResult) query;
    get_caller_chats: () -> (ChatsResult) query;
-   get_caller_settings: () -> (UserSettingsResult) query;
+   get_caller_user_info: () -> (UserInfoResult) query;
    get_chat: (text) -> (ChatResult) query;
    get_email_subscribers: () -> (vec record {
                                        text;
                                        EmailSubscriber;
                                      }) query;
    greet: (text) -> (text);
+   make_caller_account_premium: (PaymentInfoInput) -> (UpdateUserInfoResult);
    submit_signup_form: (SignUpFormInput) -> (text);
-   update_caller_settings: (UserSettings) -> (UpdateUserSettingsResult);
+   update_caller_chat_settings: (UserChatSettings) ->
+    (UpdateUserChatSettingsResult);
+   update_caller_user_info: (UserInfoInput) -> (UpdateUserInfoResult);
    update_chat_messages: (text, vec Message) -> (ChatIdResult);
    update_chat_metadata: (UpdateChatObject) -> (ChatIdResult);
  };
@@ -99,7 +121,7 @@ type Chat =
  };
 type ApiError = 
  variant {
-   InvalidTokenId;
+   InvalidId;
    Other: text;
    Unauthorized;
    ZeroAddress;

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { store } from "../../store";
+  import { store } from "../../stores/store";
 
   import spinner from "../../assets/loading.gif";
   import iclogo from "/internet-computer.svg";

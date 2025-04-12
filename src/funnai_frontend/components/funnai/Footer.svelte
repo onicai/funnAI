@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { theme } from "../../store";
+  import { theme } from "../../stores/store";
   import icLogoHex from "../../assets/ic_logo_hex.svg";
   import icLogoHexWhite from "../../assets/ic_logo_hex_white.svg";
   

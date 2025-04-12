@@ -1,6 +1,6 @@
 <script lang="ts">
   import LoginModal from '../login/LoginModal.svelte';
-  import { store } from "../../store";
+  import { store } from "../../stores/store";
 
   let modalIsOpen = false;
 

@@ -1,8 +1,8 @@
 export const idlFactory = ({ IDL }) => {
   const Message = IDL.Record({ 'content' : IDL.Text, 'sender' : IDL.Text });
   const ApiError = IDL.Variant({
+    'InvalidId' : IDL.Null,
     'ZeroAddress' : IDL.Null,
-    'InvalidTokenId' : IDL.Null,
     'Unauthorized' : IDL.Null,
     'Other' : IDL.Text,
   });
@@ -26,31 +26,43 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : IDL.Vec(ChatPreview),
     'Err' : ApiError,
   });
-  const ChatsResult = IDL.Variant({ 'Ok' : IDL.Vec(Chat), 'Err' : ApiError });
-  const UserSettings = IDL.Record({
+  const UserChatSettings = IDL.Record({
     'responseLength' : IDL.Text,
     'temperature' : IDL.Float64,
     'selectedAiModelId' : IDL.Text,
     'systemPrompt' : IDL.Text,
     'saveChats' : IDL.Bool,
   });
-  const UserSettingsResult = IDL.Variant({
-    'Ok' : UserSettings,
+  const UserChatSettingsResult = IDL.Variant({
+    'Ok' : UserChatSettings,
     'Err' : ApiError,
   });
+  const ChatsResult = IDL.Variant({ 'Ok' : IDL.Vec(Chat), 'Err' : ApiError });
+  const UserInfo = IDL.Record({
+    'createdAt' : IDL.Nat64,
+    'isPremiumAccount' : IDL.Bool,
+    'emailAddress' : IDL.Opt(IDL.Text),
+  });
+  const UserInfoResult = IDL.Variant({ 'Ok' : UserInfo, 'Err' : ApiError });
   const EmailSubscriber = IDL.Record({
     'subscribedAt' : IDL.Nat64,
     'emailAddress' : IDL.Text,
     'pageSubmittedFrom' : IDL.Text,
   });
+  const PaymentInfoInput = IDL.Record({ 'block_index' : IDL.Nat64 });
+  const UpdateUserInfoResult = IDL.Variant({
+    'Ok' : IDL.Bool,
+    'Err' : ApiError,
+  });
   const SignUpFormInput = IDL.Record({
     'emailAddress' : IDL.Text,
     'pageSubmittedFrom' : IDL.Text,
   });
-  const UpdateUserSettingsResult = IDL.Variant({
+  const UpdateUserChatSettingsResult = IDL.Variant({
     'Ok' : IDL.Bool,
     'Err' : ApiError,
   });
+  const UserInfoInput = IDL.Record({ 'emailAddress' : IDL.Opt(IDL.Text) });
   const ChatIdResult = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : ApiError });
   const UpdateChatObject = IDL.Record({
     'id' : IDL.Text,
@@ -61,8 +73,13 @@ export const idlFactory = ({ IDL }) => {
     'delete_chat' : IDL.Func([IDL.Text], [ChatResult], []),
     'delete_email_subscriber' : IDL.Func([IDL.Text], [IDL.Bool], []),
     'get_caller_chat_history' : IDL.Func([], [ChatsPreviewResult], ['query']),
+    'get_caller_chat_settings' : IDL.Func(
+        [],
+        [UserChatSettingsResult],
+        ['query'],
+      ),
     'get_caller_chats' : IDL.Func([], [ChatsResult], ['query']),
-    'get_caller_settings' : IDL.Func([], [UserSettingsResult], ['query']),
+    'get_caller_user_info' : IDL.Func([], [UserInfoResult], ['query']),
     'get_chat' : IDL.Func([IDL.Text], [ChatResult], ['query']),
     'get_email_subscribers' : IDL.Func(
         [],
@@ -70,10 +87,20 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'greet' : IDL.Func([IDL.Text], [IDL.Text], []),
+    'make_caller_account_premium' : IDL.Func(
+        [PaymentInfoInput],
+        [UpdateUserInfoResult],
+        [],
+      ),
     'submit_signup_form' : IDL.Func([SignUpFormInput], [IDL.Text], []),
-    'update_caller_settings' : IDL.Func(
-        [UserSettings],
-        [UpdateUserSettingsResult],
+    'update_caller_chat_settings' : IDL.Func(
+        [UserChatSettings],
+        [UpdateUserChatSettingsResult],
+        [],
+      ),
+    'update_caller_user_info' : IDL.Func(
+        [UserInfoInput],
+        [UpdateUserInfoResult],
         [],
       ),
     'update_chat_messages' : IDL.Func(

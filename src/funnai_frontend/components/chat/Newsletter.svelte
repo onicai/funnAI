@@ -1,6 +1,6 @@
 <script lang="ts">
   import { location } from 'svelte-spa-router';
-  import { submitEmailSignUpForm } from "../../helpers/utils.js";
+  import { submitEmailSignUpForm } from "../../helpers/utils/utils.js";
 
   let message = "";
   const submitForm = async (event) => {

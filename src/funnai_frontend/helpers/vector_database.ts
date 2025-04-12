@@ -10,7 +10,7 @@ import { TensorFlowEmbeddings } from "langchain/embeddings/tensorflow";
 import {
   store,
   vectorStore,
-} from "../store";
+} from "../stores/store";
 
 import { getResourceAsArray } from "./setup_knowledgebase";
 

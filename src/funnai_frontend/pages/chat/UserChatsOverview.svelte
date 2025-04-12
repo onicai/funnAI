@@ -1,5 +1,5 @@
 <script>
-    import { store } from "../store";
+    import { store } from "../stores/store";
 
     import Topnav from "../components/chat/Topnav.svelte";
     import Footer from "../components/Footer.svelte";

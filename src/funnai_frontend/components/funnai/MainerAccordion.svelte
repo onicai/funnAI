@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import CyclesDisplayAgent from './CyclesDisplayAgent.svelte';
-  import { store } from "../../store";
+  import { store } from "../../stores/store";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;

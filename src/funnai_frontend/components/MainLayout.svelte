@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { SvelteComponent } from 'svelte';
   import Router from "svelte-spa-router";
-  import { store, theme } from "../store";
+  import { store, theme } from "../stores/store";
   import NavigationMainLayout from "./funnai/NavigationMainLayout.svelte";
   import SidebarMainLayout from "./funnai/SidebarMainLayout.svelte";
   import ChatLayout from "./chat/ChatLayout.svelte";
@@ -65,3 +65,5 @@
     </div>
   </main>
 </div> 
+
+<div id="portal-target"></div>
