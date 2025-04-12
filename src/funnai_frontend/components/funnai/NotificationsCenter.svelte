@@ -75,7 +75,7 @@
   <button 
     id="dropdownNotificationButton" 
     on:click={toggleDropdown}
-    class="relative inline-flex items-center text-sm font-medium text-center text-gray-500 hover:text-gray-900 focus:outline-none dark:hover:text-white dark:text-gray-400" 
+    class="relative inline-flex items-center text-sm font-medium text-center text-gray-500 hover:text-gray-900 focus:outline-none dark:hover:text-white dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-md" 
     type="button"
   >
     <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 14 20">
@@ -91,12 +91,12 @@
   <!-- Dropdown menu -->
   <div 
     id="dropdownNotification" 
-    class={`z-20 ${dropdownOpen ? '' : 'hidden'} w-full max-w-sm bg-white divide-y divide-gray-100 rounded-lg shadow-sm dark:bg-gray-800 dark:divide-gray-700 absolute right-0 mt-2`} 
-    style="min-width: 320px; right: -140px;"
+    class={`z-20 ${dropdownOpen ? '' : 'hidden'} w-full max-w-sm bg-white divide-y divide-gray-100 rounded-lg shadow-lg dark:bg-gray-800 dark:divide-gray-700 absolute right-0 mt-2 border border-gray-200 dark:border-gray-700`} 
+    style="min-width: 320px; right: 0;"
     aria-labelledby="dropdownNotificationButton"
   >
-    <div class="flex justify-between items-center px-4 py-2 font-medium text-gray-700 rounded-t-lg bg-gray-50 dark:bg-gray-800 dark:text-white">
-      <span>Notifications</span>
+    <div class="flex justify-between items-center px-4 py-3 font-medium text-gray-700 rounded-t-lg bg-blue-50 dark:bg-blue-900/30 dark:text-white border-b-2 border-blue-100 dark:border-blue-800">
+      <span class="font-semibold">Notifications</span>
       {#if notificationCount > 0}
         <button 
           on:click={markAllAsRead} 
@@ -114,7 +114,7 @@
         </div>
       {:else}
         {#each notifications as notification (notification.id)}
-          <div class="flex px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700">
+          <div class="flex px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 bg-white dark:bg-gray-800">
             <div class="w-full">
               <div class="text-gray-500 text-sm mb-1.5 dark:text-gray-400">
                 <span class="font-semibold text-gray-900 dark:text-white">{notification.sender}</span>: {notification.message}
