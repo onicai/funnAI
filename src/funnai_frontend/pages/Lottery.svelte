@@ -11,7 +11,7 @@
       name: "General Lottery",
       description: "Win a chance to create your own mAIner. This lottery requires a deposit of 1 ICP, which will be credited toward your mAIner creation fee if you win.",
       nextDraw: new Date(Date.now() + 3600000 * 12), // 12 hours from now
-      prize: "Own mAIner Creation Slot",
+      prize: "Own mAIner creation slot",
       deposit: 1, // ICP
       isRegistered: false,
       type: "general",
@@ -23,7 +23,7 @@
       name: "Charles Holders Lottery",
       description: "Exclusive lottery for Charles NFT holders. Redeem your Charles coupon to enter this lottery and get a chance to win a discounted mAIner creation slot.",
       nextDraw: new Date(Date.now() + 3600000 * 24), // 24 hours from now
-      prize: "Own mAIner Creation Slot",
+      prize: "Own mAIner creation slot",
       deposit: 0,
       isRegistered: true,
       type: "whitelist",
@@ -47,7 +47,7 @@
       name: "IConfucius x Odin Holders Perk",
       description: "Special whitelist lottery for @IConfucius_odin holders. Celebrate with us as funnAI comes together — redeem your coupon and enter for a chance to win one mAIner creation slot.",
       nextDraw: new Date(Date.now() + 3600000 * 72), // 72 hours from now
-      prize: "One mAIner Creation Slot", 
+      prize: "One mAIner creation slot", 
       deposit: 0,
       isRegistered: false,
       type: "whitelist",
@@ -62,7 +62,7 @@
       id: 1,
       lotteryName: "General Lottery",
       result: "Winner",
-      prize: "Own mAIner Creation Slot",
+      prize: "Own mAIner creation slot",
       validUntil: new Date(Date.now() + 3600000 * 24), // 24 hours from now
       claimed: false,
       drawDate: new Date(Date.now() - 3600000 * 2) // 2 hours ago
@@ -226,13 +226,13 @@
               <svg class="w-4 h-4 text-green-500 mt-0.5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
-              Discounts on mAIner creation fees
+              First to create a mAIner
             </li>
             <li class="flex items-start">
               <svg class="w-4 h-4 text-green-500 mt-0.5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
-              Special rewards and early access to features
+              Early access to new features
             </li>
           </ul>
         </div>
