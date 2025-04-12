@@ -241,8 +241,8 @@
                   &lt;0.001 {token.symbol}
                 {:else}
                   {
-                    Number(formatBalance(token.balanceAmount.toString(), token.decimals)) < 0.00001
-                    ? "<0.00001"
+                    Number(formatBalance(token.balanceAmount.toString(), token.decimals)) < 0.00000001
+                    ? "<0.00000001"
                     : formatBalance(token.balanceAmount.toString(), token.decimals)
                   }
                   {token.symbol}
