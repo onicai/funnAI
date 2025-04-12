@@ -3,9 +3,9 @@
   import { get } from 'svelte/store';
   import { Coins, DollarSign, TrendingUp, ArrowUp, ArrowDown } from "lucide-svelte";
 
-  import WalletTable from '../components/WalletTable.svelte';
-  import WalletStatus from '../components/WalletStatus.svelte';
-  import LoginModal from '../components/LoginModal.svelte';
+  import WalletTable from '../components/funnai/WalletTable.svelte';
+  import WalletStatus from '../components/funnai/WalletStatus.svelte';
+  import LoginModal from '../components/login/LoginModal.svelte';
   import WalletTokenList from "../components/WalletTokenList.svelte";
   import Panel from "../components/Panel.svelte";
   import LoadingIndicator from "../components/LoadingIndicator.svelte";
