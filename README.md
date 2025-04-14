@@ -123,7 +123,6 @@ Deploy the code as canisters to the live IC where it's accessible via regular We
 ### Development Stage
 ```bash
 dfx deploy --network development --argument "( principal\"$(dfx identity get-principal)\" )" funnai_backend
-dfx canister call funnai_backend --network development setCanisterCreationCanisterId '("wyx7t-zqaaa-aaaam-qb5ga-cai")'
 
 dfx deploy --network development funnai_frontend
 ```

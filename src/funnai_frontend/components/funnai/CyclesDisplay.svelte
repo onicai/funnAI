@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { store } from "../../store";
+  import { store } from "../../stores/store";
 
   export let cycles: number;
   export let label: string = "Burned Cycles";

@@ -4,7 +4,7 @@
     temperatureDefaultSetting,
     responseLengthDefaultSetting,
     systemPromptDefaultSetting
-  } from "../../store";
+  } from "../../stores/store";
   import { updateUserSettingsProperty } from "../../helpers/user_settings";
 
   // Use nullish coalescing operator to handle potential null/undefined values

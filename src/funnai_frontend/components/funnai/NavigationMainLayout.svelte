@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { store } from "../../store";
+  import { store } from "../../stores/store";
   import { link } from 'svelte-spa-router';
   import LoginModal from '../login/LoginModal.svelte';
   import NotificationsCenter from './NotificationsCenter.svelte';

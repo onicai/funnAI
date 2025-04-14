@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { deviceType, supportsWebGpu } from "../store";
+  import { deviceType, supportsWebGpu } from "../stores/store";
   import Topnav from "../components/chat/Topnav.svelte";
-  import Footer from "../components/Footer.svelte";
+  import Footer from "../components/funnai/Footer.svelte";
   import ChatInterface from "../components/chat/ChatInterface.svelte";
   import LoginMenu from "../components/chat/LoginMenu.svelte";
   import UnsupportedDeviceBanner from "../components/chat/UnsupportedDeviceBanner.svelte";
