@@ -43,7 +43,7 @@
     chatModelIdInitiatedGlobal,
     downloadedModels,
     useKnowledgeBase
-  } from "../../store";
+  } from "../../stores/store";
   import InstallToastNotification from './InstallToastNotification.svelte';
   import {
     getSearchVectorDbTool

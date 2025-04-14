@@ -15,6 +15,19 @@
 
   const DEFAULT_IMAGE = "/tokens/not_verified.webp";
 
+  // Map specific tokens to their image paths
+  function getTokenImagePath(token: FE.Token): string {
+    // Map of token symbols to their image paths
+    const tokenImageMap: Record<string, string> = {
+      'ICP': '/icp-rounded.svg',
+      'ckBTC': '/ckbtc.webp'
+      // Add more tokens here as needed
+    };
+
+    // Return the mapped image path if it exists, otherwise use the token's logo_url or default
+    return tokenImageMap[token.symbol] || token.logo_url || DEFAULT_IMAGE;
+  }
+
   // Filter out invalid tokens and memoize result
   $: validTokens = tokens.filter((token): token is FE.Token => {
     return token && typeof token === "object";
@@ -56,7 +69,7 @@
 
   // Check if image exists for a token
   function hasValidImage(token: FE.Token): boolean {
-    return !!(token.logo_url || DEFAULT_IMAGE);
+    return true; // We'll always try to get an image now, either mapped or default
   }
 </script>
 
@@ -75,7 +88,7 @@
       {#if hasValidImage(token)}
         <img
           class="w-full h-full rounded-full bg-transparent ring-2 ring-gray-900/40"
-          src={token?.logo_url || DEFAULT_IMAGE}
+          src={getTokenImagePath(token)}
           alt={getTokenAlt(token)}
           loading="eager"
           on:error={(e) => handleImageError(e, token)}

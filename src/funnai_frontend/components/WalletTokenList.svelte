@@ -131,13 +131,13 @@
 
   {#if !isLoadingBalances && formattedTokens.length > 0}
     <div
-      class="hidden sm:grid sm:grid-cols-[2fr,1.5fr,1fr,1fr,1fr] gap-4 px-4 py-2 text-sm text-gray-400 font-medium border-b border-gray-700"
+      class="hidden sm:grid sm:grid-cols-[2fr,1.5fr,1fr] gap-4 px-4 py-2 text-sm text-gray-400 font-medium border-b border-gray-700"
     >
       <div>Token</div>
       <div class="text-right">Balance</div>
-      <div class="text-right">Price</div>
-      <div class="text-right">24h Change</div>
-      <div class="text-right">Value</div>
+      <!--<div class="text-right">Price</div>
+      <div class="text-right">24h Change</div>-->
+      <div class="text-right">Actions</div>
     </div>
   {/if}
 
@@ -159,8 +159,9 @@
         {#each formattedTokens as token (token.canister_id)}
           <div
             animate:flip={{ duration: 300 }}
-            class="sm:grid sm:grid-cols-[2fr,1.5fr,1fr,1fr,1fr] sm:gap-4 sm:items-center p-4 hover:bg-zinc-800/30 transition-colors cursor-pointer"
+            class="sm:grid sm:grid-cols-[2fr,1.5fr,1fr] sm:gap-4 sm:items-center p-4 hover:bg-zinc-800/30 transition-colors cursor-pointer"
           >
+            <!-- Mobile display -->
             <div class="flex flex-col gap-3 sm:hidden">
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-2">
@@ -184,37 +185,20 @@
                 </div>
                 <div class="text-right">
                   <div class="font-medium text-gray-100">
-                    ${formatToNonZeroDecimal(token.formattedUsdValue)}
+                    {#if token.balanceAmount === BigInt(0)}
+                      0 {token.symbol}
+                    {:else if Number(token.balanceAmount) < 0.00001}
+                      &lt;0.001 {token.symbol}
+                    {:else}
+                      {formatBalance(token.balanceAmount.toString(), token.decimals)}
+                      {token.symbol}
+                    {/if}
                   </div>
-                </div>
-              </div>
-
-              <div class="flex justify-between items-center text-sm">
-                <div>
-                  <span class="text-gray-400">Balance: </span>
-                  <span class="font-medium">
-                    {Number(token.balanceAmount) < 0.00001
-                      ? "&lt;0.001"
-                      : formatBalance(token.balanceAmount.toString(), token.decimals)}
-                  </span>
-                </div>
-                <div>
-                  <span class="text-gray-400">Price: </span>
-                  <span class="font-medium">
-                    ${formatToNonZeroDecimal(token.price)}
-                  </span>
-                </div>
-                <div class={getPriceChangeColor(token.priceChange24h)}>
-                  {formatPriceChange(token.priceChange24h)}
-                  {#if Number(token.priceChange24h) > 0}
-                    <ArrowUp class="inline h-3 w-3" />
-                  {:else if Number(token.priceChange24h) < 0}
-                    <ArrowDown class="inline h-3 w-3" />
-                  {/if}
                 </div>
               </div>
             </div>
 
+            <!-- Desktop token column -->
             <div class="hidden sm:flex items-center gap-3">
               <TokenImages tokens={[token]} size={32} />
               <div class="flex flex-col">
@@ -235,58 +219,46 @@
               </div>
             </div>
 
+            <!-- Desktop balance column -->
             <div class="hidden sm:block text-right">
               <div class="font-medium text-gray-100">
-                {#if token.balanceAmount === BigInt(0) && Number(token.formattedUsdValue) > 0}
-                  &lt;0.001 {token.symbol}
+                {#if token.balanceAmount === BigInt(0)}
+                  0 {token.symbol}
+                {:else if Number(formatBalance(token.balanceAmount.toString(), token.decimals)) < 0.00000001}
+                  &lt;0.00000001 {token.symbol}
                 {:else}
-                  {
-                    Number(formatBalance(token.balanceAmount.toString(), token.decimals)) < 0.00000001
-                    ? "<0.00000001"
-                    : formatBalance(token.balanceAmount.toString(), token.decimals)
-                  }
+                  {formatBalance(token.balanceAmount.toString(), token.decimals)}
                   {token.symbol}
                 {/if}
               </div>
             </div>
 
+            <!-- Desktop actions column -->
             <div class="hidden sm:block text-right">
-              <div class="font-medium text-gray-100">
-                {Number(token.price) < 0.00001
-                  ? "<$0.00001"
-                  : "$" + formatToNonZeroDecimal(token.price)}
+              <div class="flex justify-end gap-2">
+                <button
+                  on:click={() => openReceiveModal(token)}
+                  class="text-sm font-medium px-3 py-1.5 bg-gray-700 text-white hover:bg-gray-600 rounded-lg transition"
+                >
+                  Receive
+                </button>
+                <button
+                  on:click={() => openSendModal(token)}
+                  class="text-sm font-medium px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-500 rounded-lg transition"
+                >
+                  Send
+                </button>
               </div>
             </div>
 
-            <div class="hidden sm:block text-right">
-              <div class={getPriceChangeColor(token.priceChange24h)}>
-                {formatPriceChange(token.priceChange24h)}
-                {#if Number(token.priceChange24h) > 0}
-                  <ArrowUp class="inline h-4 w-4" />
-                {:else if Number(token.priceChange24h) < 0}
-                  <ArrowDown class="inline h-4 w-4" />
-                {/if}
-              </div>
-            </div>
-
-            <div class="hidden sm:block text-right">
-              <div class="font-medium text-gray-100">
-                {Number(token.formattedUsdValue) < 0.01
-                  ? "<$0.01"
-                  : "$" + formatToNonZeroDecimal(token.formattedUsdValue)}
-              </div>
-            </div>
-
-            <div class="mt-2 sm:mt-0 sm:col-span-full flex justify-end">
+            <!-- Mobile buttons -->
+            <div class="flex sm:hidden justify-end gap-2 mt-4">
               <button
                 on:click={() => openReceiveModal(token)}
                 class="text-sm font-medium px-3 py-1.5 bg-gray-700 text-white hover:bg-gray-600 rounded-lg transition"
               >
                 Receive
               </button>
-            </div>
-
-            <div class="mt-2 sm:mt-0 sm:col-span-full flex justify-end">
               <button
                 on:click={() => openSendModal(token)}
                 class="text-sm font-medium px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-500 rounded-lg transition"

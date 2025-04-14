@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { store } from "../store";
+  import { store } from "../stores/store";
   import RedeemCode from "../components/funnai/lottery/RedeemCode.svelte";
   import LotteryInfo from "../components/funnai/lottery/LotteryInfo.svelte";
   import { onMount } from "svelte";
