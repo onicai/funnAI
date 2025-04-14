@@ -3,11 +3,9 @@
   import { get } from 'svelte/store';
   import { Coins, DollarSign, TrendingUp, ArrowUp, ArrowDown } from "lucide-svelte";
 
-  import WalletTable from '../components/funnai/WalletTable.svelte';
   import WalletStatus from '../components/funnai/WalletStatus.svelte';
   import LoginModal from '../components/login/LoginModal.svelte';
   import WalletTokenList from "../components/WalletTokenList.svelte";
-  import Panel from "../components/Panel.svelte";
   import LoadingIndicator from "../components/LoadingIndicator.svelte";
   import LoadingEllipsis from "../components/LoadingEllipsis.svelte";
 
@@ -31,10 +29,10 @@
     return balance && Number(balance.in_tokens || "0") > 0;
   }) || [];
 
-  $: totalTokenValue = Object.values(walletData.balances).reduce(
-    (sum: number, balance) => sum + Number(balance?.in_usd || "0"),
-    0
-  );
+  // $: totalTokenValue = Object.values(walletData.balances).reduce(
+  //   (sum: number, balance) => sum + Number(balance?.in_usd || "0"),
+  //   0
+  // );
 
   $: isDataLoading =
     isLoading ||
@@ -111,20 +109,6 @@
     console.log("in Wallet walletData ", walletData);
   });
 
-  const transactions = [
-    {
-      coin: "Internet Computer",
-      symbol: "ICP",
-      amount: "11.15",
-      icon: "/icp-rounded.svg"
-    },
-    {
-      coin: "FunnAI",
-      symbol: "FUNN",
-      amount: "1110.4",
-      icon: "/coin.webp"
-    }
-  ];
 
   const toggleModal = () => {
     modalIsOpen = !modalIsOpen;
