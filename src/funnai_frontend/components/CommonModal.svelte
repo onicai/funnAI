@@ -242,7 +242,7 @@
           variant="solid"
           width="100%"
           height="100%"
-          className="flex flex-col overflow-hidden {className}"
+          className="flex flex-col overflow-hidden modal-panel {className}"
         >
           <div
             class="modal-content flex flex-col overflow-hidden"
@@ -262,7 +262,7 @@
               <!-- Check for all title rendering options -->
               <div class="flex-grow">
                 <slot name="title">
-                  <h2 class="text-lg font-semibold modal-title">
+                  <h2 class="text-lg font-semibold modal-title text-gray-100">
                     {#if typeof title === "string" && !title.includes("<")}
                       {title}
                     {/if}
@@ -270,7 +270,7 @@
                 </slot>
               </div>
               <button
-                class="!flex !items-center hover:text-red-600 !border-0 !shadow-none group relative ml-2"
+                class="!flex !items-center hover:text-red-600 !border-0 !shadow-none group relative ml-2 text-gray-300 hover:text-red-400"
                 on:click={(e) => handleClose(e)}
                 aria-label="Close modal"
               >
@@ -308,6 +308,13 @@
   }
 
   :global(#portal-target) {
+    position: relative;
+    isolation: isolate;
+    z-index: 100000; /* Ensure portal is always on top */
+  }
+  
+  /* Modal panel theming */
+  :global(.modal-panel) {
     position: relative;
     isolation: isolate;
   }

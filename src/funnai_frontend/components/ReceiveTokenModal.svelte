@@ -128,10 +128,10 @@
   <div class="p-4 flex flex-col gap-4">
     <!-- Token Info Banner -->
     <div 
-      class="flex items-center gap-3 p-3 rounded-lg transition-all duration-300"
+      class="flex items-center gap-3 p-3 rounded-lg bg-gray-700/20 border border-gray-600/30 text-gray-100 transition-all duration-300"
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '10px')});"
     >
-      <div class="w-10 h-10 rounded-full flex-shrink-0">
+      <div class="w-10 h-10 rounded-full bg-gray-800 p-1 border border-gray-700 flex-shrink-0">
         <TokenImages
           tokens={[token]}
           size={32}
@@ -139,8 +139,8 @@
         />
       </div>
       <div class="flex flex-col">
-        <div class="font-medium">{token.name}</div>
-        <div class="text-sm">Your receive address information</div>
+        <div class="font-medium text-gray-100">{token.name}</div>
+        <div class="text-sm text-gray-400">Your receive address information</div>
       </div>
     </div>
 
@@ -150,86 +150,86 @@
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '20px')});"
     >
       <!-- Principal ID -->
-      <div class="rounded-lg border p-4">
+      <div class="rounded-lg border border-gray-600/50 bg-gray-800/30 p-4">
         <div class="flex justify-between items-center mb-2">
-          <h3 class="text-sm font-medium">Principal ID</h3>
+          <h3 class="text-sm font-medium text-gray-200">Principal ID</h3>
           {#if principalQrCode}
             <div class="flex">
               <img 
                 src={principalQrCode} 
                 alt="Principal QR Code" 
-                class="w-16 h-16 cursor-pointer hover:opacity-80 transition-opacity" 
+                class="w-16 h-16 cursor-pointer hover:opacity-80 transition-opacity bg-white rounded-md" 
                 on:click={() => enlargeQrCode(principalQrCode, "Principal ID QR Code")}
               />
             </div>
           {/if}
         </div>
         <div class="relative">
-          <div class="rounded border p-2.5 pr-10 text-sm break-all font-mono">
+          <div class="rounded border border-gray-600 bg-gray-700/30 p-2.5 pr-10 text-sm break-all font-mono text-gray-200">
             {principal || "Loading..."}
           </div>
           <button 
-            class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-colors"
+            class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-colors text-gray-400 hover:text-gray-200"
             on:click={() => copyToClipboard(principal, 'principal')}
             use:tooltip={{ text: principalCopied ? "Copied!" : "Copy to clipboard", direction: "top" }}
           >
             {#if principalCopied}
-              <Check size={16} class="" />
+              <Check size={16} class="text-green-500" />
             {:else}
               <Copy size={16} />
             {/if}
           </button>
         </div>
-        <p class="text-xs mt-2">
+        <p class="text-xs mt-2 text-gray-400">
           Use this Principal ID to receive {token.symbol === "ICP" ? "non-ICP tokens" : "tokens"}
         </p>
       </div>
 
       {#if token.symbol === "ICP" && accountId}
         <!-- Account ID for ICP -->
-        <div class="rounded-lg border p-4">
+        <div class="rounded-lg border border-gray-600/50 bg-gray-800/30 p-4">
           <div class="flex justify-between items-center mb-2">
-            <h3 class="text-sm font-medium">Account ID</h3>
+            <h3 class="text-sm font-medium text-gray-200">Account ID</h3>
             {#if accountIdQrCode}
               <div class="flex">
                 <img 
                   src={accountIdQrCode} 
                   alt="Account ID QR Code" 
-                  class="w-16 h-16 cursor-pointer hover:opacity-80 transition-opacity" 
+                  class="w-16 h-16 cursor-pointer hover:opacity-80 transition-opacity bg-white rounded-md" 
                   on:click={() => enlargeQrCode(accountIdQrCode, "Account ID QR Code")}
                 />
               </div>
             {/if}
           </div>
           <div class="relative">
-            <div class="rounded border p-2.5 pr-10 text-sm break-all font-mono">
+            <div class="rounded border border-gray-600 bg-gray-700/30 p-2.5 pr-10 text-sm break-all font-mono text-gray-200">
               {accountId || "Loading..."}
             </div>
             <button 
-              class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-colors"
+              class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-colors text-gray-400 hover:text-gray-200"
               on:click={() => copyToClipboard(accountId, 'accountId')}
               use:tooltip={{ text: accountIdCopied ? "Copied!" : "Copy to clipboard", direction: "top" }}
             >
               {#if accountIdCopied}
-                <Check size={16} class="" />
+                <Check size={16} class="text-green-500" />
               {:else}
                 <Copy size={16} />
               {/if}
             </button>
           </div>
-          <p class="text-xs mt-2">
+          <p class="text-xs mt-2 text-gray-400">
             Use this Account ID to receive ICP tokens (recommended for exchanges)
           </p>
         </div>
       {/if}
       
       <!-- Instructions -->
-      <div class="rounded-lg border p-3 text-sm">
+      <div class="rounded-lg border border-gray-600/50 bg-gray-800/30 p-3 text-sm">
         <div class="flex items-center gap-2 mb-1.5">
-          <QrCode size={16} class="" />
-          <span class="">How to receive {token.symbol}</span>
+          <QrCode size={16} class="text-gray-300" />
+          <span class="text-gray-200">How to receive {token.symbol}</span>
         </div>
-        <p class="ml-6">
+        <p class="ml-6 text-gray-400">
           {#if token.symbol === "ICP"}
             Send ICP to your Account ID. This is the recommended address for transfers from exchanges.
           {:else}
@@ -245,75 +245,29 @@
 {#if enlargedQrCode}
   <Portal target="body">
     <div 
-      class="fixed inset-0 bg-black/70 flex items-center justify-center p-4"
+      class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[100001]"
       on:click={closeEnlargedQrCode}
       transition:fade={{ duration: 200 }}
-      style="z-index: 999999;"
     >
       <div 
-        class="relative p-4 rounded-xl max-w-md w-full flex flex-col items-center"
-        on:click|stopPropagation={() => {}}
+        class="rounded-lg bg-white p-2 shadow-2xl max-w-full max-h-full"
+        on:click|stopPropagation
       >
-        <button 
-          class="absolute top-3 right-3 p-1.5 rounded-full"
-          on:click={closeEnlargedQrCode}
-        >
-          <X size={20} />
-        </button>
-        
-        <div class="text-center mb-4">
-          <h3 class="text-lg font-medium">{enlargedQrCode.alt}</h3>
-        </div>
-        
-        <div class="bg-white p-6 rounded-lg">
-          <img 
-            src={enlargedQrCode.src} 
-            alt={enlargedQrCode.alt}
-            class="w-80 h-80"
-          />
-        </div>
-        
-        <button
-          class="mt-4 px-4 py-2 text-white rounded-md transition-colors"
-          on:click={closeEnlargedQrCode}
-        >
-          Close
-        </button>
+        <img 
+          src={enlargedQrCode.src} 
+          alt={enlargedQrCode.alt} 
+          class="max-w-full max-h-[80vh]"
+        />
       </div>
     </div>
   </Portal>
 {/if}
 
 <style>
-  /* Add global CSS for the modal transitions */
+  /* Custom styling for component - ensures proper z-indexing */
   :global(.receive-token-modal) {
-    animation: fadeIn 0.25s ease-out;
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* This will be applied when the modal is closing */
-  :global(.modal-closing) {
-    animation: fadeOut 0.2s ease-out forwards !important;
-  }
-
-  @keyframes fadeOut {
-    from {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    to {
-      opacity: 0;
-      transform: translateY(20px);
-    }
+    max-width: 480px;
+    position: relative;
+    z-index: 100000;
   }
 </style> 

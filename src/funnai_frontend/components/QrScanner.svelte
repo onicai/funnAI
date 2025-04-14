@@ -210,6 +210,7 @@
     title="Scan QR Code"
     width="min(450px, 95vw)"
     height="auto"
+    className="qr-scanner-modal"
 >
     <div class="scanner-container">
         {#if showConfirmation}
@@ -300,254 +301,264 @@
 </Modal>
 {/if}
 
-<style scoped>
-    .scanner-container {
-      padding: 1rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
-      min-height: 400px;
-    }
-  
-    .hidden {
-      display: none;
-    }
-  
-    :global(#qr-reader) {
-      width: 100%;
-      max-width: 300px;
-      margin-left: auto;
-      margin-right: auto;
-      background-color: rgba(0, 0, 0, 0.2);
-      border-radius: 0.5rem;
-      overflow: hidden;
-      min-height: 300px;
-      position: relative;
-    }
-  
-    :global(#qr-reader video) {
-      border-radius: 0.5rem;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-  
-    :global(#qr-reader__header_message),
-    :global(#qr-reader__filescan_input),
-    :global(#qr-reader__dashboard_section_csr),
-    :global(#qr-reader__status_span),
-    :global(button.html5-qrcode-element) {
-      display: none;
-    }
-  
-    :global(#qr-reader__scan_region) {
-      background-color: transparent;
-      border-radius: 0.5rem;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 1;
-      border: 2px solid #6366f1; /* indigo-500 */
-    }
-  
-    .scanner-controls {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      margin-top: 1rem;
-      width: 100%;
-      max-width: 300px;
-    }
-  
-    .primary-controls {
-      display: flex;
-      gap: 0.75rem;
-      justify-content: center;
-    }
-  
-    .file-upload {
-      display: flex;
-      justify-content: center;
-      margin-top: 0.5rem;
-    }
-  
-    .file-upload-btn {
-      padding: 0.5rem 1rem;
-      background-color: rgba(99, 102, 241, 0.8); /* indigo-600/80 */
-      color: white;
-      border-radius: 0.5rem;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-  
-    .file-upload-btn:hover {
-      background-color: #6366f1; /* indigo-600 */
-    }
-  
-    .switch-camera-btn {
-      padding: 0.5rem 1rem;
-      background-color: rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.9);
-      border-radius: 0.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-  
-    .cancel-scan-btn {
-      padding: 0.5rem 1rem;
-      background-color: rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.9);
-      border-radius: 0.5rem;
-    }
-  
-    .confirmation-dialog {
-      width: 100%;
-      max-width: 300px;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-  
-    .confirmation-dialog h3 {
-      font-size: 1.25rem;
-      font-weight: 500;
-      color: rgba(255, 255, 255, 0.9);
-      text-align: center;
-    }
-  
-    .scanned-data {
-      background-color: rgba(0, 0, 0, 0.2);
-      border-radius: 0.75rem;
-      padding: 1.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-  
-    .address-type {
-      display: flex;
-      justify-content: center;
-    }
-  
-    .badge {
-      padding: 0.5rem 1rem;
-      border-radius: 0.5rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-  
-    .icon {
-      width: 1rem;
-      height: 1rem;
-    }
-  
-    .badge.principal {
-      background-color: rgba(99, 102, 241, 0.2);
-      color: #c7d2fe;
-      border: 1px solid rgba(99, 102, 241, 0.3);
-    }
-  
-    .badge.account {
-      background-color: rgba(34, 197, 94, 0.2);
-      color: #bbf7d0;
-      border: 1px solid rgba(34, 197, 94, 0.3);
-    }
-  
-    .badge.unknown {
-      background-color: rgba(239, 68, 68, 0.2);
-      color: #fecaca;
-      border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-  
-    .address-display {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-  
-    .formatted-address {
-      font-family: monospace;
-      font-size: 1.25rem;
-      color: rgba(255, 255, 255, 0.9);
-      text-align: center;
-      letter-spacing: 0.05em;
-    }
-  
-    .divider {
-      height: 1px;
-      background-color: rgba(255, 255, 255, 0.1);
-      width: 100%;
-    }
-  
-    .full-address-container {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-    }
-  
-    .label {
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.5);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      text-align: center;
-    }
-  
-    .full-address {
-      font-family: monospace;
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.7);
-      word-break: break-word;
-      text-align: center;
-      background-color: rgba(0, 0, 0, 0.2);
-      border-radius: 0.5rem;
-      padding: 0.75rem;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-  
-    .confirmation-buttons {
-      display: flex;
-      gap: 0.75rem;
-      justify-content: center;
-    }
-  
-    .confirmation-buttons button {
-      padding: 0.625rem 1.5rem;
-      border-radius: 0.5rem;
-      transition: background-color 0.2s;
-      font-weight: 500;
-    }
-  
-    .confirm-btn {
-      background-color: #4f46e5; /* indigo-600 */
-      color: white;
-    }
-  
-    .confirm-btn:hover {
-      background-color: #4338ca; /* indigo-500 */
-    }
-  
-    .confirm-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-  
-    .reject-btn {
-      background-color: rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.9);
-    }
-  
-    .reject-btn:hover {
-      background-color: rgba(255, 255, 255, 0.15);
-    }
+<style>
+.scanner-container {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  min-height: 400px;
+}
+
+.hidden {
+  display: none;
+}
+
+:global(#qr-reader) {
+  width: 100%;
+  max-width: 300px;
+  margin-left: auto;
+  margin-right: auto;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  min-height: 300px;
+  position: relative;
+}
+
+:global(#qr-reader video) {
+  border-radius: 0.5rem;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+:global(#qr-reader__header_message),
+:global(#qr-reader__filescan_input),
+:global(#qr-reader__dashboard_section_csr),
+:global(#qr-reader__status_span),
+:global(button.html5-qrcode-element) {
+  display: none;
+}
+
+:global(#qr-reader__scan_region) {
+  background-color: transparent;
+  border-radius: 0.5rem;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  border: 2px solid #6366f1; /* indigo-500 */
+}
+
+.scanner-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  width: 100%;
+  max-width: 300px;
+}
+
+.primary-controls {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.file-upload {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+.file-upload-btn {
+  padding: 0.5rem 1rem;
+  background-color: rgba(99, 102, 241, 0.8); /* indigo-600/80 */
+  color: white;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.file-upload-btn:hover {
+  background-color: #6366f1; /* indigo-600 */
+}
+
+.switch-camera-btn {
+  padding: 0.5rem 1rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cancel-scan-btn {
+  padding: 0.5rem 1rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 0.5rem;
+}
+
+.confirmation-dialog {
+  width: 100%;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.confirmation-dialog h3 {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+}
+
+.scanned-data {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.address-type {
+  display: flex;
+  justify-content: center;
+}
+
+.badge {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.badge.principal {
+  background-color: rgba(99, 102, 241, 0.2);
+  color: #c7d2fe;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.badge.account {
+  background-color: rgba(34, 197, 94, 0.2);
+  color: #bbf7d0;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.badge.unknown {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #fecaca;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.address-display {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.formatted-address {
+  font-family: monospace;
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+.divider {
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.1);
+  width: 100%;
+}
+
+.full-address-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+.full-address {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  word-break: break-word;
+  text-align: center;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.confirmation-buttons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.confirmation-buttons button {
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+  font-weight: 500;
+}
+
+.confirm-btn {
+  background-color: #4f46e5; /* indigo-600 */
+  color: white;
+}
+
+.confirm-btn:hover {
+  background-color: #4338ca; /* indigo-500 */
+}
+
+.confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.reject-btn {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.reject-btn:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+:global(.qr-scanner-modal) {
+    position: relative;
+    z-index: 100001; /* Ensure QR scanner is above other modals */
+}
+
+#qr-reader {
+    position: relative;
+    z-index: 100002; /* Ensure reader is above other elements */
+}
 </style>
   

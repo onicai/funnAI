@@ -10,11 +10,23 @@
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
   export let onConfirm: () => void = () => {};
-  export let amount: string;
-  export let token: FE.Token;
-  export let tokenFee: bigint;
-  export let isValidating: boolean = false;
-  export let toPrincipal: string;
+  export let transferDetails: {
+    amount: string;
+    token: FE.Token;
+    tokenFee: bigint;
+    toPrincipal: string;
+  } | null = null;
+  export let isProcessing: boolean = false;
+  export let isValidating: boolean = false; // For backward compatibility
+  
+  // Use isValidating for backward compatibility if isProcessing is not set
+  $: isProcessing = isProcessing || isValidating;
+
+  // Extract values from transferDetails
+  $: amount = transferDetails?.amount || "0";
+  $: token = transferDetails?.token || { name: "", symbol: "", decimals: 8, logo_url: "", metrics: { price: "0" } };
+  $: tokenFee = transferDetails?.tokenFee || BigInt(0);
+  $: toPrincipal = transferDetails?.toPrincipal || "";
 
   // State variables
   let receiverAmount: string = "";
@@ -94,6 +106,7 @@
   height="auto"
   target="body"
   isPadded={false}
+  className="transfer-confirmation-modal"
 >
   <div class="confirm-container" in:fade={{ duration: 200 }}>
     <!-- Transfer Header -->
@@ -174,7 +187,7 @@
         type="button" 
         class="cancel-button" 
         on:click={onClose}
-        disabled={isValidating || showSuccess}
+        disabled={isProcessing || showSuccess}
       >
         Cancel
       </button>
@@ -182,17 +195,17 @@
       <button
         type="button"
         class="confirm-button"
-        class:loading={isValidating}
+        class:loading={isProcessing}
         class:success={showSuccess}
         on:click={handleConfirm}
-        disabled={isValidating || showSuccess}
+        disabled={isProcessing || showSuccess}
       >
         {#if showSuccess}
           <div class="success-icon">
             <Check size={18} />
           </div>
           Confirmed!
-        {:else if isValidating}
+        {:else if isProcessing}
           <div class="spinner"></div>
           Processing...
         {:else}
@@ -209,7 +222,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    padding: 0.5rem 0.75rem;
+    padding: 1rem;
   }
 
   .transfer-header {
@@ -218,16 +231,16 @@
     gap: 0.75rem;
     align-items: center;
     justify-content: center;
-    padding: 0.75rem;
-    background-color: rgba(39, 39, 42, 0.8);
-    border-radius: 0.5rem;
+    padding: 1rem;
+    background-color: rgba(39, 39, 42, 0.4);
+    border-radius: 0.75rem;
     border: 1px solid rgba(82, 82, 91, 0.3);
   }
 
   .token-info {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
   }
 
   .token-logo {
@@ -235,33 +248,18 @@
     height: 2.5rem;
     border-radius: 9999px;
     overflow: hidden;
-    background-color: #f3f4f6;
+    background-color: #1f2937;
     padding: 0.25rem;
-    border: 1px solid rgba(209, 213, 219, 1);
+    border: 1px solid rgba(55, 65, 81, 0.8);
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
-  @media (min-width: 640px) {
-    .token-logo {
-      width: 3rem;
-      height: 3rem;
-    }
-  }
-
   .token-image {
-    width: 2rem;
-    height: 2rem;
-    border-radius: 9999px;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
-  }
-
-  @media (min-width: 640px) {
-    .token-image {
-      width: 2.5rem;
-      height: 2.5rem;
-    }
   }
 
   .token-details {
@@ -270,12 +268,13 @@
   }
 
   .token-name {
-    color: #f3f4f6;
     font-weight: 500;
+    font-size: 0.95rem;
+    color: #e5e7eb;
   }
 
   .token-symbol {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     color: #9ca3af;
   }
 
@@ -283,16 +282,17 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 0.2rem;
   }
 
   .amount-value {
-    font-size: 1.5rem;
-    font-weight: 500;
+    font-size: 1.25rem;
+    font-weight: 600;
     color: #f3f4f6;
   }
 
   .usd-value {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     color: #9ca3af;
   }
 
@@ -300,32 +300,32 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-  }
-
-  .detail-section {
-    background-color: rgba(39, 39, 42, 0.5);
-    border-radius: 0.5rem;
-    padding: 0.75rem;
+    padding: 1rem;
+    background-color: rgba(39, 39, 42, 0.2);
+    border-radius: 0.75rem;
     border: 1px solid rgba(82, 82, 91, 0.2);
   }
 
-  @media (min-width: 640px) {
-    .detail-section {
-      padding: 1rem;
-    }
+  .detail-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .section-title {
-    font-size: 0.875rem;
+    color: #d1d5db;
+    font-size: 0.9rem;
     font-weight: 500;
-    color: rgba(243, 244, 246, 0.9);
-    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
-  @media (min-width: 640px) {
-    .section-title {
-      margin-bottom: 0.75rem;
-    }
+  .section-title::after {
+    content: '';
+    flex-grow: 1;
+    height: 1px;
+    background-color: rgba(156, 163, 175, 0.2);
   }
 
   .detail-rows {
@@ -338,24 +338,24 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 0.25rem 0;
   }
 
   .detail-row.total {
-    margin-top: 0.5rem;
+    border-top: 1px dashed rgba(156, 163, 175, 0.2);
+    margin-top: 0.25rem;
     padding-top: 0.5rem;
-    border-top: 1px solid rgba(75, 85, 99, 0.1);
-    font-weight: 500;
-    color: #f3f4f6;
   }
 
   .detail-label {
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     color: #9ca3af;
   }
 
   .detail-value {
-    font-size: 0.875rem;
-    color: #f3f4f6;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #e5e7eb;
   }
 
   .detail-value.fee {
@@ -363,145 +363,119 @@
   }
 
   .recipient-address {
+    background-color: rgba(31, 41, 55, 0.4);
+    border: 1px solid rgba(75, 85, 99, 0.3);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.25rem;
   }
 
   .address-display {
-    background-color: rgba(243, 244, 246, 0.5);
-    border-radius: 0.5rem;
-    padding: 0.75rem;
-    border: 1px solid rgba(209, 213, 219, 1);
+    word-break: break-all;
   }
 
   .address-value {
-    font-size: 0.75rem;
+    font-size: 0.9rem;
     font-family: monospace;
-    color: #f3f4f6;
-    word-break: break-word;
+    color: #d1d5db;
   }
 
   .address-type {
     font-size: 0.75rem;
     color: #9ca3af;
     margin-top: 0.25rem;
-    padding-left: 0.25rem;
-    padding-right: 0.25rem;
   }
 
   .warning-section {
     display: flex;
     align-items: flex-start;
     gap: 0.5rem;
-    padding: 0.625rem;
+    background-color: rgba(146, 64, 14, 0.1);
+    border: 1px solid rgba(180, 83, 9, 0.2);
     border-radius: 0.5rem;
-    background-color: rgba(254, 249, 195, 0.1);
-    border: 1px solid rgba(253, 224, 71, 0.2);
-    font-size: 0.75rem;
-    color: rgba(243, 244, 246, 0.8);
-  }
-
-  @media (min-width: 640px) {
-    .warning-section {
-      padding: 0.75rem;
-    }
+    padding: 0.75rem;
   }
 
   .warning-icon {
-    color: #facc15;
+    color: #f59e0b;
     flex-shrink: 0;
     margin-top: 0.125rem;
   }
 
+  .warning-text {
+    font-size: 0.8rem;
+    color: #fbbf24;
+    line-height: 1.4;
+  }
+
   .action-buttons {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem;
+    display: flex;
+    gap: 0.75rem;
     margin-top: 0.5rem;
   }
 
-  @media (min-width: 640px) {
-    .action-buttons {
-      gap: 0.75rem;
-    }
-  }
-
-  .cancel-button {
-    height: 2.5rem;
-    border-radius: 0.5rem;
-    font-weight: 500;
-    background-color: rgba(243, 244, 246, 0.8);
-    color: rgba(55, 65, 81, 0.8);
-    transition: all 0.2s ease;
-  }
-
-  .cancel-button:hover {
-    background-color: #f3f4f6;
-    color: #111827;
-  }
-
-  .cancel-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  @media (min-width: 640px) {
-    .cancel-button {
-      height: 3rem;
-    }
-  }
-
+  .cancel-button,
   .confirm-button {
-    height: 2.5rem;
+    flex: 1;
+    padding: 0.75rem 0;
     border-radius: 0.5rem;
+    font-size: 0.9rem;
     font-weight: 500;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    background-color: #2563eb;
-    color: white;
     transition: all 0.2s ease;
   }
 
-  .confirm-button:hover {
+  .cancel-button {
+    background-color: rgba(75, 85, 99, 0.2);
+    color: #e5e7eb;
+    border: 1px solid rgba(75, 85, 99, 0.3);
+  }
+
+  .cancel-button:hover:not(:disabled) {
+    background-color: rgba(75, 85, 99, 0.3);
+  }
+
+  .confirm-button {
+    background-color: #2563eb;
+    color: white;
+    border: 1px solid rgba(59, 130, 246, 0.5);
+  }
+
+  .confirm-button:hover:not(:disabled) {
     background-color: #3b82f6;
   }
 
-  .confirm-button:disabled {
+  .confirm-button:disabled,
+  .cancel-button:disabled {
     opacity: 0.7;
     cursor: not-allowed;
   }
 
-  @media (min-width: 640px) {
-    .confirm-button {
-      height: 3rem;
-    }
-  }
-
   .confirm-button.loading {
-    background-color: rgba(59, 130, 246, 0.9);
+    background-color: #3b82f6;
   }
 
   .confirm-button.success {
-    background-color: #22c55e;
+    background-color: #10b981;
+    border-color: #059669;
   }
 
   .spinner {
-    width: 1.25rem;
-    height: 1.25rem;
-    border: 2px solid white;
-    border-top-color: transparent;
-    border-radius: 9999px;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
 
   .success-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: pop 0.3s ease-out;
+    animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
 
   @keyframes spin {
@@ -512,15 +486,26 @@
 
   @keyframes pop {
     0% {
-      transform: scale(0.5);
-      opacity: 0;
+      transform: scale(0);
     }
     70% {
       transform: scale(1.2);
     }
     100% {
       transform: scale(1);
-      opacity: 1;
     }
+  }
+
+  @media (min-width: 640px) {
+    .token-logo {
+      width: 3rem;
+      height: 3rem;
+    }
+  }
+  
+  /* Ensure proper z-indexing */
+  :global(.transfer-confirmation-modal) {
+    position: relative;
+    z-index: 100000;
   }
 </style>
