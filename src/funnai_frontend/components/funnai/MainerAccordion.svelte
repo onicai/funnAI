@@ -170,7 +170,7 @@
                 </svg>
             </span>
             <h3 class="font-medium leading-tight mb-2 dark:text-gray-300">Model Type</h3>
-            <div class="inline-flex rounded-full shadow-xs w-full justify-start mb-4" role="group">
+            <div class="inline-flex rounded-full shadow-xs w-full justify-start mb-1" role="group">
               <button 
                 type="button" 
                 class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-s-full focus:z-10 focus:ring-2 focus:ring-blue-700 
@@ -249,10 +249,7 @@
       </div>
     {:else}
       <div class="flex flex-col items-center justify-center py-8">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-400 mb-4" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-        </svg>
-        <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">You need to login first</h3>
+        <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2 mt-8">You need to login first</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 text-center">
           Connect your wallet to create and manage your mAIners
         </p>
