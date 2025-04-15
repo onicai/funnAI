@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, afterUpdate } from 'svelte';
   import CyclesDisplayAgent from './CyclesDisplayAgent.svelte';
   import { store } from "../../stores/store";
   import LoginModal from '../login/LoginModal.svelte';
+  import SendTokenModal from '../SendTokenModal.svelte';
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -21,6 +22,12 @@
   let addressCopied = false;
   let modelType: 'Own' | 'Shared' = 'Own'; // Default to Own model
   let loginModalOpen = false;
+  let sendTokenModalOpen = false;
+  let funnai_address = "opcne-svazk-6dnsy-iejci-fsm7h-miuun-ovpm4-wtsgw-5pgbz-teu3h-eqe"; // Default address to send tokens to
+  
+  // Reference to the SendTokenModal's input fields
+  let recipientAddressInput: HTMLInputElement;
+  let amountInput: HTMLInputElement;
 
   function toggleAccordion(index: string) {
     const content = document.getElementById(`content-${index}`);
@@ -37,9 +44,57 @@
   };
 
   function createAgent() {
-    // TODO: Implement agent creation
-    console.log("Creating new agent...");
+    // Open the SendTokenModal to handle the payment
+    sendTokenModalOpen = true;
+    
+    // Call our function to lock and pre-fill the fields
+    lockSendTokenModalFields();
   };
+  
+  function handleSendComplete(txId?: string) {
+    console.log("Payment completed" + (txId ? ` with transaction ID: ${txId}` : ""));
+    sendTokenModalOpen = false;
+    
+    // Here we would implement the actual agent creation logic
+    console.log(`Creating new ${modelType} mAIner model after payment...`);
+    
+    // TODO: Call the backend API to create the mAIner with the selected model type
+    // You can use the txId as proof of payment if needed
+  };
+
+  // Function to lock and pre-fill the fields in the SendTokenModal once it's opened
+  function lockSendTokenModalFields() {
+    // Need to use setTimeout to ensure the DOM has updated after the modal opens
+    setTimeout(() => {
+      // Find the recipient address input field
+      const recipientInput = document.getElementById('recipient-address') as HTMLInputElement;
+      if (recipientInput) {
+        recipientInput.value = funnai_address;
+        recipientInput.disabled = true;
+        
+        // Manually trigger the input event to validate the address
+        const inputEvent = new Event('input', { bubbles: true });
+        recipientInput.dispatchEvent(inputEvent);
+      }
+      
+      // Find the amount input field
+      const amountInputField = document.getElementById('amount-input') as HTMLInputElement;
+      if (amountInputField) {
+        amountInputField.value = modelType === 'Own' ? '0.05' : '0.03';
+        amountInputField.disabled = true;
+        
+        // Manually trigger the input event to validate the amount
+        const inputEvent = new Event('input', { bubbles: true });
+        amountInputField.dispatchEvent(inputEvent);
+      }
+      
+      // Hide the "Send Max" button
+      const sendMaxButton = document.querySelector('[class*="text-blue-500"]') as HTMLButtonElement;
+      if (sendMaxButton) {
+        sendMaxButton.style.display = 'none';
+      }
+    }, 500); // Wait for 500ms to ensure modal is fully rendered
+  }
 
   function copyAddress() {
     addressCopied = true;
@@ -236,7 +291,7 @@
             <h3 class="font-medium leading-tight mb-1 dark:text-gray-300">Pay & Spin up</h3>
             <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md p-3 mb-3">
               <p class="text-xs text-blue-800 dark:text-blue-300">
-                Create mAIner requires a payment fee of <span class="font-medium">{modelType === 'Own' ? '0.05' : '0.03'}</span> for {modelType} model
+                Create mAIner requires a payment fee of <span class="font-medium">{modelType === 'Own' ? '0.05' : '0.03'} ICP</span> for {modelType} model
               </p>
             </div>
         </li>
@@ -244,7 +299,7 @@
 
       <div class="flex justify-end">
         <button on:click={createAgent} class="bg-purple-600 dark:bg-purple-700 w-1/2 hover:bg-purple-700 dark:hover:bg-purple-800 text-white px-4 py-2 rounded-[16px] transition-colors">
-          Create mAIner
+          Pay & Create mAIner ({modelType === 'Own' ? '0.05' : '0.03'} ICP)
         </button>
       </div>
     {:else}
@@ -270,6 +325,20 @@
 
 {#if loginModalOpen}
   <LoginModal toggleModal={toggleLoginModal} />
+{/if}
+
+{#if sendTokenModalOpen}
+  <SendTokenModal 
+    isOpen={sendTokenModalOpen}
+    onClose={() => sendTokenModalOpen = false}
+    token={{
+      name: "Internet Computer for mAIner Creation",
+      symbol: "ICP",
+      decimals: 8,
+      fee_fixed: "10000" // standard ICP fee
+    }}
+    onSuccess={handleSendComplete}
+  />
 {/if}
 
 <!-- Existing Agents -->
