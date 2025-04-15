@@ -17,13 +17,6 @@
         toggleModal();
       };
     });
-
-    // Close modal on 'Escape' key press
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        toggleModal();
-      };
-    });
   };
 
   onMount(() => {
