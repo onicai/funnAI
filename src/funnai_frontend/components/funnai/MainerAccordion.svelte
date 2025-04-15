@@ -28,6 +28,10 @@
   // Reference to the SendTokenModal's input fields
   let recipientAddressInput: HTMLInputElement;
   let amountInput: HTMLInputElement;
+  
+  // Progress tracking for mAIner creation
+  let isCreatingMainer = false;
+  let mainerCreationProgress: {message: string, timestamp: string, complete: boolean}[] = [];
 
   function toggleAccordion(index: string) {
     const content = document.getElementById(`content-${index}`);
@@ -55,12 +59,44 @@
     console.log("Payment completed" + (txId ? ` with transaction ID: ${txId}` : ""));
     sendTokenModalOpen = false;
     
-    // Here we would implement the actual agent creation logic
-    console.log(`Creating new ${modelType} mAIner model after payment...`);
+    // Set the creation process as started
+    isCreatingMainer = true;
     
-    // TODO: Call the backend API to create the mAIner with the selected model type
-    // You can use the txId as proof of payment if needed
+    // Start the staged creation process with simulated delays
+    // Step 1: Begin registration
+    addProgressMessage("Registering new mAIner...");
+    
+    // Step 2: Create controller after 2 seconds
+    setTimeout(() => {
+      addProgressMessage("Creating mAIner controller...");
+      
+      // Step 3: Set up LLM after 3 more seconds
+      setTimeout(() => {
+        addProgressMessage("Setting up LLM environment...");
+        
+        // Step 4: Final configuration after 2 more seconds
+        setTimeout(() => {
+          addProgressMessage("Configuring model parameters...");
+          
+          // Step 5: Completion after 3 more seconds
+          setTimeout(() => {
+            addProgressMessage("mAIner successfully created and ready to use!", true);
+          }, 3000);
+        }, 2000);
+      }, 3000);
+    }, 2000);
   };
+
+  // Helper function to add a progress message with timestamp
+  function addProgressMessage(message: string, isComplete = false) {
+    const now = new Date();
+    const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+    
+    mainerCreationProgress = [
+      ...mainerCreationProgress,
+      { message, timestamp, complete: isComplete }
+    ];
+  }
 
   // Function to lock and pre-fill the fields in the SendTokenModal once it's opened
   function lockSendTokenModalFields() {
@@ -94,6 +130,12 @@
         sendMaxButton.style.display = 'none';
       }
     }, 500); // Wait for 500ms to ensure modal is fully rendered
+  }
+
+  // Debug function to test mAIner creation without payment
+  function debugSkipPayment() {
+    // Call handleSendComplete directly to skip the payment process
+    handleSendComplete("debug-transaction-id");
   }
 
   function copyAddress() {
@@ -298,10 +340,54 @@
       </ol>
 
       <div class="flex justify-end">
-        <button on:click={createAgent} class="bg-purple-600 dark:bg-purple-700 w-1/2 hover:bg-purple-700 dark:hover:bg-purple-800 text-white px-4 py-2 rounded-[16px] transition-colors">
+        <button 
+          on:click={createAgent} 
+          disabled={isCreatingMainer}
+          class="bg-purple-600 dark:bg-purple-700 w-1/2 hover:bg-purple-700 dark:hover:bg-purple-800 text-white px-4 py-2 rounded-[16px] transition-colors"
+          class:opacity-50={isCreatingMainer}
+          class:cursor-not-allowed={isCreatingMainer}
+        >
           Pay & Create mAIner ({modelType === 'Own' ? '0.05' : '0.03'} ICP)
         </button>
       </div>
+      
+      <!-- Debug button - only for development testing -->
+      <div class="mt-2 text-right">
+        <button 
+          on:click={debugSkipPayment} 
+          class="text-xs text-gray-400 hover:text-gray-300 dark:text-gray-600 dark:hover:text-gray-500"
+        >
+          [Debug: Skip Payment]
+        </button>
+      </div>
+      
+      <!-- Terminal-style progress component -->
+      {#if isCreatingMainer}
+        <div class="mt-4 bg-gray-900 text-green-400 font-mono text-sm rounded-lg p-3 border border-gray-700 overflow-hidden">
+          <div class="flex items-center justify-between mb-2 border-b border-gray-700 pb-2">
+            <div class="text-gray-300 text-xs">mAIner Creation Progress</div>
+            <div class="flex space-x-2">
+              <div class="h-3 w-3 rounded-full bg-red-500"></div>
+              <div class="h-3 w-3 rounded-full bg-yellow-500"></div>
+              <div class="h-3 w-3 rounded-full bg-green-500"></div>
+            </div>
+          </div>
+          <div class="h-40 overflow-y-auto terminal-scroll">
+            {#each mainerCreationProgress as progress}
+              <div class="flex mb-1 items-start" class:text-green-300={progress.complete}>
+                <span class="text-gray-500 mr-2">[{progress.timestamp}]</span>
+                <span class="flex-1">{progress.message}</span>
+                {#if progress.complete}
+                  <span class="text-green-500">✓</span>
+                {/if}
+              </div>
+            {/each}
+            {#if mainerCreationProgress.length > 0 && !mainerCreationProgress[mainerCreationProgress.length - 1].complete}
+              <div class="blink">_</div>
+            {/if}
+          </div>
+        </div>
+      {/if}
     {:else}
       <div class="flex flex-col items-center justify-center py-8">
         <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2 mt-8">You need to login first</h3>
@@ -439,5 +525,36 @@
   .accordion-content.accordion-open {
     max-height: 2000px; /* High value to ensure all content is visible */
     overflow: visible;
+  }
+  
+  /* Terminal styling */
+  .terminal-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #4a5568 #2d3748;
+  }
+  
+  .terminal-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .terminal-scroll::-webkit-scrollbar-track {
+    background: #2d3748;
+    border-radius: 4px;
+  }
+  
+  .terminal-scroll::-webkit-scrollbar-thumb {
+    background-color: #4a5568;
+    border-radius: 4px;
+    border: 2px solid #2d3748;
+  }
+  
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  
+  .blink {
+    animation: blink 1s step-end infinite;
   }
 </style>
