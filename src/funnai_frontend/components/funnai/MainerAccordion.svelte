@@ -3,7 +3,7 @@
   import CyclesDisplayAgent from './CyclesDisplayAgent.svelte';
   import { store } from "../../stores/store";
   import LoginModal from '../login/LoginModal.svelte';
-  import SendTokenModal from '../SendTokenModal.svelte';
+  import MainerPaymentModal from './MainerPaymentModal.svelte';
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -22,12 +22,7 @@
   let addressCopied = false;
   let modelType: 'Own' | 'Shared' = 'Own'; // Default to Own model
   let loginModalOpen = false;
-  let sendTokenModalOpen = false;
-  let funnai_address = "opcne-svazk-6dnsy-iejci-fsm7h-miuun-ovpm4-wtsgw-5pgbz-teu3h-eqe"; // Default address to send tokens to
-  
-  // Reference to the SendTokenModal's input fields
-  let recipientAddressInput: HTMLInputElement;
-  let amountInput: HTMLInputElement;
+  let mainerPaymentModalOpen = false;
   
   // Progress tracking for mAIner creation
   let isCreatingMainer = false;
@@ -48,16 +43,13 @@
   };
 
   function createAgent() {
-    // Open the SendTokenModal to handle the payment
-    sendTokenModalOpen = true;
-    
-    // Call our function to lock and pre-fill the fields
-    lockSendTokenModalFields();
+    // Open the MainerPaymentModal to handle the payment
+    mainerPaymentModalOpen = true;
   };
   
   function handleSendComplete(txId?: string) {
     console.log("Payment completed" + (txId ? ` with transaction ID: ${txId}` : ""));
-    sendTokenModalOpen = false;
+    mainerPaymentModalOpen = false;
     
     // Set the creation process as started
     isCreatingMainer = true;
@@ -96,40 +88,6 @@
       ...mainerCreationProgress,
       { message, timestamp, complete: isComplete }
     ];
-  }
-
-  // Function to lock and pre-fill the fields in the SendTokenModal once it's opened
-  function lockSendTokenModalFields() {
-    // Need to use setTimeout to ensure the DOM has updated after the modal opens
-    setTimeout(() => {
-      // Find the recipient address input field
-      const recipientInput = document.getElementById('recipient-address') as HTMLInputElement;
-      if (recipientInput) {
-        recipientInput.value = funnai_address;
-        recipientInput.disabled = true;
-        
-        // Manually trigger the input event to validate the address
-        const inputEvent = new Event('input', { bubbles: true });
-        recipientInput.dispatchEvent(inputEvent);
-      }
-      
-      // Find the amount input field
-      const amountInputField = document.getElementById('amount-input') as HTMLInputElement;
-      if (amountInputField) {
-        amountInputField.value = modelType === 'Own' ? '0.05' : '0.03';
-        amountInputField.disabled = true;
-        
-        // Manually trigger the input event to validate the amount
-        const inputEvent = new Event('input', { bubbles: true });
-        amountInputField.dispatchEvent(inputEvent);
-      }
-      
-      // Hide the "Send Max" button
-      const sendMaxButton = document.querySelector('[class*="text-blue-500"]') as HTMLButtonElement;
-      if (sendMaxButton) {
-        sendMaxButton.style.display = 'none';
-      }
-    }, 500); // Wait for 500ms to ensure modal is fully rendered
   }
 
   // Debug function to test mAIner creation without payment
@@ -305,7 +263,7 @@
                 {/if}
             </span>
             {#if modelType === 'Own'}
-            <form class="max-w-sm mx-auto">
+            <form class="max-w-sm">
               <label for="countries" class="block mb-2 text-sm font-medium text-gray-500 dark:text-gray-300">Choose a model</label>
               <select 
                 bind:value={selectedModel}
@@ -333,7 +291,7 @@
             <h3 class="font-medium leading-tight mb-1 dark:text-gray-300">Pay & Spin up</h3>
             <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md p-3 mb-3">
               <p class="text-xs text-blue-800 dark:text-blue-300">
-                Create mAIner requires a payment fee of <span class="font-medium">{modelType === 'Own' ? '0.05' : '0.03'} ICP</span> for {modelType} model
+                Create mAIner requires a payment fee of <span class="font-medium">{modelType === 'Own' ? '0.005' : '0.003'} ICP</span> for {modelType} model
               </p>
             </div>
         </li>
@@ -347,7 +305,7 @@
           class:opacity-50={isCreatingMainer}
           class:cursor-not-allowed={isCreatingMainer}
         >
-          Pay & Create mAIner ({modelType === 'Own' ? '0.05' : '0.03'} ICP)
+          Pay & Create mAIner ({modelType === 'Own' ? '0.005' : '0.003'} ICP)
         </button>
       </div>
       
@@ -413,17 +371,12 @@
   <LoginModal toggleModal={toggleLoginModal} />
 {/if}
 
-{#if sendTokenModalOpen}
-  <SendTokenModal 
-    isOpen={sendTokenModalOpen}
-    onClose={() => sendTokenModalOpen = false}
-    token={{
-      name: "Internet Computer for mAIner Creation",
-      symbol: "ICP",
-      decimals: 8,
-      fee_fixed: "10000" // standard ICP fee
-    }}
+{#if mainerPaymentModalOpen}
+  <MainerPaymentModal 
+    isOpen={mainerPaymentModalOpen}
+    onClose={() => mainerPaymentModalOpen = false}
     onSuccess={handleSendComplete}
+    {modelType}
   />
 {/if}
 
