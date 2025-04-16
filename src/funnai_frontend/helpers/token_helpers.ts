@@ -66,7 +66,29 @@ const availableTokens : FE.Token[] = [ // TODO
     chain: 'IC',
     total_24h_volume: '0'
   },
-  
+  { 
+    canister_id: "4uuff-dyaaa-aaaaj-qnoeq-cai",
+    name: "FUNNAI",
+    symbol: "FUNNAI",
+    decimals: 8,
+    address: "4uuff-dyaaa-aaaaj-qnoeq-cai",
+    fee: 0.0000001,
+    fee_fixed: "10",
+    token: "4uuff-dyaaa-aaaaj-qnoeq-cai",
+    icrc1: true,
+    icrc2: true,
+    icrc3: true,
+    pool_symbol: "",
+    pools: [],
+    timestamp: Date.now(),
+    metrics: null,
+    balance: '0',
+    logo_url: "/coin.webp",
+    token_type: 'IC',
+    token_id: 3,
+    chain: 'IC',
+    total_24h_volume: '0'
+  }
 ];
 
 export const fetchTokens = async (options) => {
