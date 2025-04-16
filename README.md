@@ -125,6 +125,10 @@ Deploy the code as canisters to the live IC where it's accessible via regular We
 dfx deploy --network development --argument "( principal\"$(dfx identity get-principal)\" )" funnai_backend
 
 dfx deploy --network development funnai_frontend
+
+or
+
+dfx deploy funnai_frontend --network development --wallet "$(dfx identity --network development get-wallet)"
 ```
 
 For setting up stages, see [Notes on Stages](./notes/NotesOnStages.md)
