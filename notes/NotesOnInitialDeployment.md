@@ -41,6 +41,13 @@ dfx canister logs <canister-id> --ic
 dfx canister logs mainer_creator_canister --ic
 ```
 
+### Top-up a Canister
+
+```bash
+# Top up cycles by sending 1Tcycles
+dfx wallet --ic send <canister-id> 1000000000000
+```
+
 ### Start & Stop timers
 
 ```bash
