@@ -15,7 +15,8 @@ sudo sysctl -w vm.max_map_count=2097152
 
 # from folder: funnAI
 
-# To monitor the logs, run this script
+# To monitor the logs on mainnet, run this script
+# -> it reads the canister IDs from the file: "scripts/canister_ids.env"
 # -> It will write to the screen & also write individual files in scripts/logs/
 # -> You must be a controller or log-viewer
 #    % dfx canister update-settings <canister-name> --add-log-viewer <principal-id>
