@@ -17,6 +17,8 @@ sudo sysctl -w vm.max_map_count=2097152
 
 # To monitor the logs, run this script
 # -> It will write to the screen & also write individual files in scripts/logs/
+# -> You must be a controller or log-viewer
+#    % dfx canister update-settings <canister-name> --add-log-viewer <principal-id>
 scripts/logs.sh --network ic
 
 # This script does it all:

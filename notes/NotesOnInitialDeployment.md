@@ -2,33 +2,6 @@
 
 The following canisters were deployed to main-net as part of the demo deployment:
 
-Fixed:
-- GameState canister    : "xzpy6-hiaaa-aaaaj-az4pq-cai"
-- mAInerCreator canister: "movk5-tyaaa-aaaaj-az64q-cai"
-
-- Challenger:
-  - ctrlb canister      : "lxb3x-jyaaa-aaaaj-azzta-cai"
-  - llm_0               : "lmehs-taaaa-aaaaj-azzrq-cai"
-  - llm_1               : "l6cql-7qaaa-aaaaj-azzsq-cai"
-
-- Judge:
-  - ctrlb canister      : "xxnvw-4yaaa-aaaaj-az4oq-cai"
-  - llm_0               : "xljph-lyaaa-aaaaj-az4mq-cai"
-  - llm_1               : "xcke3-5qaaa-aaaaj-az4na-cai"
-
-Variable - installed via mAInerCreator
-- mAIner Agent type #Own:
-  - ctrlb canister      : "hmhcs-7qaaa-aaaaj-az7ba-cai"
-  - llm canister        : 
-
-- mAIner Agent type #ShareService:
-  - ctrlb canister      : "h6bvl-taaaa-aaaaj-az7ca-cai"
-  - llm canister        : 
-
-- mAIner Agent type #ShareAgent:
-  - ctrlb canister      : "hqdyd-iqaaa-aaaaj-az7da-cai"
-  - ctrlb canister      : "hxc6x-fiaaa-aaaaj-az7dq-cai"
-
 -> Copy/Paste this into your terminal...
 ```bash
 GAMESTATE="xzpy6-hiaaa-aaaaj-az4pq-cai"
@@ -54,6 +27,13 @@ MAINER_AGENT2="hxc6x-fiaaa-aaaaj-az7dq-cai"
 You can retrieve the log of a canister as follows:
 
 ```bash
+# Continuous monitoring:
+# To monitor the logs, run this script from the FunnAI folder
+# -> It will write to the screen & also write individual files in scripts/logs/
+# -> You must be a controller or log-viewer
+#    % dfx canister update-settings <canister-name> --add-log-viewer <principal-id>
+scripts/logs.sh --network ic
+
 # From anywhere
 dfx canister logs <canister-id> --ic
 
