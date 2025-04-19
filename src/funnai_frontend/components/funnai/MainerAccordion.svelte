@@ -47,7 +47,7 @@
     mainerPaymentModalOpen = true;
   };
   
-  function handleSendComplete(txId?: string) {
+  async function handleSendComplete(txId?: string) {
     console.log("Payment completed" + (txId ? ` with transaction ID: ${txId}` : ""));
     mainerPaymentModalOpen = false;
     
@@ -57,26 +57,70 @@
     // Start the staged creation process with simulated delays
     // Step 1: Begin registration
     addProgressMessage("Registering new mAIner...");
-    
-    // Step 2: Create controller after 2 seconds
-    setTimeout(() => {
-      addProgressMessage("Creating mAIner controller...");
-      
-      // Step 3: Set up LLM after 3 more seconds
-      setTimeout(() => {
-        addProgressMessage("Setting up LLM environment...");
-        
-        // Step 4: Final configuration after 2 more seconds
-        setTimeout(() => {
-          addProgressMessage("Configuring model parameters...");
-          
-          // Step 5: Completion after 3 more seconds
+    type SelectableMainerLLMs = { 'Qwen2_5_500M' : null };
+    let selectableMainerLLM = { 'Qwen2_5_500M' : null }; // default
+    let selectedLLM : [] | [SelectableMainerLLMs] = selectedModel === "" ? [] : [selectableMainerLLM];
+    type MainerAgentCanisterType = { 'NA' : null } |
+      { 'Own' : null } |
+      { 'ShareAgent' : null } |
+      { 'ShareService' : null };
+    let mainerAgentCanisterType : MainerAgentCanisterType = { 'Own' : null }; // default
+    if (modelType === "Shared") {
+      mainerAgentCanisterType = { 'ShareAgent' : null };
+    };
+    let mainerConfig = {
+      selectedLLM,
+      mainerAgentCanisterType,
+    };
+    let mainerCreationInput = {
+      paymentTransactionBlockId: BigInt(txId),
+      mainerConfig,
+    };
+    try {
+      let createUserMainerAgentResponse = await $store.gameStateCanisterActor.createUserMainerAgent(mainerCreationInput);
+      //@ts-ignore
+      if (createUserMainerAgentResponse?.Ok) {
+        // Step 2: Create controller
+        addProgressMessage("Creating mAIner controller...");
+        //@ts-ignore
+        let spinUpMainerControllerCanisterResponse = await $store.gameStateCanisterActor.spinUpMainerControllerCanister(createUserMainerAgentResponse?.Ok);
+        //@ts-ignore
+        if (spinUpMainerControllerCanisterResponse?.Ok) {
+          // Step 3: Set up LLM
+          addProgressMessage("Setting up LLM environment...");
+          if (modelType === 'Own') {
+            //@ts-ignore
+            let setUpMainerLlmCanisterResponse = await $store.gameStateCanisterActor.setUpMainerLlmCanister(spinUpMainerControllerCanisterResponse?.Ok);
+            //@ts-ignore
+            if (setUpMainerLlmCanisterResponse?.Ok) {
+              addProgressMessage("Added your own LLM canister to the controller...");
+            //@ts-ignore
+            } else if (setUpMainerLlmCanisterResponse?.Err) {
+              //@ts-ignore
+              console.error("Error in setUpMainerLlmCanister:", setUpMainerLlmCanister?.Err);
+            };
+          };
+          // Step 4: Final configuration
+          addProgressMessage("Configuring mAIner parameters...");
+          // TODO: set default cycle burn rate, start mAIner's timer (if not done yet by backend)
+
+          // Step 5: Completion after 2 more seconds
           setTimeout(() => {
             addProgressMessage("mAIner successfully created and ready to use!", true);
-          }, 3000);
-        }, 2000);
-      }, 3000);
-    }, 2000);
+          }, 2000);
+        //@ts-ignore
+        } else if (spinUpMainerControllerCanisterResponse?.Err) {
+          //@ts-ignore
+          console.error("Error in spinUpMainerControllerCanister:", spinUpMainerControllerCanisterResponse?.Err);
+        };
+      //@ts-ignore
+      } else if (createUserMainerAgentResponse?.Err) {
+        //@ts-ignore
+        console.error("Error in createUserMainerAgent:", createUserMainerAgentResponse?.Err);
+      };
+    } catch (creationError) {
+      console.error("Failed to create mAIner:", creationError);
+    };
   };
 
   // Helper function to add a progress message with timestamp
