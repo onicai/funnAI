@@ -187,6 +187,8 @@
         //console.log("in MainerAccordion agentCanisterActors.map before return cycleBalance ", cycleBalance);
         //console.log("in MainerAccordion agentCanisterActors.map before return cyclesBurnRate ", cyclesBurnRate);
 
+        // TODO: this is for already created mAIners, handle unlocked mAIners that the user is allowed to create (don't have an address yet) differently
+        // TODO: based on unlocked mAIners determine whether the user can create a new mAIner and of which type (user needs unlocked mAIners that they can create to go ahead with the creation flow, otherwise they first have to get unlocked mAIners, e.g. via the lottery)
         return {
           id: canisterInfo.address,
           name: `mAIner ${index + 1}`,
