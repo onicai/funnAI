@@ -54,9 +54,10 @@
     // Set the creation process as started
     isCreatingMainer = true;
     
-    // Start the staged creation process with simulated delays
+    // Start the staged creation process
     // Step 1: Begin registration
     addProgressMessage("Registering new mAIner...");
+    // See the Game State canister interface here: src/declarations/game_state_canister/game_state_canister.did.d.ts
     type SelectableMainerLLMs = { 'Qwen2_5_500M' : null };
     let selectableMainerLLM = { 'Qwen2_5_500M' : null }; // default
     let selectedLLM : [] | [SelectableMainerLLMs] = selectedModel === "" ? [] : [selectableMainerLLM];
@@ -189,6 +190,22 @@
 
         // TODO: this is for already created mAIners, handle unlocked mAIners that the user is allowed to create (don't have an address yet) differently
         // TODO: based on unlocked mAIners determine whether the user can create a new mAIner and of which type (user needs unlocked mAIners that they can create to go ahead with the creation flow, otherwise they first have to get unlocked mAIners, e.g. via the lottery)
+        /* Background on unlocking mAIner creation and how to check:
+            This is the flow how a user can unlock access to create a mAIner (initially):
+            1) The user registers on the funnAI backend for the lotteries (to register for some lotteries an access code is needed, e.g. Charles holders)
+            2) The user needs to win in one of the lottery runs
+            3) For each user that wins a lottery run, the funnAI backend calls the Game State canister to add the associated prize which is an unlocked mAIner (of type Own or Shared)
+            4) This mAIner entry of status Unlocked is the pre-requisite to be allowed to create a new mAIner (and is type specific, i.e. of type Own or Shared)
+            5) The frontend checks whether the user has mAIner entries of status Unlocked and which ones (i.e. of type Own or Shared), if the user has Unlocked entries the UI enables the creation flow
+            6) Accordingly, the user can now follow the creation flow (it should be disabled otherwise, with a note that the user first has to unlock a mAIner e.g. via the lottery)
+            In the future, there will be additional ways to unlock a mAIner, e.g. simply letting the user trigger it from the UI once mAIner slots aren't as scarce anymore
+
+          How the access check, whether a user is allowed to create a mAIner, works technically:
+            The frontend loads the user's agents as implemented in store via gameStateCanisterActor.getMainerAgentCanistersForUser and the associated info is in agentCanisterActors and agentCanistersInfo.
+            See the Game State canister interface here: src/declarations/game_state_canister/game_state_canister.did.d.ts
+            If these retrieved entries include mAIner's of status Unlocked, then the user has unlocked mAIners that they can proceed to create
+            Now, check which type of mAIner is unlocked (Own and/or Shared) and enable the creation flow on the UI accordingly
+         */
         return {
           id: canisterInfo.address,
           name: `mAIner ${index + 1}`,
@@ -202,8 +219,8 @@
   };
 
   $: {
-    console.log("MainerAccordion reactive agentCanisterActors", agentCanisterActors);
-    console.log("MainerAccordion reactive agentCanistersInfo", agentCanistersInfo);
+    console.log("MainerAccordion reactive agentCanisterActors", agentCanisterActors); // TODO: the usage of agentCanisterActors here is needed to react to changes to it, but this should be made nicer (not via this print statement)
+    console.log("MainerAccordion reactive agentCanistersInfo", agentCanistersInfo); // TODO: the usage of agentCanistersInfo here is needed to react to changes to it, but this should be made nicer (not via this print statement)
 
     (async () => {
       agents = await loadAgents();
