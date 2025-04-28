@@ -1,6 +1,21 @@
 # funnAI
 
 # Setup instructions
+We are using dfx deps for:
+- internet-identity
+- cycles_ledger
+
+So, use dfx deps & dfx start from the funnAI root folder:
+
+```bash
+# from folder: funnAI
+dfx deps pull
+dfx deps init
+
+dfx start --clean
+
+dfx deploy
+```
 
 First follow all instructions of PoAIW/README.md
 
