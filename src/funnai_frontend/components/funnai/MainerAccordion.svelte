@@ -74,6 +74,7 @@
       mainerAgentCanisterType,
     };
     let mainerCreationInput = {
+      owner: [$store.principal],
       paymentTransactionBlockId: BigInt(txId),
       mainerConfig,
     };
@@ -90,6 +91,7 @@
           // Step 3: Set up LLM
           addProgressMessage("Setting up LLM environment...");
           if (modelType === 'Own') {
+            // TODO: don't wait until the LLM canister is created as this takes a few minutes (and most likely will time out) but design the UX accordingly
             //@ts-ignore
             let setUpMainerLlmCanisterResponse = await $store.gameStateCanisterActor.setUpMainerLlmCanister(spinUpMainerControllerCanisterResponse?.Ok);
             //@ts-ignore
@@ -138,7 +140,7 @@
   // Debug function to test mAIner creation without payment
   function debugSkipPayment() {
     // Call handleSendComplete directly to skip the payment process
-    handleSendComplete("debug-transaction-id");
+    handleSendComplete("0");
   }
 
   function copyAddress() {
