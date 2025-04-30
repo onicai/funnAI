@@ -107,7 +107,7 @@ fi
 echo " "
 echo "--------------------------------------------------"
 echo "Registering ServiceShare mAIner canister with the game_state_canister"
-output=$(dfx canister call game_state_canister addOfficialCanister "(record { address = \"$NEW_MAINER_SHARE_SERVICE_CANISTER\"; canisterType = variant {ShareService} })" --network $NETWORK_TYPE)
+output=$(dfx canister call game_state_canister addOfficialCanister "(record { address = \"$NEW_MAINER_SHARE_SERVICE_CANISTER\"; canisterType = variant {MainerAgent = variant {ShareService}} })" --network $NETWORK_TYPE)
 
 if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; then
     echo "Error calling addOfficialCanister for ShareService mAIner canister $NEW_MAINER_SHARE_SERVICE_CANISTER."
