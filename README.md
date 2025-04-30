@@ -42,7 +42,8 @@ scripts/logs.sh --network ic
 # (-) Deploys GameState, mAInerCreator, Challenger, Judge
 # (-) Registers the canisters properly with each other
 # (-) The timers of the Challenger & Judge are not started.
-#     -> Do this manually in the next step
+#     -> Do this manually with the command:
+#          dfx canister call <canister-id> startTimerExecutionAdmin
 scripts/deploy-all.sh --mode install [--network ic]
 
 # Notes: 
@@ -58,13 +59,14 @@ scripts/deploy-all.sh --mode install [--network ic]
 # Always deploy a mAIner of type #ShareService, since this is a protocol canister
 scripts/scripts-gamestate/deploy-mainers-ShareService-via-gamestate.sh --mode install [--network ic]
 
-# Optionally, deploy mAIners of type #Own or #ShareAgent
+# Optionally, deploy mAIners of type #ShareAgent or #Own
 # This is optional for test purposes, because these mAIners will be created by users of the frontend
 #
-# (-) Deploy a mAIner of type #Own
-scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install [--network ic]
 # (-) Deploy a mAIner of type #ShareAgent
 scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install [--network ic]
+# (-) Deploy a mAIner of type #Own
+scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install [--network ic]
+
 #
 # Notes: 
 # (-) You (should) run the script for type #ShareService only once. It has not been verified what happens if you run it again.
