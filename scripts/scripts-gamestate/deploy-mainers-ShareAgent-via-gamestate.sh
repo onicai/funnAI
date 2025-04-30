@@ -2,7 +2,7 @@
 
 #######################################################################
 # run from parent folder as:
-# scripts/deploy-mainers-Own-via-gamestate.sh
+# scripts/deploy-mainers-ShareAgent-via-gamestate.sh
 #######################################################################
 
 # Default network type is local
@@ -71,15 +71,15 @@ if [ "$NETWORK_TYPE" = "local" ]; then
 fi
 
 # ================================================================
-# Type: #Own
+# Type: #ShareAgent
 
 echo " "
 echo "--------------------------------------------------"
-echo "Deploying a mAInerController canister of type #Own"
+echo "Deploying a mAInerController canister of type #ShareAgent"
 
 echo " "
 echo "Calling createUserMainerAgent"
-output=$(dfx canister call game_state_canister createUserMainerAgent '(record { paymentTransactionBlockId = 11; mainerConfig = record { mainerAgentCanisterType = variant {Own}; selectedLLM = opt variant {Qwen2_5_500M}; }; })' --network $NETWORK_TYPE)
+output=$(dfx canister call game_state_canister createUserMainerAgent '(record { paymentTransactionBlockId = 12; mainerConfig = record { mainerAgentCanisterType = variant {ShareAgent}; selectedLLM = opt variant {Qwen2_5_500M}; }; })' --network $NETWORK_TYPE)
 echo $output
 if [[ "$output" != *"Ok = record"* ]]; then
     echo "Call to createUserMainerAgent failed. Exiting."    
@@ -100,35 +100,13 @@ else
     RESULT_2=$(extract_record_from_variant "$output")
     echo "RESULT_2 (spinUpMainerControllerCanister): $RESULT_2"
 
-    NEW_MAINER_OWN_CANISTER=$(echo "$RESULT_2" | grep -o 'address = "[^"]*"' | sed 's/address = "//;s/"//')
-    echo "NEW_MAINER_OWN_CANISTER: $NEW_MAINER_OWN_CANISTER"
+    NEW_MAINER_SHARE_AGENT_CANISTER=$(echo "$RESULT_2" | grep -o 'address = "[^"]*"' | sed 's/address = "//;s/"//')
+    echo "NEW_MAINER_SHARE_AGENT_CANISTER: $NEW_MAINER_SHARE_AGENT_CANISTER"
 fi
 
+echo "========================================================================"
+echo "To start the timers for the mAInerController $NEW_MAINER_SHARE_AGENT_CANISTER of type #ShareAgent, issue this command:"
+echo " "
+echo "dfx canister call $NEW_MAINER_SHARE_AGENT_CANISTER startTimerExecutionAdmin --network $NETWORK_TYPE"
 echo " "
 echo "========================================================================"
-echo "We will print this message and then call setUpMainerLlmCanister. "
-echo "(That call might time out while it actually works, but the script would exit without printing this message.)"
-echo " "
-echo "To add another LLM to the mAInerController $NEW_MAINER_OWN_CANISTER of type #Own, issue this command:"
-echo " "
-echo "dfx canister call game_state_canister addLlmCanisterToMainer  '$RESULT_2' --network $NETWORK_TYPE"
-echo " "
-echo "========================================================================"
-echo "To start the timers for the mAInerController $NEW_MAINER_OWN_CANISTER of type #Own, issue this command:"
-echo " "
-echo "dfx canister call $NEW_MAINER_OWN_CANISTER startTimerExecutionAdmin --network $NETWORK_TYPE"
-echo " "
-echo "========================================================================"
-echo " "
-
-echo " "
-echo "Calling setUpMainerLlmCanister"
-output=$(dfx canister call game_state_canister setUpMainerLlmCanister "$RESULT_2" --network $NETWORK_TYPE)
-echo $output
-if [[ "$output" != *"Ok = record"* ]]; then
-    echo "Call to setUpMainerLlmCanister.. Exiting."    
-    exit 1
-else
-    RESULT_3=$(extract_record_from_variant "$output")
-    echo "RESULT_3 (setUpMainerLlmCanister): $RESULT_3"
-fi

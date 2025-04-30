@@ -52,14 +52,28 @@ scripts/deploy-all.sh --mode install [--network ic]
 #     followed by                 `scripts/deploy-all.sh --mode upgrade`
 #     -> This will erase all data: canisters/challenges/responses/etc.
 
-# Optionally, you can now manually deploy mAIners
-# This is for testing purposes only, because mAIners will be created via the frontend
-# (-) Deploy One mAIner of type #Own, with 1 LLM
+# -----------------------------------------------------------------------------------
+# Deploy mAIners
+#
+# Always deploy a mAIner of type #ShareService, since this is a protocol canister
+scripts/scripts-gamestate/deploy-mainers-ShareService-via-gamestate.sh --mode install [--network ic]
+
+# Optionally, deploy mAIners of type #Own or #ShareAgent
+# This is optional for test purposes, because these mAIners will be created by users of the frontend
+#
+# (-) Deploy a mAIner of type #Own
 scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install [--network ic]
-# (-) Deploy:
-#     -> One mAIner  of type #ShareService, with 1 LLM
-#     -> Two mAIners of type #ShareAgent
-#... this is WIP
+# (-) Deploy a mAIner of type #ShareAgent
+scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install [--network ic]
+#
+# Notes: 
+# (-) You (should) run the script for type #ShareService only once. It has not been verified what happens if you run it again.
+# (-) You can run the scripts for type #Own and #ShareAgent multiple times. It will deploy another mAIner.
+# (-) The #Own & #ShareService mAIners are deployed with 1 LLM. To add more LLMs, use the function: addLlmCanisterToMainer (*)
+# (-) The timers of the mAIners are NOT started automatically. (*)
+#
+# => The exact dfx commands to add LLMs & to start the timers are printed by the scripts
+#
 
 # Deploy funnai backend (used mainly for chat):
 dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_backend [--ic]
