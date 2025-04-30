@@ -1,6 +1,9 @@
 # Nested repos
 PoAIW
 
+# deps 
+deps
+
 # Logs
 logs
 *.log

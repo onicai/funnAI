@@ -8,6 +8,7 @@
   import Dashboard from "../pages/Dashboard.svelte";
   import Wallet from "../pages/Wallet.svelte";
   import Lottery from "../pages/Lottery.svelte";
+  import Brand from "../pages/Brand.svelte";
   import { onMount } from 'svelte';
 
   // Initialize theme from localStorage on mount
@@ -39,6 +40,7 @@
     "/chat/*": ChatLayout,
     "/wallet": Wallet,
     "/lottery": Lottery,
+    "/brand": Brand,
   };
 </script>
 
