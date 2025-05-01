@@ -102,6 +102,10 @@ else
 
     NEW_MAINER_SHARE_AGENT_CANISTER=$(echo "$RESULT_2" | grep -o 'address = "[^"]*"' | sed 's/address = "//;s/"//')
     echo "NEW_MAINER_SHARE_AGENT_CANISTER: $NEW_MAINER_SHARE_AGENT_CANISTER"
+
+    echo " "
+    echo "Calling getMainerAgentCanisterInfo to check the canister status"
+    dfx canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$NEW_MAINER_SHARE_AGENT_CANISTER\";})" --network $NETWORK_TYPE
 fi
 
 echo "========================================================================"

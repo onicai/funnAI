@@ -105,10 +105,31 @@ else
 fi
 
 echo " "
-echo "========================================================================"
-echo "We will print this message and then call setUpMainerLlmCanister. "
-echo "(That call might time out while it actually works, but the script would exit without printing this message.)"
+echo "Calling setUpMainerLlmCanister"
+output=$(dfx canister call game_state_canister setUpMainerLlmCanister "$RESULT_2" --network $NETWORK_TYPE)
+echo $output
+if [[ "$output" != *"Ok = record"* ]]; then
+    echo "Call to setUpMainerLlmCanister.. Exiting."    
+    exit 1
+else
+    RESULT_3=$(extract_record_from_variant "$output")
+    echo "RESULT_3 (setUpMainerLlmCanister): $RESULT_3"
+    echo " "
+    echo "Going into a loop to wait for the LLM setup to finish."
+    CANISTER_STATUS=$(echo "$RESULT_3" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
+    echo "CANISTER_STATUS: $CANISTER_STATUS"
+    while [[ "$CANISTER_STATUS" == "LlmSetupInProgress" ]]; do
+        sleep 15
+        output=$(dfx canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$NEW_MAINER_OWN_CANISTER\";})" --network $NETWORK_TYPE)
+        RESULT_4=$(extract_record_from_variant "$output")
+        CANISTER_STATUS=$(echo "$RESULT_4" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
+        echo "CANISTER_STATUS: $CANISTER_STATUS (continue waiting...)"
+    done
+fi
+
+
 echo " "
+echo "========================================================================"
 echo "To add another LLM to the mAInerController $NEW_MAINER_OWN_CANISTER of type #Own, issue this command:"
 echo " "
 echo "dfx canister call game_state_canister addLlmCanisterToMainer  '$RESULT_2' --network $NETWORK_TYPE"
@@ -120,15 +141,3 @@ echo "dfx canister call $NEW_MAINER_OWN_CANISTER startTimerExecutionAdmin --netw
 echo " "
 echo "========================================================================"
 echo " "
-
-echo " "
-echo "Calling setUpMainerLlmCanister"
-output=$(dfx canister call game_state_canister setUpMainerLlmCanister "$RESULT_2" --network $NETWORK_TYPE)
-echo $output
-if [[ "$output" != *"Ok = record"* ]]; then
-    echo "Call to setUpMainerLlmCanister.. Exiting."    
-    exit 1
-else
-    RESULT_3=$(extract_record_from_variant "$output")
-    echo "RESULT_3 (setUpMainerLlmCanister): $RESULT_3"
-fi
