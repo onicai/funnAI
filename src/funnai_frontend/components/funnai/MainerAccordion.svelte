@@ -4,6 +4,7 @@
   import { store } from "../../stores/store";
   import LoginModal from '../login/LoginModal.svelte';
   import MainerPaymentModal from './MainerPaymentModal.svelte';
+  import { Principal } from '@dfinity/principal';
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -77,7 +78,7 @@
       mainerAgentCanisterType,
     };
     let mainerCreationInput = {
-      owner: [$store.principal],
+      owner: [$store.principal] as [] | [Principal],
       paymentTransactionBlockId: BigInt(txId),
       mainerConfig,
     };
@@ -192,12 +193,12 @@
 
     // Normal implementation for production
     return await Promise.all(
-      agentCanisterActors.map(async (agentActor, index) => {
+      agentCanistersInfo.map(async (canisterInfo, index) => {
         //console.log("in MainerAccordion agentCanisterActors.map index ", index);
         //console.log("in MainerAccordion agentCanisterActors.map agentActor", agentActor);
-        
-        const canisterInfo = agentCanistersInfo[index];
-        //console.log("in MainerAccordion agentCanisterActors.map canisterInfo", canisterInfo);
+
+        const agentActor = agentCanisterActors[index];
+        console.log("in MainerAccordion agentCanisterActors.map canisterInfo", canisterInfo);
         let status = "active";
         let burnedCycles = 0;
         let cycleBalance = 0;
@@ -206,55 +207,60 @@
         let llmCanisters = [];
         
         // Determine mainer type from the canister info
-        if (canisterInfo.mainerAgentCanisterType) {
-          // Check for "Own" type in the mainerAgentCanisterType variant
-          if ('Own' in canisterInfo.mainerAgentCanisterType) {
+        console.log("in MainerAccordion agentCanisterActors.map canisterInfo.canisterType", canisterInfo.canisterType);
+        if (canisterInfo.canisterType) {
+          // Check for "Own" type in the canisterType variant
+          if ('Own' in canisterInfo.canisterType.MainerAgent) {
             mainerType = 'Own';
-          } else if ('ShareAgent' in canisterInfo.mainerAgentCanisterType) {
+          } else if ('ShareAgent' in canisterInfo.canisterType.MainerAgent) {
             mainerType = 'Shared';
-          }
-        }
+          };
+        };
 
-        try {
-          const issueFlagsResult = await agentActor.getIssueFlagsAdmin();
-          //console.log("in MainerAccordion agentCanisterActors.map issueFlagsResult", issueFlagsResult);
-          if ('Ok' in issueFlagsResult && issueFlagsResult.Ok.lowCycleBalance) {
+        if (agentActor) {
+          try {
+            const issueFlagsResult = await agentActor.getIssueFlagsAdmin();
+            //console.log("in MainerAccordion agentCanisterActors.map issueFlagsResult", issueFlagsResult);
+            if ('Ok' in issueFlagsResult && issueFlagsResult.Ok.lowCycleBalance) {
+              status = "inactive";
+            };
+          } catch (error) {
+            console.error("Error fetching issue flags: ", error);
             status = "inactive";
           };
-        } catch (error) {
-          console.error("Error fetching issue flags: ", error);
+
+          try {
+            const statsResult = await agentActor.getMainerStatisticsAdmin();
+            //console.log("in MainerAccordion agentCanisterActors.map statsResult", statsResult);
+            if ('Ok' in statsResult) {
+              burnedCycles = Number(statsResult.Ok.totalCyclesBurnt);
+              cycleBalance = Number(statsResult.Ok.cycleBalance);
+              cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
+            };
+          } catch (error) {
+            console.error("Error fetching statistics: ", error);
+          };
+
+          // Fetch LLM canisters if this is an "Own" type mAIner
+          if (mainerType === 'Own') {
+            try {
+              // Check if the getLlmCanisterIds method exists on the actor
+              if (agentActor.getLlmCanisterIds && typeof agentActor.getLlmCanisterIds === 'function') {
+                // Attempt to get LLM canister IDs from the controller
+                const llmResult = await agentActor.getLlmCanisterIds();
+                if ('Ok' in llmResult && Array.isArray(llmResult.Ok)) {
+                  llmCanisters = llmResult.Ok;
+                }
+              } else {
+                console.log("getLlmCanisterIds method not available on this agent actor");
+              };
+            } catch (error) {
+              console.error("Error fetching LLM canister IDs: ", error);
+            };
+          };
+        } else {
           status = "inactive";
         };
-
-        try {
-          const statsResult = await agentActor.getMainerStatisticsAdmin();
-          //console.log("in MainerAccordion agentCanisterActors.map statsResult", statsResult);
-          if ('Ok' in statsResult) {
-            burnedCycles = Number(statsResult.Ok.totalCyclesBurnt);
-            cycleBalance = Number(statsResult.Ok.cycleBalance);
-            cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
-          };
-        } catch (error) {
-          console.error("Error fetching statistics: ", error);
-        };
-
-        // Fetch LLM canisters if this is an "Own" type mAIner
-        if (mainerType === 'Own') {
-          try {
-            // Check if the getLlmCanisterIds method exists on the actor
-            if (agentActor.getLlmCanisterIds && typeof agentActor.getLlmCanisterIds === 'function') {
-              // Attempt to get LLM canister IDs from the controller
-              const llmResult = await agentActor.getLlmCanisterIds();
-              if ('Ok' in llmResult && Array.isArray(llmResult.Ok)) {
-                llmCanisters = llmResult.Ok;
-              }
-            } else {
-              console.log("getLlmCanisterIds method not available on this agent actor");
-            }
-          } catch (error) {
-            console.error("Error fetching LLM canister IDs: ", error);
-          }
-        }
 
         //console.log("in MainerAccordion agentCanisterActors.map before return id ", canisterInfo.address);
         //console.log("in MainerAccordion agentCanisterActors.map before return name ", `mAIner ${index + 1}`);
