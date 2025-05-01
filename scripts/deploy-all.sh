@@ -58,7 +58,4 @@ scripts/deploy-judge.sh      --network $NETWORK_TYPE --mode $DEPLOY_MODE
 cd ../
 scripts/scripts-gamestate/register-all.sh --network $NETWORK_TYPE
 
-# Now it is possible to deploy the mAIners via the mAInerCreator
-cd PoAIW
-scripts/deploy-mainers-Own.sh     --network $NETWORK_TYPE --mode $DEPLOY_MODE
-scripts/deploy-mainers-Share.sh     --network $NETWORK_TYPE --mode $DEPLOY_MODE
+# WE NO LONGER DEPLOY mAIners from this script. See README for details

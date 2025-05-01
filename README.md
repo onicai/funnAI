@@ -1,11 +1,12 @@
 # funnAI
 
 # Setup instructions
+
 We are using dfx deps for:
 - internet-identity
 - cycles_ledger
 
-So, use dfx deps & dfx start from the funnAI root folder:
+Use dfx deps & dfx start from the funnAI root folder:
 
 ```bash
 # from folder: funnAI
@@ -17,7 +18,7 @@ dfx start --clean
 dfx deploy
 ```
 
-First follow all instructions of PoAIW/README.md
+Then, follow all instructions of PoAIW/README.md
 
 Then, do the following:
 
@@ -37,16 +38,12 @@ sudo sysctl -w vm.max_map_count=2097152
 #    % dfx canister update-settings <canister-name> --add-log-viewer <principal-id>
 scripts/logs.sh --network ic
 
-# This script does it all:
+# This script deploys the core canisters:
 # (-) Deploys GameState, mAInerCreator, Challenger, Judge
 # (-) Registers the canisters properly with each other
-# (-) Deploys a demo set of mAIners via calls to mAInerCreator
-#     -> One mAIner  of type #Own, with 1 LLM
-#     -> One mAIner  of type #ShareService, with 1 LLM
-#     -> Two mAIners of type #ShareAgent
-# (-) The timers of the mAIners are started immediately
 # (-) The timers of the Challenger & Judge are not started.
-#     -> Do this manually in the next step
+#     -> Do this manually with the command:
+#          dfx canister call <canister-id> startTimerExecutionAdmin
 scripts/deploy-all.sh --mode install [--network ic]
 
 # Notes: 
@@ -55,6 +52,30 @@ scripts/deploy-all.sh --mode install [--network ic]
 # (-) to reset the gamestate, run `scripts/deploy-gamestate.sh --mode reinstall`, 
 #     followed by                 `scripts/deploy-all.sh --mode upgrade`
 #     -> This will erase all data: canisters/challenges/responses/etc.
+
+# -----------------------------------------------------------------------------------
+# Deploy mAIners
+#
+# Always deploy a mAIner of type #ShareService, since this is a protocol canister
+scripts/scripts-gamestate/deploy-mainers-ShareService-via-gamestate.sh --mode install [--network ic]
+
+# Optionally, deploy mAIners of type #ShareAgent or #Own
+# This is optional for test purposes, because these mAIners will be created by users of the frontend
+#
+# (-) Deploy a mAIner of type #ShareAgent
+scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install [--network ic]
+# (-) Deploy a mAIner of type #Own
+scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install [--network ic]
+
+#
+# Notes: 
+# (-) You (should) run the script for type #ShareService only once. It has not been verified what happens if you run it again.
+# (-) You can run the scripts for type #Own and #ShareAgent multiple times. It will deploy another mAIner.
+# (-) The #Own & #ShareService mAIners are deployed with 1 LLM. To add more LLMs, use the function: addLlmCanisterToMainer (*)
+# (-) The timers of the mAIners are NOT started automatically. (*)
+#
+# => The exact dfx commands to add LLMs & to start the timers are printed by the scripts
+#
 
 # Deploy funnai backend (used mainly for chat):
 dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_backend [--ic]
