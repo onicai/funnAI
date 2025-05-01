@@ -93,27 +93,34 @@
         //@ts-ignore
         if (spinUpMainerControllerCanisterResponse?.Ok) {
           // Step 3: Set up LLM
-          addProgressMessage("Setting up LLM environment...");
           if (modelType === 'Own') {
-            // TODO: don't wait until the LLM canister is created as this takes a few minutes (and most likely will time out) but design the UX accordingly
+            // We don't wait for LLM canister setup anymore, just trigger it and let it run in background
+            addProgressMessage("Starting LLM environment setup in the background...");
+            
+            // Trigger LLM setup without awaiting it
             //@ts-ignore
-            let setUpMainerLlmCanisterResponse = await $store.gameStateCanisterActor.setUpMainerLlmCanister(spinUpMainerControllerCanisterResponse?.Ok);
-            //@ts-ignore
-            if (setUpMainerLlmCanisterResponse?.Ok) {
-              addProgressMessage("Added your own LLM canister to the controller...");
-            //@ts-ignore
-            } else if (setUpMainerLlmCanisterResponse?.Err) {
-              //@ts-ignore
-              console.error("Error in setUpMainerLlmCanister:", setUpMainerLlmCanister?.Err);
-            };
-          };
+            $store.gameStateCanisterActor.setUpMainerLlmCanister(spinUpMainerControllerCanisterResponse?.Ok)
+              .then((response) => {
+                console.log("LLM canister setup triggered successfully:", response);
+              })
+              .catch((error) => {
+                console.error("Error triggering LLM setup:", error);
+              });
+            
+            addProgressMessage("LLM setup will continue in the background (it may take several minutes to complete)");
+          }
+          
           // Step 4: Final configuration
           addProgressMessage("Configuring mAIner parameters...");
           // TODO: set default cycle burn rate, start mAIner's timer (if not done yet by backend)
 
-          // Step 5: Completion after 2 more seconds
+          // Step 5: Completion
           setTimeout(() => {
-            addProgressMessage("mAIner successfully created and ready to use!", true);
+            addProgressMessage("mAIner successfully created! You can start using it while LLM setup completes in the background.", true);
+            // Refresh the list of agents to show the newly created one
+            loadAgents().then(newAgents => {
+              agents = newAgents;
+            });
           }, 2000);
         //@ts-ignore
         } else if (spinUpMainerControllerCanisterResponse?.Err) {
@@ -186,7 +193,8 @@
           cycleBalance: 3000000,
           cyclesBurnRate: {},
           mainerType: "Own",
-          llmCanisters: []  // Own type with no LLMs attached yet
+          llmCanisters: [],
+          llmSetupStatus: "inProgress" // Example of a setup in progress
         }
       ];
     }
@@ -205,6 +213,16 @@
         let cyclesBurnRate = {};
         let mainerType = 'Unknown';
         let llmCanisters = [];
+        let llmSetupStatus = '';
+        
+        // Check for LLM setup status from the canister info
+        if (canisterInfo.status) {
+          if ('LlmSetupInProgress' in canisterInfo.status) {
+            llmSetupStatus = 'inProgress';
+          } else if ('LlmSetupFinished' in canisterInfo.status) {
+            llmSetupStatus = 'completed';
+          }
+        }
         
         // Determine mainer type from the canister info
         console.log("in MainerAccordion agentCanisterActors.map canisterInfo.canisterType", canisterInfo.canisterType);
@@ -250,6 +268,10 @@
                 const llmResult = await agentActor.getLlmCanisterIds();
                 if ('Ok' in llmResult && Array.isArray(llmResult.Ok)) {
                   llmCanisters = llmResult.Ok;
+                  // If we have LLM canisters but status doesn't show 'completed', update it
+                  if (llmCanisters.length > 0 && llmSetupStatus !== 'completed') {
+                    llmSetupStatus = 'completed';
+                  }
                 }
               } else {
                 console.log("getLlmCanisterIds method not available on this agent actor");
@@ -295,7 +317,8 @@
           cycleBalance,
           cyclesBurnRate,
           mainerType,
-          llmCanisters
+          llmCanisters,
+          llmSetupStatus
         };
       })
     );
@@ -537,6 +560,12 @@
         {agent.name}
       </span>
       <div class="flex items-center">
+        <!-- Add LLM setup status badge when applicable -->
+        {#if agent.mainerType === 'Own' && agent.llmSetupStatus === 'inProgress'}
+          <span class="mr-2 px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-400">
+            LLM setup in progress
+          </span>
+        {/if}
         <span class={`mr-4 px-2 py-1 rounded-full text-xs ${agent.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-400'}`}>
           {agent.status}
         </span>
@@ -570,9 +599,24 @@
                 <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-yellow-300 border border-yellow-300">{agent.mainerType}</span>
               </div>
               
-              <!-- For Own type mAIners, show LLM information -->
+              <!-- For Own type mAIners, show LLM information or setup status -->
               {#if agent.mainerType === 'Own'}
                 <div class="flex flex-col mt-2">
+                  <!-- Show LLM setup status if in progress -->
+                  {#if agent.llmSetupStatus === 'inProgress'}
+                    <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 my-2">
+                      <div class="flex items-center">
+                        <svg class="animate-spin h-4 w-4 text-yellow-600 dark:text-yellow-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p class="text-xs text-yellow-800 dark:text-yellow-300">
+                          <span class="font-medium">LLM setup in progress</span> - This may take several minutes to complete and will happen in the background. You can use the mAIner with shared LLMs in the meantime.
+                        </p>
+                      </div>
+                    </div>
+                  {/if}
+                
                   <span class="text-xs mb-1">Attached LLMs:</span>
                   {#if agent.llmCanisters && agent.llmCanisters.length > 0}
                     <div class="flex flex-col gap-2 ml-2 mt-1">
@@ -590,7 +634,11 @@
                     </div>
                   {:else}
                     <div class="ml-2 mt-1">
-                      <span class="text-xs italic text-gray-500 dark:text-gray-400">No LLM canisters attached yet</span>
+                      {#if agent.llmSetupStatus === 'inProgress'}
+                        <span class="text-xs italic text-yellow-500 dark:text-yellow-400">LLM canister setup in progress...</span>
+                      {:else}
+                        <span class="text-xs italic text-gray-500 dark:text-gray-400">No LLM canisters attached yet</span>
+                      {/if}
                     </div>
                   {/if}
                 </div>
