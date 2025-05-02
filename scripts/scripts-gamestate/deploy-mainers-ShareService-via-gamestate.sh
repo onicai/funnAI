@@ -122,7 +122,7 @@ echo "RESULT_2A (getMainerAgentCanisterInfo): $RESULT_2A"
 
 echo " "
 echo "--------------------------------------------------"
-echo "Registering ServiceShare mAIner canister with the game_state_canister"
+echo "Registering ShareService mAIner canister with the game_state_canister"
 output=$(dfx canister call game_state_canister addOfficialCanister "(record { address = \"$NEW_MAINER_SHARE_SERVICE_CANISTER\"; canisterType = variant {MainerAgent = variant {ShareService}} })" --network $NETWORK_TYPE)
 
 if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; then
