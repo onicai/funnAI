@@ -121,7 +121,7 @@ fi
 echo "RESULT_2A (getMainerAgentCanisterInfo): $RESULT_2A"
 
 echo "========================================================================"
-echo "To start the timers for the mAInerController $NEW_MAINER_SHARE_AGENT_CANISTER of type #ShareAgent, issue this command:"
+echo "The timers are running! To stop for the mAInerController $NEW_MAINER_SHARE_AGENT_CANISTER of type #ShareAgent, issue this command:"
 echo " "
 echo "dfx canister call $NEW_MAINER_SHARE_AGENT_CANISTER startTimerExecutionAdmin --network $NETWORK_TYPE"
 echo " "
