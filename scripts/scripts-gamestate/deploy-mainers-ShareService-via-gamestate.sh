@@ -102,7 +102,23 @@ else
 
     NEW_MAINER_SHARE_SERVICE_CANISTER=$(echo "$RESULT_2" | grep -o 'address = "[^"]*"' | sed 's/address = "//;s/"//')
     echo "NEW_MAINER_SHARE_SERVICE_CANISTER: $NEW_MAINER_SHARE_SERVICE_CANISTER"
+
+    echo " "
+    echo "Going into a loop to wait for the ShareService Controller setup to finish."
+    CANISTER_STATUS=$(echo "$RESULT_2" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
+    echo "CANISTER_STATUS: $CANISTER_STATUS"
+    WAIT_TIME=5
+    while [[ "$CANISTER_STATUS" == "ControllerCreationInProgress" ]]; do
+        echo "sleep for $WAIT_TIME seconds..."
+        sleep $WAIT_TIME
+        output=$(dfx canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$NEW_MAINER_SHARE_SERVICE_CANISTER\";})" --network $NETWORK_TYPE)
+        RESULT_2A=$(extract_record_from_variant "$output")
+        CANISTER_STATUS=$(echo "$RESULT_2A" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
+        echo "CANISTER_STATUS: $CANISTER_STATUS"
+    done
 fi
+
+echo "RESULT_2A (getMainerAgentCanisterInfo): $RESULT_2A"
 
 echo " "
 echo "--------------------------------------------------"
@@ -118,7 +134,7 @@ fi
 
 echo " "
 echo "Calling setUpMainerLlmCanister to add an LLM to the ShareService"
-output=$(dfx canister call game_state_canister setUpMainerLlmCanister "$RESULT_2" --network $NETWORK_TYPE)
+output=$(dfx canister call game_state_canister setUpMainerLlmCanister "$RESULT_2A" --network $NETWORK_TYPE)
 echo $output
 if [[ "$output" != *"Ok = record"* ]]; then
     echo "Call to setUpMainerLlmCanister.. Exiting."    
@@ -127,24 +143,27 @@ else
     RESULT_3=$(extract_record_from_variant "$output")
     echo "RESULT_3 (setUpMainerLlmCanister): $RESULT_3"
     echo " "
-    echo " "
     echo "Going into a loop to wait for the LLM setup to finish."
     CANISTER_STATUS=$(echo "$RESULT_3" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
     echo "CANISTER_STATUS: $CANISTER_STATUS"
+    WAIT_TIME=60
     while [[ "$CANISTER_STATUS" == "LlmSetupInProgress" ]]; do
-        sleep 15
+        echo "sleep for $WAIT_TIME seconds..."
+        sleep $WAIT_TIME
         output=$(dfx canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$NEW_MAINER_SHARE_SERVICE_CANISTER\";})" --network $NETWORK_TYPE)
-        RESULT_4=$(extract_record_from_variant "$output")
-        CANISTER_STATUS=$(echo "$RESULT_4" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
-        echo "CANISTER_STATUS: $CANISTER_STATUS (continue waiting...)"
+        RESULT_3A=$(extract_record_from_variant "$output")
+        CANISTER_STATUS=$(echo "$RESULT_3A" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
+        echo "CANISTER_STATUS: $CANISTER_STATUS"
     done
 fi
+
+echo "RESULT_3A (getMainerAgentCanisterInfo): $RESULT_3A"
 
 echo " "
 echo "========================================================================"
 echo "To add another LLM to the mAInerController $NEW_MAINER_SHARE_SERVICE_CANISTER of type #ShareService, issue this command:"
 echo " "
-echo "dfx canister call game_state_canister addLlmCanisterToMainer  '$RESULT_2' --network $NETWORK_TYPE"
+echo "dfx canister call game_state_canister addLlmCanisterToMainer  '$RESULT_2A' --network $NETWORK_TYPE"
 echo " "
 echo "========================================================================"
 echo "To start the timers for the mAInerController $NEW_MAINER_SHARE_SERVICE_CANISTER of type #ShareService, issue this command:"
