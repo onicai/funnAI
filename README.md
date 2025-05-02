@@ -79,11 +79,6 @@ export JUDGE=a4tbr-q4aaa-aaaaa-qaafq-cai
 dfx canister call $CHALLENGER startTimerExecutionAdmin
 dfx canister call $JUDGE startTimerExecutionAdmin
 
-# The exact dfx commands to start the timers for the mAIners are printed by the scripts
-
-
-#
-
 # Once the timers are running, you can use these commands to check on the data captured by the gamestate:
 # Run from folder: funnAI
 # Verify Challenger challenge generations
