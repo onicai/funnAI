@@ -72,8 +72,9 @@ scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install [--
 # (-) You (should) run the script for type #ShareService only once. It has not been verified what happens if you run it again.
 # (-) You can run the scripts for type #Own and #ShareAgent multiple times. It will deploy another mAIner.
 # (-) The #Own & #ShareService mAIners are deployed with 1 LLM. To add more LLMs, use the function: addLlmCanisterToMainer 
-# (-) The timers of the Challenger, Judge & mAIners are NOT started automatically.
-#     Use something like this:
+# (-) The timers for the mAIners are started automatically.
+# (-) The timers of the Challenger & Judge are NOT started automatically.
+#     Start them with something like this:
 export CHALLENGER=by6od-j4aaa-aaaaa-qaadq-cai
 export JUDGE=a4tbr-q4aaa-aaaaa-qaafq-cai
 dfx canister call $CHALLENGER startTimerExecutionAdmin
