@@ -2,32 +2,13 @@
 
 # Setup instructions
 
-We are using dfx deps for:
-- internet-identity
-- cycles_ledger
-
-Use dfx deps & dfx start from the funnAI root folder:
-
-```bash
-# from folder: funnAI
-dfx deps pull
-dfx deps init
-dfx start --clean
-dfx deps deploy
-```
-
-Then, follow all instructions of PoAIW/README.md
+First follow all instructions of PoAIW/README.md
 
 Then, do the following:
 
 ```bash
 # Use conda environment
 conda activate llama_cpp_canister
-
-# Note: on WSL, you might first have to run
-sudo sysctl -w vm.max_map_count=2097152
-
-# from folder: funnAI
 
 # To monitor the logs on mainnet, run this script
 # -> it reads the canister IDs from the file: "scripts/canister_ids.env"
@@ -36,12 +17,25 @@ sudo sysctl -w vm.max_map_count=2097152
 #    % dfx canister update-settings <canister-name> --add-log-viewer <principal-id>
 scripts/logs.sh --network ic
 
+# We are using dfx deps for:
+# - internet-identity
+# - cycles_ledger
+#
+# from folder: funnAI
+dfx deps pull
+dfx deps init
+dfx start --clean
+dfx deps deploy
+
 # This script deploys the core canisters:
 # (-) Deploys GameState, mAInerCreator, Challenger, Judge
 # (-) Registers the canisters properly with each other
 # (-) The timers of the Challenger & Judge are not started.
 #     -> Do this manually with the command:
 #          dfx canister call <canister-id> startTimerExecutionAdmin
+# Note: on WSL, you might first have to run
+sudo sysctl -w vm.max_map_count=2097152
+# from folder: funnAI
 scripts/deploy-all.sh --mode install [--network ic]
 
 # Notes: 
