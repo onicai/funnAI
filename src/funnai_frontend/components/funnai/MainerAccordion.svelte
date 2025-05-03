@@ -4,6 +4,7 @@
   import { store } from "../../stores/store";
   import LoginModal from '../login/LoginModal.svelte';
   import MainerPaymentModal from './MainerPaymentModal.svelte';
+  import { Principal } from '@dfinity/principal';
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -27,6 +28,9 @@
   // Progress tracking for mAIner creation
   let isCreatingMainer = false;
   let mainerCreationProgress: {message: string, timestamp: string, complete: boolean}[] = [];
+
+  // For testing UI only - set to true to use mock data for the mainer accordion displaying canister INFO
+  let useMockData = false;
 
   function toggleAccordion(index: string) {
     const content = document.getElementById(`content-${index}`);
@@ -74,7 +78,7 @@
       mainerAgentCanisterType,
     };
     let mainerCreationInput = {
-      owner: [$store.principal],
+      owner: [$store.principal] as [] | [Principal],
       paymentTransactionBlockId: BigInt(txId),
       mainerConfig,
     };
@@ -89,27 +93,34 @@
         //@ts-ignore
         if (spinUpMainerControllerCanisterResponse?.Ok) {
           // Step 3: Set up LLM
-          addProgressMessage("Setting up LLM environment...");
           if (modelType === 'Own') {
-            // TODO: don't wait until the LLM canister is created as this takes a few minutes (and most likely will time out) but design the UX accordingly
+            // We don't wait for LLM canister setup anymore, just trigger it and let it run in background
+            addProgressMessage("Starting LLM environment setup in the background...");
+            
+            // Trigger LLM setup without awaiting it
             //@ts-ignore
-            let setUpMainerLlmCanisterResponse = await $store.gameStateCanisterActor.setUpMainerLlmCanister(spinUpMainerControllerCanisterResponse?.Ok);
-            //@ts-ignore
-            if (setUpMainerLlmCanisterResponse?.Ok) {
-              addProgressMessage("Added your own LLM canister to the controller...");
-            //@ts-ignore
-            } else if (setUpMainerLlmCanisterResponse?.Err) {
-              //@ts-ignore
-              console.error("Error in setUpMainerLlmCanister:", setUpMainerLlmCanister?.Err);
-            };
-          };
+            $store.gameStateCanisterActor.setUpMainerLlmCanister(spinUpMainerControllerCanisterResponse?.Ok)
+              .then((response) => {
+                console.log("LLM canister setup triggered successfully:", response);
+              })
+              .catch((error) => {
+                console.error("Error triggering LLM setup:", error);
+              });
+            
+            addProgressMessage("LLM setup will continue in the background (it may take several minutes to complete)");
+          }
+          
           // Step 4: Final configuration
           addProgressMessage("Configuring mAIner parameters...");
           // TODO: set default cycle burn rate, start mAIner's timer (if not done yet by backend)
 
-          // Step 5: Completion after 2 more seconds
+          // Step 5: Completion
           setTimeout(() => {
-            addProgressMessage("mAIner successfully created and ready to use!", true);
+            addProgressMessage("mAIner successfully created! You can start using it while LLM setup completes in the background.", true);
+            // Refresh the list of agents to show the newly created one
+            loadAgents().then(newAgents => {
+              agents = newAgents;
+            });
           }, 2000);
         //@ts-ignore
         } else if (spinUpMainerControllerCanisterResponse?.Err) {
@@ -148,39 +159,129 @@
   };
 
   async function loadAgents() {
+    // For UI testing only - return mock data when enabled
+    if (useMockData) {
+      return [
+        {
+          id: "zlbtt-2yaaa-aaaak-qufwa-cai",
+          name: "mAIner 1",
+          status: "active",
+          burnedCycles: 1234567,
+          cycleBalance: 5000000,
+          cyclesBurnRate: {},
+          mainerType: "Own",
+          llmCanisters: [
+            "3f4dg-7uaaa-aaaak-abcde-cai",
+            "5g9kl-8vaaa-aaaak-fghij-cai"
+          ]
+        },
+        {
+          id: "w4ctb-aiaaa-aaaak-aczaq-cai",
+          name: "mAIner 2",
+          status: "inactive",
+          burnedCycles: 890123,
+          cycleBalance: 100000,
+          cyclesBurnRate: {},
+          mainerType: "Shared",
+          llmCanisters: []
+        },
+        {
+          id: "jc6wa-hyaaa-aaaak-abtlq-cai",
+          name: "mAIner 3",
+          status: "active",
+          burnedCycles: 567890,
+          cycleBalance: 3000000,
+          cyclesBurnRate: {},
+          mainerType: "Own",
+          llmCanisters: [],
+          llmSetupStatus: "inProgress" // Example of a setup in progress
+        }
+      ];
+    }
+
+    // Normal implementation for production
     return await Promise.all(
-      agentCanisterActors.map(async (agentActor, index) => {
+      agentCanistersInfo.map(async (canisterInfo, index) => {
         //console.log("in MainerAccordion agentCanisterActors.map index ", index);
         //console.log("in MainerAccordion agentCanisterActors.map agentActor", agentActor);
-        
-        const canisterInfo = agentCanistersInfo[index];
-        //console.log("in MainerAccordion agentCanisterActors.map canisterInfo", canisterInfo);
+
+        const agentActor = agentCanisterActors[index];
+        console.log("in MainerAccordion agentCanisterActors.map canisterInfo", canisterInfo);
         let status = "active";
         let burnedCycles = 0;
         let cycleBalance = 0;
         let cyclesBurnRate = {};
-
-        try {
-          const issueFlagsResult = await agentActor.getIssueFlagsAdmin();
-          //console.log("in MainerAccordion agentCanisterActors.map issueFlagsResult", issueFlagsResult);
-          if ('Ok' in issueFlagsResult && issueFlagsResult.Ok.lowCycleBalance) {
-            status = "inactive";
+        let mainerType = 'Unknown';
+        let llmCanisters = [];
+        let llmSetupStatus = '';
+        
+        // Check for LLM setup status from the canister info
+        if (canisterInfo.status) {
+          if ('LlmSetupInProgress' in canisterInfo.status) {
+            llmSetupStatus = 'inProgress';
+          } else if ('LlmSetupFinished' in canisterInfo.status) {
+            llmSetupStatus = 'completed';
+          }
+        }
+        
+        // Determine mainer type from the canister info
+        console.log("in MainerAccordion agentCanisterActors.map canisterInfo.canisterType", canisterInfo.canisterType);
+        if (canisterInfo.canisterType) {
+          // Check for "Own" type in the canisterType variant
+          if ('Own' in canisterInfo.canisterType.MainerAgent) {
+            mainerType = 'Own';
+          } else if ('ShareAgent' in canisterInfo.canisterType.MainerAgent) {
+            mainerType = 'Shared';
           };
-        } catch (error) {
-          console.error("Error fetching issue flags: ", error);
-          status = "inactive";
         };
 
-        try {
-          const statsResult = await agentActor.getMainerStatisticsAdmin();
-          //console.log("in MainerAccordion agentCanisterActors.map statsResult", statsResult);
-          if ('Ok' in statsResult) {
-            burnedCycles = Number(statsResult.Ok.totalCyclesBurnt);
-            cycleBalance = Number(statsResult.Ok.cycleBalance);
-            cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
+        if (agentActor) {
+          try {
+            const issueFlagsResult = await agentActor.getIssueFlagsAdmin();
+            //console.log("in MainerAccordion agentCanisterActors.map issueFlagsResult", issueFlagsResult);
+            if ('Ok' in issueFlagsResult && issueFlagsResult.Ok.lowCycleBalance) {
+              status = "inactive";
+            };
+          } catch (error) {
+            console.error("Error fetching issue flags: ", error);
+            status = "inactive";
           };
-        } catch (error) {
-          console.error("Error fetching statistics: ", error);
+
+          try {
+            const statsResult = await agentActor.getMainerStatisticsAdmin();
+            //console.log("in MainerAccordion agentCanisterActors.map statsResult", statsResult);
+            if ('Ok' in statsResult) {
+              burnedCycles = Number(statsResult.Ok.totalCyclesBurnt);
+              cycleBalance = Number(statsResult.Ok.cycleBalance);
+              cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
+            };
+          } catch (error) {
+            console.error("Error fetching statistics: ", error);
+          };
+
+          // Fetch LLM canisters if this is an "Own" type mAIner
+          if (mainerType === 'Own') {
+            try {
+              // Check if the getLlmCanisterIds method exists on the actor
+              if (agentActor.getLlmCanisterIds && typeof agentActor.getLlmCanisterIds === 'function') {
+                // Attempt to get LLM canister IDs from the controller
+                const llmResult = await agentActor.getLlmCanisterIds();
+                if ('Ok' in llmResult && Array.isArray(llmResult.Ok)) {
+                  llmCanisters = llmResult.Ok;
+                  // If we have LLM canisters but status doesn't show 'completed', update it
+                  if (llmCanisters.length > 0 && llmSetupStatus !== 'completed') {
+                    llmSetupStatus = 'completed';
+                  }
+                }
+              } else {
+                console.log("getLlmCanisterIds method not available on this agent actor");
+              };
+            } catch (error) {
+              console.error("Error fetching LLM canister IDs: ", error);
+            };
+          };
+        } else {
+          status = "inactive";
         };
 
         //console.log("in MainerAccordion agentCanisterActors.map before return id ", canisterInfo.address);
@@ -214,7 +315,10 @@
           status,
           burnedCycles,
           cycleBalance,
-          cyclesBurnRate
+          cyclesBurnRate,
+          mainerType,
+          llmCanisters,
+          llmSetupStatus
         };
       })
     );
@@ -456,6 +560,12 @@
         {agent.name}
       </span>
       <div class="flex items-center">
+        <!-- Add LLM setup status badge when applicable -->
+        {#if agent.mainerType === 'Own' && agent.llmSetupStatus === 'inProgress'}
+          <span class="mr-2 px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-400">
+            LLM setup in progress
+          </span>
+        {/if}
         <span class={`mr-4 px-2 py-1 rounded-full text-xs ${agent.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-400'}`}>
           {agent.status}
         </span>
@@ -468,6 +578,75 @@
     </button>
     <div id="content-{agent.id}" class="accordion-content">
       <div class="pb-5 text-sm text-gray-700 dark:text-gray-300 p-4 bg-gray-5 dark:bg-gray-900">
+        <!-- Canister Information Section -->
+        <div class="flex flex-col space-y-2 mb-4">
+          <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg">
+            <h2 class="text-sm mb-2 font-medium">Canister Information</h2>
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center flex-wrap">
+                <span class="text-xs mr-2 w-24">Controller ID:</span>
+                <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id={agent.id}" target="_blank" rel="noopener noreferrer" class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-green-400 border border-green-400 break-all hover:bg-green-200 dark:hover:bg-gray-600 transition-colors flex items-center">
+                  <span>{agent.id}</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
+                  </svg>
+                </a>
+              </div>
+              
+              <!-- Show mAIner type -->
+              <div class="flex items-center">
+                <span class="text-xs mr-2 w-24">Type:</span>
+                <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-yellow-300 border border-yellow-300">{agent.mainerType}</span>
+              </div>
+              
+              <!-- For Own type mAIners, show LLM information or setup status -->
+              {#if agent.mainerType === 'Own'}
+                <div class="flex flex-col mt-2">
+                  <!-- Show LLM setup status if in progress -->
+                  {#if agent.llmSetupStatus === 'inProgress'}
+                    <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 my-2">
+                      <div class="flex items-center">
+                        <svg class="animate-spin h-4 w-4 text-yellow-600 dark:text-yellow-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p class="text-xs text-yellow-800 dark:text-yellow-300">
+                          <span class="font-medium">LLM setup in progress</span> - This may take several minutes to complete and will happen in the background. You can use the mAIner with shared LLMs in the meantime.
+                        </p>
+                      </div>
+                    </div>
+                  {/if}
+                
+                  <span class="text-xs mb-1">Attached LLMs:</span>
+                  {#if agent.llmCanisters && agent.llmCanisters.length > 0}
+                    <div class="flex flex-col gap-2 ml-2 mt-1">
+                      {#each agent.llmCanisters as llmCanister, i}
+                        <div class="flex items-center flex-wrap">
+                          <span class="text-xs mr-2 w-20">LLM {i+1}:</span>
+                          <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id={llmCanister}" target="_blank" rel="noopener noreferrer" class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-indigo-400 border border-indigo-400 break-all hover:bg-indigo-200 dark:hover:bg-gray-600 transition-colors flex items-center">
+                            <span>{llmCanister}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                              <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
+                            </svg>
+                          </a>
+                        </div>
+                      {/each}
+                    </div>
+                  {:else}
+                    <div class="ml-2 mt-1">
+                      {#if agent.llmSetupStatus === 'inProgress'}
+                        <span class="text-xs italic text-yellow-500 dark:text-yellow-400">LLM canister setup in progress...</span>
+                      {:else}
+                        <span class="text-xs italic text-gray-500 dark:text-gray-400">No LLM canisters attached yet</span>
+                      {/if}
+                    </div>
+                  {/if}
+                </div>
+              {/if}
+            </div>
+          </div>
+        </div>
+        
         <div class="flex flex-col space-y-2 mb-2">
           <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
             <div class="flex items-center justify-between">
@@ -532,6 +711,87 @@
     </div>
   </div>
 {/each}
+
+
+<!-- Test UI display when no agents are available but useMockData is enabled -->
+ <!-- TODO: remove this once the real data is available -->
+{#if agents.length === 0 && useMockData}
+  <div class="border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
+    <button class="w-full flex justify-between items-center py-5 px-4 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
+      <span class="flex items-center font-medium text-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-600 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+        </svg>
+        Test mAIner (Demo)
+      </span>
+      <div class="flex items-center">
+        <span class="mr-4 px-2 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400">
+          active
+        </span>
+      </div>
+    </button>
+    <div class="pb-5 text-sm text-gray-700 dark:text-gray-300 p-4 bg-gray-5 dark:bg-gray-900">
+      <!-- Canister Information Section -->
+      <div class="flex flex-col space-y-2 mb-4">
+        <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg">
+          <h2 class="text-sm mb-2 font-medium">Canister Information</h2>
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center flex-wrap">
+              <span class="text-xs mr-2 w-24">Controller ID:</span>
+              <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id=zlbtt-2yaaa-aaaak-qufwa-cai" target="_blank" rel="noopener noreferrer" class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-green-400 border border-green-400 break-all hover:bg-green-200 dark:hover:bg-gray-600 transition-colors flex items-center">
+                <span>zlbtt-2yaaa-aaaak-qufwa-cai</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
+                </svg>
+              </a>
+            </div>
+            
+            <!-- Show mAIner type -->
+            <div class="flex items-center">
+              <span class="text-xs mr-2 w-24">Type:</span>
+              <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-yellow-300 border border-yellow-300">Own</span>
+            </div>
+            
+            <!-- LLM information -->
+            <div class="flex flex-col mt-2">
+              <span class="text-xs mb-1">Attached LLMs:</span>
+              <div class="flex flex-col gap-2 ml-2 mt-1">
+                <div class="flex items-center flex-wrap">
+                  <span class="text-xs mr-2 w-20">LLM 1:</span>
+                  <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id=3f4dg-7uaaa-aaaak-abcde-cai" target="_blank" rel="noopener noreferrer" class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-indigo-400 border border-indigo-400 break-all hover:bg-indigo-200 dark:hover:bg-gray-600 transition-colors flex items-center">
+                    <span>3f4dg-7uaaa-aaaak-abcde-cai</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
+                    </svg>
+                  </a>
+                </div>
+                <div class="flex items-center flex-wrap">
+                  <span class="text-xs mr-2 w-20">LLM 2:</span>
+                  <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id=5g9kl-8vaaa-aaaak-fghij-cai" target="_blank" rel="noopener noreferrer" class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-indigo-400 border border-indigo-400 break-all hover:bg-indigo-200 dark:hover:bg-gray-600 transition-colors flex items-center">
+                    <span>5g9kl-8vaaa-aaaak-fghij-cai</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Other sections similar to real UI -->
+      <div class="flex flex-col space-y-2 mb-2">
+        <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
+          <div class="flex items-center justify-between">
+              <h2 class="text-sm mb-2">Top up cycles</h2>
+              <button type="button" class="py-2.5 px-5 me-2 text-xs font-medium text-gray-900 dark:text-gray-300 focus:outline-none bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700">Top-up</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <style>
   .accordion-content {

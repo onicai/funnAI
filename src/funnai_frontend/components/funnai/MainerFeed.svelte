@@ -205,119 +205,121 @@
         //console.log(index);
         //console.log("in MainerFeed getFeedData agentCanisterActors entries agent");
         //console.log(agent);
-        try {
-          const submissionsResult =
-            await agent.getRecentSubmittedResponsesAdmin();
-          //console.log("in MainerFeed getFeedData agentCanisterActors entries submissionsResult");
-          //console.log(submissionsResult);
-          // ChallengeResponseSubmissionsResult looks like so: type ChallengeResponseSubmissionsResult = { 'Ok' : Array<ChallengeResponseSubmission> } | { 'Err' : ApiError };
-          /* interface ChallengeResponseSubmission {
-              'challengeClosedTimestamp' : [] | [bigint],
-              'challengeTopicStatus' : ChallengeTopicStatus,
-              'challengeTopicCreationTimestamp' : bigint,
-              'challengeCreationTimestamp' : bigint,
-              'challengeCreatedBy' : CanisterAddress,
-              'challengeTopicId' : string,
-              'submittedTimestamp' : bigint,
-              'submittedBy' : Principal,
-              'challengeStatus' : ChallengeStatus,
-              'challengeQuestionSeed' : number,
-              'submissionStatus' : ChallengeResponseSubmissionStatus,
-              'challengeQuestion' : string,
-              'challengeId' : string,
-              'challengeTopic' : string,
-              'submissionId' : string,
-              'challengeAnswerSeed' : number,
-              'submissionCyclesRequired' : bigint,
-              'challengeQueuedId' : string,
-              'challengeQueuedBy' : Principal,
-              'challengeQueuedTo' : Principal,
-              'challengeQueuedTimestamp' : bigint,
-              'challengeAnswer' : string,
-            } */
+        if (agent) {
+          try {
+            const submissionsResult =
+              await agent.getRecentSubmittedResponsesAdmin();
+            //console.log("in MainerFeed getFeedData agentCanisterActors entries submissionsResult");
+            //console.log(submissionsResult);
+            // ChallengeResponseSubmissionsResult looks like so: type ChallengeResponseSubmissionsResult = { 'Ok' : Array<ChallengeResponseSubmission> } | { 'Err' : ApiError };
+            /* interface ChallengeResponseSubmission {
+                'challengeClosedTimestamp' : [] | [bigint],
+                'challengeTopicStatus' : ChallengeTopicStatus,
+                'challengeTopicCreationTimestamp' : bigint,
+                'challengeCreationTimestamp' : bigint,
+                'challengeCreatedBy' : CanisterAddress,
+                'challengeTopicId' : string,
+                'submittedTimestamp' : bigint,
+                'submittedBy' : Principal,
+                'challengeStatus' : ChallengeStatus,
+                'challengeQuestionSeed' : number,
+                'submissionStatus' : ChallengeResponseSubmissionStatus,
+                'challengeQuestion' : string,
+                'challengeId' : string,
+                'challengeTopic' : string,
+                'submissionId' : string,
+                'challengeAnswerSeed' : number,
+                'submissionCyclesRequired' : bigint,
+                'challengeQueuedId' : string,
+                'challengeQueuedBy' : Principal,
+                'challengeQueuedTo' : Principal,
+                'challengeQueuedTimestamp' : bigint,
+                'challengeAnswer' : string,
+              } */
 
-          // for each ChallengeResponseSubmission add an entry to newFeedItems
-          if ("Ok" in submissionsResult) {
-            for (const submission of submissionsResult.Ok) {
-              //console.log("in MainerFeed getFeedData agentCanisterActors entries submission");
-              //console.log(submission);
-              const mainerName = `mAIner ${index + 1}`;
-              newFeedItems.push({
-                id: submission.submissionId,
-                timestamp: Number(submission.submittedTimestamp),
-                type: "response",
-                mainerName,
-                content: { response: submission.challengeAnswer },
-              });
+            // for each ChallengeResponseSubmission add an entry to newFeedItems
+            if ("Ok" in submissionsResult) {
+              for (const submission of submissionsResult.Ok) {
+                //console.log("in MainerFeed getFeedData agentCanisterActors entries submission");
+                //console.log(submission);
+                const mainerName = `mAIner ${index + 1}`;
+                newFeedItems.push({
+                  id: submission.submissionId,
+                  timestamp: Number(submission.submittedTimestamp),
+                  type: "response",
+                  mainerName,
+                  content: { response: submission.challengeAnswer },
+                });
 
-              // then (also for each ChallengeResponseSubmission) retrieve the score this submission received
-              /*   interface SubmissionRetrievalInput {
-                    'challengeId' : string,
-                    'submissionId' : string,
-                  } */
-              // which returns type ScoredResponseRetrievalResult = { 'Ok' : ScoredResponse } | { 'Err' : ApiError };
-              /*   interface ScoredResponse {
-                    'challengeClosedTimestamp' : [] | [bigint],
-                    'challengeTopicStatus' : ChallengeTopicStatus,
-                    'challengeTopicCreationTimestamp' : bigint,
-                    'challengeCreationTimestamp' : bigint,
-                    'challengeCreatedBy' : CanisterAddress,
-                    'challengeTopicId' : string,
-                    'judgedBy' : Principal,
-                    'submittedTimestamp' : bigint,
-                    'submittedBy' : Principal,
-                    'challengeStatus' : ChallengeStatus,
-                    'challengeQuestionSeed' : number,
-                    'submissionStatus' : ChallengeResponseSubmissionStatus,
-                    'score' : bigint,
-                    'challengeQuestion' : string,
-                    'challengeId' : string,
-                    'challengeTopic' : string,
-                    'judgedTimestamp' : bigint,
-                    'submissionId' : string,
-                    'challengeAnswerSeed' : number,
-                    'submissionCyclesRequired' : bigint,
-                    'challengeQueuedId' : string,
-                    'challengeQueuedBy' : Principal,
-                    'challengeQueuedTo' : Principal,
-                    'challengeQueuedTimestamp' : bigint,
-                    'challengeAnswer' : string,
-                    'scoreSeed' : number,
-                  } */
-              // note that the submission might not have received a score yet (ScoredResponseRetrievalResult returns an Err in that case)
+                // then (also for each ChallengeResponseSubmission) retrieve the score this submission received
+                /*   interface SubmissionRetrievalInput {
+                      'challengeId' : string,
+                      'submissionId' : string,
+                    } */
+                // which returns type ScoredResponseRetrievalResult = { 'Ok' : ScoredResponse } | { 'Err' : ApiError };
+                /*   interface ScoredResponse {
+                      'challengeClosedTimestamp' : [] | [bigint],
+                      'challengeTopicStatus' : ChallengeTopicStatus,
+                      'challengeTopicCreationTimestamp' : bigint,
+                      'challengeCreationTimestamp' : bigint,
+                      'challengeCreatedBy' : CanisterAddress,
+                      'challengeTopicId' : string,
+                      'judgedBy' : Principal,
+                      'submittedTimestamp' : bigint,
+                      'submittedBy' : Principal,
+                      'challengeStatus' : ChallengeStatus,
+                      'challengeQuestionSeed' : number,
+                      'submissionStatus' : ChallengeResponseSubmissionStatus,
+                      'score' : bigint,
+                      'challengeQuestion' : string,
+                      'challengeId' : string,
+                      'challengeTopic' : string,
+                      'judgedTimestamp' : bigint,
+                      'submissionId' : string,
+                      'challengeAnswerSeed' : number,
+                      'submissionCyclesRequired' : bigint,
+                      'challengeQueuedId' : string,
+                      'challengeQueuedBy' : Principal,
+                      'challengeQueuedTo' : Principal,
+                      'challengeQueuedTimestamp' : bigint,
+                      'challengeAnswer' : string,
+                      'scoreSeed' : number,
+                    } */
+                // note that the submission might not have received a score yet (ScoredResponseRetrievalResult returns an Err in that case)
 
-              // if there's a score for the submission, add the score as an entry to newFeedItems
-              try {
-                const scoreResult =
-                  await $store.gameStateCanisterActor.getScoreForSubmission({
+                // if there's a score for the submission, add the score as an entry to newFeedItems
+                try {
+                  const scoreResult =
+                    await $store.gameStateCanisterActor.getScoreForSubmission({
+                      challengeId: submission.challengeId,
+                      submissionId: submission.submissionId,
+                    });
+                  /* const scoreResult = await $store.gameStateCanisterActor.getScoreForSubmission_mockup({
                     challengeId: submission.challengeId,
-                    submissionId: submission.submissionId,
-                  });
-                /* const scoreResult = await $store.gameStateCanisterActor.getScoreForSubmission_mockup({
-                  challengeId: submission.challengeId,
-                  submissionId: submission.submissionId
-                }); */
+                    submissionId: submission.submissionId
+                  }); */
 
-                //console.log("in MainerFeed getFeedData agentCanisterActors entries scoreResult");
-                //console.log(scoreResult);
+                  //console.log("in MainerFeed getFeedData agentCanisterActors entries scoreResult");
+                  //console.log(scoreResult);
 
-                if ("Ok" in scoreResult) {
-                  newFeedItems.push({
-                    id: `${submission.submissionId}-score`,
-                    timestamp: Number(scoreResult.Ok.judgedTimestamp),
-                    type: "score",
-                    mainerName,
-                    content: { score: Number(scoreResult.Ok.score) },
-                  });
+                  if ("Ok" in scoreResult) {
+                    newFeedItems.push({
+                      id: `${submission.submissionId}-score`,
+                      timestamp: Number(scoreResult.Ok.judgedTimestamp),
+                      type: "score",
+                      mainerName,
+                      content: { score: Number(scoreResult.Ok.score) },
+                    });
+                  }
+                } catch (error) {
+                  console.error("Error fetching score for submission", error);
                 }
-              } catch (error) {
-                console.error("Error fetching score for submission", error);
               }
             }
-          }
-        } catch (error) {
-          console.error("Error fetching submissions", error);
-        }
+          } catch (error) {
+            console.error("Error fetching submissions", error);
+          };
+        };
       }
     }
     //console.log("in MainerFeed getFeedData newFeedItems before return");
