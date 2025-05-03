@@ -102,10 +102,26 @@ else
 
     NEW_MAINER_SHARE_AGENT_CANISTER=$(echo "$RESULT_2" | grep -o 'address = "[^"]*"' | sed 's/address = "//;s/"//')
     echo "NEW_MAINER_SHARE_AGENT_CANISTER: $NEW_MAINER_SHARE_AGENT_CANISTER"
+
+    echo " "
+    echo "Going into a loop to wait for the ShareAgent Controller setup to finish."
+    CANISTER_STATUS=$(echo "$RESULT_2" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
+    echo "CANISTER_STATUS: $CANISTER_STATUS"
+    WAIT_TIME=5
+    while [[ "$CANISTER_STATUS" == "ControllerCreationInProgress" ]]; do
+        echo "sleep for $WAIT_TIME seconds..."
+        sleep $WAIT_TIME
+        output=$(dfx canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$NEW_MAINER_SHARE_AGENT_CANISTER\";})" --network $NETWORK_TYPE)
+        RESULT_2A=$(extract_record_from_variant "$output")
+        CANISTER_STATUS=$(echo "$RESULT_2A" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
+        echo "CANISTER_STATUS: $CANISTER_STATUS"
+    done
 fi
 
+echo "RESULT_2A (getMainerAgentCanisterInfo): $RESULT_2A"
+
 echo "========================================================================"
-echo "To start the timers for the mAInerController $NEW_MAINER_SHARE_AGENT_CANISTER of type #ShareAgent, issue this command:"
+echo "The timers are running! To stop for the mAInerController $NEW_MAINER_SHARE_AGENT_CANISTER of type #ShareAgent, issue this command:"
 echo " "
 echo "dfx canister call $NEW_MAINER_SHARE_AGENT_CANISTER startTimerExecutionAdmin --network $NETWORK_TYPE"
 echo " "

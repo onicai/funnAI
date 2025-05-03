@@ -71,11 +71,31 @@ scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install [--
 # Notes: 
 # (-) You (should) run the script for type #ShareService only once. It has not been verified what happens if you run it again.
 # (-) You can run the scripts for type #Own and #ShareAgent multiple times. It will deploy another mAIner.
-# (-) The #Own & #ShareService mAIners are deployed with 1 LLM. To add more LLMs, use the function: addLlmCanisterToMainer (*)
-# (-) The timers of the mAIners are NOT started automatically. (*)
-#
-# => The exact dfx commands to add LLMs & to start the timers are printed by the scripts
-#
+# (-) The #Own & #ShareService mAIners are deployed with 1 LLM. To add more LLMs, use the function: addLlmCanisterToMainer 
+# (-) The timers of the Challenger, Judge & mAIners are NOT started automatically.
+#     Use something like this:
+export CHALLENGER=by6od-j4aaa-aaaaa-qaadq-cai
+export JUDGE=a4tbr-q4aaa-aaaaa-qaafq-cai
+dfx canister call $CHALLENGER startTimerExecutionAdmin
+dfx canister call $JUDGE startTimerExecutionAdmin
+
+# Once the timers are running, you can use these commands to check on the data captured by the gamestate:
+# Run from folder: funnAI
+# Verify Challenger challenge generations
+dfx canister call game_state_canister getCurrentChallengesAdmin --output json [--ic]
+dfx canister call game_state_canister getNumCurrentChallengesAdmin --output json [--ic]
+ Verify mAIner response generations
+# Note: submissionStatus changes from #Submitted > #Judging > #Judged
+dfx canister call game_state_canister getSubmissionsAdmin --output json [--ic]
+dfx canister call game_state_canister getNumSubmissionsAdmin --output json [--ic]
+
+dfx canister call game_state_canister getOpenSubmissionsAdmin --output json [--ic]
+dfx canister call game_state_canister getNumOpenSubmissionsAdmin --output json [--ic]
+
+# Verify Judge score generations
+dfx canister call game_state_canister getScoredChallengesAdmin --output json [--ic]
+dfx canister call game_state_canister getNumScoredChallengesAdmin --output json [--ic]
+
 
 # Deploy funnai backend (used mainly for chat):
 dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_backend [--ic]
