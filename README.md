@@ -12,10 +12,8 @@ Use dfx deps & dfx start from the funnAI root folder:
 # from folder: funnAI
 dfx deps pull
 dfx deps init
-
 dfx start --clean
-
-dfx deploy
+dfx deps deploy
 ```
 
 Then, follow all instructions of PoAIW/README.md
