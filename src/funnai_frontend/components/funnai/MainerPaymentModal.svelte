@@ -13,8 +13,10 @@
   export let onSuccess: (txId?: string) => void = () => {};
   export let modelType: 'Own' | 'Shared' = 'Own';
   
-  // Fixed config for mAIner creation
+  // Fixed config for mAIner creation 
+  // TODO: load funnai_address dynamically for Protocol
   const funnai_address = "kwrfk-ypzrt-wwywz-qov7y-36lis-6rkyv-zdpsp-jgees-uwhhi-7c3eg-gae";
+  // TODO: load token info from token_helpers.ts
   const token: any = {
     name: "Internet Computer",
     symbol: "ICP",
@@ -71,6 +73,7 @@
 
       if (result && typeof result === 'object' && 'Ok' in result) {
         const txId = result.Ok?.toString();
+        // TODO: persist txId
         onSuccess(txId);
         onClose();
       } else if (result && typeof result === 'object' && 'Err' in result) {

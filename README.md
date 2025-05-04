@@ -10,11 +10,6 @@ Then, do the following:
 # Use conda environment
 conda activate llama_cpp_canister
 
-# Note: on WSL, you might first have to run
-sudo sysctl -w vm.max_map_count=2097152
-
-# from folder: funnAI
-
 # To monitor the logs on mainnet, run this script
 # -> it reads the canister IDs from the file: "scripts/canister_ids.env"
 # -> It will write to the screen & also write individual files in scripts/logs/
@@ -22,16 +17,25 @@ sudo sysctl -w vm.max_map_count=2097152
 #    % dfx canister update-settings <canister-name> --add-log-viewer <principal-id>
 scripts/logs.sh --network ic
 
-# This script does it all:
+# We are using dfx deps for:
+# - internet-identity
+# - cycles_ledger
+#
+# from folder: funnAI
+dfx deps pull
+dfx deps init
+dfx start --clean
+dfx deps deploy
+
+# This script deploys the core canisters:
 # (-) Deploys GameState, mAInerCreator, Challenger, Judge
 # (-) Registers the canisters properly with each other
-# (-) Deploys a demo set of mAIners via calls to mAInerCreator
-#     -> One mAIner  of type #Own, with 1 LLM
-#     -> One mAIner  of type #ShareService, with 1 LLM
-#     -> Two mAIners of type #ShareAgent
-# (-) The timers of the mAIners are started immediately
 # (-) The timers of the Challenger & Judge are not started.
-#     -> Do this manually in the next step
+#     -> Do this manually with the command:
+#          dfx canister call <canister-id> startTimerExecutionAdmin
+# Note: on WSL, you might first have to run
+sudo sysctl -w vm.max_map_count=2097152
+# from folder: funnAI
 scripts/deploy-all.sh --mode install [--network ic]
 
 # Notes: 
@@ -40,6 +44,51 @@ scripts/deploy-all.sh --mode install [--network ic]
 # (-) to reset the gamestate, run `scripts/deploy-gamestate.sh --mode reinstall`, 
 #     followed by                 `scripts/deploy-all.sh --mode upgrade`
 #     -> This will erase all data: canisters/challenges/responses/etc.
+
+# -----------------------------------------------------------------------------------
+# Deploy mAIners
+#
+# Always deploy a mAIner of type #ShareService, since this is a protocol canister
+scripts/scripts-gamestate/deploy-mainers-ShareService-via-gamestate.sh --mode install [--network ic]
+
+# Optionally, deploy mAIners of type #ShareAgent or #Own
+# This is optional for test purposes, because these mAIners will be created by users of the frontend
+#
+# (-) Deploy a mAIner of type #ShareAgent
+scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install [--network ic]
+# (-) Deploy a mAIner of type #Own
+scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install [--network ic]
+
+#
+# Notes: 
+# (-) You (should) run the script for type #ShareService only once. It has not been verified what happens if you run it again.
+# (-) You can run the scripts for type #Own and #ShareAgent multiple times. It will deploy another mAIner.
+# (-) The #Own & #ShareService mAIners are deployed with 1 LLM. To add more LLMs, use the function: addLlmCanisterToMainer 
+# (-) The timers for the mAIners are started automatically.
+# (-) The timers of the Challenger & Judge are NOT started automatically.
+#     Start them with something like this:
+export CHALLENGER=by6od-j4aaa-aaaaa-qaadq-cai
+export JUDGE=a4tbr-q4aaa-aaaaa-qaafq-cai
+dfx canister call $CHALLENGER startTimerExecutionAdmin
+dfx canister call $JUDGE startTimerExecutionAdmin
+
+# Once the timers are running, you can use these commands to check on the data captured by the gamestate:
+# Run from folder: funnAI
+# Verify Challenger challenge generations
+dfx canister call game_state_canister getCurrentChallengesAdmin --output json [--ic]
+dfx canister call game_state_canister getNumCurrentChallengesAdmin --output json [--ic]
+ Verify mAIner response generations
+# Note: submissionStatus changes from #Submitted > #Judging > #Judged
+dfx canister call game_state_canister getSubmissionsAdmin --output json [--ic]
+dfx canister call game_state_canister getNumSubmissionsAdmin --output json [--ic]
+
+dfx canister call game_state_canister getOpenSubmissionsAdmin --output json [--ic]
+dfx canister call game_state_canister getNumOpenSubmissionsAdmin --output json [--ic]
+
+# Verify Judge score generations
+dfx canister call game_state_canister getScoredChallengesAdmin --output json [--ic]
+dfx canister call game_state_canister getNumScoredChallengesAdmin --output json [--ic]
+
 
 # Deploy funnai backend (used mainly for chat):
 dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_backend [--ic]

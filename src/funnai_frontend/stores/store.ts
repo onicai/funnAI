@@ -1,5 +1,5 @@
 import { writable } from "svelte/store";
-import type { Principal } from "@dfinity/principal";
+import { Principal } from "@dfinity/principal";
 import type { Identity } from "@dfinity/agent";
 import { HttpAgent, Actor } from "@dfinity/agent";
 import { AuthClient } from "@dfinity/auth-client";
@@ -351,6 +351,11 @@ export const createStore = ({
 
   const initMainerAgentCanisterActor = async (userMainerCanisterInfo, loginType, identity: Identity) => {
     let canisterId = userMainerCanisterInfo.address;
+    try {
+      Principal.fromText(canisterId);
+    } catch {
+      return;
+    };
     
     let mainerControllerActor = createMainerControllerCanisterActor(canisterId, {
       agentOptions: {
