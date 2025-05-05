@@ -42,6 +42,8 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 
+# ================================================================
+# some helper functions
 extract_record_from_variant() {
     local variant_string="$1"
     python -c "
@@ -61,6 +63,28 @@ if match:
                 break
 "
 }
+
+#––– normalize whitespace: collapse runs → 1 space, trim ends –––
+normalize() {
+  sed -E 's/[[:space:]]+/ /g; s/^ //; s/ $//'
+}
+
+#––– extract the full “status = variant { … }” block on one line –––
+# Usage: echo "$RECORD" | extract_status_block
+extract_status_block() {
+  sed -n '/status = variant/,/};/p' \
+    | sed 's/status = //; s/};/}/' \
+    | tr '\n' ' ' \
+    | normalize
+}
+
+#––– extract just the top‑level key (e.g. LlmSetupInProgress) –––
+# Usage: echo "$BLOCK" | extract_status_name
+extract_status_name() {
+  sed -E 's/variant[[:space:]]*\{[[:space:]]*([^[:space:]]+).*/\1/' \
+    | normalize
+}
+# ================================================================
 
 #######################################################################
 if [ "$NETWORK_TYPE" = "local" ]; then
@@ -144,16 +168,19 @@ else
     echo "RESULT_3 (setUpMainerLlmCanister): $RESULT_3"
     echo " "
     echo "Going into a loop to wait for the LLM setup to finish."
-    CANISTER_STATUS=$(echo "$RESULT_3" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
+    CANISTER_STATUS_BLOCK=$(printf '%s\n' "$RESULT_3" | extract_status_block)
+    CANISTER_STATUS=$(printf '%s\n' "$CANISTER_STATUS_BLOCK" | extract_status_name)
     echo "CANISTER_STATUS: $CANISTER_STATUS"
-    WAIT_TIME=60
+    WAIT_TIME=30
     while [[ "$CANISTER_STATUS" == "LlmSetupInProgress" ]]; do
         echo "sleep for $WAIT_TIME seconds..."
         sleep $WAIT_TIME
         output=$(dfx canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$NEW_MAINER_SHARE_SERVICE_CANISTER\";})" --network $NETWORK_TYPE)
         RESULT_3A=$(extract_record_from_variant "$output")
-        CANISTER_STATUS=$(echo "$RESULT_3A" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
-        echo "CANISTER_STATUS: $CANISTER_STATUS"
+        CANISTER_STATUS_BLOCK=$(printf '%s\n' "$RESULT_3A" | extract_status_block)
+        CANISTER_STATUS=$(printf '%s\n' "$CANISTER_STATUS_BLOCK" | extract_status_name)
+        echo "CANISTER_STATUS_BLOCK: $CANISTER_STATUS_BLOCK"
+        # echo "CANISTER_STATUS:       $CANISTER_STATUS"
     done
 fi
 
