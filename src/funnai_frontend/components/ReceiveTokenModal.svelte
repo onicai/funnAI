@@ -181,7 +181,7 @@
           </button>
         </div>
         <p class="text-xs mt-2 text-gray-400">
-          Use this Principal ID to receive {token.symbol === "ICP" ? "non-ICP tokens" : "tokens"}
+          Use this Principal ID to receive {token.symbol === "ICP" ? "tokens" : "tokens"}
         </p>
       </div>
 

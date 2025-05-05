@@ -16,7 +16,8 @@
       isRegistered: false,
       type: "general",
       participants: 156,
-      slots: 10
+      slots: 10,
+      image: "coin.webp"
     },
     {
       id: 2,
@@ -28,7 +29,8 @@
       isRegistered: true,
       type: "whitelist",
       participants: 42,
-      slots: 5
+      slots: 5,
+      image: "charles.webp"
     },
     {
       id: 3,
@@ -40,7 +42,8 @@
       isRegistered: false,
       type: "whitelist",
       participants: 28,
-      slots: 3
+      slots: 3,
+      image: "icppart.webp"
     },
     {
       id: 4,
@@ -52,7 +55,8 @@
       isRegistered: false,
       type: "whitelist",
       participants: 0,
-      slots: 5
+      slots: 5,
+      image: "iconfucius.webp"
     }
   ];
   
@@ -101,9 +105,12 @@
               <div class="mb-6">
                 <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-5 shadow-sm border border-blue-100 dark:border-blue-800">
                   <div class="flex justify-between items-start mb-3">
-                    <div>
-                      <h3 class="text-xl font-bold text-blue-800 dark:text-blue-300">{lottery.name}</h3>
-                      <p class="text-gray-600 dark:text-gray-400 mt-1">{lottery.description}</p>
+                    <div class="flex items-center">
+                      <img src={lottery.image} alt={lottery.name} class="w-12 h-12 rounded-full object-cover mr-3 border-2 border-blue-200 dark:border-blue-700" />
+                      <div>
+                        <h3 class="text-xl font-bold text-blue-800 dark:text-blue-300">{lottery.name}</h3>
+                        <p class="text-gray-600 dark:text-gray-400 mt-1">{lottery.description}</p>
+                      </div>
                     </div>
                   </div>
                   
@@ -166,7 +173,10 @@
             {#each lotteries.filter(l => l.type === "whitelist") as lottery (lottery.id)}
               <div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
                 <div class="flex justify-between items-start">
-                  <h4 class="text-base font-semibold text-gray-900 dark:text-white">{lottery.name}</h4>
+                  <div class="flex items-center">
+                    <img src={lottery.image} alt={lottery.name} class="w-8 h-8 rounded-full object-cover mr-2 border border-purple-200 dark:border-purple-700" />
+                    <h4 class="text-base font-semibold text-gray-900 dark:text-white">{lottery.name}</h4>
+                  </div>
                   <span class="bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs font-medium px-2 py-0.5 rounded">Whitelist</span>
                 </div>
                 
