@@ -431,21 +431,23 @@
                   </svg>
                 {/if}
             </span>
+            <!-- Commenting out model selection dropdown
             {#if modelType === 'Own'}
-            <form class="max-w-sm">
-              <label for="countries" class="block mb-2 text-sm font-medium text-gray-500 dark:text-gray-300">Choose a model</label>
-              <select 
-                bind:value={selectedModel}
-                id="countries" 
-                class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                <option value="">Choose model</option>
-                <option value="SL">Small LLM</option>
-                <option value="G2">Gpt-2</option>
-                <option value="QW">Qwen</option>
-                <option disabled value="DS">DeepSeek</option>
-              </select>
-            </form>
+              <form class="max-w-sm">
+                <label for="countries" class="block mb-2 text-sm font-medium text-gray-500 dark:text-gray-300">Choose a model</label>
+                <select 
+                  bind:value={selectedModel}
+                  id="countries" 
+                  class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                  <option value="">Choose model</option>
+                  <option value="SL">Small LLM</option>
+                  <option value="G2">Gpt-2</option>
+                  <option value="QW">Qwen</option>
+                  <option disabled value="DS">DeepSeek</option>
+                </select>
+              </form>
             {/if}
+            -->
         </li>
         <li class="mb-6 ms-6">
             <span class="absolute flex items-center justify-center w-8 h-8 {addressCopied ? 'bg-green-200 dark:bg-green-800' : 'bg-gray-100 dark:bg-gray-800'} rounded-full -start-4 ring-4 ring-white dark:ring-gray-900">
@@ -474,7 +476,7 @@
           class:opacity-50={isCreatingMainer}
           class:cursor-not-allowed={isCreatingMainer}
         >
-          Pay & Create mAIner ({modelType === 'Own' ? '0.005' : '0.003'} ICP)
+          Create mAIner ({modelType === 'Own' ? '0.005' : '0.003'} ICP)
         </button>
       </div>
       
