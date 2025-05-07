@@ -1,6 +1,6 @@
 # April 2, 2025
 
-The following canisters were deployed to main-net as part of the demo deployment:
+The following canisters were deployed to "ic" network as part of the demo deployment:
 
 -> Copy/Paste this into your terminal...
 ```bash
