@@ -74,8 +74,11 @@
       return !showOnlyWithBalance || token.balanceAmount > BigInt(0);
     })
     .sort((a, b) => {
-      console.log("in WalletTokenList sort a ", a);
-      console.log("in WalletTokenList sort b ", b);
+      // Sort by token_id if available (as defined in token_helpers.ts)
+      if (a.token_id && b.token_id) {
+        return a.token_id - b.token_id;
+      }
+      // Fallback to previous sorting method if token_id not available
       if (Object.keys(walletData.balances).length > 0) {
         return Number(b.formattedUsdValue) - Number(a.formattedUsdValue);
       }

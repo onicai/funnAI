@@ -150,6 +150,7 @@
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '20px')});"
     >
       <!-- Principal ID -->
+      {#if token.symbol !== "ICP"}
       <div class="rounded-lg border border-gray-600/50 bg-gray-800/30 p-4">
         <div class="flex justify-between items-center mb-2">
           <h3 class="text-sm font-medium text-gray-200">Principal ID</h3>
@@ -181,15 +182,53 @@
           </button>
         </div>
         <p class="text-xs mt-2 text-gray-400">
-          Use this Principal ID to receive {token.symbol === "ICP" ? "non-ICP tokens" : "tokens"}
+          Use this Principal ID to receive tokens
         </p>
       </div>
+      {/if}
+
+      <!-- Principal ID section - Commented out for ICP tokens 
+      <div class="rounded-lg border border-gray-600/50 bg-gray-800/30 p-4">
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="text-sm font-medium text-gray-200">Principal ID</h3>
+          {#if principalQrCode}
+            <div class="flex">
+              <img 
+                src={principalQrCode} 
+                alt="Principal QR Code" 
+                class="w-16 h-16 cursor-pointer hover:opacity-80 transition-opacity bg-white rounded-md" 
+                on:click={() => enlargeQrCode(principalQrCode, "Principal ID QR Code")}
+              />
+            </div>
+          {/if}
+        </div>
+        <div class="relative">
+          <div class="rounded border border-gray-600 bg-gray-700/30 p-2.5 pr-10 text-sm break-all font-mono text-gray-200">
+            {principal || "Loading..."}
+          </div>
+          <button 
+            class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-colors text-gray-400 hover:text-gray-200"
+            on:click={() => copyToClipboard(principal, 'principal')}
+            use:tooltip={{ text: principalCopied ? "Copied!" : "Copy to clipboard", direction: "top" }}
+          >
+            {#if principalCopied}
+              <Check size={16} class="text-green-500" />
+            {:else}
+              <Copy size={16} />
+            {/if}
+          </button>
+        </div>
+        <p class="text-xs mt-2 text-gray-400">
+          Use this Principal ID to receive tokens
+        </p>
+      </div>
+      -->
 
       {#if token.symbol === "ICP" && accountId}
         <!-- Account ID for ICP -->
         <div class="rounded-lg border border-gray-600/50 bg-gray-800/30 p-4">
           <div class="flex justify-between items-center mb-2">
-            <h3 class="text-sm font-medium text-gray-200">Account ID</h3>
+            <h3 class="text-sm font-medium text-gray-200">Address</h3>
             {#if accountIdQrCode}
               <div class="flex">
                 <img 
@@ -218,7 +257,7 @@
             </button>
           </div>
           <p class="text-xs mt-2 text-gray-400">
-            Use this Account ID to receive ICP tokens (recommended for exchanges)
+            Use this Address to receive ICP tokens.
           </p>
         </div>
       {/if}
@@ -231,9 +270,9 @@
         </div>
         <p class="ml-6 text-gray-400">
           {#if token.symbol === "ICP"}
-            Send ICP to your Account ID. This is the recommended address for transfers from exchanges.
+            Send ICP to your address. Copy the address or click the QR code to scan it.
           {:else}
-            Send {token.symbol} to your Principal ID. Make sure the sender is sending the correct token type.
+            Send {token.symbol} to your address. Make sure the sender is sending the correct token type. Copy the address or click the QR code to scan it.
           {/if}
         </p>
       </div>
