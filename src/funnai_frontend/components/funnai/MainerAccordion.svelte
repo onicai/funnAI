@@ -4,6 +4,7 @@
   import { store } from "../../stores/store";
   import LoginModal from '../login/LoginModal.svelte';
   import MainerPaymentModal from './MainerPaymentModal.svelte';
+  import MainerTopUpModal from './MainerTopUpModal.svelte';
   import { Principal } from '@dfinity/principal';
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
@@ -24,6 +25,17 @@
   let modelType: 'Own' | 'Shared' = 'Own'; // Default to Own model
   let loginModalOpen = false;
   let mainerPaymentModalOpen = false;
+  let mainerTopUpModalOpen = false;
+  let selectedCanister = { id: "", name: "" };
+  
+  // Debug agent for testing UI
+  const debugAgent = {
+    id: "abcde-fghij-klmno-pqrst-uvwxy-z",
+    name: "Debug mAIner",
+    status: "active",
+    burnedCycles: 1000000,
+    cycleBalance: 5000000
+  };
   
   // Progress tracking for mAIner creation
   let isCreatingMainer = false;
@@ -50,6 +62,27 @@
     // Open the MainerPaymentModal to handle the payment
     mainerPaymentModalOpen = true;
   };
+  
+  function openTopUpModal(agent) {
+    // Set the selected canister
+    selectedCanister = {
+      id: agent.id,
+      name: agent.name
+    };
+    // Open the top-up modal
+    mainerTopUpModalOpen = true;
+  }
+  
+  // Handle top-up completion
+  function handleTopUpComplete(txId?: string) {
+    console.log("Top-up completed" + (txId ? ` with transaction ID: ${txId}` : ""));
+    mainerTopUpModalOpen = false;
+    
+    // Refresh the list of agents to show updated balances
+    loadAgents().then(newAgents => {
+      agents = newAgents;
+    });
+  }
   
   async function handleSendComplete(txId?: string) {
     console.log("Payment completed" + (txId ? ` with transaction ID: ${txId}` : ""));
@@ -489,6 +522,16 @@
           [Debug: Skip Payment]
         </button>
       </div>
+      <div class="mt-2 text-right">
+        <button 
+            class="text-xs text-gray-400 hover:text-gray-300 dark:text-gray-600 dark:hover:text-gray-500"
+            on:click={() => openTopUpModal(debugAgent)}
+          >
+            [Debug: Top-Up]
+          </button>
+      </div>
+
+      
       
       <!-- Terminal-style progress component -->
       {#if isCreatingMainer}
@@ -548,6 +591,16 @@
     onClose={() => mainerPaymentModalOpen = false}
     onSuccess={handleSendComplete}
     {modelType}
+  />
+{/if}
+
+{#if mainerTopUpModalOpen}
+  <MainerTopUpModal 
+    isOpen={mainerTopUpModalOpen}
+    onClose={() => mainerTopUpModalOpen = false}
+    onSuccess={handleTopUpComplete}
+    canisterId={selectedCanister.id}
+    canisterName={selectedCanister.name}
   />
 {/if}
 
@@ -653,7 +706,20 @@
           <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
             <div class="flex items-center justify-between">
                 <h2 class="text-sm mb-2">Top up cycles</h2>
-                <button type="button" class="py-2.5 px-5 me-2 text-xs font-medium text-gray-900 dark:text-gray-300 focus:outline-none bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700">Top-up</button>
+                <button 
+                  type="button" 
+                  class="py-2.5 px-5 me-2 text-xs font-medium text-gray-900 dark:text-gray-300 focus:outline-none bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400"
+                  on:click={() => openTopUpModal(agent)}
+                >
+                  Top-up
+                </button>
+            </div>
+            <!-- Cycle Balance Display -->
+            <div class="mt-2 flex items-center">
+              <span class="text-xs text-gray-500 dark:text-gray-400">Current balance:</span>
+              <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                {(agent.cycleBalance / 1_000_000_000_000).toFixed(4)} T cycles
+              </span>
             </div>
           </div>
         </div>
@@ -787,7 +853,14 @@
         <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
           <div class="flex items-center justify-between">
               <h2 class="text-sm mb-2">Top up cycles</h2>
-              <button type="button" class="py-2.5 px-5 me-2 text-xs font-medium text-gray-900 dark:text-gray-300 focus:outline-none bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700">Top-up</button>
+              <button type="button" class="py-2.5 px-5 me-2 text-xs font-medium text-gray-900 dark:text-gray-300 focus:outline-none bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400">Top-up</button>
+          </div>
+          <!-- Cycle Balance Display for Mock Data -->
+          <div class="mt-2 flex items-center">
+            <span class="text-xs text-gray-500 dark:text-gray-400">Current balance:</span>
+            <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+              5.0000 T cycles
+            </span>
           </div>
         </div>
       </div>
