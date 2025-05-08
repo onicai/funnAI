@@ -108,6 +108,18 @@ Use the local UI: http://cbopz-duaaa-aaaaa-qaaka-cai.localhost:4943/:
 - The feed will show mAIner related items (Submissions & Scores) for the logged in user (!)
   - You can login using NFID with your Google account.
 
+# Testing each component
+
+Scripts are provided to verify that each component works correctly, and to determine the exact cycle burn.
+
+For accurate cycle burn calculation, turn off ALL the timers (Challenger, mAIners, Judge).
+
+```bash
+# test a single Challenge Generation
+scripts/generate-a-challenge.sh --network [local|ic|development|testing]
+
+```
+
 # The GameState Thresholds
 
 The Thresholds are stored in stable memory.
