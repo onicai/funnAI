@@ -10,12 +10,12 @@ Then, do the following:
 # Use conda environment
 conda activate llama_cpp_canister
 
-# To monitor the logs on mainnet, run this script
-# -> it reads the canister IDs from the file: "scripts/canister_ids.env"
-# -> It will write to the screen & also write individual files in scripts/logs/
+# To monitor the logs of the canisters, run this script
+# -> it reads the canister IDs from the file: "scripts/canister_ids-{network}.env"
+# -> It will write to the screen & also write individual files in scripts/logs-{network}/
 # -> You must be a controller or log-viewer
 #    % dfx canister update-settings <canister-name> --add-log-viewer <principal-id>
-scripts/logs.sh --network ic
+scripts/logs.sh --network [local|ic|development|testing]
 
 # We are using dfx deps for:
 # - internet-identity
@@ -36,28 +36,29 @@ dfx deps deploy
 # Note: on WSL, you might first have to run
 sudo sysctl -w vm.max_map_count=2097152
 # from folder: funnAI
-scripts/deploy-all.sh --mode install [--network ic]
+scripts/deploy-all.sh --mode install --network [local|ic|development|testing]
 
 # Notes: 
 # (-) when redeploying changes, you can run the above command with --mode upgrade
 #     to avoid reuploading the models and thus saving a lot of time
-# (-) to reset the gamestate, run `scripts/deploy-gamestate.sh --mode reinstall`, 
-#     followed by                 `scripts/deploy-all.sh --mode upgrade`
+# (-) to reset the gamestate, run:
 #     -> This will erase all data: canisters/challenges/responses/etc.
+scripts/deploy-gamestate.sh --mode reinstall --network [local|ic|development|testing]
+scripts/scripts-gamestate/register-all.sh --network [local|ic|development|testing]
 
 # -----------------------------------------------------------------------------------
 # Deploy mAIners
 #
 # Always deploy a mAIner of type #ShareService, since this is a protocol canister
-scripts/scripts-gamestate/deploy-mainers-ShareService-via-gamestate.sh --mode install [--network ic]
+scripts/scripts-gamestate/deploy-mainers-ShareService-via-gamestate.sh --mode install --network [local|ic|development|testing]
 
 # Optionally, deploy mAIners of type #ShareAgent or #Own
 # This is optional for test purposes, because these mAIners will be created by users of the frontend
 #
 # (-) Deploy a mAIner of type #ShareAgent
-scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install [--network ic]
+scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install --network [local|ic|development|testing]
 # (-) Deploy a mAIner of type #Own
-scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install [--network ic]
+scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install --network [local|ic|development|testing]
 
 #
 # Notes: 
