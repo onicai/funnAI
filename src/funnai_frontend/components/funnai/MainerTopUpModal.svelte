@@ -6,7 +6,7 @@
   import { store } from "../../stores/store";
   import { IcrcService } from "../../helpers/IcrcService";
   import BigNumber from "bignumber.js";
-  import { formatBalance } from "../../helpers/utils/numberFormatUtils";
+  import { formatBalance, formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
   import { fetchTokens } from "../../helpers/token_helpers";
   import { createAnonymousActorHelper } from "../../helpers/utils/actorUtils";
 
@@ -188,12 +188,8 @@
       // Calculate cycles
       const cycles = e8sAmount.times(e8sToCycleRatio);
       
-      // Convert to trillions for display
-      const ONE_TRILLION = new BigNumber("1000000000000");
-      const trillionCycles = cycles.div(ONE_TRILLION);
-      
-      // Format with 4 decimal places
-      cyclesAmount = trillionCycles.toFixed(4);
+      // Use formatLargeNumber to format trillions
+      cyclesAmount = formatLargeNumber(cycles.toNumber() / 1_000_000_000_000, 4, false);
       
       console.log(`${amount} ICP equals ${cyclesAmount} Trillion (${cycles.toString()}) cycles`);
     } catch (error) {

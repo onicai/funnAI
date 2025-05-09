@@ -6,6 +6,7 @@
   import MainerPaymentModal from './MainerPaymentModal.svelte';
   import MainerTopUpModal from './MainerTopUpModal.svelte';
   import { Principal } from '@dfinity/principal';
+  import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -718,7 +719,7 @@
             <div class="mt-2 flex items-center">
               <span class="text-xs text-gray-500 dark:text-gray-400">Current balance:</span>
               <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                {(agent.cycleBalance / 1_000_000_000_000).toFixed(4)} T cycles
+                {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)} T cycles
               </span>
             </div>
           </div>
@@ -859,7 +860,7 @@
           <div class="mt-2 flex items-center">
             <span class="text-xs text-gray-500 dark:text-gray-400">Current balance:</span>
             <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-              5.0000 T cycles
+              {formatLargeNumber(5, 4, false)} T cycles
             </span>
           </div>
         </div>
