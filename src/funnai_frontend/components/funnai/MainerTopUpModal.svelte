@@ -2,12 +2,12 @@
   import { onMount } from 'svelte';
   import Modal from "../CommonModal.svelte";
   import TokenImages from "../TokenImages.svelte";
-  import { ArrowUp, Info } from 'lucide-svelte';
+  import { ArrowUp, Info, Check } from 'lucide-svelte';
   import { store } from "../../stores/store";
   import { IcrcService } from "../../helpers/IcrcService";
   import BigNumber from "bignumber.js";
   import { formatBalance, formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
-  import { fetchTokens } from "../../helpers/token_helpers";
+  import { fetchTokens, protocolConfig } from "../../helpers/token_helpers";
   import { createAnonymousActorHelper } from "../../helpers/utils/actorUtils";
 
   export let isOpen: boolean = false;
@@ -15,6 +15,9 @@
   export let onSuccess: (txId?: string) => void = () => {};
   export let canisterId: string = "";
   export let canisterName: string = "";
+  
+  // Protocol address from token_helpers
+  const { address: protocolAddress } = protocolConfig;
   
   // ICP token configuration - load from token_helpers
   let token: any = null;
@@ -218,18 +221,16 @@
         throw new Error("Canister ID is required");
       }
       
-      // Transfer ICP to the Cycles Minting Canister for top-up
-      // This is a simplified approach - in production, you would:
-      // 1. Transfer to the CMC with correct memo
-      // 2. Call notify_top_up on the CMC
-      
-      // For now, we'll just transfer to the canister directly as placeholder
+      // Transfer ICP to the Protocol's account for top-up
+      // The backend will handle the actual cycles minting and top-up process
       const result = await IcrcService.transfer(
         token,
-        canisterId, // Send directly to the canister (note: this is placeholder)
+        protocolAddress,  // Use protocol address from token_helpers
         amountBigInt,
         {
-          fee: tokenFee
+          fee: tokenFee,
+          // Include canister ID in the memo so the backend knows which canister to top up
+          memo: Array.from(new TextEncoder().encode(canisterId))
         }
       );
 
@@ -289,6 +290,25 @@
 
       <!-- Top-up Info -->
       <div class="flex flex-col gap-3">
+        <!-- Recipient Address -->
+        <div>
+          <label class="block text-xs text-gray-400 mb-1.5">Recipient</label>
+          <div class="relative">
+            <input
+              type="text"
+              class="w-full py-2 px-3 bg-gray-800 border border-gray-600 rounded-md text-sm text-gray-100"
+              value={protocolAddress}
+              disabled
+            />
+            <div class="absolute inset-y-0 right-0 flex items-center">
+              <div class="p-1.5 text-green-500">
+                <Check size={16} />
+              </div>
+            </div>
+          </div>
+          <div class="mt-1 text-xs text-green-500">FunnAI Protocol Address</div>
+        </div>
+        
         <!-- Canister ID -->
         <div>
           <label class="block text-xs text-gray-400 mb-1.5">mAIner canister</label>
@@ -300,7 +320,7 @@
               disabled
             />
           </div>
-          <div class="mt-1 text-xs text-gray-500">mAIner's controller canister ID</div>
+          <div class="mt-1 text-xs text-gray-500">mAIner to be topped up</div>
         </div>
 
         <!-- Amount -->

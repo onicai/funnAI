@@ -7,37 +7,62 @@
   import { IcrcService } from "../../helpers/IcrcService";
   import BigNumber from "bignumber.js";
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
+  import { fetchTokens, protocolConfig } from "../../helpers/token_helpers";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
   export let onSuccess: (txId?: string) => void = () => {};
   export let modelType: 'Own' | 'Shared' = 'Own';
   
-  // Fixed config for mAIner creation 
-  // TODO: load funnai_address dynamically for Protocol
-  const funnai_address = "kwrfk-ypzrt-wwywz-qov7y-36lis-6rkyv-zdpsp-jgees-uwhhi-7c3eg-gae";
+  // Protocol address from token_helpers
+  const { address: protocolAddress } = protocolConfig;
+  
   // TODO: load token info from token_helpers.ts
-  const token: any = {
-    name: "Internet Computer",
-    symbol: "ICP",
-    decimals: 8,
-    fee_fixed: "10000", // standard ICP fee
-    canister_id: "ryjl3-tyaaa-aaaaa-aaaba-cai" // ICP Ledger canister ID
-  };
+  let token: any = null;
+  let isTokenLoading: boolean = true;
+  
+  // Load token data from token_helpers
+  async function loadTokenData() {
+    isTokenLoading = true;
+    try {
+      const result = await fetchTokens({});
+      const icpToken = result.tokens.find(t => t.symbol === "ICP");
+      if (icpToken) {
+        token = icpToken;
+      } else {
+        throw new Error("ICP token not found in token_helpers");
+      }
+    } catch (error) {
+      console.error("Error loading token data:", error);
+      // Fallback to default values if token data can't be loaded
+      token = {
+        name: "Internet Computer",
+        symbol: "ICP",
+        decimals: 8,
+        fee_fixed: "10000", // standard ICP fee
+        canister_id: "ryjl3-tyaaa-aaaaa-aaaba-cai" // ICP Ledger canister ID
+      };
+    } finally {
+      isTokenLoading = false;
+    }
+  }
   
   let isValidating: boolean = false;
   let errorMessage: string = "";
-  let tokenFee: bigint = BigInt(10000); // Default 0.0001 ICP fee
+  let tokenFee: bigint = BigInt(0); // Will be set once token is loaded
   let balance: bigint = BigInt(0);
   
   // Determine payment amount based on model type
   $: paymentAmount = modelType === 'Own' ? '0.005' : '0.003';
-  $: amountBigInt = BigInt(new BigNumber(paymentAmount).times(new BigNumber(10).pow(token.decimals)).toString());
+  $: amountBigInt = token ? BigInt(new BigNumber(paymentAmount).times(new BigNumber(10).pow(token.decimals)).toString()) : BigInt(0);
   $: hasEnoughBalance = balance >= (amountBigInt + tokenFee);
+  $: if (token) {
+    tokenFee = BigInt(token.fee_fixed);
+  }
   
   async function loadBalance() {
     try {
-      if (!$store.principal) return;
+      if (!$store.principal || !token) return;
       
       balance = await IcrcService.getIcrc1Balance(
         token,
@@ -49,7 +74,7 @@
   }
 
   async function handleSubmit() {
-    if (isValidating) return;
+    if (isValidating || !token) return;
     isValidating = true;
     errorMessage = "";
 
@@ -64,7 +89,7 @@
 
       const result = await IcrcService.transfer(
         token,
-        funnai_address,
+        protocolAddress,
         amountBigInt,
         {
           fee: tokenFee
@@ -91,7 +116,8 @@
     }
   }
 
-  onMount(() => {
+  onMount(async () => {
+    await loadTokenData();
     loadBalance();
   });
 </script>
@@ -106,89 +132,95 @@
   className="mainer-payment-modal"
 >
   <div class="p-4 flex flex-col gap-4">
-    <!-- Token Info Banner -->
-    <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-700/20 border border-gray-600/30 text-gray-100">
-      <div class="w-10 h-10 rounded-full bg-gray-800 p-1 border border-gray-700 flex-shrink-0">
-        <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
+    {#if isTokenLoading}
+      <div class="flex justify-center py-4">
+        <span class="w-6 h-6 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin"></span>
       </div>
-      <div class="flex flex-col">
-        <div class="text-gray-100 font-medium">{token.name}</div>
-        <div class="text-sm text-gray-400">Balance: {formatBalance(balance.toString(), token.decimals)} {token.symbol}</div>
+    {:else}
+      <!-- Token Info Banner -->
+      <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-700/20 border border-gray-600/30 text-gray-100">
+        <div class="w-10 h-10 rounded-full bg-gray-800 p-1 border border-gray-700 flex-shrink-0">
+          <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
+        </div>
+        <div class="flex flex-col">
+          <div class="text-gray-100 font-medium">{token.name}</div>
+          <div class="text-sm text-gray-400">Balance: {formatBalance(balance.toString(), token.decimals)} {token.symbol}</div>
+        </div>
       </div>
-    </div>
 
-    <!-- Payment Info -->
-    <div class="flex flex-col gap-3">
-      <!-- Recipient Address -->
-      <div>
-        <label class="block text-xs text-gray-400 mb-1.5">Recipient</label>
-        <div class="relative">
-          <input
-            type="text"
-            class="w-full py-2 px-3 bg-gray-800 border border-gray-600 rounded-md text-sm text-gray-100"
-            value={funnai_address}
-            disabled
-          />
-          <div class="absolute inset-y-0 right-0 flex items-center">
-            <div class="p-1.5 text-green-500">
-              <Check size={16} />
+      <!-- Payment Info -->
+      <div class="flex flex-col gap-3">
+        <!-- Recipient Address -->
+        <div>
+          <label class="block text-xs text-gray-400 mb-1.5">Recipient</label>
+          <div class="relative">
+            <input
+              type="text"
+              class="w-full py-2 px-3 bg-gray-800 border border-gray-600 rounded-md text-sm text-gray-100"
+              value={protocolAddress}
+              disabled
+            />
+            <div class="absolute inset-y-0 right-0 flex items-center">
+              <div class="p-1.5 text-green-500">
+                <Check size={16} />
+              </div>
             </div>
           </div>
+          <div class="mt-1 text-xs text-green-500">FunnAI mAIner Creation Address</div>
         </div>
-        <div class="mt-1 text-xs text-green-500">FunnAI mAIner Creation Address</div>
-      </div>
 
-      <!-- Amount -->
-      <div>
-        <label class="block text-xs text-gray-400 mb-1.5">Payment Amount</label>
-        <div class="relative">
-          <input
-            type="text"
-            class="w-full py-2 px-3 bg-gray-800 border border-gray-600 rounded-md text-sm text-gray-100"
-            value={paymentAmount}
-            disabled
-          />
-          <div class="absolute inset-y-0 right-0 flex items-center">
-            <span class="pr-3 text-sm text-gray-400">{token.symbol}</span>
+        <!-- Amount -->
+        <div>
+          <label class="block text-xs text-gray-400 mb-1.5">Payment Amount</label>
+          <div class="relative">
+            <input
+              type="text"
+              class="w-full py-2 px-3 bg-gray-800 border border-gray-600 rounded-md text-sm text-gray-100"
+              value={paymentAmount}
+              disabled
+            />
+            <div class="absolute inset-y-0 right-0 flex items-center">
+              <span class="pr-3 text-sm text-gray-400">{token.symbol}</span>
+            </div>
+          </div>
+          <div class="mt-1 text-xs text-gray-400">
+            Fee: {formatBalance(tokenFee.toString(), token.decimals)} {token.symbol}
           </div>
         </div>
-        <div class="mt-1 text-xs text-gray-400">
-          Fee: {formatBalance(tokenFee.toString(), token.decimals)} {token.symbol}
+        
+        <!-- Payment Description -->
+        <div class="p-3 rounded-lg bg-blue-900/20 border border-blue-800/30 text-blue-200 text-sm">
+          This payment is used to create your {modelType} mAIner model. Once payment is complete, your mAIner will be created automatically.
         </div>
-      </div>
-      
-      <!-- Payment Description -->
-      <div class="p-3 rounded-lg bg-blue-900/20 border border-blue-800/30 text-blue-200 text-sm">
-        This payment is used to create your {modelType} mAIner model. Once payment is complete, your mAIner will be created automatically.
-      </div>
 
-      <!-- Error message -->
-      {#if errorMessage}
-        <div class="mt-1 p-2 rounded bg-red-900/30 border border-red-900/50 text-red-400 text-sm">
-          {errorMessage}
-        </div>
-      {/if}
-
-      <!-- Send Button -->
-      <button
-        type="button"
-        on:click={handleSubmit}
-        class="mt-2 py-2.5 px-4 rounded-md text-white font-medium flex items-center justify-center gap-2 transition-colors"
-        class:bg-purple-600={hasEnoughBalance && !isValidating}
-        class:hover:bg-purple-500={hasEnoughBalance && !isValidating}
-        class:bg-gray-700={!hasEnoughBalance || isValidating}
-        class:cursor-not-allowed={!hasEnoughBalance || isValidating}
-        disabled={!hasEnoughBalance || isValidating}
-      >
-        {#if isValidating}
-          <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-          Processing...
-        {:else}
-          <ArrowUp size={16} />
-          Pay {paymentAmount} {token.symbol}
+        <!-- Error message -->
+        {#if errorMessage}
+          <div class="mt-1 p-2 rounded bg-red-900/30 border border-red-900/50 text-red-400 text-sm">
+            {errorMessage}
+          </div>
         {/if}
-      </button>
-    </div>
+
+        <!-- Send Button -->
+        <button
+          type="button"
+          on:click={handleSubmit}
+          class="mt-2 py-2.5 px-4 rounded-md text-white font-medium flex items-center justify-center gap-2 transition-colors"
+          class:bg-purple-600={hasEnoughBalance && !isValidating}
+          class:hover:bg-purple-500={hasEnoughBalance && !isValidating}
+          class:bg-gray-700={!hasEnoughBalance || isValidating}
+          class:cursor-not-allowed={!hasEnoughBalance || isValidating}
+          disabled={!hasEnoughBalance || isValidating}
+        >
+          {#if isValidating}
+            <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            Processing...
+          {:else}
+            <ArrowUp size={16} />
+            Pay {paymentAmount} {token.symbol}
+          {/if}
+        </button>
+      </div>
+    {/if}
   </div>
 </Modal>
 
