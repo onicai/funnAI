@@ -8,6 +8,7 @@
   import BigNumber from "bignumber.js";
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
   import { fetchTokens } from "../../helpers/token_helpers";
+  import { createAnonymousActorHelper } from "../../helpers/utils/actorUtils";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
@@ -83,39 +84,30 @@
       // Access the CMC canister and get the conversion rate
       const cmcCanisterId = "rkp4c-7iaaa-aaaaa-aaaca-cai";
       
-      // Type for window.ic
-      interface IcWindow extends Window {
-        ic?: {
-          agent?: any;
-          createActor?: any;
-        }
-      }
-      
-      // Only run this if we have IC APIs available
-      if ((window as IcWindow).ic && (window as IcWindow).ic.agent) {
-        // Create CMC actor
-        const cmcActor = await (window as IcWindow).ic.createActor({
-          canisterId: cmcCanisterId,
-          interfaceFactory: ({ IDL }) => {
-            const IcpXdrConversionRate = IDL.Record({
-              'timestamp_seconds': IDL.Nat64,
-              'xdr_permyriad_per_icp': IDL.Nat64,
-            });
-            const IcpXdrConversionRateResponse = IDL.Record({
-              'data': IcpXdrConversionRate,
-              'hash_tree': IDL.Vec(IDL.Nat8),
-              'certificate': IDL.Vec(IDL.Nat8),
-            });
-            return IDL.Service({
-              'get_icp_xdr_conversion_rate': IDL.Func(
-                [],
-                [IcpXdrConversionRateResponse],
-                ['query'],
-              ),
-            });
-          },
+      // Create the IDL factory for CMC
+      const createCmcIdl = ({ IDL }) => {
+        const IcpXdrConversionRate = IDL.Record({
+          'timestamp_seconds': IDL.Nat64,
+          'xdr_permyriad_per_icp': IDL.Nat64,
         });
-
+        const IcpXdrConversionRateResponse = IDL.Record({
+          'data': IcpXdrConversionRate,
+          'hash_tree': IDL.Vec(IDL.Nat8),
+          'certificate': IDL.Vec(IDL.Nat8),
+        });
+        return IDL.Service({
+          'get_icp_xdr_conversion_rate': IDL.Func(
+            [],
+            [IcpXdrConversionRateResponse],
+            ['query'],
+          ),
+        });
+      };
+      
+      try {
+        // Create the CMC actor using the anonymous actor helper
+        const cmcActor = await createAnonymousActorHelper(cmcCanisterId, createCmcIdl);
+        
         // Get conversion rate from CMC
         const response = await cmcActor.get_icp_xdr_conversion_rate();
         
@@ -134,9 +126,9 @@
         } else {
           throw new Error("Failed to get conversion rate data");
         }
-      } else {
-        // Fallback if IC APIs aren't available
-        throw new Error("Internet Computer APIs not available");
+      } catch (actorError) {
+        console.error("Error creating CMC actor:", actorError);
+        throw new Error("Failed to create CMC actor");
       }
     } catch (error) {
       console.error("Error loading conversion rate:", error);
