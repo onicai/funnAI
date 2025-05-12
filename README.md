@@ -116,7 +116,7 @@ For accurate cycle burn calculation, turn off ALL the timers (Challenger, mAIner
 
 ```bash
 # test a single Challenge Generation
-scripts/generate-a-challenge.sh --network [local|ic|development|testing]
+scripts/scripts-testing/generate-a-challenge.sh --network [local|ic|development|testing]
 
 ```
 

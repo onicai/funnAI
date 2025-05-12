@@ -9,9 +9,6 @@
 # Default network type is local
 NETWORK_TYPE="local"
 
-# When deploying local, use canister IDs from .env
-source PoAIW/src/mAInerCreator/.env
-
 # Parse command line arguments for network type
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -40,14 +37,19 @@ cd PoAIW/src/Challenger
 CANISTER_ID_CHALLENGER_CTRLB_CANISTER=$(dfx canister --network $NETWORK_TYPE id challenger_ctrlb_canister)
 cd ../../llms/Challenger
 CHALLENGER_LLM_0=$(dfx canister --network $NETWORK_TYPE id llm_0)
-CHALLENGER_LLM_1=$(dfx canister --network $NETWORK_TYPE id llm_1)
+if [ "$NETWORK_TYPE" != "local" ]; then
+    CHALLENGER_LLM_1=$(dfx canister --network $NETWORK_TYPE id llm_1)   
+fi
+
 # go back to the funnAI folder
 cd ../../../
 
 echo "CANISTER_ID_GAME_STATE_CANISTER: $CANISTER_ID_GAME_STATE_CANISTER"
 echo "CANISTER_ID_CHALLENGER_CTRLB_CANISTER: $CANISTER_ID_CHALLENGER_CTRLB_CANISTER"
 echo "CHALLENGER_LLM_0: $CHALLENGER_LLM_0"
-echo "CHALLENGER_LLM_1: $CHALLENGER_LLM_1"
+if [ "$NETWORK_TYPE" != "local" ]; then
+    echo "CHALLENGER_LLM_1: $CHALLENGER_LLM_1"
+fi
 
 # ================================================================
 # some helper functions
@@ -109,7 +111,6 @@ echo "TODO: fund Challenger with sufficient Cycles to create a challenge"
 # fi
 
 # ================================================================
-# Type: #ShareAgent
 
 echo " "
 echo "--------------------------------------------------"
@@ -126,9 +127,11 @@ CHALLENGER_LLM_0_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CHALL
 CHALLENGER_LLM_0_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CHALLENGER_LLM_0 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
 CHALLENGER_LLM_0_BALANCE_0_T=$(echo "scale=6; $CHALLENGER_LLM_0_BALANCE_0 / 1000000000000" | bc)
 
-CHALLENGER_LLM_1_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CHALLENGER_LLM_1 2>&1 | grep "Balance:"| awk '{print $2}')
-CHALLENGER_LLM_1_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CHALLENGER_LLM_1 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
-CHALLENGER_LLM_1_BALANCE_0_T=$(echo "scale=6; $CHALLENGER_LLM_1_BALANCE_0 / 1000000000000" | bc)
+if [ "$NETWORK_TYPE" != "local" ]; then
+    CHALLENGER_LLM_1_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CHALLENGER_LLM_1 2>&1 | grep "Balance:"| awk '{print $2}')
+    CHALLENGER_LLM_1_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CHALLENGER_LLM_1 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+    CHALLENGER_LLM_1_BALANCE_0_T=$(echo "scale=6; $CHALLENGER_LLM_1_BALANCE_0 / 1000000000000" | bc)
+fi
 
 echo " "
 echo "Before generateNewChallenge:"
@@ -143,9 +146,11 @@ echo " "
 echo "LLM 0         ($CHALLENGER_LLM_0) "
 echo "-> Balance: $CHALLENGER_LLM_0_BALANCE_0_T TCycles ($CHALLENGER_LLM_0_BALANCE_0)"
 
-echo " "
-echo "LLM 1         ($CHALLENGER_LLM_1) "
-echo "-> Balance: $CHALLENGER_LLM_1_BALANCE_0_T TCycles ($CHALLENGER_LLM_1_BALANCE_0)"
+if [ "$NETWORK_TYPE" != "local" ]; then
+    echo " "
+    echo "LLM 1         ($CHALLENGER_LLM_1) "
+    echo "-> Balance: $CHALLENGER_LLM_1_BALANCE_0_T TCycles ($CHALLENGER_LLM_1_BALANCE_0)"
+fi
 ########################################################
 
 echo " "
