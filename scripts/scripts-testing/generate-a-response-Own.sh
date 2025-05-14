@@ -144,17 +144,13 @@ fi
 # echo " "
 # echo "Get the LLM for the mAIner Agent ($CANISTER_ID_OWN_CONTROLLER):"
 output=$(dfx canister --network $NETWORK_TYPE call $CANISTER_ID_OWN_CONTROLLER getLLMCanisterIds)
+# echo "output (getLLMCanisterIds): $output"
 if [[ "$output" != *"Ok = vec"* ]]; then
     echo $output
     echo " "
     echo "Call to getMainerAgentCanistersForUser failed. Exiting."    
     exit 1
 else
-    # echo "output (getMainerAgentCanistersForUser): $output"
-    # echo " "
-    # echo "Extracting the address of the LLM:"
-    output='(variant { Ok = vec { "x36vx-byaaa-aaaaj-a2aja-cai" } })'
-    # echo "output (getLLMCanisterIds): $output"
     CANISTER_ID_OWN_LLM=$(echo "$output" | grep -oE '"[a-z0-9-]+"' | sed 's/"//g')
 fi
 
@@ -178,6 +174,10 @@ echo "TODO: fund mAIner with sufficient Cycles to create a response"
 # fi
 
 # ================================================================
+
+echo " "
+echo "We will first check the balances of the canisters involved in generating the response."
+echo " "
 
 echo " "
 echo "--------------------------------------------------"
@@ -225,7 +225,9 @@ else
     read -p "When done, press Enter to continue..."
 fi
 
-
+echo " "
+echo "Thank you! We will now check the balances again to see how much cycles were used to generate the response."
+echo " "
 ##############################################################
 GAME_STATE_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:"| awk '{print $2}')
 GAME_STATE_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')

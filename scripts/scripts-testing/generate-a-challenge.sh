@@ -113,6 +113,10 @@ echo "TODO: fund Challenger with sufficient Cycles to create a challenge"
 # ================================================================
 
 echo " "
+echo "We will first check the balances of the canisters involved in generating the Challenge."
+echo " "
+
+echo " "
 echo "--------------------------------------------------"
 ########################################################
 GAME_STATE_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:" | awk '{print $2}')
@@ -177,6 +181,10 @@ fi
 
 echo " "
 echo "The Challenger used LLM with ID: $GENERATED_BY_LLM_ID"
+
+echo " "
+echo "We will now check the balances again to see how much cycles were used to generate the Challenge."
+echo " "
 
 ##############################################################
 GAME_STATE_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:"| awk '{print $2}')
