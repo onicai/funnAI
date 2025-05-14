@@ -8,11 +8,6 @@
 # Default network type is local
 NETWORK_TYPE="local"
 
-# When deploying local, use canister IDs from .env
-source PoAIW/src/mAInerCreator/.env
-source PoAIW/src/Challenger/.env
-source PoAIW/src/Judge/.env
-
 # none will not use subnet parameter in deploy to ic
 SUBNET="none"
 
@@ -23,15 +18,6 @@ while [ $# -gt 0 ]; do
             shift
             if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ]; then
                 NETWORK_TYPE=$1
-                if [ "$NETWORK_TYPE" = "ic" ]; then
-                    CANISTER_ID_MAINER_CREATOR_CANISTER='movk5-tyaaa-aaaaj-az64q-cai'
-                    CANISTER_ID_CHALLENGER_CTRLB_CANISTER='lxb3x-jyaaa-aaaaj-azzta-cai'
-                    CANISTER_ID_JUDGE_CTRLB_CANISTER='xxnvw-4yaaa-aaaaj-az4oq-cai'
-                elif [ "$NETWORK_TYPE" = "testing" ]; then
-                    CANISTER_ID_MAINER_CREATOR_CANISTER='cx56d-zaaaa-aaaaj-az76a-cai'
-                    CANISTER_ID_CHALLENGER_CTRLB_CANISTER='c66v7-piaaa-aaaaj-az77q-cai'
-                    CANISTER_ID_JUDGE_CTRLB_CANISTER='uln7r-5yaaa-aaaaj-a2aba-cai'
-                fi
             else
                 echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing."
                 exit 1
@@ -47,6 +33,16 @@ while [ $# -gt 0 ]; do
 done
 
 echo "Using network type: $NETWORK_TYPE"
+
+cd PoAIW/src/mAInerCreator
+CANISTER_ID_MAINER_CREATOR_CANISTER=$(dfx canister --network $NETWORK_TYPE id mainer_creator_canister)
+cd ../Challenger
+CANISTER_ID_CHALLENGER_CTRLB_CANISTER=$(dfx canister --network $NETWORK_TYPE id challenger_ctrlb_canister)
+cd ../Judge
+CANISTER_ID_JUDGE_CTRLB_CANISTER=$(dfx canister --network $NETWORK_TYPE id judge_ctrlb_canister)
+
+# go back to the funnAI folder
+cd ../../../
 
 #######################################################################
 echo " "

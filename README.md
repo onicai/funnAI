@@ -41,6 +41,7 @@ scripts/deploy-all.sh --mode install --network [local|ic|development|testing]
 # Notes: 
 # (-) when redeploying changes, you can run the above command with --mode upgrade
 #     to avoid reuploading the models and thus saving a lot of time
+
 # (-) to reset the gamestate, run:
 #     -> This will erase all data: canisters/challenges/responses/etc.
 scripts/deploy-gamestate.sh --mode reinstall --network [local|ic|development|testing]
@@ -76,26 +77,29 @@ dfx canister call $JUDGE startTimerExecutionAdmin
 # Once the timers are running, you can use these commands to check on the data captured by the gamestate:
 # Run from folder: funnAI
 # Verify Challenger challenge generations
-dfx canister call game_state_canister getCurrentChallengesAdmin --output json [--ic]
-dfx canister call game_state_canister getNumCurrentChallengesAdmin --output json [--ic]
- Verify mAIner response generations
-# Note: submissionStatus changes from #Submitted > #Judging > #Judged
-dfx canister call game_state_canister getSubmissionsAdmin --output json [--ic]
-dfx canister call game_state_canister getNumSubmissionsAdmin --output json [--ic]
+dfx canister call game_state_canister getCurrentChallengesAdmin --output json --network [local|ic|development|testing]
+dfx canister call game_state_canister getNumCurrentChallengesAdmin --output json --network [local|ic|development|testing]
+# You can reset the challenge storage arrays with:
+dfx canister call game_state_canister resetCurrentChallengesAdmin --output json --network [local|ic|development|testing]
 
-dfx canister call game_state_canister getOpenSubmissionsAdmin --output json [--ic]
-dfx canister call game_state_canister getNumOpenSubmissionsAdmin --output json [--ic]
+# Verify mAIner response generations
+# Note: submissionStatus changes from #Submitted > #Judging > #Judged
+dfx canister call game_state_canister getSubmissionsAdmin --output json --network [local|ic|development|testing]
+dfx canister call game_state_canister getNumSubmissionsAdmin --output json --network [local|ic|development|testing]
+
+dfx canister call game_state_canister getOpenSubmissionsAdmin --output json --network [local|ic|development|testing]
+dfx canister call game_state_canister getNumOpenSubmissionsAdmin --output json --network [local|ic|development|testing]
 
 # Verify Judge score generations
-dfx canister call game_state_canister getScoredChallengesAdmin --output json [--ic]
-dfx canister call game_state_canister getNumScoredChallengesAdmin --output json [--ic]
+dfx canister call game_state_canister getScoredChallengesAdmin --output json --network [local|ic|development|testing]
+dfx canister call game_state_canister getNumScoredChallengesAdmin --output json --network [local|ic|development|testing]
 
 
 # Deploy funnai backend (used mainly for chat):
-dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_backend [--ic]
+dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_backend --network [local|ic|development|testing]
 
 # Deploy funnai frontend:
-dfx deploy funnai_frontend [--ic]
+dfx deploy funnai_frontend --network [local|ic|development|testing]
 
 # Deploy the token ledger canister:
 # from folder: PoAIW/src/TokenLedger
@@ -108,7 +112,7 @@ Use the local UI: http://cbopz-duaaa-aaaaa-qaaka-cai.localhost:4943/:
 - The feed will show mAIner related items (Submissions & Scores) for the logged in user (!)
   - You can login using NFID with your Google account.
 
-# Testing each component
+# Testing each component & their cycle burn
 
 Scripts are provided to verify that each component works correctly, and to determine the exact cycle burn.
 
@@ -116,7 +120,10 @@ For accurate cycle burn calculation, turn off ALL the timers (Challenger, mAIner
 
 ```bash
 # test a single Challenge Generation
-scripts/generate-a-challenge.sh --network [local|ic|development|testing]
+scripts/scripts-testing/generate-a-challenge.sh --network [local|ic|development|testing]
+
+# test a single Response Generation by the first mAIner of type #Own
+scripts/scripts-testing/generate-a-response-Own.sh --network [local|ic|development|testing]
 
 ```
 
@@ -128,7 +135,7 @@ The following endpoints allow to set & get the values:
 
 ```bash
 # From folder: funnAI
-dfx canister call game_state_canister getGameStateThresholdsAdmin --output json [--ic] 
+dfx canister call game_state_canister getGameStateThresholdsAdmin --output json --network [local|ic|development|testing] 
 
 dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdArchiveClosedChallenges = 30 : nat;
@@ -136,7 +143,7 @@ dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdMaxOpenSubmissions = 5 : nat;
         thresholdScoredResponsesPerChallenge = 3 : nat;
     }
-)' [--ic]
+)' --network [local|ic|development|testing]
 ```
 
 # Start & Stop the Game
