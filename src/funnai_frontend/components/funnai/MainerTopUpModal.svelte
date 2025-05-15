@@ -13,7 +13,7 @@
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
-  export let onSuccess: (txId?: string) => void = () => {};
+  export let onSuccess: (txId: string, canisterId: string) => void = () => {};
   export let canisterId: string = "";
   export let canisterName: string = "";
   
@@ -217,7 +217,7 @@
 
       if (result && typeof result === 'object' && 'Ok' in result) {
         const txId = result.Ok?.toString();
-        onSuccess(txId);
+        onSuccess(txId, canisterId);
         handleClose();
       } else if (result && typeof result === 'object' && 'Err' in result) {
         const errMsg = typeof result.Err === 'object' 

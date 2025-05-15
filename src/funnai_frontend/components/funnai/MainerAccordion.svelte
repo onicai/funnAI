@@ -42,6 +42,8 @@
   let isCreatingMainer = false;
   let mainerCreationProgress: {message: string, timestamp: string, complete: boolean}[] = [];
 
+  let isToppingUpMainer  = false;
+
   // For testing UI only - set to true to use mock data for the mainer accordion displaying canister INFO
   let useMockData = false;
 
@@ -72,12 +74,42 @@
     };
     // Open the top-up modal
     mainerTopUpModalOpen = true;
-  }
+  };
+
+  function findAgentByAddress(canisterId) {
+    return agentCanistersInfo.find(canister => canister.address === canisterId) || null;
+  };
   
   // Handle top-up completion
-  function handleTopUpComplete(txId?: string) {
+  async function handleTopUpComplete(txId: string, canisterId: string) {
     console.log("Top-up completed" + (txId ? ` with transaction ID: ${txId}` : ""));
     mainerTopUpModalOpen = false;
+
+    // Set the top up process as started
+    isToppingUpMainer = true;
+    
+    // Get mAIner info from agentCanistersInfo via canisterId
+    let mainerAgent = findAgentByAddress(canisterId);
+    let mainerAgentTopUpInput = {
+      paymentTransactionBlockId: BigInt(txId),
+      mainerAgent,
+    };
+    try {
+      let topUpUserMainerAgentResponse = await $store.gameStateCanisterActor.topUpCyclesForMainerAgent(mainerAgentTopUpInput);
+      //@ts-ignore
+      if (topUpUserMainerAgentResponse?.Ok) {
+        // top up was successful
+        
+      //@ts-ignore
+      } else if (topUpUserMainerAgentResponse?.Err) {
+        //@ts-ignore
+        console.error("Error in topUpCyclesForMainerAgent:", topUpUserMainerAgentResponse?.Err);
+      };
+    } catch (topUpError) {
+      console.error("Failed to top up mAIner:", topUpError);
+    };
+
+    isToppingUpMainer = false;
     
     // Refresh the list of agents to show updated balances
     loadAgents().then(newAgents => {
