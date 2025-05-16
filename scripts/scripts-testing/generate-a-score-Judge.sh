@@ -2,7 +2,7 @@
 
 #######################################################################
 # run from funnAI folder as:
-# scripts/scripts-testing/generate-a-challenge.sh --network [local|ic|development|testing]
+# scripts/scripts-testing/generate-a-score-Judge.sh --network [local|ic|development|testing]
 #######################################################################
 
 
@@ -33,22 +33,22 @@ done
 echo "Using network type: $NETWORK_TYPE"
 
 CANISTER_ID_GAME_STATE_CANISTER=$(dfx canister --network $NETWORK_TYPE id game_state_canister)
-cd PoAIW/src/Challenger
-CANISTER_ID_CHALLENGER_CTRLB_CANISTER=$(dfx canister --network $NETWORK_TYPE id challenger_ctrlb_canister)
-cd ../../llms/Challenger
-CANISTER_ID_CHALLENGER_LLM_0=$(dfx canister --network $NETWORK_TYPE id llm_0)
+cd PoAIW/src/Judge
+CANISTER_ID_JUDGE_CTRLB_CANISTER=$(dfx canister --network $NETWORK_TYPE id judge_ctrlb_canister)
+cd ../../llms/Judge
+CANISTER_ID_JUDGE_LLM_0=$(dfx canister --network $NETWORK_TYPE id llm_0)
 if [ "$NETWORK_TYPE" != "local" ]; then
-    CANISTER_ID_CHALLENGER_LLM_1=$(dfx canister --network $NETWORK_TYPE id llm_1)   
+    CANISTER_ID_JUDGE_LLM_1=$(dfx canister --network $NETWORK_TYPE id llm_1)   
 fi
 
 # go back to the funnAI folder
 cd ../../../
 
 echo "CANISTER_ID_GAME_STATE_CANISTER: $CANISTER_ID_GAME_STATE_CANISTER"
-echo "CANISTER_ID_CHALLENGER_CTRLB_CANISTER: $CANISTER_ID_CHALLENGER_CTRLB_CANISTER"
-echo "CANISTER_ID_CHALLENGER_LLM_0: $CANISTER_ID_CHALLENGER_LLM_0"
+echo "CANISTER_ID_JUDGE_CTRLB_CANISTER: $CANISTER_ID_JUDGE_CTRLB_CANISTER"
+echo "CANISTER_ID_JUDGE_LLM_0: $CANISTER_ID_JUDGE_LLM_0"
 if [ "$NETWORK_TYPE" != "local" ]; then
-    echo "CANISTER_ID_CHALLENGER_LLM_1: $CANISTER_ID_CHALLENGER_LLM_1"
+    echo "CANISTER_ID_JUDGE_LLM_1: $CANISTER_ID_JUDGE_LLM_1"
 fi
 
 # ================================================================
@@ -97,7 +97,7 @@ extract_status_name() {
 # ================================================================
 
 #######################################################################
-echo "TODO: fund Challenger with sufficient Cycles to create a challenge"
+echo "TODO: fund Judge with sufficient Cycles to create a score"
 # if [ "$NETWORK_TYPE" = "local" ]; then
 #     echo " "
 #     echo "--------------------------------------------------"
@@ -113,7 +113,7 @@ echo "TODO: fund Challenger with sufficient Cycles to create a challenge"
 # ================================================================
 
 echo " "
-echo "We will first check the balances of the canisters involved in generating the Challenge."
+echo "We will first check the balances of the canisters involved in generating the score."
 echo "(Be patient, this may take a few seconds.)"
 
 echo " "
@@ -123,67 +123,71 @@ GAME_STATE_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID
 GAME_STATE_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
 GAME_STATE_BALANCE_0_T=$(echo "scale=6; $GAME_STATE_BALANCE_0 / 1000000000000" | bc)
 
-CHALLENGER_CTRLB_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_CHALLENGER_CTRLB_CANISTER 2>&1 | grep "Balance:"| awk '{print $2}')
-CHALLENGER_CTRLB_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_CHALLENGER_CTRLB_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
-CHALLENGER_CTRLB_BALANCE_0_T=$(echo "scale=6; $CHALLENGER_CTRLB_BALANCE_0 / 1000000000000" | bc)
+JUDGE_CTRLB_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_CTRLB_CANISTER 2>&1 | grep "Balance:"| awk '{print $2}')
+JUDGE_CTRLB_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_CTRLB_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+JUDGE_CTRLB_BALANCE_0_T=$(echo "scale=6; $JUDGE_CTRLB_BALANCE_0 / 1000000000000" | bc)
 
-CHALLENGER_LLM_0_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_CHALLENGER_LLM_0 2>&1 | grep "Balance:"| awk '{print $2}')
-CHALLENGER_LLM_0_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_CHALLENGER_LLM_0 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
-CHALLENGER_LLM_0_BALANCE_0_T=$(echo "scale=6; $CHALLENGER_LLM_0_BALANCE_0 / 1000000000000" | bc)
+JUDGE_LLM_0_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_0 2>&1 | grep "Balance:"| awk '{print $2}')
+JUDGE_LLM_0_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_0 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+JUDGE_LLM_0_BALANCE_0_T=$(echo "scale=6; $JUDGE_LLM_0_BALANCE_0 / 1000000000000" | bc)
 
 if [ "$NETWORK_TYPE" != "local" ]; then
-    CHALLENGER_LLM_1_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_CHALLENGER_LLM_1 2>&1 | grep "Balance:"| awk '{print $2}')
-    CHALLENGER_LLM_1_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_CHALLENGER_LLM_1 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
-    CHALLENGER_LLM_1_BALANCE_0_T=$(echo "scale=6; $CHALLENGER_LLM_1_BALANCE_0 / 1000000000000" | bc)
+    JUDGE_LLM_1_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_1 2>&1 | grep "Balance:"| awk '{print $2}')
+    JUDGE_LLM_1_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_1 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+    JUDGE_LLM_1_BALANCE_0_T=$(echo "scale=6; $JUDGE_LLM_1_BALANCE_0 / 1000000000000" | bc)
 fi
 
 echo " "
-echo "Before generateNewChallenge:"
+echo "Before triggerScoreSubmissionAdmin:"
 echo "GameState     ($CANISTER_ID_GAME_STATE_CANISTER) "
 echo "-> Balance: $GAME_STATE_BALANCE_0_T TCycles ($GAME_STATE_BALANCE_0_)"
 
 echo " "
-echo "Challenger    ($CANISTER_ID_CHALLENGER_CTRLB_CANISTER) "
-echo "-> Balance: $CHALLENGER_CTRLB_BALANCE_0_T TCycles ($CHALLENGER_CTRLB_BALANCE_0_)"
+echo "Judge    ($CANISTER_ID_JUDGE_CTRLB_CANISTER) "
+echo "-> Balance: $JUDGE_CTRLB_BALANCE_0_T TCycles ($JUDGE_CTRLB_BALANCE_0_)"
 
 echo " "
-echo "LLM 0         ($CANISTER_ID_CHALLENGER_LLM_0) "
-echo "-> Balance: $CHALLENGER_LLM_0_BALANCE_0_T TCycles ($CHALLENGER_LLM_0_BALANCE_0)"
+echo "LLM 0         ($CANISTER_ID_JUDGE_LLM_0) "
+echo "-> Balance: $JUDGE_LLM_0_BALANCE_0_T TCycles ($JUDGE_LLM_0_BALANCE_0)"
 
 if [ "$NETWORK_TYPE" != "local" ]; then
     echo " "
-    echo "LLM 1         ($CANISTER_ID_CHALLENGER_LLM_1) "
-    echo "-> Balance: $CHALLENGER_LLM_1_BALANCE_0_T TCycles ($CHALLENGER_LLM_1_BALANCE_0)"
+    echo "LLM 1         ($CANISTER_ID_JUDGE_LLM_1) "
+    echo "-> Balance: $JUDGE_LLM_1_BALANCE_0_T TCycles ($JUDGE_LLM_1_BALANCE_0)"
 fi
 ########################################################
 
 echo " "
-echo "Calling generateNewChallenge"
-output=$(dfx canister call $CANISTER_ID_CHALLENGER_CTRLB_CANISTER generateNewChallenge --network $NETWORK_TYPE)
+echo "Calling triggerScoreSubmissionAdmin"
+output=$(dfx canister call $CANISTER_ID_JUDGE_CTRLB_CANISTER triggerScoreSubmissionAdmin --network $NETWORK_TYPE)
 
 if [[ "$output" != *"Ok = record"* ]]; then
     echo $output
     echo " "
-    echo "If there are already sufficient open challenges, you can reset them with a call the GameState:"
-    echo "dfx canister --network $NETWORK_TYPE call $CANISTER_ID_GAME_STATE_CANISTER resetCurrentChallengesAdmin"
-    echo " "
-    echo "Check the currently open Challenges by calling the GameState:"
-    echo "dfx canister --network $NETWORK_TYPE call $CANISTER_ID_GAME_STATE_CANISTER getNumCurrentChallengesAdmin"
-    echo "dfx canister --network $NETWORK_TYPE call $CANISTER_ID_GAME_STATE_CANISTER getCurrentChallengesAdmin"
-    echo " "
-    echo "Call to createUserMainerAgent failed. Exiting."    
+    echo "Call to triggerScoreSubmissionAdmin failed. Exiting."    
     exit 1
 else
-    RESULT_1=$(extract_record_from_variant "$output")
-    echo "RESULT_1 (createUserMainerAgent): $RESULT_1"
-    GENERATED_BY_LLM_ID=$(echo "$RESULT_1" | grep -o 'generatedByLlmId = "[^"]*"' | sed 's/generatedByLlmId = "//;s/"//')
+    echo $output
+    echo " "
+    echo "We do not yet have a good method to automatically determine when the response generation is done."
+    echo "So, please monitor the logs of the Judge Controller ($CANISTER_ID_JUDGE_CTRLB_CANISTER) and the LLMs ($CANISTER_ID_JUDGE_LLM_0 & $CANISTER_ID_JUDGE_LLM_1 ) to see when the response generation is done."
+    read -p "When done, press Enter to continue..."
 fi
 
 echo " "
-echo "The Challenger used LLM with ID: $GENERATED_BY_LLM_ID"
+echo "Did the Judge use LLM 0 ($CANISTER_ID_JUDGE_LLM_0)? [y/n]"
+read -p "> " llm_choice
 
+if [[ "$llm_choice" == "y" ]]; then
+    GENERATED_BY_LLM_ID=$CANISTER_ID_JUDGE_LLM_0
+else
+    GENERATED_BY_LLM_ID=$CANISTER_ID_JUDGE_LLM_1
+fi
+
+echo "Setting GENERATED_BY_LLM_ID to: $GENERATED_BY_LLM_ID"
 echo " "
-echo "We will now check the balances again to see how much cycles were used to generate the Challenge."
+
+echo "Thank you! We will now check the balances again to see how much cycles were used to generate the score."
 echo "(Be patient, this may take a few seconds.)"
 
 ##############################################################
@@ -193,41 +197,41 @@ GAME_STATE_BALANCE_1_T=$(echo "scale=6; $GAME_STATE_BALANCE_1 / 1000000000000" |
 GAME_STATE_CYCLES_CHANGE_1=$(echo "$GAME_STATE_BALANCE_1 - $GAME_STATE_BALANCE_0" | bc)
 GAME_STATE_CYCLES_CHANGE_1_T=$(echo "scale=6; $GAME_STATE_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
-CHALLENGER_CTRLB_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_CHALLENGER_CTRLB_CANISTER 2>&1 | grep "Balance:"| awk '{print $2}')
-CHALLENGER_CTRLB_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_CHALLENGER_CTRLB_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
-CHALLENGER_CTRLB_BALANCE_1_T=$(echo "scale=6; $CHALLENGER_CTRLB_BALANCE_1 / 1000000000000" | bc)
-CHALLENGER_CTRLB_CYCLES_CHANGE_1=$(echo "$CHALLENGER_CTRLB_BALANCE_1 - $CHALLENGER_CTRLB_BALANCE_0" | bc)
-CHALLENGER_CTRLB_CYCLES_CHANGE_1_T=$(echo "scale=6; $CHALLENGER_CTRLB_CYCLES_CHANGE_1 / 1000000000000" | bc)
+JUDGE_CTRLB_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_CTRLB_CANISTER 2>&1 | grep "Balance:"| awk '{print $2}')
+JUDGE_CTRLB_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_CTRLB_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+JUDGE_CTRLB_BALANCE_1_T=$(echo "scale=6; $JUDGE_CTRLB_BALANCE_1 / 1000000000000" | bc)
+JUDGE_CTRLB_CYCLES_CHANGE_1=$(echo "$JUDGE_CTRLB_BALANCE_1 - $JUDGE_CTRLB_BALANCE_0" | bc)
+JUDGE_CTRLB_CYCLES_CHANGE_1_T=$(echo "scale=6; $JUDGE_CTRLB_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
 LLM_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $GENERATED_BY_LLM_ID 2>&1 | grep "Balance:"| awk '{print $2}')
 LLM_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $GENERATED_BY_LLM_ID 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
 LLM_BALANCE_1_T=$(echo "scale=6; $LLM_BALANCE_1 / 1000000000000" | bc)
 
-if [ "$GENERATED_BY_LLM_ID" = "$CANISTER_ID_CHALLENGER_LLM_0" ]; then
+if [ "$GENERATED_BY_LLM_ID" = "$CANISTER_ID_JUDGE_LLM_0" ]; then
     LLM_INDEX=0
-    echo "generatedByLlmId: $GENERATED_BY_LLM_ID is LLM 0: $CANISTER_ID_CHALLENGER_LLM_0"
-    LLM_CYCLES_CHANGE_1=$(echo "$LLM_BALANCE_1 - $CHALLENGER_LLM_0_BALANCE_0" | bc)
+    echo "generatedByLlmId: $GENERATED_BY_LLM_ID is LLM 0: $CANISTER_ID_JUDGE_LLM_0"
+    LLM_CYCLES_CHANGE_1=$(echo "$LLM_BALANCE_1 - $JUDGE_LLM_0_BALANCE_0" | bc)
 else
     LLM_INDEX=1
-    echo "generatedByLlmId: $GENERATED_BY_LLM_ID is LLM 1: $CANISTER_ID_CHALLENGER_LLM_1"
-    LLM_CYCLES_CHANGE_1=$(echo "$LLM_BALANCE_1 - $CHALLENGER_LLM_1_BALANCE_0" | bc)
+    echo "generatedByLlmId: $GENERATED_BY_LLM_ID is LLM 1: $CANISTER_ID_JUDGE_LLM_1"
+    LLM_CYCLES_CHANGE_1=$(echo "$LLM_BALANCE_1 - $JUDGE_LLM_1_BALANCE_0" | bc)
 fi
 LLM_CYCLES_CHANGE_1_T=$(echo "scale=6; $LLM_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
-COST_TO_GENERATE_A_CHALLENGE=$(echo "- $GAME_STATE_CYCLES_CHANGE_1 - $CHALLENGER_CTRLB_CYCLES_CHANGE_1 - $LLM_CYCLES_CHANGE_1" | bc)
-COST_TO_GENERATE_A_CHALLENGE_T=$(echo "scale=6; $COST_TO_GENERATE_A_CHALLENGE / 1000000000000" | bc)
+COST_TO_GENERATE_A_SCORE=$(echo "- $GAME_STATE_CYCLES_CHANGE_1 - $JUDGE_CTRLB_CYCLES_CHANGE_1 - $LLM_CYCLES_CHANGE_1" | bc)
+COST_TO_GENERATE_A_SCORE_T=$(echo "scale=6; $COST_TO_GENERATE_A_SCORE / 1000000000000" | bc)
 
 echo " "
 echo "--------------------------------------------------"
-echo "After generateNewChallenge: "
+echo "After score generation: "
 echo "GameState     ($CANISTER_ID_GAME_STATE_CANISTER) "
 echo "-> Balance: $GAME_STATE_BALANCE_1_T TCycles ($GAME_STATE_BALANCE_1_)"
 echo "-> Change : $GAME_STATE_CYCLES_CHANGE_1_T TCycles ($GAME_STATE_CYCLES_CHANGE_1)"
 
 echo " "
-echo "Challenger    ($CANISTER_ID_CHALLENGER_CTRLB_CANISTER) "
-echo "-> Balance: $CHALLENGER_CTRLB_BALANCE_1_T TCycles ($CHALLENGER_CTRLB_BALANCE_1_)"
-echo "-> Change : $CHALLENGER_CTRLB_CYCLES_CHANGE_1_T TCycles ($CHALLENGER_CTRLB_CYCLES_CHANGE_1)"
+echo "Judge    ($CANISTER_ID_JUDGE_CTRLB_CANISTER) "
+echo "-> Balance: $JUDGE_CTRLB_BALANCE_1_T TCycles ($JUDGE_CTRLB_BALANCE_1_)"
+echo "-> Change : $JUDGE_CTRLB_CYCLES_CHANGE_1_T TCycles ($JUDGE_CTRLB_CYCLES_CHANGE_1)"
 
 echo " "
 echo "LLM $LLM_INDEX         ($GENERATED_BY_LLM_ID) "
@@ -235,13 +239,13 @@ echo "-> Balance: $LLM_BALANCE_1_T TCycles ($LLM_BALANCE_1_)"
 echo "-> Change : $LLM_CYCLES_CHANGE_1_T TCycles ($LLM_CYCLES_CHANGE_1)"
 
 echo " "
-echo "Cost to generate a challenge: $COST_TO_GENERATE_A_CHALLENGE_T TCycles ($COST_TO_GENERATE_A_CHALLENGE)"
+echo "Cost to generate a score: $COST_TO_GENERATE_A_SCORE_T TCycles ($COST_TO_GENERATE_A_SCORE)"
 
 echo " "
 echo "to copy into spreadsheet:"
-echo $COST_TO_GENERATE_A_CHALLENGE_T
+echo $COST_TO_GENERATE_A_SCORE_T
 echo $(echo "- $GAME_STATE_CYCLES_CHANGE_1_T" | bc)
-echo $(echo "- $CHALLENGER_CTRLB_CYCLES_CHANGE_1_T" | bc)
+echo $(echo "- $JUDGE_CTRLB_CYCLES_CHANGE_1_T" | bc)
 echo $(echo "- $LLM_CYCLES_CHANGE_1_T" | bc)
 
 ##############################################################

@@ -90,6 +90,9 @@ dfx canister call game_state_canister getNumSubmissionsAdmin --output json --net
 dfx canister call game_state_canister getOpenSubmissionsAdmin --output json --network [local|ic|development|testing]
 dfx canister call game_state_canister getNumOpenSubmissionsAdmin --output json --network [local|ic|development|testing]
 
+dfx canister call game_state_canister getOpenSubmissionsForOpenChallengesAdmin --output json --network [local|ic|development|testing]
+dfx canister call game_state_canister getNumOpenSubmissionsForOpenChallengesAdmin --output json --network [local|ic|development|testing]
+
 # Verify Judge score generations
 dfx canister call game_state_canister getScoredChallengesAdmin --output json --network [local|ic|development|testing]
 dfx canister call game_state_canister getNumScoredChallengesAdmin --output json --network [local|ic|development|testing]
@@ -119,12 +122,20 @@ Scripts are provided to verify that each component works correctly, and to deter
 For accurate cycle burn calculation, turn off ALL the timers (Challenger, mAIners, Judge).
 
 ```bash
-# test a single Challenge Generation
+# To start with a clean slate, remove all current challenges
+dfx canister call game_state_canister resetCurrentChallengesAdmin --output json --network [local|ic|development|testing]
+
+# test a single Challenge Generation by the Challenger
 scripts/scripts-testing/generate-a-challenge.sh --network [local|ic|development|testing]
 
-# test a single Response Generation by the first mAIner of type #Own
+# test a single Response Generation by your first mAIner of type #Own
 scripts/scripts-testing/generate-a-response-Own.sh --network [local|ic|development|testing]
 
+# test a single Response Generation by your first mAIner of type #ShareAgent
+scripts/scripts-testing/generate-a-response-ShareAgent.sh --network [local|ic|development|testing]
+
+# test a single Score Generation by the Judge
+scripts/scripts-testing/generate-a-score-Judge.sh --network [local|ic|development|testing]
 ```
 
 # The GameState Thresholds

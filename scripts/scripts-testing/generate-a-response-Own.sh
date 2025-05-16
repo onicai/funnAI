@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #######################################################################
-# run from parent folder as:
-# scripts/generate-a-challenge.sh
+# run from funnAI folder as:
+# scripts/scripts-testing/generate-a-response-Own.sh --network [local|ic|development|testing]
 #######################################################################
 
 # Default network type is local
@@ -177,7 +177,7 @@ echo "TODO: fund mAIner with sufficient Cycles to create a response"
 
 echo " "
 echo "We will first check the balances of the canisters involved in generating the response."
-echo " "
+echo "(Be patient, this may take a few seconds.)"
 
 echo " "
 echo "--------------------------------------------------"
@@ -195,7 +195,7 @@ MAINER_OWN_LLM_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER
 MAINER_OWN_LLM_BALANCE_0_T=$(echo "scale=6; $MAINER_OWN_LLM_BALANCE_0 / 1000000000000" | bc)
 
 echo " "
-echo "Before generateNewChallenge:"
+echo "Before the response generation:"
 echo "GameState     ($CANISTER_ID_GAME_STATE_CANISTER) "
 echo "-> Balance: $GAME_STATE_BALANCE_0_T TCycles ($GAME_STATE_BALANCE_0_)"
 
@@ -227,7 +227,7 @@ fi
 
 echo " "
 echo "Thank you! We will now check the balances again to see how much cycles were used to generate the response."
-echo " "
+echo "(Be patient, this may take a few seconds.)"
 ##############################################################
 GAME_STATE_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:"| awk '{print $2}')
 GAME_STATE_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
@@ -268,13 +268,20 @@ echo "-> Balance: $MAINER_OWN_LLM_BALANCE_1_T TCycles ($MAINER_OWN_LLM_BALANCE_1
 echo "-> Change : $MAINER_OWN_LLM_CYCLES_CHANGE_1_T TCycles ($MAINER_OWN_LLM_CYCLES_CHANGE_1)"
 
 echo " "
-echo "Cost to generate a challenge: $COST_TO_GENERATE_A_RESPONSE_T TCycles ($COST_TO_GENERATE_A_RESPONSE)"
+echo "Cost to generate a response: $COST_TO_GENERATE_A_RESPONSE_T TCycles ($COST_TO_GENERATE_A_RESPONSE)"
+
+# Settings in Tcycles
+SUBMISSION_CYCLES_REQUIRED=0.1
+echo " "
+echo "to copy into spreadsheet"
+echo "Corrected for:"
+echo "The mAIner #Own sending SUBMISSION_CYCLES_REQUIRED ($SUBMISSION_CYCLES_REQUIRED Tcycles) with the Submission to GameState"
 
 echo " "
 echo "to copy into spreadsheet (corrected for the mAIner sending 0.1T cycles with the Submission...):"
 echo $COST_TO_GENERATE_A_RESPONSE_T
-echo $(echo "- $GAME_STATE_CYCLES_CHANGE_1_T + 0.1" | bc)
-echo $(echo "- $MAINER_OWN_CTRLB_CYCLES_CHANGE_1_T - 0.1" | bc)
+echo $(echo "- $GAME_STATE_CYCLES_CHANGE_1_T + $SUBMISSION_CYCLES_REQUIRED" | bc)
+echo $(echo "- $MAINER_OWN_CTRLB_CYCLES_CHANGE_1_T - $SUBMISSION_CYCLES_REQUIRED" | bc)
 echo $(echo "- $MAINER_OWN_LLM_CYCLES_CHANGE_1_T" | bc)
 
 ##############################################################
