@@ -181,6 +181,7 @@ fi
 
 echo " "
 echo "The Challenger used LLM with ID: $GENERATED_BY_LLM_ID"
+echo "...but... it likely used the other LLM for prompt.cache generation. Will include both LLMs in the cost calculation."
 
 echo " "
 echo "We will now check the balances again to see how much cycles were used to generate the Challenge."
@@ -199,22 +200,19 @@ CHALLENGER_CTRLB_BALANCE_1_T=$(echo "scale=6; $CHALLENGER_CTRLB_BALANCE_1 / 1000
 CHALLENGER_CTRLB_CYCLES_CHANGE_1=$(echo "$CHALLENGER_CTRLB_BALANCE_1 - $CHALLENGER_CTRLB_BALANCE_0" | bc)
 CHALLENGER_CTRLB_CYCLES_CHANGE_1_T=$(echo "scale=6; $CHALLENGER_CTRLB_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
-LLM_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $GENERATED_BY_LLM_ID 2>&1 | grep "Balance:"| awk '{print $2}')
-LLM_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $GENERATED_BY_LLM_ID 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
-LLM_BALANCE_1_T=$(echo "scale=6; $LLM_BALANCE_1 / 1000000000000" | bc)
+CHALLENGER_LLM_0_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_CHALLENGER_LLM_0 2>&1 | grep "Balance:"| awk '{print $2}')
+CHALLENGER_LLM_0_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_CHALLENGER_LLM_0 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+CHALLENGER_LLM_0_BALANCE_1_T=$(echo "scale=6; $CHALLENGER_LLM_0_BALANCE_1 / 1000000000000" | bc)
+CHALLENGER_LLM_0_CYCLES_CHANGE_1=$(echo "$CHALLENGER_LLM_0_BALANCE_1 - $CHALLENGER_LLM_0_BALANCE_0" | bc)
+CHALLENGER_LLM_0_CYCLES_CHANGE_1_T=$(echo "scale=6; $CHALLENGER_LLM_0_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
-if [ "$GENERATED_BY_LLM_ID" = "$CANISTER_ID_CHALLENGER_LLM_0" ]; then
-    LLM_INDEX=0
-    echo "generatedByLlmId: $GENERATED_BY_LLM_ID is LLM 0: $CANISTER_ID_CHALLENGER_LLM_0"
-    LLM_CYCLES_CHANGE_1=$(echo "$LLM_BALANCE_1 - $CHALLENGER_LLM_0_BALANCE_0" | bc)
-else
-    LLM_INDEX=1
-    echo "generatedByLlmId: $GENERATED_BY_LLM_ID is LLM 1: $CANISTER_ID_CHALLENGER_LLM_1"
-    LLM_CYCLES_CHANGE_1=$(echo "$LLM_BALANCE_1 - $CHALLENGER_LLM_1_BALANCE_0" | bc)
-fi
-LLM_CYCLES_CHANGE_1_T=$(echo "scale=6; $LLM_CYCLES_CHANGE_1 / 1000000000000" | bc)
+CHALLENGER_LLM_1_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_CHALLENGER_LLM_1 2>&1 | grep "Balance:"| awk '{print $2}')
+CHALLENGER_LLM_1_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_CHALLENGER_LLM_1 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+CHALLENGER_LLM_1_BALANCE_1_T=$(echo "scale=6; $CHALLENGER_LLM_1_BALANCE_1 / 1000000000000" | bc)
+CHALLENGER_LLM_1_CYCLES_CHANGE_1=$(echo "$CHALLENGER_LLM_1_BALANCE_1 - $CHALLENGER_LLM_1_BALANCE_0" | bc)
+CHALLENGER_LLM_1_CYCLES_CHANGE_1_T=$(echo "scale=6; $CHALLENGER_LLM_1_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
-COST_TO_GENERATE_A_CHALLENGE=$(echo "- $GAME_STATE_CYCLES_CHANGE_1 - $CHALLENGER_CTRLB_CYCLES_CHANGE_1 - $LLM_CYCLES_CHANGE_1" | bc)
+COST_TO_GENERATE_A_CHALLENGE=$(echo "- $GAME_STATE_CYCLES_CHANGE_1 - $CHALLENGER_CTRLB_CYCLES_CHANGE_1 - $CHALLENGER_LLM_0_CYCLES_CHANGE_1 - $CHALLENGER_LLM_1_CYCLES_CHANGE_1" | bc)
 COST_TO_GENERATE_A_CHALLENGE_T=$(echo "scale=6; $COST_TO_GENERATE_A_CHALLENGE / 1000000000000" | bc)
 
 echo " "
@@ -230,9 +228,14 @@ echo "-> Balance: $CHALLENGER_CTRLB_BALANCE_1_T TCycles ($CHALLENGER_CTRLB_BALAN
 echo "-> Change : $CHALLENGER_CTRLB_CYCLES_CHANGE_1_T TCycles ($CHALLENGER_CTRLB_CYCLES_CHANGE_1)"
 
 echo " "
-echo "LLM $LLM_INDEX         ($GENERATED_BY_LLM_ID) "
-echo "-> Balance: $LLM_BALANCE_1_T TCycles ($LLM_BALANCE_1_)"
-echo "-> Change : $LLM_CYCLES_CHANGE_1_T TCycles ($LLM_CYCLES_CHANGE_1)"
+echo "LLM 0         ($CANISTER_ID_CHALLENGER_LLM_0) "
+echo "-> Balance: $CHALLENGER_LLM_0_BALANCE_1_T TCycles ($CHALLENGER_LLM_0_BALANCE_1_)"
+echo "-> Change : $CHALLENGER_LLM_0_CYCLES_CHANGE_1_T TCycles ($CHALLENGER_LLM_0_CYCLES_CHANGE_1)"
+
+echo " "
+echo "LLM 1         ($CANISTER_ID_CHALLENGER_LLM_1) "
+echo "-> Balance: $CHALLENGER_LLM_1_BALANCE_1_T TCycles ($CHALLENGER_LLM_1_BALANCE_1_)"
+echo "-> Change : $CHALLENGER_LLM_1_CYCLES_CHANGE_1_T TCycles ($CHALLENGER_LLM_1_CYCLES_CHANGE_1)"
 
 echo " "
 echo "Cost to generate a challenge: $COST_TO_GENERATE_A_CHALLENGE_T TCycles ($COST_TO_GENERATE_A_CHALLENGE)"
@@ -242,6 +245,6 @@ echo "to copy into spreadsheet:"
 echo $COST_TO_GENERATE_A_CHALLENGE_T
 echo $(echo "- $GAME_STATE_CYCLES_CHANGE_1_T" | bc)
 echo $(echo "- $CHALLENGER_CTRLB_CYCLES_CHANGE_1_T" | bc)
-echo $(echo "- $LLM_CYCLES_CHANGE_1_T" | bc)
+echo $(echo "- $CHALLENGER_LLM_0_CYCLES_CHANGE_1_T - $CHALLENGER_LLM_1_CYCLES_CHANGE_1_T" | bc)
 
 ##############################################################

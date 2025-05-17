@@ -76,11 +76,14 @@ dfx canister call $JUDGE startTimerExecutionAdmin
 
 # Once the timers are running, you can use these commands to check on the data captured by the gamestate:
 # Run from folder: funnAI
+
 # Verify Challenger challenge generations
-dfx canister call game_state_canister getCurrentChallengesAdmin --output json --network [local|ic|development|testing]
-dfx canister call game_state_canister getNumCurrentChallengesAdmin --output json --network [local|ic|development|testing]
 # You can reset the challenge storage arrays with:
 dfx canister call game_state_canister resetCurrentChallengesAdmin --output json --network [local|ic|development|testing]
+
+dfx canister call game_state_canister getCurrentChallengesAdmin --output json --network [local|ic|development|testing]
+dfx canister call game_state_canister getNumCurrentChallengesAdmin --output json --network [local|ic|development|testing]
+
 
 # Verify mAIner response generations
 # Note: submissionStatus changes from #Submitted > #Judging > #Judged
