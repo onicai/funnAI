@@ -3,7 +3,7 @@
   import Modal from "../CommonModal.svelte";
   import TokenImages from "../TokenImages.svelte";
   import { ArrowUp, Info, Check } from 'lucide-svelte';
-  import { store } from "../../stores/store";
+  import { MEMO_PAYMENT_PROTOCOL, store } from "../../stores/store";
   import { IcrcService } from "../../helpers/IcrcService";
   import BigNumber from "bignumber.js";
   import { formatBalance, formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
@@ -91,12 +91,15 @@
       try {
         // Create the CMC actor using the imported IDL factory
         const cmcActor = await createAnonymousActorHelper(cmcCanisterId, cmcIdlFactory);
+        console.log("loadConversionRate cmcActor: ", cmcActor);
         
         // Get conversion rate from CMC
         const response = await cmcActor.get_icp_xdr_conversion_rate();
+        console.log("loadConversionRate cmcActor response: ", response);
         
         if (response && response.data) {
           const xdrRate = Number(response.data.xdr_permyriad_per_icp);
+          console.log("loadConversionRate xdrRate: ", xdrRate);
           
           // 1 XDR = 1 trillion cycles, and the rate is in 10,000ths (permyriad)
           const CYCLES_PER_XDR = new BigNumber("1000000000000"); // 1 trillion cycles
@@ -210,13 +213,15 @@
         amountBigInt,
         {
           fee: tokenFee,
-          // Include canister ID in the memo so the backend knows which canister to top up
-          memo: Array.from(new TextEncoder().encode(canisterId))
+          // Include the memo for transactions to the Protocol
+          memo: MEMO_PAYMENT_PROTOCOL
         }
       );
+      console.log("handleSubmit result: ", result);
 
       if (result && typeof result === 'object' && 'Ok' in result) {
         const txId = result.Ok?.toString();
+        console.log("handleSubmit txId: ", txId);
         onSuccess(txId, canisterId);
         handleClose();
       } else if (result && typeof result === 'object' && 'Err' in result) {

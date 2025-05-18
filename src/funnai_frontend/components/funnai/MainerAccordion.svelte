@@ -90,6 +90,7 @@
     
     // Get mAIner info from agentCanistersInfo via canisterId
     let mainerAgent = findAgentByAddress(canisterId);
+    console.log("handleTopUpComplete mainerAgent: ", mainerAgent);
     if (!mainerAgent) {
       console.error("Error in handleTopUpComplete: no agent for canisterId");
       return; // TODO - Implementation: decide if the top up should just be credited to the user's first agent then instead (as otherwise the payment is lost)
@@ -101,6 +102,7 @@
     };
     try {
       let topUpUserMainerAgentResponse = await $store.gameStateCanisterActor.topUpCyclesForMainerAgent(mainerAgentTopUpInput);
+      console.log("handleTopUpComplete topUpUserMainerAgentResponse: ", topUpUserMainerAgentResponse);
       //@ts-ignore
       if (topUpUserMainerAgentResponse?.Ok) {
         // top up was successful

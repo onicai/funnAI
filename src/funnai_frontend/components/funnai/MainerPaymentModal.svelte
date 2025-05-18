@@ -3,7 +3,7 @@
   import Modal from "../CommonModal.svelte";
   import TokenImages from "../TokenImages.svelte";
   import { ArrowUp, Check } from 'lucide-svelte';
-  import { store } from "../../stores/store";
+  import { MEMO_PAYMENT_PROTOCOL, store } from "../../stores/store";
   import { IcrcService } from "../../helpers/IcrcService";
   import BigNumber from "bignumber.js";
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
@@ -92,7 +92,9 @@
         protocolAddress,
         amountBigInt,
         {
-          fee: tokenFee
+          fee: tokenFee,
+          // Include the memo for transactions to the Protocol
+          memo: MEMO_PAYMENT_PROTOCOL
         }
       );
 
