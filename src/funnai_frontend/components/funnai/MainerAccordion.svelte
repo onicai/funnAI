@@ -90,6 +90,11 @@
     
     // Get mAIner info from agentCanistersInfo via canisterId
     let mainerAgent = findAgentByAddress(canisterId);
+    if (!mainerAgent) {
+      console.error("Error in handleTopUpComplete: no agent for canisterId");
+      return; // TODO - Implementation: decide if the top up should just be credited to the user's first agent then instead (as otherwise the payment is lost)
+    };
+
     let mainerAgentTopUpInput = {
       paymentTransactionBlockId: BigInt(txId),
       mainerAgent,
