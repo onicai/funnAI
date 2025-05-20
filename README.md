@@ -68,11 +68,13 @@ scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install --n
 # (-) The #Own & #ShareService mAIners are deployed with 1 LLM. To add more LLMs, use the function: addLlmCanisterToMainer 
 # (-) The timers for the mAIners are started automatically.
 # (-) The timers of the Challenger & Judge are NOT started automatically.
-#     Start them with something like this:
-export CHALLENGER=by6od-j4aaa-aaaaa-qaadq-cai
-export JUDGE=a4tbr-q4aaa-aaaaa-qaafq-cai
-dfx canister call $CHALLENGER startTimerExecutionAdmin
-dfx canister call $JUDGE startTimerExecutionAdmin
+#     Start/Stop them with:
+scripts/start-challenger.sh --network [local|ic|development|testing]
+scripts/stop-challenger.sh --network [local|ic|development|testing]
+scripts/start-judge.sh --network [local|ic|development|testing]
+scripts/stop-judge.sh --network [local|ic|development|testing]
+
+
 
 # Once the timers are running, you can use these commands to check on the data captured by the gamestate:
 # Run from folder: funnAI

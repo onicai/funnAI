@@ -2,7 +2,7 @@
 
 #######################################################################
 # run from parent folder as:
-# scripts/register-all.sh --network [local|ic]
+# scripts/scripts-gamestate/register-all.sh --network [local|ic]
 #######################################################################
 
 # Default network type is local
@@ -16,10 +16,10 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --network)
             shift
-            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ]; then
+            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ] || [ "$1" = "development" ]; then
                 NETWORK_TYPE=$1
             else
-                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing."
+                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing' or 'development'."
                 exit 1
             fi
             shift
