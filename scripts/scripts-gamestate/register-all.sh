@@ -21,15 +21,20 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --network)
             shift
-            if [ "$1" = "local" ] || [ "$1" = "ic" ]; then
+            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "development" ]; then
                 NETWORK_TYPE=$1
                 if [ "$NETWORK_TYPE" = "ic" ]; then
                     CANISTER_ID_MAINER_CREATOR_CANISTER='movk5-tyaaa-aaaaj-az64q-cai'
                     CANISTER_ID_CHALLENGER_CTRLB_CANISTER='lxb3x-jyaaa-aaaaj-azzta-cai'
                     CANISTER_ID_JUDGE_CTRLB_CANISTER='xxnvw-4yaaa-aaaaj-az4oq-cai' 
                 fi
+                if [ "$NETWORK_TYPE" = "development" ]; then
+                    CANISTER_ID_MAINER_CREATOR_CANISTER='hh3ix-5qaaa-aaaad-qhkxq-cai'
+                    CANISTER_ID_CHALLENGER_CTRLB_CANISTER='sx25d-4yaaa-aaaai-atiaq-cai'
+                    CANISTER_ID_JUDGE_CTRLB_CANISTER='tjr6j-qaaaa-aaaaj-qnpaa-cai' 
+                fi
             else
-                echo "Invalid network type: $1. Use 'local' or 'ic'."
+                echo "Invalid network type: $1. Use 'local', 'development' or 'ic'."
                 exit 1
             fi
             shift
