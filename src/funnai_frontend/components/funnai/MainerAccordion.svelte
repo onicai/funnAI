@@ -535,7 +535,7 @@
             <h3 class="font-medium leading-tight mb-1 dark:text-gray-300">Pay & Spin up</h3>
             <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md p-3 mb-3">
               <p class="text-xs text-blue-800 dark:text-blue-300">
-                Create mAIner requires a payment fee of <span class="font-medium">{modelType === 'Own' ? '0.005' : '0.003'} ICP</span> for {modelType} model
+                Create mAIner requires a payment fee of <span class="font-medium">{modelType === 'Own' ? '0.0003' : '0.0002'} ICP</span> for {modelType} model
               </p>
             </div>
         </li>
@@ -549,7 +549,7 @@
           class:opacity-50={isCreatingMainer}
           class:cursor-not-allowed={isCreatingMainer}
         >
-          Create mAIner ({modelType === 'Own' ? '0.005' : '0.003'} ICP)
+          Create mAIner ({modelType === 'Own' ? '0.0003' : '0.0002'} ICP)
         </button>
       </div>
       
