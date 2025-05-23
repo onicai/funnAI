@@ -9,7 +9,7 @@ source canister_ids-testing.env
 ```
 
 ========================================================================
-To add another LLM to the ShareService Controller uqidu-haaaa-aaaaj-a2adq-cai:
+To add another LLM to the ShareService Controller rcruz-xyaaa-aaaaj-a2a5a-cai:
  
 (-) First add 5 TCycles to the GameState canister:
 dfx wallet send  cc2po-yiaaa-aaaaj-az75q-cai 5000000000000 --network testing 
@@ -18,24 +18,21 @@ dfx canister call cc2po-yiaaa-aaaaj-az75q-cai addLlmCanisterToMainer  'record {
       status = variant { ControllerCreated };
       canisterType = variant { MainerAgent = variant { ShareService } };
       ownedBy = principal "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae";
-      creationTimestamp = 1_746_639_960_946_013_657 : nat64;
+      creationTimestamp = 1_747_923_938_922_433_290 : nat64;
       createdBy = principal "cc2po-yiaaa-aaaaj-az75q-cai";
       mainerConfig = record {
         selectedLLM = opt variant { Qwen2_5_500M };
         mainerAgentCanisterType = variant { ShareService };
       };
-      address = "uqidu-haaaa-aaaaj-a2adq-cai";
+      address = "rcruz-xyaaa-aaaaj-a2a5a-cai";
     }' --network testing
  
-The timers are running! 
-To stop timers for ShareService: 
-dfx canister call uqidu-haaaa-aaaaj-a2adq-cai stopTimerExecutionAdmin --network testing
-
-To stop timers for the ShareAgents: 
-dfx canister call vteks-tyaaa-aaaaj-a2afa-cai stopTimerExecutionAdmin --network testing
-
-To stop timers for the Owns:
-dfx canister call vgd37-sqaaa-aaaaj-a2agq-cai stopTimerExecutionAdmin --network testing
+========================================================================
+The timers are running! To stop timers for ShareService rcruz-xyaaa-aaaaj-a2a5a-cai, call the ShareService controller:
+ 
+dfx canister call rcruz-xyaaa-aaaaj-a2a5a-cai stopTimerExecutionAdmin --network testing
+ 
+========================================================================
 
 ## Debugging
 
