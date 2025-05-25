@@ -74,8 +74,6 @@ scripts/stop-challenger.sh --network [local|ic|development|testing]
 scripts/start-judge.sh --network [local|ic|development|testing]
 scripts/stop-judge.sh --network [local|ic|development|testing]
 
-
-
 # Once the timers are running, you can use these commands to check on the data captured by the gamestate:
 # Run from folder: funnAI
 
@@ -141,6 +139,36 @@ scripts/scripts-testing/generate-a-response-ShareAgent.sh --network [local|ic|de
 
 # test a single Score Generation by the Judge
 scripts/scripts-testing/generate-a-score-Judge.sh --network [local|ic|development|testing]
+```
+
+# The CyclesFlow variables
+
+The CyclesFlow variables are defined in GameState and then selectively passed on to the other canisters.
+
+- public type `CyclesFlow`
+- GameState does the following:
+  - Defines `let DEFAULT_COST_XXX_YYY`
+  - Assigns `DEFAULT_COST_XXX_YYY` to `stable var costXxxxYyyy`
+  - Provides endpoint to calculate the cycles flow variables `stable var cyclesZzz`
+
+The following Admin endpoints are available:
+
+```bash
+dfx canister call game_state_canister setCyclesFlowAdmin '(record {})'
+dfx canister call game_state_canister getCyclesFlowAdmin
+dfx canister call game_state_canister resetCyclesFlowAdmin
+
+# setCyclesFLowAdmin allows to overwrite the default values:
+#
+# a) Overwrite individual parameters that go into the CyclesFlow calculations
+dfx canister call game_state_canister setCyclesFlowAdmin '( record {
+  dailyChallenges = opt (10 : nat);
+  dailySubmissionsPerShareLOW = opt (1 : nat);
+})'
+# b) Overwrite the calculated CyclesFlow variables
+dfx canister call game_state_canister setCyclesFlowAdmin '( record {
+  cyclesGenerateResponseSsctrlSsllm = opt (100_000_000 : nat);
+})'
 ```
 
 # The GameState Thresholds
