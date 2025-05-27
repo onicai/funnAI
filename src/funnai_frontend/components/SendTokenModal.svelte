@@ -24,7 +24,8 @@
     formatTokenInput,
     getInitialBalances,
   } from "../helpers/utils/tokenValidators";
-  import QrScanner from "./QrScanner.svelte";
+  // Lazy load QrScanner only when needed
+  let QrScanner: any = null;
   import { getAccountIds } from "../helpers/utils/accountUtils";
   import { formatBalance } from "../helpers/utils/numberFormatUtils";
   import { fade, fly } from 'svelte/transition';
@@ -141,8 +142,13 @@
   }
 
   // Handle QR scanner button click
-  function handleScanClick() {
+  async function handleScanClick() {
     if (hasCamera) {
+      // Lazy load QrScanner component
+      if (!QrScanner) {
+        const module = await import('./QrScanner.svelte');
+        QrScanner = module.default;
+      }
       showScanner = true;
     } else {
       //toastStore.warning("No camera detected on your device");
@@ -503,7 +509,7 @@
 </Modal>
 
 <!-- QR Scanner Modal -->
-{#if showScanner}
+{#if showScanner && QrScanner}
   <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[100001]" transition:fade={{ duration: 200 }}>
     <div class="relative bg-gray-900 rounded-lg shadow-xl overflow-hidden w-full max-w-md mx-4">
       <div class="p-4 flex justify-between items-center border-b border-gray-700">
@@ -512,7 +518,7 @@
           <X size={20} />
         </button>
       </div>
-      <QrScanner onScan={handleScan} />
+      <svelte:component this={QrScanner} isOpen={true} onScan={handleScan} onClose={() => showScanner = false} />
     </div>
   </div>
 {/if}

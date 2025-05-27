@@ -144,6 +144,18 @@ export default defineConfig({
   ],
   build: {
     target: "es2020",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks for large libraries
+          'webllm': ['@mlc-ai/web-llm'],
+          'dfinity': ['@dfinity/agent', '@dfinity/auth-client', '@dfinity/candid', '@dfinity/principal', '@dfinity/identity', '@dfinity/ledger-icp', '@dfinity/utils'],
+          'qr-scanner': ['html5-qrcode', 'qrcode'],
+          'ui-libs': ['svelte-spa-router', 'lucide-svelte', 'svelte-portal'],
+          'markdown': ['marked']
+        }
+      }
+    }
   },
   resolve: {
     alias: {
