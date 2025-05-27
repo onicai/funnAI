@@ -146,6 +146,8 @@ const APPLICATION_LOGO_URL = "https://x6occ-biaaa-aaaai-acqzq-cai.icp0.io/devinc
 //TODO: double check
 const AUTH_PATH = "/authenticate/?applicationName="+APPLICATION_NAME+"&applicationLogo="+APPLICATION_LOGO_URL+"#authorize";
 
+export const MEMO_PAYMENT_PROTOCOL : number[] = [173];
+
 const days = BigInt(30);
 const hours = BigInt(24);
 const nanosecondsPerHour = BigInt(3600000000000);

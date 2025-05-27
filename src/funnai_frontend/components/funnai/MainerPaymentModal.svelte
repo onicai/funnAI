@@ -3,7 +3,7 @@
   import Modal from "../CommonModal.svelte";
   import TokenImages from "../TokenImages.svelte";
   import { ArrowUp, Check } from 'lucide-svelte';
-  import { store } from "../../stores/store";
+  import { MEMO_PAYMENT_PROTOCOL, store } from "../../stores/store";
   import { IcrcService } from "../../helpers/IcrcService";
   import BigNumber from "bignumber.js";
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
@@ -53,7 +53,7 @@
   let balance: bigint = BigInt(0);
   
   // Determine payment amount based on model type
-  $: paymentAmount = modelType === 'Own' ? '0.005' : '0.003';
+  $: paymentAmount = modelType === 'Own' ? '0.0003' : '0.0002';
   $: amountBigInt = token ? BigInt(new BigNumber(paymentAmount).times(new BigNumber(10).pow(token.decimals)).toString()) : BigInt(0);
   $: hasEnoughBalance = balance >= (amountBigInt + tokenFee);
   $: if (token) {
@@ -92,7 +92,9 @@
         protocolAddress,
         amountBigInt,
         {
-          fee: tokenFee
+          fee: tokenFee,
+          // Include the memo for transactions to the Protocol
+          memo: MEMO_PAYMENT_PROTOCOL
         }
       );
 
