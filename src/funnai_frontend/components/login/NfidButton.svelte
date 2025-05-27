@@ -1,7 +1,6 @@
 <script lang="ts">
   import { store } from "../../stores/store";
-
-  import spinner from "../../assets/loading.gif";
+  import LoadingSpinner from "../LoadingSpinner.svelte";
   import nfidlogo from "/nfid.webp"
 
   export let loading;
@@ -20,7 +19,7 @@
   on:click={connect}
 >
   {#if loading === "nfid"}
-    <img class="h-6 block" src={spinner} alt="loading animation" />
+    <LoadingSpinner size="h-6 w-6" />
   {:else}
     <img class="h-5" src={nfidlogo}  alt="nfid wallet" />
     <span class="flex-1 ms-3 whitespace-nowrap">NFID (incl. Google)</span>
