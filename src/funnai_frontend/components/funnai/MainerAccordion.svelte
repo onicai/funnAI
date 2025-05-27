@@ -42,7 +42,8 @@
   let isCreatingMainer = false;
   let mainerCreationProgress: {message: string, timestamp: string, complete: boolean}[] = [];
 
-  let isToppingUpMainer  = false;
+  // Track which agents are being topped up (agent-specific loading states)
+  let agentsBeingToppedUp = new Set<string>();
 
   // For testing UI only - set to true to use mock data for the mainer accordion displaying canister INFO
   let useMockData = false;
@@ -85,14 +86,18 @@
     console.log("Top-up completed" + (txId ? ` with transaction ID: ${txId}` : ""));
     mainerTopUpModalOpen = false;
 
-    // Set the top up process as started
-    isToppingUpMainer = true;
+    // Add this agent to the loading set
+    agentsBeingToppedUp.add(canisterId);
+    agentsBeingToppedUp = agentsBeingToppedUp; // Trigger reactivity
     
     // Get mAIner info from agentCanistersInfo via canisterId
     let mainerAgent = findAgentByAddress(canisterId);
     console.log("handleTopUpComplete mainerAgent: ", mainerAgent);
     if (!mainerAgent) {
       console.error("Error in handleTopUpComplete: no agent for canisterId");
+      // Remove from loading set on error
+      agentsBeingToppedUp.delete(canisterId);
+      agentsBeingToppedUp = agentsBeingToppedUp;
       return; // TODO - Implementation: decide if the top up should just be credited to the user's first agent then instead (as otherwise the payment is lost)
     };
 
@@ -116,7 +121,9 @@
       console.error("Failed to top up mAIner:", topUpError);
     };
 
-    isToppingUpMainer = false;
+    // Remove from loading set after processing
+    agentsBeingToppedUp.delete(canisterId);
+    agentsBeingToppedUp = agentsBeingToppedUp; // Trigger reactivity
     
     // Refresh the list of agents to show updated balances
     loadAgents().then(newAgents => {
@@ -749,17 +756,30 @@
                 <button 
                   type="button" 
                   class="py-2.5 px-5 me-2 text-xs font-medium text-gray-900 dark:text-gray-300 focus:outline-none bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400"
+                  class:opacity-50={agentsBeingToppedUp.has(agent.id)}
+                  class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id)}
+                  disabled={agentsBeingToppedUp.has(agent.id)}
                   on:click={() => openTopUpModal(agent)}
                 >
+                  {#if agentsBeingToppedUp.has(agent.id)}
+                    <span class="w-3 h-3 mr-1 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin"></span>
+                  {/if}
                   Top-up
                 </button>
             </div>
             <!-- Cycle Balance Display -->
             <div class="mt-2 flex items-center">
               <span class="text-xs text-gray-500 dark:text-gray-400">Current balance:</span>
-              <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)} T cycles
-              </span>
+              {#if agentsBeingToppedUp.has(agent.id)}
+                <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center">
+                  <span class="w-3 h-3 mr-2 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin"></span>
+                  Updating...
+                </span>
+              {:else}
+                <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)} T cycles
+                </span>
+              {/if}
             </div>
           </div>
         </div>
