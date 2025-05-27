@@ -81,19 +81,19 @@ const pwaManifest = {
   categories: ["productivity", "ai", "PoAIW"], 
   icons: [
     {
-      src: './chat/devinci192.png',
+      src: './chat/devinci.webp',
       sizes: '192x192',
-      type: 'image/png',
+      type: 'image/webp',
     },
     {
-      src: './chat/devinci512.png',
+      src: './chat/devinci512.webp',
       sizes: '512x512',
-      type: 'image/png',
+      type: 'image/webp',
       purpose: 'any maskable'
     },
     {
-      src: "./chat/devinci1024.png", 
-      type: "image/png",
+      src: "./chat/devinci1024.webp", 
+      type: "image/webp",
       sizes: "1024x1024"
     },
   ],
@@ -110,7 +110,7 @@ const pwaManifest = {
       short_name: "New Chat",
       description: "Start a new AI chat session",
       url: "/",
-      icons: [{ src: "./chat/devinci192.png", sizes: "192x192" }]
+      icons: [{ src: "./chat/devinci.webp", sizes: "192x192" }]
     }
   ]
 };
