@@ -8,7 +8,7 @@ The testing, development or ic networks:
 - One or more mAIner #ShareAgent
 
 The local network:
-- One Challenger          with 2 LLMs
+- One Challenger          with 1 LLMs
 - One Judge               with 2 LLMs
 - One ShareService        with 2 LLMs
 - One or more mAIner #Own with 1 LLM each
