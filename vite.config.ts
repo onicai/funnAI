@@ -81,18 +81,18 @@ const pwaManifest = {
   categories: ["productivity", "ai", "PoAIW"], 
   icons: [
     {
-      src: './chat/devinci.webp',
+      src: './funnai_192.webp',
       sizes: '192x192',
       type: 'image/webp',
     },
     {
-      src: './chat/devinci512.webp',
+      src: './funnai_512.webp',
       sizes: '512x512',
       type: 'image/webp',
       purpose: 'any maskable'
     },
     {
-      src: "./chat/devinci1024.webp", 
+      src: "./funnai_1024.webp", 
       type: "image/webp",
       sizes: "1024x1024"
     },
