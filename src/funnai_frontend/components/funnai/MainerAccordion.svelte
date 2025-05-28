@@ -81,7 +81,12 @@
     console.log("in MainerAccordion updateAgentBurnRate agent ", agent);
     console.log("in MainerAccordion updateAgentBurnRate agentCanisterActors ", agentCanisterActors);
     console.log("in MainerAccordion updateAgentBurnRate agentCanisterActors[0] ", agentCanisterActors[0]);
-    let agentActor = agentCanisterActors[0]; // TODO: get actor for agent
+    let actorIndex = findAgentIndexByAddress(agent.id);
+    if (actorIndex < 0) {
+      console.error(`updateAgentBurnRate actor not found for agent: ${agent}`);
+      return;
+    };
+    let agentActor = agentCanisterActors[actorIndex]; // Get actor for agent
     let burnRateSetting;
     switch (level) {
       case 'Low':
@@ -94,7 +99,7 @@
         burnRateSetting = { cyclesBurnRate: { High: null } };
         break;
       default:
-        console.error(`Unsupported level: ${level}`);
+        console.error(`updateAgentBurnRate Unsupported level: ${level}`);
         return;
     }
 
@@ -138,6 +143,10 @@
 
   function findAgentByAddress(canisterId) {
     return agentCanistersInfo.find(canister => canister.address === canisterId) || null;
+  };
+
+  function findAgentIndexByAddress(canisterId) {
+    return agentCanistersInfo.findIndex(canister => canister.address === canisterId);
   };
   
   // Handle top-up completion
