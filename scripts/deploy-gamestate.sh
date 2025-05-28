@@ -51,12 +51,3 @@ echo "scripts-gamestate deploy.sh"
 scripts/scripts-gamestate/deploy.sh --network $NETWORK_TYPE --mode $DEPLOY_MODE
 echo "scripts-gamestate register-all.sh"
 scripts/scripts-gamestate/register-all.sh --network $NETWORK_TYPE
-
-#######################################################################
-echo " "
-echo "Calling setCyclesFlowAdmin to calculate the CyclesFlow variables"
-dfx canister call game_state_canister setCyclesFlowAdmin '(record {})'
-
-echo " "
-echo "Calling setCyclesFlowAdmin to get the CyclesFlow variables"
-dfx canister call game_state_canister getCyclesFlowAdmin

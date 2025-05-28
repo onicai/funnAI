@@ -126,7 +126,7 @@ For accurate cycle burn calculation, turn off ALL the timers (Challenger, mAIner
 
 ```bash
 # To start with a clean slate, remove all current challenges
-dfx canister call game_state_canister resetCurrentChallengesAdmin --output json --network [local|ic|development|testing]
+dfx canister call game_state_canister resetCurrentChallengesAdmin --network [local|ic|development|testing]
 
 # test a single Challenge Generation by the Challenger
 scripts/scripts-testing/generate-a-challenge.sh --network [local|ic|development|testing]
