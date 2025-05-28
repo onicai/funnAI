@@ -70,6 +70,43 @@
     };
   };
 
+  /**
+   * Updates the agent settings based on user-selected burn rate level.
+   * 
+   * @param {'Low' | 'Medium' | 'High'} level - The burn rate level selected by the user
+   * @param {object} agent - The mAIner agent to update
+  */
+  async function updateAgentBurnRate(level, agent) {
+    console.log("in MainerAccordion updateAgentBurnRate level ", level);
+    console.log("in MainerAccordion updateAgentBurnRate agent ", agent);
+    console.log("in MainerAccordion updateAgentBurnRate agentCanisterActors ", agentCanisterActors);
+    console.log("in MainerAccordion updateAgentBurnRate agentCanisterActors[0] ", agentCanisterActors[0]);
+    let agentActor = agentCanisterActors[0]; // TODO: get actor for agent
+    let burnRateSetting;
+    switch (level) {
+      case 'Low':
+        burnRateSetting = { cyclesBurnRate: { Low: null } };
+        break;
+      case 'Medium':
+        burnRateSetting = { cyclesBurnRate: { Mid: null } };
+        break;
+      case 'High':
+        burnRateSetting = { cyclesBurnRate: { High: null } };
+        break;
+      default:
+        console.error(`Unsupported level: ${level}`);
+        return;
+    }
+
+    try {
+      console.log("in MainerAccordion updateAgentBurnRate burnRateSetting ", burnRateSetting);
+      await agentActor.updateAgentSettings(burnRateSetting);
+      console.log(`Successfully updated burn rate to ${level}`);
+    } catch (error) {
+      console.error("Failed to update agent settings:", error);
+    }
+  };
+
   function toggleAccordion(index: string) {
     const content = document.getElementById(`content-${index}`);
     const icon = document.getElementById(`icon-${index}`);
@@ -828,7 +865,7 @@
                     {agent.cyclesBurnRateSetting === 'Low' 
                       ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
                       : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
-                    on:click={() => selectedBurnRate = 'Low'}
+                    on:click={() => updateAgentBurnRate('Low', agent) }
                   >
                     Low
                   </button>
@@ -838,7 +875,7 @@
                     {agent.cyclesBurnRateSetting === 'Medium' 
                       ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
                       : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
-                    on:click={() => selectedBurnRate = 'Medium'}
+                    on:click={() => updateAgentBurnRate('Medium', agent) }
                   >
                     Medium
                   </button>
@@ -848,7 +885,7 @@
                     {agent.cyclesBurnRateSetting === 'High' 
                       ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
                       : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
-                    on:click={() => selectedBurnRate = 'High'}
+                    on:click={() => updateAgentBurnRate('High', agent) }
                   >
                     High
                   </button>
