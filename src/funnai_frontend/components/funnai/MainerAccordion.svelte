@@ -107,6 +107,9 @@
       console.log("in MainerAccordion updateAgentBurnRate burnRateSetting ", burnRateSetting);
       await agentActor.updateAgentSettings(burnRateSetting);
       console.log(`Successfully updated burn rate to ${level}`);
+      loadAgents().then(newAgents => {
+        agents = newAgents;
+      });
     } catch (error) {
       console.error("Failed to update agent settings:", error);
     }
