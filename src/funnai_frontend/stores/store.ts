@@ -142,7 +142,7 @@ export let installAppDeferredPrompt = writable(null); // the installAppDeferredP
 
 let authClient : AuthClient;
 const APPLICATION_NAME = "funnai";
-const APPLICATION_LOGO_URL = "https://x6occ-biaaa-aaaai-acqzq-cai.icp0.io/devinci512.png"; //TODO: update
+const APPLICATION_LOGO_URL = "https://onicai.com/images/poaiw/coin.webp";
 //TODO: double check
 const AUTH_PATH = "/authenticate/?applicationName="+APPLICATION_NAME+"&applicationLogo="+APPLICATION_LOGO_URL+"#authorize";
 

@@ -8,8 +8,7 @@
   import Message from './Message.svelte';
   import StartUpChatPanel from './StartUpChatPanel.svelte';
   import ToastNotification from "./ToastNotification.svelte";
-
-  import spinner from "../../assets/loading.gif";
+  import LoadingSpinner from "../LoadingSpinner.svelte";
 
   import {
     getLocalFlag,
@@ -266,7 +265,7 @@
 <div class="flex flex-col h-full">
   {#if chatRetrievalInProgress}
     <div class="flex justify-center items-center h-full">
-      <img src={spinner} alt="Loading..." class="w-8 h-8" />
+      <LoadingSpinner />
     </div>
   {:else if messages.length === 0}
     <StartUpChatPanel sendMessageCallbackFunction={sendMessage} />
@@ -277,7 +276,7 @@
       {/each}
       {#if messageGenerationInProgress}
         <div class="flex justify-center items-center p-4">
-          <img src={spinner} alt="Loading..." class="w-8 h-8" />
+          <LoadingSpinner />
         </div>
       {/if}
     </div>
