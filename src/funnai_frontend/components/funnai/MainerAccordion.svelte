@@ -48,6 +48,28 @@
   // For testing UI only - set to true to use mock data for the mainer accordion displaying canister INFO
   let useMockData = false;
 
+  function getCyclesBurnRateLabel(cyclesBurnRate) {
+    console.log("in MainerAccordion getCyclesBurnRateLabel cyclesBurnRate ", cyclesBurnRate);
+    const daily = "Daily";
+
+    const cycles = BigInt(cyclesBurnRate.cycles);
+    console.log("in MainerAccordion getCyclesBurnRateLabel cycles ", cycles);
+
+    if (cycles === 1_000_000_000_000n) {
+      return "Low";
+    } else if (cycles === 4_000_000_000_000n) {
+      return "Medium";
+    } else if (cycles === 10_000_000_000_000n) {
+      return "High";
+    } else if (cycles === 20_000_000_000_000n) {
+      //return "Very High";
+      return "Medium";
+    } else {
+      //return "Custom";
+      return "Medium";
+    };
+  };
+
   function toggleAccordion(index: string) {
     const content = document.getElementById(`content-${index}`);
     const icon = document.getElementById(`icon-${index}`);
@@ -291,6 +313,7 @@
         let burnedCycles = 0;
         let cycleBalance = 0;
         let cyclesBurnRate = {};
+        let cyclesBurnRateSetting = selectedBurnRate;
         let mainerType = 'Unknown';
         let llmCanisters = [];
         let llmSetupStatus = '';
@@ -334,6 +357,11 @@
               burnedCycles = Number(statsResult.Ok.totalCyclesBurnt);
               cycleBalance = Number(statsResult.Ok.cycleBalance);
               cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
+              try {
+                cyclesBurnRateSetting = getCyclesBurnRateLabel(cyclesBurnRate);
+              } catch (error) {
+                console.error("Error converting to cyclesBurnRateSetting: ", error);
+              };
             };
           } catch (error) {
             console.error("Error fetching statistics: ", error);
@@ -364,13 +392,6 @@
           status = "inactive";
         };
 
-        //console.log("in MainerAccordion agentCanisterActors.map before return id ", canisterInfo.address);
-        //console.log("in MainerAccordion agentCanisterActors.map before return name ", `mAIner ${index + 1}`);
-        //console.log("in MainerAccordion agentCanisterActors.map before return status ", status);
-        //console.log("in MainerAccordion agentCanisterActors.map before return burnedCycles ", burnedCycles);
-        //console.log("in MainerAccordion agentCanisterActors.map before return cycleBalance ", cycleBalance);
-        //console.log("in MainerAccordion agentCanisterActors.map before return cyclesBurnRate ", cyclesBurnRate);
-
         // TODO: this is for already created mAIners, handle unlocked mAIners that the user is allowed to create (don't have an address yet) differently
         // TODO: based on unlocked mAIners determine whether the user can create a new mAIner and of which type (user needs unlocked mAIners that they can create to go ahead with the creation flow, otherwise they first have to get unlocked mAIners, e.g. via the lottery)
         /* Background on unlocking mAIner creation and how to check:
@@ -389,6 +410,17 @@
             If these retrieved entries include mAIner's of status Unlocked, then the user has unlocked mAIners that they can proceed to create
             Now, check which type of mAIner is unlocked (Own and/or Shared) and enable the creation flow on the UI accordingly
          */
+
+        console.log("in MainerAccordion agentCanisterActors.map before return id ", canisterInfo.address);
+        console.log("in MainerAccordion agentCanisterActors.map before return name ", `mAIner ${index + 1}`);
+        console.log("in MainerAccordion agentCanisterActors.map before return status ", status);
+        console.log("in MainerAccordion agentCanisterActors.map before return burnedCycles ", burnedCycles);
+        console.log("in MainerAccordion agentCanisterActors.map before return cycleBalance ", cycleBalance);
+        console.log("in MainerAccordion agentCanisterActors.map before return cyclesBurnRate ", cyclesBurnRate);
+        console.log("in MainerAccordion agentCanisterActors.map before return cyclesBurnRateSetting ", cyclesBurnRateSetting);
+        console.log("in MainerAccordion agentCanisterActors.map before return mainerType ", mainerType);
+        console.log("in MainerAccordion agentCanisterActors.map before return llmCanisters ", llmCanisters);
+        console.log("in MainerAccordion agentCanisterActors.map before return llmSetupStatus ", llmSetupStatus);
         return {
           id: canisterInfo.address,
           name: `mAIner ${index + 1}`,
@@ -396,6 +428,7 @@
           burnedCycles,
           cycleBalance,
           cyclesBurnRate,
+          cyclesBurnRateSetting,
           mainerType,
           llmCanisters,
           llmSetupStatus
@@ -792,7 +825,7 @@
                   <button 
                     type="button" 
                     class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-s-full focus:z-10 focus:ring-2 focus:ring-blue-700 
-                    {selectedBurnRate === 'Low' 
+                    {agent.cyclesBurnRateSetting === 'Low' 
                       ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
                       : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
                     on:click={() => selectedBurnRate = 'Low'}
@@ -802,7 +835,7 @@
                   <button 
                     type="button" 
                     class="px-4 py-2 text-xs font-medium border-t border-b border-gray-200 dark:border-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-700
-                    {selectedBurnRate === 'Medium' 
+                    {agent.cyclesBurnRateSetting === 'Medium' 
                       ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
                       : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
                     on:click={() => selectedBurnRate = 'Medium'}
@@ -812,7 +845,7 @@
                   <button 
                     type="button" 
                     class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-e-full focus:z-10 focus:ring-2 focus:ring-blue-700
-                    {selectedBurnRate === 'High' 
+                    {agent.cyclesBurnRateSetting === 'High' 
                       ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
                       : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
                     on:click={() => selectedBurnRate = 'High'}
