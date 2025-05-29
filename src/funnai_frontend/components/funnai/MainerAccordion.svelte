@@ -114,9 +114,7 @@
     agentsBeingToppedUp = agentsBeingToppedUp; // Trigger reactivity
     
     // Refresh the list of agents to show updated balances
-    loadAgents().then(newAgents => {
-      agents = newAgents;
-    });
+    ($store as any).loadUserMainerCanisters();
   }
   
   async function handleSendComplete(txId?: string) {
@@ -186,8 +184,12 @@
           setTimeout(() => {
             addProgressMessage("mAIner successfully created! You can start using it while LLM setup completes in the background.", true);
             // Refresh the list of agents to show the newly created one
-            loadAgents().then(newAgents => {
-              agents = newAgents;
+            ($store as any).loadUserMainerCanisters().then(() => {
+              // Reset the terminal after a short delay
+              setTimeout(() => {
+                isCreatingMainer = false;
+                mainerCreationProgress = [];
+              }, 2000);
             });
           }, 2000);
         //@ts-ignore

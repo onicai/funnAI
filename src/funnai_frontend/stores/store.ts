@@ -569,6 +569,44 @@ export const createStore = ({
       };
     };
   };
+
+  const loadUserMainerCanisters = async () => {
+    try {
+      // Get current auth client and identity
+      authClient = await AuthClient.create();
+      if (await authClient.isAuthenticated()) {
+        const identity = await authClient.getIdentity();
+        
+        // Get current auth type from store
+        const isAuthed = globalState.isAuthed;
+        if (!isAuthed) {
+          console.warn("User not authenticated, cannot reload mAIner canisters");
+          return;
+        }
+        
+        // Get current game state canister actor
+        const gameStateCanisterActor = globalState.gameStateCanisterActor;
+        if (!gameStateCanisterActor) {
+          console.warn("Game state canister actor not available");
+          return;
+        }
+        
+        // Reload user's mAIner agent canisters
+        const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, isAuthed, identity);
+        
+        // Update the store with new data
+        update((state) => ({
+          ...state,
+          userMainerCanisterActors: mainerActors,
+          userMainerAgentCanistersInfo: userCanisters
+        }));
+        
+        console.log("User mAIner canisters reloaded successfully");
+      }
+    } catch (error) {
+      console.error("Error reloading user mAIner canisters:", error);
+    }
+  };
   
   const getActor = async (canisterId, canisterIDL, options = {}) => {
     // Anonymous agent (non-authenticated calls)
@@ -627,6 +665,7 @@ export const createStore = ({
     internetIdentityConnect,
     disconnect,
     checkExistingLoginAndConnect,
+    loadUserMainerCanisters,
     updateBackendCanisterActor,
     getActor,
   };
