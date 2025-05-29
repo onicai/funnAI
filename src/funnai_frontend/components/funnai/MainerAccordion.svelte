@@ -29,24 +29,12 @@
   let mainerTopUpModalOpen = false;
   let selectedCanister = { id: "", name: "" };
   
-  // Debug agent for testing UI
-  const debugAgent = {
-    id: "abcde-fghij-klmno-pqrst-uvwxy-z",
-    name: "Debug mAIner",
-    status: "active",
-    burnedCycles: 1000000,
-    cycleBalance: 5000000
-  };
-  
   // Progress tracking for mAIner creation
   let isCreatingMainer = false;
   let mainerCreationProgress: {message: string, timestamp: string, complete: boolean}[] = [];
 
   // Track which agents are being topped up (agent-specific loading states)
   let agentsBeingToppedUp = new Set<string>();
-
-  // For testing UI only - set to true to use mock data for the mainer accordion displaying canister INFO
-  let useMockData = false;
 
   function toggleAccordion(index: string) {
     const content = document.getElementById(`content-${index}`);
@@ -228,57 +216,11 @@
     ];
   }
 
-  // Debug function to test mAIner creation without payment
-  function debugSkipPayment() {
-    // Call handleSendComplete directly to skip the payment process
-    handleSendComplete("0");
-  }
-
   function copyAddress() {
     addressCopied = true;
   };
 
   async function loadAgents() {
-    // For UI testing only - return mock data when enabled
-    if (useMockData) {
-      return [
-        {
-          id: "zlbtt-2yaaa-aaaak-qufwa-cai",
-          name: "mAIner 1",
-          status: "active",
-          burnedCycles: 1234567,
-          cycleBalance: 5000000,
-          cyclesBurnRate: {},
-          mainerType: "Own",
-          llmCanisters: [
-            "3f4dg-7uaaa-aaaak-abcde-cai",
-            "5g9kl-8vaaa-aaaak-fghij-cai"
-          ]
-        },
-        {
-          id: "w4ctb-aiaaa-aaaak-aczaq-cai",
-          name: "mAIner 2",
-          status: "inactive",
-          burnedCycles: 890123,
-          cycleBalance: 100000,
-          cyclesBurnRate: {},
-          mainerType: "Shared",
-          llmCanisters: []
-        },
-        {
-          id: "jc6wa-hyaaa-aaaak-abtlq-cai",
-          name: "mAIner 3",
-          status: "active",
-          burnedCycles: 567890,
-          cycleBalance: 3000000,
-          cyclesBurnRate: {},
-          mainerType: "Own",
-          llmCanisters: [],
-          llmSetupStatus: "inProgress" // Example of a setup in progress
-        }
-      ];
-    }
-
     // Normal implementation for production
     return await Promise.all(
       agentCanistersInfo.map(async (canisterInfo, index) => {
@@ -560,26 +502,6 @@
         </button>
       </div>
       
-      <!-- Debug button - only for development testing -->
-      <div class="mt-2 text-right">
-        <button 
-          on:click={debugSkipPayment} 
-          class="text-xs text-gray-400 hover:text-gray-300 dark:text-gray-600 dark:hover:text-gray-500"
-        >
-          [Debug: Skip Payment]
-        </button>
-      </div>
-      <div class="mt-2 text-right">
-        <button 
-            class="text-xs text-gray-400 hover:text-gray-300 dark:text-gray-600 dark:hover:text-gray-500"
-            on:click={() => openTopUpModal(debugAgent)}
-          >
-            [Debug: Top-Up]
-          </button>
-      </div>
-
-      
-      
       <!-- Terminal-style progress component -->
       {#if isCreatingMainer}
         <div class="mt-4 bg-gray-900 text-green-400 font-mono text-sm rounded-lg p-3 border border-gray-700 overflow-hidden">
@@ -839,94 +761,6 @@
     </div>
   </div>
 {/each}
-
-
-<!-- Test UI display when no agents are available but useMockData is enabled -->
- <!-- TODO: remove this once the real data is available -->
-{#if agents.length === 0 && useMockData}
-  <div class="border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
-    <button class="w-full flex justify-between items-center py-5 px-4 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
-      <span class="flex items-center font-medium text-sm">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-600 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-        </svg>
-        Test mAIner (Demo)
-      </span>
-      <div class="flex items-center">
-        <span class="mr-4 px-2 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400">
-          active
-        </span>
-      </div>
-    </button>
-    <div class="pb-5 text-sm text-gray-700 dark:text-gray-300 p-4 bg-gray-5 dark:bg-gray-900">
-      <!-- Canister Information Section -->
-      <div class="flex flex-col space-y-2 mb-4">
-        <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg">
-          <h2 class="text-sm mb-2 font-medium">Canister Information</h2>
-          <div class="flex flex-col gap-2">
-            <div class="flex items-center flex-wrap">
-              <span class="text-xs mr-2 w-24">Controller ID:</span>
-              <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id=zlbtt-2yaaa-aaaak-qufwa-cai" target="_blank" rel="noopener noreferrer" class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-green-400 border border-green-400 break-all hover:bg-green-200 dark:hover:bg-gray-600 transition-colors flex items-center">
-                <span>zlbtt-2yaaa-aaaak-qufwa-cai</span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
-                </svg>
-              </a>
-            </div>
-            
-            <!-- Show mAIner type -->
-            <div class="flex items-center">
-              <span class="text-xs mr-2 w-24">Type:</span>
-              <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-yellow-300 border border-yellow-300">Own</span>
-            </div>
-            
-            <!-- LLM information -->
-            <div class="flex flex-col mt-2">
-              <span class="text-xs mb-1">Attached LLMs:</span>
-              <div class="flex flex-col gap-2 ml-2 mt-1">
-                <div class="flex items-center flex-wrap">
-                  <span class="text-xs mr-2 w-20">LLM 1:</span>
-                  <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id=3f4dg-7uaaa-aaaak-abcde-cai" target="_blank" rel="noopener noreferrer" class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-indigo-400 border border-indigo-400 break-all hover:bg-indigo-200 dark:hover:bg-gray-600 transition-colors flex items-center">
-                    <span>3f4dg-7uaaa-aaaak-abcde-cai</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
-                    </svg>
-                  </a>
-                </div>
-                <div class="flex items-center flex-wrap">
-                  <span class="text-xs mr-2 w-20">LLM 2:</span>
-                  <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id=5g9kl-8vaaa-aaaak-fghij-cai" target="_blank" rel="noopener noreferrer" class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-indigo-400 border border-indigo-400 break-all hover:bg-indigo-200 dark:hover:bg-gray-600 transition-colors flex items-center">
-                    <span>5g9kl-8vaaa-aaaak-fghij-cai</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
-                    </svg>
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Other sections similar to real UI -->
-      <div class="flex flex-col space-y-2 mb-2">
-        <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
-          <div class="flex items-center justify-between">
-              <h2 class="text-sm mb-2">Top up cycles</h2>
-              <button type="button" class="py-2.5 px-5 me-2 text-xs font-medium text-gray-900 dark:text-gray-300 focus:outline-none bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400">Top-up</button>
-          </div>
-          <!-- Cycle Balance Display for Mock Data -->
-          <div class="mt-2 flex items-center">
-            <span class="text-xs text-gray-500 dark:text-gray-400">Current balance:</span>
-            <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-              {formatLargeNumber(5, 4, false)} T cycles
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-{/if}
 
 <style>
   .accordion-content {
