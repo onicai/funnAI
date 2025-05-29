@@ -23,7 +23,7 @@
   let showCopyIndicator = false;
   let selectedModel = ""; // track selected model
   let addressCopied = false;
-  let modelType: 'Own' | 'Shared' = 'Own'; // Default to Own model
+  let modelType: 'Own' | 'Shared' = 'Shared'; // Default to Shared model
   let loginModalOpen = false;
   let mainerPaymentModalOpen = false;
   let mainerTopUpModalOpen = false;
@@ -475,7 +475,7 @@
             </span>
             <h3 class="font-medium leading-tight mb-2 dark:text-gray-300">Model Type</h3>
             <div class="inline-flex rounded-full shadow-xs w-full justify-start mb-1" role="group">
-              <button 
+              <!-- <button 
                 type="button" 
                 class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-s-full focus:z-10 focus:ring-2 focus:ring-blue-700 
                 {modelType === 'Own' 
@@ -484,10 +484,10 @@
                 on:click={() => modelType = 'Own'}
               >
                 Own model
-              </button>
+              </button> -->
               <button 
                 type="button" 
-                class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-e-full focus:z-10 focus:ring-2 focus:ring-blue-700
+                class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-full focus:z-10 focus:ring-2 focus:ring-blue-700
                 {modelType === 'Shared' 
                   ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
                   : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
