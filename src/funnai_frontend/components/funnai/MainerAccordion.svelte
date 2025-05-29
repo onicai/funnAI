@@ -546,7 +546,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
                 </svg>
             </span>
-            <h3 class="font-medium leading-tight mb-2 dark:text-gray-300">Model Type</h3>
+            <h3 class="font-medium leading-tight mb-2 dark:text-gray-300">AI Agent Type</h3>
             <div class="inline-flex rounded-full shadow-xs w-full justify-start mb-1" role="group">
               <!-- <button 
                 type="button" 
@@ -566,7 +566,7 @@
                   : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
                 on:click={() => modelType = 'Shared'}
               >
-                Shared model
+                mAIner
               </button>
             </div>
         </li>
@@ -615,7 +615,7 @@
             <h3 class="font-medium leading-tight mb-1 dark:text-gray-300">Pay & Spin up</h3>
             <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md p-3 mb-3">
               <p class="text-xs text-blue-800 dark:text-blue-300">
-                Create mAIner requires a payment fee of <span class="font-medium">{modelType === 'Own' ? '0.0003' : '0.0002'} ICP</span> for {modelType} model
+                Creating the mAIner requires a setup fee of <span class="font-medium">{modelType === 'Own' ? '0.0003' : '0.0002'} ICP</span> for {modelType} model
               </p>
             </div>
         </li>
