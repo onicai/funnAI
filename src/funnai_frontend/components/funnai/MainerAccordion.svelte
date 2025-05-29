@@ -461,7 +461,7 @@
 
         return {
           id: canisterInfo.address,
-          name: `mAIner ${index + 1}`, // Sequential numbering: 1, 2, 3...
+          name: `mAIner ${canisterInfo.address.slice(0, 5)}`, // Use first 5 characters of canister ID
           status,
           burnedCycles,
           cycleBalance,
