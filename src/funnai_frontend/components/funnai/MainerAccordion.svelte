@@ -122,13 +122,23 @@
   };
 
   function openFirstMainerAccordion() {
-    // Open the first mAIner's accordion (which will be the newest one due to sorting)
+    // Open the last mAIner's accordion (which will be the newest one in original order)
     if (agents.length > 0 && shouldOpenFirstMainerAfterCreation) {
-      const firstMainerAccordion = agents[0];
+      const lastMainerAccordion = agents[agents.length - 1]; // Get the last (newest) mAIner
+      
       setTimeout(() => {
-        toggleAccordion(firstMainerAccordion.id);
+        const content = document.getElementById(`content-${lastMainerAccordion.id}`);
+        const icon = document.getElementById(`icon-${lastMainerAccordion.id}`);
+        
+        if (content && icon) {
+          if (!content.classList.contains('accordion-open')) {
+            content.classList.add('accordion-open');
+            icon.style.transform = 'rotate(0deg)';
+          }
+        }
+        
         shouldOpenFirstMainerAfterCreation = false; // Reset the flag
-      }, 100);
+      }, 300); // Increased timeout to ensure DOM is ready
     }
   };
 
@@ -283,6 +293,8 @@
           // Step 5: Completion
           setTimeout(() => {
             addProgressMessage("mAIner successfully created! You can start using it while LLM setup completes in the background.", true);
+            shouldOpenFirstMainerAfterCreation = true; // Ensure flag is set before reloading
+            
             // Refresh the list of agents to show the newly created one
             store.loadUserMainerCanisters().then(() => {
               // Wait for the reactive update to complete, then open the first mAIner (newest one)
@@ -293,7 +305,7 @@
                   isCreatingMainer = false;
                   mainerCreationProgress = [];
                 }, 2000);
-              }, 200);
+              }, 500); // Increased timeout for better reliability
             });
           }, 2000);
         } else if ('Err' in spinUpMainerControllerCanisterResponse) {
@@ -337,21 +349,15 @@
   };
 
   async function loadAgents() {
-    // Simply reverse the order to put newest created mAIners first
-    console.log("Original agentCanistersInfo order:", agentCanistersInfo.map((info, i) => `${i}. ${info.address}`));
-    
-    const sortedCanistersInfo = [...agentCanistersInfo].reverse();
-
-    console.log("After reverse sortedCanistersInfo:", sortedCanistersInfo.map((info, i) => `${i}. ${info.address}`));
+    // Keep the original order - no reversal needed
+    const canistersInfo = agentCanistersInfo;
 
     // Normal implementation for production
     return await Promise.all(
-      sortedCanistersInfo.map(async (canisterInfo, index) => {
-        // Find the original index to get the correct actor and preserve original naming
-        const originalIndex = agentCanistersInfo.findIndex(info => info.address === canisterInfo.address);
-        const agentActor = agentCanisterActors[originalIndex];
+      canistersInfo.map(async (canisterInfo, index) => {
+        // Get the correct actor by index (now they match since no reversal)
+        const agentActor = agentCanisterActors[index];
         
-        console.log("in MainerAccordion agentCanisterActors.map canisterInfo", canisterInfo);
         let status = "active";
         let burnedCycles = 0;
         let cycleBalance = 0;
@@ -371,7 +377,6 @@
         }
         
         // Determine mainer type from the canister info
-        console.log("in MainerAccordion agentCanisterActors.map canisterInfo.canisterType", canisterInfo.canisterType);
         if (canisterInfo.canisterType) {
           // Check for "Own" type in the canisterType variant
           if ('Own' in canisterInfo.canisterType.MainerAgent) {
@@ -450,23 +455,13 @@
           How the access check, whether a user is allowed to create a mAIner, works technically:
             The frontend loads the user's agents as implemented in store via gameStateCanisterActor.getMainerAgentCanistersForUser and the associated info is in agentCanisterActors and agentCanistersInfo.
             See the Game State canister interface here: src/declarations/game_state_canister/game_state_canister.did.d.ts
-            If these retrieved entries include mAIner's of status Unlocked, then the user has unlocked mAIners that they can proceed to create
+            If these retrieved entries include mAIner's of status Unlocked, then the user have unlocked mAIners that they can proceed to create
             Now, check which type of mAIner is unlocked (Own and/or Shared) and enable the creation flow on the UI accordingly
          */
 
-        console.log("in MainerAccordion agentCanisterActors.map before return id ", canisterInfo.address);
-        console.log("in MainerAccordion agentCanisterActors.map before return name ", `mAIner ${sortedCanistersInfo.length - index}`);
-        console.log("in MainerAccordion agentCanisterActors.map before return status ", status);
-        console.log("in MainerAccordion agentCanisterActors.map before return burnedCycles ", burnedCycles);
-        console.log("in MainerAccordion agentCanisterActors.map before return cycleBalance ", cycleBalance);
-        console.log("in MainerAccordion agentCanisterActors.map before return cyclesBurnRate ", cyclesBurnRate);
-        console.log("in MainerAccordion agentCanisterActors.map before return cyclesBurnRateSetting ", cyclesBurnRateSetting);
-        console.log("in MainerAccordion agentCanisterActors.map before return mainerType ", mainerType);
-        console.log("in MainerAccordion agentCanisterActors.map before return llmCanisters ", llmCanisters);
-        console.log("in MainerAccordion agentCanisterActors.map before return llmSetupStatus ", llmSetupStatus);
         return {
           id: canisterInfo.address,
-          name: `mAIner ${sortedCanistersInfo.length - index}`,
+          name: `mAIner ${index + 1}`, // Sequential numbering: 1, 2, 3...
           status,
           burnedCycles,
           cycleBalance,
@@ -678,7 +673,7 @@
           <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd" />
           </svg>
-          Login to Connect
+          Login to create
         </button>
       </div>
     {/if}
@@ -739,7 +734,7 @@
     <div id="content-{agent.id}" class="accordion-content">
       <div class="pb-5 text-sm text-gray-700 dark:text-gray-300 p-4 bg-gray-5 dark:bg-gray-900">
         <!-- Canister Information Section -->
-        <div class="flex flex-col space-y-2 mb-4">
+        <div class="flex flex-col space-y-2 mb-2">
           <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg">
             <h2 class="text-sm mb-2 font-medium">Canister Information</h2>
             <div class="flex flex-col gap-2">
