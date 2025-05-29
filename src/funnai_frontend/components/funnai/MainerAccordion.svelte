@@ -337,28 +337,8 @@
   };
 
   async function loadAgents() {
-    // Create a copy and sort by creation timestamp in descending order (newest first)
-    let sortedCanistersInfo = [...agentCanistersInfo];
-    
-    // Sort by creation timestamp if available, otherwise maintain reverse order
-    sortedCanistersInfo.sort((a, b) => {
-      // Try to use creation timestamp first
-      if (a.creationTimestamp && b.creationTimestamp) {
-        const timestampA = Number(a.creationTimestamp);
-        const timestampB = Number(b.creationTimestamp);
-        
-        // Only sort by timestamp if they are valid numbers and different
-        if (!isNaN(timestampA) && !isNaN(timestampB) && timestampA !== timestampB) {
-          return timestampB - timestampA; // Descending order (newest first)
-        }
-      }
-      
-      // Fallback: if timestamps are not available or equal, sort by original array position in reverse
-      // This assumes newer items are added at the end of the original array
-      const indexA = agentCanistersInfo.findIndex(info => info.address === a.address);
-      const indexB = agentCanistersInfo.findIndex(info => info.address === b.address);
-      return indexB - indexA; // Reverse order
-    });
+    // Simply reverse the order to put newest created mAIners first
+    const sortedCanistersInfo = [...agentCanistersInfo].reverse();
 
     console.log("Final mAIner order (newest first):", sortedCanistersInfo.map((info, i) => `${i+1}. ${info.address}`));
 
