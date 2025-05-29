@@ -37,6 +37,11 @@
   // Track which agents are being topped up (agent-specific loading states)
   let agentsBeingToppedUp = new Set<string>();
 
+  // Reactive counters for mAIner status
+  $: activeMainers = agents.filter(agent => agent.status === 'active').length;
+  $: inactiveMainers = agents.filter(agent => agent.status === 'inactive').length;
+  $: totalMainers = agents.length;
+
   // For testing UI only - set to true to use mock data for the mainer accordion displaying canister INFO
   let useMockData = false;
 
@@ -364,7 +369,7 @@
         // Get the correct actor by index (now they match since no reversal)
         const agentActor = agentCanisterActors[index];
         
-        let status = "active";
+        let status = "active"; // Default to active
         let burnedCycles = 0;
         let cycleBalance = 0;
         let cyclesBurnRate = {};
@@ -392,33 +397,41 @@
           };
         };
 
+        // Try to get more detailed status info, but always include the mAIner even if this fails
         if (agentActor) {
           try {
             const issueFlagsResult = await agentActor.getIssueFlagsAdmin();
-            //console.log("in MainerAccordion agentCanisterActors.map issueFlagsResult", issueFlagsResult);
             if ('Ok' in issueFlagsResult && issueFlagsResult.Ok.lowCycleBalance) {
               status = "inactive";
             };
           } catch (error) {
-            console.error("Error fetching issue flags: ", error);
-            status = "inactive";
+            // Don't mark as inactive on error - user might still want to manage it
+            console.error(`Error fetching issue flags for ${canisterInfo.address.slice(0, 5)}:`, error);
           };
 
           try {
             const statsResult = await agentActor.getMainerStatisticsAdmin();
-            //console.log("in MainerAccordion agentCanisterActors.map statsResult", statsResult);
             if ('Ok' in statsResult) {
               burnedCycles = Number(statsResult.Ok.totalCyclesBurnt);
               cycleBalance = Number(statsResult.Ok.cycleBalance);
               cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
+              
+              // Only mark as inactive if cycle balance is critically low (less than 1T cycles)
+              if (cycleBalance < 1_000_000_000_000) { // Less than 1T cycles
+                status = "inactive";
+              }
+              
               try {
                 cyclesBurnRateSetting = getCyclesBurnRateLabel(cyclesBurnRate);
               } catch (error) {
                 console.error("Error converting to cyclesBurnRateSetting: ", error);
               };
-            };
+            }
+            // Don't mark as inactive if stats call didn't return Ok - keep default active status
           } catch (error) {
-            console.error("Error fetching statistics: ", error);
+            // Don't filter out the mAIner - user needs to see it to top it up
+            console.error(`Error fetching statistics for ${canisterInfo.address.slice(0, 5)}:`, error);
+            // Keep default active status - don't assume inactive just because API failed
           };
 
           // Fetch LLM canisters if this is an "Own" type mAIner
@@ -443,28 +456,12 @@
             };
           };
         } else {
-          status = "inactive";
+          // No actor available - keep as active but user may need to investigate
+          // Don't automatically assume inactive without clear evidence
+          console.warn(`No actor available for mAIner ${canisterInfo.address.slice(0, 5)}`);
         };
 
-        // TODO: this is for already created mAIners, handle unlocked mAIners that the user is allowed to create (don't have an address yet) differently
-        // TODO: based on unlocked mAIners determine whether the user can create a new mAIner and of which type (user needs unlocked mAIners that they can create to go ahead with the creation flow, otherwise they first have to get unlocked mAIners, e.g. via the lottery)
-        /* Background on unlocking mAIner creation and how to check:
-            This is the flow how a user can unlock access to create a mAIner (initially):
-            1) The user registers on the funnAI backend for the lotteries (to register for some lotteries an access code is needed, e.g. Charles holders)
-            2) The user needs to win in one of the lottery runs
-            3) For each user that wins a lottery run, the funnAI backend calls the Game State canister to add the associated prize which is an unlocked mAIner (of type Own or Shared)
-            4) This mAIner entry of status Unlocked is the pre-requisite to be allowed to create a new mAIner (and is type specific, i.e. of type Own or Shared)
-            5) The frontend checks whether the user has mAIner entries of status Unlocked and which ones (i.e. of type Own or Shared), if the user has Unlocked entries the UI enables the creation flow
-            6) Accordingly, the user can now follow the creation flow (it should be disabled otherwise, with a note that the user first has to unlock a mAIner e.g. via the lottery)
-            In the future, there will be additional ways to unlock a mAIner, e.g. simply letting the user trigger it from the UI once mAIner slots aren't as scarce anymore
-
-          How the access check, whether a user is allowed to create a mAIner, works technically:
-            The frontend loads the user's agents as implemented in store via gameStateCanisterActor.getMainerAgentCanistersForUser and the associated info is in agentCanisterActors and agentCanistersInfo.
-            See the Game State canister interface here: src/declarations/game_state_canister/game_state_canister.did.d.ts
-            If these retrieved entries include mAIner's of status Unlocked, then the user have unlocked mAIners that they can proceed to create
-            Now, check which type of mAIner is unlocked (Own and/or Shared) and enable the creation flow on the UI accordingly
-         */
-
+        // ALWAYS return the mAIner - never filter it out
         return {
           id: canisterInfo.address,
           name: `mAIner ${canisterInfo.address.slice(0, 5)}`, // Use first 5 characters of canister ID
@@ -710,17 +707,47 @@
   />
 {/if}
 
+<!-- mAIner Summary Header -->
+{#if totalMainers > 0}
+  <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-3">
+          <div class="flex items-center space-x-1">
+            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+            <span class="text-sm text-green-700 dark:text-green-400 font-medium">{activeMainers} Active</span>
+          </div>
+          <div class="flex items-center space-x-1">
+            <div class="w-3 h-3 rounded-full bg-gray-400"></div>
+            <span class="text-sm text-gray-600 dark:text-gray-400 font-medium">{inactiveMainers} Inactive</span>
+            {#if inactiveMainers > 0}
+              <div class="mt-2 text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2 py-1 rounded-md">
+                ⚠️ {inactiveMainers} mAIner{inactiveMainers === 1 ? '' : 's'} need{inactiveMainers === 1 ? 's' : ''} cycles
+              </div>
+            {/if}
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+{/if}
+
 <!-- Existing Agents -->
-{#each agents as agent}
+{#each agents as agent, index}
   {#if agent && agent.id}
     {@const sanitizedId = agent.id.replace(/[^a-zA-Z0-9-_]/g, '_')}
-    <div class="border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
-      <button on:click={() => toggleAccordion(agent.id)} class="w-full flex justify-between items-center py-5 px-4 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
+    {@const buttonClasses = `w-full flex justify-between items-center py-5 px-4 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 ${agent.status === 'inactive' ? 'bg-red-50 dark:bg-red-900/10' : ''}`}
+    <div class="border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900" class:opacity-75={agent.status === 'inactive'}>
+      <button on:click={() => toggleAccordion(agent.id)} class={buttonClasses}>
         <span class="flex items-center font-medium text-sm">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-600 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
           </svg>
           {agent.name}
+          {#if agent.status === 'inactive'}
+            <span class="ml-2 text-xs text-red-600 dark:text-red-400">(needs cycles)</span>
+          {/if}
         </span>
         <div class="flex items-center">
           <!-- Add LLM setup status badge when applicable -->
@@ -729,7 +756,7 @@
               LLM setup in progress
             </span>
           {/if}
-          <span class={`mr-4 px-2 py-1 rounded-full text-xs ${agent.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-400'}`}>
+          <span class={`mr-4 px-2 py-1 rounded-full text-xs ${agent.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400' : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-400'}`}>
             {agent.status}
           </span>
           <span id="icon-{sanitizedId}" class="text-gray-600 dark:text-gray-400 transition-transform duration-300" style="transform: rotate(180deg)">
