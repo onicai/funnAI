@@ -432,7 +432,7 @@ export class IcrcService {
         },
         amount,
         fee: [BigInt(token.fee_fixed)],
-        memo: [opts.memo] || [],
+        memo: opts.memo ? [opts.memo] : [],
         from_subaccount: opts.fromSubaccount ? [opts.fromSubaccount] : [],
         created_at_time: opts.createdAtTime ? [opts.createdAtTime] : [],
       });
