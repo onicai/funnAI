@@ -1,3 +1,8 @@
+type UpdateWasmHashInput = 
+ record {
+   textNote: text;
+   wasmHash: blob;
+ };
 type SubmissionRetrievalInput = 
  record {
    challengeId: text;
@@ -10,7 +15,16 @@ type StatusCodeRecordResult =
  };
 type StatusCodeRecord = record {status_code: StatusCode;};
 type StatusCode = nat16;
-type SelectableMainerLLM = variant {Qwen2_5_0_5_B;};
+type SetUpMainerLlmCanisterResult = 
+ variant {
+   Err: ApiError;
+   Ok:
+    record {
+      controllerCanisterEntry: OfficialMainerAgentCanister;
+      llmCanisterId: text;
+    };
+ };
+type SelectableMainerLLMs = variant {Qwen2_5_500M;};
 type ScoredResponseReturn = record {success: bool;};
 type ScoredResponseRetrievalResult = 
  variant {
@@ -99,7 +113,7 @@ type ProtocolCanisterType =
  variant {
    Challenger;
    Judge;
-   MainerAgent;
+   MainerAgent: MainerAgentCanisterType;
    MainerCreator;
    MainerLlm;
    Verifier;
@@ -121,6 +135,17 @@ type OfficialProtocolCanister =
    createdBy: principal;
    creationTimestamp: nat64;
    ownedBy: principal;
+   status: CanisterStatus;
+ };
+type OfficialMainerAgentCanister = 
+ record {
+   address: CanisterAddress;
+   canisterType: ProtocolCanisterType;
+   createdBy: principal;
+   creationTimestamp: nat64;
+   mainerConfig: MainerConfigurationInput;
+   ownedBy: principal;
+   status: CanisterStatus;
  };
 type NewChallengeInput = 
  record {
@@ -136,11 +161,26 @@ type NatResult =
    Err: ApiError;
    Ok: nat;
  };
-type MainerConfigurationInput = record {aiModel: opt SelectableMainerLLM;};
+type MainerCreationInput = 
+ record {
+   mainerConfig: MainerConfigurationInput;
+   owner: opt principal;
+   paymentTransactionBlockId: nat64;
+ };
+type MainerConfigurationInput = 
+ record {
+   mainerAgentCanisterType: MainerAgentCanisterType;
+   selectedLLM: opt SelectableMainerLLMs;
+ };
+type MainerAgentTopUpInput = 
+ record {
+   mainerAgent: OfficialMainerAgentCanister;
+   paymentTransactionBlockId: nat64;
+ };
 type MainerAgentCanistersResult = 
  variant {
    Err: ApiError;
-   Ok: vec OfficialProtocolCanister;
+   Ok: vec OfficialMainerAgentCanister;
  };
 type MainerAgentCanisterType = 
  variant {
@@ -152,14 +192,15 @@ type MainerAgentCanisterType =
 type MainerAgentCanisterResult = 
  variant {
    Err: ApiError;
-   Ok: OfficialProtocolCanister;
+   Ok: OfficialMainerAgentCanister;
  };
-type MainerAgentCanisterInput = 
- record {
-   address: CanisterAddress;
-   canisterType: ProtocolCanisterType;
-   mainerAgentCanisterType: MainerAgentCanisterType;
-   ownedBy: principal;
+type LlmSetupStatus = 
+ variant {
+   CanisterCreated;
+   CanisterCreationInProgress;
+   CodeInstallInProgress;
+   ConfigurationInProgress;
+   ModelUploadProgress: nat8;
  };
 type List_1 = 
  opt record {
@@ -187,14 +228,19 @@ type GameStateCanister =
  service {
    addChallenge: (NewChallengeInput) -> (ChallengeAdditionResult);
    addChallengeTopic: (ChallengeTopicInput) -> (ChallengeTopicResult);
-   addMainerAgentCanister: (MainerAgentCanisterInput) ->
+   addLlmCanisterToMainer: (OfficialMainerAgentCanister) ->
+    (SetUpMainerLlmCanisterResult);
+   addMainerAgentCanister: (OfficialMainerAgentCanister) ->
     (MainerAgentCanisterResult);
-   addMainerAgentCanisterAdmin: (MainerAgentCanisterInput) ->
+   addMainerAgentCanisterAdmin: (OfficialMainerAgentCanister) ->
     (MainerAgentCanisterResult);
    addOfficialCanister: (CanisterInput) -> (StatusCodeRecordResult);
    addScoredResponse: (ScoredResponseInput) -> (ScoredResponseResult);
-   createUserMainerAgentCanister: (MainerConfigurationInput) ->
+   createUserMainerAgent: (MainerCreationInput) ->
     (MainerAgentCanisterResult);
+   deriveNewMainerAgentCanisterWasmHashAdmin: (DeriveWasmHashInput) ->
+    (CanisterWasmHashRecordResult);
+   getCanisterPrincipal: () -> (text) query;
    getCurrentChallenges: () -> (ChallengesResult) query;
    getCurrentChallengesAdmin: () -> (ChallengesResult) query;
    getGameStateThresholdsAdmin: () -> (GameStateTresholdsResult) query;
@@ -206,7 +252,9 @@ type GameStateCanister =
    getNumOpenSubmissionsAdmin: () -> (NatResult) query;
    getNumScoredChallengesAdmin: () -> (NatResult) query;
    getNumSubmissionsAdmin: () -> (NatResult) query;
+   getOfficialCanistersAdmin: () -> (vec OfficialProtocolCanister) query;
    getOfficialChallengerCanisters: () -> (AuthRecordResult);
+   getOfficialSharedServiceCanisters: () -> (AuthRecordResult);
    getOpenSubmissionsAdmin: () -> (ChallengeResponseSubmissionsResult) query;
    getProtocolTotalCyclesBurnt: () -> (CyclesBurntResult) query;
    getRandomOpenChallenge: () -> (ChallengeResult);
@@ -221,11 +269,30 @@ type GameStateCanister =
    getScoredChallengesAdmin: () -> (ScoredChallengesResult) query;
    getSubmissionsAdmin: () -> (ChallengeResponseSubmissionsResult) query;
    health: () -> (StatusCodeRecordResult) query;
+   removeOfficialSharedServiceCanisters: (text) -> (AuthRecordResult);
    setGameStateThresholdsAdmin: (GameStateTresholds) ->
     (StatusCodeRecordResult);
    setInitialChallengeTopics: () -> (StatusCodeRecordResult);
+   setOfficialMainerAgentCanisterWasmHashAdmin: (UpdateWasmHashInput) ->
+    (CanisterWasmHashRecordResult);
+   setTokenLedgerCanisterId: (text) -> (AuthRecordResult);
+   setUpMainerLlmCanister: (OfficialMainerAgentCanister) ->
+    (SetUpMainerLlmCanisterResult);
+   spinUpMainerControllerCanister: (OfficialMainerAgentCanister) ->
+    (MainerAgentCanisterResult);
    submitChallengeResponse: (ChallengeResponseSubmissionInput) ->
     (ChallengeResponseSubmissionMetadataResult);
+   testMainerCodeIntegrityAdmin: () -> (AuthRecordResult);
+   testTokenMintingAdmin: () -> (AuthRecordResult);
+   topUpCyclesForMainerAgent: (MainerAgentTopUpInput) ->
+    (MainerAgentCanisterResult);
+   unlockUserMainerAgent: (MainerCreationInput) ->
+    (MainerAgentCanisterResult);
+ };
+type DeriveWasmHashInput = 
+ record {
+   address: CanisterAddress;
+   textNote: text;
  };
 type CyclesBurntResult = 
  variant {
@@ -404,6 +471,31 @@ type Challenge =
    challengeTopicId: text;
    challengeTopicStatus: ChallengeTopicStatus;
    submissionCyclesRequired: nat;
+ };
+type CanisterWasmHashRecordResult = 
+ variant {
+   Err: ApiError;
+   Ok: CanisterWasmHashRecord;
+ };
+type CanisterWasmHashRecord = 
+ record {
+   createdBy: principal;
+   creationTimestamp: nat64;
+   textNote: text;
+   version: nat;
+   wasmHash: blob;
+ };
+type CanisterStatus = 
+ variant {
+   ControllerCreated;
+   ControllerCreationInProgress;
+   LlmSetupFinished;
+   LlmSetupInProgress: LlmSetupStatus;
+   Other: text;
+   Paid;
+   Paused;
+   Running;
+   Unlocked;
  };
 type CanisterRetrieveInput = record {address: CanisterAddress;};
 type CanisterInput = 

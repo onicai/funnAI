@@ -18,6 +18,24 @@ export interface CanisterInput {
   'address' : CanisterAddress,
 }
 export interface CanisterRetrieveInput { 'address' : CanisterAddress }
+export type CanisterStatus = { 'Paused' : null } |
+  { 'Paid' : null } |
+  { 'Unlocked' : null } |
+  { 'LlmSetupFinished' : null } |
+  { 'ControllerCreated' : null } |
+  { 'LlmSetupInProgress' : LlmSetupStatus } |
+  { 'Running' : null } |
+  { 'Other' : string } |
+  { 'ControllerCreationInProgress' : null };
+export interface CanisterWasmHashRecord {
+  'creationTimestamp' : bigint,
+  'wasmHash' : Uint8Array | number[],
+  'createdBy' : Principal,
+  'textNote' : string,
+  'version' : bigint,
+}
+export type CanisterWasmHashRecordResult = { 'Ok' : CanisterWasmHashRecord } |
+  { 'Err' : ApiError };
 export interface Challenge {
   'challengeClosedTimestamp' : [] | [bigint],
   'challengeTopicStatus' : ChallengeTopicStatus,
@@ -157,18 +175,26 @@ export type ChallengesResult = { 'Ok' : Array<Challenge> } |
   { 'Err' : ApiError };
 export type CyclesBurntResult = { 'Ok' : bigint } |
   { 'Err' : ApiError };
+export interface DeriveWasmHashInput {
+  'textNote' : string,
+  'address' : CanisterAddress,
+}
 export interface GameStateCanister {
   'addChallenge' : ActorMethod<[NewChallengeInput], ChallengeAdditionResult>,
   'addChallengeTopic' : ActorMethod<
     [ChallengeTopicInput],
     ChallengeTopicResult
   >,
+  'addLlmCanisterToMainer' : ActorMethod<
+    [OfficialMainerAgentCanister],
+    SetUpMainerLlmCanisterResult
+  >,
   'addMainerAgentCanister' : ActorMethod<
-    [MainerAgentCanisterInput],
+    [OfficialMainerAgentCanister],
     MainerAgentCanisterResult
   >,
   'addMainerAgentCanisterAdmin' : ActorMethod<
-    [MainerAgentCanisterInput],
+    [OfficialMainerAgentCanister],
     MainerAgentCanisterResult
   >,
   'addOfficialCanister' : ActorMethod<[CanisterInput], StatusCodeRecordResult>,
@@ -176,10 +202,15 @@ export interface GameStateCanister {
     [ScoredResponseInput],
     ScoredResponseResult
   >,
-  'createUserMainerAgentCanister' : ActorMethod<
-    [MainerConfigurationInput],
+  'createUserMainerAgent' : ActorMethod<
+    [MainerCreationInput],
     MainerAgentCanisterResult
   >,
+  'deriveNewMainerAgentCanisterWasmHashAdmin' : ActorMethod<
+    [DeriveWasmHashInput],
+    CanisterWasmHashRecordResult
+  >,
+  'getCanisterPrincipal' : ActorMethod<[], string>,
   'getCurrentChallenges' : ActorMethod<[], ChallengesResult>,
   'getCurrentChallengesAdmin' : ActorMethod<[], ChallengesResult>,
   'getGameStateThresholdsAdmin' : ActorMethod<[], GameStateTresholdsResult>,
@@ -199,7 +230,12 @@ export interface GameStateCanister {
   'getNumOpenSubmissionsAdmin' : ActorMethod<[], NatResult>,
   'getNumScoredChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumSubmissionsAdmin' : ActorMethod<[], NatResult>,
+  'getOfficialCanistersAdmin' : ActorMethod<
+    [],
+    Array<OfficialProtocolCanister>
+  >,
   'getOfficialChallengerCanisters' : ActorMethod<[], AuthRecordResult>,
+  'getOfficialSharedServiceCanisters' : ActorMethod<[], AuthRecordResult>,
   'getOpenSubmissionsAdmin' : ActorMethod<
     [],
     ChallengeResponseSubmissionsResult
@@ -221,14 +257,41 @@ export interface GameStateCanister {
   'getScoredChallengesAdmin' : ActorMethod<[], ScoredChallengesResult>,
   'getSubmissionsAdmin' : ActorMethod<[], ChallengeResponseSubmissionsResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
+  'removeOfficialSharedServiceCanisters' : ActorMethod<
+    [string],
+    AuthRecordResult
+  >,
   'setGameStateThresholdsAdmin' : ActorMethod<
     [GameStateTresholds],
     StatusCodeRecordResult
   >,
   'setInitialChallengeTopics' : ActorMethod<[], StatusCodeRecordResult>,
+  'setOfficialMainerAgentCanisterWasmHashAdmin' : ActorMethod<
+    [UpdateWasmHashInput],
+    CanisterWasmHashRecordResult
+  >,
+  'setTokenLedgerCanisterId' : ActorMethod<[string], AuthRecordResult>,
+  'setUpMainerLlmCanister' : ActorMethod<
+    [OfficialMainerAgentCanister],
+    SetUpMainerLlmCanisterResult
+  >,
+  'spinUpMainerControllerCanister' : ActorMethod<
+    [OfficialMainerAgentCanister],
+    MainerAgentCanisterResult
+  >,
   'submitChallengeResponse' : ActorMethod<
     [ChallengeResponseSubmissionInput],
     ChallengeResponseSubmissionMetadataResult
+  >,
+  'testMainerCodeIntegrityAdmin' : ActorMethod<[], AuthRecordResult>,
+  'testTokenMintingAdmin' : ActorMethod<[], AuthRecordResult>,
+  'topUpCyclesForMainerAgent' : ActorMethod<
+    [MainerAgentTopUpInput],
+    MainerAgentCanisterResult
+  >,
+  'unlockUserMainerAgent' : ActorMethod<
+    [MainerCreationInput],
+    MainerAgentCanisterResult
   >,
 }
 export interface GameStateTresholds {
@@ -241,24 +304,33 @@ export type GameStateTresholdsResult = { 'Ok' : GameStateTresholds } |
   { 'Err' : ApiError };
 export type List = [] | [[ScoredResponse, List]];
 export type List_1 = [] | [[ChallengeParticipantEntry, List_1]];
-export interface MainerAgentCanisterInput {
-  'canisterType' : ProtocolCanisterType,
-  'ownedBy' : Principal,
-  'mainerAgentCanisterType' : MainerAgentCanisterType,
-  'address' : CanisterAddress,
-}
-export type MainerAgentCanisterResult = { 'Ok' : OfficialProtocolCanister } |
+export type LlmSetupStatus = { 'CodeInstallInProgress' : null } |
+  { 'CanisterCreated' : null } |
+  { 'ConfigurationInProgress' : null } |
+  { 'CanisterCreationInProgress' : null } |
+  { 'ModelUploadProgress' : number };
+export type MainerAgentCanisterResult = { 'Ok' : OfficialMainerAgentCanister } |
   { 'Err' : ApiError };
 export type MainerAgentCanisterType = { 'NA' : null } |
   { 'Own' : null } |
   { 'ShareAgent' : null } |
   { 'ShareService' : null };
 export type MainerAgentCanistersResult = {
-    'Ok' : Array<OfficialProtocolCanister>
+    'Ok' : Array<OfficialMainerAgentCanister>
   } |
   { 'Err' : ApiError };
+export interface MainerAgentTopUpInput {
+  'paymentTransactionBlockId' : bigint,
+  'mainerAgent' : OfficialMainerAgentCanister,
+}
 export interface MainerConfigurationInput {
-  'aiModel' : [] | [SelectableMainerLLM],
+  'selectedLLM' : [] | [SelectableMainerLLMs],
+  'mainerAgentCanisterType' : MainerAgentCanisterType,
+}
+export interface MainerCreationInput {
+  'owner' : [] | [Principal],
+  'paymentTransactionBlockId' : bigint,
+  'mainerConfig' : MainerConfigurationInput,
 }
 export type NatResult = { 'Ok' : bigint } |
   { 'Err' : ApiError };
@@ -270,7 +342,17 @@ export interface NewChallengeInput {
   'challengeQuestion' : string,
   'challengeTopic' : string,
 }
+export interface OfficialMainerAgentCanister {
+  'status' : CanisterStatus,
+  'canisterType' : ProtocolCanisterType,
+  'ownedBy' : Principal,
+  'creationTimestamp' : bigint,
+  'createdBy' : Principal,
+  'mainerConfig' : MainerConfigurationInput,
+  'address' : CanisterAddress,
+}
 export interface OfficialProtocolCanister {
+  'status' : CanisterStatus,
   'canisterType' : ProtocolCanisterType,
   'ownedBy' : Principal,
   'creationTimestamp' : bigint,
@@ -283,7 +365,7 @@ export interface ProtocolActivityRecord {
 }
 export type ProtocolActivityResult = { 'Ok' : ProtocolActivityRecord } |
   { 'Err' : ApiError };
-export type ProtocolCanisterType = { 'MainerAgent' : null } |
+export type ProtocolCanisterType = { 'MainerAgent' : MainerAgentCanisterType } |
   { 'MainerLlm' : null } |
   { 'Challenger' : null } |
   { 'Judge' : null } |
@@ -356,7 +438,14 @@ export type ScoredResponseResult = { 'Ok' : ScoredResponseReturn } |
 export type ScoredResponseRetrievalResult = { 'Ok' : ScoredResponse } |
   { 'Err' : ApiError };
 export interface ScoredResponseReturn { 'success' : boolean }
-export type SelectableMainerLLM = { 'Qwen2_5_0_5_B' : null };
+export type SelectableMainerLLMs = { 'Qwen2_5_500M' : null };
+export type SetUpMainerLlmCanisterResult = {
+    'Ok' : {
+      'llmCanisterId' : string,
+      'controllerCanisterEntry' : OfficialMainerAgentCanister,
+    }
+  } |
+  { 'Err' : ApiError };
 export type StatusCode = number;
 export interface StatusCodeRecord { 'status_code' : StatusCode }
 export type StatusCodeRecordResult = { 'Ok' : StatusCodeRecord } |
@@ -364,6 +453,10 @@ export type StatusCodeRecordResult = { 'Ok' : StatusCodeRecord } |
 export interface SubmissionRetrievalInput {
   'challengeId' : string,
   'submissionId' : string,
+}
+export interface UpdateWasmHashInput {
+  'wasmHash' : Uint8Array | number[],
+  'textNote' : string,
 }
 export interface _SERVICE extends GameStateCanister {}
 export declare const idlFactory: IDL.InterfaceFactory;
