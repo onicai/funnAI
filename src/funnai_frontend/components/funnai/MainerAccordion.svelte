@@ -108,10 +108,15 @@
   };
 
   function toggleAccordion(index: string) {
-    const content = document.getElementById(`content-${index}`);
-    const icon = document.getElementById(`icon-${index}`);
+    // Sanitize the ID to ensure it works as a CSS selector
+    const sanitizedId = index.replace(/[^a-zA-Z0-9-_]/g, '_');
+    const content = document.getElementById(`content-${sanitizedId}`);
+    const icon = document.getElementById(`icon-${sanitizedId}`);
     
-    if (!content || !icon) return;
+    if (!content || !icon) {
+      console.warn(`Could not find accordion elements for ID: ${sanitizedId}`);
+      return;
+    }
 
     content.classList.toggle('accordion-open');
     if (content.classList.contains('accordion-open')) {
@@ -127,8 +132,9 @@
       const lastMainerAccordion = agents[agents.length - 1]; // Get the last (newest) mAIner
       
       setTimeout(() => {
-        const content = document.getElementById(`content-${lastMainerAccordion.id}`);
-        const icon = document.getElementById(`icon-${lastMainerAccordion.id}`);
+        const sanitizedId = lastMainerAccordion.id.replace(/[^a-zA-Z0-9-_]/g, '_');
+        const content = document.getElementById(`content-${sanitizedId}`);
+        const icon = document.getElementById(`icon-${sanitizedId}`);
         
         if (content && icon) {
           if (!content.classList.contains('accordion-open')) {
@@ -706,191 +712,194 @@
 
 <!-- Existing Agents -->
 {#each agents as agent}
-  <div class="border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
-    <button on:click={() => toggleAccordion(agent?.id?.toString())} class="w-full flex justify-between items-center py-5 px-4 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
-      <span class="flex items-center font-medium text-sm">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-600 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-        </svg>
-        {agent.name}
-      </span>
-      <div class="flex items-center">
-        <!-- Add LLM setup status badge when applicable -->
-        {#if agent.mainerType === 'Own' && agent.llmSetupStatus === 'inProgress'}
-          <span class="mr-2 px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-400">
-            LLM setup in progress
-          </span>
-        {/if}
-        <span class={`mr-4 px-2 py-1 rounded-full text-xs ${agent.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-400'}`}>
-          {agent.status}
-        </span>
-        <span id="icon-{agent.id}" class="text-gray-600 dark:text-gray-400 transition-transform duration-300" style="transform: rotate(180deg)">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
-            <path fill-rule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
+  {#if agent && agent.id}
+    {@const sanitizedId = agent.id.replace(/[^a-zA-Z0-9-_]/g, '_')}
+    <div class="border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <button on:click={() => toggleAccordion(agent.id)} class="w-full flex justify-between items-center py-5 px-4 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
+        <span class="flex items-center font-medium text-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-600 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
           </svg>
+          {agent.name}
         </span>
-      </div>
-    </button>
-    <div id="content-{agent.id}" class="accordion-content">
-      <div class="pb-5 text-sm text-gray-700 dark:text-gray-300 p-4 bg-gray-5 dark:bg-gray-900">
-        <!-- Canister Information Section -->
-        <div class="flex flex-col space-y-2 mb-2">
-          <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg">
-            <h2 class="text-sm mb-2 font-medium">Canister Information</h2>
-            <div class="flex flex-col gap-2">
-              <div class="flex items-center flex-wrap">
-                <span class="text-xs mr-2 w-24">Controller ID:</span>
-                <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id={agent.id}" target="_blank" rel="noopener noreferrer" class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-green-400 border border-green-400 break-all hover:bg-green-200 dark:hover:bg-gray-600 transition-colors flex items-center">
-                  <span>{agent.id}</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
-                  </svg>
-                </a>
-              </div>
-              
-              <!-- Show mAIner type -->
-              <div class="flex items-center">
-                <span class="text-xs mr-2 w-24">Type:</span>
-                <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-yellow-300 border border-yellow-300">{agent.mainerType}</span>
-              </div>
-              
-              <!-- For Own type mAIners, show LLM information or setup status -->
-              {#if agent.mainerType === 'Own'}
-                <div class="flex flex-col mt-2">
-                  <!-- Show LLM setup status if in progress -->
-                  {#if agent.llmSetupStatus === 'inProgress'}
-                    <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 my-2">
-                      <div class="flex items-center">
-                        <svg class="animate-spin h-4 w-4 text-yellow-600 dark:text-yellow-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <p class="text-xs text-yellow-800 dark:text-yellow-300">
-                          <span class="font-medium">LLM setup in progress</span> - This may take several minutes to complete and will happen in the background. You can use the mAIner with shared LLMs in the meantime.
-                        </p>
-                      </div>
-                    </div>
-                  {/if}
-                
-                  <span class="text-xs mb-1">Attached LLMs:</span>
-                  {#if agent.llmCanisters && agent.llmCanisters.length > 0}
-                    <div class="flex flex-col gap-2 ml-2 mt-1">
-                      {#each agent.llmCanisters as llmCanister, i}
-                        <div class="flex items-center flex-wrap">
-                          <span class="text-xs mr-2 w-20">LLM {i+1}:</span>
-                          <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id={llmCanister}" target="_blank" rel="noopener noreferrer" class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-indigo-400 border border-indigo-400 break-all hover:bg-indigo-200 dark:hover:bg-gray-600 transition-colors flex items-center">
-                            <span>{llmCanister}</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                              <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
-                            </svg>
-                          </a>
-                        </div>
-                      {/each}
-                    </div>
-                  {:else}
-                    <div class="ml-2 mt-1">
-                      {#if agent.llmSetupStatus === 'inProgress'}
-                        <span class="text-xs italic text-yellow-500 dark:text-yellow-400">LLM canister setup in progress...</span>
-                      {:else}
-                        <span class="text-xs italic text-gray-500 dark:text-gray-400">No LLM canisters attached yet</span>
-                      {/if}
-                    </div>
-                  {/if}
+        <div class="flex items-center">
+          <!-- Add LLM setup status badge when applicable -->
+          {#if agent.mainerType === 'Own' && agent.llmSetupStatus === 'inProgress'}
+            <span class="mr-2 px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-400">
+              LLM setup in progress
+            </span>
+          {/if}
+          <span class={`mr-4 px-2 py-1 rounded-full text-xs ${agent.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-400'}`}>
+            {agent.status}
+          </span>
+          <span id="icon-{sanitizedId}" class="text-gray-600 dark:text-gray-400 transition-transform duration-300" style="transform: rotate(180deg)">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
+              <path fill-rule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
+            </svg>
+          </span>
+        </div>
+      </button>
+      <div id="content-{sanitizedId}" class="accordion-content">
+        <div class="pb-5 text-sm text-gray-700 dark:text-gray-300 p-4 bg-gray-5 dark:bg-gray-900">
+          <!-- Canister Information Section -->
+          <div class="flex flex-col space-y-2 mb-2">
+            <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg">
+              <h2 class="text-sm mb-2 font-medium">Canister Information</h2>
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center flex-wrap">
+                  <span class="text-xs mr-2 w-24">Controller ID:</span>
+                  <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id={agent.id}" target="_blank" rel="noopener noreferrer" class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-green-400 border border-green-400 break-all hover:bg-green-200 dark:hover:bg-gray-600 transition-colors flex items-center">
+                    <span>{agent.id}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
+                    </svg>
+                  </a>
                 </div>
-              {/if}
-            </div>
-          </div>
-        </div>
-        
-        <div class="flex flex-col space-y-2 mb-2">
-          <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
-            <div class="flex items-center justify-between">
-                <h2 class="text-sm mb-2">Top up cycles</h2>
-                <button 
-                  type="button" 
-                  class="py-2.5 px-5 me-2 text-xs font-medium text-gray-900 dark:text-gray-300 focus:outline-none bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400"
-                  class:opacity-50={agentsBeingToppedUp.has(agent.id)}
-                  class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id)}
-                  disabled={agentsBeingToppedUp.has(agent.id)}
-                  on:click={() => openTopUpModal(agent)}
-                >
-                  {#if agentsBeingToppedUp.has(agent.id)}
-                    <span class="w-3 h-3 mr-1 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin"></span>
-                  {/if}
-                  Top-up
-                </button>
-            </div>
-            <!-- Cycle Balance Display -->
-            <div class="mt-2 flex items-center">
-              <span class="text-xs text-gray-500 dark:text-gray-400">Current balance:</span>
-              {#if agentsBeingToppedUp.has(agent.id)}
-                <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center">
-                  <span class="w-3 h-3 mr-2 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin"></span>
-                  Updating...
-                </span>
-              {:else}
-                <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                  {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)} T cycles
-                </span>
-              {/if}
-            </div>
-          </div>
-        </div>
-
-        <div class="flex flex-col space-y-2 mb-2">
-          <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
-            <div class="flex flex-col">
-                <h2 class="text-sm mb-2">Set daily burn rate</h2>
-                <div class="inline-flex rounded-full shadow-xs w-full justify-end" role="group">
-                  <button 
-                    type="button" 
-                    class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-s-full focus:z-10 focus:ring-2 focus:ring-blue-700 
-                    {agent.cyclesBurnRateSetting === 'Low' 
-                      ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
-                      : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
-                    on:click={() => updateAgentBurnRate('Low', agent) }
-                  >
-                    Low
-                  </button>
-                  <button 
-                    type="button" 
-                    class="px-4 py-2 text-xs font-medium border-t border-b border-gray-200 dark:border-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-700
-                    {agent.cyclesBurnRateSetting === 'Medium' 
-                      ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
-                      : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
-                    on:click={() => updateAgentBurnRate('Medium', agent) }
-                  >
-                    Medium
-                  </button>
-                  <button 
-                    type="button" 
-                    class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-e-full focus:z-10 focus:ring-2 focus:ring-blue-700
-                    {agent.cyclesBurnRateSetting === 'High' 
-                      ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
-                      : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
-                    on:click={() => updateAgentBurnRate('High', agent) }
-                  >
-                    High
-                  </button>
-                </div>            
+                
+                <!-- Show mAIner type -->
+                <div class="flex items-center">
+                  <span class="text-xs mr-2 w-24">Type:</span>
+                  <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-yellow-300 border border-yellow-300">{agent.mainerType}</span>
+                </div>
+                
+                <!-- For Own type mAIners, show LLM information or setup status -->
+                {#if agent.mainerType === 'Own'}
+                  <div class="flex flex-col mt-2">
+                    <!-- Show LLM setup status if in progress -->
+                    {#if agent.llmSetupStatus === 'inProgress'}
+                      <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 my-2">
+                        <div class="flex items-center">
+                          <svg class="animate-spin h-4 w-4 text-yellow-600 dark:text-yellow-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <p class="text-xs text-yellow-800 dark:text-yellow-300">
+                            <span class="font-medium">LLM setup in progress</span> - This may take several minutes to complete and will happen in the background. You can use the mAIner with shared LLMs in the meantime.
+                          </p>
+                        </div>
+                      </div>
+                    {/if}
+                  
+                    <span class="text-xs mb-1">Attached LLMs:</span>
+                    {#if agent.llmCanisters && agent.llmCanisters.length > 0}
+                      <div class="flex flex-col gap-2 ml-2 mt-1">
+                        {#each agent.llmCanisters as llmCanister, i}
+                          <div class="flex items-center flex-wrap">
+                            <span class="text-xs mr-2 w-20">LLM {i+1}:</span>
+                            <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id={llmCanister}" target="_blank" rel="noopener noreferrer" class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-indigo-400 border border-indigo-400 break-all hover:bg-indigo-200 dark:hover:bg-gray-600 transition-colors flex items-center">
+                              <span>{llmCanister}</span>
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
+                              </svg>
+                            </a>
+                          </div>
+                        {/each}
+                      </div>
+                    {:else}
+                      <div class="ml-2 mt-1">
+                        {#if agent.llmSetupStatus === 'inProgress'}
+                          <span class="text-xs italic text-yellow-500 dark:text-yellow-400">LLM canister setup in progress...</span>
+                        {:else}
+                          <span class="text-xs italic text-gray-500 dark:text-gray-400">No LLM canisters attached yet</span>
+                        {/if}
+                      </div>
+                    {/if}
+                  </div>
+                {/if}
               </div>
-          </div>
-        </div>
-
-        <!-- <div class="flex flex-col space-y-2 my-2">
-          <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
-            <div class="flex items-center justify-between">
-              <h2 class="text-sm">Manage settings</h2>
             </div>
           </div>
-        </div> -->
-        <div class="flex flex-col space-y-2 mb-2">
-          <CyclesDisplayAgent cycles={agent.burnedCycles} label="Burned Cycles" />
-        </div>
+          
+          <div class="flex flex-col space-y-2 mb-2">
+            <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
+              <div class="flex items-center justify-between">
+                  <h2 class="text-sm mb-2">Top up cycles</h2>
+                  <button 
+                    type="button" 
+                    class="py-2.5 px-5 me-2 text-xs font-medium text-gray-900 dark:text-gray-300 focus:outline-none bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400"
+                    class:opacity-50={agentsBeingToppedUp.has(agent.id)}
+                    class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id)}
+                    disabled={agentsBeingToppedUp.has(agent.id)}
+                    on:click={() => openTopUpModal(agent)}
+                  >
+                    {#if agentsBeingToppedUp.has(agent.id)}
+                      <span class="w-3 h-3 mr-1 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin"></span>
+                    {/if}
+                    Top-up
+                  </button>
+              </div>
+              <!-- Cycle Balance Display -->
+              <div class="mt-2 flex items-center">
+                <span class="text-xs text-gray-500 dark:text-gray-400">Current balance:</span>
+                {#if agentsBeingToppedUp.has(agent.id)}
+                  <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center">
+                    <span class="w-3 h-3 mr-2 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin"></span>
+                    Updating...
+                  </span>
+                {:else}
+                  <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                    {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)} T cycles
+                  </span>
+                {/if}
+              </div>
+            </div>
+          </div>
 
+          <div class="flex flex-col space-y-2 mb-2">
+            <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
+              <div class="flex flex-col">
+                  <h2 class="text-sm mb-2">Set daily burn rate</h2>
+                  <div class="inline-flex rounded-full shadow-xs w-full justify-end" role="group">
+                    <button 
+                      type="button" 
+                      class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-s-full focus:z-10 focus:ring-2 focus:ring-blue-700 
+                      {agent.cyclesBurnRateSetting === 'Low' 
+                        ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
+                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
+                      on:click={() => updateAgentBurnRate('Low', agent) }
+                    >
+                      Low
+                    </button>
+                    <button 
+                      type="button" 
+                      class="px-4 py-2 text-xs font-medium border-t border-b border-gray-200 dark:border-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-700
+                      {agent.cyclesBurnRateSetting === 'Medium' 
+                        ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
+                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
+                      on:click={() => updateAgentBurnRate('Medium', agent) }
+                    >
+                      Medium
+                    </button>
+                    <button 
+                      type="button" 
+                      class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-e-full focus:z-10 focus:ring-2 focus:ring-blue-700
+                      {agent.cyclesBurnRateSetting === 'High' 
+                        ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
+                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
+                      on:click={() => updateAgentBurnRate('High', agent) }
+                    >
+                      High
+                    </button>
+                  </div>            
+                </div>
+            </div>
+          </div>
+
+          <!-- <div class="flex flex-col space-y-2 my-2">
+            <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
+              <div class="flex items-center justify-between">
+                <h2 class="text-sm">Manage settings</h2>
+              </div>
+            </div>
+          </div> -->
+          <div class="flex flex-col space-y-2 mb-2">
+            <CyclesDisplayAgent cycles={agent.burnedCycles} label="Burned Cycles" />
+          </div>
+
+        </div>
       </div>
     </div>
-  </div>
+  {/if}
 {/each}
 
 <style>
