@@ -338,14 +338,16 @@
 
   async function loadAgents() {
     // Simply reverse the order to put newest created mAIners first
+    console.log("Original agentCanistersInfo order:", agentCanistersInfo.map((info, i) => `${i}. ${info.address}`));
+    
     const sortedCanistersInfo = [...agentCanistersInfo].reverse();
 
-    console.log("Final mAIner order (newest first):", sortedCanistersInfo.map((info, i) => `${i+1}. ${info.address}`));
+    console.log("After reverse sortedCanistersInfo:", sortedCanistersInfo.map((info, i) => `${i}. ${info.address}`));
 
     // Normal implementation for production
     return await Promise.all(
       sortedCanistersInfo.map(async (canisterInfo, index) => {
-        // Find the original index to get the correct actor
+        // Find the original index to get the correct actor and preserve original naming
         const originalIndex = agentCanistersInfo.findIndex(info => info.address === canisterInfo.address);
         const agentActor = agentCanisterActors[originalIndex];
         
@@ -453,7 +455,7 @@
          */
 
         console.log("in MainerAccordion agentCanisterActors.map before return id ", canisterInfo.address);
-        console.log("in MainerAccordion agentCanisterActors.map before return name ", `mAIner ${index + 1}`);
+        console.log("in MainerAccordion agentCanisterActors.map before return name ", `mAIner ${sortedCanistersInfo.length - index}`);
         console.log("in MainerAccordion agentCanisterActors.map before return status ", status);
         console.log("in MainerAccordion agentCanisterActors.map before return burnedCycles ", burnedCycles);
         console.log("in MainerAccordion agentCanisterActors.map before return cycleBalance ", cycleBalance);
@@ -464,7 +466,7 @@
         console.log("in MainerAccordion agentCanisterActors.map before return llmSetupStatus ", llmSetupStatus);
         return {
           id: canisterInfo.address,
-          name: `mAIner ${index + 1}`,
+          name: `mAIner ${sortedCanistersInfo.length - index}`,
           status,
           burnedCycles,
           cycleBalance,
