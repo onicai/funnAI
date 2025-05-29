@@ -87,7 +87,7 @@ function handleThemeToggle() {
       </button>
     </a>
 
-    <a use:link href="/lottery" class="w-full" on:click={closeSidebar}>
+    <!-- <a use:link href="/lottery" class="w-full" on:click={closeSidebar}>
       <button class={`w-full text-gray-700 h-16 mt-4 relative transition-all duration-200
         ${currentPath === '/lottery' ? 
           'bg-gradient-to-r from-purple-50 to-gray-100 border-l-4 border-l-purple-500 font-medium text-purple-700 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-700 dark:text-purple-300 dark:border-l-purple-400' : 
@@ -95,7 +95,7 @@ function handleThemeToggle() {
         style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
         Lottery
       </button>
-    </a>
+    </a> -->
 
     <a use:link href="/wallet" class="w-full" on:click={closeSidebar}>
       <button class={`w-full text-gray-700 h-16 mt-4 relative transition-all duration-200
