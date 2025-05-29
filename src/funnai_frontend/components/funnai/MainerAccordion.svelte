@@ -36,6 +36,76 @@
   // Track which agents are being topped up (agent-specific loading states)
   let agentsBeingToppedUp = new Set<string>();
 
+  // For testing UI only - set to true to use mock data for the mainer accordion displaying canister INFO
+  let useMockData = false;
+
+  function getCyclesBurnRateLabel(cyclesBurnRate) {
+    console.log("in MainerAccordion getCyclesBurnRateLabel cyclesBurnRate ", cyclesBurnRate);
+    const daily = "Daily";
+
+    const cycles = BigInt(cyclesBurnRate.cycles);
+    console.log("in MainerAccordion getCyclesBurnRateLabel cycles ", cycles);
+
+    if (cycles === 1_000_000_000_000n) {
+      return "Low";
+    } else if (cycles === 4_000_000_000_000n) {
+      return "Medium";
+    } else if (cycles === 10_000_000_000_000n) {
+      return "High";
+    } else if (cycles === 20_000_000_000_000n) {
+      //return "Very High";
+      return "Medium";
+    } else {
+      //return "Custom";
+      return "Medium";
+    };
+  };
+
+  /**
+   * Updates the agent settings based on user-selected burn rate level.
+   * 
+   * @param {'Low' | 'Medium' | 'High'} level - The burn rate level selected by the user
+   * @param {object} agent - The mAIner agent to update
+  */
+  async function updateAgentBurnRate(level, agent) {
+    console.log("in MainerAccordion updateAgentBurnRate level ", level);
+    console.log("in MainerAccordion updateAgentBurnRate agent ", agent);
+    console.log("in MainerAccordion updateAgentBurnRate agentCanisterActors ", agentCanisterActors);
+    console.log("in MainerAccordion updateAgentBurnRate agentCanisterActors[0] ", agentCanisterActors[0]);
+    let actorIndex = findAgentIndexByAddress(agent.id);
+    if (actorIndex < 0) {
+      console.error(`updateAgentBurnRate actor not found for agent: ${agent}`);
+      return;
+    };
+    let agentActor = agentCanisterActors[actorIndex]; // Get actor for agent
+    let burnRateSetting;
+    switch (level) {
+      case 'Low':
+        burnRateSetting = { cyclesBurnRate: { Low: null } };
+        break;
+      case 'Medium':
+        burnRateSetting = { cyclesBurnRate: { Mid: null } };
+        break;
+      case 'High':
+        burnRateSetting = { cyclesBurnRate: { High: null } };
+        break;
+      default:
+        console.error(`updateAgentBurnRate Unsupported level: ${level}`);
+        return;
+    }
+
+    try {
+      console.log("in MainerAccordion updateAgentBurnRate burnRateSetting ", burnRateSetting);
+      await agentActor.updateAgentSettings(burnRateSetting);
+      console.log(`Successfully updated burn rate to ${level}`);
+      loadAgents().then(newAgents => {
+        agents = newAgents;
+      });
+    } catch (error) {
+      console.error("Failed to update agent settings:", error);
+    }
+  };
+
   function toggleAccordion(index: string) {
     const content = document.getElementById(`content-${index}`);
     const icon = document.getElementById(`icon-${index}`);
@@ -68,6 +138,10 @@
   function findAgentByAddress(canisterId) {
     return agentCanistersInfo.find(canister => canister.address === canisterId) || null;
   };
+
+  function findAgentIndexByAddress(canisterId) {
+    return agentCanistersInfo.findIndex(canister => canister.address === canisterId);
+  };
   
   // Handle top-up completion
   async function handleTopUpComplete(txId: string, canisterId: string) {
@@ -96,14 +170,12 @@
     try {
       let topUpUserMainerAgentResponse = await $store.gameStateCanisterActor.topUpCyclesForMainerAgent(mainerAgentTopUpInput);
       console.log("handleTopUpComplete topUpUserMainerAgentResponse: ", topUpUserMainerAgentResponse);
-      //@ts-ignore
-      if (topUpUserMainerAgentResponse?.Ok) {
+      
+      if ('Ok' in topUpUserMainerAgentResponse) {
         // top up was successful
-        
-      //@ts-ignore
-      } else if (topUpUserMainerAgentResponse?.Err) {
-        //@ts-ignore
-        console.error("Error in topUpCyclesForMainerAgent:", topUpUserMainerAgentResponse?.Err);
+        console.log("Top-up successful");
+      } else if ('Err' in topUpUserMainerAgentResponse) {
+        console.error("Error in topUpCyclesForMainerAgent:", topUpUserMainerAgentResponse.Err);
       };
     } catch (topUpError) {
       console.error("Failed to top up mAIner:", topUpError);
@@ -127,6 +199,18 @@
     // Start the staged creation process
     // Step 1: Begin registration
     addProgressMessage("Registering new mAIner...");
+    
+    // Check which backend methods are available and use the appropriate flow
+    if (typeof $store.gameStateCanisterActor.createUserMainerAgent === 'function') {
+      // Use the full creation flow with all backend methods
+      await handleFullMainerCreation(txId);
+    } else {
+      addProgressMessage("Backend methods not available for mAIner creation");
+      isCreatingMainer = false;
+    }
+  };
+
+  async function handleFullMainerCreation(txId?: string) {
     // See the Game State canister interface here: src/declarations/game_state_canister/game_state_canister.did.d.ts
     type SelectableMainerLLMs = { 'Qwen2_5_500M' : null };
     let selectableMainerLLM = { 'Qwen2_5_500M' : null }; // default
@@ -150,22 +234,24 @@
     };
     try {
       let createUserMainerAgentResponse = await $store.gameStateCanisterActor.createUserMainerAgent(mainerCreationInput);
-      //@ts-ignore
-      if (createUserMainerAgentResponse?.Ok) {
+      console.log("createUserMainerAgentResponse:", createUserMainerAgentResponse);
+      
+      // Check if the response has the Ok property (successful response)
+      if ('Ok' in createUserMainerAgentResponse) {
+        addProgressMessage("mAIner canister created successfully!");
+        
         // Step 2: Create controller
         addProgressMessage("Creating mAIner controller...");
-        //@ts-ignore
-        let spinUpMainerControllerCanisterResponse = await $store.gameStateCanisterActor.spinUpMainerControllerCanister(createUserMainerAgentResponse?.Ok);
-        //@ts-ignore
-        if (spinUpMainerControllerCanisterResponse?.Ok) {
+        let spinUpMainerControllerCanisterResponse = await $store.gameStateCanisterActor.spinUpMainerControllerCanister(createUserMainerAgentResponse.Ok);
+        
+        if ('Ok' in spinUpMainerControllerCanisterResponse) {
           // Step 3: Set up LLM
           if (modelType === 'Own') {
             // We don't wait for LLM canister setup anymore, just trigger it and let it run in background
             addProgressMessage("Starting LLM environment setup in the background...");
             
             // Trigger LLM setup without awaiting it
-            //@ts-ignore
-            $store.gameStateCanisterActor.setUpMainerLlmCanister(spinUpMainerControllerCanisterResponse?.Ok)
+            $store.gameStateCanisterActor.setUpMainerLlmCanister(spinUpMainerControllerCanisterResponse.Ok)
               .then((response) => {
                 console.log("LLM canister setup triggered successfully:", response);
               })
@@ -192,19 +278,29 @@
               }, 2000);
             });
           }, 2000);
-        //@ts-ignore
-        } else if (spinUpMainerControllerCanisterResponse?.Err) {
-          //@ts-ignore
-          console.error("Error in spinUpMainerControllerCanister:", spinUpMainerControllerCanisterResponse?.Err);
+        } else if ('Err' in spinUpMainerControllerCanisterResponse) {
+          console.error("Error in spinUpMainerControllerCanister:", spinUpMainerControllerCanisterResponse.Err);
+          addProgressMessage("Error creating controller: " + JSON.stringify(spinUpMainerControllerCanisterResponse.Err));
+          isCreatingMainer = false;
         };
-      //@ts-ignore
-      } else if (createUserMainerAgentResponse?.Err) {
-        //@ts-ignore
-        console.error("Error in createUserMainerAgent:", createUserMainerAgentResponse?.Err);
+      } else if ('Err' in createUserMainerAgentResponse) {
+        // Handle error response
+        console.error("Error in createUserMainerAgent:", createUserMainerAgentResponse.Err);
+        addProgressMessage("Error creating mAIner: " + JSON.stringify(createUserMainerAgentResponse.Err));
+        isCreatingMainer = false;
       };
     } catch (creationError) {
       console.error("Failed to create mAIner:", creationError);
+      addProgressMessage("Failed to create mAIner: " + creationError.message);
+      isCreatingMainer = false;
     };
+  };
+
+  async function handleSimplifiedMainerCreation(txId?: string) {
+    // This method is no longer needed since createUserMainerAgent is available
+    // But keeping it for potential future use
+    addProgressMessage("Simplified creation flow not implemented");
+    isCreatingMainer = false;
   };
 
   // Helper function to add a progress message with timestamp
@@ -235,6 +331,7 @@
         let burnedCycles = 0;
         let cycleBalance = 0;
         let cyclesBurnRate = {};
+        let cyclesBurnRateSetting = selectedBurnRate;
         let mainerType = 'Unknown';
         let llmCanisters = [];
         let llmSetupStatus = '';
@@ -278,6 +375,11 @@
               burnedCycles = Number(statsResult.Ok.totalCyclesBurnt);
               cycleBalance = Number(statsResult.Ok.cycleBalance);
               cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
+              try {
+                cyclesBurnRateSetting = getCyclesBurnRateLabel(cyclesBurnRate);
+              } catch (error) {
+                console.error("Error converting to cyclesBurnRateSetting: ", error);
+              };
             };
           } catch (error) {
             console.error("Error fetching statistics: ", error);
@@ -308,13 +410,6 @@
           status = "inactive";
         };
 
-        //console.log("in MainerAccordion agentCanisterActors.map before return id ", canisterInfo.address);
-        //console.log("in MainerAccordion agentCanisterActors.map before return name ", `mAIner ${index + 1}`);
-        //console.log("in MainerAccordion agentCanisterActors.map before return status ", status);
-        //console.log("in MainerAccordion agentCanisterActors.map before return burnedCycles ", burnedCycles);
-        //console.log("in MainerAccordion agentCanisterActors.map before return cycleBalance ", cycleBalance);
-        //console.log("in MainerAccordion agentCanisterActors.map before return cyclesBurnRate ", cyclesBurnRate);
-
         // TODO: this is for already created mAIners, handle unlocked mAIners that the user is allowed to create (don't have an address yet) differently
         // TODO: based on unlocked mAIners determine whether the user can create a new mAIner and of which type (user needs unlocked mAIners that they can create to go ahead with the creation flow, otherwise they first have to get unlocked mAIners, e.g. via the lottery)
         /* Background on unlocking mAIner creation and how to check:
@@ -333,6 +428,17 @@
             If these retrieved entries include mAIner's of status Unlocked, then the user has unlocked mAIners that they can proceed to create
             Now, check which type of mAIner is unlocked (Own and/or Shared) and enable the creation flow on the UI accordingly
          */
+
+        console.log("in MainerAccordion agentCanisterActors.map before return id ", canisterInfo.address);
+        console.log("in MainerAccordion agentCanisterActors.map before return name ", `mAIner ${index + 1}`);
+        console.log("in MainerAccordion agentCanisterActors.map before return status ", status);
+        console.log("in MainerAccordion agentCanisterActors.map before return burnedCycles ", burnedCycles);
+        console.log("in MainerAccordion agentCanisterActors.map before return cycleBalance ", cycleBalance);
+        console.log("in MainerAccordion agentCanisterActors.map before return cyclesBurnRate ", cyclesBurnRate);
+        console.log("in MainerAccordion agentCanisterActors.map before return cyclesBurnRateSetting ", cyclesBurnRateSetting);
+        console.log("in MainerAccordion agentCanisterActors.map before return mainerType ", mainerType);
+        console.log("in MainerAccordion agentCanisterActors.map before return llmCanisters ", llmCanisters);
+        console.log("in MainerAccordion agentCanisterActors.map before return llmSetupStatus ", llmSetupStatus);
         return {
           id: canisterInfo.address,
           name: `mAIner ${index + 1}`,
@@ -340,6 +446,7 @@
           burnedCycles,
           cycleBalance,
           cyclesBurnRate,
+          cyclesBurnRateSetting,
           mainerType,
           llmCanisters,
           llmSetupStatus
@@ -716,30 +823,30 @@
                   <button 
                     type="button" 
                     class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-s-full focus:z-10 focus:ring-2 focus:ring-blue-700 
-                    {selectedBurnRate === 'Low' 
+                    {agent.cyclesBurnRateSetting === 'Low' 
                       ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
                       : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
-                    on:click={() => selectedBurnRate = 'Low'}
+                    on:click={() => updateAgentBurnRate('Low', agent) }
                   >
                     Low
                   </button>
                   <button 
                     type="button" 
                     class="px-4 py-2 text-xs font-medium border-t border-b border-gray-200 dark:border-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-700
-                    {selectedBurnRate === 'Medium' 
+                    {agent.cyclesBurnRateSetting === 'Medium' 
                       ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
                       : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
-                    on:click={() => selectedBurnRate = 'Medium'}
+                    on:click={() => updateAgentBurnRate('Medium', agent) }
                   >
                     Medium
                   </button>
                   <button 
                     type="button" 
                     class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-e-full focus:z-10 focus:ring-2 focus:ring-blue-700
-                    {selectedBurnRate === 'High' 
+                    {agent.cyclesBurnRateSetting === 'High' 
                       ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
                       : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
-                    on:click={() => selectedBurnRate = 'High'}
+                    on:click={() => updateAgentBurnRate('High', agent) }
                   >
                     High
                   </button>
