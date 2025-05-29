@@ -75,6 +75,33 @@
     }, 800);
   }
 
+  // Ensure this modal appears on top of all others
+  onMount(() => {
+    if (isOpen) {
+      // Force the modal to have the highest z-index
+      setTimeout(() => {
+        const modalElements = document.querySelectorAll('[role="dialog"]');
+        modalElements.forEach((element) => {
+          if (element.querySelector('.transfer-confirmation-modal')) {
+            (element as HTMLElement).style.zIndex = '100100';
+          }
+        });
+      }, 100);
+    }
+  });
+
+  // Watch for isOpen changes to re-apply z-index
+  $: if (isOpen) {
+    setTimeout(() => {
+      const modalElements = document.querySelectorAll('[role="dialog"]');
+      modalElements.forEach((element) => {
+        if (element.querySelector('.transfer-confirmation-modal')) {
+          (element as HTMLElement).style.zIndex = '100100';
+        }
+      });
+    }, 100);
+  }
+
   // Improve performance by using CSS custom properties
   onMount(() => {
     const container = document.querySelector('.token-logo-container') as HTMLElement;
@@ -107,6 +134,7 @@
   target="body"
   isPadded={false}
   className="transfer-confirmation-modal"
+  modalKey="transfer-confirmation-modal"
 >
   <div class="confirm-container" in:fade={{ duration: 200 }}>
     <!-- Transfer Header -->
@@ -506,6 +534,6 @@
   /* Ensure proper z-indexing */
   :global(.transfer-confirmation-modal) {
     position: relative;
-    z-index: 100000;
+    z-index: 100050 !important;
   }
 </style>

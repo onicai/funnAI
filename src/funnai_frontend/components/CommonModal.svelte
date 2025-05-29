@@ -62,13 +62,14 @@
       const modalEntries = Object.entries(stack);
       if (modalEntries.length === 0) return;
 
-      // Sort modals by timestamp in descending order (newest first)
-      modalEntries.sort((a, b) => b[1].timestamp - a[1].timestamp);
+      // Sort modals by timestamp in ascending order (oldest first)
+      modalEntries.sort((a, b) => a[1].timestamp - b[1].timestamp);
       
       // Find position of current modal
       const currentIndex = modalEntries.findIndex(([key]) => key === modalKey);
       if (currentIndex !== -1) {
         // Base z-index is 99999, each modal adds 10 to ensure proper stacking
+        // Newer modals (higher index) get higher z-index
         zIndex = 99999 + (currentIndex * 10);
       }
     });
@@ -190,11 +191,11 @@
       const modalEntries = Object.entries($modalStack);
       if (modalEntries.length === 0) return;
       
-      // Sort modals by timestamp in descending order (newest first)
-      modalEntries.sort((a, b) => b[1].timestamp - a[1].timestamp);
+      // Sort modals by timestamp in ascending order (oldest first)
+      modalEntries.sort((a, b) => a[1].timestamp - b[1].timestamp);
       
-      // Only close if this is the topmost modal
-      if (modalEntries[0][0] === modalKey) {
+      // Only close if this is the topmost modal (last in the sorted array)
+      if (modalEntries[modalEntries.length - 1][0] === modalKey) {
         handleClose();
       }
     }
