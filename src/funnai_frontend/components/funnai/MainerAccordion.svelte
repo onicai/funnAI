@@ -32,6 +32,7 @@
   // Progress tracking for mAIner creation
   let isCreatingMainer = false;
   let mainerCreationProgress: {message: string, timestamp: string, complete: boolean}[] = [];
+  let shouldOpenFirstMainerAfterCreation = false; // Flag to control when to auto-open
 
   // Track which agents are being topped up (agent-specific loading states)
   let agentsBeingToppedUp = new Set<string>();
@@ -120,6 +121,17 @@
     }
   };
 
+  function openFirstMainerAccordion() {
+    // Open the first mAIner's accordion (which will be the newest one due to sorting)
+    if (agents.length > 0 && shouldOpenFirstMainerAfterCreation) {
+      const firstMainerAccordion = agents[0];
+      setTimeout(() => {
+        toggleAccordion(firstMainerAccordion.id);
+        shouldOpenFirstMainerAfterCreation = false; // Reset the flag
+      }, 100);
+    }
+  };
+
   function createAgent() {
     // Open the MainerPaymentModal to handle the payment
     mainerPaymentModalOpen = true;
@@ -195,6 +207,7 @@
     
     // Set the creation process as started
     isCreatingMainer = true;
+    shouldOpenFirstMainerAfterCreation = true; // Set flag to auto-open the new mAIner
     
     // Start the staged creation process
     // Step 1: Begin registration
@@ -207,6 +220,7 @@
     } else {
       addProgressMessage("Backend methods not available for mAIner creation");
       isCreatingMainer = false;
+      shouldOpenFirstMainerAfterCreation = false;
     }
   };
 
@@ -271,11 +285,15 @@
             addProgressMessage("mAIner successfully created! You can start using it while LLM setup completes in the background.", true);
             // Refresh the list of agents to show the newly created one
             store.loadUserMainerCanisters().then(() => {
-              // Reset the terminal after a short delay
+              // Wait for the reactive update to complete, then open the first mAIner (newest one)
               setTimeout(() => {
-                isCreatingMainer = false;
-                mainerCreationProgress = [];
-              }, 2000);
+                openFirstMainerAccordion();
+                // Reset the terminal after opening the accordion
+                setTimeout(() => {
+                  isCreatingMainer = false;
+                  mainerCreationProgress = [];
+                }, 2000);
+              }, 200);
             });
           }, 2000);
         } else if ('Err' in spinUpMainerControllerCanisterResponse) {
@@ -319,13 +337,21 @@
   };
 
   async function loadAgents() {
+    // Sort canister info by creation timestamp in descending order (newest first)
+    const sortedCanistersInfo = [...agentCanistersInfo].sort((a, b) => {
+      // Convert BigInt timestamps to numbers for comparison
+      const timestampA = Number(a.creationTimestamp);
+      const timestampB = Number(b.creationTimestamp);
+      return timestampB - timestampA; // Descending order (newest first)
+    });
+
     // Normal implementation for production
     return await Promise.all(
-      agentCanistersInfo.map(async (canisterInfo, index) => {
-        //console.log("in MainerAccordion agentCanisterActors.map index ", index);
-        //console.log("in MainerAccordion agentCanisterActors.map agentActor", agentActor);
-
-        const agentActor = agentCanisterActors[index];
+      sortedCanistersInfo.map(async (canisterInfo, index) => {
+        // Find the original index to get the correct actor
+        const originalIndex = agentCanistersInfo.findIndex(info => info.address === canisterInfo.address);
+        const agentActor = agentCanisterActors[originalIndex];
+        
         console.log("in MainerAccordion agentCanisterActors.map canisterInfo", canisterInfo);
         let status = "active";
         let burnedCycles = 0;
@@ -461,6 +487,8 @@
 
     (async () => {
       agents = await loadAgents();
+      // Check if we should auto-open the first mAIner after creation
+      openFirstMainerAccordion();
     })();
   };
 
@@ -815,7 +843,7 @@
           </div>
         </div>
 
-        <div class="flex flex-col space-y-2">
+        <div class="flex flex-col space-y-2 mb-2">
           <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
             <div class="flex flex-col">
                 <h2 class="text-sm mb-2">Set daily burn rate</h2>
