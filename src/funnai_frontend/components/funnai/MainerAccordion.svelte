@@ -746,13 +746,13 @@
           </div>
         </div>
 
-        <div class="flex flex-col space-y-2 my-2">
+        <!-- <div class="flex flex-col space-y-2 my-2">
           <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
             <div class="flex items-center justify-between">
               <h2 class="text-sm">Manage settings</h2>
             </div>
           </div>
-        </div>
+        </div> -->
         <div class="flex flex-col space-y-2 mb-2">
           <CyclesDisplayAgent cycles={agent.burnedCycles} label="Burned Cycles" />
         </div>
