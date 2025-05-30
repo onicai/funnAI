@@ -152,6 +152,10 @@ const days = BigInt(30);
 const hours = BigInt(24);
 const nanosecondsPerHour = BigInt(3600000000000);
 
+// Add session refresh configuration
+const SESSION_REFRESH_THRESHOLD = BigInt(24 * 60 * 60 * 1000 * 1000 * 1000); // 24 hours in nanoseconds
+const SESSION_CHECK_INTERVAL = 30 * 60 * 1000; // Check every 30 minutes in milliseconds
+
 type State = {
   isAuthed: "nfid" | "internetidentity" | null;
   backendActor: typeof funnai_backend;
@@ -163,6 +167,8 @@ type State = {
   mainerControllerCanisterActor: typeof mainer_ctrlb_canister;
   userMainerCanisterActors: any[];
   userMainerAgentCanistersInfo: any[];
+  sessionExpiry: bigint | null; // Track session expiration time
+  sessionRefreshTimer: NodeJS.Timeout | null; // Timer for automatic session refresh
 };
 
 let defaultBackendCanisterId = backendCanisterId;
@@ -184,6 +190,8 @@ const defaultState: State = {
   }),
   userMainerCanisterActors: [],
   userMainerAgentCanistersInfo: [],
+  sessionExpiry: null,
+  sessionRefreshTimer: null,
 };
 
 // Add theme support
@@ -446,7 +454,11 @@ export const createStore = ({
 
     //let accounts = JSON.parse(await identity.accounts());
 
-    localStorage.setItem('isAuthed', "nfid"); // Set flag to indicate existing login for future sessions
+    // Calculate session expiry time (30 days from now in nanoseconds)
+    const sessionExpiry = BigInt(Date.now()) * BigInt(1000000) + days * hours * nanosecondsPerHour;
+    
+    // Store session information for persistence
+    storeSessionInfo("nfid", sessionExpiry);
 
     update((state) => ({
       ...state,
@@ -457,8 +469,12 @@ export const createStore = ({
       isAuthed: "nfid",
       gameStateCanisterActor,
       userMainerCanisterActors,
-      userMainerAgentCanistersInfo
+      userMainerAgentCanistersInfo,
+      sessionExpiry
     }));
+
+    // Start automatic session refresh timer
+    startSessionRefreshTimer();
 
     console.info("nfid is authed");
   };
@@ -513,7 +529,11 @@ export const createStore = ({
 
     //let accounts = JSON.parse(await identity.accounts());
 
-    localStorage.setItem('isAuthed', "internetidentity"); // Set flag to indicate existing login for future sessions
+    // Calculate session expiry time (30 days from now in nanoseconds)
+    const sessionExpiry = BigInt(Date.now()) * BigInt(1000000) + days * hours * nanosecondsPerHour;
+    
+    // Store session information for persistence
+    storeSessionInfo("internetidentity", sessionExpiry);
 
     update((state) => ({
       ...state,
@@ -524,13 +544,23 @@ export const createStore = ({
       isAuthed: "internetidentity",
       gameStateCanisterActor,
       userMainerCanisterActors,
-      userMainerAgentCanistersInfo
+      userMainerAgentCanistersInfo,
+      sessionExpiry
     }));
+
+    // Start automatic session refresh timer
+    startSessionRefreshTimer();
 
     console.info("internetidentity is authed");
   };
 
   const disconnect = async () => {
+    // Stop the session refresh timer
+    stopSessionRefreshTimer();
+    
+    // Clear stored session information
+    clearSessionInfo();
+    
     // Check isAuthed to determine which method to use to disconnect
     if (globalState.isAuthed === "nfid") {
       try {
@@ -555,19 +585,52 @@ export const createStore = ({
 
   const checkExistingLoginAndConnect = async () => {
     // Check login state if user is already logged in
-    const isAuthed = localStorage.getItem('isAuthed'); // Accessing Local Storage to check login state
-    if (isAuthed) {
+    const sessionInfo = getStoredSessionInfo();
+    
+    if (sessionInfo) {
       const authClient = await AuthClient.create();
-      if (await authClient.isAuthenticated()) {
-        if (isAuthed === "nfid") {
-          console.info("NFID connection detected");
-          nfidConnect();
-        } else if (isAuthed === "internetidentity") {
-          console.info("Internet Identity connection detected");
-          internetIdentityConnect();
-        };
-      };
-    };
+      const isAuthenticated = await authClient.isAuthenticated();
+      
+      if (isAuthenticated) {
+        // Check if session is still valid
+        const now = BigInt(Date.now()) * BigInt(1000000); // Convert to nanoseconds
+        
+        if (sessionInfo.expiry > now) {
+          console.info(`${sessionInfo.loginType} connection detected and session is valid`);
+          
+          // Update the session expiry in state
+          update((state) => ({ ...state, sessionExpiry: sessionInfo.expiry }));
+          
+          if (sessionInfo.loginType === "nfid") {
+            await nfidConnect();
+          } else if (sessionInfo.loginType === "internetidentity") {
+            await internetIdentityConnect();
+          }
+        } else {
+          console.info("Stored session has expired, clearing session info");
+          clearSessionInfo();
+          await authClient.logout();
+        }
+      } else {
+        console.info("AuthClient shows user is not authenticated, clearing session info");
+        clearSessionInfo();
+      }
+    } else {
+      // Fallback to old method for backward compatibility
+      const isAuthed = localStorage.getItem('isAuthed');
+      if (isAuthed) {
+        const authClient = await AuthClient.create();
+        if (await authClient.isAuthenticated()) {
+          if (isAuthed === "nfid") {
+            console.info("NFID connection detected (legacy)");
+            await nfidConnect();
+          } else if (isAuthed === "internetidentity") {
+            console.info("Internet Identity connection detected (legacy)");
+            await internetIdentityConnect();
+          }
+        }
+      }
+    }
   };
 
   const loadUserMainerCanisters = async () => {
@@ -658,6 +721,103 @@ export const createStore = ({
     });
   };
 
+  // Enhanced session management functions
+  const storeSessionInfo = (loginType: string, expiry: bigint) => {
+    const sessionInfo = {
+      loginType,
+      expiry: expiry.toString(),
+      timestamp: Date.now()
+    };
+    localStorage.setItem('sessionInfo', JSON.stringify(sessionInfo));
+    localStorage.setItem('isAuthed', loginType);
+  };
+
+  const getStoredSessionInfo = () => {
+    try {
+      const sessionInfoStr = localStorage.getItem('sessionInfo');
+      if (sessionInfoStr) {
+        const sessionInfo = JSON.parse(sessionInfoStr);
+        return {
+          ...sessionInfo,
+          expiry: BigInt(sessionInfo.expiry)
+        };
+      }
+    } catch (error) {
+      console.error("Error parsing stored session info:", error);
+    }
+    return null;
+  };
+
+  const clearSessionInfo = () => {
+    localStorage.removeItem('sessionInfo');
+    localStorage.removeItem('isAuthed');
+  };
+
+  const shouldRefreshSession = (expiry: bigint): boolean => {
+    const now = BigInt(Date.now()) * BigInt(1000000); // Convert to nanoseconds
+    const timeUntilExpiry = expiry - now;
+    return timeUntilExpiry <= SESSION_REFRESH_THRESHOLD && timeUntilExpiry > 0n;
+  };
+
+  const refreshUserSession = async () => {
+    try {
+      const sessionInfo = getStoredSessionInfo();
+      if (!sessionInfo || !authClient) return false;
+
+      // Check if session is still valid
+      const isAuthenticated = await authClient.isAuthenticated();
+      if (!isAuthenticated) {
+        console.log("Session expired, clearing stored session info");
+        clearSessionInfo();
+        await disconnect();
+        return false;
+      }
+
+      // Check if we need to refresh
+      if (shouldRefreshSession(sessionInfo.expiry)) {
+        console.log("Refreshing user session...");
+        
+        // Re-initialize the connection to extend the session
+        if (sessionInfo.loginType === "nfid") {
+          await nfidConnect();
+        } else if (sessionInfo.loginType === "internetidentity") {
+          await internetIdentityConnect();
+        }
+        return true;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error refreshing session:", error);
+      return false;
+    }
+  };
+
+  const startSessionRefreshTimer = () => {
+    // Clear existing timer
+    if (globalState.sessionRefreshTimer) {
+      clearInterval(globalState.sessionRefreshTimer);
+    }
+
+    // Start new timer
+    const timerId = setInterval(async () => {
+      const success = await refreshUserSession();
+      if (!success) {
+        clearInterval(timerId);
+        update((state) => ({ ...state, sessionRefreshTimer: null }));
+      }
+    }, SESSION_CHECK_INTERVAL);
+
+    update((state) => ({ ...state, sessionRefreshTimer: timerId }));
+  };
+
+  const stopSessionRefreshTimer = () => {
+    if (globalState.sessionRefreshTimer) {
+      clearInterval(globalState.sessionRefreshTimer);
+      update((state) => ({ ...state, sessionRefreshTimer: null }));
+    }
+  };
+
   return {
     subscribe,
     update,
@@ -668,6 +828,9 @@ export const createStore = ({
     loadUserMainerCanisters,
     updateBackendCanisterActor,
     getActor,
+    refreshUserSession,
+    getStoredSessionInfo,
+    clearSessionInfo
   };
 };
 
