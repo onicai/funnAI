@@ -649,11 +649,11 @@
                 {/if}
             </span>
             <h3 class="font-medium leading-tight mb-1 dark:text-gray-300">Pay & Spin up</h3>
-            <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md p-3 mb-3">
+            <!-- <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md p-3 mb-3">
               <p class="text-xs text-blue-800 dark:text-blue-300">
                 Creating the mAIner requires a setup fee of <span class="font-medium">{modelType === 'Own' ? '0.0003' : '0.0002'} ICP</span> for {modelType} model
               </p>
-            </div>
+            </div> -->
         </li>
       </ol>
 
@@ -665,7 +665,7 @@
           class:opacity-50={isCreatingMainer}
           class:cursor-not-allowed={isCreatingMainer}
         >
-          Create mAIner ({modelType === 'Own' ? '0.0003' : '0.0002'} ICP)
+          Create mAIner ({modelType === 'Own' ? '0.0003' : '0.0002'} ICP + 0.0001 fee)
         </button>
       </div>
       
@@ -742,7 +742,7 @@
 
 <!-- mAIner Summary Header -->
 {#if totalMainers > 0}
-  <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+  <div class="mt-2 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-4">
         <div class="flex items-center space-x-3">
@@ -816,11 +816,12 @@
                   </a>
                 </div>
                 
-                <!-- Show mAIner type -->
+                <!-- Show mAIner type 
                 <div class="flex items-center">
                   <span class="text-xs mr-2 w-24">Type:</span>
                   <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-yellow-300 border border-yellow-300">{agent.mainerType}</span>
                 </div>
+                -->
                 
                 <!-- For Own type mAIners, show LLM information or setup status -->
                 {#if agent.mainerType === 'Own'}
