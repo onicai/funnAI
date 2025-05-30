@@ -280,7 +280,7 @@
 
       <!-- Top-up Info -->
       <div class="flex flex-col gap-3">
-        <!-- Recipient Address -->
+        <!-- Recipient Address 
         <div>
           <label class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">Recipient</label>
           <div class="relative">
@@ -298,6 +298,7 @@
           </div>
           <div class="mt-1 text-xs text-green-600 dark:text-green-500">FunnAI Protocol Address</div>
         </div>
+        -->
         
         <!-- Canister ID -->
         <div>
