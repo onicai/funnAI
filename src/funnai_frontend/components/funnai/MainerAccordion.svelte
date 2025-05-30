@@ -48,28 +48,6 @@
   // For testing UI only - set to true to use mock data for the mainer accordion displaying canister INFO
   let useMockData = false;
 
-  function getCyclesBurnRateLabel(cyclesBurnRate) {
-    console.log("in MainerAccordion getCyclesBurnRateLabel cyclesBurnRate ", cyclesBurnRate);
-    const daily = "Daily";
-
-    const cycles = BigInt(cyclesBurnRate.cycles);
-    console.log("in MainerAccordion getCyclesBurnRateLabel cycles ", cycles);
-
-    if (cycles === 1_000_000_000_000n) {
-      return "Low";
-    } else if (cycles === 4_000_000_000_000n) {
-      return "Medium";
-    } else if (cycles === 10_000_000_000_000n) {
-      return "High";
-    } else if (cycles === 20_000_000_000_000n) {
-      //return "Very High";
-      return "Medium";
-    } else {
-      //return "Custom";
-      return "Medium";
-    };
-  };
-
   /**
    * Updates the agent settings based on user-selected burn rate level.
    * 
@@ -385,123 +363,39 @@
   };
 
   async function loadAgents() {
-    // Keep the original order - no reversal needed
-    const canistersInfo = agentCanistersInfo;
+    // The store now provides enriched canister info with status, cycles, etc.
+    const enrichedCanistersInfo = agentCanistersInfo;
 
-    // Filter out any canisters without valid addresses
-    const validCanistersInfo = canistersInfo.filter(canisterInfo => 
-      canisterInfo.address && canisterInfo.address.trim() !== ""
-    );
-
-    // Normal implementation for production
-    return await Promise.all(
-      validCanistersInfo.map(async (canisterInfo, index) => {
-        // Find the correct actor by looking up the original index in agentCanistersInfo
-        const originalIndex = agentCanistersInfo.findIndex(info => info.address === canisterInfo.address);
-        const agentActor = originalIndex >= 0 ? agentCanisterActors[originalIndex] : null;
-        
-        let status = "active"; // Default to active
-        let burnedCycles = 0;
-        let cycleBalance = 0;
-        let cyclesBurnRate = {};
-        let cyclesBurnRateSetting = selectedBurnRate;
-        let mainerType = 'Unknown';
-        let llmCanisters = [];
-        let llmSetupStatus = '';
-        
-        // Check for LLM setup status from the canister info
-        if (canisterInfo.status) {
-          if ('LlmSetupInProgress' in canisterInfo.status) {
-            llmSetupStatus = 'inProgress';
-          } else if ('LlmSetupFinished' in canisterInfo.status) {
-            llmSetupStatus = 'completed';
-          }
+    // Convert the enriched info to the format expected by the component
+    return enrichedCanistersInfo.map((canisterInfo, index) => {
+      // Get the correct actor by index
+      const agentActor = agentCanisterActors[index];
+      
+      // Determine mainer type from the canister info
+      let mainerType = 'Unknown';
+      if (canisterInfo.canisterType) {
+        if ('Own' in canisterInfo.canisterType.MainerAgent) {
+          mainerType = 'Own';
+        } else if ('ShareAgent' in canisterInfo.canisterType.MainerAgent) {
+          mainerType = 'Shared';
         }
-        
-        // Determine mainer type from the canister info
-        if (canisterInfo.canisterType) {
-          // Check for "Own" type in the canisterType variant
-          if ('Own' in canisterInfo.canisterType.MainerAgent) {
-            mainerType = 'Own';
-          } else if ('ShareAgent' in canisterInfo.canisterType.MainerAgent) {
-            mainerType = 'Shared';
-          };
-        };
+      }
 
-        // Try to get more detailed status info, but always include the mAIner even if this fails
-        if (agentActor) {
-          try {
-            const issueFlagsResult = await agentActor.getIssueFlagsAdmin();
-            if ('Ok' in issueFlagsResult && issueFlagsResult.Ok.lowCycleBalance) {
-              status = "inactive";
-            };
-          } catch (error) {
-            // Don't mark as inactive on error - user might still want to manage it
-            console.error(`Error fetching issue flags for ${canisterInfo.address.slice(0, 5)}:`, error);
-          };
-
-          try {
-            const statsResult = await agentActor.getMainerStatisticsAdmin();
-            if ('Ok' in statsResult) {
-              burnedCycles = Number(statsResult.Ok.totalCyclesBurnt);
-              cycleBalance = Number(statsResult.Ok.cycleBalance);
-              cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
-              
-              try {
-                cyclesBurnRateSetting = getCyclesBurnRateLabel(cyclesBurnRate);
-              } catch (error) {
-                console.error("Error converting to cyclesBurnRateSetting: ", error);
-              };
-            }
-            // Don't mark as inactive if stats call didn't return Ok - keep default active status
-          } catch (error) {
-            // Don't filter out the mAIner - user needs to see it to top it up
-            console.error(`Error fetching statistics for ${canisterInfo.address.slice(0, 5)}:`, error);
-            // Keep default active status - don't assume inactive just because API failed
-          };
-
-          // Fetch LLM canisters if this is an "Own" type mAIner
-          if (mainerType === 'Own') {
-            try {
-              // Check if the getLlmCanisterIds method exists on the actor
-              if (agentActor.getLlmCanisterIds && typeof agentActor.getLlmCanisterIds === 'function') {
-                // Attempt to get LLM canister IDs from the controller
-                const llmResult = await agentActor.getLlmCanisterIds();
-                if ('Ok' in llmResult && Array.isArray(llmResult.Ok)) {
-                  llmCanisters = llmResult.Ok;
-                  // If we have LLM canisters but status doesn't show 'completed', update it
-                  if (llmCanisters.length > 0 && llmSetupStatus !== 'completed') {
-                    llmSetupStatus = 'completed';
-                  }
-                }
-              } else {
-                console.log("getLlmCanisterIds method not available on this agent actor");
-              };
-            } catch (error) {
-              console.error("Error fetching LLM canister IDs: ", error);
-            };
-          };
-        } else {
-          // No actor available - keep as active but user may need to investigate
-          // Don't automatically assume inactive without clear evidence
-          console.warn(`No actor available for mAIner ${canisterInfo.address.slice(0, 5)}`);
-        };
-
-        // ALWAYS return the mAIner - never filter it out
-        return {
-          id: canisterInfo.address,
-          name: `mAIner ${canisterInfo.address.slice(0, 5)}`, // Use first 5 characters of canister ID
-          status,
-          burnedCycles,
-          cycleBalance,
-          cyclesBurnRate,
-          cyclesBurnRateSetting,
-          mainerType,
-          llmCanisters,
-          llmSetupStatus
-        };
-      })
-    );
+      // All the heavy lifting is now done in the store
+      return {
+        id: canisterInfo.address,
+        name: `mAIner ${canisterInfo.address.slice(0, 5)}`,
+        status: canisterInfo.status || "active",
+        burnedCycles: canisterInfo.burnedCycles || 0,
+        cycleBalance: canisterInfo.cycleBalance || 0,
+        cyclesBurnRate: canisterInfo.cyclesBurnRate || {},
+        cyclesBurnRateSetting: canisterInfo.cyclesBurnRateSetting || "Medium",
+        mainerType,
+        llmCanisters: canisterInfo.llmCanisters || [],
+        llmSetupStatus: canisterInfo.llmSetupStatus || '',
+        hasError: canisterInfo.hasError || false
+      };
+    });
   };
 
   $: {

@@ -376,21 +376,142 @@ export const createStore = ({
     return mainerControllerActor;
   };
 
+  const enrichMainerCanisterInfo = async (canisterInfo, mainerActor) => {
+    // Start with default values
+    let enrichedInfo = {
+      ...canisterInfo,
+      status: "active",
+      cycleBalance: 0,
+      burnedCycles: 0,
+      cyclesBurnRate: {},
+      cyclesBurnRateSetting: "Medium",
+      llmCanisters: [],
+      llmSetupStatus: '',
+      hasError: false
+    };
+
+    // Determine LLM setup status from canister info
+    if (canisterInfo.status) {
+      if ('LlmSetupInProgress' in canisterInfo.status) {
+        enrichedInfo.llmSetupStatus = 'inProgress';
+      } else if ('LlmSetupFinished' in canisterInfo.status) {
+        enrichedInfo.llmSetupStatus = 'completed';
+      }
+    }
+
+    // If no actor available, mark as having an error but still return the mAIner
+    if (!mainerActor) {
+      enrichedInfo.hasError = true;
+      enrichedInfo.status = "inactive";
+      return enrichedInfo;
+    }
+
+    try {
+      // Check issue flags to determine if mAIner is inactive
+      const issueFlagsResult = await mainerActor.getIssueFlagsAdmin();
+      if ('Ok' in issueFlagsResult && issueFlagsResult.Ok.lowCycleBalance) {
+        enrichedInfo.status = "inactive";
+      }
+    } catch (error) {
+      console.error(`Error fetching issue flags for ${canisterInfo.address.slice(0, 5)}:`, error);
+      enrichedInfo.hasError = true;
+      // Don't mark as inactive just because API failed - keep default active status
+    }
+
+    try {
+      // Get detailed statistics
+      const statsResult = await mainerActor.getMainerStatisticsAdmin();
+      if ('Ok' in statsResult) {
+        enrichedInfo.burnedCycles = Number(statsResult.Ok.totalCyclesBurnt);
+        enrichedInfo.cycleBalance = Number(statsResult.Ok.cycleBalance);
+        enrichedInfo.cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
+        
+        // Convert burn rate to setting label
+        try {
+          enrichedInfo.cyclesBurnRateSetting = getCyclesBurnRateLabel(statsResult.Ok.cyclesBurnRate);
+        } catch (error) {
+          console.error("Error converting to cyclesBurnRateSetting: ", error);
+        }
+      }
+    } catch (error) {
+      console.error(`Error fetching statistics for ${canisterInfo.address.slice(0, 5)}:`, error);
+      enrichedInfo.hasError = true;
+      // Don't mark as inactive just because stats API failed
+    }
+
+    // Fetch LLM canisters if this is an "Own" type mAIner
+    if (canisterInfo.canisterType && 'Own' in canisterInfo.canisterType.MainerAgent) {
+      try {
+        if (mainerActor.getLlmCanisterIds && typeof mainerActor.getLlmCanisterIds === 'function') {
+          const llmResult = await mainerActor.getLlmCanisterIds();
+          if ('Ok' in llmResult && Array.isArray(llmResult.Ok)) {
+            enrichedInfo.llmCanisters = llmResult.Ok;
+            // If we have LLM canisters but status doesn't show 'completed', update it
+            if (llmResult.Ok.length > 0 && enrichedInfo.llmSetupStatus !== 'completed') {
+              enrichedInfo.llmSetupStatus = 'completed';
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching LLM canister IDs: ", error);
+      }
+    }
+
+    return enrichedInfo;
+  };
+
+  const getCyclesBurnRateLabel = (cyclesBurnRate) => {
+    const cycles = BigInt(cyclesBurnRate.cycles);
+    
+    if (cycles === 1_000_000_000_000n) {
+      return "Low";
+    } else if (cycles === 4_000_000_000_000n) {
+      return "Medium";
+    } else if (cycles === 10_000_000_000_000n) {
+      return "High";
+    } else if (cycles === 20_000_000_000_000n) {
+      return "Medium";
+    } else {
+      return "Medium";
+    }
+  };
+
   const initializeUserMainerAgentCanisters = async (gameStateCanisterActor: typeof game_state_canister, loginType, identity: Identity) => {
     let userCanisters = [];
     let mainerActors = [];
+    let enrichedUserCanisters = [];
+    
     try {
       const getMainersResult = await gameStateCanisterActor.getMainerAgentCanistersForUser();
       // @ts-ignore
       if (getMainersResult.Ok) {
         // @ts-ignore
-        userCanisters = getMainersResult.Ok;
+        const rawUserCanisters = getMainersResult.Ok;
+        
+        // Filter out any canisters without valid addresses
+        userCanisters = rawUserCanisters.filter(canister => 
+          canister.address && canister.address.trim() !== ""
+        );
+        
+        console.log(`Filtered ${rawUserCanisters.length - userCanisters.length} invalid canisters`);
+        
+        // Initialize actors for valid canisters
         let initPromises = [];
         userCanisters.forEach(userCanister => {
           initPromises.push(initMainerAgentCanisterActor(userCanister, loginType, identity)); 
         });
         mainerActors = await Promise.all(initPromises);
-        return { mainerActors, userCanisters };
+        
+        // Enrich canister info with status, cycles, etc.
+        let enrichPromises = [];
+        userCanisters.forEach((canister, index) => {
+          enrichPromises.push(enrichMainerCanisterInfo(canister, mainerActors[index]));
+        });
+        enrichedUserCanisters = await Promise.all(enrichPromises);
+        
+        console.log(`Successfully enriched ${enrichedUserCanisters.length} mAIner canisters with status information`);
+        
+        return { mainerActors, userCanisters: enrichedUserCanisters };
       } else {
         // @ts-ignore
         console.error("Error retrieving user mAIner agent canisters: ", getMainersResult.Err);
@@ -398,7 +519,7 @@ export const createStore = ({
     } catch (error) {
       console.error("Error in initializeUserMainerAgentCanisters: ", error);
     };
-    return { mainerActors, userCanisters };
+    return { mainerActors, userCanisters: enrichedUserCanisters };
   };
 
   const nfidConnect = async () => {
