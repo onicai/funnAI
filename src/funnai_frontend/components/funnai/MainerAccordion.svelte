@@ -500,21 +500,54 @@
     agents = await loadAgents();
     //console.log("MainerAccordion onMount agents", agents);
     
-    // Automatically open the create accordion if no agents exist, regardless of auth status
+    // Automatically open the create accordion if no agents exist, or open latest mAIner if agents exist
     if (agents.length === 0) {
       setTimeout(() => {
         toggleAccordion('create');
+      }, 100);
+    } else {
+      // Open the latest mAIner if agents exist
+      setTimeout(() => {
+        const latestAgent = agents[agents.length - 1];
+        if (latestAgent && latestAgent.id) {
+          toggleAccordion(latestAgent.id);
+        }
       }, 100);
     }
   });
 
   // Watch for changes in agents or auth status
   $: if (agents.length === 0) {
+    // Only open create accordion if no agents
     setTimeout(() => {
       const content = document.getElementById(`content-create`);
       const icon = document.getElementById(`icon-create`);
       if (content && icon) {
         if (!content.classList.contains('accordion-open')) {
+          content.classList.add('accordion-open');
+          icon.style.transform = 'rotate(0deg)';
+        }
+      }
+    }, 100);
+  } else if (agents.length > 0 && !shouldOpenFirstMainerAfterCreation) {
+    // If we have agents and this isn't triggered by creation, open the latest mAIner
+    setTimeout(() => {
+      // First, ensure create accordion is closed
+      const createContent = document.getElementById(`content-create`);
+      const createIcon = document.getElementById(`icon-create`);
+      if (createContent && createIcon && createContent.classList.contains('accordion-open')) {
+        createContent.classList.remove('accordion-open');
+        createIcon.style.transform = 'rotate(180deg)';
+      }
+      
+      // Then open the latest mAIner
+      const latestAgent = agents[agents.length - 1];
+      if (latestAgent && latestAgent.id) {
+        const sanitizedId = latestAgent.id.replace(/[^a-zA-Z0-9-_]/g, '_');
+        const content = document.getElementById(`content-${sanitizedId}`);
+        const icon = document.getElementById(`icon-${sanitizedId}`);
+        
+        if (content && icon && !content.classList.contains('accordion-open')) {
           content.classList.add('accordion-open');
           icon.style.transform = 'rotate(0deg)';
         }
