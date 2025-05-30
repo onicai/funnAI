@@ -377,10 +377,10 @@ export const createStore = ({
   };
 
   const enrichMainerCanisterInfo = async (canisterInfo, mainerActor) => {
-    // Start with default values
+    // Start with default values for UI-specific properties
     let enrichedInfo = {
       ...canisterInfo,
-      status: "active",
+      uiStatus: "active",  // Use uiStatus instead of status to avoid overwriting backend status
       cycleBalance: 0,
       burnedCycles: 0,
       cyclesBurnRate: {},
@@ -402,7 +402,7 @@ export const createStore = ({
     // If no actor available, mark as having an error but still return the mAIner
     if (!mainerActor) {
       enrichedInfo.hasError = true;
-      enrichedInfo.status = "inactive";
+      enrichedInfo.uiStatus = "inactive";
       return enrichedInfo;
     }
 
@@ -410,7 +410,7 @@ export const createStore = ({
       // Check issue flags to determine if mAIner is inactive
       const issueFlagsResult = await mainerActor.getIssueFlagsAdmin();
       if ('Ok' in issueFlagsResult && issueFlagsResult.Ok.lowCycleBalance) {
-        enrichedInfo.status = "inactive";
+        enrichedInfo.uiStatus = "inactive";
       }
     } catch (error) {
       console.error(`Error fetching issue flags for ${canisterInfo.address.slice(0, 5)}:`, error);

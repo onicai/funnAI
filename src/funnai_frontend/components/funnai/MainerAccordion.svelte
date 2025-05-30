@@ -172,6 +172,26 @@
     return agentCanistersInfo.findIndex(canister => canister.address === canisterId);
   };
   
+  // Helper function to extract only the original backend fields for API calls
+  function getOriginalCanisterInfo(enrichedCanisterInfo) {
+    // Extract only the fields that the backend expects
+    const {
+      // Remove UI-specific fields that we added
+      uiStatus,
+      cycleBalance,
+      burnedCycles,
+      cyclesBurnRate,
+      cyclesBurnRateSetting,
+      llmCanisters,
+      llmSetupStatus,
+      hasError,
+      // Keep only original backend fields
+      ...originalInfo
+    } = enrichedCanisterInfo;
+    
+    return originalInfo;
+  };
+  
   // Handle top-up completion
   async function handleTopUpComplete(txId: string, canisterId: string) {
     console.log("Top-up completed" + (txId ? ` with transaction ID: ${txId}` : ""));
@@ -192,9 +212,13 @@
       return; // TODO - Implementation: decide if the top up should just be credited to the user's first agent then instead (as otherwise the payment is lost)
     };
 
+    // Clean the enriched data to get only original backend fields
+    let cleanMainerAgent = getOriginalCanisterInfo(mainerAgent);
+    console.log("handleTopUpComplete cleanMainerAgent: ", cleanMainerAgent);
+
     let mainerAgentTopUpInput = {
       paymentTransactionBlockId: BigInt(txId),
-      mainerAgent,
+      mainerAgent: cleanMainerAgent,
     };
     try {
       let topUpUserMainerAgentResponse = await $store.gameStateCanisterActor.topUpCyclesForMainerAgent(mainerAgentTopUpInput);
@@ -385,7 +409,7 @@
       return {
         id: canisterInfo.address,
         name: `mAIner ${canisterInfo.address.slice(0, 5)}`,
-        status: canisterInfo.status || "active",
+        status: canisterInfo.uiStatus || "active",  // Use uiStatus from enriched data
         burnedCycles: canisterInfo.burnedCycles || 0,
         cycleBalance: canisterInfo.cycleBalance || 0,
         cyclesBurnRate: canisterInfo.cyclesBurnRate || {},
