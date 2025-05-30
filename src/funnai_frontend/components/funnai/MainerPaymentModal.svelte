@@ -3,7 +3,7 @@
   import Modal from "../CommonModal.svelte";
   import TokenImages from "../TokenImages.svelte";
   import { ArrowUp, Check } from 'lucide-svelte';
-  import { MEMO_PAYMENT_PROTOCOL, store } from "../../stores/store";
+  import { MEMO_PAYMENT_PROTOCOL, store, theme } from "../../stores/store";
   import { IcrcService } from "../../helpers/IcrcService";
   import BigNumber from "bignumber.js";
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
@@ -136,17 +136,17 @@
   <div class="p-4 flex flex-col gap-4">
     {#if isTokenLoading}
       <div class="flex justify-center py-4">
-        <span class="w-6 h-6 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin"></span>
+        <span class="w-6 h-6 border-2 border-gray-400/30 border-t-gray-400 dark:border-gray-400/30 dark:border-t-gray-400 rounded-full animate-spin"></span>
       </div>
     {:else}
       <!-- Token Info Banner -->
-      <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-700/20 border border-gray-600/30 text-gray-100">
-        <div class="w-10 h-10 rounded-full bg-gray-800 p-1 border border-gray-700 flex-shrink-0">
+      <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-700/20 border border-gray-600/30 text-gray-100 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100 bg-gray-100 border-gray-300 text-gray-900">
+        <div class="w-10 h-10 rounded-full bg-gray-800 p-1 border border-gray-700 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700 bg-gray-200 border-gray-300">
           <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
         </div>
         <div class="flex flex-col">
-          <div class="text-gray-100 font-medium">{token.name}</div>
-          <div class="text-sm text-gray-400">Balance: {formatBalance(balance.toString(), token.decimals)} {token.symbol}</div>
+          <div class="text-gray-100 font-medium dark:text-gray-100 text-gray-900">{token.name}</div>
+          <div class="text-sm text-gray-400 dark:text-gray-400 text-gray-600">Balance: {formatBalance(balance.toString(), token.decimals)} {token.symbol}</div>
         </div>
       </div>
 
@@ -154,11 +154,11 @@
       <div class="flex flex-col gap-3">
         <!-- Recipient Address -->
         <div>
-          <label class="block text-xs text-gray-400 mb-1.5">Recipient</label>
+          <label class="block text-xs text-gray-400 mb-1.5 dark:text-gray-400 text-gray-600">Recipient</label>
           <div class="relative">
             <input
               type="text"
-              class="w-full py-2 px-3 bg-gray-800 border border-gray-600 rounded-md text-sm text-gray-100"
+              class="w-full py-2 px-3 bg-gray-800 border border-gray-600 rounded-md text-sm text-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 bg-white border-gray-300 text-gray-900"
               value={protocolAddress}
               disabled
             />
@@ -173,31 +173,31 @@
 
         <!-- Amount -->
         <div>
-          <label class="block text-xs text-gray-400 mb-1.5">Payment Amount</label>
+          <label class="block text-xs text-gray-400 mb-1.5 dark:text-gray-400 text-gray-600">Payment Amount</label>
           <div class="relative">
             <input
               type="text"
-              class="w-full py-2 px-3 bg-gray-800 border border-gray-600 rounded-md text-sm text-gray-100"
+              class="w-full py-2 px-3 bg-gray-800 border border-gray-600 rounded-md text-sm text-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 bg-white border-gray-300 text-gray-900"
               value={paymentAmount}
               disabled
             />
             <div class="absolute inset-y-0 right-0 flex items-center">
-              <span class="pr-3 text-sm text-gray-400">{token.symbol}</span>
+              <span class="pr-3 text-sm text-gray-400 dark:text-gray-400 text-gray-600">{token.symbol}</span>
             </div>
           </div>
-          <div class="mt-1 text-xs text-gray-400">
+          <div class="mt-1 text-xs text-gray-400 dark:text-gray-400 text-gray-600">
             Fee: {formatBalance(tokenFee.toString(), token.decimals)} {token.symbol}
           </div>
         </div>
         
         <!-- Payment Description -->
-        <div class="p-3 rounded-lg bg-blue-900/20 border border-blue-800/30 text-blue-200 text-sm">
+        <div class="p-3 rounded-lg bg-blue-900/20 border border-blue-800/30 text-blue-200 text-sm dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200 bg-blue-50 border-blue-200 text-blue-800">
           This payment is used to create your {modelType} mAIner model. Once payment is complete, your mAIner will be created automatically.
         </div>
 
         <!-- Error message -->
         {#if errorMessage}
-          <div class="mt-1 p-2 rounded bg-red-900/30 border border-red-900/50 text-red-400 text-sm">
+          <div class="mt-1 p-2 rounded bg-red-900/30 border border-red-900/50 text-red-400 text-sm dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-400 bg-red-50 border-red-200 text-red-700">
             {errorMessage}
           </div>
         {/if}
@@ -211,6 +211,8 @@
           class:hover:bg-purple-500={hasEnoughBalance && !isValidating}
           class:bg-gray-700={!hasEnoughBalance || isValidating}
           class:cursor-not-allowed={!hasEnoughBalance || isValidating}
+          class:dark:bg-gray-700={!hasEnoughBalance || isValidating}
+          class:bg-gray-400={!hasEnoughBalance || isValidating}
           disabled={!hasEnoughBalance || isValidating}
         >
           {#if isValidating}

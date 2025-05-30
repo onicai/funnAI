@@ -325,31 +325,33 @@
               class:border-red-400={!hasEnoughBalance && isValidAmount}
               class:border-yellow-400={isBelowMinimum}
               class:border-gray-600={!isValidAmount && !isBelowMinimum}
+              class:dark:border-gray-600={!isValidAmount && !isBelowMinimum}
+              class:border-gray-300={!isValidAmount && !isBelowMinimum}
               placeholder="Enter ICP amount to top up"
               bind:value={amount}
               on:input={handleAmountInput}
             />
             <div class="absolute inset-y-0 right-0 flex items-center">
-              <span class="pr-3 text-sm text-gray-400">{token.symbol}</span>
+              <span class="pr-3 text-sm text-gray-400 dark:text-gray-400 text-gray-600">{token.symbol}</span>
             </div>
           </div>
-          <div class="mt-1 text-xs text-gray-400">
+          <div class="mt-1 text-xs text-gray-400 dark:text-gray-400 text-gray-600">
             Fee: {formatBalance(tokenFee.toString(), token.decimals)} {token.symbol}
           </div>
           {#if isBelowMinimum}
-            <div class="mt-1 text-xs text-yellow-400">
+            <div class="mt-1 text-xs text-yellow-400 dark:text-yellow-400 text-yellow-600">
               Minimum amount: {MIN_TOPUP_AMOUNT} {token.symbol}
             </div>
           {/if}
         </div>
         
         <!-- Cycles Conversion Display -->
-        <div class="p-3 rounded-lg bg-blue-900/20 border border-blue-800/30 text-blue-200 text-sm flex flex-col gap-2">
+        <div class="p-3 rounded-lg bg-blue-900/20 border border-blue-800/30 text-blue-200 text-sm flex flex-col gap-2 dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200 bg-blue-50 border-blue-200 text-blue-800">
           <div class="flex items-center gap-1">
             <Info size={14} />
             <span class="font-medium">Cycles Conversion</span>
             {#if isLoadingConversionRate}
-              <span class="w-3 h-3 ml-2 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin"></span>
+              <span class="w-3 h-3 ml-2 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin dark:border-blue-400/30 dark:border-t-blue-400 border-blue-600/30 border-t-blue-600"></span>
             {/if}
           </div>
           
@@ -359,13 +361,13 @@
               <span class="font-medium">≈ {cyclesAmount} Trillion Cycles</span>
             </div>
           {:else}
-            <div class="text-blue-300/70">Loading conversion rate...</div>
+            <div class="text-blue-300/70 dark:text-blue-300/70 text-blue-600/70">Loading conversion rate...</div>
           {/if}
         </div>
 
         <!-- Error message -->
         {#if errorMessage}
-          <div class="mt-1 p-2 rounded bg-red-900/30 border border-red-900/50 text-red-400 text-sm">
+          <div class="mt-1 p-2 rounded bg-red-900/30 border border-red-900/50 text-red-400 text-sm dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-400 bg-red-50 border-red-200 text-red-700">
             {errorMessage}
           </div>
         {/if}
@@ -379,6 +381,8 @@
           class:hover:bg-purple-500={hasEnoughBalance && !isValidating}
           class:bg-gray-700={!hasEnoughBalance || isValidating}
           class:cursor-not-allowed={!hasEnoughBalance || isValidating}
+          class:dark:bg-gray-700={!hasEnoughBalance || isValidating}
+          class:bg-gray-400={!hasEnoughBalance || isValidating}
           disabled={!hasEnoughBalance || isValidating}
         >
           {#if isValidating}
