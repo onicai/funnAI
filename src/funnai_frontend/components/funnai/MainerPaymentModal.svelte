@@ -60,6 +60,9 @@
     tokenFee = BigInt(token.fee_fixed);
   }
   
+  // Calculate total amount including fee for display
+  $: totalPaymentAmount = token ? new BigNumber(paymentAmount).plus(new BigNumber(tokenFee.toString()).dividedBy(new BigNumber(10).pow(token.decimals))).toString() : paymentAmount;
+  
   async function loadBalance() {
     try {
       if (!$store.principal || !token) return;
@@ -178,7 +181,7 @@
             <input
               type="text"
               class="w-full py-2 px-3 bg-white border border-gray-300 rounded-md text-sm text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
-              value={paymentAmount}
+              value={totalPaymentAmount}
               disabled
             />
             <div class="absolute inset-y-0 right-0 flex items-center">
@@ -186,13 +189,13 @@
             </div>
           </div>
           <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-            Fee: {formatBalance(tokenFee.toString(), token.decimals)} {token.symbol}
+            Includes network fee: {formatBalance(tokenFee.toString(), token.decimals)} {token.symbol}
           </div>
         </div>
         
         <!-- Payment Description -->
         <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200">
-          This payment is used to create your mAIner. Once payment is complete, your mAIner will be created automatically.
+          This payment ({totalPaymentAmount} {token.symbol} total including network fees) is used to create your mAIner. Once payment is complete, your mAIner will be created automatically.
         </div>
 
         <!-- Error message -->
@@ -219,7 +222,7 @@
             Processing...
           {:else}
             <ArrowUp size={16} />
-            Pay {paymentAmount} {token.symbol}
+            Pay {totalPaymentAmount} {token.symbol}
           {/if}
         </button>
       </div>
