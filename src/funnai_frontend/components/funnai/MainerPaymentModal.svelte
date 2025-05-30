@@ -53,7 +53,7 @@
   let balance: bigint = BigInt(0);
   
   // Determine payment amount based on model type
-  $: paymentAmount = modelType === 'Own' ? '0.0003' : '0.0002';
+  $: paymentAmount = modelType === 'Own' ? '0.0003' : '0.0001';
   $: amountBigInt = token ? BigInt(new BigNumber(paymentAmount).times(new BigNumber(10).pow(token.decimals)).toString()) : BigInt(0);
   $: hasEnoughBalance = balance >= (amountBigInt + tokenFee);
   $: if (token) {
@@ -142,7 +142,7 @@
       <!-- Token Info Banner -->
       <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100">
         <div class="w-10 h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
-          <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
+          <TokenImages tokens={[token]} size={38} showSymbolFallback={true} />
         </div>
         <div class="flex flex-col">
           <div class="text-gray-900 font-medium dark:text-gray-100">{token.name}</div>
@@ -168,7 +168,7 @@
               </div>
             </div>
           </div>
-          <div class="mt-1 text-xs text-green-600 dark:text-green-500">FunnAI mAIner Creation Address</div>
+          <div class="mt-1 text-xs text-green-600 dark:text-green-500">funnAI mAIner creation address</div>
         </div>
 
         <!-- Amount -->
@@ -192,7 +192,7 @@
         
         <!-- Payment Description -->
         <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200">
-          This payment is used to create your {modelType} mAIner model. Once payment is complete, your mAIner will be created automatically.
+          This payment is used to create your mAIner. Once payment is complete, your mAIner will be created automatically.
         </div>
 
         <!-- Error message -->

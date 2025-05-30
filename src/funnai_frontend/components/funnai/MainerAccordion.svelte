@@ -668,7 +668,7 @@
           Create mAIner
         </button>
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
-          {modelType === 'Own' ? '0.0003' : '0.0002'} ICP + 0.0001 fee
+          {modelType === 'Own' ? '0.0003' : '0.0002'} ICP
         </div>
       </div>
       
