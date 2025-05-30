@@ -388,11 +388,17 @@
     // Keep the original order - no reversal needed
     const canistersInfo = agentCanistersInfo;
 
+    // Filter out any canisters without valid addresses
+    const validCanistersInfo = canistersInfo.filter(canisterInfo => 
+      canisterInfo.address && canisterInfo.address.trim() !== ""
+    );
+
     // Normal implementation for production
     return await Promise.all(
-      canistersInfo.map(async (canisterInfo, index) => {
-        // Get the correct actor by index (now they match since no reversal)
-        const agentActor = agentCanisterActors[index];
+      validCanistersInfo.map(async (canisterInfo, index) => {
+        // Find the correct actor by looking up the original index in agentCanistersInfo
+        const originalIndex = agentCanistersInfo.findIndex(info => info.address === canisterInfo.address);
+        const agentActor = originalIndex >= 0 ? agentCanisterActors[originalIndex] : null;
         
         let status = "active"; // Default to active
         let burnedCycles = 0;
@@ -440,11 +446,6 @@
               burnedCycles = Number(statsResult.Ok.totalCyclesBurnt);
               cycleBalance = Number(statsResult.Ok.cycleBalance);
               cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
-              
-              // Only mark as inactive if cycle balance is critically low (less than 1T cycles)
-              if (cycleBalance < 1_000_000_000_000) { // Less than 1T cycles
-                status = "inactive";
-              }
               
               try {
                 cyclesBurnRateSetting = getCyclesBurnRateLabel(cyclesBurnRate);
