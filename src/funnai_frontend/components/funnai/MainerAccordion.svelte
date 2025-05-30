@@ -657,7 +657,7 @@
         </li>
       </ol>
 
-      <div class="flex justify-end">
+      <div class="flex flex-col items-end">
         <button 
           on:click={createAgent} 
           disabled={isCreatingMainer}
@@ -665,8 +665,11 @@
           class:opacity-50={isCreatingMainer}
           class:cursor-not-allowed={isCreatingMainer}
         >
-          Create mAIner ({modelType === 'Own' ? '0.0003' : '0.0002'} ICP + 0.0001 fee)
+          Create mAIner
         </button>
+        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
+          {modelType === 'Own' ? '0.0003' : '0.0002'} ICP + 0.0001 fee
+        </div>
       </div>
       
       <!-- Terminal-style progress component -->
@@ -742,7 +745,7 @@
 
 <!-- mAIner Summary Header -->
 {#if totalMainers > 0}
-  <div class="mt-2 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+  <div class="mt-2 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-2">
     <div class="flex items-center justify-between">
       <div class="flex items-center space-x-4">
         <div class="flex items-center space-x-3">
