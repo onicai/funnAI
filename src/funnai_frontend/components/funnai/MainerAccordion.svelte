@@ -596,10 +596,10 @@
               </button> -->
               <button 
                 type="button" 
-                class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-full focus:z-10 focus:ring-2 focus:ring-blue-700
+                class="px-4 py-2 text-xs cursor-default font-medium border border-gray-200 dark:border-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-700
                 {modelType === 'Shared' 
-                  ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
-                  : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
+                  ? 'bg-purple-600 dark:bg-purple-700 text-white' 
+                  : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300'}"
                 on:click={() => modelType = 'Shared'}
               >
                 mAIner
