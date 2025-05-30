@@ -232,12 +232,19 @@
       console.error("Failed to top up mAIner:", topUpError);
     };
 
-    // Remove from loading set after processing
-    agentsBeingToppedUp.delete(canisterId);
-    agentsBeingToppedUp = agentsBeingToppedUp; // Trigger reactivity
-    
     // Refresh the list of agents to show updated balances
-    store.loadUserMainerCanisters();
+    try {
+      await store.loadUserMainerCanisters();
+      // Explicitly reload agents after store update
+      agents = await loadAgents();
+      console.log("Agents refreshed after top-up");
+    } catch (refreshError) {
+      console.error("Error refreshing agents after top-up:", refreshError);
+    } finally {
+      // Remove from loading set after processing
+      agentsBeingToppedUp.delete(canisterId);
+      agentsBeingToppedUp = agentsBeingToppedUp; // Trigger reactivity
+    }
   }
   
   async function handleSendComplete(txId?: string) {
