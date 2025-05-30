@@ -37,6 +37,9 @@
   // Track which agents are being topped up (agent-specific loading states)
   let agentsBeingToppedUp = new Set<string>();
 
+  // Track which agents are having their burn rate updated
+  let agentsBeingUpdated = new Set<string>();
+
   // Reactive counters for mAIner status
   $: activeMainers = agents.filter(agent => agent.status === 'active').length;
   $: inactiveMainers = agents.filter(agent => agent.status === 'inactive').length;
@@ -78,9 +81,17 @@
     console.log("in MainerAccordion updateAgentBurnRate agent ", agent);
     console.log("in MainerAccordion updateAgentBurnRate agentCanisterActors ", agentCanisterActors);
     console.log("in MainerAccordion updateAgentBurnRate agentCanisterActors[0] ", agentCanisterActors[0]);
+    
+    // Add this agent to the updating set
+    agentsBeingUpdated.add(agent.id);
+    agentsBeingUpdated = agentsBeingUpdated; // Trigger reactivity
+    
     let actorIndex = findAgentIndexByAddress(agent.id);
     if (actorIndex < 0) {
       console.error(`updateAgentBurnRate actor not found for agent: ${agent}`);
+      // Remove from updating set on error
+      agentsBeingUpdated.delete(agent.id);
+      agentsBeingUpdated = agentsBeingUpdated;
       return;
     };
     let agentActor = agentCanisterActors[actorIndex]; // Get actor for agent
@@ -97,6 +108,9 @@
         break;
       default:
         console.error(`updateAgentBurnRate Unsupported level: ${level}`);
+        // Remove from updating set on error
+        agentsBeingUpdated.delete(agent.id);
+        agentsBeingUpdated = agentsBeingUpdated;
         return;
     }
 
@@ -109,6 +123,10 @@
       });
     } catch (error) {
       console.error("Failed to update agent settings:", error);
+    } finally {
+      // Remove from updating set after processing
+      agentsBeingUpdated.delete(agent.id);
+      agentsBeingUpdated = agentsBeingUpdated; // Trigger reactivity
     }
   };
 
@@ -920,8 +938,14 @@
                       {agent.cyclesBurnRateSetting === 'Low' 
                         ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
                         : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
+                      class:opacity-50={agentsBeingUpdated.has(agent.id)}
+                      class:cursor-not-allowed={agentsBeingUpdated.has(agent.id)}
+                      disabled={agentsBeingUpdated.has(agent.id)}
                       on:click={() => updateAgentBurnRate('Low', agent) }
                     >
+                      {#if agentsBeingUpdated.has(agent.id) && agent.cyclesBurnRateSetting === 'Low'}
+                        <span class="w-3 h-3 mr-1 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                      {/if}
                       Low
                     </button>
                     <button 
@@ -930,8 +954,14 @@
                       {agent.cyclesBurnRateSetting === 'Medium' 
                         ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
                         : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
+                      class:opacity-50={agentsBeingUpdated.has(agent.id)}
+                      class:cursor-not-allowed={agentsBeingUpdated.has(agent.id)}
+                      disabled={agentsBeingUpdated.has(agent.id)}
                       on:click={() => updateAgentBurnRate('Medium', agent) }
                     >
+                      {#if agentsBeingUpdated.has(agent.id) && agent.cyclesBurnRateSetting === 'Medium'}
+                        <span class="w-3 h-3 mr-1 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                      {/if}
                       Medium
                     </button>
                     <button 
@@ -940,8 +970,14 @@
                       {agent.cyclesBurnRateSetting === 'High' 
                         ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
                         : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
+                      class:opacity-50={agentsBeingUpdated.has(agent.id)}
+                      class:cursor-not-allowed={agentsBeingUpdated.has(agent.id)}
+                      disabled={agentsBeingUpdated.has(agent.id)}
                       on:click={() => updateAgentBurnRate('High', agent) }
                     >
+                      {#if agentsBeingUpdated.has(agent.id) && agent.cyclesBurnRateSetting === 'High'}
+                        <span class="w-3 h-3 mr-1 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                      {/if}
                       High
                     </button>
                   </div>            
