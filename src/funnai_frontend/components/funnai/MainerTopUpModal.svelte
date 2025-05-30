@@ -3,7 +3,7 @@
   import Modal from "../CommonModal.svelte";
   import TokenImages from "../TokenImages.svelte";
   import { ArrowUp, Info, Check } from 'lucide-svelte';
-  import { MEMO_PAYMENT_PROTOCOL, store } from "../../stores/store";
+  import { MEMO_PAYMENT_PROTOCOL, store, theme } from "../../stores/store";
   import { IcrcService } from "../../helpers/IcrcService";
   import BigNumber from "bignumber.js";
   import { formatBalance, formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
@@ -59,7 +59,11 @@
   let cyclesAmount: string = "0";
   let conversionRate: BigNumber | null = null;
   
-  $: isValidAmount = amount && !isNaN(Number(amount)) && Number(amount) > 0;
+  // Minimum amount for top-up
+  const MIN_TOPUP_AMOUNT = 0.1;
+  
+  $: isValidAmount = amount && !isNaN(Number(amount)) && Number(amount) >= MIN_TOPUP_AMOUNT;
+  $: isBelowMinimum = amount && !isNaN(Number(amount)) && Number(amount) > 0 && Number(amount) < MIN_TOPUP_AMOUNT;
   $: amountBigInt = isValidAmount && token
     ? BigInt(new BigNumber(amount).times(new BigNumber(10).pow(token.decimals)).toString())
     : BigInt(0);
@@ -260,17 +264,17 @@
   <div class="p-4 flex flex-col gap-4">
     {#if isTokenLoading}
       <div class="flex justify-center py-4">
-        <span class="w-6 h-6 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin"></span>
+        <span class="w-6 h-6 border-2 border-gray-400/30 border-t-gray-400 dark:border-gray-400/30 dark:border-t-gray-400 rounded-full animate-spin"></span>
       </div>
     {:else}
       <!-- Token Info Banner -->
-      <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-700/20 border border-gray-600/30 text-gray-100">
-        <div class="w-10 h-10 rounded-full bg-gray-800 p-1 border border-gray-700 flex-shrink-0">
+      <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-700/20 border border-gray-600/30 text-gray-100 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100 bg-gray-100 border-gray-300 text-gray-900">
+        <div class="w-10 h-10 rounded-full bg-gray-800 p-1 border border-gray-700 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700 bg-gray-200 border-gray-300">
           <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
         </div>
         <div class="flex flex-col">
-          <div class="text-gray-100 font-medium">{token.name}</div>
-          <div class="text-sm text-gray-400">Balance: {formatBalance(balance.toString(), token.decimals)} {token.symbol}</div>
+          <div class="text-gray-100 font-medium dark:text-gray-100 text-gray-900">{token.name}</div>
+          <div class="text-sm text-gray-400 dark:text-gray-400 text-gray-600">Balance: {formatBalance(balance.toString(), token.decimals)} {token.symbol}</div>
         </div>
       </div>
 
@@ -278,11 +282,11 @@
       <div class="flex flex-col gap-3">
         <!-- Recipient Address -->
         <div>
-          <label class="block text-xs text-gray-400 mb-1.5">Recipient</label>
+          <label class="block text-xs text-gray-400 mb-1.5 dark:text-gray-400 text-gray-600">Recipient</label>
           <div class="relative">
             <input
               type="text"
-              class="w-full py-2 px-3 bg-gray-800 border border-gray-600 rounded-md text-sm text-gray-100"
+              class="w-full py-2 px-3 bg-gray-800 border border-gray-600 rounded-md text-sm text-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 bg-white border-gray-300 text-gray-900"
               value={protocolAddress}
               disabled
             />
@@ -297,29 +301,30 @@
         
         <!-- Canister ID -->
         <div>
-          <label class="block text-xs text-gray-400 mb-1.5">mAIner canister</label>
+          <label class="block text-xs text-gray-400 mb-1.5 dark:text-gray-400 text-gray-600">mAIner canister</label>
           <div class="relative">
             <input
               type="text"
-              class="w-full py-2 px-3 bg-gray-800 border border-gray-600 rounded-md text-sm text-gray-100"
+              class="w-full py-2 px-3 bg-gray-800 border border-gray-600 rounded-md text-sm text-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 bg-white border-gray-300 text-gray-900"
               value={canisterName ? `${canisterName} (${canisterId})` : canisterId}
               disabled
             />
           </div>
-          <div class="mt-1 text-xs text-gray-500">mAIner to be topped up</div>
+          <div class="mt-1 text-xs text-gray-500 dark:text-gray-500 text-gray-600">mAIner to be topped up</div>
         </div>
 
         <!-- Amount -->
         <div>
-          <label class="block text-xs text-gray-400 mb-1.5">ICP Amount</label>
+          <label class="block text-xs text-gray-400 mb-1.5 dark:text-gray-400 text-gray-600">ICP Amount</label>
           <div class="relative">
             <input
               type="text"
               inputmode="decimal"
-              class="w-full py-2 px-3 bg-gray-800 border rounded-md text-sm text-gray-100"
+              class="w-full py-2 px-3 bg-gray-800 border rounded-md text-sm text-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 bg-white border-gray-300 text-gray-900"
               class:border-green-400={hasEnoughBalance && isValidAmount}
               class:border-red-400={!hasEnoughBalance && isValidAmount}
-              class:border-gray-600={!isValidAmount}
+              class:border-yellow-400={isBelowMinimum}
+              class:border-gray-600={!isValidAmount && !isBelowMinimum}
               placeholder="Enter ICP amount to top up"
               bind:value={amount}
               on:input={handleAmountInput}
@@ -331,6 +336,11 @@
           <div class="mt-1 text-xs text-gray-400">
             Fee: {formatBalance(tokenFee.toString(), token.decimals)} {token.symbol}
           </div>
+          {#if isBelowMinimum}
+            <div class="mt-1 text-xs text-yellow-400">
+              Minimum amount: {MIN_TOPUP_AMOUNT} {token.symbol}
+            </div>
+          {/if}
         </div>
         
         <!-- Cycles Conversion Display -->

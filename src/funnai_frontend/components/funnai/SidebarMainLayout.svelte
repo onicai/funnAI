@@ -83,7 +83,7 @@ function handleThemeToggle() {
           'bg-gradient-to-r from-purple-50 to-gray-100 border-l-4 border-l-purple-500 font-medium text-purple-700 dark:bg-gradient-to-r dark:from-gray-800 dark:to-gray-700 dark:text-purple-300 dark:border-l-purple-400' : 
           'bg-white hover:border-2 hover:border-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:border-gray-600 dark:hover:text-white'}`} 
         style="box-shadow: rgb(214, 195, 219) 0px 0px 6px 0px; border-radius: 16px;" type="button">
-        mAIner
+        mAIners
       </button>
     </a>
 
