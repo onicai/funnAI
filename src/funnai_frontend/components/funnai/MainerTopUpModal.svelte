@@ -268,13 +268,13 @@
       </div>
     {:else}
       <!-- Token Info Banner -->
-      <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-700/20 border border-gray-600/30 text-gray-100 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100 bg-gray-100 border-gray-300 text-gray-900">
-        <div class="w-10 h-10 rounded-full bg-gray-800 p-1 border border-gray-700 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700 bg-gray-200 border-gray-300">
+      <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100">
+        <div class="w-10 h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
           <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
         </div>
         <div class="flex flex-col">
-          <div class="text-gray-100 font-medium dark:text-gray-100 text-gray-900">{token.name}</div>
-          <div class="text-sm text-gray-400 dark:text-gray-400 text-gray-600">Balance: {formatBalance(balance.toString(), token.decimals)} {token.symbol}</div>
+          <div class="text-gray-900 font-medium dark:text-gray-100">{token.name}</div>
+          <div class="text-sm text-gray-600 dark:text-gray-400">Balance: {formatBalance(balance.toString(), token.decimals)} {token.symbol}</div>
         </div>
       </div>
 
@@ -282,11 +282,11 @@
       <div class="flex flex-col gap-3">
         <!-- Recipient Address -->
         <div>
-          <label class="block text-xs text-gray-400 mb-1.5 dark:text-gray-400 text-gray-600">Recipient</label>
+          <label class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">Recipient</label>
           <div class="relative">
             <input
               type="text"
-              class="w-full py-2 px-3 bg-gray-800 border border-gray-600 rounded-md text-sm text-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 bg-white border-gray-300 text-gray-900"
+              class="w-full py-2 px-3 bg-white border border-gray-300 rounded-md text-sm text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
               value={protocolAddress}
               disabled
             />
@@ -296,62 +296,63 @@
               </div>
             </div>
           </div>
-          <div class="mt-1 text-xs text-green-500">FunnAI Protocol Address</div>
+          <div class="mt-1 text-xs text-green-600 dark:text-green-500">FunnAI Protocol Address</div>
         </div>
         
         <!-- Canister ID -->
         <div>
-          <label class="block text-xs text-gray-400 mb-1.5 dark:text-gray-400 text-gray-600">mAIner canister</label>
+          <label class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">mAIner canister</label>
           <div class="relative">
             <input
               type="text"
-              class="w-full py-2 px-3 bg-gray-800 border border-gray-600 rounded-md text-sm text-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 bg-white border-gray-300 text-gray-900"
+              class="w-full py-2 px-3 bg-white border border-gray-300 rounded-md text-sm text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
               value={canisterName ? `${canisterName} (${canisterId})` : canisterId}
               disabled
             />
           </div>
-          <div class="mt-1 text-xs text-gray-500 dark:text-gray-500 text-gray-600">mAIner to be topped up</div>
+          <div class="mt-1 text-xs text-gray-600 dark:text-gray-500">mAIner to be topped up</div>
         </div>
 
         <!-- Amount -->
         <div>
-          <label class="block text-xs text-gray-400 mb-1.5 dark:text-gray-400 text-gray-600">ICP Amount</label>
+          <div class="flex justify-between items-center mb-1.5">
+            <label for="amount-input" class="block text-xs text-gray-600 dark:text-gray-400">ICP Amount</label>
+          </div>
           <div class="relative">
             <input
               type="text"
               inputmode="decimal"
-              class="w-full py-2 px-3 bg-gray-800 border rounded-md text-sm text-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 bg-white border-gray-300 text-gray-900"
+              class="w-full py-2 px-3 bg-white border rounded-md text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-100"
               class:border-green-400={hasEnoughBalance && isValidAmount}
               class:border-red-400={!hasEnoughBalance && isValidAmount}
               class:border-yellow-400={isBelowMinimum}
-              class:border-gray-600={!isValidAmount && !isBelowMinimum}
-              class:dark:border-gray-600={!isValidAmount && !isBelowMinimum}
               class:border-gray-300={!isValidAmount && !isBelowMinimum}
+              class:dark:border-gray-600={!isValidAmount && !isBelowMinimum}
               placeholder="Enter ICP amount to top up"
               bind:value={amount}
               on:input={handleAmountInput}
             />
             <div class="absolute inset-y-0 right-0 flex items-center">
-              <span class="pr-3 text-sm text-gray-400 dark:text-gray-400 text-gray-600">{token.symbol}</span>
+              <span class="pr-3 text-sm text-gray-600 dark:text-gray-400">{token.symbol}</span>
             </div>
           </div>
-          <div class="mt-1 text-xs text-gray-400 dark:text-gray-400 text-gray-600">
+          <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
             Fee: {formatBalance(tokenFee.toString(), token.decimals)} {token.symbol}
           </div>
           {#if isBelowMinimum}
-            <div class="mt-1 text-xs text-yellow-400 dark:text-yellow-400 text-yellow-600">
+            <div class="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
               Minimum amount: {MIN_TOPUP_AMOUNT} {token.symbol}
             </div>
           {/if}
         </div>
         
         <!-- Cycles Conversion Display -->
-        <div class="p-3 rounded-lg bg-blue-900/20 border border-blue-800/30 text-blue-200 text-sm flex flex-col gap-2 dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200 bg-blue-50 border-blue-200 text-blue-800">
+        <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm flex flex-col gap-2 dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200">
           <div class="flex items-center gap-1">
             <Info size={14} />
             <span class="font-medium">Cycles Conversion</span>
             {#if isLoadingConversionRate}
-              <span class="w-3 h-3 ml-2 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin dark:border-blue-400/30 dark:border-t-blue-400 border-blue-600/30 border-t-blue-600"></span>
+              <span class="w-3 h-3 ml-2 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin dark:border-blue-400/30 dark:border-t-blue-400"></span>
             {/if}
           </div>
           
@@ -361,13 +362,13 @@
               <span class="font-medium">≈ {cyclesAmount} Trillion Cycles</span>
             </div>
           {:else}
-            <div class="text-blue-300/70 dark:text-blue-300/70 text-blue-600/70">Loading conversion rate...</div>
+            <div class="text-blue-600/70 dark:text-blue-300/70">Loading conversion rate...</div>
           {/if}
         </div>
 
         <!-- Error message -->
         {#if errorMessage}
-          <div class="mt-1 p-2 rounded bg-red-900/30 border border-red-900/50 text-red-400 text-sm dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-400 bg-red-50 border-red-200 text-red-700">
+          <div class="mt-1 p-2 rounded bg-red-50 border border-red-200 text-red-700 text-sm dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-400">
             {errorMessage}
           </div>
         {/if}
@@ -379,10 +380,9 @@
           class="mt-2 py-2.5 px-4 rounded-md text-white font-medium flex items-center justify-center gap-2 transition-colors"
           class:bg-purple-600={hasEnoughBalance && !isValidating}
           class:hover:bg-purple-500={hasEnoughBalance && !isValidating}
-          class:bg-gray-700={!hasEnoughBalance || isValidating}
+          class:bg-gray-400={!hasEnoughBalance || isValidating}
           class:cursor-not-allowed={!hasEnoughBalance || isValidating}
           class:dark:bg-gray-700={!hasEnoughBalance || isValidating}
-          class:bg-gray-400={!hasEnoughBalance || isValidating}
           disabled={!hasEnoughBalance || isValidating}
         >
           {#if isValidating}

@@ -125,123 +125,95 @@
 </script>
 
 <Modal
-  {isOpen}
-  variant="transparent"
-  {onClose}
+  isOpen={isOpen}
+  onClose={onClose}
   title="Confirm Transfer"
-  width="min(450px, 92vw)"
+  width="420px"
+  variant="transparent"
   height="auto"
-  target="body"
-  isPadded={false}
   className="transfer-confirmation-modal"
-  modalKey="transfer-confirmation-modal"
 >
-  <div class="confirm-container" in:fade={{ duration: 200 }}>
-    <!-- Transfer Header -->
-    <div class="transfer-header">
-      <div class="token-info">
-        <div class="token-logo">
-          <img 
-            src={token.logo_url} 
-            alt={token.symbol}
-            class="token-image" 
-            loading="lazy"
-          />
+  <div class="p-6 flex flex-col gap-4">
+    <!-- Success animation -->
+    {#if showSuccess}
+      <div class="text-center py-8" transition:fade={{ duration: 300 }}>
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+          <Check size={32} class="text-green-600 dark:text-green-400" />
         </div>
-        <div class="token-details">
-          <span class="token-name">{token.name}</span>
-          <span class="token-symbol">{token.symbol}</span>
-        </div>
+        <p class="text-lg font-medium text-gray-900 dark:text-gray-100">Transfer Confirmed!</p>
       </div>
-      
-      <div class="transfer-amount">
-        <span class="amount-value">{amount} {token.symbol}</span>
-        {#if usdValue !== "0.00"}
-          <span class="usd-value">≈ ${usdValue} USD</span>
-        {/if}
-      </div>
-    </div>
-    
-    <!-- Transfer Details -->
-    <div class="transfer-details">
-      <div class="detail-section">
-        <div class="section-title">
-          <span>Transaction Details</span>
+    {:else}
+      <!-- Transfer Details -->
+      <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 space-y-3">
+        <h3 class="text-base font-medium text-gray-900 dark:text-gray-100">Transfer Details</h3>
+        
+        <!-- Amount -->
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Amount</span>
+          <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{receiverAmount} {token.symbol}</span>
         </div>
         
-        <div class="detail-rows">
-          <div class="detail-row">
-            <span class="detail-label">You're sending</span>
-            <span class="detail-value">{amount} {token.symbol}</span>
-          </div>
-          
-          <div class="detail-row">
-            <span class="detail-label">Network fee</span>
-            <span class="detail-value fee">{formattedFee} {token.symbol}</span>
-          </div>
-          
-          <div class="detail-row total">
-            <span class="detail-label">Total amount</span>
-            <span class="detail-value">{totalAmount} {token.symbol}</span>
-          </div>
-        </div>
-      </div>
-      
-      <div class="detail-section">
-        <div class="section-title">
-          <span>Recipient</span>
+        <!-- Fee -->
+        <div class="flex justify-between items-center">
+          <span class="text-sm text-gray-600 dark:text-gray-400">Network Fee</span>
+          <span class="text-sm text-gray-900 dark:text-gray-100">{formattedFee} {token.symbol}</span>
         </div>
         
-        <div class="recipient-address">
-          <div class="address-display">
-            <span class="address-value" title={toPrincipal}>{truncatedAddress}</span>
-          </div>
-          <div class="address-type">
-            {toPrincipal.length === 64 ? 'Account ID' : 'Principal ID'}
+        <!-- Total -->
+        <div class="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
+          <span class="text-sm font-medium text-gray-900 dark:text-gray-100">Total</span>
+          <div class="text-right">
+            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{totalAmount} {token.symbol}</div>
+            {#if Number(usdValue) > 0}
+              <div class="text-xs text-gray-600 dark:text-gray-400">${usdValue} USD</div>
+            {/if}
           </div>
         </div>
       </div>
-      
-      <!-- Warning Section -->
-      <div class="warning-section">
-        <AlertTriangle size={16} class="warning-icon" />
-        <span class="warning-text">Transfers are irreversible. Please verify all details before confirming.</span>
+
+      <!-- Recipient -->
+      <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+        <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Sending to</h3>
+        <div class="font-mono text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 p-2 rounded border border-gray-200 dark:border-gray-600">
+          {truncatedAddress}
+        </div>
       </div>
-    </div>
-    
-    <!-- Action Buttons -->
-    <div class="action-buttons">
-      <button 
-        type="button" 
-        class="cancel-button" 
-        on:click={onClose}
-        disabled={isProcessing || showSuccess}
-      >
-        Cancel
-      </button>
-      
-      <button
-        type="button"
-        class="confirm-button"
-        class:loading={isProcessing}
-        class:success={showSuccess}
-        on:click={handleConfirm}
-        disabled={isProcessing || showSuccess}
-      >
-        {#if showSuccess}
-          <div class="success-icon">
-            <Check size={18} />
-          </div>
-          Confirmed!
-        {:else if isProcessing}
-          <div class="spinner"></div>
-          Processing...
-        {:else}
-          <ArrowRight size={18} />
-          Confirm Transfer
-        {/if}
-      </button>
-    </div>
+
+      <!-- Warning -->
+      <div class="flex items-start gap-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/30 rounded-lg">
+        <AlertTriangle size={16} class="text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
+        <div class="text-sm">
+          <p class="text-yellow-800 dark:text-yellow-200 font-medium">Double-check the recipient address</p>
+          <p class="text-yellow-700 dark:text-yellow-300 mt-1">Transfers cannot be reversed once confirmed.</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-3 pt-2">
+        <button
+          type="button"
+          on:click={onClose}
+          class="flex-1 py-2.5 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors"
+          disabled={isProcessing}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          on:click={handleConfirm}
+          class="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md flex items-center justify-center gap-2 transition-colors"
+          disabled={isProcessing}
+        >
+          {#if isProcessing}
+            <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            Processing...
+          {:else}
+            <ArrowRight size={16} />
+            Confirm Transfer
+          {/if}
+        </button>
+      </div>
+    {/if}
   </div>
 </Modal>
 
