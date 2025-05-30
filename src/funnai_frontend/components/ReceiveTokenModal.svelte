@@ -134,7 +134,7 @@
       <div class="w-10 h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
         <TokenImages
           tokens={[token]}
-          size={32}
+          size={38}
           showSymbolFallback={true}
         />
       </div>

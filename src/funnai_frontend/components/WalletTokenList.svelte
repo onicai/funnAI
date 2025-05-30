@@ -203,7 +203,7 @@
 
             <!-- Desktop token column -->
             <div class="hidden sm:flex items-center gap-3">
-              <TokenImages tokens={[token]} size={32} />
+              <TokenImages tokens={[token]} size={38} />
               <div class="flex flex-col">
                 <div class="flex items-center gap-1">
                   <span class="font-semibold text-gray-900 dark:text-gray-100">{token.symbol}</span>

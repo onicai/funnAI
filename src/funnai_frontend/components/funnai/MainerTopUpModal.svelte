@@ -270,7 +270,7 @@
       <!-- Token Info Banner -->
       <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100">
         <div class="w-10 h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
-          <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
+          <TokenImages tokens={[token]} size={38} showSymbolFallback={true} />
         </div>
         <div class="flex flex-col">
           <div class="text-gray-900 font-medium dark:text-gray-100">{token.name}</div>
