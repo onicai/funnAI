@@ -220,11 +220,20 @@
           {#if isValidating}
             <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
             Processing...
+          {:else if !hasEnoughBalance}
+            Insufficient Balance
           {:else}
             <ArrowUp size={16} />
             Pay {totalPaymentAmount} {token.symbol}
           {/if}
         </button>
+        
+        <!-- Insufficient balance helper -->
+        {#if !hasEnoughBalance && !isValidating && token}
+          <div class="mt-2 p-2 rounded bg-orange-50 border border-orange-200 text-orange-700 text-sm dark:bg-orange-900/30 dark:border-orange-800/30 dark:text-orange-300">
+            You need {formatBalance((amountBigInt + tokenFee - balance).toString(), token.decimals)} more {token.symbol} to create this mAIner.
+          </div>
+        {/if}
       </div>
     {/if}
   </div>
