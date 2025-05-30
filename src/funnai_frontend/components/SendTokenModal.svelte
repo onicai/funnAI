@@ -380,7 +380,7 @@
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '10px')});"
     >
       <div class="w-10 h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
-        <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
+        <TokenImages tokens={[token]} size={38} showSymbolFallback={true} />
       </div>
       <div class="flex flex-col">
         <div class="text-gray-900 font-medium dark:text-gray-100">{token.name}</div>
