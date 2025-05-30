@@ -263,7 +263,7 @@
               <!-- Check for all title rendering options -->
               <div class="flex-grow">
                 <slot name="title">
-                  <h2 class="text-lg font-semibold modal-title text-gray-100">
+                  <h2 class="text-lg font-semibold modal-title text-gray-900 dark:text-gray-100">
                     {#if typeof title === "string" && !title.includes("<")}
                       {title}
                     {/if}
@@ -271,7 +271,7 @@
                 </slot>
               </div>
               <button
-                class="!flex !items-center hover:text-red-600 !border-0 !shadow-none group relative ml-2 text-gray-300 hover:text-red-400"
+                class="!flex !items-center hover:text-red-600 !border-0 !shadow-none group relative ml-2 text-gray-600 hover:text-red-400 dark:text-gray-300 dark:hover:text-red-400"
                 on:click={(e) => handleClose(e)}
                 aria-label="Close modal"
               >
