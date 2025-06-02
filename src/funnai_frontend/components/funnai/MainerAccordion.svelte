@@ -23,52 +23,30 @@
   let showCopyIndicator = false;
   let selectedModel = ""; // track selected model
   let addressCopied = false;
-  let modelType: 'Own' | 'Shared' = 'Own'; // Default to Own model
+  let modelType: 'Own' | 'Shared' = 'Shared'; // Default to Shared model
   let loginModalOpen = false;
   let mainerPaymentModalOpen = false;
   let mainerTopUpModalOpen = false;
   let selectedCanister = { id: "", name: "" };
   
-  // Debug agent for testing UI
-  const debugAgent = {
-    id: "abcde-fghij-klmno-pqrst-uvwxy-z",
-    name: "Debug mAIner",
-    status: "active",
-    burnedCycles: 1000000,
-    cycleBalance: 5000000
-  };
-  
   // Progress tracking for mAIner creation
   let isCreatingMainer = false;
   let mainerCreationProgress: {message: string, timestamp: string, complete: boolean}[] = [];
+  let shouldOpenFirstMainerAfterCreation = false; // Flag to control when to auto-open
 
   // Track which agents are being topped up (agent-specific loading states)
   let agentsBeingToppedUp = new Set<string>();
 
+  // Track which agents are having their burn rate updated
+  let agentsBeingUpdated = new Set<string>();
+
+  // Reactive counters for mAIner status
+  $: activeMainers = agents.filter(agent => agent.status === 'active').length;
+  $: inactiveMainers = agents.filter(agent => agent.status === 'inactive').length;
+  $: totalMainers = agents.length;
+
   // For testing UI only - set to true to use mock data for the mainer accordion displaying canister INFO
   let useMockData = false;
-
-  function getCyclesBurnRateLabel(cyclesBurnRate) {
-    console.log("in MainerAccordion getCyclesBurnRateLabel cyclesBurnRate ", cyclesBurnRate);
-    const daily = "Daily";
-
-    const cycles = BigInt(cyclesBurnRate.cycles);
-    console.log("in MainerAccordion getCyclesBurnRateLabel cycles ", cycles);
-
-    if (cycles === 1_000_000_000_000n) {
-      return "Low";
-    } else if (cycles === 4_000_000_000_000n) {
-      return "Medium";
-    } else if (cycles === 10_000_000_000_000n) {
-      return "High";
-    } else if (cycles === 20_000_000_000_000n) {
-      //return "Very High";
-      return "Medium";
-    } else {
-      //return "Custom";
-      return "Medium";
-    };
-  };
 
   /**
    * Updates the agent settings based on user-selected burn rate level.
@@ -81,9 +59,17 @@
     console.log("in MainerAccordion updateAgentBurnRate agent ", agent);
     console.log("in MainerAccordion updateAgentBurnRate agentCanisterActors ", agentCanisterActors);
     console.log("in MainerAccordion updateAgentBurnRate agentCanisterActors[0] ", agentCanisterActors[0]);
+    
+    // Add this agent to the updating set
+    agentsBeingUpdated.add(agent.id);
+    agentsBeingUpdated = agentsBeingUpdated; // Trigger reactivity
+    
     let actorIndex = findAgentIndexByAddress(agent.id);
     if (actorIndex < 0) {
       console.error(`updateAgentBurnRate actor not found for agent: ${agent}`);
+      // Remove from updating set on error
+      agentsBeingUpdated.delete(agent.id);
+      agentsBeingUpdated = agentsBeingUpdated;
       return;
     };
     let agentActor = agentCanisterActors[actorIndex]; // Get actor for agent
@@ -100,6 +86,9 @@
         break;
       default:
         console.error(`updateAgentBurnRate Unsupported level: ${level}`);
+        // Remove from updating set on error
+        agentsBeingUpdated.delete(agent.id);
+        agentsBeingUpdated = agentsBeingUpdated;
         return;
     }
 
@@ -107,25 +96,63 @@
       console.log("in MainerAccordion updateAgentBurnRate burnRateSetting ", burnRateSetting);
       await agentActor.updateAgentSettings(burnRateSetting);
       console.log(`Successfully updated burn rate to ${level}`);
-      loadAgents().then(newAgents => {
-        agents = newAgents;
-      });
+      
+      // Refresh the list of agents to show updated settings
+      try {
+        await store.loadUserMainerCanisters();
+        // Explicitly reload agents after store update  
+        agents = await loadAgents();
+        console.log("Agents refreshed after burn rate update");
+      } catch (refreshError) {
+        console.error("Error refreshing agents after burn rate update:", refreshError);
+      }
     } catch (error) {
       console.error("Failed to update agent settings:", error);
+    } finally {
+      // Remove from updating set after processing
+      agentsBeingUpdated.delete(agent.id);
+      agentsBeingUpdated = agentsBeingUpdated; // Trigger reactivity
     }
   };
 
   function toggleAccordion(index: string) {
-    const content = document.getElementById(`content-${index}`);
-    const icon = document.getElementById(`icon-${index}`);
+    // Sanitize the ID to ensure it works as a CSS selector
+    const sanitizedId = index.replace(/[^a-zA-Z0-9-_]/g, '_');
+    const content = document.getElementById(`content-${sanitizedId}`);
+    const icon = document.getElementById(`icon-${sanitizedId}`);
     
-    if (!content || !icon) return;
+    if (!content || !icon) {
+      console.warn(`Could not find accordion elements for ID: ${sanitizedId}`);
+      return;
+    }
 
     content.classList.toggle('accordion-open');
     if (content.classList.contains('accordion-open')) {
       icon.style.transform = 'rotate(0deg)';
     } else {
       icon.style.transform = 'rotate(180deg)';
+    }
+  };
+
+  function openFirstMainerAccordion() {
+    // Open the last mAIner's accordion (which will be the newest one in original order)
+    if (agents.length > 0 && shouldOpenFirstMainerAfterCreation) {
+      const lastMainerAccordion = agents[agents.length - 1]; // Get the last (newest) mAIner
+      
+      setTimeout(() => {
+        const sanitizedId = lastMainerAccordion.id.replace(/[^a-zA-Z0-9-_]/g, '_');
+        const content = document.getElementById(`content-${sanitizedId}`);
+        const icon = document.getElementById(`icon-${sanitizedId}`);
+        
+        if (content && icon) {
+          if (!content.classList.contains('accordion-open')) {
+            content.classList.add('accordion-open');
+            icon.style.transform = 'rotate(0deg)';
+          }
+        }
+        
+        shouldOpenFirstMainerAfterCreation = false; // Reset the flag
+      }, 300); // Increased timeout to ensure DOM is ready
     }
   };
 
@@ -152,6 +179,26 @@
     return agentCanistersInfo.findIndex(canister => canister.address === canisterId);
   };
   
+  // Helper function to extract only the original backend fields for API calls
+  function getOriginalCanisterInfo(enrichedCanisterInfo) {
+    // Extract only the fields that the backend expects
+    const {
+      // Remove UI-specific fields that we added
+      uiStatus,
+      cycleBalance,
+      burnedCycles,
+      cyclesBurnRate,
+      cyclesBurnRateSetting,
+      llmCanisters,
+      llmSetupStatus,
+      hasError,
+      // Keep only original backend fields
+      ...originalInfo
+    } = enrichedCanisterInfo;
+    
+    return originalInfo;
+  };
+  
   // Handle top-up completion
   async function handleTopUpComplete(txId: string, canisterId: string) {
     console.log("Top-up completed" + (txId ? ` with transaction ID: ${txId}` : ""));
@@ -172,34 +219,41 @@
       return; // TODO - Implementation: decide if the top up should just be credited to the user's first agent then instead (as otherwise the payment is lost)
     };
 
+    // Clean the enriched data to get only original backend fields
+    let cleanMainerAgent = getOriginalCanisterInfo(mainerAgent);
+    console.log("handleTopUpComplete cleanMainerAgent: ", cleanMainerAgent);
+
     let mainerAgentTopUpInput = {
       paymentTransactionBlockId: BigInt(txId),
-      mainerAgent,
+      mainerAgent: cleanMainerAgent,
     };
     try {
       let topUpUserMainerAgentResponse = await $store.gameStateCanisterActor.topUpCyclesForMainerAgent(mainerAgentTopUpInput);
       console.log("handleTopUpComplete topUpUserMainerAgentResponse: ", topUpUserMainerAgentResponse);
-      //@ts-ignore
-      if (topUpUserMainerAgentResponse?.Ok) {
+      
+      if ('Ok' in topUpUserMainerAgentResponse) {
         // top up was successful
-        
-      //@ts-ignore
-      } else if (topUpUserMainerAgentResponse?.Err) {
-        //@ts-ignore
-        console.error("Error in topUpCyclesForMainerAgent:", topUpUserMainerAgentResponse?.Err);
+        console.log("Top-up successful");
+      } else if ('Err' in topUpUserMainerAgentResponse) {
+        console.error("Error in topUpCyclesForMainerAgent:", topUpUserMainerAgentResponse.Err);
       };
     } catch (topUpError) {
       console.error("Failed to top up mAIner:", topUpError);
     };
 
-    // Remove from loading set after processing
-    agentsBeingToppedUp.delete(canisterId);
-    agentsBeingToppedUp = agentsBeingToppedUp; // Trigger reactivity
-    
     // Refresh the list of agents to show updated balances
-    loadAgents().then(newAgents => {
-      agents = newAgents;
-    });
+    try {
+      await store.loadUserMainerCanisters();
+      // Explicitly reload agents after store update
+      agents = await loadAgents();
+      console.log("Agents refreshed after top-up");
+    } catch (refreshError) {
+      console.error("Error refreshing agents after top-up:", refreshError);
+    } finally {
+      // Remove from loading set after processing
+      agentsBeingToppedUp.delete(canisterId);
+      agentsBeingToppedUp = agentsBeingToppedUp; // Trigger reactivity
+    }
   }
   
   async function handleSendComplete(txId?: string) {
@@ -208,10 +262,24 @@
     
     // Set the creation process as started
     isCreatingMainer = true;
+    shouldOpenFirstMainerAfterCreation = true; // Set flag to auto-open the new mAIner
     
     // Start the staged creation process
     // Step 1: Begin registration
     addProgressMessage("Registering new mAIner...");
+    
+    // Check which backend methods are available and use the appropriate flow
+    if (typeof $store.gameStateCanisterActor.createUserMainerAgent === 'function') {
+      // Use the full creation flow with all backend methods
+      await handleFullMainerCreation(txId);
+    } else {
+      addProgressMessage("Backend methods not available for mAIner creation");
+      isCreatingMainer = false;
+      shouldOpenFirstMainerAfterCreation = false;
+    }
+  };
+
+  async function handleFullMainerCreation(txId?: string) {
     // See the Game State canister interface here: src/declarations/game_state_canister/game_state_canister.did.d.ts
     type SelectableMainerLLMs = { 'Qwen2_5_500M' : null };
     let selectableMainerLLM = { 'Qwen2_5_500M' : null }; // default
@@ -235,22 +303,24 @@
     };
     try {
       let createUserMainerAgentResponse = await $store.gameStateCanisterActor.createUserMainerAgent(mainerCreationInput);
-      //@ts-ignore
-      if (createUserMainerAgentResponse?.Ok) {
+      console.log("createUserMainerAgentResponse:", createUserMainerAgentResponse);
+      
+      // Check if the response has the Ok property (successful response)
+      if ('Ok' in createUserMainerAgentResponse) {
+        addProgressMessage("mAIner canister created successfully!");
+        
         // Step 2: Create controller
         addProgressMessage("Creating mAIner controller...");
-        //@ts-ignore
-        let spinUpMainerControllerCanisterResponse = await $store.gameStateCanisterActor.spinUpMainerControllerCanister(createUserMainerAgentResponse?.Ok);
-        //@ts-ignore
-        if (spinUpMainerControllerCanisterResponse?.Ok) {
+        let spinUpMainerControllerCanisterResponse = await $store.gameStateCanisterActor.spinUpMainerControllerCanister(createUserMainerAgentResponse.Ok);
+        
+        if ('Ok' in spinUpMainerControllerCanisterResponse) {
           // Step 3: Set up LLM
           if (modelType === 'Own') {
             // We don't wait for LLM canister setup anymore, just trigger it and let it run in background
             addProgressMessage("Starting LLM environment setup in the background...");
             
             // Trigger LLM setup without awaiting it
-            //@ts-ignore
-            $store.gameStateCanisterActor.setUpMainerLlmCanister(spinUpMainerControllerCanisterResponse?.Ok)
+            $store.gameStateCanisterActor.setUpMainerLlmCanister(spinUpMainerControllerCanisterResponse.Ok)
               .then((response) => {
                 console.log("LLM canister setup triggered successfully:", response);
               })
@@ -268,24 +338,44 @@
           // Step 5: Completion
           setTimeout(() => {
             addProgressMessage("mAIner successfully created! You can start using it while LLM setup completes in the background.", true);
+            shouldOpenFirstMainerAfterCreation = true; // Ensure flag is set before reloading
+            
             // Refresh the list of agents to show the newly created one
-            loadAgents().then(newAgents => {
-              agents = newAgents;
+            store.loadUserMainerCanisters().then(() => {
+              // Wait for the reactive update to complete, then open the first mAIner (newest one)
+              setTimeout(() => {
+                openFirstMainerAccordion();
+                // Reset the terminal after opening the accordion
+                setTimeout(() => {
+                  isCreatingMainer = false;
+                  mainerCreationProgress = [];
+                }, 2000);
+              }, 500); // Increased timeout for better reliability
             });
           }, 2000);
-        //@ts-ignore
-        } else if (spinUpMainerControllerCanisterResponse?.Err) {
-          //@ts-ignore
-          console.error("Error in spinUpMainerControllerCanister:", spinUpMainerControllerCanisterResponse?.Err);
+        } else if ('Err' in spinUpMainerControllerCanisterResponse) {
+          console.error("Error in spinUpMainerControllerCanister:", spinUpMainerControllerCanisterResponse.Err);
+          addProgressMessage("Error creating controller: " + JSON.stringify(spinUpMainerControllerCanisterResponse.Err));
+          isCreatingMainer = false;
         };
-      //@ts-ignore
-      } else if (createUserMainerAgentResponse?.Err) {
-        //@ts-ignore
-        console.error("Error in createUserMainerAgent:", createUserMainerAgentResponse?.Err);
+      } else if ('Err' in createUserMainerAgentResponse) {
+        // Handle error response
+        console.error("Error in createUserMainerAgent:", createUserMainerAgentResponse.Err);
+        addProgressMessage("Error creating mAIner: " + JSON.stringify(createUserMainerAgentResponse.Err));
+        isCreatingMainer = false;
       };
     } catch (creationError) {
       console.error("Failed to create mAIner:", creationError);
+      addProgressMessage("Failed to create mAIner: " + creationError.message);
+      isCreatingMainer = false;
     };
+  };
+
+  async function handleSimplifiedMainerCreation(txId?: string) {
+    // This method is no longer needed since createUserMainerAgent is available
+    // But keeping it for potential future use
+    addProgressMessage("Simplified creation flow not implemented");
+    isCreatingMainer = false;
   };
 
   // Helper function to add a progress message with timestamp
@@ -299,191 +389,44 @@
     ];
   }
 
-  // Debug function to test mAIner creation without payment
-  function debugSkipPayment() {
-    // Call handleSendComplete directly to skip the payment process
-    handleSendComplete("0");
-  }
-
   function copyAddress() {
     addressCopied = true;
   };
 
   async function loadAgents() {
-    // For UI testing only - return mock data when enabled
-    if (useMockData) {
-      return [
-        {
-          id: "zlbtt-2yaaa-aaaak-qufwa-cai",
-          name: "mAIner 1",
-          status: "active",
-          burnedCycles: 1234567,
-          cycleBalance: 5000000,
-          cyclesBurnRate: {},
-          mainerType: "Own",
-          llmCanisters: [
-            "3f4dg-7uaaa-aaaak-abcde-cai",
-            "5g9kl-8vaaa-aaaak-fghij-cai"
-          ]
-        },
-        {
-          id: "w4ctb-aiaaa-aaaak-aczaq-cai",
-          name: "mAIner 2",
-          status: "inactive",
-          burnedCycles: 890123,
-          cycleBalance: 100000,
-          cyclesBurnRate: {},
-          mainerType: "Shared",
-          llmCanisters: []
-        },
-        {
-          id: "jc6wa-hyaaa-aaaak-abtlq-cai",
-          name: "mAIner 3",
-          status: "active",
-          burnedCycles: 567890,
-          cycleBalance: 3000000,
-          cyclesBurnRate: {},
-          mainerType: "Own",
-          llmCanisters: [],
-          llmSetupStatus: "inProgress" // Example of a setup in progress
+    // The store now provides enriched canister info with status, cycles, etc.
+    const enrichedCanistersInfo = agentCanistersInfo;
+
+    // Convert the enriched info to the format expected by the component
+    return enrichedCanistersInfo.map((canisterInfo, index) => {
+      // Get the correct actor by index
+      const agentActor = agentCanisterActors[index];
+      
+      // Determine mainer type from the canister info
+      let mainerType = 'Unknown';
+      if (canisterInfo.canisterType) {
+        if ('Own' in canisterInfo.canisterType.MainerAgent) {
+          mainerType = 'Own';
+        } else if ('ShareAgent' in canisterInfo.canisterType.MainerAgent) {
+          mainerType = 'Shared';
         }
-      ];
-    }
+      }
 
-    // Normal implementation for production
-    return await Promise.all(
-      agentCanistersInfo.map(async (canisterInfo, index) => {
-        //console.log("in MainerAccordion agentCanisterActors.map index ", index);
-        //console.log("in MainerAccordion agentCanisterActors.map agentActor", agentActor);
-
-        const agentActor = agentCanisterActors[index];
-        console.log("in MainerAccordion agentCanisterActors.map canisterInfo", canisterInfo);
-        let status = "active";
-        let burnedCycles = 0;
-        let cycleBalance = 0;
-        let cyclesBurnRate = {};
-        let cyclesBurnRateSetting = selectedBurnRate;
-        let mainerType = 'Unknown';
-        let llmCanisters = [];
-        let llmSetupStatus = '';
-        
-        // Check for LLM setup status from the canister info
-        if (canisterInfo.status) {
-          if ('LlmSetupInProgress' in canisterInfo.status) {
-            llmSetupStatus = 'inProgress';
-          } else if ('LlmSetupFinished' in canisterInfo.status) {
-            llmSetupStatus = 'completed';
-          }
-        }
-        
-        // Determine mainer type from the canister info
-        console.log("in MainerAccordion agentCanisterActors.map canisterInfo.canisterType", canisterInfo.canisterType);
-        if (canisterInfo.canisterType) {
-          // Check for "Own" type in the canisterType variant
-          if ('Own' in canisterInfo.canisterType.MainerAgent) {
-            mainerType = 'Own';
-          } else if ('ShareAgent' in canisterInfo.canisterType.MainerAgent) {
-            mainerType = 'Shared';
-          };
-        };
-
-        if (agentActor) {
-          try {
-            const issueFlagsResult = await agentActor.getIssueFlagsAdmin();
-            //console.log("in MainerAccordion agentCanisterActors.map issueFlagsResult", issueFlagsResult);
-            if ('Ok' in issueFlagsResult && issueFlagsResult.Ok.lowCycleBalance) {
-              status = "inactive";
-            };
-          } catch (error) {
-            console.error("Error fetching issue flags: ", error);
-            status = "inactive";
-          };
-
-          try {
-            const statsResult = await agentActor.getMainerStatisticsAdmin();
-            //console.log("in MainerAccordion agentCanisterActors.map statsResult", statsResult);
-            if ('Ok' in statsResult) {
-              burnedCycles = Number(statsResult.Ok.totalCyclesBurnt);
-              cycleBalance = Number(statsResult.Ok.cycleBalance);
-              cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
-              try {
-                cyclesBurnRateSetting = getCyclesBurnRateLabel(cyclesBurnRate);
-              } catch (error) {
-                console.error("Error converting to cyclesBurnRateSetting: ", error);
-              };
-            };
-          } catch (error) {
-            console.error("Error fetching statistics: ", error);
-          };
-
-          // Fetch LLM canisters if this is an "Own" type mAIner
-          if (mainerType === 'Own') {
-            try {
-              // Check if the getLlmCanisterIds method exists on the actor
-              if (agentActor.getLlmCanisterIds && typeof agentActor.getLlmCanisterIds === 'function') {
-                // Attempt to get LLM canister IDs from the controller
-                const llmResult = await agentActor.getLlmCanisterIds();
-                if ('Ok' in llmResult && Array.isArray(llmResult.Ok)) {
-                  llmCanisters = llmResult.Ok;
-                  // If we have LLM canisters but status doesn't show 'completed', update it
-                  if (llmCanisters.length > 0 && llmSetupStatus !== 'completed') {
-                    llmSetupStatus = 'completed';
-                  }
-                }
-              } else {
-                console.log("getLlmCanisterIds method not available on this agent actor");
-              };
-            } catch (error) {
-              console.error("Error fetching LLM canister IDs: ", error);
-            };
-          };
-        } else {
-          status = "inactive";
-        };
-
-        // TODO: this is for already created mAIners, handle unlocked mAIners that the user is allowed to create (don't have an address yet) differently
-        // TODO: based on unlocked mAIners determine whether the user can create a new mAIner and of which type (user needs unlocked mAIners that they can create to go ahead with the creation flow, otherwise they first have to get unlocked mAIners, e.g. via the lottery)
-        /* Background on unlocking mAIner creation and how to check:
-            This is the flow how a user can unlock access to create a mAIner (initially):
-            1) The user registers on the funnAI backend for the lotteries (to register for some lotteries an access code is needed, e.g. Charles holders)
-            2) The user needs to win in one of the lottery runs
-            3) For each user that wins a lottery run, the funnAI backend calls the Game State canister to add the associated prize which is an unlocked mAIner (of type Own or Shared)
-            4) This mAIner entry of status Unlocked is the pre-requisite to be allowed to create a new mAIner (and is type specific, i.e. of type Own or Shared)
-            5) The frontend checks whether the user has mAIner entries of status Unlocked and which ones (i.e. of type Own or Shared), if the user has Unlocked entries the UI enables the creation flow
-            6) Accordingly, the user can now follow the creation flow (it should be disabled otherwise, with a note that the user first has to unlock a mAIner e.g. via the lottery)
-            In the future, there will be additional ways to unlock a mAIner, e.g. simply letting the user trigger it from the UI once mAIner slots aren't as scarce anymore
-
-          How the access check, whether a user is allowed to create a mAIner, works technically:
-            The frontend loads the user's agents as implemented in store via gameStateCanisterActor.getMainerAgentCanistersForUser and the associated info is in agentCanisterActors and agentCanistersInfo.
-            See the Game State canister interface here: src/declarations/game_state_canister/game_state_canister.did.d.ts
-            If these retrieved entries include mAIner's of status Unlocked, then the user has unlocked mAIners that they can proceed to create
-            Now, check which type of mAIner is unlocked (Own and/or Shared) and enable the creation flow on the UI accordingly
-         */
-
-        console.log("in MainerAccordion agentCanisterActors.map before return id ", canisterInfo.address);
-        console.log("in MainerAccordion agentCanisterActors.map before return name ", `mAIner ${index + 1}`);
-        console.log("in MainerAccordion agentCanisterActors.map before return status ", status);
-        console.log("in MainerAccordion agentCanisterActors.map before return burnedCycles ", burnedCycles);
-        console.log("in MainerAccordion agentCanisterActors.map before return cycleBalance ", cycleBalance);
-        console.log("in MainerAccordion agentCanisterActors.map before return cyclesBurnRate ", cyclesBurnRate);
-        console.log("in MainerAccordion agentCanisterActors.map before return cyclesBurnRateSetting ", cyclesBurnRateSetting);
-        console.log("in MainerAccordion agentCanisterActors.map before return mainerType ", mainerType);
-        console.log("in MainerAccordion agentCanisterActors.map before return llmCanisters ", llmCanisters);
-        console.log("in MainerAccordion agentCanisterActors.map before return llmSetupStatus ", llmSetupStatus);
-        return {
-          id: canisterInfo.address,
-          name: `mAIner ${index + 1}`,
-          status,
-          burnedCycles,
-          cycleBalance,
-          cyclesBurnRate,
-          cyclesBurnRateSetting,
-          mainerType,
-          llmCanisters,
-          llmSetupStatus
-        };
-      })
-    );
+      // All the heavy lifting is now done in the store
+      return {
+        id: canisterInfo.address,
+        name: `mAIner ${canisterInfo.address.slice(0, 5)}`,
+        status: canisterInfo.uiStatus || "active",  // Use uiStatus from enriched data
+        burnedCycles: canisterInfo.burnedCycles || 0,
+        cycleBalance: canisterInfo.cycleBalance || 0,
+        cyclesBurnRate: canisterInfo.cyclesBurnRate || {},
+        cyclesBurnRateSetting: canisterInfo.cyclesBurnRateSetting || "Medium",
+        mainerType,
+        llmCanisters: canisterInfo.llmCanisters || [],
+        llmSetupStatus: canisterInfo.llmSetupStatus || '',
+        hasError: canisterInfo.hasError || false
+      };
+    });
   };
 
   $: {
@@ -492,6 +435,8 @@
 
     (async () => {
       agents = await loadAgents();
+      // Check if we should auto-open the first mAIner after creation
+      openFirstMainerAccordion();
     })();
   };
 
@@ -506,21 +451,54 @@
     agents = await loadAgents();
     //console.log("MainerAccordion onMount agents", agents);
     
-    // Automatically open the create accordion if no agents exist, regardless of auth status
+    // Automatically open the create accordion if no agents exist, or open latest mAIner if agents exist
     if (agents.length === 0) {
       setTimeout(() => {
         toggleAccordion('create');
+      }, 100);
+    } else {
+      // Open the latest mAIner if agents exist
+      setTimeout(() => {
+        const latestAgent = agents[agents.length - 1];
+        if (latestAgent && latestAgent.id) {
+          toggleAccordion(latestAgent.id);
+        }
       }, 100);
     }
   });
 
   // Watch for changes in agents or auth status
   $: if (agents.length === 0) {
+    // Only open create accordion if no agents
     setTimeout(() => {
       const content = document.getElementById(`content-create`);
       const icon = document.getElementById(`icon-create`);
       if (content && icon) {
         if (!content.classList.contains('accordion-open')) {
+          content.classList.add('accordion-open');
+          icon.style.transform = 'rotate(0deg)';
+        }
+      }
+    }, 100);
+  } else if (agents.length > 0 && !shouldOpenFirstMainerAfterCreation) {
+    // If we have agents and this isn't triggered by creation, open the latest mAIner
+    setTimeout(() => {
+      // First, ensure create accordion is closed
+      const createContent = document.getElementById(`content-create`);
+      const createIcon = document.getElementById(`icon-create`);
+      if (createContent && createIcon && createContent.classList.contains('accordion-open')) {
+        createContent.classList.remove('accordion-open');
+        createIcon.style.transform = 'rotate(180deg)';
+      }
+      
+      // Then open the latest mAIner
+      const latestAgent = agents[agents.length - 1];
+      if (latestAgent && latestAgent.id) {
+        const sanitizedId = latestAgent.id.replace(/[^a-zA-Z0-9-_]/g, '_');
+        const content = document.getElementById(`content-${sanitizedId}`);
+        const icon = document.getElementById(`icon-${sanitizedId}`);
+        
+        if (content && icon && !content.classList.contains('accordion-open')) {
           content.classList.add('accordion-open');
           icon.style.transform = 'rotate(0deg)';
         }
@@ -555,9 +533,9 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
                 </svg>
             </span>
-            <h3 class="font-medium leading-tight mb-2 dark:text-gray-300">Model Type</h3>
+            <h3 class="font-medium leading-tight mb-2 dark:text-gray-300">AI Agent Type</h3>
             <div class="inline-flex rounded-full shadow-xs w-full justify-start mb-1" role="group">
-              <button 
+              <!-- <button 
                 type="button" 
                 class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-s-full focus:z-10 focus:ring-2 focus:ring-blue-700 
                 {modelType === 'Own' 
@@ -566,16 +544,16 @@
                 on:click={() => modelType = 'Own'}
               >
                 Own model
-              </button>
+              </button> -->
               <button 
                 type="button" 
-                class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-e-full focus:z-10 focus:ring-2 focus:ring-blue-700
+                class="px-4 py-2 text-xs cursor-default font-medium border border-gray-200 dark:border-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-700
                 {modelType === 'Shared' 
-                  ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
-                  : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
+                  ? 'bg-purple-600 dark:bg-purple-700 text-white' 
+                  : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300'}"
                 on:click={() => modelType = 'Shared'}
               >
-                Shared model
+                mAIner
               </button>
             </div>
         </li>
@@ -622,15 +600,15 @@
                 {/if}
             </span>
             <h3 class="font-medium leading-tight mb-1 dark:text-gray-300">Pay & Spin up</h3>
-            <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md p-3 mb-3">
+            <!-- <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md p-3 mb-3">
               <p class="text-xs text-blue-800 dark:text-blue-300">
-                Create mAIner requires a payment fee of <span class="font-medium">{modelType === 'Own' ? '0.0003' : '0.0002'} ICP</span> for {modelType} model
+                Creating the mAIner requires a setup fee of <span class="font-medium">{modelType === 'Own' ? '0.0003' : '0.0002'} ICP</span> for {modelType} model
               </p>
-            </div>
+            </div> -->
         </li>
       </ol>
 
-      <div class="flex justify-end">
+      <div class="flex flex-col items-end">
         <button 
           on:click={createAgent} 
           disabled={isCreatingMainer}
@@ -638,29 +616,12 @@
           class:opacity-50={isCreatingMainer}
           class:cursor-not-allowed={isCreatingMainer}
         >
-          Create mAIner ({modelType === 'Own' ? '0.0003' : '0.0002'} ICP)
+          Create mAIner
         </button>
+        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
+          {modelType === 'Own' ? '0.0003' : '0.0002'} ICP
+        </div>
       </div>
-      
-      <!-- Debug button - only for development testing -->
-      <div class="mt-2 text-right">
-        <button 
-          on:click={debugSkipPayment} 
-          class="text-xs text-gray-400 hover:text-gray-300 dark:text-gray-600 dark:hover:text-gray-500"
-        >
-          [Debug: Skip Payment]
-        </button>
-      </div>
-      <div class="mt-2 text-right">
-        <button 
-            class="text-xs text-gray-400 hover:text-gray-300 dark:text-gray-600 dark:hover:text-gray-500"
-            on:click={() => openTopUpModal(debugAgent)}
-          >
-            [Debug: Top-Up]
-          </button>
-      </div>
-
-      
       
       <!-- Terminal-style progress component -->
       {#if isCreatingMainer}
@@ -702,7 +663,7 @@
           <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd" />
           </svg>
-          Login to Connect
+          Connect
         </button>
       </div>
     {/if}
@@ -733,282 +694,243 @@
   />
 {/if}
 
-<!-- Existing Agents -->
-{#each agents as agent}
-  <div class="border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
-    <button on:click={() => toggleAccordion(agent?.id?.toString())} class="w-full flex justify-between items-center py-5 px-4 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
-      <span class="flex items-center font-medium text-sm">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-600 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-        </svg>
-        {agent.name}
-      </span>
-      <div class="flex items-center">
-        <!-- Add LLM setup status badge when applicable -->
-        {#if agent.mainerType === 'Own' && agent.llmSetupStatus === 'inProgress'}
-          <span class="mr-2 px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-400">
-            LLM setup in progress
-          </span>
-        {/if}
-        <span class={`mr-4 px-2 py-1 rounded-full text-xs ${agent.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-400'}`}>
-          {agent.status}
-        </span>
-        <span id="icon-{agent.id}" class="text-gray-600 dark:text-gray-400 transition-transform duration-300" style="transform: rotate(180deg)">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
-            <path fill-rule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
-          </svg>
-        </span>
-      </div>
-    </button>
-    <div id="content-{agent.id}" class="accordion-content">
-      <div class="pb-5 text-sm text-gray-700 dark:text-gray-300 p-4 bg-gray-5 dark:bg-gray-900">
-        <!-- Canister Information Section -->
-        <div class="flex flex-col space-y-2 mb-4">
-          <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg">
-            <h2 class="text-sm mb-2 font-medium">Canister Information</h2>
-            <div class="flex flex-col gap-2">
-              <div class="flex items-center flex-wrap">
-                <span class="text-xs mr-2 w-24">Controller ID:</span>
-                <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id={agent.id}" target="_blank" rel="noopener noreferrer" class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-green-400 border border-green-400 break-all hover:bg-green-200 dark:hover:bg-gray-600 transition-colors flex items-center">
-                  <span>{agent.id}</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
-                  </svg>
-                </a>
-              </div>
-              
-              <!-- Show mAIner type -->
-              <div class="flex items-center">
-                <span class="text-xs mr-2 w-24">Type:</span>
-                <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-yellow-300 border border-yellow-300">{agent.mainerType}</span>
-              </div>
-              
-              <!-- For Own type mAIners, show LLM information or setup status -->
-              {#if agent.mainerType === 'Own'}
-                <div class="flex flex-col mt-2">
-                  <!-- Show LLM setup status if in progress -->
-                  {#if agent.llmSetupStatus === 'inProgress'}
-                    <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 my-2">
-                      <div class="flex items-center">
-                        <svg class="animate-spin h-4 w-4 text-yellow-600 dark:text-yellow-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <p class="text-xs text-yellow-800 dark:text-yellow-300">
-                          <span class="font-medium">LLM setup in progress</span> - This may take several minutes to complete and will happen in the background. You can use the mAIner with shared LLMs in the meantime.
-                        </p>
-                      </div>
-                    </div>
-                  {/if}
-                
-                  <span class="text-xs mb-1">Attached LLMs:</span>
-                  {#if agent.llmCanisters && agent.llmCanisters.length > 0}
-                    <div class="flex flex-col gap-2 ml-2 mt-1">
-                      {#each agent.llmCanisters as llmCanister, i}
-                        <div class="flex items-center flex-wrap">
-                          <span class="text-xs mr-2 w-20">LLM {i+1}:</span>
-                          <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id={llmCanister}" target="_blank" rel="noopener noreferrer" class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-indigo-400 border border-indigo-400 break-all hover:bg-indigo-200 dark:hover:bg-gray-600 transition-colors flex items-center">
-                            <span>{llmCanister}</span>
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                              <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
-                            </svg>
-                          </a>
-                        </div>
-                      {/each}
-                    </div>
-                  {:else}
-                    <div class="ml-2 mt-1">
-                      {#if agent.llmSetupStatus === 'inProgress'}
-                        <span class="text-xs italic text-yellow-500 dark:text-yellow-400">LLM canister setup in progress...</span>
-                      {:else}
-                        <span class="text-xs italic text-gray-500 dark:text-gray-400">No LLM canisters attached yet</span>
-                      {/if}
-                    </div>
-                  {/if}
-                </div>
-              {/if}
-            </div>
+<!-- mAIner Summary Header -->
+{#if totalMainers > 0}
+  <div class="mt-2 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-2">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-3">
+          <div class="flex items-center space-x-1">
+            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+            <span class="text-sm text-green-700 dark:text-green-400 font-medium">{activeMainers} Active</span>
           </div>
-        </div>
-        
-        <div class="flex flex-col space-y-2 mb-2">
-          <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
-            <div class="flex items-center justify-between">
-                <h2 class="text-sm mb-2">Top up cycles</h2>
-                <button 
-                  type="button" 
-                  class="py-2.5 px-5 me-2 text-xs font-medium text-gray-900 dark:text-gray-300 focus:outline-none bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400"
-                  class:opacity-50={agentsBeingToppedUp.has(agent.id)}
-                  class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id)}
-                  disabled={agentsBeingToppedUp.has(agent.id)}
-                  on:click={() => openTopUpModal(agent)}
-                >
-                  {#if agentsBeingToppedUp.has(agent.id)}
-                    <span class="w-3 h-3 mr-1 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin"></span>
-                  {/if}
-                  Top-up
-                </button>
-            </div>
-            <!-- Cycle Balance Display -->
-            <div class="mt-2 flex items-center">
-              <span class="text-xs text-gray-500 dark:text-gray-400">Current balance:</span>
-              {#if agentsBeingToppedUp.has(agent.id)}
-                <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center">
-                  <span class="w-3 h-3 mr-2 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin"></span>
-                  Updating...
-                </span>
-              {:else}
-                <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                  {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)} T cycles
-                </span>
-              {/if}
-            </div>
-          </div>
-        </div>
-
-        <div class="flex flex-col space-y-2">
-          <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
-            <div class="flex flex-col">
-                <h2 class="text-sm mb-2">Set daily burn rate</h2>
-                <div class="inline-flex rounded-full shadow-xs w-full justify-end" role="group">
-                  <button 
-                    type="button" 
-                    class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-s-full focus:z-10 focus:ring-2 focus:ring-blue-700 
-                    {agent.cyclesBurnRateSetting === 'Low' 
-                      ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
-                      : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
-                    on:click={() => updateAgentBurnRate('Low', agent) }
-                  >
-                    Low
-                  </button>
-                  <button 
-                    type="button" 
-                    class="px-4 py-2 text-xs font-medium border-t border-b border-gray-200 dark:border-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-700
-                    {agent.cyclesBurnRateSetting === 'Medium' 
-                      ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
-                      : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
-                    on:click={() => updateAgentBurnRate('Medium', agent) }
-                  >
-                    Medium
-                  </button>
-                  <button 
-                    type="button" 
-                    class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-e-full focus:z-10 focus:ring-2 focus:ring-blue-700
-                    {agent.cyclesBurnRateSetting === 'High' 
-                      ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
-                      : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
-                    on:click={() => updateAgentBurnRate('High', agent) }
-                  >
-                    High
-                  </button>
-                </div>            
+          <div class="flex items-center space-x-1">
+            <div class="w-3 h-3 rounded-full bg-gray-400"></div>
+            <span class="text-sm text-gray-600 dark:text-gray-400 font-medium">{inactiveMainers} Inactive</span>
+            {#if inactiveMainers > 0}
+              <div class="mt-2 text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2 py-1 rounded-md">
+                ⚠️ {inactiveMainers} mAIner{inactiveMainers === 1 ? '' : 's'} need{inactiveMainers === 1 ? 's' : ''} cycles
               </div>
-          </div>
-        </div>
-
-        <div class="flex flex-col space-y-2 my-2">
-          <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
-            <div class="flex items-center justify-between">
-              <h2 class="text-sm">Manage settings</h2>
-            </div>
-          </div>
-        </div>
-        <div class="flex flex-col space-y-2 mb-2">
-          <CyclesDisplayAgent cycles={agent.burnedCycles} label="Burned Cycles" />
-        </div>
-
-      </div>
-    </div>
-  </div>
-{/each}
-
-
-<!-- Test UI display when no agents are available but useMockData is enabled -->
- <!-- TODO: remove this once the real data is available -->
-{#if agents.length === 0 && useMockData}
-  <div class="border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
-    <button class="w-full flex justify-between items-center py-5 px-4 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
-      <span class="flex items-center font-medium text-sm">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-600 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
-        </svg>
-        Test mAIner (Demo)
-      </span>
-      <div class="flex items-center">
-        <span class="mr-4 px-2 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400">
-          active
-        </span>
-      </div>
-    </button>
-    <div class="pb-5 text-sm text-gray-700 dark:text-gray-300 p-4 bg-gray-5 dark:bg-gray-900">
-      <!-- Canister Information Section -->
-      <div class="flex flex-col space-y-2 mb-4">
-        <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg">
-          <h2 class="text-sm mb-2 font-medium">Canister Information</h2>
-          <div class="flex flex-col gap-2">
-            <div class="flex items-center flex-wrap">
-              <span class="text-xs mr-2 w-24">Controller ID:</span>
-              <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id=zlbtt-2yaaa-aaaak-qufwa-cai" target="_blank" rel="noopener noreferrer" class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-green-400 border border-green-400 break-all hover:bg-green-200 dark:hover:bg-gray-600 transition-colors flex items-center">
-                <span>zlbtt-2yaaa-aaaak-qufwa-cai</span>
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
-                </svg>
-              </a>
-            </div>
-            
-            <!-- Show mAIner type -->
-            <div class="flex items-center">
-              <span class="text-xs mr-2 w-24">Type:</span>
-              <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-yellow-300 border border-yellow-300">Own</span>
-            </div>
-            
-            <!-- LLM information -->
-            <div class="flex flex-col mt-2">
-              <span class="text-xs mb-1">Attached LLMs:</span>
-              <div class="flex flex-col gap-2 ml-2 mt-1">
-                <div class="flex items-center flex-wrap">
-                  <span class="text-xs mr-2 w-20">LLM 1:</span>
-                  <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id=3f4dg-7uaaa-aaaak-abcde-cai" target="_blank" rel="noopener noreferrer" class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-indigo-400 border border-indigo-400 break-all hover:bg-indigo-200 dark:hover:bg-gray-600 transition-colors flex items-center">
-                    <span>3f4dg-7uaaa-aaaak-abcde-cai</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
-                    </svg>
-                  </a>
-                </div>
-                <div class="flex items-center flex-wrap">
-                  <span class="text-xs mr-2 w-20">LLM 2:</span>
-                  <a href="https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id=5g9kl-8vaaa-aaaak-fghij-cai" target="_blank" rel="noopener noreferrer" class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-indigo-400 border border-indigo-400 break-all hover:bg-indigo-200 dark:hover:bg-gray-600 transition-colors flex items-center">
-                    <span>5g9kl-8vaaa-aaaak-fghij-cai</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
-                    </svg>
-                  </a>
-                </div>
-              </div>
-            </div>
+            {/if}
           </div>
         </div>
       </div>
       
-      <!-- Other sections similar to real UI -->
-      <div class="flex flex-col space-y-2 mb-2">
-        <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
-          <div class="flex items-center justify-between">
-              <h2 class="text-sm mb-2">Top up cycles</h2>
-              <button type="button" class="py-2.5 px-5 me-2 text-xs font-medium text-gray-900 dark:text-gray-300 focus:outline-none bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400">Top-up</button>
-          </div>
-          <!-- Cycle Balance Display for Mock Data -->
-          <div class="mt-2 flex items-center">
-            <span class="text-xs text-gray-500 dark:text-gray-400">Current balance:</span>
-            <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-              {formatLargeNumber(5, 4, false)} T cycles
-            </span>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 {/if}
+
+<!-- Existing Agents -->
+{#each agents as agent, index}
+  {#if agent && agent.id}
+    {@const sanitizedId = agent.id.replace(/[^a-zA-Z0-9-_]/g, '_')}
+    {@const buttonClasses = `w-full flex justify-between items-center py-5 px-4 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 ${agent.status === 'inactive' ? 'bg-red-50 dark:bg-red-900/10' : ''}`}
+    <div class="border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900" class:opacity-75={agent.status === 'inactive'}>
+      <button on:click={() => toggleAccordion(agent.id)} class={buttonClasses}>
+        <span class="flex items-center font-medium text-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-600 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+          </svg>
+          {agent.name}
+          {#if agent.status === 'inactive'}
+            <span class="ml-2 text-xs text-red-600 dark:text-red-400">(needs cycles)</span>
+          {/if}
+        </span>
+        <div class="flex items-center">
+          <!-- Add LLM setup status badge when applicable -->
+          {#if agent.mainerType === 'Own' && agent.llmSetupStatus === 'inProgress'}
+            <span class="mr-2 px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-400">
+              LLM setup in progress
+            </span>
+          {/if}
+          <span class={`mr-4 px-2 py-1 rounded-full text-xs ${agent.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400' : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-400'}`}>
+            {agent.status}
+          </span>
+          <span id="icon-{sanitizedId}" class="text-gray-600 dark:text-gray-400 transition-transform duration-300" style="transform: rotate(180deg)">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
+              <path fill-rule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
+            </svg>
+          </span>
+        </div>
+      </button>
+      <div id="content-{sanitizedId}" class="accordion-content">
+        <div class="pb-5 text-sm text-gray-700 dark:text-gray-300 p-4 bg-gray-5 dark:bg-gray-900">
+          <!-- Canister Information Section -->
+          <div class="flex flex-col space-y-2 mb-2">
+            <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg">
+              <h2 class="text-sm mb-2 font-medium">Canister Information</h2>
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center flex-wrap">
+                  <span class="text-xs mr-2 w-24">Controller ID:</span>
+                  <a href="https://dashboard.internetcomputer.org/canister/{agent.id}" target="_blank" rel="noopener noreferrer" class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-green-400 border border-green-400 break-all hover:bg-green-200 dark:hover:bg-gray-600 transition-colors flex items-center">
+                    <span>{agent.id}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
+                    </svg>
+                  </a>
+                </div>
+                
+                <!-- Show mAIner type 
+                <div class="flex items-center">
+                  <span class="text-xs mr-2 w-24">Type:</span>
+                  <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-yellow-300 border border-yellow-300">{agent.mainerType}</span>
+                </div>
+                -->
+                
+                <!-- For Own type mAIners, show LLM information or setup status -->
+                {#if agent.mainerType === 'Own'}
+                  <div class="flex flex-col mt-2">
+                    <!-- Show LLM setup status if in progress -->
+                    {#if agent.llmSetupStatus === 'inProgress'}
+                      <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 my-2">
+                        <div class="flex items-center">
+                          <svg class="animate-spin h-4 w-4 text-yellow-600 dark:text-yellow-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <p class="text-xs text-yellow-800 dark:text-yellow-300">
+                            <span class="font-medium">LLM setup in progress</span> - This may take several minutes to complete and will happen in the background. You can use the mAIner with shared LLMs in the meantime.
+                          </p>
+                        </div>
+                      </div>
+                    {/if}
+                  
+                    <span class="text-xs mb-1">Attached LLMs:</span>
+                    {#if agent.llmCanisters && agent.llmCanisters.length > 0}
+                      <div class="flex flex-col gap-2 ml-2 mt-1">
+                        {#each agent.llmCanisters as llmCanister, i}
+                          <div class="flex items-center flex-wrap">
+                            <span class="text-xs mr-2 w-20">LLM {i+1}:</span>
+                            <a href="https://dashboard.internetcomputer.org/canister/{llmCanister}" target="_blank" rel="noopener noreferrer" class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-indigo-400 border border-indigo-400 break-all hover:bg-indigo-200 dark:hover:bg-gray-600 transition-colors flex items-center">
+                              <span>{llmCanister}</span>
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
+                              </svg>
+                            </a>
+                          </div>
+                        {/each}
+                      </div>
+                    {:else}
+                      <div class="ml-2 mt-1">
+                        {#if agent.llmSetupStatus === 'inProgress'}
+                          <span class="text-xs italic text-yellow-500 dark:text-yellow-400">LLM canister setup in progress...</span>
+                        {:else}
+                          <span class="text-xs italic text-gray-500 dark:text-gray-400">No LLM canisters attached yet</span>
+                        {/if}
+                      </div>
+                    {/if}
+                  </div>
+                {/if}
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex flex-col space-y-2 mb-2">
+            <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
+              <div class="flex items-center justify-between">
+                  <h2 class="text-sm mb-2">Top up cycles</h2>
+                  <button 
+                    type="button" 
+                    class="py-2.5 px-5 me-2 text-xs font-medium text-gray-900 dark:text-gray-300 focus:outline-none bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400"
+                    class:opacity-50={agentsBeingToppedUp.has(agent.id)}
+                    class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id)}
+                    disabled={agentsBeingToppedUp.has(agent.id)}
+                    on:click={() => openTopUpModal(agent)}
+                  >
+                    {#if agentsBeingToppedUp.has(agent.id)}
+                      <span class="w-3 h-3 mr-1 border-2 border-gray-400/30 border-t-gray-400 rounded-full animate-spin"></span>
+                    {/if}
+                    Top-up
+                  </button>
+              </div>
+              <!-- Cycle Balance Display -->
+              <div class="mt-2 flex items-center">
+                <span class="text-xs text-gray-500 dark:text-gray-400">Current balance:</span>
+                {#if agentsBeingToppedUp.has(agent.id)}
+                  <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center">
+                    <span class="w-3 h-3 mr-2 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin"></span>
+                    Updating...
+                  </span>
+                {:else}
+                  <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                    {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)} T cycles
+                  </span>
+                {/if}
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col space-y-2 mb-2">
+            <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
+              <div class="flex flex-col">
+                  <h2 class="text-sm mb-2">Set daily burn rate</h2>
+                  <div class="inline-flex rounded-full shadow-xs w-full justify-end" role="group">
+                    <button 
+                      type="button" 
+                      class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-s-full focus:z-10 focus:ring-2 focus:ring-blue-700 
+                      {agent.cyclesBurnRateSetting === 'Low' 
+                        ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
+                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
+                      class:opacity-50={agentsBeingUpdated.has(agent.id)}
+                      class:cursor-not-allowed={agentsBeingUpdated.has(agent.id)}
+                      disabled={agentsBeingUpdated.has(agent.id)}
+                      on:click={() => updateAgentBurnRate('Low', agent) }
+                    >
+                      Low
+                    </button>
+                    <button 
+                      type="button" 
+                      class="px-4 py-2 text-xs font-medium border-t border-b border-gray-200 dark:border-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-700
+                      {agent.cyclesBurnRateSetting === 'Medium' 
+                        ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
+                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
+                      class:opacity-50={agentsBeingUpdated.has(agent.id)}
+                      class:cursor-not-allowed={agentsBeingUpdated.has(agent.id)}
+                      disabled={agentsBeingUpdated.has(agent.id)}
+                      on:click={() => updateAgentBurnRate('Medium', agent) }
+                    >
+                      Medium
+                    </button>
+                    <button 
+                      type="button" 
+                      class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-e-full focus:z-10 focus:ring-2 focus:ring-blue-700
+                      {agent.cyclesBurnRateSetting === 'High' 
+                        ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
+                        : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
+                      class:opacity-50={agentsBeingUpdated.has(agent.id)}
+                      class:cursor-not-allowed={agentsBeingUpdated.has(agent.id)}
+                      disabled={agentsBeingUpdated.has(agent.id)}
+                      on:click={() => updateAgentBurnRate('High', agent) }
+                    >
+                      High
+                    </button>
+                  </div>
+                  {#if agentsBeingUpdated.has(agent.id)}
+                    <div class="flex items-center justify-center mt-2">
+                      <span class="w-4 h-4 mr-2 border-2 border-purple-400/30 border-t-purple-600 rounded-full animate-spin"></span>
+                      <span class="text-xs text-purple-600 dark:text-purple-400">Updating burn rate setting...</span>
+                    </div>
+                  {/if}
+                </div>
+            </div>
+          </div>
+
+          <!-- <div class="flex flex-col space-y-2 my-2">
+            <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
+              <div class="flex items-center justify-between">
+                <h2 class="text-sm">Manage settings</h2>
+              </div>
+            </div>
+          </div> -->
+          <div class="flex flex-col space-y-2 mb-2">
+            <CyclesDisplayAgent cycles={agent.burnedCycles} label="Burned Cycles" />
+          </div>
+
+        </div>
+      </div>
+    </div>
+  {/if}
+{/each}
 
 <style>
   .accordion-content {

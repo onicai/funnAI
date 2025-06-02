@@ -28,6 +28,23 @@ import {
 import { ICRC2_IDL as icrc2IDL } from "../helpers/idls/icrc2.idl.js";
 import { idlFactory as icpIDL } from "../helpers/idls/icp.idl.js";
 
+// TODO: move this into a utils file
+const getCyclesBurnRateLabel = (cyclesBurnRate) => {
+  const cycles = BigInt(cyclesBurnRate.cycles);
+  
+  if (cycles === 1_000_000_000_000n) {
+    return "Low";
+  } else if (cycles === 4_000_000_000_000n) {
+    return "Medium";
+  } else if (cycles === 10_000_000_000_000n) {
+    return "High";
+  } else if (cycles === 20_000_000_000_000n) {
+    return "Medium";
+  } else {
+    return "Medium";
+  }
+};
+
 export const canisterIds = {
   backendCanisterId,
   gameStateCanisterId
@@ -96,31 +113,13 @@ export const responseLengthDefaultSetting = 'Long';
 export const systemPromptDefaultSetting = "You are a helpful, respectful and honest assistant.";
 export const saveChatsDefaultSetting = true;
 export let userSettings = writable(null);
-userSettings.subscribe((value) => localStorage.setItem("userSettings", JSON.stringify(value)));
 export let selectedAiModelId = writable(localStorage.getItem("selectedAiModelId") || null);
 let selectedAiModelIdValue = null;
-selectedAiModelId.subscribe((value) => {
-  selectedAiModelIdValue = value;
-  if (value === null) {
-    localStorage.removeItem("selectedAiModelId");
-  } else {
-    localStorage.setItem("selectedAiModelId", value);
-  };
-});
 
 export let saveChatsUserSelection = writable(localStorage.getItem("saveChatsUserSelection") === "false" ? false : true); // values: true for "save" or false for "doNotSave" with true as default
 let saveChatsUserSelectionValue = saveChatsDefaultSetting;
-saveChatsUserSelection.subscribe((value) => {
-  saveChatsUserSelectionValue = value;
-  // @ts-ignore
-  localStorage.setItem("saveChatsUserSelection", value)
-});
 
 export let useKnowledgeBase = writable(localStorage.getItem("useKnowledgeBase") === "true" ? true : false);
-useKnowledgeBase.subscribe((value) => {
-  // @ts-ignore
-  localStorage.setItem("useKnowledgeBase", value)
-});
 
 declare global {
   interface BigInt {
@@ -131,9 +130,6 @@ declare global {
 BigInt.prototype.toJSON = function () { return Number(this) };
 
 export let downloadedModels = writable(JSON.parse(localStorage.getItem("downloadedAiModels") || "[]"));
-downloadedModels.subscribe((value) => {
-  localStorage.setItem("downloadedAiModels", JSON.stringify(value));
-});
 
 export const currentExperienceId = writable(null);
 export let vectorStore = writable(null);
@@ -152,6 +148,10 @@ const days = BigInt(30);
 const hours = BigInt(24);
 const nanosecondsPerHour = BigInt(3600000000000);
 
+// Add session refresh configuration
+const SESSION_REFRESH_THRESHOLD = BigInt(24 * 60 * 60 * 1000 * 1000 * 1000); // 24 hours in nanoseconds
+const SESSION_CHECK_INTERVAL = 30 * 60 * 1000; // Check every 30 minutes in milliseconds
+
 type State = {
   isAuthed: "nfid" | "internetidentity" | null;
   backendActor: typeof funnai_backend;
@@ -163,6 +163,8 @@ type State = {
   mainerControllerCanisterActor: typeof mainer_ctrlb_canister;
   userMainerCanisterActors: any[];
   userMainerAgentCanistersInfo: any[];
+  sessionExpiry: bigint | null; // Track session expiration time
+  sessionRefreshTimer: NodeJS.Timeout | null; // Timer for automatic session refresh
 };
 
 let defaultBackendCanisterId = backendCanisterId;
@@ -184,12 +186,45 @@ const defaultState: State = {
   }),
   userMainerCanisterActors: [],
   userMainerAgentCanistersInfo: [],
+  sessionExpiry: null,
+  sessionRefreshTimer: null,
 };
 
 // Add theme support
 export const theme = writable(localStorage.getItem('theme') || 'dark');
 
-// Toggle theme function
+// Setup store subscriptions after all variables are declared
+function setupStoreSubscriptions() {
+  userSettings.subscribe((value) => localStorage.setItem("userSettings", JSON.stringify(value)));
+  
+  selectedAiModelId.subscribe((value) => {
+    selectedAiModelIdValue = value;
+    if (value === null) {
+      localStorage.removeItem("selectedAiModelId");
+    } else {
+      localStorage.setItem("selectedAiModelId", value);
+    };
+  });
+  
+  saveChatsUserSelection.subscribe((value) => {
+    saveChatsUserSelectionValue = value;
+    // @ts-ignore
+    localStorage.setItem("saveChatsUserSelection", value)
+  });
+  
+  useKnowledgeBase.subscribe((value) => {
+    // @ts-ignore
+    localStorage.setItem("useKnowledgeBase", value)
+  });
+  
+  downloadedModels.subscribe((value) => {
+    localStorage.setItem("downloadedAiModels", JSON.stringify(value));
+  });
+}
+
+// Call setup function immediately
+setupStoreSubscriptions();
+
 export const toggleTheme = () => {
   theme.update(currentTheme => {
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
@@ -217,7 +252,11 @@ export const createStore = ({
 }) => {
   const { subscribe, update } = writable<State>(defaultState);
   let globalState: State;
-  subscribe((value) => globalState = value);
+  
+  // Defer the subscription to avoid temporal dead zone
+  setTimeout(() => {
+    subscribe((value) => globalState = value);
+  }, 0);
 
   const initUserSettings = async (backendActor) => {
     // Load the user's settings
@@ -368,21 +407,126 @@ export const createStore = ({
     return mainerControllerActor;
   };
 
+  const enrichMainerCanisterInfo = async (canisterInfo, mainerActor) => {
+    // Start with default values for UI-specific properties
+    let enrichedInfo = {
+      ...canisterInfo,
+      uiStatus: "active",  // Use uiStatus instead of status to avoid overwriting backend status
+      cycleBalance: 0,
+      burnedCycles: 0,
+      cyclesBurnRate: {},
+      cyclesBurnRateSetting: "Medium",
+      llmCanisters: [],
+      llmSetupStatus: '',
+      hasError: false
+    };
+
+    // Determine LLM setup status from canister info
+    if (canisterInfo.status) {
+      if ('LlmSetupInProgress' in canisterInfo.status) {
+        enrichedInfo.llmSetupStatus = 'inProgress';
+      } else if ('LlmSetupFinished' in canisterInfo.status) {
+        enrichedInfo.llmSetupStatus = 'completed';
+      }
+    }
+
+    // If no actor available, mark as having an error but still return the mAIner
+    if (!mainerActor) {
+      enrichedInfo.hasError = true;
+      enrichedInfo.uiStatus = "inactive";
+      return enrichedInfo;
+    }
+
+    try {
+      // Check issue flags to determine if mAIner is inactive
+      const issueFlagsResult = await mainerActor.getIssueFlagsAdmin();
+      if ('Ok' in issueFlagsResult && issueFlagsResult.Ok.lowCycleBalance) {
+        enrichedInfo.uiStatus = "inactive";
+      }
+    } catch (error) {
+      console.error(`Error fetching issue flags for ${canisterInfo.address.slice(0, 5)}:`, error);
+      enrichedInfo.hasError = true;
+      // Don't mark as inactive just because API failed - keep default active status
+    }
+
+    try {
+      // Get detailed statistics
+      const statsResult = await mainerActor.getMainerStatisticsAdmin();
+      if ('Ok' in statsResult) {
+        enrichedInfo.burnedCycles = Number(statsResult.Ok.totalCyclesBurnt);
+        enrichedInfo.cycleBalance = Number(statsResult.Ok.cycleBalance);
+        enrichedInfo.cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
+        
+        // Convert burn rate to setting label
+        try {
+          enrichedInfo.cyclesBurnRateSetting = getCyclesBurnRateLabel(statsResult.Ok.cyclesBurnRate);
+        } catch (error) {
+          console.error("Error converting to cyclesBurnRateSetting: ", error);
+        }
+      }
+    } catch (error) {
+      console.error(`Error fetching statistics for ${canisterInfo.address.slice(0, 5)}:`, error);
+      enrichedInfo.hasError = true;
+      // Don't mark as inactive just because stats API failed
+    }
+
+    // Fetch LLM canisters if this is an "Own" type mAIner
+    if (canisterInfo.canisterType && 'Own' in canisterInfo.canisterType.MainerAgent) {
+      try {
+        if (mainerActor.getLlmCanisterIds && typeof mainerActor.getLlmCanisterIds === 'function') {
+          const llmResult = await mainerActor.getLlmCanisterIds();
+          if ('Ok' in llmResult && Array.isArray(llmResult.Ok)) {
+            enrichedInfo.llmCanisters = llmResult.Ok;
+            // If we have LLM canisters but status doesn't show 'completed', update it
+            if (llmResult.Ok.length > 0 && enrichedInfo.llmSetupStatus !== 'completed') {
+              enrichedInfo.llmSetupStatus = 'completed';
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching LLM canister IDs: ", error);
+      }
+    }
+
+    return enrichedInfo;
+  };
+
   const initializeUserMainerAgentCanisters = async (gameStateCanisterActor: typeof game_state_canister, loginType, identity: Identity) => {
     let userCanisters = [];
     let mainerActors = [];
+    let enrichedUserCanisters = [];
+    
     try {
       const getMainersResult = await gameStateCanisterActor.getMainerAgentCanistersForUser();
       // @ts-ignore
       if (getMainersResult.Ok) {
         // @ts-ignore
-        userCanisters = getMainersResult.Ok;
+        const rawUserCanisters = getMainersResult.Ok;
+        
+        // Filter out any canisters without valid addresses
+        userCanisters = rawUserCanisters.filter(canister => 
+          canister.address && canister.address.trim() !== ""
+        );
+        
+        console.log(`Filtered ${rawUserCanisters.length - userCanisters.length} invalid canisters`);
+        
+        // Initialize actors for valid canisters
         let initPromises = [];
         userCanisters.forEach(userCanister => {
           initPromises.push(initMainerAgentCanisterActor(userCanister, loginType, identity)); 
         });
         mainerActors = await Promise.all(initPromises);
-        return { mainerActors, userCanisters };
+        
+        // Enrich canister info with status, cycles, etc.
+        let enrichPromises = [];
+        userCanisters.forEach((canister, index) => {
+          enrichPromises.push(enrichMainerCanisterInfo(canister, mainerActors[index]));
+        });
+        enrichedUserCanisters = await Promise.all(enrichPromises);
+        
+        console.log(`Successfully enriched ${enrichedUserCanisters.length} mAIner canisters with status information`);
+        
+        return { mainerActors, userCanisters: enrichedUserCanisters };
       } else {
         // @ts-ignore
         console.error("Error retrieving user mAIner agent canisters: ", getMainersResult.Err);
@@ -390,7 +534,7 @@ export const createStore = ({
     } catch (error) {
       console.error("Error in initializeUserMainerAgentCanisters: ", error);
     };
-    return { mainerActors, userCanisters };
+    return { mainerActors, userCanisters: enrichedUserCanisters };
   };
 
   const nfidConnect = async () => {
@@ -446,7 +590,11 @@ export const createStore = ({
 
     //let accounts = JSON.parse(await identity.accounts());
 
-    localStorage.setItem('isAuthed', "nfid"); // Set flag to indicate existing login for future sessions
+    // Calculate session expiry time (30 days from now in nanoseconds)
+    const sessionExpiry = BigInt(Date.now()) * BigInt(1000000) + days * hours * nanosecondsPerHour;
+    
+    // Store session information for persistence
+    storeSessionInfo("nfid", sessionExpiry);
 
     update((state) => ({
       ...state,
@@ -457,8 +605,12 @@ export const createStore = ({
       isAuthed: "nfid",
       gameStateCanisterActor,
       userMainerCanisterActors,
-      userMainerAgentCanistersInfo
+      userMainerAgentCanistersInfo,
+      sessionExpiry
     }));
+
+    // Start automatic session refresh timer
+    startSessionRefreshTimer();
 
     console.info("nfid is authed");
   };
@@ -513,7 +665,11 @@ export const createStore = ({
 
     //let accounts = JSON.parse(await identity.accounts());
 
-    localStorage.setItem('isAuthed', "internetidentity"); // Set flag to indicate existing login for future sessions
+    // Calculate session expiry time (30 days from now in nanoseconds)
+    const sessionExpiry = BigInt(Date.now()) * BigInt(1000000) + days * hours * nanosecondsPerHour;
+    
+    // Store session information for persistence
+    storeSessionInfo("internetidentity", sessionExpiry);
 
     update((state) => ({
       ...state,
@@ -524,13 +680,23 @@ export const createStore = ({
       isAuthed: "internetidentity",
       gameStateCanisterActor,
       userMainerCanisterActors,
-      userMainerAgentCanistersInfo
+      userMainerAgentCanistersInfo,
+      sessionExpiry
     }));
+
+    // Start automatic session refresh timer
+    startSessionRefreshTimer();
 
     console.info("internetidentity is authed");
   };
 
   const disconnect = async () => {
+    // Stop the session refresh timer
+    stopSessionRefreshTimer();
+    
+    // Clear stored session information
+    clearSessionInfo();
+    
     // Check isAuthed to determine which method to use to disconnect
     if (globalState.isAuthed === "nfid") {
       try {
@@ -555,19 +721,90 @@ export const createStore = ({
 
   const checkExistingLoginAndConnect = async () => {
     // Check login state if user is already logged in
-    const isAuthed = localStorage.getItem('isAuthed'); // Accessing Local Storage to check login state
-    if (isAuthed) {
+    const sessionInfo = getStoredSessionInfo();
+    
+    if (sessionInfo) {
       const authClient = await AuthClient.create();
+      const isAuthenticated = await authClient.isAuthenticated();
+      
+      if (isAuthenticated) {
+        // Check if session is still valid
+        const now = BigInt(Date.now()) * BigInt(1000000); // Convert to nanoseconds
+        
+        if (sessionInfo.expiry > now) {
+          console.info(`${sessionInfo.loginType} connection detected and session is valid`);
+          
+          // Update the session expiry in state
+          update((state) => ({ ...state, sessionExpiry: sessionInfo.expiry }));
+          
+          if (sessionInfo.loginType === "nfid") {
+            await nfidConnect();
+          } else if (sessionInfo.loginType === "internetidentity") {
+            await internetIdentityConnect();
+          }
+        } else {
+          console.info("Stored session has expired, clearing session info");
+          clearSessionInfo();
+          await authClient.logout();
+        }
+      } else {
+        console.info("AuthClient shows user is not authenticated, clearing session info");
+        clearSessionInfo();
+      }
+    } else {
+      // Fallback to old method for backward compatibility
+      const isAuthed = localStorage.getItem('isAuthed');
+      if (isAuthed) {
+        const authClient = await AuthClient.create();
+        if (await authClient.isAuthenticated()) {
+          if (isAuthed === "nfid") {
+            console.info("NFID connection detected (legacy)");
+            await nfidConnect();
+          } else if (isAuthed === "internetidentity") {
+            console.info("Internet Identity connection detected (legacy)");
+            await internetIdentityConnect();
+          }
+        }
+      }
+    }
+  };
+
+  const loadUserMainerCanisters = async () => {
+    try {
+      // Get current auth client and identity
+      authClient = await AuthClient.create();
       if (await authClient.isAuthenticated()) {
-        if (isAuthed === "nfid") {
-          console.info("NFID connection detected");
-          nfidConnect();
-        } else if (isAuthed === "internetidentity") {
-          console.info("Internet Identity connection detected");
-          internetIdentityConnect();
-        };
-      };
-    };
+        const identity = await authClient.getIdentity();
+        
+        // Get current auth type from store
+        const isAuthed = globalState.isAuthed;
+        if (!isAuthed) {
+          console.warn("User not authenticated, cannot reload mAIner canisters");
+          return;
+        }
+        
+        // Get current game state canister actor
+        const gameStateCanisterActor = globalState.gameStateCanisterActor;
+        if (!gameStateCanisterActor) {
+          console.warn("Game state canister actor not available");
+          return;
+        }
+        
+        // Reload user's mAIner agent canisters
+        const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, isAuthed, identity);
+        
+        // Update the store with new data
+        update((state) => ({
+          ...state,
+          userMainerCanisterActors: mainerActors,
+          userMainerAgentCanistersInfo: userCanisters
+        }));
+        
+        console.log("User mAIner canisters reloaded successfully");
+      }
+    } catch (error) {
+      console.error("Error reloading user mAIner canisters:", error);
+    }
   };
   
   const getActor = async (canisterId, canisterIDL, options = {}) => {
@@ -620,6 +857,103 @@ export const createStore = ({
     });
   };
 
+  // Enhanced session management functions
+  const storeSessionInfo = (loginType: string, expiry: bigint) => {
+    const sessionInfo = {
+      loginType,
+      expiry: expiry.toString(),
+      timestamp: Date.now()
+    };
+    localStorage.setItem('sessionInfo', JSON.stringify(sessionInfo));
+    localStorage.setItem('isAuthed', loginType);
+  };
+
+  const getStoredSessionInfo = () => {
+    try {
+      const sessionInfoStr = localStorage.getItem('sessionInfo');
+      if (sessionInfoStr) {
+        const sessionInfo = JSON.parse(sessionInfoStr);
+        return {
+          ...sessionInfo,
+          expiry: BigInt(sessionInfo.expiry)
+        };
+      }
+    } catch (error) {
+      console.error("Error parsing stored session info:", error);
+    }
+    return null;
+  };
+
+  const clearSessionInfo = () => {
+    localStorage.removeItem('sessionInfo');
+    localStorage.removeItem('isAuthed');
+  };
+
+  const shouldRefreshSession = (expiry: bigint): boolean => {
+    const now = BigInt(Date.now()) * BigInt(1000000); // Convert to nanoseconds
+    const timeUntilExpiry = expiry - now;
+    return timeUntilExpiry <= SESSION_REFRESH_THRESHOLD && timeUntilExpiry > 0n;
+  };
+
+  const refreshUserSession = async () => {
+    try {
+      const sessionInfo = getStoredSessionInfo();
+      if (!sessionInfo || !authClient) return false;
+
+      // Check if session is still valid
+      const isAuthenticated = await authClient.isAuthenticated();
+      if (!isAuthenticated) {
+        console.log("Session expired, clearing stored session info");
+        clearSessionInfo();
+        await disconnect();
+        return false;
+      }
+
+      // Check if we need to refresh
+      if (shouldRefreshSession(sessionInfo.expiry)) {
+        console.log("Refreshing user session...");
+        
+        // Re-initialize the connection to extend the session
+        if (sessionInfo.loginType === "nfid") {
+          await nfidConnect();
+        } else if (sessionInfo.loginType === "internetidentity") {
+          await internetIdentityConnect();
+        }
+        return true;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Error refreshing session:", error);
+      return false;
+    }
+  };
+
+  const startSessionRefreshTimer = () => {
+    // Clear existing timer
+    if (globalState.sessionRefreshTimer) {
+      clearInterval(globalState.sessionRefreshTimer);
+    }
+
+    // Start new timer
+    const timerId = setInterval(async () => {
+      const success = await refreshUserSession();
+      if (!success) {
+        clearInterval(timerId);
+        update((state) => ({ ...state, sessionRefreshTimer: null }));
+      }
+    }, SESSION_CHECK_INTERVAL);
+
+    update((state) => ({ ...state, sessionRefreshTimer: timerId }));
+  };
+
+  const stopSessionRefreshTimer = () => {
+    if (globalState.sessionRefreshTimer) {
+      clearInterval(globalState.sessionRefreshTimer);
+      update((state) => ({ ...state, sessionRefreshTimer: null }));
+    }
+  };
+
   return {
     subscribe,
     update,
@@ -627,8 +961,12 @@ export const createStore = ({
     internetIdentityConnect,
     disconnect,
     checkExistingLoginAndConnect,
+    loadUserMainerCanisters,
     updateBackendCanisterActor,
     getActor,
+    refreshUserSession,
+    getStoredSessionInfo,
+    clearSessionInfo
   };
 };
 

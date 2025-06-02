@@ -376,15 +376,15 @@
   <div class="p-4 flex flex-col gap-4">
     <!-- Token Info Banner -->
     <div 
-      class="flex items-center gap-3 p-3 rounded-lg bg-gray-700/20 border border-gray-600/30 text-gray-100 transition-all duration-300"
+      class="flex items-center gap-3 p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100 transition-all duration-300"
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '10px')});"
     >
-      <div class="w-10 h-10 rounded-full bg-gray-800 p-1 border border-gray-700 flex-shrink-0">
-        <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
+      <div class="w-10 h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
+        <TokenImages tokens={[token]} size={38} showSymbolFallback={true} />
       </div>
       <div class="flex flex-col">
-        <div class="text-gray-100 font-medium">{token.name}</div>
-        <div class="text-sm text-gray-400">Balance: {formatBalance(balances.default.toString(), token.decimals)} {token.symbol}</div>
+        <div class="text-gray-900 font-medium dark:text-gray-100">{token.name}</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400">Balance: {formatBalance(balances.default.toString(), token.decimals)} {token.symbol}</div>
       </div>
     </div>
 
@@ -396,15 +396,16 @@
     >
       <!-- Recipient Address Input -->
       <div>
-        <label for="recipient-address" class="block text-xs text-gray-400 mb-1.5">Recipient Address</label>
+        <label for="recipient-address" class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">Recipient Address</label>
         <div class="relative">
           <input
             id="recipient-address"
             type="text"
-            class="w-full py-2 px-3 bg-gray-800 border rounded-md text-sm text-gray-100"
+            class="w-full py-2 px-3 bg-white border rounded-md text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-100"
             class:border-green-400={addressValidation.isValid}
             class:border-red-400={!addressValidation.isValid && recipientAddress}
-            class:border-gray-600={!recipientAddress}
+            class:border-gray-300={!recipientAddress}
+            class:dark:border-gray-600={!recipientAddress}
             placeholder="Enter Canister ID, Principal ID, or Account ID"
             bind:value={recipientAddress}
             on:input={handleAddressInput}
@@ -417,7 +418,7 @@
             {/if}
             <button
               type="button"
-              class="p-1.5 text-gray-400 hover:text-gray-300"
+              class="p-1.5 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
               on:click={handleAddressPaste}
               use:tooltip={{ text: "Paste from clipboard", direction: "top" }}
             >
@@ -426,7 +427,7 @@
             {#if hasCamera}
               <button
                 type="button"
-                class="p-1.5 text-gray-400 hover:text-gray-300"
+                class="p-1.5 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
                 on:click={handleScanClick}
                 use:tooltip={{ text: "Scan QR code", direction: "top" }}
               >
@@ -436,7 +437,7 @@
           </div>
         </div>
         {#if addressValidation.addressType && addressValidation.isValid}
-          <div class="mt-1 text-xs text-green-500">
+          <div class="mt-1 text-xs text-green-600 dark:text-green-500">
             Valid {addressValidation.addressType} address
           </div>
         {/if}
@@ -445,10 +446,10 @@
       <!-- Amount Input -->
       <div>
         <div class="flex justify-between items-center mb-1.5">
-          <label for="amount-input" class="block text-xs text-gray-400">Amount</label>
+          <label for="amount-input" class="block text-xs text-gray-600 dark:text-gray-400">Amount</label>
           <button
             type="button"
-            class="text-xs text-blue-500 hover:text-blue-400"
+            class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-500 dark:hover:text-blue-400"
             on:click={handleSendMax}
           >
             Send Max
@@ -459,20 +460,21 @@
             id="amount-input"
             type="text"
             inputmode="decimal"
-            class="w-full py-2 px-3 bg-gray-800 border rounded-md text-sm text-gray-100"
+            class="w-full py-2 px-3 bg-white border rounded-md text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-100"
             class:border-green-400={amountValidation.isValid && amount}
             class:border-red-400={!amountValidation.isValid && amount}
-            class:border-gray-600={!amount}
+            class:border-gray-300={!amount}
+            class:dark:border-gray-600={!amount}
             placeholder={`Enter amount of ${token.symbol}`}
             bind:value={amount}
             on:input={handleAmountInput}
           />
           <div class="absolute inset-y-0 right-0 flex items-center">
-            <span class="pr-3 text-sm text-gray-400">{token.symbol}</span>
+            <span class="pr-3 text-sm text-gray-600 dark:text-gray-400">{token.symbol}</span>
           </div>
         </div>
         {#if Number(amount) > 0}
-          <div class="mt-1 text-xs text-gray-400">
+          <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
             Fee: {formatBalance(String(tokenFee), token.decimals)} {token.symbol}
           </div>
         {/if}
@@ -480,7 +482,7 @@
 
       <!-- Error message -->
       {#if errorMessage}
-        <div class="mt-1 p-2 rounded bg-red-900/30 border border-red-900/50 text-red-400 text-sm">
+        <div class="mt-1 p-2 rounded bg-red-50 border border-red-200 text-red-700 text-sm dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-400">
           {errorMessage}
         </div>
       {/if}
@@ -491,7 +493,8 @@
         class="mt-2 py-2.5 px-4 rounded-md text-white font-medium flex items-center justify-center gap-2 transition-colors"
         class:bg-blue-600={isFormValid && !isValidating}
         class:hover:bg-blue-500={isFormValid && !isValidating}
-        class:bg-gray-700={!isFormValid || isValidating}
+        class:bg-gray-400={!isFormValid || isValidating}
+        class:dark:bg-gray-700={!isFormValid || isValidating}
         class:cursor-not-allowed={!isFormValid || isValidating}
         disabled={!isFormValid || isValidating}
         use:tooltip={{ text: getTooltipMessage(), direction: "top" }}
