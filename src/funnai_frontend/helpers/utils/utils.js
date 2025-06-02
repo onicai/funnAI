@@ -116,19 +116,3 @@ export function saveBlob(blob, filename) {
   link.click();
   // URL.revokeObjectURL(url); breaks Firefox...
 }
-
-export const getCyclesBurnRateLabel = (cyclesBurnRate) => {
-  const cycles = BigInt(cyclesBurnRate.cycles);
-  
-  if (cycles === 1_000_000_000_000n) {
-    return "Low";
-  } else if (cycles === 4_000_000_000_000n) {
-    return "Medium";
-  } else if (cycles === 10_000_000_000_000n) {
-    return "High";
-  } else if (cycles === 20_000_000_000_000n) {
-    return "Medium";
-  } else {
-    return "Medium";
-  }
-};

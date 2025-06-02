@@ -27,7 +27,22 @@ import {
 
 import { ICRC2_IDL as icrc2IDL } from "../helpers/idls/icrc2.idl.js";
 import { idlFactory as icpIDL } from "../helpers/idls/icp.idl.js";
-import { getCyclesBurnRateLabel } from "../helpers/utils/utils.js";
+
+const getCyclesBurnRateLabel = (cyclesBurnRate) => {
+  const cycles = BigInt(cyclesBurnRate.cycles);
+  
+  if (cycles === 1_000_000_000_000n) {
+    return "Low";
+  } else if (cycles === 4_000_000_000_000n) {
+    return "Medium";
+  } else if (cycles === 10_000_000_000_000n) {
+    return "High";
+  } else if (cycles === 20_000_000_000_000n) {
+    return "Medium";
+  } else {
+    return "Medium";
+  }
+};
 
 export const canisterIds = {
   backendCanisterId,
@@ -97,31 +112,13 @@ export const responseLengthDefaultSetting = 'Long';
 export const systemPromptDefaultSetting = "You are a helpful, respectful and honest assistant.";
 export const saveChatsDefaultSetting = true;
 export let userSettings = writable(null);
-userSettings.subscribe((value) => localStorage.setItem("userSettings", JSON.stringify(value)));
 export let selectedAiModelId = writable(localStorage.getItem("selectedAiModelId") || null);
 let selectedAiModelIdValue = null;
-selectedAiModelId.subscribe((value) => {
-  selectedAiModelIdValue = value;
-  if (value === null) {
-    localStorage.removeItem("selectedAiModelId");
-  } else {
-    localStorage.setItem("selectedAiModelId", value);
-  };
-});
 
 export let saveChatsUserSelection = writable(localStorage.getItem("saveChatsUserSelection") === "false" ? false : true); // values: true for "save" or false for "doNotSave" with true as default
 let saveChatsUserSelectionValue = saveChatsDefaultSetting;
-saveChatsUserSelection.subscribe((value) => {
-  saveChatsUserSelectionValue = value;
-  // @ts-ignore
-  localStorage.setItem("saveChatsUserSelection", value)
-});
 
 export let useKnowledgeBase = writable(localStorage.getItem("useKnowledgeBase") === "true" ? true : false);
-useKnowledgeBase.subscribe((value) => {
-  // @ts-ignore
-  localStorage.setItem("useKnowledgeBase", value)
-});
 
 declare global {
   interface BigInt {
@@ -132,9 +129,6 @@ declare global {
 BigInt.prototype.toJSON = function () { return Number(this) };
 
 export let downloadedModels = writable(JSON.parse(localStorage.getItem("downloadedAiModels") || "[]"));
-downloadedModels.subscribe((value) => {
-  localStorage.setItem("downloadedAiModels", JSON.stringify(value));
-});
 
 export const currentExperienceId = writable(null);
 export let vectorStore = writable(null);
@@ -198,7 +192,38 @@ const defaultState: State = {
 // Add theme support
 export const theme = writable(localStorage.getItem('theme') || 'dark');
 
-// Toggle theme function
+// Setup store subscriptions after all variables are declared
+function setupStoreSubscriptions() {
+  userSettings.subscribe((value) => localStorage.setItem("userSettings", JSON.stringify(value)));
+  
+  selectedAiModelId.subscribe((value) => {
+    selectedAiModelIdValue = value;
+    if (value === null) {
+      localStorage.removeItem("selectedAiModelId");
+    } else {
+      localStorage.setItem("selectedAiModelId", value);
+    };
+  });
+  
+  saveChatsUserSelection.subscribe((value) => {
+    saveChatsUserSelectionValue = value;
+    // @ts-ignore
+    localStorage.setItem("saveChatsUserSelection", value)
+  });
+  
+  useKnowledgeBase.subscribe((value) => {
+    // @ts-ignore
+    localStorage.setItem("useKnowledgeBase", value)
+  });
+  
+  downloadedModels.subscribe((value) => {
+    localStorage.setItem("downloadedAiModels", JSON.stringify(value));
+  });
+}
+
+// Call setup function immediately
+setupStoreSubscriptions();
+
 export const toggleTheme = () => {
   theme.update(currentTheme => {
     const newTheme = currentTheme === 'light' ? 'dark' : 'light';
@@ -226,7 +251,11 @@ export const createStore = ({
 }) => {
   const { subscribe, update } = writable<State>(defaultState);
   let globalState: State;
-  subscribe((value) => globalState = value);
+  
+  // Defer the subscription to avoid temporal dead zone
+  setTimeout(() => {
+    subscribe((value) => globalState = value);
+  }, 0);
 
   const initUserSettings = async (backendActor) => {
     // Load the user's settings
