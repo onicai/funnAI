@@ -96,9 +96,9 @@
       console.log("in MainerAccordion updateAgentBurnRate burnRateSetting ", burnRateSetting);
       await agentActor.updateAgentSettings(burnRateSetting);
       console.log(`Successfully updated burn rate to ${level}`);
-      loadAgents().then(newAgents => {
-        agents = newAgents;
-      });
+      // Update the store to trigger reactive refresh
+      await store.loadUserMainerCanisters();
+      console.log("Agents refreshed after burn rate update");
     } catch (error) {
       console.error("Failed to update agent settings:", error);
     } finally {
@@ -869,7 +869,7 @@
                       disabled={agentsBeingUpdated.has(agent.id)}
                       on:click={() => updateAgentBurnRate('Low', agent) }
                     >
-                      {#if agentsBeingUpdated.has(agent.id) && agent.cyclesBurnRateSetting === 'Low'}
+                      {#if agentsBeingUpdated.has(agent.id)}
                         <span class="w-3 h-3 mr-1 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                       {/if}
                       Low
@@ -885,7 +885,7 @@
                       disabled={agentsBeingUpdated.has(agent.id)}
                       on:click={() => updateAgentBurnRate('Medium', agent) }
                     >
-                      {#if agentsBeingUpdated.has(agent.id) && agent.cyclesBurnRateSetting === 'Medium'}
+                      {#if agentsBeingUpdated.has(agent.id)}
                         <span class="w-3 h-3 mr-1 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                       {/if}
                       Medium
@@ -901,7 +901,7 @@
                       disabled={agentsBeingUpdated.has(agent.id)}
                       on:click={() => updateAgentBurnRate('High', agent) }
                     >
-                      {#if agentsBeingUpdated.has(agent.id) && agent.cyclesBurnRateSetting === 'High'}
+                      {#if agentsBeingUpdated.has(agent.id)}
                         <span class="w-3 h-3 mr-1 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                       {/if}
                       High
