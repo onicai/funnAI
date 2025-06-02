@@ -27,6 +27,7 @@ import {
 
 import { ICRC2_IDL as icrc2IDL } from "../helpers/idls/icrc2.idl.js";
 import { idlFactory as icpIDL } from "../helpers/idls/icp.idl.js";
+import { getCyclesBurnRateLabel } from "../helpers/utils/utils.js";
 
 export const canisterIds = {
   backendCanisterId,
@@ -458,22 +459,6 @@ export const createStore = ({
     }
 
     return enrichedInfo;
-  };
-
-  const getCyclesBurnRateLabel = (cyclesBurnRate) => {
-    const cycles = BigInt(cyclesBurnRate.cycles);
-    
-    if (cycles === 1_000_000_000_000n) {
-      return "Low";
-    } else if (cycles === 4_000_000_000_000n) {
-      return "Medium";
-    } else if (cycles === 10_000_000_000_000n) {
-      return "High";
-    } else if (cycles === 20_000_000_000_000n) {
-      return "Medium";
-    } else {
-      return "Medium";
-    }
   };
 
   const initializeUserMainerAgentCanisters = async (gameStateCanisterActor: typeof game_state_canister, loginType, identity: Identity) => {
