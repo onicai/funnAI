@@ -28,6 +28,7 @@ import {
 import { ICRC2_IDL as icrc2IDL } from "../helpers/idls/icrc2.idl.js";
 import { idlFactory as icpIDL } from "../helpers/idls/icp.idl.js";
 
+// TODO: move this into a utils file
 const getCyclesBurnRateLabel = (cyclesBurnRate) => {
   const cycles = BigInt(cyclesBurnRate.cycles);
   
