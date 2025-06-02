@@ -96,9 +96,16 @@
       console.log("in MainerAccordion updateAgentBurnRate burnRateSetting ", burnRateSetting);
       await agentActor.updateAgentSettings(burnRateSetting);
       console.log(`Successfully updated burn rate to ${level}`);
-      // Update the store to trigger reactive refresh
-      await store.loadUserMainerCanisters();
-      console.log("Agents refreshed after burn rate update");
+      
+      // Refresh the list of agents to show updated settings
+      try {
+        await store.loadUserMainerCanisters();
+        // Explicitly reload agents after store update  
+        agents = await loadAgents();
+        console.log("Agents refreshed after burn rate update");
+      } catch (refreshError) {
+        console.error("Error refreshing agents after burn rate update:", refreshError);
+      }
     } catch (error) {
       console.error("Failed to update agent settings:", error);
     } finally {
