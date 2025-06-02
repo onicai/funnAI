@@ -876,9 +876,6 @@
                       disabled={agentsBeingUpdated.has(agent.id)}
                       on:click={() => updateAgentBurnRate('Low', agent) }
                     >
-                      {#if agentsBeingUpdated.has(agent.id)}
-                        <span class="w-3 h-3 mr-1 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                      {/if}
                       Low
                     </button>
                     <button 
@@ -892,9 +889,6 @@
                       disabled={agentsBeingUpdated.has(agent.id)}
                       on:click={() => updateAgentBurnRate('Medium', agent) }
                     >
-                      {#if agentsBeingUpdated.has(agent.id)}
-                        <span class="w-3 h-3 mr-1 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                      {/if}
                       Medium
                     </button>
                     <button 
@@ -908,12 +902,15 @@
                       disabled={agentsBeingUpdated.has(agent.id)}
                       on:click={() => updateAgentBurnRate('High', agent) }
                     >
-                      {#if agentsBeingUpdated.has(agent.id)}
-                        <span class="w-3 h-3 mr-1 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                      {/if}
                       High
                     </button>
-                  </div>            
+                  </div>
+                  {#if agentsBeingUpdated.has(agent.id)}
+                    <div class="flex items-center justify-center mt-2">
+                      <span class="w-4 h-4 mr-2 border-2 border-purple-400/30 border-t-purple-600 rounded-full animate-spin"></span>
+                      <span class="text-xs text-purple-600 dark:text-purple-400">Updating burn rate setting...</span>
+                    </div>
+                  {/if}
                 </div>
             </div>
           </div>
