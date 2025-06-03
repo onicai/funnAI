@@ -167,11 +167,11 @@ dfx canister call game_state_canister resetCurrentChallengesAdmin --network $NET
 # test a single Challenge Generation by the Challenger
 scripts/scripts-testing/generate-a-challenge.sh --network $NETWORK
 
-# test a single Response Generation by your first mAIner of type #Own
-scripts/scripts-testing/generate-a-response-Own.sh --network $NETWORK
-
 # test a single Response Generation by your first mAIner of type #ShareAgent
 scripts/scripts-testing/generate-a-response-ShareAgent.sh --network $NETWORK
+
+# test a single Response Generation by your first mAIner of type #Own
+# TODO UPDATE SCRIPT scripts/scripts-testing/generate-a-response-Own.sh --network $NETWORK
 
 # test a single Score Generation by the Judge
 scripts/scripts-testing/generate-a-score-Judge.sh --network $NETWORK

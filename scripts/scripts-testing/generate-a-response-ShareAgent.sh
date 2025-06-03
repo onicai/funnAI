@@ -182,7 +182,7 @@ if [[ "$output" != *"Ok = vec"* ]]; then
 else
     CANISTER_ID_SHARE_SERVICE_LLM_0=$(echo "$output" | grep -oE '"[a-z0-9-]+"' | sed -n '1p' | tr -d '"')
     CANISTER_ID_SHARE_SERVICE_LLM_1=$(echo "$output" | grep -oE '"[a-z0-9-]+"' | sed -n '2p' | tr -d '"')
-    CANISTER_ID_SHARE_SERVICE_LLM_2=$(echo "$output" | grep -oE '"[a-z0-9-]+"' | sed -n '2p' | tr -d '"')
+    CANISTER_ID_SHARE_SERVICE_LLM_2=$(echo "$output" | grep -oE '"[a-z0-9-]+"' | sed -n '3p' | tr -d '"')
 fi
 
 echo "CANISTER_ID_SHARE_SERVICE_LLM_0: $CANISTER_ID_SHARE_SERVICE_LLM_0"
@@ -304,21 +304,21 @@ MAINER_SHARE_SERVICE_CTRLB_BALANCE_1_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_CT
 MAINER_SHARE_SERVICE_CTRLB_CYCLES_CHANGE_1=$(echo "$MAINER_SHARE_SERVICE_CTRLB_BALANCE_1 - $MAINER_SHARE_SERVICE_CTRLB_BALANCE_0" | bc)
 MAINER_SHARE_SERVICE_CTRLB_CYCLES_CHANGE_1_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_CTRLB_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
-MAINER_SHARE_SERVICE_LLM_0_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_MAINER_SHARE_SERVICE_LLM_0 2>&1 | grep "Balance:"| awk '{print $2}')
-MAINER_SHARE_SERVICE_LLM_0_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_MAINER_SHARE_SERVICE_LLM_0 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+MAINER_SHARE_SERVICE_LLM_0_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_SHARE_SERVICE_LLM_0 2>&1 | grep "Balance:"| awk '{print $2}')
+MAINER_SHARE_SERVICE_LLM_0_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_SHARE_SERVICE_LLM_0 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
 MAINER_SHARE_SERVICE_LLM_0_BALANCE_1_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_LLM_0_BALANCE_1 / 1000000000000" | bc)
 MAINER_SHARE_SERVICE_LLM_0_CYCLES_CHANGE_1=$(echo "$MAINER_SHARE_SERVICE_LLM_0_BALANCE_1 - $MAINER_SHARE_SERVICE_LLM_0_BALANCE_0" | bc)
 MAINER_SHARE_SERVICE_LLM_0_CYCLES_CHANGE_1_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_LLM_0_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
 if [ "$NETWORK_TYPE" != "local" ]; then
-    MAINER_SHARE_SERVICE_LLM_1_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_MAINER_SHARE_SERVICE_LLM_1 2>&1 | grep "Balance:"| awk '{print $2}')
-    MAINER_SHARE_SERVICE_LLM_1_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_MAINER_SHARE_SERVICE_LLM_1 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+    MAINER_SHARE_SERVICE_LLM_1_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_SHARE_SERVICE_LLM_1 2>&1 | grep "Balance:"| awk '{print $2}')
+    MAINER_SHARE_SERVICE_LLM_1_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_SHARE_SERVICE_LLM_1 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
     MAINER_SHARE_SERVICE_LLM_1_BALANCE_1_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_LLM_1_BALANCE_1 / 1000000000000" | bc)
     MAINER_SHARE_SERVICE_LLM_1_CYCLES_CHANGE_1=$(echo "$MAINER_SHARE_SERVICE_LLM_1_BALANCE_1 - $MAINER_SHARE_SERVICE_LLM_1_BALANCE_0" | bc)
     MAINER_SHARE_SERVICE_LLM_1_CYCLES_CHANGE_1_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_LLM_1_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
-    MAINER_SHARE_SERVICE_LLM_2_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_MAINER_SHARE_SERVICE_LLM_2 2>&1 | grep "Balance:"| awk '{print $2}')
-    MAINER_SHARE_SERVICE_LLM_2_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_MAINER_SHARE_SERVICE_LLM_2 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+    MAINER_SHARE_SERVICE_LLM_2_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_SHARE_SERVICE_LLM_2 2>&1 | grep "Balance:"| awk '{print $2}')
+    MAINER_SHARE_SERVICE_LLM_2_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_SHARE_SERVICE_LLM_2 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
     MAINER_SHARE_SERVICE_LLM_2_BALANCE_1_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_LLM_2_BALANCE_1 / 1000000000000" | bc)
     MAINER_SHARE_SERVICE_LLM_2_CYCLES_CHANGE_1=$(echo "$MAINER_SHARE_SERVICE_LLM_2_BALANCE_1 - $MAINER_SHARE_SERVICE_LLM_2_BALANCE_0" | bc)
     MAINER_SHARE_SERVICE_LLM_2_CYCLES_CHANGE_1_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_LLM_2_CYCLES_CHANGE_1 / 1000000000000" | bc)
