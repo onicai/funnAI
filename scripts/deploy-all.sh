@@ -58,4 +58,9 @@ scripts/deploy-judge.sh      --network $NETWORK_TYPE --mode $DEPLOY_MODE
 cd ../
 scripts/scripts-gamestate/register-all.sh --network $NETWORK_TYPE
 
+echo " "
+echo "--------------------------------------------------"
+echo "Calling getCyclesFlowAdmin to get the current CyclesFlow variables"
+dfx canister call game_state_canister getCyclesFlowAdmin --network $NETWORK_TYPE
+
 # WE NO LONGER DEPLOY mAIners from this script. See README for details

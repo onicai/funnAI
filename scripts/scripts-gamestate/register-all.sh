@@ -8,9 +8,6 @@
 # Default network type is local
 NETWORK_TYPE="local"
 
-# none will not use subnet parameter in deploy to ic
-SUBNET="none"
-
 # Parse command line arguments for network type
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -41,6 +38,16 @@ CANISTER_ID_CHALLENGER_CTRLB_CANISTER=$(dfx canister --network $NETWORK_TYPE id 
 cd ../Judge
 CANISTER_ID_JUDGE_CTRLB_CANISTER=$(dfx canister --network $NETWORK_TYPE id judge_ctrlb_canister)
 
+if [ "$NETWORK_TYPE" = "local" ]; then
+    SUBNET_MAINER_CREATOR="local"
+    SUBNET_CHALLENGER="local"
+    SUBNET_JUDGE="local"
+else
+    SUBNET_MAINER_CREATOR=$(curl -s "https://ic-api.internetcomputer.org/api/v3/canisters/$CANISTER_ID_MAINER_CREATOR_CANISTER" | jq -r '.subnet_id')
+    SUBNET_CHALLENGER=$(curl -s "https://ic-api.internetcomputer.org/api/v3/canisters/$CANISTER_ID_CHALLENGER_CTRLB_CANISTER" | jq -r '.subnet_id')
+    SUBNET_JUDGE=$(curl -s "https://ic-api.internetcomputer.org/api/v3/canisters/$CANISTER_ID_JUDGE_CTRLB_CANISTER" | jq -r '.subnet_id')
+fi
+
 # go back to the funnAI folder
 cd ../../../
 
@@ -59,8 +66,8 @@ fi
 
 echo " "
 echo "--------------------------------------------------"
-echo "Registering mAInerCreator with the game_state_canister"
-output=$(dfx canister call game_state_canister addOfficialCanister "(record { address = \"$CANISTER_ID_MAINER_CREATOR_CANISTER\"; canisterType = variant {MainerCreator} })" --network $NETWORK_TYPE)
+echo "Registering mAInerCreator ($CANISTER_ID_MAINER_CREATOR_CANISTER) on subnet $SUBNET_MAINER_CREATOR with the game_state_canister"
+output=$(dfx canister call game_state_canister addOfficialCanister "(record { address = \"$CANISTER_ID_MAINER_CREATOR_CANISTER\"; subnet = \"$SUBNET_MAINER_CREATOR\"; canisterType = variant {MainerCreator} })" --network $NETWORK_TYPE)
 
 if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; then
     echo "Error calling addOfficialCanister for mAInerCreator $CANISTER_ID_MAINER_CREATOR_CANISTER."
@@ -71,8 +78,8 @@ fi
 
 echo " "
 echo "--------------------------------------------------"
-echo "Registering Challenger with the game_state_canister"
-output=$(dfx canister call game_state_canister addOfficialCanister "(record { address = \"$CANISTER_ID_CHALLENGER_CTRLB_CANISTER\"; canisterType = variant {Challenger} })" --network $NETWORK_TYPE)
+echo "Registering Challenger ($CANISTER_ID_CHALLENGER_CTRLB_CANISTER) on subnet $SUBNET_CHALLENGER with the game_state_canister"
+output=$(dfx canister call game_state_canister addOfficialCanister "(record { address = \"$CANISTER_ID_CHALLENGER_CTRLB_CANISTER\"; subnet = \"$SUBNET_CHALLENGER\"; canisterType = variant {Challenger} })" --network $NETWORK_TYPE)
 
 if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; then
     echo "Error calling addOfficialCanister for Challenger $CANISTER_ID_CHALLENGER_CTRLB_CANISTER."
@@ -83,8 +90,8 @@ fi
 
 echo " "
 echo "--------------------------------------------------"
-echo "Registering Judge with the game_state_canister"
-output=$(dfx canister call game_state_canister addOfficialCanister "(record { address = \"$CANISTER_ID_JUDGE_CTRLB_CANISTER\"; canisterType = variant {Judge} })" --network $NETWORK_TYPE)
+echo "Registering Judge ($CANISTER_ID_JUDGE_CTRLB_CANISTER) on subnet $SUBNET_JUDGE with the game_state_canister"
+output=$(dfx canister call game_state_canister addOfficialCanister "(record { address = \"$CANISTER_ID_JUDGE_CTRLB_CANISTER\"; subnet = \"$SUBNET_JUDGE\"; canisterType = variant {Judge} })" --network $NETWORK_TYPE)
 
 if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; then
     echo "Error calling addOfficialCanister for Judge $CANISTER_ID_JUDGE_CTRLB_CANISTER."

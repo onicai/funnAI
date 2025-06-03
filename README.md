@@ -10,13 +10,14 @@ Then, do the following:
 # Use conda environment
 conda activate llama_cpp_canister
 
-# To monitor the logs of the canisters, run this script
-# -> it reads the canister IDs from the file: "scripts/canister_ids-{network}.env"
-# -> It will write to the screen & also write individual files in scripts/logs-{network}/
-# -> You must be a controller or log-viewer
-#    % dfx canister update-settings <canister-name> --add-log-viewer <principal-id>
-scripts/logs.sh --network [local|ic|development|testing]
+# Set NETWORK environment variable
+NETWORK=testing  # [local|ic|development|testing]
 
+# To monitor the logs of the canisters, run this script
+# For more details, see "notes/HowToManageBackend.md"
+scripts/logs.sh --network $NETWORK
+
+# When running local
 # We are using dfx deps for:
 # - internet-identity
 # - cycles_ledger
@@ -28,84 +29,119 @@ dfx start --clean
 dfx deps deploy
 
 # This script deploys the core canisters:
-# (-) Deploys GameState, mAInerCreator, Challenger, Judge
+# (-) Before doing a new install, reset all canister_ids.json files, for example:
+#       "testing": ".*-cai"   -->  "testing": ""
+# (-) Deploys GameState, mAInerCreator, Challenger (1 LLM), Judge (3 LLMs)
 # (-) Registers the canisters properly with each other
 # (-) The timers of the Challenger & Judge are not started.
 #     -> Do this manually with the command:
-#          dfx canister call <canister-id> startTimerExecutionAdmin
+#          dfx canister call <canisterId> startTimerExecutionAdmin
 # Note: on WSL, you might first have to run
 sudo sysctl -w vm.max_map_count=2097152
 # from folder: funnAI
-scripts/deploy-all.sh --mode install --network [local|ic|development|testing]
+scripts/deploy-all.sh --mode install --network $NETWORK
 
 # Notes: 
 # (-) when redeploying changes, you can run the above command with --mode upgrade
 #     to avoid reuploading the models and thus saving a lot of time
 
-# (-) to reset the gamestate, run:
-#     -> This will erase all data: canisters/challenges/responses/etc.
-scripts/deploy-gamestate.sh --mode reinstall --network [local|ic|development|testing]
-scripts/scripts-gamestate/register-all.sh --network [local|ic|development|testing]
+# (-) WARNING - never reinstall GameState in PRODUCTION, only upgrade with:
+scripts/deploy-gamestate.sh --mode upgrade --network $NETWORK
+scripts/scripts-gamestate/register-all.sh --network $NETWORK
+
+# (-) If you reinstall, you will erase all data: mAIners/challenges/responses/etc.
+# DURING TESTING, you can reinstall & you can fix the protocol canisters, but user's mAIners info is lost and not easily restored
+# Fix mAIner wasm hash
+dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin "(record {address=\"$SUBNET_2_0_MAINER_SHARE_AGENT_0\"; textNote=\"Fixing after reinstall\"})" --network $NETWORK
+# Fix Register mAIner type #ShareService
+dfx canister call game_state_canister addOfficialCanister "(record { address = \"$SUBNET_2_0_SHARE_SERVICE\"; subnet = \"$SUBNET_2_0\" ; canisterType = variant {MainerAgent = variant {ShareService}} })" --network $NETWORK
+# The User's mAIner info is lost, so delete the canisters of type #ShareAgent & #Own and recreate them
 
 # -----------------------------------------------------------------------------------
-# Deploy mAIners
+# Deploy additional LLMs for the Judge on another subnet
+TODO -- the script is ready, but needs to be tested ---
+
+# -----------------------------------------------------------------------------------
+# Deploy mAIner of type #ShareService
+#
+# IMPORTANT: Record the canister ids in scripts/canister_ids-<network>.env
+#            for canister monitoring, management & logging purposes
 #
 # Always deploy a mAIner of type #ShareService, since this is a protocol canister
-scripts/scripts-gamestate/deploy-mainers-ShareService-via-gamestate.sh --mode install --network [local|ic|development|testing]
+scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.sh --mode install --network $NETWORK
 
-# Optionally, deploy mAIners of type #ShareAgent or #Own
-# This is optional for test purposes, because these mAIners will be created by users of the frontend
+# Edit the next script to set SUBNET_SHARE_SERVICE_LLM, then run it to install the first LLM
+scripts/scripts-gamestate/deploy-mainers-ShareService-FirstLLM-via-gamestate.sh --mode install --network $NETWORK
+# Edit the next script to set SUBNET_SHARE_SERVICE_LLM, then run it to install the first LLM
+# -> Run the AddLLMs script multiple times and execute the command printed
+# -> Make sure you install no more than 3 LLMs per subnet
+# -> Change the SUBNET_SHARE_SERVICE_LLM each time
+# -> This process is a bit clunky and needs improvement, but it works for now...
+scripts/scripts-gamestate/deploy-mainers-ShareService-AddLLM-via-gamestate.sh --mode install --network $NETWORK
+
+# -----------------------------------------
+# Deploy mAIners of type #ShareAgent or #Own
 #
 # (-) Deploy a mAIner of type #ShareAgent
-scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install --network [local|ic|development|testing]
+scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install --network $NETWORK
 # (-) Deploy a mAIner of type #Own
-scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install --network [local|ic|development|testing]
+scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install --network $NETWORK
 
-#
-# Notes: 
-# (-) You (should) run the script for type #ShareService only once. It has not been verified what happens if you run it again.
-# (-) You can run the scripts for type #Own and #ShareAgent multiple times. It will deploy another mAIner.
-# (-) The #Own & #ShareService mAIners are deployed with 1 LLM. To add more LLMs, use the function: addLlmCanisterToMainer 
+# IMPORTANT - wasm hash of mAIners
+# If the wasm hash of the mAIner changed, you must update the gamestate.
+# First deploy a ShareAgent, then do this:
+dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="<...>"})' --network $NETWORK
+
+# Admin functions to clean up redeemed payments in case the creation failed.
+# This is used during testing, but can also be used in production in case the mAIner creation failed, but user payment was accepted
+dfx canister call game_state_canister getRedeemedTransactionBlockAdmin '(record {paymentTransactionBlockId = 12 : nat64} )' --network $NETWORK 
+dfx canister call game_state_canister removeRedeemedTransactionBlockAdmin '(record {paymentTransactionBlockId = 12 : nat64} )' --network $NETWORK 
+
+# -----------------------------------------------
+# Timers:
 # (-) The timers for the mAIners are started automatically.
 # (-) The timers of the Challenger & Judge are NOT started automatically.
-#     Start/Stop them with:
-scripts/start-challenger.sh --network [local|ic|development|testing]
-scripts/stop-challenger.sh --network [local|ic|development|testing]
-scripts/start-judge.sh --network [local|ic|development|testing]
-scripts/stop-judge.sh --network [local|ic|development|testing]
+# Start/Stop by canisterId 
+dfx canister --network $NETWORK call <canisterId> startTimerExecutionAdmin
+dfx canister --network $NETWORK call <canisterId> stopTimerExecutionAdmin 
+# Start/Stop Challenger & Judge with script
+scripts/start-challenger.sh --network $NETWORK
+scripts/stop-challenger.sh --network $NETWORK
+scripts/start-judge.sh --network $NETWORK
+scripts/stop-judge.sh --network $NETWORK
 
 # Once the timers are running, you can use these commands to check on the data captured by the gamestate:
 # Run from folder: funnAI
 
 # Verify Challenger challenge generations
 # You can reset the challenge storage arrays with:
-dfx canister call game_state_canister resetCurrentChallengesAdmin --output json --network [local|ic|development|testing]
+dfx canister call game_state_canister resetCurrentChallengesAdmin --output json --network $NETWORK
 
-dfx canister call game_state_canister getCurrentChallengesAdmin --output json --network [local|ic|development|testing]
-dfx canister call game_state_canister getNumCurrentChallengesAdmin --output json --network [local|ic|development|testing]
+dfx canister call game_state_canister getCurrentChallengesAdmin --output json --network $NETWORK
+dfx canister call game_state_canister getNumCurrentChallengesAdmin --output json --network $NETWORK
 
 
 # Verify mAIner response generations
 # Note: submissionStatus changes from #Submitted > #Judging > #Judged
-dfx canister call game_state_canister getSubmissionsAdmin --output json --network [local|ic|development|testing]
-dfx canister call game_state_canister getNumSubmissionsAdmin --output json --network [local|ic|development|testing]
+dfx canister call game_state_canister getSubmissionsAdmin --output json --network $NETWORK
+dfx canister call game_state_canister getNumSubmissionsAdmin --output json --network $NETWORK
 
-dfx canister call game_state_canister getOpenSubmissionsAdmin --output json --network [local|ic|development|testing]
-dfx canister call game_state_canister getNumOpenSubmissionsAdmin --output json --network [local|ic|development|testing]
+dfx canister call game_state_canister getOpenSubmissionsAdmin --output json --network $NETWORK
+dfx canister call game_state_canister getNumOpenSubmissionsAdmin --output json --network $NETWORK
 
-dfx canister call game_state_canister getOpenSubmissionsForOpenChallengesAdmin --output json --network [local|ic|development|testing]
-dfx canister call game_state_canister getNumOpenSubmissionsForOpenChallengesAdmin --output json --network [local|ic|development|testing]
+dfx canister call game_state_canister getOpenSubmissionsForOpenChallengesAdmin --output json --network $NETWORK
+dfx canister call game_state_canister getNumOpenSubmissionsForOpenChallengesAdmin --output json --network $NETWORK
 
 # Verify Judge score generations
-dfx canister call game_state_canister getScoredChallengesAdmin --output json --network [local|ic|development|testing]
-dfx canister call game_state_canister getNumScoredChallengesAdmin --output json --network [local|ic|development|testing]
+dfx canister call game_state_canister getScoredChallengesAdmin --output json --network $NETWORK
+dfx canister call game_state_canister getNumScoredChallengesAdmin --output json --network $NETWORK
 
 
 # Deploy funnai backend (used mainly for chat):
-dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_backend --network [local|ic|development|testing]
+dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_backend --network $NETWORK
 
 # Deploy funnai frontend:
-dfx deploy funnai_frontend --network [local|ic|development|testing]
+dfx deploy funnai_frontend --network $NETWORK
 
 # Deploy the token ledger canister:
 # from folder: PoAIW/src/TokenLedger
@@ -126,19 +162,19 @@ For accurate cycle burn calculation, turn off ALL the timers (Challenger, mAIner
 
 ```bash
 # To start with a clean slate, remove all current challenges
-dfx canister call game_state_canister resetCurrentChallengesAdmin --network [local|ic|development|testing]
+dfx canister call game_state_canister resetCurrentChallengesAdmin --network $NETWORK
 
 # test a single Challenge Generation by the Challenger
-scripts/scripts-testing/generate-a-challenge.sh --network [local|ic|development|testing]
+scripts/scripts-testing/generate-a-challenge.sh --network $NETWORK
 
 # test a single Response Generation by your first mAIner of type #Own
-scripts/scripts-testing/generate-a-response-Own.sh --network [local|ic|development|testing]
+scripts/scripts-testing/generate-a-response-Own.sh --network $NETWORK
 
 # test a single Response Generation by your first mAIner of type #ShareAgent
-scripts/scripts-testing/generate-a-response-ShareAgent.sh --network [local|ic|development|testing]
+scripts/scripts-testing/generate-a-response-ShareAgent.sh --network $NETWORK
 
 # test a single Score Generation by the Judge
-scripts/scripts-testing/generate-a-score-Judge.sh --network [local|ic|development|testing]
+scripts/scripts-testing/generate-a-score-Judge.sh --network $NETWORK
 ```
 
 # The CyclesFlow variables
@@ -163,7 +199,7 @@ dfx canister call game_state_canister resetCyclesFlowAdmin
 # a) Overwrite individual parameters that go into the CyclesFlow calculations
 dfx canister call game_state_canister setCyclesFlowAdmin '( record {
   dailyChallenges = opt (10 : nat);
-  dailySubmissionsPerShareLOW = opt (1 : nat);
+  numJudgeLlms = opt (6 : nat);
 })'
 # b) Overwrite the calculated CyclesFlow variables
 dfx canister call game_state_canister setCyclesFlowAdmin '( record {
@@ -179,7 +215,7 @@ The following endpoints allow to set & get the values:
 
 ```bash
 # From folder: funnAI
-dfx canister call game_state_canister getGameStateThresholdsAdmin --output json --network [local|ic|development|testing] 
+dfx canister call game_state_canister getGameStateThresholdsAdmin --output json --network $NETWORK 
 
 dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdArchiveClosedChallenges = 30 : nat;
@@ -187,7 +223,7 @@ dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdMaxOpenSubmissions = 5 : nat;
         thresholdScoredResponsesPerChallenge = 3 : nat;
     }
-)' --network [local|ic|development|testing]
+)' --network $NETWORK
 ```
 
 # Start & Stop the Game

@@ -122,11 +122,36 @@ for record in records:
 "
 }
 # ================================================================
+echo " "
+echo "--------------------------------------------------"
+output=$(dfx canister --network $NETWORK_TYPE call $CANISTER_ID_GAME_STATE_CANISTER getSharedServiceCanistersAdmin)
+if [[ "$output" != *"Ok = vec"* ]]; then
+    echo $output
+    echo " "
+    echo "Call to getSharedServiceCanistersAdmin failed. Exiting."    
+    exit 1
+else
+    CANISTER_ID_SHARE_SERVICE_CONTROLLER=$(extract_address_of_mAIner "$output" "ShareService")
+fi
 
+echo "CANISTER_ID_SHARE_SERVICE_CONTROLLER: $CANISTER_ID_SHARE_SERVICE_CONTROLLER"
+
+echo " "
+echo "--------------------------------------------------"
+echo "Checking health endpoint of ShareService canister ($CANISTER_ID_SHARE_SERVICE_CONTROLLER)"
+output=$(dfx canister call $CANISTER_ID_SHARE_SERVICE_CONTROLLER health --network $NETWORK_TYPE)
+
+if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; then
+    echo $output
+    echo "ShareService Canister is not healthy. Exiting."
+    exit 1
+else
+    echo "ShareService Canister is healthy."
+fi
+
+echo " "
+echo "---------------------------------------------------"
 echo "Finding the address of my first mAIner of type ShareAgent..."
-
-# echo " "
-# echo "Retrieving all my mAIner agents:"
 output=$(dfx canister --network $NETWORK_TYPE call $CANISTER_ID_GAME_STATE_CANISTER getMainerAgentCanistersForUser)
 if [[ "$output" != *"Ok = vec"* ]]; then
     echo $output
@@ -138,17 +163,15 @@ else
     # echo " "
     # echo "Extracting the address of my first mAIner of type ShareAgent"
     CANISTER_ID_SHARE_AGENT_CONTROLLER=$(extract_address_of_mAIner "$output" "ShareAgent")
-    CANISTER_ID_SHARE_SERVICE_CONTROLLER=$(extract_address_of_mAIner "$output" "ShareService")
-    # echo "CANISTER_ID_SHARE_AGENT_CONTROLLER: $CANISTER_ID_SHARE_AGENT_CONTROLLER"
 fi
 
 echo " "
 echo "CANISTER_ID_SHARE_AGENT_CONTROLLER: $CANISTER_ID_SHARE_AGENT_CONTROLLER"
-echo "CANISTER_ID_SHARE_SERVICE_CONTROLLER: $CANISTER_ID_SHARE_SERVICE_CONTROLLER"
+
 
 
 echo " "
-echo "Get the LLM_0 & LLM_1 for the mAIner ShareService ($CANISTER_ID_SHARE_SERVICE_CONTROLLER):"
+echo "Get the LLM_0 & LLM_1 & LLM_2 for the mAIner ShareService ($CANISTER_ID_SHARE_SERVICE_CONTROLLER):"
 output=$(dfx canister --network $NETWORK_TYPE call $CANISTER_ID_SHARE_SERVICE_CONTROLLER getLLMCanisterIds)
 echo "output (getLLMCanisterIds): $output"
 if [[ "$output" != *"Ok = vec"* ]]; then
@@ -159,24 +182,25 @@ if [[ "$output" != *"Ok = vec"* ]]; then
 else
     CANISTER_ID_SHARE_SERVICE_LLM_0=$(echo "$output" | grep -oE '"[a-z0-9-]+"' | sed -n '1p' | tr -d '"')
     CANISTER_ID_SHARE_SERVICE_LLM_1=$(echo "$output" | grep -oE '"[a-z0-9-]+"' | sed -n '2p' | tr -d '"')
+    CANISTER_ID_SHARE_SERVICE_LLM_2=$(echo "$output" | grep -oE '"[a-z0-9-]+"' | sed -n '2p' | tr -d '"')
 fi
 
 echo "CANISTER_ID_SHARE_SERVICE_LLM_0: $CANISTER_ID_SHARE_SERVICE_LLM_0"
 echo "CANISTER_ID_SHARE_SERVICE_LLM_1: $CANISTER_ID_SHARE_SERVICE_LLM_1"
+echo "CANISTER_ID_SHARE_SERVICE_LLM_2: $CANISTER_ID_SHARE_SERVICE_LLM_2"
 
 #######################################################################
-echo "TODO: fund mAIner with sufficient Cycles to create a response"
-# if [ "$NETWORK_TYPE" = "local" ]; then
-#     echo " "
-#     echo "--------------------------------------------------"
-#     echo "To fund Controller creation - Adding 5 TCycles to the game_state_canister canister on local"
-#     dfx ledger fabricate-cycles --canister game_state_canister --t 5
-# else
-#     echo " "
-#     echo "--------------------------------------------------"
-#     echo "To fund Controller creation - Adding 5 TCycles to the game_state_canister ($CANISTER_ID_GAME_STATE_CANISTER) canister on $NETWORK_TYPE"
-#     dfx wallet send --network $NETWORK_TYPE $CANISTER_ID_GAME_STATE_CANISTER 5000000000000
-# fi
+if [ "$NETWORK_TYPE" = "local" ]; then
+    echo " "
+    echo "--------------------------------------------------"
+    echo "To fund response generation - Adding 5 TCycles to the mAIner canister $CANISTER_ID_SHARE_AGENT_CONTROLLER on local"
+    dfx ledger fabricate-cycles --canister game_state_canister --t 5
+else
+    echo " "
+    echo "--------------------------------------------------"
+    echo "To fund response generation - Adding 5 TCycles to the mAIner canister $CANISTER_ID_SHARE_AGENT_CONTROLLER on $NETWORK_TYPE"
+    dfx wallet send --network $NETWORK_TYPE $CANISTER_ID_SHARE_AGENT_CONTROLLER 5000000000000
+fi
 
 # ================================================================
 
@@ -207,6 +231,10 @@ if [ "$NETWORK_TYPE" != "local" ]; then
     MAINER_SHARE_SERVICE_LLM_1_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_SHARE_SERVICE_LLM_1 2>&1 | grep "Balance:"| awk '{print $2}')
     MAINER_SHARE_SERVICE_LLM_1_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_SHARE_SERVICE_LLM_1 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
     MAINER_SHARE_SERVICE_LLM_1_BALANCE_0_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_LLM_1_BALANCE_0 / 1000000000000" | bc)
+
+    MAINER_SHARE_SERVICE_LLM_2_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_SHARE_SERVICE_LLM_2 2>&1 | grep "Balance:"| awk '{print $2}')
+    MAINER_SHARE_SERVICE_LLM_2_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_SHARE_SERVICE_LLM_2 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+    MAINER_SHARE_SERVICE_LLM_2_BALANCE_0_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_LLM_2_BALANCE_0 / 1000000000000" | bc)
 fi
 
 echo " "
@@ -230,6 +258,10 @@ if [ "$NETWORK_TYPE" != "local" ]; then
     echo " "
     echo "LLM 1         ($CANISTER_ID_SHARE_SERVICE_LLM_1) "
     echo "-> Balance: $MAINER_SHARE_SERVICE_LLM_1_BALANCE_0_T TCycles ($MAINER_SHARE_SERVICE_LLM_1_BALANCE_0)"
+
+    echo " "
+    echo "LLM 2         ($CANISTER_ID_SHARE_SERVICE_LLM_2) "
+    echo "-> Balance: $MAINER_SHARE_SERVICE_LLM_2_BALANCE_0_T TCycles ($MAINER_SHARE_SERVICE_LLM_2_BALANCE_0)"
 fi
 ########################################################
 
@@ -246,22 +278,9 @@ else
     echo $output
     echo " "
     echo "We do not yet have a good method to automatically determine when the response generation is done."
-    echo "So, please monitor the logs of the mAIner agent ($CANISTER_ID_SHARE_AGENT_CONTROLLER) and the LLMs ($CANISTER_ID_SHARE_SERVICE_LLM_0 & $CANISTER_ID_SHARE_SERVICE_LLM_1 ) to see when the response generation is done."
+    echo "So, please monitor the logs of the mAIner agent ($CANISTER_ID_SHARE_AGENT_CONTROLLER) and the LLMs ($CANISTER_ID_SHARE_SERVICE_LLM_0  & $CANISTER_ID_SHARE_SERVICE_LLM_1 ) & $CANISTER_ID_SHARE_SERVICE_LLM_2 ) to see when the response generation is done."
     read -p "When done, press Enter to continue..."
 fi
-
-echo " "
-echo "Did the ShareService use LLM 0 ($CANISTER_ID_SHARE_SERVICE_LLM_0)? [y/n]"
-read -p "> " llm_choice
-
-if [[ "$llm_choice" == "y" ]]; then
-    GENERATED_BY_LLM_ID=$CANISTER_ID_SHARE_SERVICE_LLM_0
-else
-    GENERATED_BY_LLM_ID=$CANISTER_ID_SHARE_SERVICE_LLM_1
-fi
-
-echo "Setting GENERATED_BY_LLM_ID to: $GENERATED_BY_LLM_ID"
-echo " "
 
 echo "Thank you! We will now check the balances again to see how much cycles were used to generate the response."
 echo "(Be patient, this may take a few seconds.)"
@@ -285,23 +304,25 @@ MAINER_SHARE_SERVICE_CTRLB_BALANCE_1_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_CT
 MAINER_SHARE_SERVICE_CTRLB_CYCLES_CHANGE_1=$(echo "$MAINER_SHARE_SERVICE_CTRLB_BALANCE_1 - $MAINER_SHARE_SERVICE_CTRLB_BALANCE_0" | bc)
 MAINER_SHARE_SERVICE_CTRLB_CYCLES_CHANGE_1_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_CTRLB_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
-LLM_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $GENERATED_BY_LLM_ID 2>&1 | grep "Balance:"| awk '{print $2}')
-LLM_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $GENERATED_BY_LLM_ID 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
-LLM_BALANCE_1_T=$(echo "scale=6; $LLM_BALANCE_1 / 1000000000000" | bc)
+MAINER_SHARE_SERVICE_LLM_0_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_MAINER_SHARE_SERVICE_LLM_0 2>&1 | grep "Balance:"| awk '{print $2}')
+MAINER_SHARE_SERVICE_LLM_0_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_MAINER_SHARE_SERVICE_LLM_0 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+MAINER_SHARE_SERVICE_LLM_0_BALANCE_1_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_LLM_0_BALANCE_1 / 1000000000000" | bc)
+MAINER_SHARE_SERVICE_LLM_0_CYCLES_CHANGE_1=$(echo "$MAINER_SHARE_SERVICE_LLM_0_BALANCE_1 - $MAINER_SHARE_SERVICE_LLM_0_BALANCE_0" | bc)
+MAINER_SHARE_SERVICE_LLM_0_CYCLES_CHANGE_1_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_LLM_0_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
-if [ "$GENERATED_BY_LLM_ID" = "$CANISTER_ID_SHARE_SERVICE_LLM_0" ]; then
-    LLM_INDEX=0
-    echo "generatedByLlmId: $GENERATED_BY_LLM_ID is LLM 0: $CANISTER_ID_SHARE_SERVICE_LLM_0"
-    LLM_CYCLES_CHANGE_1=$(echo "$LLM_BALANCE_1 - $MAINER_SHARE_SERVICE_LLM_0_BALANCE_0" | bc)
-else
-    LLM_INDEX=1
-    echo "generatedByLlmId: $GENERATED_BY_LLM_ID is LLM 1: $CANISTER_ID_SHARE_SERVICE_LLM_1"
-    LLM_CYCLES_CHANGE_1=$(echo "$LLM_BALANCE_1 - $MAINER_SHARE_SERVICE_LLM_1_BALANCE_0" | bc)
+if [ "$NETWORK_TYPE" != "local" ]; then
+    MAINER_SHARE_SERVICE_LLM_1_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_MAINER_SHARE_SERVICE_LLM_1 2>&1 | grep "Balance:"| awk '{print $2}')
+    MAINER_SHARE_SERVICE_LLM_1_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_MAINER_SHARE_SERVICE_LLM_1 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+    MAINER_SHARE_SERVICE_LLM_1_BALANCE_1_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_LLM_1_BALANCE_1 / 1000000000000" | bc)
+    MAINER_SHARE_SERVICE_LLM_1_CYCLES_CHANGE_1=$(echo "$MAINER_SHARE_SERVICE_LLM_1_BALANCE_1 - $MAINER_SHARE_SERVICE_LLM_1_BALANCE_0" | bc)
+    MAINER_SHARE_SERVICE_LLM_1_CYCLES_CHANGE_1_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_LLM_1_CYCLES_CHANGE_1 / 1000000000000" | bc)
+
+    MAINER_SHARE_SERVICE_LLM_2_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_MAINER_SHARE_SERVICE_LLM_2 2>&1 | grep "Balance:"| awk '{print $2}')
+    MAINER_SHARE_SERVICE_LLM_2_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_MAINER_SHARE_SERVICE_LLM_2 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+    MAINER_SHARE_SERVICE_LLM_2_BALANCE_1_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_LLM_2_BALANCE_1 / 1000000000000" | bc)
+    MAINER_SHARE_SERVICE_LLM_2_CYCLES_CHANGE_1=$(echo "$MAINER_SHARE_SERVICE_LLM_2_BALANCE_1 - $MAINER_SHARE_SERVICE_LLM_2_BALANCE_0" | bc)
+    MAINER_SHARE_SERVICE_LLM_2_CYCLES_CHANGE_1_T=$(echo "scale=6; $MAINER_SHARE_SERVICE_LLM_2_CYCLES_CHANGE_1 / 1000000000000" | bc)
 fi
-LLM_CYCLES_CHANGE_1_T=$(echo "scale=6; $LLM_CYCLES_CHANGE_1 / 1000000000000" | bc)
-
-COST_TO_GENERATE_A_RESPONSE=$(echo "- $GAME_STATE_CYCLES_CHANGE_1 - $MAINER_SHARE_AGENT_CTRLB_CYCLES_CHANGE_1 - $MAINER_SHARE_SERVICE_CTRLB_CYCLES_CHANGE_1 - $LLM_CYCLES_CHANGE_1" | bc)
-COST_TO_GENERATE_A_RESPONSE_T=$(echo "scale=6; $COST_TO_GENERATE_A_RESPONSE / 1000000000000" | bc)
 
 echo " "
 echo "--------------------------------------------------"
@@ -321,25 +342,20 @@ echo "-> Balance: $MAINER_SHARE_SERVICE_CTRLB_BALANCE_1_T TCycles ($MAINER_SHARE
 echo "-> Change : $MAINER_SHARE_SERVICE_CTRLB_CYCLES_CHANGE_1_T TCycles ($MAINER_SHARE_SERVICE_CTRLB_CYCLES_CHANGE_1)"
 
 echo " "
-echo "LLM $LLM_INDEX         ($GENERATED_BY_LLM_ID) "
-echo "-> Balance: $LLM_BALANCE_1_T TCycles ($LLM_BALANCE_1_)"
-echo "-> Change : $LLM_CYCLES_CHANGE_1_T TCycles ($LLM_CYCLES_CHANGE_1)"
+echo "LLM 0         ($CANISTER_ID_SHARE_SERVICE_LLM_0) "
+echo "-> Balance: $MAINER_SHARE_SERVICE_LLM_0_BALANCE_1_T TCycles ($MAINER_SHARE_SERVICE_LLM_0_BALANCE_1_)"
+echo "-> Change : $MAINER_SHARE_SERVICE_LLM_0_CYCLES_CHANGE_1_T TCycles ($MAINER_SHARE_SERVICE_LLM_0_CYCLES_CHANGE_1)"
 
-echo " "
-echo "Cost to generate a response: $COST_TO_GENERATE_A_RESPONSE_T TCycles ($COST_TO_GENERATE_A_RESPONSE)"
+if [ "$NETWORK_TYPE" != "local" ]; then
+    echo " "
+    echo "LLM 1         ($CANISTER_ID_SHARE_SERVICE_LLM_1) "
+    echo "-> Balance: $MAINER_SHARE_SERVICE_LLM_1_BALANCE_1_T TCycles ($MAINER_SHARE_SERVICE_LLM_1_BALANCE_1_)"
+    echo "-> Change : $MAINER_SHARE_SERVICE_LLM_1_CYCLES_CHANGE_1_T TCycles ($MAINER_SHARE_SERVICE_LLM_1_CYCLES_CHANGE_1)"
 
-# Settings in Tcycles
-SHARE_SERVICE_QUEUE_CYCLES_REQUIRED=0.1
-SUBMISSION_CYCLES_REQUIRED=0.1
-echo " "
-echo "to copy into spreadsheet"
-echo "Corrected for:"
-echo "The mAIner ShareAgent sending SHARE_SERVICE_QUEUE_CYCLES_REQUIRED ($SHARE_SERVICE_QUEUE_CYCLES_REQUIRED Tcycles) to ShareService"
-echo "The mAIner ShareAgent sending SUBMISSION_CYCLES_REQUIRED ($SUBMISSION_CYCLES_REQUIRED Tcycles) with the Submission to GameState"
-echo $COST_TO_GENERATE_A_RESPONSE_T
-echo $(echo "- $GAME_STATE_CYCLES_CHANGE_1_T + $SUBMISSION_CYCLES_REQUIRED" | bc)
-echo $(echo "- $MAINER_SHARE_AGENT_CTRLB_CYCLES_CHANGE_1_T - $SHARE_SERVICE_QUEUE_CYCLES_REQUIRED - $SUBMISSION_CYCLES_REQUIRED" | bc)
-echo $(echo "- $MAINER_SHARE_SERVICE_CTRLB_CYCLES_CHANGE_1_T + $SHARE_SERVICE_QUEUE_CYCLES_REQUIRED" | bc)
-echo $(echo "- $LLM_CYCLES_CHANGE_1_T" | bc)
+    echo " "
+    echo "LLM 2         ($CANISTER_ID_SHARE_SERVICE_LLM_2) "
+    echo "-> Balance: $MAINER_SHARE_SERVICE_LLM_2_BALANCE_1_T TCycles ($MAINER_SHARE_SERVICE_LLM_2_BALANCE_1_)"
+    echo "-> Change : $MAINER_SHARE_SERVICE_LLM_2_CYCLES_CHANGE_1_T TCycles ($MAINER_SHARE_SERVICE_LLM_2_CYCLES_CHANGE_1)"
+fi
 
 ##############################################################

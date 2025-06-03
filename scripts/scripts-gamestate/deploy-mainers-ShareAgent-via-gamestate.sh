@@ -98,13 +98,13 @@ extract_status_name() {
 if [ "$NETWORK_TYPE" = "local" ]; then
     echo " "
     echo "--------------------------------------------------"
-    echo "To fund Controller creation - Adding 5 TCycles to the game_state_canister canister on local"
-    dfx ledger fabricate-cycles --canister game_state_canister --t 5
+    echo "To fund Controller creation - Adding 3 TCycles to the game_state_canister canister on local"
+    dfx ledger fabricate-cycles --canister game_state_canister --t 3
 else
     echo " "
     echo "--------------------------------------------------"
-    echo "To fund Controller creation - Adding 5 TCycles to the game_state_canister ($CANISTER_ID_GAME_STATE_CANISTER) canister on $NETWORK_TYPE"
-    dfx wallet send --network $NETWORK_TYPE $CANISTER_ID_GAME_STATE_CANISTER 5000000000000
+    echo "To fund Controller creation - Adding 3 TCycles to the game_state_canister ($CANISTER_ID_GAME_STATE_CANISTER) canister on $NETWORK_TYPE"
+    dfx wallet send --network $NETWORK_TYPE $CANISTER_ID_GAME_STATE_CANISTER 3000000000000
 fi
 
 # ================================================================
@@ -135,7 +135,11 @@ echo "-> Balance: $MAINER_CREATOR_BALANCE_0_T TCycles ($MAINER_CREATOR_BALANCE_0
 
 echo " "
 echo "Calling createUserMainerAgent"
-output=$(dfx canister call game_state_canister createUserMainerAgent '(record { paymentTransactionBlockId = 12; mainerConfig = record { mainerAgentCanisterType = variant {ShareAgent}; selectedLLM = opt variant {Qwen2_5_500M}; }; })' --network $NETWORK_TYPE)
+# Note:
+# (-) arguments subnetCtrl and subnetLlm are dummy values & not used by createUserMainerAgent.
+#     The actual values are already set in the game_state_canister via setSubnetsAdmin
+# (-) argument cyclesForMainer is a dummy value & not used by this call to createUserMainerAgent.
+output=$(dfx canister call game_state_canister createUserMainerAgent '(record { paymentTransactionBlockId = 12; mainerConfig = record { mainerAgentCanisterType = variant {ShareAgent}; selectedLLM = opt variant {Qwen2_5_500M}; subnetCtrl = ""; subnetLlm = ""; cyclesForMainer = 0; }; })' --network $NETWORK_TYPE)
 if [[ "$output" != *"Ok = record"* ]]; then
     echo $output
     echo "Call to createUserMainerAgent failed. Exiting."    
@@ -175,6 +179,9 @@ else
 fi
 
 echo "RESULT_2A (getMainerAgentCanisterInfo): $RESULT_2A"
+
+SUBNET_SHARE_AGENT=$(echo "$RESULT_2A" | grep -o 'subnet = "[^"]*"' | sed 's/subnet = "//; s/"//')
+echo "SUBNET_SHARE_AGENT: $SUBNET_SHARE_AGENT"
 
 ##############################################################
 GAME_STATE_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:"| awk '{print $2}')

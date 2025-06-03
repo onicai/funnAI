@@ -96,22 +96,6 @@ extract_status_name() {
 }
 # ================================================================
 
-#######################################################################
-echo "TODO: fund Judge with sufficient Cycles to create a score"
-# if [ "$NETWORK_TYPE" = "local" ]; then
-#     echo " "
-#     echo "--------------------------------------------------"
-#     echo "To fund Controller creation - Adding 5 TCycles to the game_state_canister canister on local"
-#     dfx ledger fabricate-cycles --canister game_state_canister --t 5
-# else
-#     echo " "
-#     echo "--------------------------------------------------"
-#     echo "To fund Controller creation - Adding 5 TCycles to the game_state_canister ($CANISTER_ID_GAME_STATE_CANISTER) canister on $NETWORK_TYPE"
-#     dfx wallet send --network $NETWORK_TYPE $CANISTER_ID_GAME_STATE_CANISTER 5000000000000
-# fi
-
-# ================================================================
-
 echo " "
 echo "We will first check the balances of the canisters involved in generating the score."
 echo "(Be patient, this may take a few seconds.)"
@@ -238,14 +222,14 @@ echo "LLM $LLM_INDEX         ($GENERATED_BY_LLM_ID) "
 echo "-> Balance: $LLM_BALANCE_1_T TCycles ($LLM_BALANCE_1_)"
 echo "-> Change : $LLM_CYCLES_CHANGE_1_T TCycles ($LLM_CYCLES_CHANGE_1)"
 
-echo " "
-echo "Cost to generate a score: $COST_TO_GENERATE_A_SCORE_T TCycles ($COST_TO_GENERATE_A_SCORE)"
+# echo " "
+# echo "Cost to generate a score: $COST_TO_GENERATE_A_SCORE_T TCycles ($COST_TO_GENERATE_A_SCORE)"
 
-echo " "
-echo "to copy into spreadsheet:"
-echo $COST_TO_GENERATE_A_SCORE_T
-echo $(echo "- $GAME_STATE_CYCLES_CHANGE_1_T" | bc)
-echo $(echo "- $JUDGE_CTRLB_CYCLES_CHANGE_1_T" | bc)
-echo $(echo "- $LLM_CYCLES_CHANGE_1_T" | bc)
+# echo " "
+# echo "to copy into spreadsheet:"
+# echo $COST_TO_GENERATE_A_SCORE_T
+# echo $(echo "- $GAME_STATE_CYCLES_CHANGE_1_T" | bc)
+# echo $(echo "- $JUDGE_CTRLB_CYCLES_CHANGE_1_T" | bc)
+# echo $(echo "- $LLM_CYCLES_CHANGE_1_T" | bc)
 
 ##############################################################
