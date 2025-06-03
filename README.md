@@ -90,7 +90,7 @@ scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install --n
 # IMPORTANT - wasm hash of mAIners
 # If the wasm hash of the mAIner changed, you must update the gamestate.
 # First deploy a ShareAgent, then do this:
-dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="<...>"})' --network $NETWORK
+dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="Initial install"})' --network $NETWORK
 
 # Admin functions to clean up redeemed payments in case the creation failed.
 # This is used during testing, but can also be used in production in case the mAIner creation failed, but user payment was accepted
