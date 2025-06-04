@@ -21,7 +21,7 @@ def get_canisters(network):
     # Load CANISTER_NAME=ID pairs from .env file located in the script's directory
     ENV_PATH = os.path.join(SCRIPT_DIR, f"canister_ids-{network}.env")
     env_config = dotenv_values(ENV_PATH)
-    CANISTERS = {key: value.strip('"') for key, value in env_config.items() if value}
+    CANISTERS = {key: value.strip('"') for key, value in env_config.items() if value and value.endswith("-cai") and not key=="NETWORK"}
 
     # Pick visually distinct 256-color codes (avoid 0-15 for standard colors, go higher for vivid ones)
     COLOR_CODES_256 = [

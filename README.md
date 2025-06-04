@@ -14,10 +14,11 @@ conda activate llama_cpp_canister
 NETWORK=testing  # [local|ic|development|testing]
 
 # MONITORING SCRIPTS
-# For more details, see "notes/HowToManageBackend.md"
+# (-) scripts read from 'scripts/canister_ids-<network>.env'
 pip install -r scripts/requirements.txt
 scripts/monitor_logs.sh --network $NETWORK
 scripts/monitor_gamestate.sh --network $NETWORK
+scripts/monitor_balance.sh --network $NETWORK
 
 # When running local
 # We are using dfx deps for:
