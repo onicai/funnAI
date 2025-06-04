@@ -39,6 +39,7 @@ cd ../../llms/Judge
 CANISTER_ID_JUDGE_LLM_0=$(dfx canister --network $NETWORK_TYPE id llm_0)
 if [ "$NETWORK_TYPE" != "local" ]; then
     CANISTER_ID_JUDGE_LLM_1=$(dfx canister --network $NETWORK_TYPE id llm_1)   
+    CANISTER_ID_JUDGE_LLM_2=$(dfx canister --network $NETWORK_TYPE id llm_2)
 fi
 
 # go back to the funnAI folder
@@ -49,6 +50,7 @@ echo "CANISTER_ID_JUDGE_CTRLB_CANISTER: $CANISTER_ID_JUDGE_CTRLB_CANISTER"
 echo "CANISTER_ID_JUDGE_LLM_0: $CANISTER_ID_JUDGE_LLM_0"
 if [ "$NETWORK_TYPE" != "local" ]; then
     echo "CANISTER_ID_JUDGE_LLM_1: $CANISTER_ID_JUDGE_LLM_1"
+    echo "CANISTER_ID_JUDGE_LLM_2: $CANISTER_ID_JUDGE_LLM_2"
 fi
 
 # ================================================================
@@ -119,6 +121,10 @@ if [ "$NETWORK_TYPE" != "local" ]; then
     JUDGE_LLM_1_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_1 2>&1 | grep "Balance:"| awk '{print $2}')
     JUDGE_LLM_1_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_1 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
     JUDGE_LLM_1_BALANCE_0_T=$(echo "scale=6; $JUDGE_LLM_1_BALANCE_0 / 1000000000000" | bc)
+
+    JUDGE_LLM_2_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_2 2>&1 | grep "Balance:"| awk '{print $2}')
+    JUDGE_LLM_2_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_2 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+    JUDGE_LLM_2_BALANCE_0_T=$(echo "scale=6; $JUDGE_LLM_2_BALANCE_0 / 1000000000000" | bc)
 fi
 
 echo " "
@@ -138,6 +144,9 @@ if [ "$NETWORK_TYPE" != "local" ]; then
     echo " "
     echo "LLM 1         ($CANISTER_ID_JUDGE_LLM_1) "
     echo "-> Balance: $JUDGE_LLM_1_BALANCE_0_T TCycles ($JUDGE_LLM_1_BALANCE_0)"
+    echo " "
+    echo "LLM 2         ($CANISTER_ID_JUDGE_LLM_2) "
+    echo "-> Balance: $JUDGE_LLM_2_BALANCE_0_T TCycles ($JUDGE_LLM_2_BALANCE_0)"
 fi
 ########################################################
 
@@ -158,19 +167,6 @@ else
     read -p "When done, press Enter to continue..."
 fi
 
-echo " "
-echo "Did the Judge use LLM 0 ($CANISTER_ID_JUDGE_LLM_0)? [y/n]"
-read -p "> " llm_choice
-
-if [[ "$llm_choice" == "y" ]]; then
-    GENERATED_BY_LLM_ID=$CANISTER_ID_JUDGE_LLM_0
-else
-    GENERATED_BY_LLM_ID=$CANISTER_ID_JUDGE_LLM_1
-fi
-
-echo "Setting GENERATED_BY_LLM_ID to: $GENERATED_BY_LLM_ID"
-echo " "
-
 echo "Thank you! We will now check the balances again to see how much cycles were used to generate the score."
 echo "(Be patient, this may take a few seconds.)"
 
@@ -187,23 +183,25 @@ JUDGE_CTRLB_BALANCE_1_T=$(echo "scale=6; $JUDGE_CTRLB_BALANCE_1 / 1000000000000"
 JUDGE_CTRLB_CYCLES_CHANGE_1=$(echo "$JUDGE_CTRLB_BALANCE_1 - $JUDGE_CTRLB_BALANCE_0" | bc)
 JUDGE_CTRLB_CYCLES_CHANGE_1_T=$(echo "scale=6; $JUDGE_CTRLB_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
-LLM_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $GENERATED_BY_LLM_ID 2>&1 | grep "Balance:"| awk '{print $2}')
-LLM_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $GENERATED_BY_LLM_ID 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
-LLM_BALANCE_1_T=$(echo "scale=6; $LLM_BALANCE_1 / 1000000000000" | bc)
+JUDGE_LLM_0_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_0 2>&1 | grep "Balance:"| awk '{print $2}')
+JUDGE_LLM_0_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_0 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+JUDGE_LLM_0_BALANCE_1_T=$(echo "scale=6; $JUDGE_LLM_0_BALANCE_1 / 1000000000000" | bc)
+JUDGE_LLM_0_CYCLES_CHANGE_1=$(echo "$JUDGE_LLM_0_BALANCE_1 - $JUDGE_LLM_0_BALANCE_0" | bc)
+JUDGE_LLM_0_CYCLES_CHANGE_1_T=$(echo "scale=6; $JUDGE_LLM_0_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
-if [ "$GENERATED_BY_LLM_ID" = "$CANISTER_ID_JUDGE_LLM_0" ]; then
-    LLM_INDEX=0
-    echo "generatedByLlmId: $GENERATED_BY_LLM_ID is LLM 0: $CANISTER_ID_JUDGE_LLM_0"
-    LLM_CYCLES_CHANGE_1=$(echo "$LLM_BALANCE_1 - $JUDGE_LLM_0_BALANCE_0" | bc)
-else
-    LLM_INDEX=1
-    echo "generatedByLlmId: $GENERATED_BY_LLM_ID is LLM 1: $CANISTER_ID_JUDGE_LLM_1"
-    LLM_CYCLES_CHANGE_1=$(echo "$LLM_BALANCE_1 - $JUDGE_LLM_1_BALANCE_0" | bc)
+if [ "$NETWORK_TYPE" != "local" ]; then
+    JUDGE_LLM_1_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_1 2>&1 | grep "Balance:"| awk '{print $2}')
+    JUDGE_LLM_1_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_1 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+    JUDGE_LLM_1_BALANCE_1_T=$(echo "scale=6; $JUDGE_LLM_1_BALANCE_1 / 1000000000000" | bc)
+    JUDGE_LLM_1_CYCLES_CHANGE_1=$(echo "$JUDGE_LLM_1_BALANCE_1 - $JUDGE_LLM_0_BALANCE_0" | bc)
+    JUDGE_LLM_1_CYCLES_CHANGE_1_T=$(echo "scale=6; $JUDGE_LLM_1_CYCLES_CHANGE_1 / 1000000000000" | bc)
+
+    JUDGE_LLM_2_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_2 2>&1 | grep "Balance:"| awk '{print $2}')
+    JUDGE_LLM_2_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_2 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+    JUDGE_LLM_2_BALANCE_1_T=$(echo "scale=6; $JUDGE_LLM_2_BALANCE_1 / 1000000000000" | bc)
+    JUDGE_LLM_2_CYCLES_CHANGE_1=$(echo "$JUDGE_LLM_2_BALANCE_1 - $JUDGE_LLM_0_BALANCE_0" | bc)
+    JUDGE_LLM_2_CYCLES_CHANGE_1_T=$(echo "scale=6; $JUDGE_LLM_2_CYCLES_CHANGE_1 / 1000000000000" | bc)
 fi
-LLM_CYCLES_CHANGE_1_T=$(echo "scale=6; $LLM_CYCLES_CHANGE_1 / 1000000000000" | bc)
-
-COST_TO_GENERATE_A_SCORE=$(echo "- $GAME_STATE_CYCLES_CHANGE_1 - $JUDGE_CTRLB_CYCLES_CHANGE_1 - $LLM_CYCLES_CHANGE_1" | bc)
-COST_TO_GENERATE_A_SCORE_T=$(echo "scale=6; $COST_TO_GENERATE_A_SCORE / 1000000000000" | bc)
 
 echo " "
 echo "--------------------------------------------------"
@@ -218,18 +216,17 @@ echo "-> Balance: $JUDGE_CTRLB_BALANCE_1_T TCycles ($JUDGE_CTRLB_BALANCE_1_)"
 echo "-> Change : $JUDGE_CTRLB_CYCLES_CHANGE_1_T TCycles ($JUDGE_CTRLB_CYCLES_CHANGE_1)"
 
 echo " "
-echo "LLM $LLM_INDEX         ($GENERATED_BY_LLM_ID) "
-echo "-> Balance: $LLM_BALANCE_1_T TCycles ($LLM_BALANCE_1_)"
-echo "-> Change : $LLM_CYCLES_CHANGE_1_T TCycles ($LLM_CYCLES_CHANGE_1)"
+echo "LLM 0         ($CANISTER_ID_JUDGE_LLM_0) "
+echo "-> Balance: $JUDGE_LLM_0_BALANCE_0_T TCycles ($JUDGE_LLM_0_BALANCE_0)"
+echo "-> Change : $JUDGE_LLM_0_CYCLES_CHANGE_1_T TCycles ($JUDGE_LLM_0_CYCLES_CHANGE_1)"
 
-# echo " "
-# echo "Cost to generate a score: $COST_TO_GENERATE_A_SCORE_T TCycles ($COST_TO_GENERATE_A_SCORE)"
-
-# echo " "
-# echo "to copy into spreadsheet:"
-# echo $COST_TO_GENERATE_A_SCORE_T
-# echo $(echo "- $GAME_STATE_CYCLES_CHANGE_1_T" | bc)
-# echo $(echo "- $JUDGE_CTRLB_CYCLES_CHANGE_1_T" | bc)
-# echo $(echo "- $LLM_CYCLES_CHANGE_1_T" | bc)
-
-##############################################################
+if [ "$NETWORK_TYPE" != "local" ]; then
+    echo " "
+    echo "LLM 1         ($CANISTER_ID_JUDGE_LLM_1) "
+    echo "-> Balance: $JUDGE_LLM_1_BALANCE_0_T TCycles ($JUDGE_LLM_1_BALANCE_0)"
+    echo "-> Change : $JUDGE_LLM_1_CYCLES_CHANGE_1_T TCycles ($JUDGE_LLM_1_CYCLES_CHANGE_1)"
+    echo " "
+    echo "LLM 2         ($CANISTER_ID_JUDGE_LLM_2) "
+    echo "-> Balance: $JUDGE_LLM_2_BALANCE_0_T TCycles ($JUDGE_LLM_2_BALANCE_0)"
+    echo "-> Change : $JUDGE_LLM_2_CYCLES_CHANGE_1_T TCycles ($JUDGE_LLM_2_CYCLES_CHANGE_1)"
+fi
