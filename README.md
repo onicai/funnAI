@@ -13,9 +13,11 @@ conda activate llama_cpp_canister
 # Set NETWORK environment variable
 NETWORK=testing  # [local|ic|development|testing]
 
-# To monitor the logs of the canisters, run this script
+# MONITORING SCRIPTS
 # For more details, see "notes/HowToManageBackend.md"
-scripts/logs.sh --network $NETWORK
+pip install -r scripts/requirements.txt
+scripts/monitor_logs.sh --network $NETWORK
+scripts/monitor_gamestate.sh --network $NETWORK
 
 # When running local
 # We are using dfx deps for:
@@ -135,6 +137,13 @@ dfx canister call game_state_canister getNumOpenSubmissionsForOpenChallengesAdmi
 # Verify Judge score generations
 dfx canister call game_state_canister getScoredChallengesAdmin --output json --network $NETWORK
 dfx canister call game_state_canister getNumScoredChallengesAdmin --output json --network $NETWORK
+
+# Verify GameState management of challenges/scores/winners
+dfx canister call game_state_canister getArchivedChallengesAdmin --output json --network $NETWORK
+dfx canister call game_state_canister getNumArchivedChallengesAdmin --output json --network $NETWORK
+
+dfx canister call game_state_canister getClosedChallengesAdmin --output json --network $NETWORK
+dfx canister call game_state_canister getNumClosedChallengesAdmin --output json --network $NETWORK
 
 
 # Deploy funnai backend (used mainly for chat):

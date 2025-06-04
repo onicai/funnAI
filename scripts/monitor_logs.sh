@@ -2,7 +2,7 @@
 
 #######################################################################
 # run from parent folder as:
-# scripts/log.sh --network [local|ic]
+# scripts/monitor_logs.sh --network [local|ic|testing|development]
 #######################################################################
 
 # Default network type is local
@@ -31,4 +31,4 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 
-python -m scripts.logs --network $NETWORK_TYPE
+python -m scripts.monitor_logs --network $NETWORK_TYPE
