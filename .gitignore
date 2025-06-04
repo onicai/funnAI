@@ -1,6 +1,9 @@
 # Nested repos
 PoAIW
 
+# vscode
+.vscode/
+
 # deps 
 deps
 
