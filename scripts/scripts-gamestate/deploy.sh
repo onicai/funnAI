@@ -2,27 +2,22 @@
 
 #######################################################################
 # run from parent folder as:
-# scripts/deploy.sh --network [local|ic]
+# scripts/scripts-gamestate/deploy.sh --network [local|ic]
 #######################################################################
 
 # Default network type is local
 NETWORK_TYPE="local"
 DEPLOY_MODE="install"
 
-# When deploying to IC, we deploy to a specific subnet
-# none will not use subnet parameter in deploy to ic
-# SUBNET="none"
-SUBNET="qdvhd-os4o2-zzrdw-xrcv4-gljou-eztdp-bj326-e6jgr-tkhuc-ql6v2-yqe"
-
 # Parse command line arguments for network type
 while [ $# -gt 0 ]; do
     case "$1" in
         --network)
             shift
-            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ]; then
+            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ] || [ "$1" = "development" ]; then
                 NETWORK_TYPE=$1
             else
-                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing."
+                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing' or 'development'."
                 exit 1
             fi
             shift
@@ -45,7 +40,31 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-echo "Using network type: $NETWORK_TYPE"
+# WARNING: when updating here, also update in scripts/scripts-gamestate/deploy-mainers-ShareService-LLMs-via-gamestate.sh
+if [ "$NETWORK_TYPE" = "ic" ]; then
+    SUBNET_GAME_STATE="csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"
+    SUBNET_SHARE_AGENT_CTRL="w4asl-4nmyj-qnr7c-6cqq4-tkwmt-o26di-iupkq-vx4kt-asbrx-jzuxh-4ae" # All share agents are on the same subnet
+    SUBNET_SHARE_SERVICE_CTRL="w4asl-4nmyj-qnr7c-6cqq4-tkwmt-o26di-iupkq-vx4kt-asbrx-jzuxh-4ae"
+    SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0,1,2 - overwritten by the LLMs deployment script
+elif [ "$NETWORK_TYPE" = "testing" ]; then
+    SUBNET_GAME_STATE="csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"
+    SUBNET_SHARE_AGENT_CTRL="w4asl-4nmyj-qnr7c-6cqq4-tkwmt-o26di-iupkq-vx4kt-asbrx-jzuxh-4ae" # All share agents are on the same subnet
+    SUBNET_SHARE_SERVICE_CTRL="w4asl-4nmyj-qnr7c-6cqq4-tkwmt-o26di-iupkq-vx4kt-asbrx-jzuxh-4ae"
+    SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0,1,2 - overwritten by the LLMs deployment script
+elif [ "$NETWORK_TYPE" = "development" ]; then
+    SUBNET_GAME_STATE="none"  # TODO
+    SUBNET_SHARE_AGENT_CTRL="none"  # TODO
+    SUBNET_SHARE_SERVICE_CTRL="none"  # TODO
+    SUBNET_SHARE_SERVICE_LLM="none"  # TODO
+else
+    SUBNET_GAME_STATE="none"  
+    SUBNET_SHARE_AGENT_CTRL="none"
+    SUBNET_SHARE_SERVICE_CTRL="none"  # No specific subnet for local
+    SUBNET_SHARE_SERVICE_LLM="none"  # No specific subnet for local
+fi
+
+echo "Using network type : $NETWORK_TYPE"
+echo "Deploying to subnet: $SUBNET_GAME_STATE"
 
 #######################################################################
 
@@ -54,10 +73,10 @@ echo "--------------------------------------------------"
 echo "Deploying the game_state_canister"
 
 if [ "$NETWORK_TYPE" = "ic" ] || [ "$NETWORK_TYPE" = "testing" ]; then
-    if [ "$SUBNET" = "none" ]; then
+    if [ "$SUBNET_GAME_STATE" = "none" ]; then
         dfx deploy game_state_canister --mode $DEPLOY_MODE --yes --network $NETWORK_TYPE
     else
-        dfx deploy game_state_canister --mode $DEPLOY_MODE --yes --network $NETWORK_TYPE --subnet $SUBNET
+        dfx deploy game_state_canister --mode $DEPLOY_MODE --yes --network $NETWORK_TYPE --subnet $SUBNET_GAME_STATE
     fi
 else
     dfx deploy game_state_canister --mode $DEPLOY_MODE --yes --network $NETWORK_TYPE
@@ -74,6 +93,21 @@ if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; t
 else
     echo "game_state_canister is healthy."
 fi
+
+echo " "
+echo "--------------------------------------------------"
+echo "Calling setSubnetsAdmin to set the mAIner subnets"
+dfx canister call game_state_canister setSubnetsAdmin "(record {subnetShareAgentCtrl = \"$SUBNET_SHARE_AGENT_CTRL\"; subnetShareServiceCtrl = \"$SUBNET_SHARE_SERVICE_CTRL\"; subnetShareServiceLlm = \"$SUBNET_SHARE_SERVICE_LLM\";})" --network $NETWORK_TYPE
+
+echo " "
+echo "--------------------------------------------------"
+echo "Calling getSubnetsAdmin to get the mAIner subnets"
+dfx canister call game_state_canister getSubnetsAdmin  --network $NETWORK_TYPE
+
+echo " "
+echo "--------------------------------------------------"
+echo "Calling setCyclesFlowAdmin to calculate the CyclesFlow variables"
+dfx canister call game_state_canister setCyclesFlowAdmin '(record {})' --network $NETWORK_TYPE
 
 if [ "$DEPLOY_MODE" != "upgrade" ]; then
     echo " "

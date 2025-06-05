@@ -2,7 +2,7 @@
 
 #######################################################################
 # run from parent folder as:
-# scripts/log.sh --network [local|ic]
+# scripts/monitor_logs.sh --network [local|ic|testing|development]
 #######################################################################
 
 # Default network type is local
@@ -13,10 +13,10 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --network)
             shift
-            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ]; then
+            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ] || [ "$1" = "development" ]; then
                 NETWORK_TYPE=$1
             else
-                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing."
+                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing' or 'development'."
                 exit 1
             fi
             shift
@@ -31,4 +31,4 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 
-python -m scripts.logs --network $NETWORK_TYPE
+python -m scripts.monitor_logs --network $NETWORK_TYPE

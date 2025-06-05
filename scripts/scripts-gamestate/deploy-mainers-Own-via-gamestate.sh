@@ -2,30 +2,22 @@
 
 #######################################################################
 # run from parent folder as:
-# scripts/deploy-mainers-Own-via-gamestate.sh
+# scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh
 #######################################################################
 
 # Default network type is local
 NETWORK_TYPE="local"
 DEPLOY_MODE="install"
 
-# When deploying local, use canister IDs from .env
-source PoAIW/src/mAInerCreator/.env
-
 # Parse command line arguments for network type
 while [ $# -gt 0 ]; do
     case "$1" in
         --network)
             shift
-            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ]; then
+            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ] || [ "$1" = "development" ]; then
                 NETWORK_TYPE=$1
-                if [ "$NETWORK_TYPE" = "ic" ]; then
-                    CANISTER_ID_MAINER_CREATOR_CANISTER='movk5-tyaaa-aaaaj-az64q-cai'
-                elif [ "$NETWORK_TYPE" = "testing" ]; then
-                    CANISTER_ID_MAINER_CREATOR_CANISTER='cx56d-zaaaa-aaaaj-az76a-cai'
-                fi
             else
-                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing."
+                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing' or 'development'."
                 exit 1
             fi
             shift
@@ -51,6 +43,11 @@ done
 echo "Using network type: $NETWORK_TYPE"
 
 CANISTER_ID_GAME_STATE_CANISTER=$(dfx canister --network $NETWORK_TYPE id game_state_canister)
+cd PoAIW/src/mAInerCreator
+CANISTER_ID_MAINER_CREATOR_CANISTER=$(dfx canister --network $NETWORK_TYPE id mainer_creator_canister)
+
+# go back to the funnAI folder
+cd ../../../
 
 # ================================================================
 # some helper functions

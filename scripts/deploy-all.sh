@@ -14,10 +14,10 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --network)
             shift
-            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ]; then
+            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ] || [ "$1" = "development" ]; then
                 NETWORK_TYPE=$1
             else
-                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing."
+                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing' or 'development'."
                 exit 1
             fi
             shift
@@ -57,5 +57,10 @@ scripts/deploy-judge.sh      --network $NETWORK_TYPE --mode $DEPLOY_MODE
 # From folder funnAI:
 cd ../
 scripts/scripts-gamestate/register-all.sh --network $NETWORK_TYPE
+
+echo " "
+echo "--------------------------------------------------"
+echo "Calling getCyclesFlowAdmin to get the current CyclesFlow variables"
+dfx canister call game_state_canister getCyclesFlowAdmin --network $NETWORK_TYPE
 
 # WE NO LONGER DEPLOY mAIners from this script. See README for details

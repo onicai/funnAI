@@ -7,14 +7,10 @@ import os
 from collections import defaultdict
 from dotenv import dotenv_values
 
+from .monitor_common import get_canisters, ensure_log_dir
+
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
-
-def ensure_log_dir(log_dir):
-    """Ensure the logs directory exists."""
-    if not os.path.exists(log_dir):
-        os.makedirs(log_dir)
-        print(f"Created log directory: {log_dir}")
 
 def get_logs(canister_id, network):
     """Fetch logs using dfx for a given canister."""
@@ -29,30 +25,7 @@ def get_logs(canister_id, network):
         return []
 
 def main(network):
-    
-    # Load CANISTER_NAME=ID pairs from .env file located in the script's directory
-    ENV_PATH = os.path.join(SCRIPT_DIR, f"canister_ids-{network}.env")
-    env_config = dotenv_values(ENV_PATH)
-    CANISTERS = {key: value.strip('"') for key, value in env_config.items() if value}
-
-    # Pick visually distinct 256-color codes (avoid 0-15 for standard colors, go higher for vivid ones)
-    COLOR_CODES_256 = [
-        27, 33, 39, 45, 51,     # blues, cyans
-        82, 118, 154, 190,      # greens
-        196, 202, 208, 214,     # reds/oranges
-        129, 135, 141, 177,     # purples/pinks
-        226, 220, 190           # yellows
-    ]
-
-    def make_ansi_color(code):
-        return f"\033[38;5;{code}m"
-
-    RESET_COLOR = "\033[0m"
-
-    CANISTER_COLORS = {
-        name: make_ansi_color(COLOR_CODES_256[i % len(COLOR_CODES_256)])
-        for i, name in enumerate(sorted(CANISTERS.keys()))
-    }
+    (CANISTERS, CANISTER_COLORS, RESET_COLOR) = get_canisters(network)
 
     # Log directory (also relative to script location)
     LOG_DIR = os.path.join(SCRIPT_DIR, f"logs-{network}")
