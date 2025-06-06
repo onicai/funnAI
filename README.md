@@ -56,6 +56,9 @@ TODO -- the script is ready, but needs to be tested ---
 # IMPORTANT: Record the canister ids in scripts/canister_ids-<network>.env
 #            for canister monitoring, management & logging purposes
 #
+# Set the SubnetIds in the GameState canister, for example for the 'testing' environment
+dfx canister --network testing call game_state_canister setSubnetsAdmin '(record {subnetShareAgentCtrl = "csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"; subnetShareServiceCtrl ="csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"; subnetShareServiceLlm = "qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" })'
+
 # Always deploy a mAIner of type #ShareService, since this is a protocol canister
 scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.sh --mode install --network $NETWORK
 
