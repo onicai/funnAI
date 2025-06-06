@@ -14,10 +14,10 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --network)
             shift
-            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "development" ]; then
+            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ] || [ "$1" = "development" ]; then
                 NETWORK_TYPE=$1
             else
-                echo "Invalid network type: $1. Use 'local', 'development' or 'ic'."
+                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing' or 'development'."
                 exit 1
             fi
             shift
@@ -34,18 +34,31 @@ while [ $# -gt 0 ]; do
             ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic]"
+            echo "Usage: $0 --network [local|ic|testing]"
             exit 1
             ;;
     esac
 done
 
 echo "Using network type: $NETWORK_TYPE"
+echo "We are going to   : $DEPLOY_MODE"
+
+# Check if user wants to reinstall and confirm
+if [ "$DEPLOY_MODE" = "reinstall" ]; then
+    echo " "
+    echo "WARNING: You are about to reinstall the canisters. You will lose all persistent data."
+    echo "Are you sure you want to reinstall? (y/N)"
+    read -r confirmation
+    if [ "$confirmation" != "y" ] && [ "$confirmation" != "Y" ]; then
+        echo "Reinstall cancelled."
+        exit 1
+    fi
+fi
 
 #######################################################################
 # From funnAI folder
 echo "scripts-gamestate deploy.sh"
-scripts/scripts-gamestate/deploy.sh --network $NETWORK_TYPE --mode $DEPLOY_MODE
+ $NETWORK_TYPE --mode $DEPLOY_MODE
 
 # Deploy the core Protocol canisters
 cd PoAIW
@@ -57,5 +70,10 @@ scripts/deploy-judge.sh      --network $NETWORK_TYPE --mode $DEPLOY_MODE
 # From folder funnAI:
 cd ../
 scripts/scripts-gamestate/register-all.sh --network $NETWORK_TYPE
+
+echo " "
+echo "--------------------------------------------------"
+echo "Calling getCyclesFlowAdmin to get the current CyclesFlow variables"
+dfx canister call game_state_canister getCyclesFlowAdmin --network $NETWORK_TYPE
 
 # WE NO LONGER DEPLOY mAIners from this script. See README for details
