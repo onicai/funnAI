@@ -58,7 +58,7 @@ fi
 #######################################################################
 # From funnAI folder
 echo "scripts-gamestate deploy.sh"
- $NETWORK_TYPE --mode $DEPLOY_MODE
+scripts/scripts-gamestate/deploy.sh --network $NETWORK_TYPE --mode $DEPLOY_MODE
 
 # Deploy the core Protocol canisters
 cd PoAIW
