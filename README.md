@@ -72,14 +72,10 @@ scripts/scripts-gamestate/deploy-mainers-ShareService-AddLLM-via-gamestate.sh --
 # Deploy mAIners of type #ShareAgent
 scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install --network $NETWORK
 
-# When you repeat it, you will get an error: "Already redeemd this paymentTransactionBlockId 12"
-# Just clear it out first with:
-dfx canister call game_state_canister removeRedeemedTransactionBlockAdmin '(record {paymentTransactionBlockId = 12 : nat64} )' --network $NETWORK 
-
 # -----------------------------------------
 # Deploy mAIners of type #Own
-scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install --network $NETWORK
-# TODO --- write script to upgrade mAIner #Own controllers
+# TODO - fix the script
+# scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install --network $NETWORK
 
 # #########################################################################
 # Upgrading for new GameState code
@@ -104,7 +100,7 @@ scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.s
 #
 # Upgrade the #ShareAgent canisters with new mAIner code, by repeating this call for all of them
 # TODO: write a script that automates these calls over all ShareAgent canisters
-scripts/scripts-gamestate/deploy-mainers-ShareAgent-Controller-via-gamestate.sh --mode upgrade --canister <canisterId> --network $NETWORK
+scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode upgrade --canister <canisterId> --network $NETWORK
 #
 # Update gamestate to the latest wasmhash. <canisterId> is the address of one of the upgraded ShareAgent canisters
 dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="New wasm deployed"})' --network $NETWORK

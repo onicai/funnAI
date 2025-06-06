@@ -51,18 +51,10 @@ done
 echo "Using network type: $NETWORK_TYPE"
 echo "We are going to   : $DEPLOY_MODE $CANISTER_ID_SHARE_AGENT_CONTROLLER"
 
-# Check if user wants to reinstall and confirm
 if [ "$DEPLOY_MODE" = "reinstall" ]; then
     echo " "
-    echo "reinstall of ShareAgent Controller is not yet supported."
+    echo "reinstall of ShareAgent Controller is not supported."
     exit 1
-    # echo "WARNING: You are about to reinstall a ShareAgent. You will lose all persistent data."
-    # echo "Are you really sure you want to reinstall the ShareAgent? (y/N)"
-    # read -r confirmation
-    # if [ "$confirmation" != "y" ] && [ "$confirmation" != "Y" ]; then
-    #     echo "Reinstall cancelled."
-    #     exit 1
-    # fi
 fi
 
 if [ "$DEPLOY_MODE" = "upgrade" ] && [ "$CANISTER_ID_SHARE_AGENT_CONTROLLER" = "" ]; then
@@ -269,6 +261,12 @@ if [ "$DEPLOY_MODE" = "upgrade" ]; then
     echo "RESULT_2A (upgradeMainerControllerAdmin): $RESULT_2A"
 else
     echo " "
+    echo "--------------------------------------------------"
+    echo "Clearing any previous RedeemedTransactionBlockAdmin for paymentTransactionBlockId 12"
+    dfx canister call game_state_canister removeRedeemedTransactionBlockAdmin '(record {paymentTransactionBlockId = 12 : nat64} )' --network $NETWORK_TYPE
+
+    echo " "
+    echo "--------------------------------------------------"
     echo "Calling createUserMainerAgent"
     # Note:
     # (-) arguments subnetCtrl and subnetLlm are dummy values & not used by createUserMainerAgent.
@@ -298,25 +296,9 @@ else
         CANISTER_ID_SHARE_AGENT_CONTROLLER=$(echo "$RESULT_2" | grep -o 'address = "[^"]*"' | sed 's/address = "//;s/"//')
         echo "CANISTER_ID_SHARE_AGENT_CONTROLLER: $CANISTER_ID_SHARE_AGENT_CONTROLLER"
 
-        echo " "
-        echo "Going into a loop to wait for the ShareAgent Controller setup to finish."
-        CANISTER_STATUS=$(echo "$RESULT_2" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
-        echo "CANISTER_STATUS: $CANISTER_STATUS"
-        WAIT_TIME=5
-        while [[ "$CANISTER_STATUS" == "ControllerCreationInProgress" ]]; do
-            echo "sleep for $WAIT_TIME seconds..."
-            sleep $WAIT_TIME
-            output=$(dfx canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$CANISTER_ID_SHARE_AGENT_CONTROLLER\";})" --network $NETWORK_TYPE)
-            RESULT_2A=$(extract_record_from_variant "$output")
-            CANISTER_STATUS=$(echo "$RESULT_2A" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
-            echo "CANISTER_STATUS: $CANISTER_STATUS"
-        done
+        SUBNET_SHARE_AGENT=$(echo "$RESULT_2" | grep -o 'subnet = "[^"]*"' | sed 's/subnet = "//; s/"//')
+        echo "SUBNET_SHARE_AGENT: $SUBNET_SHARE_AGENT"
     fi
-
-    echo "RESULT_2A (getMainerAgentCanisterInfo): $RESULT_2A"
-
-    SUBNET_SHARE_AGENT=$(echo "$RESULT_2A" | grep -o 'subnet = "[^"]*"' | sed 's/subnet = "//; s/"//')
-    echo "SUBNET_SHARE_AGENT: $SUBNET_SHARE_AGENT"
 fi
 
 ##############################################################
