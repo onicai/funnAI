@@ -66,6 +66,20 @@ fi
 echo "Using network type : $NETWORK_TYPE"
 echo "Deploying to subnet: $SUBNET_GAME_STATE"
 
+echo "We are going to   : $DEPLOY_MODE"
+
+# Check if user wants to reinstall and confirm
+if [ "$DEPLOY_MODE" = "reinstall" ]; then
+    echo " "
+    echo "WARNING: You are about to reinstall the GameState. You will lose all persistent data."
+    echo "Are you really sure you want to reinstall the GameState? (y/N)"
+    read -r confirmation
+    if [ "$confirmation" != "y" ] && [ "$confirmation" != "Y" ]; then
+        echo "Reinstall cancelled."
+        exit 1
+    fi
+fi
+
 #######################################################################
 
 echo " "

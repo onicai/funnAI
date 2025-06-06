@@ -38,7 +38,9 @@ def main(network):
     with open(COMMON_LOG_FILE, "w"):
         pass
 
-    print(f"Monitoring {len(CANISTERS)} canisters on '{network}' network...")
+    print(f"Retrieving logs for {len(CANISTERS)} canisters on '{network}' network...")
+    timer = 0
+    delay = 3  # seconds  
     while True:
         for name, canister_id in CANISTERS.items():
             new_lines = []
@@ -56,7 +58,13 @@ def main(network):
                         f_common.write(line + "\n")
                         # print(line)
                         print(f"{CANISTER_COLORS[name]}[{name}]{RESET_COLOR}({canister_id}) {line}")
-        time.sleep(1)
+        
+        if timer == 0:
+            print(f"\nInitial log retrieval completed for {len(CANISTERS)} canisters on '{network}' network.")
+            print(f"Will report changes in logs. Checking every {delay} seconds...")
+
+        time.sleep(delay)
+        timer += delay
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Monitor DFINITY canister logs.")

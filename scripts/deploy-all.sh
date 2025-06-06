@@ -41,11 +41,24 @@ while [ $# -gt 0 ]; do
 done
 
 echo "Using network type: $NETWORK_TYPE"
+echo "We are going to   : $DEPLOY_MODE"
+
+# Check if user wants to reinstall and confirm
+if [ "$DEPLOY_MODE" = "reinstall" ]; then
+    echo " "
+    echo "WARNING: You are about to reinstall the canisters. You will lose all persistent data."
+    echo "Are you sure you want to reinstall? (y/N)"
+    read -r confirmation
+    if [ "$confirmation" != "y" ] && [ "$confirmation" != "Y" ]; then
+        echo "Reinstall cancelled."
+        exit 1
+    fi
+fi
 
 #######################################################################
 # From funnAI folder
 echo "scripts-gamestate deploy.sh"
-scripts/scripts-gamestate/deploy.sh --network $NETWORK_TYPE --mode $DEPLOY_MODE
+ $NETWORK_TYPE --mode $DEPLOY_MODE
 
 # Deploy the core Protocol canisters
 cd PoAIW

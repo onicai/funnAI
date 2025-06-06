@@ -42,23 +42,9 @@ dfx deps deploy
 # Note: on WSL, you might first have to run
 sudo sysctl -w vm.max_map_count=2097152
 # from folder: funnAI
-scripts/deploy-all.sh --mode install --network $NETWORK
-
-# Notes: 
-# (-) when redeploying changes, you can run the above command with --mode upgrade
-#     to avoid reuploading the models and thus saving a lot of time
-
-# (-) WARNING - never reinstall GameState in PRODUCTION, only upgrade with:
-scripts/deploy-gamestate.sh --mode upgrade --network $NETWORK
-scripts/scripts-gamestate/register-all.sh --network $NETWORK
-
-# (-) If you reinstall, you will erase all data: mAIners/challenges/responses/etc.
-# DURING TESTING, you can reinstall & you can fix the protocol canisters, but user's mAIners info is lost and not easily restored
-# Fix mAIner wasm hash
-dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin "(record {address=\"$SUBNET_2_0_MAINER_SHARE_AGENT_0\"; textNote=\"Fixing after reinstall\"})" --network $NETWORK
-# Fix Register mAIner type #ShareService
-dfx canister call game_state_canister addOfficialCanister "(record { address = \"$SUBNET_2_0_SHARE_SERVICE\"; subnet = \"$SUBNET_2_0\" ; canisterType = variant {MainerAgent = variant {ShareService}} })" --network $NETWORK
-# The User's mAIner info is lost, so delete the canisters of type #ShareAgent & #Own and recreate them
+scripts/deploy-all.sh --mode install --network $NETWORK 
+# When redeploying changes, you can run the above command with --mode upgrade
+#      to avoid reuploading the models and thus saving a lot of time
 
 # -----------------------------------------------------------------------------------
 # Deploy additional LLMs for the Judge on another subnet
@@ -83,23 +69,43 @@ scripts/scripts-gamestate/deploy-mainers-ShareService-FirstLLM-via-gamestate.sh 
 scripts/scripts-gamestate/deploy-mainers-ShareService-AddLLM-via-gamestate.sh --mode install --network $NETWORK
 
 # -----------------------------------------
-# Deploy mAIners of type #ShareAgent or #Own
-#
-# (-) Deploy a mAIner of type #ShareAgent
+# Deploy mAIners of type #ShareAgent
 scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install --network $NETWORK
-# When you repeat it, you will get an error: "Already redeemd this paymentTransactionBlockId 12"
-# Just clear it out first with:
-dfx canister call game_state_canister removeRedeemedTransactionBlockAdmin '(record {paymentTransactionBlockId = 12 : nat64} )' --network $NETWORK 
 
 # -----------------------------------------
 # Deploy mAIners of type #Own
-scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install --network $NETWORK
+# TODO - fix the script
+# scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install --network $NETWORK
 
-# IMPORTANT - wasm hash of mAIners
-# If the wasm hash of the mAIner changed, you must update the gamestate.
-# First deploy a ShareAgent, then do this:
-dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="Initial install"})' --network $NETWORK
+# #########################################################################
+# Upgrading for new GameState code
+# NEVER, EVER reinstall the GameState. Always upgrade...
+scripts/deploy-gamestate.sh --mode upgrade --network $NETWORK
+scripts/scripts-gamestate/register-all.sh --network $NETWORK
+# Be careful, but you might need to do these to apply new settings and values for stable memory:
+dfx canister call game_state_canister resetCyclesFlowAdmin --network $NETWORK
 
+# #########################################################################
+# Upgrading for new mAIner code
+#
+# Store the new mAIner did & wasm in mAinerCreator/files, then issue these commands to upgrade the system
+cd PoAIW
+scripts/deploy-mainer-creator.sh  --network $NETWORK --mode upgrade
+# 
+# go back to funnAI folder
+cd ..
+#
+# Upgrade the #ShareService with the new mAIner code
+scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.sh --mode upgrade --network $NETWORK
+#
+# Upgrade the #ShareAgent canisters with new mAIner code, by repeating this call for all of them
+# TODO: write a script that automates these calls over all ShareAgent canisters
+scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode upgrade --canister <canisterId> --network $NETWORK
+#
+# Update gamestate to the latest wasmhash. <canisterId> is the address of one of the upgraded ShareAgent canisters
+dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="New wasm deployed"})' --network $NETWORK
+
+# #########################################################################
 # Admin functions to clean up redeemed payments in case the creation failed.
 # This is used during testing, but can also be used in production in case the mAIner creation failed, but user payment was accepted
 dfx canister call game_state_canister getRedeemedTransactionBlockAdmin '(record {paymentTransactionBlockId = 12 : nat64} )' --network $NETWORK 
