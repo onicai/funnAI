@@ -5,7 +5,7 @@ import {
   responseLengthDefaultSetting,
   systemPromptDefaultSetting,
   saveChatsDefaultSetting
-} from "../store";
+} from "../stores/store";
 import { syncLocalChanges, setUserSettingsSyncFlag } from "./local_storage";
 
 let storeState;
@@ -25,7 +25,7 @@ const updateUserSettings = async (updatedSettingsObject) => {
   };
   try {
     // Persist to backend
-    const settingsUpdatedResponse = await storeState.backendActor.update_caller_settings(updatedSettingsObject);
+    const settingsUpdatedResponse = await storeState.backendActor.update_caller_chat_settings(updatedSettingsObject);
     // @ts-ignore
     if (settingsUpdatedResponse.Ok) {
       syncLocalChanges(); // Sync any local changes (from offline usage), only works if back online

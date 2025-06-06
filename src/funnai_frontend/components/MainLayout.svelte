@@ -1,12 +1,14 @@
 <script lang="ts">
   import type { SvelteComponent } from 'svelte';
   import Router from "svelte-spa-router";
-  import { store, theme } from "../store";
-  import NavigationMainLayout from "./NavigationMainLayout.svelte";
-  import SidebarMainLayout from "./SidebarMainLayout.svelte";
-  import ChatLayout from "./ChatLayout.svelte";
+  import { store, theme } from "../stores/store";
+  import NavigationMainLayout from "./funnai/NavigationMainLayout.svelte";
+  import SidebarMainLayout from "./funnai/SidebarMainLayout.svelte";
+  import ChatLayout from "./chat/ChatLayout.svelte";
   import Dashboard from "../pages/Dashboard.svelte";
   import Wallet from "../pages/Wallet.svelte";
+  import Lottery from "../pages/Lottery.svelte";
+  import Brand from "../pages/Brand.svelte";
   import { onMount } from 'svelte';
 
   // Initialize theme from localStorage on mount
@@ -37,10 +39,12 @@
     "/chat": ChatLayout,
     "/chat/*": ChatLayout,
     "/wallet": Wallet,
+    "/lottery": Lottery,
+    "/brand": Brand,
   };
 </script>
 
-<div class="flex flex-row h-screen">
+<div class="flex flex-row h-screen dark:bg-gray-900">
   <aside id="mainSidebar" class="bg-[radial-gradient(circle_at_center,_#e6e9f0,_#fafbfc,_#dfe7fd)] dark:bg-[radial-gradient(circle_at_center,_#1f2937,_#111827,_#1e293b)] fixed z-50 w-72 min-w-72 h-full md:shadow transform -translate-x-full md:translate-x-0 transition-transform duration-150 ease-in">
     <div class="sidebar-content p-4 pt-0 h-full overflow-hidden">
       <SidebarMainLayout />
@@ -65,3 +69,5 @@
     </div>
   </main>
 </div> 
+
+<div id="portal-target"></div>

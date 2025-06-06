@@ -1,0 +1,248 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import Modal from "../CommonModal.svelte";
+  import TokenImages from "../TokenImages.svelte";
+  import { ArrowUp, Check } from 'lucide-svelte';
+  import { MEMO_PAYMENT_PROTOCOL, store, theme } from "../../stores/store";
+  import { IcrcService } from "../../helpers/IcrcService";
+  import BigNumber from "bignumber.js";
+  import { formatBalance } from "../../helpers/utils/numberFormatUtils";
+  import { fetchTokens, protocolConfig } from "../../helpers/token_helpers";
+
+  export let isOpen: boolean = false;
+  export let onClose: () => void = () => {};
+  export let onSuccess: (txId?: string) => void = () => {};
+  export let modelType: 'Own' | 'Shared' = 'Own';
+  
+  // Protocol address from token_helpers
+  const { address: protocolAddress } = protocolConfig;
+  
+  // TODO: load token info from token_helpers.ts
+  let token: any = null;
+  let isTokenLoading: boolean = true;
+  
+  // Load token data from token_helpers
+  async function loadTokenData() {
+    isTokenLoading = true;
+    try {
+      const result = await fetchTokens({});
+      const icpToken = result.tokens.find(t => t.symbol === "ICP");
+      if (icpToken) {
+        token = icpToken;
+      } else {
+        throw new Error("ICP token not found in token_helpers");
+      }
+    } catch (error) {
+      console.error("Error loading token data:", error);
+      // Fallback to default values if token data can't be loaded
+      token = {
+        name: "Internet Computer",
+        symbol: "ICP",
+        decimals: 8,
+        fee_fixed: "10000", // standard ICP fee
+        canister_id: "ryjl3-tyaaa-aaaaa-aaaba-cai" // ICP Ledger canister ID
+      };
+    } finally {
+      isTokenLoading = false;
+    }
+  }
+  
+  let isValidating: boolean = false;
+  let errorMessage: string = "";
+  let tokenFee: bigint = BigInt(0); // Will be set once token is loaded
+  let balance: bigint = BigInt(0);
+  
+  // Determine payment amount based on model type
+  $: paymentAmount = modelType === 'Own' ? '0.0003' : '0.0001';
+  $: amountBigInt = token ? BigInt(new BigNumber(paymentAmount).times(new BigNumber(10).pow(token.decimals)).toString()) : BigInt(0);
+  $: hasEnoughBalance = balance >= (amountBigInt + tokenFee);
+  $: if (token) {
+    tokenFee = BigInt(token.fee_fixed);
+  }
+  
+  // Calculate total amount including fee for display
+  $: totalPaymentAmount = token ? new BigNumber(paymentAmount).plus(new BigNumber(tokenFee.toString()).dividedBy(new BigNumber(10).pow(token.decimals))).toString() : paymentAmount;
+  
+  async function loadBalance() {
+    try {
+      if (!$store.principal || !token) return;
+      
+      balance = await IcrcService.getIcrc1Balance(
+        token,
+        $store.principal
+      ) as bigint;
+    } catch (error) {
+      console.error("Error loading balance:", error);
+    }
+  }
+
+  async function handleSubmit() {
+    if (isValidating || !token) return;
+    isValidating = true;
+    errorMessage = "";
+
+    try {
+      if (!$store.principal) {
+        throw new Error("Authentication not initialized");
+      }
+      
+      if (!hasEnoughBalance) {
+        throw new Error("Insufficient balance for transfer + fee");
+      }
+
+      const result = await IcrcService.transfer(
+        token,
+        protocolAddress,
+        amountBigInt,
+        {
+          fee: tokenFee,
+          // Include the memo for transactions to the Protocol
+          memo: MEMO_PAYMENT_PROTOCOL
+        }
+      );
+
+      if (result && typeof result === 'object' && 'Ok' in result) {
+        const txId = result.Ok?.toString();
+        // TODO: persist txId
+        onSuccess(txId);
+        onClose();
+      } else if (result && typeof result === 'object' && 'Err' in result) {
+        const errMsg = typeof result.Err === 'object' 
+          ? Object.keys(result.Err)[0]
+          : String(result.Err);
+        errorMessage = `Transfer failed: ${errMsg}`;
+        console.error("Transfer error details:", result.Err);
+      }
+    } catch (err) {
+      console.error("Transfer error:", err);
+      errorMessage = err.message || "Transfer failed";
+    } finally {
+      isValidating = false;
+    }
+  }
+
+  onMount(async () => {
+    await loadTokenData();
+    loadBalance();
+  });
+</script>
+
+<Modal
+  {isOpen}
+  onClose={onClose}
+  title="mAIner Creation Payment"
+  width="480px"
+  variant="transparent"
+  height="auto"
+  className="mainer-payment-modal"
+>
+  <div class="p-4 flex flex-col gap-4">
+    {#if isTokenLoading}
+      <div class="flex justify-center py-4">
+        <span class="w-6 h-6 border-2 border-gray-400/30 border-t-gray-400 dark:border-gray-400/30 dark:border-t-gray-400 rounded-full animate-spin"></span>
+      </div>
+    {:else}
+      <!-- Token Info Banner -->
+      <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100">
+        <div class="w-10 h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
+          <TokenImages tokens={[token]} size={38} showSymbolFallback={true} />
+        </div>
+        <div class="flex flex-col">
+          <div class="text-gray-900 font-medium dark:text-gray-100">{token.name}</div>
+          <div class="text-sm text-gray-600 dark:text-gray-400">Balance: {formatBalance(balance.toString(), token.decimals)} {token.symbol}</div>
+        </div>
+      </div>
+
+      <!-- Payment Info -->
+      <div class="flex flex-col gap-3">
+        <!-- Recipient Address -->
+        <div>
+          <label class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">Recipient</label>
+          <div class="relative">
+            <input
+              type="text"
+              class="w-full py-2 px-3 bg-white border border-gray-300 rounded-md text-sm text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+              value={protocolAddress}
+              disabled
+            />
+            <div class="absolute inset-y-0 right-0 flex items-center">
+              <div class="p-1.5 text-green-500">
+                <Check size={16} />
+              </div>
+            </div>
+          </div>
+          <div class="mt-1 text-xs text-green-600 dark:text-green-500">funnAI mAIner creation address</div>
+        </div>
+
+        <!-- Amount -->
+        <div>
+          <label class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">Payment Amount</label>
+          <div class="relative">
+            <input
+              type="text"
+              class="w-full py-2 px-3 bg-white border border-gray-300 rounded-md text-sm text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+              value={totalPaymentAmount}
+              disabled
+            />
+            <div class="absolute inset-y-0 right-0 flex items-center">
+              <span class="pr-3 text-sm text-gray-600 dark:text-gray-400">{token.symbol}</span>
+            </div>
+          </div>
+          <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
+            Includes network fee: {formatBalance(tokenFee.toString(), token.decimals)} {token.symbol}
+          </div>
+        </div>
+        
+        <!-- Payment Description -->
+        <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200">
+          This payment ({totalPaymentAmount} {token.symbol} total including network fees) is used to create your mAIner. Once payment is complete, your mAIner will be created automatically.
+        </div>
+
+        <!-- Error message -->
+        {#if errorMessage}
+          <div class="mt-1 p-2 rounded bg-red-50 border border-red-200 text-red-700 text-sm dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-400">
+            {errorMessage}
+          </div>
+        {/if}
+
+        <!-- Send Button -->
+        <button
+          type="button"
+          on:click={handleSubmit}
+          class="mt-2 py-2.5 px-4 rounded-md text-white font-medium flex items-center justify-center gap-2 transition-colors"
+          class:bg-purple-600={hasEnoughBalance && !isValidating}
+          class:hover:bg-purple-500={hasEnoughBalance && !isValidating}
+          class:bg-gray-400={!hasEnoughBalance || isValidating}
+          class:cursor-not-allowed={!hasEnoughBalance || isValidating}
+          class:dark:bg-gray-700={!hasEnoughBalance || isValidating}
+          disabled={!hasEnoughBalance || isValidating}
+        >
+          {#if isValidating}
+            <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            Processing...
+          {:else if !hasEnoughBalance}
+            Insufficient Balance
+          {:else}
+            <ArrowUp size={16} />
+            Pay {totalPaymentAmount} {token.symbol}
+          {/if}
+        </button>
+        
+        <!-- Insufficient balance helper -->
+        {#if !hasEnoughBalance && !isValidating && token}
+          <div class="mt-2 p-2 rounded bg-orange-50 border border-orange-200 text-orange-700 text-sm dark:bg-orange-900/30 dark:border-orange-800/30 dark:text-orange-300">
+            You need {formatBalance((amountBigInt + tokenFee - balance).toString(), token.decimals)} more {token.symbol} to create this mAIner.
+          </div>
+        {/if}
+      </div>
+    {/if}
+  </div>
+</Modal>
+
+<style>
+  :global(.mainer-payment-modal) {
+    max-width: 480px;
+    position: relative;
+    z-index: 100000;
+  }
+</style> 

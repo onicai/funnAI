@@ -1,118 +1,191 @@
 <script lang="ts">
-  import devincilogo from "/devinci.svg";
-  import devincilogosvgdownload from "/devinci.zip?url";
-  import devincilogopngdownload from "/devinci.png.zip?url";
+  import { theme } from "../stores/store";
 </script>
 
-
-<div class="flex justify-between px-4 mb-12 mx-auto max-w-screen-2xl">
-  <article class="mx-auto w-full max-w-4xl format format-sm sm:format-base lg:format-lg format-blue">
-    <h1 class="mb-4 text-3xl font-extrabold leading-tight text-gray-900 lg:mb-6 lg:text-4xl">Logo</h1>
-    <div class="w-full mx-auto">
-      <img class="h-1/3 w-1/3 rounded-full mx-auto" src={devincilogo} alt="deVinci logo">
-      <div class="mt-12 flex justify-center">
-        <a href="{devincilogosvgdownload}" download class="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2">Download SVG</a>
-        <a href="{devincilogopngdownload}" download  class="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2">Download PNG</a>
-      </div>
-    </div>
-    <h1 class="my-14 mt-32 text-3xl font-extrabold leading-tight text-gray-900 lg:mb-6 lg:text-4xl">Color codification</h1>
-    <h1 class="my-14 text-xl font-extrabold leading-tight text-gray-700 lg:mb-6 lg:text-3xl">Primary colors</h1>
-
-    <div class="flex flex-row max-w-xl  items-center bg-white mb-2 border border-gray-200 rounded-lg shadow">
-      <div class="bg-[#b0c4de] h-40 w-40"></div>
-      <div class="flex flex-col justify-between p-4 leading-normal">
-        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-700">#b0c4de</h5>
-        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-700">rgb(176,196,222)</h5>
-      </div>
-    </div>
-
-    <div class="flex flex-row max-w-xl items-center bg-white border border-gray-200 rounded-lg shadow">
-      <div class="bg-[#151b1e] h-40 w-40"></div>
-      <div class="flex flex-col justify-between p-4 leading-normal">
-        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-700">#151b1e</h5>
-        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-700">rgb(21,27,30)</h5>
-      </div>
-    </div>
-
-    <h1 class="my-14 text-xl font-extrabold leading-tight text-gray-700 lg:mb-6 lg:text-3xl">Secondary colors</h1>
-
-    <div class="flex flex-row max-w-xl items-center bg-white mb-2 border border-gray-200 rounded-lg shadow">
-      <div class="bg-[#f9c490] h-28 w-28"></div>
-      <div class="flex flex-col justify-between p-4 leading-normal">
-        <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-500">#f9c490</h5>
-        <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-500">rgb(249, 196, 144)</h5>
-      </div>
-    </div>
-    <div class="flex flex-row max-w-xl items-center bg-white mb-2 border border-gray-200 rounded-lg shadow">
-      <div class="bg-[#a1c490] h-28 w-28"></div>
-      <div class="flex flex-col justify-between p-4 leading-normal">
-        <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-500">#a1c490</h5>
-        <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-500">rgb(161, 196, 144)</h5>
-      </div>
-    </div>
-    <div class="flex flex-row max-w-xl items-center bg-white mb-2 border border-gray-200 rounded-lg shadow">
-      <div class="bg-[#f0e68c] h-28 w-28"></div>
-      <div class="flex flex-col justify-between p-4 leading-normal">
-        <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-500">#f0e68c</h5>
-        <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-500">rgb(240, 230, 140)</h5>
-      </div>
-    </div>
-    <div class="flex flex-row max-w-xl  items-center bg-white mb-2 border border-gray-200 rounded-lg shadow w-full">
-      <div class="bg-[#cb8bd0] h-28 w-28"></div>
-      <div class="flex flex-col justify-between p-4 leading-normal">
-        <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-500">#cb8bd0</h5>
-        <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-500">rgb(203, 139, 208)</h5>
-      </div>
-    </div>
-
-    <h1 class="my-14 text-xl font-extrabold leading-tight text-gray-700 lg:mb-6 lg:text-3xl">Letterform</h1>
-    <h1 class="my-14 text-4xl font-normal leading-tight text-[#151b1e] lg:mb-6 lg:text-5xl w-full mx-auto text-center"><b>D</b>e<b>V</b>inci</h1>
-    <p class="text-gray-500 text-left text-lg">
-      The DeVinci brand must consistently be written with a capital "D" and a capital "V" across all branding materials and communications to maintain its visual identity and brand consistency.
-    </p>
-    <p class="text-gray-500 text-left text-lg mt-6">
-      This specific stylization—DeVinci—is a key element of the brand's recognition, serving to distinguish it from other names and enhance its memorability. Whether in marketing, digital platforms, packaging, or internal documents, this capitalization structure should always be adhered to in order to preserve the integrity and uniqueness of the brand.
-    </p>
+<div class="w-full min-h-screen dark:bg-gray-900 pb-8">
+  <div class="container mx-auto py-8 px-4 max-w-6xl">
+    <h1 class="text-4xl font-fredoka font-bold mb-8 dark:text-white">Brand Guidelines</h1>
     
-    
-    <h1 class="my-14 text-xl font-extrabold leading-tight text-gray-700 lg:mb-6 lg:text-3xl">Typography</h1>
+    <section class="mb-12">
+      <h2 class="text-2xl font-fredoka font-semibold mb-4 dark:text-white">Logotype</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 flex flex-col items-center">
+          <h3 class="text-xl font-medium mb-4 dark:text-white">Light Theme</h3>
+          <img src="/funnai_black.svg" alt="FunnAI Light Logo" class="h-24 mb-4" />
+          <div class="text-sm text-gray-600 dark:text-gray-300 mt-2">
+            <p>Format: SVG</p>
+            <p>Usage: Light backgrounds</p>
+          </div>
+        </div>
+        <div class="bg-gray-800 shadow-md rounded-lg p-6 flex flex-col items-center">
+          <h3 class="text-xl font-medium mb-4 text-white">Dark Theme</h3>
+          <img src="/funnai_white.svg" alt="FunnAI Dark Logo" class="h-24 mb-4" />
+          <div class="text-sm text-gray-300 mt-2">
+            <p>Format: SVG</p>
+            <p>Usage: Dark backgrounds</p>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <h5 class="mb-2 text-xl font-bold tracking-tight text-gray-500">Sans-serif </h5>
-    <div class="overflow-x-auto max-w-full">
-    <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm leading-normal">
-<code class="font-mono break-words whitespace-pre-wrap word-break-all">font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";</code>
-    </pre>
+    <section class="mb-12">
+      <h2 class="text-2xl font-fredoka font-semibold mb-4 dark:text-white">Logo Icon</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 flex flex-col items-center">
+          <h3 class="text-xl font-medium mb-4 dark:text-white">Favicon</h3>
+          <img src="/coin.webp" alt="FunnAI Favicon" class="h-16 mb-4" />
+          <div class="text-sm text-gray-600 dark:text-gray-300 mt-2">
+            <p>Format: WebP</p>
+            <p>Usage: Browser tabs, bookmarks</p>
+          </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 flex flex-col items-center">
+          <h3 class="text-xl font-medium mb-4 dark:text-white">App Icon</h3>
+          <img src="/coin.webp" alt="FunnAI App Icon" class="h-16 mb-4" />
+          <div class="text-sm text-gray-600 dark:text-gray-300 mt-2">
+            <p>Format: WebP</p>
+            <p>Usage: Mobile apps, shortcuts</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-fredoka font-semibold mb-4 dark:text-white">Colors</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <!-- Primary Colors -->
+        <div class="color-card">
+          <div class="h-24 bg-gray-900 rounded-t-lg"></div>
+          <div class="p-4 bg-white dark:bg-gray-800 rounded-b-lg shadow-md dark:text-white">
+            <h3 class="font-medium">Primary Dark</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300">HEX: #111827</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">RGB: 17, 24, 39</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">Tailwind: gray-900</p>
+          </div>
+        </div>
+        <div class="color-card">
+          <div class="h-24 bg-gray-800 rounded-t-lg"></div>
+          <div class="p-4 bg-white dark:bg-gray-800 rounded-b-lg shadow-md dark:text-white">
+            <h3 class="font-medium">Secondary Dark</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300">HEX: #1f2937</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">RGB: 31, 41, 55</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">Tailwind: gray-800</p>
+          </div>
+        </div>
+        <div class="color-card">
+          <div class="h-24 bg-white rounded-t-lg border"></div>
+          <div class="p-4 bg-white dark:bg-gray-800 rounded-b-lg shadow-md dark:text-white">
+            <h3 class="font-medium">Primary Light</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300">HEX: #ffffff</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">RGB: 255, 255, 255</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">Tailwind: white</p>
+          </div>
+        </div>
+        
+        <!-- Additional Colors -->
+        <div class="color-card">
+          <div class="h-24 rounded-t-lg" style="background-color: #FFC943;"></div>
+          <div class="p-4 bg-white dark:bg-gray-800 rounded-b-lg shadow-md dark:text-white">
+            <h3 class="font-medium">Gold</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300">HEX: #FFC943</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">RGB: 255, 201, 67</p>
+          </div>
+        </div>
+        <div class="color-card">
+          <div class="h-24 rounded-t-lg" style="background-color: #FF223E;"></div>
+          <div class="p-4 bg-white dark:bg-gray-800 rounded-b-lg shadow-md dark:text-white">
+            <h3 class="font-medium">Red</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300">HEX: #FF223E</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">RGB: 255, 34, 62</p>
+          </div>
+        </div>
+        <div class="color-card">
+          <div class="h-24 rounded-t-lg" style="background-color: #29CCFD;"></div>
+          <div class="p-4 bg-white dark:bg-gray-800 rounded-b-lg shadow-md dark:text-white">
+            <h3 class="font-medium">Blue</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300">HEX: #29CCFD</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">RGB: 41, 204, 253</p>
+          </div>
+        </div>
+        <div class="color-card">
+          <div class="h-24 rounded-t-lg" style="background-color: #8475cb;"></div>
+          <div class="p-4 bg-white dark:bg-gray-800 rounded-b-lg shadow-md dark:text-white">
+            <h3 class="font-medium">Purple</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300">HEX: #8475cb</p>
+            <p class="text-sm text-gray-600 dark:text-gray-300">RGB: 132, 117, 203</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-fredoka font-semibold mb-4 dark:text-white">Typography</h2>
+      <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+        <h3 class="text-xl font-medium mb-4 dark:text-white">Primary Font: Fredoka</h3>
+        <p class="font-fredoka text-4xl font-bold mb-2 dark:text-white">Aa Bb Cc 123</p>
+        <p class="font-fredoka text-2xl font-semibold mb-2 dark:text-white">Aa Bb Cc 123</p>
+        <p class="font-fredoka text-xl font-medium mb-2 dark:text-white">Aa Bb Cc 123</p>
+        <p class="font-fredoka text-lg font-regular mb-2 dark:text-white">Aa Bb Cc 123</p>
+        <p class="font-fredoka text-base font-light mb-4 dark:text-white">Aa Bb Cc 123</p>
+        
+        <div class="text-sm text-gray-600 dark:text-gray-300 mt-4">
+          <p>Primary Font: Fredoka</p>
+          <p>Weights: Light (300), Regular (400), Medium (500), Semibold (600), Bold (700)</p>
+          <p>Usage: Headings, Brand Elements, UI Accents</p>
+        </div>
+
+        <h3 class="text-xl font-medium mb-4 mt-8 dark:text-white">Secondary Font: General Sans-Serif</h3>
+        <p class="font-sans text-4xl font-bold mb-2 dark:text-white">Aa Bb Cc 123</p>
+        <p class="font-sans text-2xl font-semibold mb-2 dark:text-white">Aa Bb Cc 123</p>
+        <p class="font-sans text-xl font-medium mb-2 dark:text-white">Aa Bb Cc 123</p>
+        <p class="font-sans text-lg font-normal mb-2 dark:text-white">Aa Bb Cc 123</p>
+        <p class="font-sans text-base font-light mb-4 dark:text-white">Aa Bb Cc 123</p>
+        
+        <div class="text-sm text-gray-600 dark:text-gray-300 mt-4">
+          <p>Secondary Font: General Sans-Serif</p>
+          <p>Weights: Light (300), Regular (400), Medium (500), Semibold (600), Bold (700)</p>
+          <p>Usage: Body text, UI Elements, Secondary Content</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-fredoka font-semibold mb-4 dark:text-white">Gradients</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="h-48 rounded-lg shadow-md bg-[radial-gradient(circle_at_center,_#e6e9f0,_#fafbfc,_#dfe7fd)]">
+          <div class="p-4">
+            <h3 class="text-xl font-medium mb-2">Light Theme Gradient</h3>
+            <p class="text-sm text-gray-700">radial-gradient(circle at center, #e6e9f0, #fafbfc, #dfe7fd)</p>
+            <p class="text-sm text-gray-700 mt-1">Usage: Sidebar background in light mode</p>
+          </div>
+        </div>
+        <div class="h-48 rounded-lg shadow-md bg-[radial-gradient(circle_at_center,_#1f2937,_#111827,_#1e293b)]">
+          <div class="p-4">
+            <h3 class="text-xl font-medium mb-2 text-white">Dark Theme Gradient</h3>
+            <p class="text-sm text-gray-300">radial-gradient(circle at center, #1f2937, #111827, #1e293b)</p>
+            <p class="text-sm text-gray-300 mt-1">Usage: Sidebar background in dark mode</p>
+          </div>
+        </div>
+        <div class="h-48 rounded-lg shadow-md bg-gradient-to-br from-[#29CCFD] to-[#1D4ED8]">
+          <div class="p-4">
+            <h3 class="text-xl font-medium mb-2 text-white">Blue Gradient</h3>
+            <p class="text-sm text-gray-100">bg-gradient-to-br from-[#29CCFD] to-[#1D4ED8]</p>
+            <p class="text-sm text-gray-100 mt-1">Usage: Call-to-action elements, feature backgrounds</p>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
-    <h5 class="my-4 text-xl font-bold tracking-tight text-gray-500">Serif </h5>
-    <div class="overflow-x-auto max-w-full">
-    <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm leading-normal">
-<code class="font-mono break-words whitespace-pre-wrap word-break-all">font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;</code>
-    </pre>
-    </div>
-
-    <h5 class="my-4 text-xl font-bold tracking-tight text-gray-500">Mono </h5>
-    <div class="overflow-x-auto max-w-full">
-    <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm leading-normal">
-<code class="font-mono break-words whitespace-pre-wrap word-break-all">font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;</code>
-    </pre>
-  </div>
-
-</article>
 </div>
 
-
-
-
 <style>
-  pre {
-    max-width: 100%;
+  .color-card {
+    border-radius: 0.5rem;
+    overflow: hidden;
+    transition: transform 0.2s;
   }
-  code {
-    display: inline-block;
-    max-width: 100%;
-    white-space: pre-wrap;
-    word-break: break-all;
-    overflow-wrap: break-word;
+  
+  .color-card:hover {
+    transform: translateY(-4px);
   }
-</style>
-
+</style> 

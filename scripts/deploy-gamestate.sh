@@ -13,10 +13,10 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --network)
             shift
-            if [ "$1" = "local" ] || [ "$1" = "ic" ]; then
+            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ] || [ "$1" = "development" ]; then
                 NETWORK_TYPE=$1
             else
-                echo "Invalid network type: $1. Use 'local' or 'ic'."
+                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing' or 'development'."
                 exit 1
             fi
             shift
@@ -33,7 +33,7 @@ while [ $# -gt 0 ]; do
             ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic]"
+            echo "Usage: $0 --network [local|ic|testing]"
             exit 1
             ;;
     esac
@@ -51,23 +51,3 @@ echo "scripts-gamestate deploy.sh"
 scripts/scripts-gamestate/deploy.sh --network $NETWORK_TYPE --mode $DEPLOY_MODE
 echo "scripts-gamestate register-all.sh"
 scripts/scripts-gamestate/register-all.sh --network $NETWORK_TYPE
-
-# cd PoAIW/src/GameState
-# This is now done in the PoAIW/scripts/deploy-mainer-creator.sh
-# echo "-------------------------------------------------"
-# cd ../mAInerCreator
-# echo "-src/mAInerCreator: register-game-state.sh"
-# scripts/register-game-state.sh --network $NETWORK_TYPE
-
-# This is now done in the PoAIW/scripts/deploy-challenger.sh
-# echo "-------------------------------------------------"
-# cd ../Challenger
-# echo "-src/Challenger: register-game-state.sh"
-# scripts/register-game-state.sh --network $NETWORK_TYPE
-
-# This is now done in the PoAIW/scripts/deploy-judge.sh
-# echo "-------------------------------------------------"
-# cd ../Judge
-# echo "-src/Judge: register-game-state.sh"
-# scripts/register-game-state.sh --network $NETWORK_TYPE
-#######################################################################

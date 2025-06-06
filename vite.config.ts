@@ -81,19 +81,19 @@ const pwaManifest = {
   categories: ["productivity", "ai", "PoAIW"], 
   icons: [
     {
-      src: './devinci192.png',
+      src: './funnai_192.webp',
       sizes: '192x192',
-      type: 'image/png',
+      type: 'image/webp',
     },
     {
-      src: './devinci512.png',
+      src: './funnai_512.webp',
       sizes: '512x512',
-      type: 'image/png',
+      type: 'image/webp',
       purpose: 'any maskable'
     },
     {
-      src: "./devinci1024.png", 
-      type: "image/png",
+      src: "./funnai_1024.webp", 
+      type: "image/webp",
       sizes: "1024x1024"
     },
   ],
@@ -110,7 +110,7 @@ const pwaManifest = {
       short_name: "New Chat",
       description: "Start a new AI chat session",
       url: "/",
-      icons: [{ src: "./devinci192.png", sizes: "192x192" }]
+      icons: [{ src: "./chat/devinci.webp", sizes: "192x192" }]
     }
   ]
 };
@@ -144,6 +144,18 @@ export default defineConfig({
   ],
   build: {
     target: "es2020",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks for large libraries
+          'webllm': ['@mlc-ai/web-llm'],
+          'dfinity': ['@dfinity/agent', '@dfinity/auth-client', '@dfinity/candid', '@dfinity/principal', '@dfinity/identity', '@dfinity/ledger-icp', '@dfinity/utils'],
+          'qr-scanner': ['html5-qrcode', 'qrcode'],
+          'ui-libs': ['svelte-spa-router', 'lucide-svelte', 'svelte-portal'],
+          'markdown': ['marked']
+        }
+      }
+    }
   },
   resolve: {
     alias: {
