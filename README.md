@@ -56,19 +56,20 @@ TODO -- the script is ready, but needs to be tested ---
 # IMPORTANT: Record the canister ids in scripts/canister_ids-<network>.env
 #            for canister monitoring, management & logging purposes
 #
-# Set the SubnetIds in the GameState canister, for example for the 'testing' environment
-dfx canister --network testing call game_state_canister setSubnetsAdmin '(record {subnetShareAgentCtrl = "csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"; subnetShareServiceCtrl ="csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"; subnetShareServiceLlm = "qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" })'
 
 # Always deploy a mAIner of type #ShareService, since this is a protocol canister
+# Set the SubnetIds in the GameState canister, for example for the 'testing' environment
+dfx canister --network testing call game_state_canister setSubnetsAdmin '(record {subnetShareAgentCtrl = "csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"; subnetShareServiceCtrl ="csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"; subnetShareServiceLlm = "qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" })'
 scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.sh --mode install --network $NETWORK
 
 # Edit the next script to set SUBNET_SHARE_SERVICE_LLM, then run it to install the first LLM
+# Set the SubnetIds in the GameState canister, for example for the 'testing' environment
+dfx canister --network testing call game_state_canister setSubnetsAdmin '(record {subnetShareAgentCtrl = "csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"; subnetShareServiceCtrl ="csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"; subnetShareServiceLlm = "qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" })'
 scripts/scripts-gamestate/deploy-mainers-ShareService-FirstLLM-via-gamestate.sh --mode install --network $NETWORK
-# Edit the next script to set SUBNET_SHARE_SERVICE_LLM, then run it to install the first LLM
-# -> Run the AddLLMs script multiple times and execute the command printed
-# -> Make sure you install no more than 3 LLMs per subnet
-# -> Change the SUBNET_SHARE_SERVICE_LLM each time
-# -> This process is a bit clunky and needs improvement, but it works for now...
+
+# Set the SubnetIds in the GameState canister, for example for the 'testing' environment
+dfx canister --network testing call game_state_canister setSubnetsAdmin '(record {subnetShareAgentCtrl = "csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"; subnetShareServiceCtrl ="csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"; subnetShareServiceLlm = "qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" })'
+# -> This process is clunky and needs improvement, but it works for now...
 scripts/scripts-gamestate/deploy-mainers-ShareService-AddLLM-via-gamestate.sh --mode install --network $NETWORK
 
 # -----------------------------------------

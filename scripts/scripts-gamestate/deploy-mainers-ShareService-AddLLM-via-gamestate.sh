@@ -49,24 +49,6 @@ CANISTER_ID_MAINER_CREATOR_CANISTER=$(dfx canister --network $NETWORK_TYPE id ma
 # go back to the funnAI folder
 cd ../../../
 
-if [ "$NETWORK_TYPE" = "ic" ]; then
-    # Outcommment one of these
-    SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0,1,2
-    # SUBNET_SHARE_SERVICE_LLM="5kdm2-62fc6-fwnja-hutkz-ycsnm-4z33i-woh43-4cenu-ev7mi-gii6t-4ae" # LLMs 3,4,5
-elif [ "$NETWORK_TYPE" = "testing" ]; then
-    # Outcommment one of these
-    SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0,1,2
-    # SUBNET_SHARE_SERVICE_LLM="5kdm2-62fc6-fwnja-hutkz-ycsnm-4z33i-woh43-4cenu-ev7mi-gii6t-4ae" # LLMs 3,4,5
-elif [ "$NETWORK_TYPE" = "development" ]; then
-    echo " "
-    echo "TODO for $NETWORK_TYPE"
-    exit 1
-else
-    echo " "
-    echo "TODO for $NETWORK_TYPE"
-    exit 1
-fi
-
 # ================================================================
 # some helper functions
 extract_record_from_variant() {
@@ -243,10 +225,3 @@ echo "CANISTER_STATUS: $CANISTER_STATUS"
 
 echo " "
 echo "RESULT_3A (getMainerAgentCanisterInfo) summary from ShareService Controller: $RESULT_3A"
-
-echo " "
-echo "Succesfully completed setup of ShareService LLM: $CANISTER_ID_SHARE_SERVICE_LLM"
-echo "On Subnet                                      : $SUBNET_SHARE_SERVICE_LLM"
-echo " "
-
-echo "Don't forget to update the SUBNET_SHARE_SERVICE_LLM in the deploy script for the next LLM!"
