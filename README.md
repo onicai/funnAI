@@ -72,6 +72,10 @@ scripts/scripts-gamestate/deploy-mainers-ShareService-AddLLM-via-gamestate.sh --
 # Deploy mAIners of type #ShareAgent
 scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install --network $NETWORK
 
+# When you repeat it, you will get an error: "Already redeemd this paymentTransactionBlockId 12"
+# Just clear it out first with:
+dfx canister call game_state_canister removeRedeemedTransactionBlockAdmin '(record {paymentTransactionBlockId = 12 : nat64} )' --network $NETWORK 
+
 # -----------------------------------------
 # Deploy mAIners of type #Own
 scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install --network $NETWORK
