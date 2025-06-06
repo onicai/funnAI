@@ -179,7 +179,7 @@
 {/if}
 
 <svelte:head>
-  <title>Token balances for {$store.principal}</title>
+  <title>{$store.isAuthed ? `Token balances for ${$store.principal}` : 'Connect to View Wallet'}</title>
 </svelte:head>
 
 <!-- 

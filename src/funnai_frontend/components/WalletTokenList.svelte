@@ -123,7 +123,7 @@
 <div>
   {#if showHeader}
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-sm uppercase font-medium text-gray-100">
+      <h3 class="text-sm uppercase font-medium text-gray-900 dark:text-gray-100">
         Token Balances
       </h3>
       <div class="p-2 rounded-lg bg-blue-600/10">
@@ -134,7 +134,7 @@
 
   {#if !isLoadingBalances && formattedTokens.length > 0}
     <div
-      class="hidden sm:grid sm:grid-cols-[2fr,1.5fr,1fr] gap-4 px-4 py-2 text-sm text-gray-400 font-medium border-b border-gray-700"
+      class="hidden sm:grid sm:grid-cols-[2fr,1.5fr,1fr] gap-4 px-4 py-2 text-sm text-gray-600 dark:text-gray-400 font-medium border-b border-gray-700"
     >
       <div>Token</div>
       <div class="text-right">Balance</div>
@@ -150,7 +150,7 @@
         <LoadingIndicator text="Loading token balances..." size={24} />
       </div>
     {:else if formattedTokens.length === 0}
-      <div class="text-center py-8 text-gray-400">
+      <div class="text-center py-8 text-gray-600 dark:text-gray-400">
         {#if showOnlyWithBalance}
           No tokens with balance found in this wallet
         {:else}
@@ -171,7 +171,7 @@
                   <TokenImages tokens={[token]} size={28} />
                   <div class="flex flex-col">
                     <div class="flex items-center gap-1">
-                      <span class="font-semibold text-gray-100">{token.symbol}</span>
+                      <span class="font-semibold text-gray-900 dark:text-gray-100">{token.symbol}</span>
                       {#if token.isWhale}
                         <Badge
                           variant="blue"
@@ -183,11 +183,11 @@
                         </Badge>
                       {/if}
                     </div>
-                    <span class="text-xs text-gray-400">{token.name}</span>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">{token.name}</span>
                   </div>
                 </div>
                 <div class="text-right">
-                  <div class="font-medium text-gray-100">
+                  <div class="font-medium text-gray-900 dark:text-gray-100">
                     {#if token.balanceAmount === BigInt(0)}
                       0 {token.symbol}
                     {:else if Number(token.balanceAmount) < 0.00001}
@@ -203,10 +203,10 @@
 
             <!-- Desktop token column -->
             <div class="hidden sm:flex items-center gap-3">
-              <TokenImages tokens={[token]} size={32} />
+              <TokenImages tokens={[token]} size={38} />
               <div class="flex flex-col">
                 <div class="flex items-center gap-1">
-                  <span class="font-semibold text-gray-100">{token.symbol}</span>
+                  <span class="font-semibold text-gray-900 dark:text-gray-100">{token.symbol}</span>
                   {#if token.isWhale}
                     <Badge
                       variant="blue"
@@ -218,13 +218,13 @@
                     </Badge>
                   {/if}
                 </div>
-                <span class="text-xs text-gray-400">{token.name}</span>
+                <span class="text-xs text-gray-600 dark:text-gray-400">{token.name}</span>
               </div>
             </div>
 
             <!-- Desktop balance column -->
             <div class="hidden sm:block text-right">
-              <div class="font-medium text-gray-100">
+              <div class="font-medium text-gray-900 dark:text-gray-100">
                 {#if token.balanceAmount === BigInt(0)}
                   0 {token.symbol}
                 {:else if Number(formatBalance(token.balanceAmount.toString(), token.decimals)) < 0.00000001}
@@ -241,13 +241,13 @@
               <div class="flex justify-end gap-2">
                 <button
                   on:click={() => openReceiveModal(token)}
-                  class="text-sm font-medium px-3 py-1.5 bg-gray-700 text-white hover:bg-gray-600 rounded-lg transition"
+                  class="text-sm font-medium px-3 py-1.5 bg-gray-700 text-white hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 rounded-lg transition"
                 >
                   Receive
                 </button>
                 <button
                   on:click={() => openSendModal(token)}
-                  class="text-sm font-medium px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-500 rounded-lg transition"
+                  class="text-sm font-medium px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400 rounded-lg transition"
                 >
                   Send
                 </button>
@@ -258,13 +258,13 @@
             <div class="flex sm:hidden justify-end gap-2 mt-4">
               <button
                 on:click={() => openReceiveModal(token)}
-                class="text-sm font-medium px-3 py-1.5 bg-gray-700 text-white hover:bg-gray-600 rounded-lg transition"
+                class="text-sm font-medium px-3 py-1.5 bg-gray-700 text-white hover:bg-gray-600 dark:bg-gray-600 dark:hover:bg-gray-500 rounded-lg transition"
               >
                 Receive
               </button>
               <button
                 on:click={() => openSendModal(token)}
-                class="text-sm font-medium px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-500 rounded-lg transition"
+                class="text-sm font-medium px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-500 dark:bg-blue-500 dark:hover:bg-blue-400 rounded-lg transition"
               >
                 Send
               </button>

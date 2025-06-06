@@ -128,19 +128,19 @@
   <div class="p-4 flex flex-col gap-4">
     <!-- Token Info Banner -->
     <div 
-      class="flex items-center gap-3 p-3 rounded-lg bg-gray-700/20 border border-gray-600/30 text-gray-100 transition-all duration-300"
+      class="flex items-center gap-3 p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100 transition-all duration-300"
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '10px')});"
     >
-      <div class="w-10 h-10 rounded-full bg-gray-800 p-1 border border-gray-700 flex-shrink-0">
+      <div class="w-10 h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
         <TokenImages
           tokens={[token]}
-          size={32}
+          size={38}
           showSymbolFallback={true}
         />
       </div>
       <div class="flex flex-col">
-        <div class="font-medium text-gray-100">{token.name}</div>
-        <div class="text-sm text-gray-400">Your receive address information</div>
+        <div class="font-medium text-gray-900 dark:text-gray-100">{token.name}</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400">Your receive address information</div>
       </div>
     </div>
 
@@ -150,10 +150,9 @@
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '20px')});"
     >
       <!-- Principal ID -->
-      {#if token.symbol !== "ICP"}
-      <div class="rounded-lg border border-gray-600/50 bg-gray-800/30 p-4">
+      <div class="rounded-lg border border-gray-300 bg-gray-50 p-4 dark:border-gray-600/50 dark:bg-gray-800/30">
         <div class="flex justify-between items-center mb-2">
-          <h3 class="text-sm font-medium text-gray-200">Principal ID</h3>
+          <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">Principal ID</h3>
           {#if principalQrCode}
             <div class="flex">
               <img 
@@ -166,11 +165,11 @@
           {/if}
         </div>
         <div class="relative">
-          <div class="rounded border border-gray-600 bg-gray-700/30 p-2.5 pr-10 text-sm break-all font-mono text-gray-200">
+          <div class="rounded border border-gray-300 bg-white p-2.5 pr-10 text-sm break-all font-mono text-gray-900 dark:border-gray-600 dark:bg-gray-700/30 dark:text-gray-200">
             {principal || "Loading..."}
           </div>
           <button 
-            class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-colors text-gray-400 hover:text-gray-200"
+            class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-colors text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
             on:click={() => copyToClipboard(principal, 'principal')}
             use:tooltip={{ text: principalCopied ? "Copied!" : "Copy to clipboard", direction: "top" }}
           >
@@ -181,54 +180,16 @@
             {/if}
           </button>
         </div>
-        <p class="text-xs mt-2 text-gray-400">
+        <p class="text-xs mt-2 text-gray-600 dark:text-gray-400">
           Use this Principal ID to receive tokens
         </p>
       </div>
-      {/if}
 
-      <!-- Principal ID section - Commented out for ICP tokens 
-      <div class="rounded-lg border border-gray-600/50 bg-gray-800/30 p-4">
-        <div class="flex justify-between items-center mb-2">
-          <h3 class="text-sm font-medium text-gray-200">Principal ID</h3>
-          {#if principalQrCode}
-            <div class="flex">
-              <img 
-                src={principalQrCode} 
-                alt="Principal QR Code" 
-                class="w-16 h-16 cursor-pointer hover:opacity-80 transition-opacity bg-white rounded-md" 
-                on:click={() => enlargeQrCode(principalQrCode, "Principal ID QR Code")}
-              />
-            </div>
-          {/if}
-        </div>
-        <div class="relative">
-          <div class="rounded border border-gray-600 bg-gray-700/30 p-2.5 pr-10 text-sm break-all font-mono text-gray-200">
-            {principal || "Loading..."}
-          </div>
-          <button 
-            class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-colors text-gray-400 hover:text-gray-200"
-            on:click={() => copyToClipboard(principal, 'principal')}
-            use:tooltip={{ text: principalCopied ? "Copied!" : "Copy to clipboard", direction: "top" }}
-          >
-            {#if principalCopied}
-              <Check size={16} class="text-green-500" />
-            {:else}
-              <Copy size={16} />
-            {/if}
-          </button>
-        </div>
-        <p class="text-xs mt-2 text-gray-400">
-          Use this Principal ID to receive tokens
-        </p>
-      </div>
-      -->
-
-      {#if token.symbol === "ICP" && accountId}
-        <!-- Account ID for ICP -->
-        <div class="rounded-lg border border-gray-600/50 bg-gray-800/30 p-4">
+      <!-- ICP Account ID (only show for ICP) -->
+      {#if token.symbol === "ICP"}
+        <div class="rounded-lg border border-gray-300 bg-gray-50 p-4 dark:border-gray-600/50 dark:bg-gray-800/30">
           <div class="flex justify-between items-center mb-2">
-            <h3 class="text-sm font-medium text-gray-200">Address</h3>
+            <h3 class="text-sm font-medium text-gray-900 dark:text-gray-200">Account ID</h3>
             {#if accountIdQrCode}
               <div class="flex">
                 <img 
@@ -241,11 +202,11 @@
             {/if}
           </div>
           <div class="relative">
-            <div class="rounded border border-gray-600 bg-gray-700/30 p-2.5 pr-10 text-sm break-all font-mono text-gray-200">
+            <div class="rounded border border-gray-300 bg-white p-2.5 pr-10 text-sm break-all font-mono text-gray-900 dark:border-gray-600 dark:bg-gray-700/30 dark:text-gray-200">
               {accountId || "Loading..."}
             </div>
             <button 
-              class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-colors text-gray-400 hover:text-gray-200"
+              class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-colors text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
               on:click={() => copyToClipboard(accountId, 'accountId')}
               use:tooltip={{ text: accountIdCopied ? "Copied!" : "Copy to clipboard", direction: "top" }}
             >
@@ -256,19 +217,19 @@
               {/if}
             </button>
           </div>
-          <p class="text-xs mt-2 text-gray-400">
-            Use this Address to receive ICP tokens.
+          <p class="text-xs mt-2 text-gray-600 dark:text-gray-400">
+            Use this Account ID for legacy ICP transfers
           </p>
         </div>
       {/if}
-      
-      <!-- Instructions -->
-      <div class="rounded-lg border border-gray-600/50 bg-gray-800/30 p-3 text-sm">
+
+      <!-- Information box -->
+      <div class="rounded-lg border border-gray-300 bg-gray-50 p-3 text-sm dark:border-gray-600/50 dark:bg-gray-800/30">
         <div class="flex items-center gap-2 mb-1.5">
-          <QrCode size={16} class="text-gray-300" />
-          <span class="text-gray-200">How to receive {token.symbol}</span>
+          <QrCode size={16} class="text-gray-600 dark:text-gray-300" />
+          <span class="text-gray-900 dark:text-gray-200">How to receive {token.symbol}</span>
         </div>
-        <p class="ml-6 text-gray-400">
+        <p class="ml-6 text-gray-600 dark:text-gray-400">
           {#if token.symbol === "ICP"}
             Send ICP to your address. Copy the address or click the QR code to scan it.
           {:else}

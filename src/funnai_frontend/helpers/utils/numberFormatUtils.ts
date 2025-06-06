@@ -92,16 +92,23 @@ export const formatToNonZeroDecimal = (input: number | string): string => {
 };
 
 /**
- * Formats large numbers with appropriate abbreviations (K, M, B).
+ * Formats large numbers with appropriate abbreviations (K, M, B, T).
  * Examples:
  *  - 1500 -> "1.50K"
  *  - 1500000 -> "1.50M"
  *  - 1500000000 -> "1.50B"
+ *  - 1500000000000 -> "1.50T"
  * 
  * @param value The number to format (string or number)
+ * @param decimals Number of decimal places to show (default: 2)
+ * @param showUnit Whether to show the unit (K, M, B, T) (default: true)
  * @returns Formatted string with appropriate abbreviation
  */
-export function formatLargeNumber(value: string | number): string {
+export function formatLargeNumber(
+  value: string | number, 
+  decimals: number = 2, 
+  showUnit: boolean = true
+): string {
   if (!value) return "0";
   
   const num = typeof value === 'string' ? parseFloat(value) : value;
@@ -109,12 +116,18 @@ export function formatLargeNumber(value: string | number): string {
   if (isNaN(num)) return "0";
   
   // Format based on size
-  if (num >= 1_000_000_000) {
-    return (num / 1_000_000_000).toFixed(2) + "B";
+  if (num >= 1_000_000_000_000) {
+    const formatted = (num / 1_000_000_000_000).toFixed(decimals);
+    return showUnit ? formatted + "T" : formatted;
+  } else if (num >= 1_000_000_000) {
+    const formatted = (num / 1_000_000_000).toFixed(decimals);
+    return showUnit ? formatted + "B" : formatted;
   } else if (num >= 1_000_000) {
-    return (num / 1_000_000).toFixed(2) + "M";
+    const formatted = (num / 1_000_000).toFixed(decimals);
+    return showUnit ? formatted + "M" : formatted;
   } else if (num >= 1_000) {
-    return (num / 1_000).toFixed(2) + "K";
+    const formatted = (num / 1_000).toFixed(decimals);
+    return showUnit ? formatted + "K" : formatted;
   } else {
     return formatToNonZeroDecimal(num);
   }

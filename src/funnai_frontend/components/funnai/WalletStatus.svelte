@@ -1,12 +1,35 @@
 <script lang="ts">
   import LoginModal from '../login/LoginModal.svelte';
   import { store } from "../../stores/store";
+  import { WalletDataService } from "../../helpers/WalletDataService";
 
   let modalIsOpen = false;
+  let isRefreshingBalances = false;
 
-  // Placeholder function for wallet actions
-  function getWalletBalances() {
-    console.log('Getting wallet balances...');
+  // Function to refresh wallet balances
+  async function getWalletBalances() {
+    if (!$store.principal || !$store.isAuthed) {
+      console.log('No wallet connected to refresh balances');
+      return;
+    }
+
+    if (isRefreshingBalances) {
+      console.log('Balance refresh already in progress');
+      return;
+    }
+
+    isRefreshingBalances = true;
+    console.log('Refreshing wallet balances...');
+    
+    try {
+      // Force refresh balances using WalletDataService
+      await WalletDataService.refreshBalances(true);
+      console.log('Wallet balances refreshed successfully');
+    } catch (error) {
+      console.error('Error refreshing wallet balances:', error);
+    } finally {
+      isRefreshingBalances = false;
+    }
   }
 
   async function disconnect() {
@@ -57,9 +80,18 @@
         {#if $store.isAuthed}
           <button
             on:click={getWalletBalances}
-            class="text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:outline-none focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-800"
+            disabled={isRefreshingBalances}
+            class="text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:outline-none focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
           >
-            Refresh Balances
+            {#if isRefreshingBalances}
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Refreshing...
+            {:else}
+              Refresh Balances
+            {/if}
           </button>
           <button
             on:click={disconnect}

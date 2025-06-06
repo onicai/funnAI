@@ -16,7 +16,7 @@
       {/if}
     </div>
     <p class="text-sm">
-      {currentYear}<sup>©</sup>  onicai.com
+      <sup>©</sup>onicai
     </p>
   </div>
 </footer>
