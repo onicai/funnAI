@@ -53,6 +53,8 @@ if [ "$NETWORK_TYPE" = "ic" ]; then
     SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0
 elif [ "$NETWORK_TYPE" = "testing" ]; then
     SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0
+elif [ "$NETWORK_TYPE" = "demo" ]; then
+    SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0
 elif [ "$NETWORK_TYPE" = "development" ]; then
     echo "TODO for $NETWORK_TYPE"
     exit 1
