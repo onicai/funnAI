@@ -295,6 +295,9 @@
     let mainerConfig = {
       selectedLLM,
       mainerAgentCanisterType,
+      subnetCtrl : "",
+      subnetLlm : "",
+      cyclesForMainer : 0n
     };
     let mainerCreationInput = {
       owner: [$store.principal] as [] | [Principal],
@@ -339,20 +342,21 @@
           setTimeout(() => {
             addProgressMessage("mAIner successfully created! You can start using it while LLM setup completes in the background.", true);
             shouldOpenFirstMainerAfterCreation = true; // Ensure flag is set before reloading
-            
-            // Refresh the list of agents to show the newly created one
-            store.loadUserMainerCanisters().then(() => {
-              // Wait for the reactive update to complete, then open the first mAIner (newest one)
-              setTimeout(() => {
-                openFirstMainerAccordion();
-                // Reset the terminal after opening the accordion
+            setTimeout(() => {
+              // Refresh the list of agents to show the newly created one
+              store.loadUserMainerCanisters().then(() => {
+                // Wait for the reactive update to complete, then open the first mAIner (newest one)
                 setTimeout(() => {
-                  isCreatingMainer = false;
-                  mainerCreationProgress = [];
-                }, 2000);
-              }, 500); // Increased timeout for better reliability
-            });
-          }, 2000);
+                  openFirstMainerAccordion();
+                  // Reset the terminal after opening the accordion
+                  setTimeout(() => {
+                    isCreatingMainer = false;
+                    mainerCreationProgress = [];
+                  }, 4000);
+                }, 4000); // Increased timeout for better reliability
+              });
+            }, 14000);
+          }, 9000);
         } else if ('Err' in spinUpMainerControllerCanisterResponse) {
           console.error("Error in spinUpMainerControllerCanister:", spinUpMainerControllerCanisterResponse.Err);
           addProgressMessage("Error creating controller: " + JSON.stringify(spinUpMainerControllerCanisterResponse.Err));
@@ -619,7 +623,7 @@
           Create mAIner
         </button>
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
-          {modelType === 'Own' ? '0.0003' : '0.0002'} ICP
+          {modelType === 'Own' ? '1.1' : '1.1'} ICP
         </div>
       </div>
       
