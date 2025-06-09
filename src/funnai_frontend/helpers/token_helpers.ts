@@ -104,6 +104,7 @@ export const protocolConfig = {
   // Funnai account address for payments and top-ups
   // TODO: Change to the actual protocol address
   //address: "kwrfk-ypzrt-wwywz-qov7y-36lis-6rkyv-zdpsp-jgees-uwhhi-7c3eg-gae",
-  address: "ciqqv-4iaaa-aaaag-auara-cai", // Game State on Dev stage
+  //address: "ciqqv-4iaaa-aaaag-auara-cai", // Game State on Dev stage
+  address: "4tr6r-mqaaa-aaaae-qfcta-cai", // Game State on Demo stage
   // Add other protocol-related configuration here
 };
