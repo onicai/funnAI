@@ -155,24 +155,26 @@
 
       <!-- Payment Info -->
       <div class="flex flex-col gap-3">
-        <!-- Recipient Address -->
-        <div>
-          <label class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">Recipient</label>
-          <div class="relative">
-            <input
-              type="text"
-              class="w-full py-2 px-3 bg-white border border-gray-300 rounded-md text-sm text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
-              value={protocolAddress}
-              disabled
-            />
-            <div class="absolute inset-y-0 right-0 flex items-center">
-              <div class="p-1.5 text-green-500">
-                <Check size={16} />
+        <!-- Recipient Address - only show if user has enough balance -->
+        {#if hasEnoughBalance}
+          <div>
+            <label class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">Recipient</label>
+            <div class="relative">
+              <input
+                type="text"
+                class="w-full py-2 px-3 bg-white border border-gray-300 rounded-md text-sm text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+                value={protocolAddress}
+                disabled
+              />
+              <div class="absolute inset-y-0 right-0 flex items-center">
+                <div class="p-1.5 text-green-500">
+                  <Check size={16} />
+                </div>
               </div>
             </div>
+            <div class="mt-1 text-xs text-green-600 dark:text-green-500">funnAI mAIner creation address</div>
           </div>
-          <div class="mt-1 text-xs text-green-600 dark:text-green-500">funnAI mAIner creation address</div>
-        </div>
+        {/if}
 
         <!-- Amount -->
         <div>

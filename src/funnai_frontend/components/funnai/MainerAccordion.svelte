@@ -468,10 +468,10 @@
         }
       }
     }, 100);
-  } else if (agents.length > 0 && !shouldOpenFirstMainerAfterCreation) {
-    // If we have agents and this isn't triggered by creation, open the latest mAIner
+  } else if (agents.length > 0 && !shouldOpenFirstMainerAfterCreation && !isCreatingMainer) {
+    // If we have agents and this isn't triggered by creation, and we're not currently creating a mAIner, open the latest mAIner
     setTimeout(() => {
-      // First, ensure create accordion is closed
+      // First, ensure create accordion is closed (only if not creating)
       const createContent = document.getElementById(`content-create`);
       const createIcon = document.getElementById(`icon-create`);
       if (createContent && createIcon && createContent.classList.contains('accordion-open')) {
