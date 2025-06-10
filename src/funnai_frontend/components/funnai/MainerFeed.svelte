@@ -379,34 +379,34 @@
     aria-label="mAIner Activity Feed" 
     role="feed" 
     class="relative flex flex-col gap-8 py-12 pl-6 text-sm 
-           before:absolute before:top-0 before:left-6 before:h-full before:border before:-translate-x-1/2 before:border-slate-200 before:border-dashed before:z-[-1] dark:before:border-slate-700
-           after:absolute after:top-6 after:left-6 after:bottom-6 after:border after:-translate-x-1/2 after:border-slate-200 after:z-[-1] dark:after:border-slate-700"
+           before:absolute before:top-0 before:left-6 before:h-full before:border before:-translate-x-1/2 before:border-slate-300 before:border-dashed before:z-[1] dark:before:border-slate-500
+           after:absolute after:top-6 after:left-6 after:bottom-6 after:border-2 after:-translate-x-1/2 after:border-slate-400 after:z-[2] dark:after:border-slate-400"
   >
     {#if loading}
-      <li class="text-center text-gray-500 dark:text-gray-400">Loading feed...</li>
+      <li class="text-center text-gray-600 dark:text-gray-300">Loading feed...</li>
     {:else}
       {#each feedItems as item (item.id)}
         <li 
           role="article" 
           class="relative pl-6 
-                 before:absolute before:z-10 before:left-0 before:top-2 before:h-2 before:w-2 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 animate-fadeIn"
+                 before:absolute before:z-10 before:left-0 before:top-2 before:h-3 before:w-3 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 before:shadow-sm animate-fadeIn"
           in:fly="{{ y: 20, duration: 500 }}"
         >
           <div class="flex flex-col flex-1 gap-2">
             <h4
-              class="text-base font-medium flex justify-between items-center mr-6"
+              class="text-base font-medium flex justify-between items-center mr-6 text-gray-900 dark:text-gray-100"
             >
               {item.mainerName}
-              <span class="text-xs font-normal text-slate-500 dark:text-slate-400">{formatTimestamp(item.timestamp)}</span>
+              <span class="text-xs font-normal text-slate-600 dark:text-slate-300">{formatTimestamp(item.timestamp)}</span>
             </h4>
             {#if item.type === 'challenge'}
-              <p class="text-slate-500 dark:text-slate-400">Received challenge: {item.content.challenge}</p>
+              <p class="text-slate-600 dark:text-slate-300">Received challenge: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.challenge}</span></p>
             {:else if item.type === 'response'}
-              <p class="text-slate-500 dark:text-slate-400">Submitted response: {item.content.response}</p>
+              <p class="text-slate-600 dark:text-slate-300">Submitted response: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.response}</span></p>
             {:else if item.type === 'score'}
-              <p class="text-slate-500 dark:text-slate-400">Received score: {item.content.score}/5</p>
+              <p class="text-slate-600 dark:text-slate-300">Received score: <span class="font-semibold text-orange-600 dark:text-orange-400">{item.content.score}/5</span></p>
             {:else if item.type === 'winner'}
-              <p class="text-slate-500 dark:text-slate-400">Achieved {item.content.placement} and earned {item.content.reward}</p>
+              <p class="text-slate-600 dark:text-slate-300">Achieved <span class="font-semibold text-emerald-600 dark:text-emerald-400">{item.content.placement}</span> and earned <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.reward}</span></p>
             {/if}
           </div>
         </li>
