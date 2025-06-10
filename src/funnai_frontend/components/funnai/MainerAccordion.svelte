@@ -533,9 +533,117 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
                 </svg>
             </span>
-            <h3 class="font-medium leading-tight mb-2 dark:text-gray-300">AI Agent Type</h3>
+            <h3 class="font-medium leading-tight mb-3 dark:text-gray-300">AI Agent Type</h3>
+            
+            <!-- Modern Agent Type Selector -->
+            <div class="space-y-3 mb-2">
+              <!-- Shared Model Card -->
+              <div 
+                class="relative border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md {modelType === 'Shared' 
+                  ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' 
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-600'}"
+                on:click={() => modelType = 'Shared'}
+                on:keydown={(e) => e.key === 'Enter' && (modelType = 'Shared')}
+                role="button"
+                tabindex="0"
+              >
+                <!-- Selection indicator -->
+                <div class="absolute top-3 right-3">
+                  {#if modelType === 'Shared'}
+                    <div class="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
+                      <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                    </div>
+                  {:else}
+                    <div class="w-5 h-5 border-2 border-gray-300 dark:border-gray-600 rounded-full"></div>
+                  {/if}
+                </div>
+
+                <div class="flex items-start space-x-3 pr-8">
+                  <!-- Icon -->
+                  <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                  </div>
+
+                  <!-- Content -->
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center space-x-2 mb-1">
+                      <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">mAIner Agent</h4>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                        Ready
+                      </span>
+                    </div>
+                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      Shared infrastructure with optimized performance
+                    </p>
+                    <div class="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                      <div class="flex items-center space-x-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                        </svg>
+                        <span>0.0002 ICP</span>
+                      </div>
+                      <div class="flex items-center space-x-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        <span>Instant deploy</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Own Model Card (Disabled/Coming Soon) -->
+              <!-- 
+              <div 
+                class="relative border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-800/50 opacity-60"
+              >
+                <div class="absolute top-3 right-3">
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                    Coming Soon
+                  </span>
+                </div>
+
+                <div class="flex items-start space-x-3 pr-20">
+                  <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                  </div>
+
+                  <div class="flex-1 min-w-0">
+                    <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Custom Model</h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mb-2">
+                      Deploy your own AI model with full control
+                    </p>
+                    <div class="flex items-center space-x-4 text-xs text-gray-400 dark:text-gray-500">
+                      <div class="flex items-center space-x-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                        </svg>
+                        <span>0.0003 ICP</span>
+                      </div>
+                      <div class="flex items-center space-x-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span>Custom setup</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              -->
+            </div>
+
+            <!-- Original button code commented out
             <div class="inline-flex rounded-full shadow-xs w-full justify-start mb-1" role="group">
-              <!-- <button 
+              <button 
                 type="button" 
                 class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-s-full focus:z-10 focus:ring-2 focus:ring-blue-700 
                 {modelType === 'Own' 
@@ -544,7 +652,7 @@
                 on:click={() => modelType = 'Own'}
               >
                 Own model
-              </button> -->
+              </button>
               <button 
                 type="button" 
                 class="px-4 py-2 text-xs cursor-default font-medium border border-gray-200 dark:border-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-700
@@ -556,6 +664,7 @@
                 mAIner
               </button>
             </div>
+            -->
         </li>
         <li class="mb-6 ms-6">            
             <span class="absolute flex items-center justify-center w-8 h-8 {selectedModel ? 'bg-green-200 dark:bg-green-800' : 'bg-gray-200 dark:bg-gray-800'} rounded-full -start-4 ring-4 ring-white dark:ring-gray-900">
