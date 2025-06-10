@@ -9,7 +9,7 @@
 
 <div class="flex flex-col h-full min-h-[calc(100vh-60px)] dark:bg-gray-900">
   <div class="container mx-auto px-8 py-8 flex-grow dark:bg-gray-900">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 h-full min-h-0">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full min-h-0">
       <div class="card-style bg-white p-6 rounded-lg shadow mb-2 dark:bg-gray-800 dark:text-gray-200 flex flex-col overflow-hidden min-h-0">
         <div class="flex-grow overflow-hidden">
           <MainerAccordion />
