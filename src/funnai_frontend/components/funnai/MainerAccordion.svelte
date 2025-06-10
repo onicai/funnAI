@@ -737,10 +737,8 @@
         <div class="mt-4 bg-gray-900 text-green-400 font-mono text-sm rounded-lg p-3 border border-gray-700 overflow-hidden">
           <div class="flex items-center justify-between mb-2 border-b border-gray-700 pb-2">
             <div class="text-gray-300 text-xs">mAIner Creation Progress</div>
-            <div class="flex space-x-2">
-              <div class="h-3 w-3 rounded-full bg-red-500"></div>
-              <div class="h-3 w-3 rounded-full bg-yellow-500"></div>
-              <div class="h-3 w-3 rounded-full bg-green-500"></div>
+            <div class="flex items-center">
+              <div class="h-4 w-4 border-2 border-gray-400/30 border-t-green-400 rounded-full animate-spin"></div>
             </div>
           </div>
           <div class="h-40 overflow-y-auto terminal-scroll">
