@@ -708,7 +708,7 @@
             <div class="w-3 h-3 rounded-full bg-gray-400"></div>
             <span class="text-sm text-gray-600 dark:text-gray-400 font-medium">{inactiveMainers} Inactive</span>
             {#if inactiveMainers > 0}
-              <div class="mt-2 text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2 py-1 rounded-md">
+              <div class="text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2 py-1 rounded-md">
                 ⚠️ {inactiveMainers} mAIner{inactiveMainers === 1 ? '' : 's'} need{inactiveMainers === 1 ? 's' : ''} cycles
               </div>
             {/if}
