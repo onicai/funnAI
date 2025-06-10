@@ -726,7 +726,7 @@
         <button 
           on:click={createAgent} 
           disabled={isCreatingMainer}
-          class="bg-purple-600 dark:bg-purple-700 w-1/2 hover:bg-purple-700 dark:hover:bg-purple-800 text-white px-4 py-2 rounded-[16px] transition-colors"
+          class="bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-800 text-white px-4 py-2 rounded-xl transition-colors mr-2 mb-2"
           class:opacity-50={isCreatingMainer}
           class:cursor-not-allowed={isCreatingMainer}
         >

@@ -50,9 +50,35 @@
       case "score":
         return "before:bg-orange-500";
       case "winner":
-        return "before:bg-emerald-500";
+        return "before:bg-gradient-to-r before:from-yellow-400 before:to-yellow-600 before:shadow-lg before:shadow-yellow-500/50";
       default:
         return "before:bg-gray-500";
+    }
+  }
+
+  function getWinnerStyling(placement: string): string {
+    switch (placement) {
+      case "First Place":
+        return "bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 shadow-lg shadow-yellow-500/20 dark:from-yellow-900/20 dark:to-amber-900/20 dark:border-yellow-600";
+      case "Second Place":
+        return "bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-300 shadow-lg shadow-gray-500/20 dark:from-gray-800/20 dark:to-slate-800/20 dark:border-gray-600";
+      case "Third Place":
+        return "bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-300 shadow-lg shadow-orange-500/20 dark:from-orange-900/20 dark:to-amber-900/20 dark:border-orange-600";
+      default:
+        return "";
+    }
+  }
+
+  function getWinnerIcon(placement: string): string {
+    switch (placement) {
+      case "First Place":
+        return "🏆";
+      case "Second Place":
+        return "🥈";
+      case "Third Place":
+        return "🥉";
+      default:
+        return "🏅";
     }
   }
 
@@ -63,114 +89,89 @@
   async function getFeedData(): Promise<FeedItem[]> {
     //console.log("in MainerFeed getFeedData");
     // Get activity data for the feed from the backend canisters
-    // Challenges and winners from Game State
+    // Only show challenges and winners related to user's mAIners
     let recentProtocolActivityResult =
       await $store.gameStateCanisterActor.getRecentProtocolActivity();
     //let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity_mockup();
     //console.log("MainerFeed recentProtocolActivityResult");
     //console.log(recentProtocolActivityResult);
     let newFeedItems: FeedItem[] = [];
-    // recentProtocolActivityResult looks like so: type ProtocolActivityResult = { 'Ok' : ProtocolActivityRecord } | { 'Err' : ApiError };
-    /* export interface ProtocolActivityRecord {
-        'challenges' : Array<Challenge>,
-        'winners' : Array<ChallengeWinnerDeclaration>,
-      } */
-    /* interface Challenge {
-        'challengeClosedTimestamp' : [] | [bigint],
-        'challengeTopicStatus' : ChallengeTopicStatus,
-        'challengeTopicCreationTimestamp' : bigint,
-        'challengeCreationTimestamp' : bigint,
-        'challengeCreatedBy' : CanisterAddress,
-        'challengeTopicId' : string,
-        'challengeStatus' : ChallengeStatus,
-        'challengeQuestionSeed' : number,
-        'challengeQuestion' : string,
-        'challengeId' : string,
-        'challengeTopic' : string,
-        'submissionCyclesRequired' : bigint,
-      } */
-    /* interface ChallengeWinnerDeclaration {
-        'participants' : List_1,
-        'thirdPlace' : ChallengeParticipantEntry,
-        'winner' : ChallengeParticipantEntry,
-        'secondPlace' : ChallengeParticipantEntry,
-        'finalizedTimestamp' : bigint,
-        'challengeId' : string,
-      } */
+    let userParticipatedChallenges: Set<string> = new Set();
 
-    if ("Ok" in recentProtocolActivityResult) {
+    if ("Ok" in recentProtocolActivityResult && $store.isAuthed) {
       const { challenges, winners } = recentProtocolActivityResult.Ok;
       //console.log("in MainerFeed getFeedData winners");
       //console.log(winners);
-      // all challenges in challenges are open, for each challenge create an entry for feedItems
-      // including challengeCreationTimestamp as timestamp and challengeQuestion as content
-      // as mainerName use "Protocol"
+
+      // First, collect challenge IDs that user's mAIners have participated in
+      for (const [index, agent] of agentCanisterActors.entries()) {
+        if (agent) {
+          try {
+            const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
+            if ("Ok" in submissionsResult) {
+              for (const submission of submissionsResult.Ok) {
+                userParticipatedChallenges.add(submission.challengeId);
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching submissions for challenge filtering", error);
+          }
+        }
+      }
+
+      // Only add challenges that user's mAIners have participated in
       challenges.forEach((challenge) => {
-        newFeedItems.push({
-          id: challenge.challengeId,
-          timestamp: Number(challenge.challengeCreationTimestamp),
-          type: "challenge",
-          mainerName: "Protocol",
-          content: { challenge: challenge.challengeQuestion },
-        });
+        if (userParticipatedChallenges.has(challenge.challengeId)) {
+          newFeedItems.push({
+            id: challenge.challengeId,
+            timestamp: Number(challenge.challengeCreationTimestamp),
+            type: "challenge",
+            mainerName: "Protocol",
+            content: { challenge: challenge.challengeQuestion },
+          });
+        }
       });
 
-      // for each ChallengeWinnerDeclaration in winners, create several entries for feedItems
-      // one feedItems entry for the winner
-      // one feedItems entry for the secondPlace
-      // one feedItems entry for the thirdPlace (if there is a thirdPlace)
-      /* use the fields on winner, secondPlace and thirdPlace: interface ChallengeParticipantEntry {
-        'result' : ChallengeParticipationResult,
-        'reward' : ChallengeWinnerReward,
-        'ownedBy' : Principal,
-        'submittedBy' : Principal,
-        'submissionId' : string,
-      } */
-      // submittedBy on ChallengeParticipantEntry is the mAIner agent that submitted it, compare it to the address field of the entries in agentCanistersInfo (which is an array with each element being an object with info on an agent) and use the index as mainerName (e.g. "mAIner 1", "mAIner 2")
-      //console.log("in MainerFeed getFeedData agentCanistersInfo before winners");
-      //console.log(agentCanistersInfo);
-      //console.log(agentCanistersInfo[0]);
+      // for each ChallengeWinnerDeclaration in winners, create entries only for user's mAIners
+      winners.forEach((winnerDeclaration) => {
+        //console.log("in MainerFeed getFeedData winners winnerDeclaration");
+        //console.log(winnerDeclaration);
+        const placements = [
+          { position: "First Place", entry: winnerDeclaration.winner },
+          { position: "Second Place", entry: winnerDeclaration.secondPlace },
+          ...(winnerDeclaration.thirdPlace
+            ? [
+                {
+                  position: "Third Place",
+                  entry: winnerDeclaration.thirdPlace,
+                },
+              ]
+            : []),
+        ];
+        //console.log("in MainerFeed getFeedData winners placements");
+        //console.log(placements);
 
-      if ($store.isAuthed) {
-        winners.forEach((winnerDeclaration) => {
-          //console.log("in MainerFeed getFeedData winners winnerDeclaration");
-          //console.log(winnerDeclaration);
-          const placements = [
-            { position: "First Place", entry: winnerDeclaration.winner },
-            { position: "Second Place", entry: winnerDeclaration.secondPlace },
-            ...(winnerDeclaration.thirdPlace
-              ? [
-                  {
-                    position: "Third Place",
-                    entry: winnerDeclaration.thirdPlace,
-                  },
-                ]
-              : []),
-          ];
-          //console.log("in MainerFeed getFeedData winners placements");
-          //console.log(placements);
-
-          placements.forEach(({ position, entry }) => {
-            //console.log("in MainerFeed getFeedData winners placements position");
-            //console.log(position);
-            //console.log("in MainerFeed getFeedData winners placements entry");
-            //console.log(entry);
-            //console.log(entry.submittedBy);
-            //console.log(entry.submittedBy.toString());
-            //console.log("in MainerFeed getFeedData agentCanistersInfo address");
-            //console.log(agentCanistersInfo[0].address);
-            //console.log(agentCanistersInfo[1]?.address);
-            //console.log(agentCanistersInfo[0].address === entry.submittedBy.toString());
-            //console.log(agentCanistersInfo[1].address === entry.submittedBy.toString());
-            const mainerIndex = agentCanistersInfo.findIndex(
-              (agent) => agent.address === entry.submittedBy.toString(),
-            );
-            //console.log("in MainerFeed getFeedData winners placements mainerIndex");
-            //console.log(mainerIndex);
-            const mainerName =
-              mainerIndex !== -1
-                ? `mAIner ${mainerIndex + 1}`
-                : `Other User's Agent`;
+        placements.forEach(({ position, entry }) => {
+          //console.log("in MainerFeed getFeedData winners placements position");
+          //console.log(position);
+          //console.log("in MainerFeed getFeedData winners placements entry");
+          //console.log(entry);
+          //console.log(entry.submittedBy);
+          //console.log(entry.submittedBy.toString());
+          //console.log("in MainerFeed getFeedData agentCanistersInfo address");
+          //console.log(agentCanistersInfo[0].address);
+          //console.log(agentCanistersInfo[1]?.address);
+          //console.log(agentCanistersInfo[0].address === entry.submittedBy.toString());
+          //console.log(agentCanistersInfo[1].address === entry.submittedBy.toString());
+          const mainerIndex = agentCanistersInfo.findIndex(
+            (agent) => agent.address === entry.submittedBy.toString(),
+          );
+          //console.log("in MainerFeed getFeedData winners placements mainerIndex");
+          //console.log(mainerIndex);
+          
+          // Only show winners that are user's mAIners
+          if (mainerIndex !== -1) {
+            const mainerName = `mAIner ${mainerIndex + 1}`;
             //console.log("in MainerFeed getFeedData winners placements mainerIndex");
             //console.log(mainerIndex);
             //console.log("in MainerFeed getFeedData winners placements mainerName");
@@ -186,9 +187,9 @@
                 reward: entry.reward.amount.toString(),
               },
             });
-          });
+          }
         });
-      }
+      });
       //console.log("in MainerFeed getFeedData newFeedItems after winners");
       //console.log(newFeedItems);
     }
@@ -383,19 +384,56 @@
   >
     {#if loading}
       <li class="text-center text-gray-600 dark:text-gray-300">Loading feed...</li>
+    {:else if feedItems.length === 0 && !$store.isAuthed}
+      <li class="text-center py-8">
+        <div class="flex flex-col items-center gap-4 text-gray-500 dark:text-gray-400">
+          <div class="text-6xl">🤖</div>
+          <div class="max-w-md">
+            <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Your mAIner Activity Feed
+            </h3>
+            <p class="text-sm leading-relaxed">
+              This feed will display activity from your mAIner agents including:
+            </p>
+            <ul class="text-sm mt-3 space-y-1 text-left">
+              <li>• 🎯 Challenges your mAIners participate in</li>
+              <li>• 💭 Responses your mAIners submit</li>
+              <li>• 📊 Scores your mAIners receive</li>
+              <li>• 🏆 Victories and placements your mAIners achieve</li>
+            </ul>
+            <p class="text-xs mt-4 text-gray-400 dark:text-gray-500 text-left">
+              Please connect your wallet to see your mAIner activity.
+            </p>
+          </div>
+        </div>
+      </li>
+    {:else if feedItems.length === 0 && $store.isAuthed}
+      <li class="text-center py-4">
+        <p class="text-sm text-gray-500 dark:text-gray-400">No activity yet from your mAIners.</p>
+      </li>
     {:else}
       {#each feedItems as item (item.id)}
         <li 
           role="article" 
           class="relative pl-6 
-                 before:absolute before:z-[20] before:left-0 before:top-2 before:h-3 before:w-3 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 before:shadow-sm animate-fadeIn"
+                 before:absolute before:z-[20] before:left-0 before:top-2 before:h-3 before:w-3 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 before:shadow-sm animate-fadeIn
+                 {item.type === 'winner' ? 'animate-pulse-winner' : ''}"
           in:fly="{{ y: 20, duration: 500 }}"
         >
-          <div class="flex flex-col flex-1 gap-2">
+          <div class="flex flex-col flex-1 gap-2 {item.type === 'winner' ? getWinnerStyling(item.content.placement || '') + ' p-4 rounded-lg' : ''}">
             <h4
-              class="text-base font-medium flex justify-between items-center mr-6 text-gray-900 dark:text-gray-100"
+              class="text-base font-medium flex justify-between items-center mr-6 text-gray-900 dark:text-gray-100
+                     {item.type === 'winner' ? 'text-lg font-bold' : ''}"
             >
-              {item.mainerName}
+              <span class="flex items-center gap-2">
+                {#if item.type === 'winner'}
+                  <span class="text-2xl animate-bounce">{getWinnerIcon(item.content.placement || '')}</span>
+                {/if}
+                {item.mainerName}
+                {#if item.type === 'winner'}
+                  <span class="text-2xl animate-bounce">{getWinnerIcon(item.content.placement || '')}</span>
+                {/if}
+              </span>
               <span class="text-xs font-normal text-slate-600 dark:text-slate-300">{formatTimestamp(item.timestamp)}</span>
             </h4>
             {#if item.type === 'challenge'}
@@ -405,7 +443,17 @@
             {:else if item.type === 'score'}
               <p class="text-slate-600 dark:text-slate-300">Received score: <span class="font-semibold text-orange-600 dark:text-orange-400">{item.content.score}/5</span></p>
             {:else if item.type === 'winner'}
-              <p class="text-slate-600 dark:text-slate-300">Achieved <span class="font-semibold text-emerald-600 dark:text-emerald-400">{item.content.placement}</span> and earned <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.reward}</span></p>
+              <div class="text-center">
+                <p class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 to-amber-600 dark:from-yellow-400 dark:to-amber-400 mb-2">
+                  🎉 CONGRATULATIONS! 🎉
+                </p>
+                <p class="text-slate-700 dark:text-slate-200">
+                  Achieved <span class="font-bold text-lg {item.content.placement === 'First Place' ? 'text-yellow-600 dark:text-yellow-400' : item.content.placement === 'Second Place' ? 'text-gray-600 dark:text-gray-400' : 'text-orange-600 dark:text-orange-400'}">{item.content.placement}</span>
+                </p>
+                <p class="text-slate-700 dark:text-slate-200">
+                  and earned <span class="font-bold text-lg text-green-600 dark:text-green-400">{item.content.reward} cycles</span>
+                </p>
+              </div>
             {/if}
           </div>
         </li>
@@ -426,13 +474,47 @@
     }
   }
 
+  @keyframes pulseWinner {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+    }
+    50% {
+      box-shadow: 0 0 0 10px rgba(251, 191, 36, 0);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
   .animate-fadeIn {
     animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-pulse-winner {
+    animation: pulseWinner 2s infinite;
+  }
+
+  /* Shimmer effect for winner text */
+  .winner-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
   }
 
   /* Dark mode adjustments */
   :global(.dark) .animate-spin {
     border-color: rgba(96, 165, 250, 0.8);
     border-top-color: transparent;
+  }
+
+  /* Enhanced winner glow for dark mode */
+  :global(.dark) .animate-pulse-winner {
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
   }
 </style> 
