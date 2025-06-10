@@ -209,7 +209,11 @@
         <button
           type="button"
           on:click={handleSubmit}
-          class="mt-2 py-2.5 px-4 rounded-md text-white font-medium flex items-center justify-center gap-2 transition-colors"
+          class="mt-2 py-2.5 px-4 rounded-md text-white font-medium transition-colors"
+          class:flex={!(!hasEnoughBalance && !isValidating)}
+          class:items-center={!(!hasEnoughBalance && !isValidating)}
+          class:justify-center={!(!hasEnoughBalance && !isValidating)}
+          class:gap-2={!(!hasEnoughBalance && !isValidating)}
           class:bg-purple-600={hasEnoughBalance && !isValidating}
           class:hover:bg-purple-500={hasEnoughBalance && !isValidating}
           class:bg-gray-400={!hasEnoughBalance || isValidating}
@@ -218,13 +222,20 @@
           disabled={!hasEnoughBalance || isValidating}
         >
           {#if isValidating}
-            <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            Processing...
+            <div class="flex items-center justify-center gap-2">
+              <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              Processing...
+            </div>
           {:else if !hasEnoughBalance}
-            Insufficient Balance
+            <div class="flex flex-col items-center justify-center gap-1">
+              <div>Insufficient Balance</div>
+              <a href="/#/wallet" class="underline text-sm text-orange-800 dark:text-orange-200 hover:text-orange-900 dark:hover:text-orange-100">Please fund your wallet ↗</a>
+            </div>
           {:else}
-            <ArrowUp size={16} />
-            Pay {totalPaymentAmount} {token.symbol}
+            <div class="flex items-center justify-center gap-2">
+              <ArrowUp size={16} />
+              Pay {totalPaymentAmount} {token.symbol}
+            </div>
           {/if}
         </button>
         
@@ -232,6 +243,7 @@
         {#if !hasEnoughBalance && !isValidating && token}
           <div class="mt-2 p-2 rounded bg-orange-50 border border-orange-200 text-orange-700 text-sm dark:bg-orange-900/30 dark:border-orange-800/30 dark:text-orange-300">
             You need {formatBalance((amountBigInt + tokenFee - balance).toString(), token.decimals)} more {token.symbol} to create this mAIner.
+            
           </div>
         {/if}
       </div>

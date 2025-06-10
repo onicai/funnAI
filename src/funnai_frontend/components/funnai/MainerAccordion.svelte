@@ -11,6 +11,9 @@
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
   $: isAuthenticated = $store.isAuthed;
+  $: isCreatingMainer = $store.isCreatingMainer;
+  $: mainerCreationProgress = $store.mainerCreationProgress;
+  $: shouldOpenFirstMainerAfterCreation = $store.shouldOpenFirstMainerAfterCreation;
 
   let agents = [
     // Add the agent entries dynamically via the calls in onMount
@@ -29,11 +32,6 @@
   let mainerTopUpModalOpen = false;
   let selectedCanister = { id: "", name: "" };
   
-  // Progress tracking for mAIner creation
-  let isCreatingMainer = false;
-  let mainerCreationProgress: {message: string, timestamp: string, complete: boolean}[] = [];
-  let shouldOpenFirstMainerAfterCreation = false; // Flag to control when to auto-open
-
   // Track which agents are being topped up (agent-specific loading states)
   let agentsBeingToppedUp = new Set<string>();
 
@@ -151,7 +149,7 @@
           }
         }
         
-        shouldOpenFirstMainerAfterCreation = false; // Reset the flag
+        store.resetMainerCreationAfterOpen(); // Reset the flag using store method
       }, 300); // Increased timeout to ensure DOM is ready
     }
   };
@@ -260,9 +258,8 @@
     console.log("Payment completed" + (txId ? ` with transaction ID: ${txId}` : ""));
     mainerPaymentModalOpen = false;
     
-    // Set the creation process as started
-    isCreatingMainer = true;
-    shouldOpenFirstMainerAfterCreation = true; // Set flag to auto-open the new mAIner
+    // Set the creation process as started using store
+    store.startMainerCreation();
     
     // Start the staged creation process
     // Step 1: Begin registration
@@ -274,8 +271,7 @@
       await handleFullMainerCreation(txId);
     } else {
       addProgressMessage("Backend methods not available for mAIner creation");
-      isCreatingMainer = false;
-      shouldOpenFirstMainerAfterCreation = false;
+      store.completeMainerCreation();
     }
   };
 
@@ -338,7 +334,6 @@
           // Step 5: Completion
           setTimeout(() => {
             addProgressMessage("mAIner successfully created! You can start using it while LLM setup completes in the background.", true);
-            shouldOpenFirstMainerAfterCreation = true; // Ensure flag is set before reloading
             
             // Refresh the list of agents to show the newly created one
             store.loadUserMainerCanisters().then(() => {
@@ -347,8 +342,7 @@
                 openFirstMainerAccordion();
                 // Reset the terminal after opening the accordion
                 setTimeout(() => {
-                  isCreatingMainer = false;
-                  mainerCreationProgress = [];
+                  store.completeMainerCreation();
                 }, 2000);
               }, 500); // Increased timeout for better reliability
             });
@@ -356,18 +350,18 @@
         } else if ('Err' in spinUpMainerControllerCanisterResponse) {
           console.error("Error in spinUpMainerControllerCanister:", spinUpMainerControllerCanisterResponse.Err);
           addProgressMessage("Error creating controller: " + JSON.stringify(spinUpMainerControllerCanisterResponse.Err));
-          isCreatingMainer = false;
+          store.completeMainerCreation();
         };
       } else if ('Err' in createUserMainerAgentResponse) {
         // Handle error response
         console.error("Error in createUserMainerAgent:", createUserMainerAgentResponse.Err);
         addProgressMessage("Error creating mAIner: " + JSON.stringify(createUserMainerAgentResponse.Err));
-        isCreatingMainer = false;
+        store.completeMainerCreation();
       };
     } catch (creationError) {
       console.error("Failed to create mAIner:", creationError);
       addProgressMessage("Failed to create mAIner: " + creationError.message);
-      isCreatingMainer = false;
+      store.completeMainerCreation();
     };
   };
 
@@ -375,18 +369,12 @@
     // This method is no longer needed since createUserMainerAgent is available
     // But keeping it for potential future use
     addProgressMessage("Simplified creation flow not implemented");
-    isCreatingMainer = false;
+    store.completeMainerCreation();
   };
 
   // Helper function to add a progress message with timestamp
   function addProgressMessage(message: string, isComplete = false) {
-    const now = new Date();
-    const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-    
-    mainerCreationProgress = [
-      ...mainerCreationProgress,
-      { message, timestamp, complete: isComplete }
-    ];
+    store.addMainerCreationProgress(message, isComplete);
   }
 
   function copyAddress() {
