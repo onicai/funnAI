@@ -130,13 +130,12 @@
                     <!-- <WalletTable {transactions} /> -->
 
                     <!-- Content with consistent height to prevent flickering -->
-                    <div class="min-h-[400px]">
+                    <div class="min-h-[400px] relative">
                         {#if isDataLoading}
-                            <div class="flex flex-col items-center justify-center py-8">
+                            <!-- Show skeleton immediately with loading overlay -->
+                            <TokenListSkeleton rows={4} />
+                            <div class="absolute inset-0 bg-gray-800/80 flex items-center justify-center">
                                 <LoadingIndicator text={"Loading wallet data..."} size={24} />
-                                <div class="mt-8 w-full">
-                                    <TokenListSkeleton rows={3} />
-                                </div>
                             </div>
                         {:else if loadingError}
                             <div class="flex flex-col items-center justify-center py-12">
