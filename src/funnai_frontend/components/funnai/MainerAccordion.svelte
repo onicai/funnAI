@@ -291,6 +291,9 @@
     let mainerConfig = {
       selectedLLM,
       mainerAgentCanisterType,
+      subnetCtrl : "",
+      subnetLlm : "",
+      cyclesForMainer : 0n
     };
     let mainerCreationInput = {
       owner: [$store.principal] as [] | [Principal],
@@ -334,19 +337,20 @@
           // Step 5: Completion
           setTimeout(() => {
             addProgressMessage("mAIner successfully created! You can start using it while LLM setup completes in the background.", true);
-            
-            // Refresh the list of agents to show the newly created one
-            store.loadUserMainerCanisters().then(() => {
-              // Wait for the reactive update to complete, then open the first mAIner (newest one)
-              setTimeout(() => {
-                openFirstMainerAccordion();
-                // Reset the terminal after opening the accordion
+            setTimeout(() => {
+              // Refresh the list of agents to show the newly created one
+              store.loadUserMainerCanisters().then(() => {
+                // Wait for the reactive update to complete, then open the first mAIner (newest one)
                 setTimeout(() => {
-                  store.completeMainerCreation();
-                }, 2000);
-              }, 500); // Increased timeout for better reliability
-            });
-          }, 2000);
+                  openFirstMainerAccordion();
+                  // Reset the terminal after opening the accordion
+                  setTimeout(() => {
+                    store.completeMainerCreation();
+                  }, 4000);
+                }, 4000); // Increased timeout for better reliability
+              });
+            }, 14000);
+          }, 9000);
         } else if ('Err' in spinUpMainerControllerCanisterResponse) {
           console.error("Error in spinUpMainerControllerCanister:", spinUpMainerControllerCanisterResponse.Err);
           addProgressMessage("Error creating controller: " + JSON.stringify(spinUpMainerControllerCanisterResponse.Err));

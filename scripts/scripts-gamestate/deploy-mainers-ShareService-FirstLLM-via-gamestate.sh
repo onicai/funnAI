@@ -14,10 +14,10 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --network)
             shift
-            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ] || [ "$1" = "development" ]; then
+            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ] || [ "$1" = "development" ] || [ "$1" = "demo" ]; then
                 NETWORK_TYPE=$1
             else
-                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing' or 'development'."
+                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing' or 'development' or 'demo'."
                 exit 1
             fi
             shift
@@ -52,6 +52,8 @@ cd ../../../
 if [ "$NETWORK_TYPE" = "ic" ]; then
     SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0
 elif [ "$NETWORK_TYPE" = "testing" ]; then
+    SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0
+elif [ "$NETWORK_TYPE" = "demo" ]; then
     SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0
 elif [ "$NETWORK_TYPE" = "development" ]; then
     echo "TODO for $NETWORK_TYPE"
