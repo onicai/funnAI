@@ -369,7 +369,7 @@
   });
 </script>
 
-<div class="max-h-[600px] overflow-y-auto dark:bg-gray-900 dark:text-white">
+<div class="h-full overflow-y-auto dark:bg-gray-900 dark:text-white">
   {#if updating}
     <div class="flex justify-center py-2">
       <div class="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent dark:border-blue-400"></div>
@@ -379,8 +379,7 @@
     aria-label="mAIner Activity Feed" 
     role="feed" 
     class="relative flex flex-col gap-8 py-12 pl-6 text-sm 
-           before:absolute before:top-0 before:left-6 before:h-full before:border before:-translate-x-1/2 before:border-slate-300 before:border-dashed before:z-[1] dark:before:border-slate-500
-           after:absolute after:top-6 after:left-6 after:bottom-6 after:border-2 after:-translate-x-1/2 after:border-slate-400 after:z-[2] dark:after:border-slate-400"
+           before:absolute before:top-0 before:left-6 before:h-full before:border-2 before:-translate-x-1/2 before:border-slate-400 before:border-dashed before:z-[1] dark:before:border-slate-400"
   >
     {#if loading}
       <li class="text-center text-gray-600 dark:text-gray-300">Loading feed...</li>
@@ -389,7 +388,7 @@
         <li 
           role="article" 
           class="relative pl-6 
-                 before:absolute before:z-10 before:left-0 before:top-2 before:h-3 before:w-3 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 before:shadow-sm animate-fadeIn"
+                 before:absolute before:z-[20] before:left-0 before:top-2 before:h-3 before:w-3 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 before:shadow-sm animate-fadeIn"
           in:fly="{{ y: 20, duration: 500 }}"
         >
           <div class="flex flex-col flex-1 gap-2">

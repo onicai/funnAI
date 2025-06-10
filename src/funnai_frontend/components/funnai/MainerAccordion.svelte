@@ -764,7 +764,7 @@
       {/if}
     {:else}
       <div class="flex flex-col items-center justify-center py-8">
-        <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2 mt-8">You need to login first</h3>
+        <h3 class="text-xl font-medium text-gray-700 dark:text-gray-100 mb-2 mt-8">You need to login first</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 text-center">
           Connect your wallet to create and manage your mAIners
         </p>
