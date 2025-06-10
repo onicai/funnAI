@@ -64,7 +64,7 @@
         </div>
       </div>
     </header>
-    <div class="flex-grow flex flex-col dark:bg-gray-800">
+    <div class="flex-grow flex flex-col dark:bg-gray-900">
       <Router {routes} />
     </div>
   </main>

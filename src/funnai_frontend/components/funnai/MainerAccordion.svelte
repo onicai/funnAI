@@ -831,7 +831,7 @@
 {#each agents as agent, index}
   {#if agent && agent.id}
     {@const sanitizedId = agent.id.replace(/[^a-zA-Z0-9-_]/g, '_')}
-    {@const buttonClasses = `w-full flex justify-between items-center py-5 px-4 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 ${agent.status === 'inactive' ? 'bg-red-50 dark:bg-red-900/10' : ''}`}
+    {@const buttonClasses = `w-full flex justify-between items-center py-5 px-4 text-gray-800 dark:text-gray-200 ${agent.status === 'inactive' ? 'bg-red-50 dark:bg-red-900/10' : ''}`}
     <div class="border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900" class:opacity-75={agent.status === 'inactive'}>
       <button on:click={() => toggleAccordion(agent.id)} class={buttonClasses}>
         <span class="flex items-center font-medium text-sm">
