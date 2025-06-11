@@ -44,7 +44,7 @@
   $: totalMainers = agents.length;
 
   // Reactive mAIner price based on model type
-  $: mainerPrice = modelType === 'Own' ? '0.0003' : '1.0999';
+  $: mainerPrice = modelType === 'Own' ? '0.0003' : '1.1';
 
   // For testing UI only - set to true to use mock data for the mainer accordion displaying canister INFO
   let useMockData = false;
