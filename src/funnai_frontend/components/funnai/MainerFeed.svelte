@@ -393,7 +393,7 @@
   <!-- Toggle controls -->
   <div class="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
     <div class="flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Activity Feed</h2>
+      <h2 class="hidden sm:block text-lg font-semibold text-gray-900 dark:text-white">Activity Feed</h2>
       <div class="flex items-center gap-3">
         <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
           <span class="text-xs">My mAIners only</span>
@@ -475,11 +475,10 @@
           <li 
             role="article" 
             class="relative pl-6 
-                   before:absolute before:z-[20] before:left-0 before:top-2 before:h-3 before:w-3 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 before:shadow-sm animate-fadeIn
-                   {item.type === 'winner' ? 'animate-pulse-winner' : ''}"
+                   before:absolute before:z-[20] before:left-0 before:top-2 before:h-3 before:w-3 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 before:shadow-sm animate-fadeIn"
             in:fly="{{ y: 20, duration: 500 }}"
           >
-            <div class="flex flex-col flex-1 gap-2 {item.type === 'winner' ? getWinnerStyling(item.content.placement || '') + ' p-4 rounded-lg' : ''}">
+            <div class="flex flex-col flex-1 gap-2 {item.type === 'winner' ? getWinnerStyling(item.content.placement || '') + ' p-4 rounded-lg animate-pulse-winner' : ''}">
               <h4
                 class="text-base font-medium flex justify-between items-center mr-6 text-gray-900 dark:text-gray-100
                        {item.type === 'winner' ? 'text-lg font-bold' : ''}"
@@ -557,7 +556,7 @@
   }
 
   .animate-pulse-winner {
-    animation: pulseWinner 2s infinite;
+    animation: pulseWinner 2s 5;
   }
 
   /* Shimmer effect for winner text */
