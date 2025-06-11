@@ -868,7 +868,7 @@
               <div class="flex flex-col gap-2">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:flex-wrap">
                   <span class="text-xs mr-2 mb-1 sm:mb-0 sm:w-24 font-medium">Controller ID:</span>
-                  <a href="https://dashboard.internetcomputer.org/canister/{agent.id}" target="_blank" rel="noopener noreferrer" class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-green-400 border border-green-400 break-all hover:bg-green-200 dark:hover:bg-gray-600 transition-colors flex items-center w-fit">
+                  <a href="https://dashboard.internetcomputer.org/canister/{agent.id}" target="_blank" rel="noopener noreferrer" class="ml-auto bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-green-400 border border-green-400 break-all hover:bg-green-200 dark:hover:bg-gray-600 transition-colors flex items-center w-fit">
                     <span class="truncate max-w-[200px] sm:max-w-none">{agent.id}</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                       <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
