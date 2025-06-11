@@ -63,7 +63,7 @@
         <span class="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent font-mono tabular-nums">
           {formattedCycles}
         </span>
-        <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">cycles</span>
+        <span class="hidden sm:inline text-xs text-gray-500 dark:text-gray-400 font-medium">cycles</span>
       </div>
       
       <!-- Optional trend indicator -->
