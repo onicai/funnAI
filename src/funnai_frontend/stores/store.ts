@@ -50,6 +50,9 @@ export const canisterIds = {
   gameStateCanisterId
 };
 
+console.log("in store canisterIds ", canisterIds);
+console.log("in store gameStateCanisterId ", gameStateCanisterId);
+
 export const canisterIDLs = {
   backendIdlFactory,
   gameStateIdlFactory,

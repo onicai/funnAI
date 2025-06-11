@@ -101,6 +101,10 @@ cd ..
 #
 # Upgrade the #ShareService with the new mAIner code
 scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.sh --mode upgrade --network $NETWORK
+# Add a previous ShareService if need be, e.g.
+dfx canister call game_state_canister addOfficialCanister '(record { address = "ecpt4-ayaaa-aaaad-qhk4a-cai"; subnet = ""; canisterType = variant { MainerAgent = variant { ShareService } } })' --network $NETWORK
+# Verify with
+dfx canister call game_state_canister getOfficialCanistersAdmin --network $NETWORK
 #
 # Upgrade the #ShareAgent canisters with new mAIner code, by repeating this call for all of them
 # TODO: write a script that automates these calls over all ShareAgent canisters

@@ -19,6 +19,8 @@
   
   // Protocol address from token_helpers
   const { address: protocolAddress } = protocolConfig;
+
+  console.log("in MainerTopUpModal protocolAddress ", protocolAddress);
   
   // ICP token configuration - load from token_helpers
   let token: any = null;
