@@ -553,15 +553,27 @@ export interface GameStateCanister {
   'setIcpForOwnMainerAdmin' : ActorMethod<[bigint], StatusCodeRecordResult>,
   'setIcpForShareAgentAdmin' : ActorMethod<[bigint], StatusCodeRecordResult>,
   'setInitialChallengeTopics' : ActorMethod<[], StatusCodeRecordResult>,
+  'setLimitForCreatingMainerAdmin' : ActorMethod<
+    [bigint, MainerAgentCanisterType],
+    AuthRecordResult
+  >,
   'setOfficialMainerAgentCanisterWasmHashAdmin' : ActorMethod<
     [UpdateWasmHashInput],
     CanisterWasmHashRecordResult
+  >,
+  'setRewardPerChallengeAdmin' : ActorMethod<
+    [bigint],
+    RewardPerChallengeResult
   >,
   'setSubnetsAdmin' : ActorMethod<[SubnetIds], StatusCodeRecordResult>,
   'setTokenLedgerCanisterId' : ActorMethod<[string], AuthRecordResult>,
   'setUpMainerLlmCanister' : ActorMethod<
     [OfficialMainerAgentCanister],
     SetUpMainerLlmCanisterResult
+  >,
+  'shouldCreatingMainersBeStopped' : ActorMethod<
+    [MainerAgentCanisterType],
+    boolean
   >,
   'spinUpMainerControllerCanister' : ActorMethod<
     [OfficialMainerAgentCanister],
@@ -581,6 +593,7 @@ export interface GameStateCanister {
   >,
   'testMainerCodeIntegrityAdmin' : ActorMethod<[], AuthRecordResult>,
   'testTokenMintingAdmin' : ActorMethod<[], AuthRecordResult>,
+  'togglePauseProtocolFlagAdmin' : ActorMethod<[], AuthRecordResult>,
   'topUpCyclesForMainerAgent' : ActorMethod<
     [MainerAgentTopUpInput],
     MainerAgentCanisterResult
@@ -729,6 +742,16 @@ export interface RedeemedTransactionBlock {
 export type RedeemedTransactionBlockResult = {
     'Ok' : RedeemedTransactionBlock
   } |
+  { 'Err' : ApiError };
+export interface RewardPerChallenge {
+  'amountForAllParticipants' : bigint,
+  'thirdPlaceAmount' : bigint,
+  'rewardType' : RewardType,
+  'totalAmount' : bigint,
+  'winnerAmount' : bigint,
+  'secondPlaceAmount' : bigint,
+}
+export type RewardPerChallengeResult = { 'Ok' : RewardPerChallenge } |
   { 'Err' : ApiError };
 export type RewardType = { 'ICP' : null } |
   { 'Coupon' : string } |

@@ -11,7 +11,7 @@ Then, do the following:
 conda activate llama_cpp_canister
 
 # Set NETWORK environment variable
-NETWORK=testing  # [local|ic|development|testing]
+NETWORK=testing  # [local|ic|development|testing|demo]
 
 # MONITORING SCRIPTS
 # (-) scripts read from 'scripts/canister_ids-<network>.env'
