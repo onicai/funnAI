@@ -183,6 +183,20 @@ type RewardType =
    MainerToken;
    Other: text;
  };
+type RewardPerChallengeResult = 
+ variant {
+   Err: ApiError;
+   Ok: RewardPerChallenge;
+ };
+type RewardPerChallenge = 
+ record {
+   amountForAllParticipants: nat;
+   rewardType: RewardType;
+   secondPlaceAmount: nat;
+   thirdPlaceAmount: nat;
+   totalAmount: nat;
+   winnerAmount: nat;
+ };
 type RedeemedTransactionBlockResult = 
  variant {
    Err: ApiError;
@@ -437,15 +451,19 @@ type GameStateCanister =
    setCyclesFlowAdmin: (CyclesFlowSettings) -> (StatusCodeRecordResult);
    setGameStateThresholdsAdmin: (GameStateTresholds) ->
     (StatusCodeRecordResult);
-   setIcpForOwnMainerAdmin: (nat) -> (StatusCodeRecordResult);
-   setIcpForShareAgentAdmin: (nat) -> (StatusCodeRecordResult);
+   setIcpForOwnMainerAdmin: (nat64) -> (StatusCodeRecordResult);
+   setIcpForShareAgentAdmin: (nat64) -> (StatusCodeRecordResult);
    setInitialChallengeTopics: () -> (StatusCodeRecordResult);
+   setLimitForCreatingMainerAdmin: (nat, MainerAgentCanisterType) ->
+    (AuthRecordResult);
    setOfficialMainerAgentCanisterWasmHashAdmin: (UpdateWasmHashInput) ->
     (CanisterWasmHashRecordResult);
+   setRewardPerChallengeAdmin: (nat) -> (RewardPerChallengeResult);
    setSubnetsAdmin: (SubnetIds) -> (StatusCodeRecordResult);
    setTokenLedgerCanisterId: (text) -> (AuthRecordResult);
    setUpMainerLlmCanister: (OfficialMainerAgentCanister) ->
     (SetUpMainerLlmCanisterResult);
+   shouldCreatingMainersBeStopped: (MainerAgentCanisterType) -> (bool) query;
    spinUpMainerControllerCanister: (OfficialMainerAgentCanister) ->
     (MainerAgentCanisterResult);
    startUploadJudgePromptCache: () ->
@@ -456,6 +474,7 @@ type GameStateCanister =
     (ChallengeResponseSubmissionMetadataResult);
    testMainerCodeIntegrityAdmin: () -> (AuthRecordResult);
    testTokenMintingAdmin: () -> (AuthRecordResult);
+   togglePauseProtocolFlagAdmin: () -> (AuthRecordResult);
    topUpCyclesForMainerAgent: (MainerAgentTopUpInput) ->
     (MainerAgentCanisterResult);
    unlockUserMainerAgent: (MainerCreationInput) ->
