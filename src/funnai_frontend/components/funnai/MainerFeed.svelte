@@ -30,6 +30,7 @@
   let currentIndex = 0;
   let updating = false;
   let updateCounter = 0;
+  let showAllEvents = true; // Default to showing all events
 
   // Convert milliseconds timestamp to readable time format
   function formatTimestamp(timestamp: number): string {
@@ -86,42 +87,45 @@
     return feedItems.sort((a, b) => a.timestamp - b.timestamp);
   }
 
-  async function getFeedData(): Promise<FeedItem[]> {
+  async function getFeedData(filterToUserMainers: boolean = false): Promise<FeedItem[]> {
     //console.log("in MainerFeed getFeedData");
     // Get activity data for the feed from the backend canisters
-    // Only show challenges and winners related to user's mAIners
-    let recentProtocolActivityResult =
-      await $store.gameStateCanisterActor.getRecentProtocolActivity();
-    //let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity_mockup();
-    //console.log("MainerFeed recentProtocolActivityResult");
-    //console.log(recentProtocolActivityResult);
     let newFeedItems: FeedItem[] = [];
     let userParticipatedChallenges: Set<string> = new Set();
+
+    try {
+      let recentProtocolActivityResult =
+        await $store.gameStateCanisterActor.getRecentProtocolActivity();
+      //let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity_mockup();
+      //console.log("MainerFeed recentProtocolActivityResult");
+      //console.log(recentProtocolActivityResult);
 
     if ("Ok" in recentProtocolActivityResult && $store.isAuthed) {
       const { challenges, winners } = recentProtocolActivityResult.Ok;
       //console.log("in MainerFeed getFeedData winners");
       //console.log(winners);
 
-      // First, collect challenge IDs that user's mAIners have participated in
-      for (const [index, agent] of agentCanisterActors.entries()) {
-        if (agent) {
-          try {
-            const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
-            if ("Ok" in submissionsResult) {
-              for (const submission of submissionsResult.Ok) {
-                userParticipatedChallenges.add(submission.challengeId);
+      if (filterToUserMainers) {
+        // Collect challenge IDs that user's mAIners have participated in
+        for (const [index, agent] of agentCanisterActors.entries()) {
+          if (agent) {
+            try {
+              const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
+              if ("Ok" in submissionsResult) {
+                for (const submission of submissionsResult.Ok) {
+                  userParticipatedChallenges.add(submission.challengeId);
+                }
               }
+            } catch (error) {
+              console.error("Error fetching submissions for challenge filtering", error);
             }
-          } catch (error) {
-            console.error("Error fetching submissions for challenge filtering", error);
           }
         }
       }
 
-      // Only add challenges that user's mAIners have participated in
+      // Add challenges based on filter setting
       challenges.forEach((challenge) => {
-        if (userParticipatedChallenges.has(challenge.challengeId)) {
+        if (!filterToUserMainers || userParticipatedChallenges.has(challenge.challengeId)) {
           newFeedItems.push({
             id: challenge.challengeId,
             timestamp: Number(challenge.challengeCreationTimestamp),
@@ -132,7 +136,7 @@
         }
       });
 
-      // for each ChallengeWinnerDeclaration in winners, create entries only for user's mAIners
+      // Add winners based on filter setting
       winners.forEach((winnerDeclaration) => {
         //console.log("in MainerFeed getFeedData winners winnerDeclaration");
         //console.log(winnerDeclaration);
@@ -152,30 +156,15 @@
         //console.log(placements);
 
         placements.forEach(({ position, entry }) => {
-          //console.log("in MainerFeed getFeedData winners placements position");
-          //console.log(position);
-          //console.log("in MainerFeed getFeedData winners placements entry");
-          //console.log(entry);
-          //console.log(entry.submittedBy);
-          //console.log(entry.submittedBy.toString());
-          //console.log("in MainerFeed getFeedData agentCanistersInfo address");
-          //console.log(agentCanistersInfo[0].address);
-          //console.log(agentCanistersInfo[1]?.address);
-          //console.log(agentCanistersInfo[0].address === entry.submittedBy.toString());
-          //console.log(agentCanistersInfo[1].address === entry.submittedBy.toString());
           const mainerIndex = agentCanistersInfo.findIndex(
             (agent) => agent.address === entry.submittedBy.toString(),
           );
-          //console.log("in MainerFeed getFeedData winners placements mainerIndex");
-          //console.log(mainerIndex);
           
-          // Only show winners that are user's mAIners
-          if (mainerIndex !== -1) {
-            const mainerName = `mAIner ${entry.submittedBy.toString().slice(0, 5)}`;
-            //console.log("in MainerFeed getFeedData winners placements mainerIndex");
-            //console.log(mainerIndex);
-            //console.log("in MainerFeed getFeedData winners placements mainerName");
-            //console.log(mainerName);
+          // Show all winners or only user's mAIners based on filter
+          if (!filterToUserMainers || mainerIndex !== -1) {
+            const mainerName = mainerIndex !== -1 
+              ? `mAIner ${entry.submittedBy.toString().slice(0, 5)}` 
+              : `mAIner ${entry.submittedBy.toString().slice(0, 5)}`;
 
             newFeedItems.push({
               id: `${entry.submissionId}-winner`,
@@ -194,6 +183,11 @@
       //console.log(newFeedItems);
     }
 
+    } catch (error) {
+      console.error("Error fetching protocol activity:", error);
+      // Return empty array on error, component will show appropriate message
+    }
+
     if ($store.isAuthed) {
       //console.log("MainerFeed agentCanisterActors");
       //console.log(agentCanisterActors);
@@ -201,7 +195,9 @@
       //console.log(agentCanistersInfo);
       // Add user's mAIner agents' submissions and scores (for submissions) to newFeedItems
       // for each agent in the array agentCanisterActors, retrieve the agent's submissions
-      for (const [index, agent] of agentCanisterActors.entries()) {
+      
+      try {
+        for (const [index, agent] of agentCanisterActors.entries()) {
         //console.log("in MainerFeed getFeedData agentCanisterActors entries index");
         //console.log(index);
         //console.log("in MainerFeed getFeedData agentCanisterActors entries agent");
@@ -322,6 +318,10 @@
           };
         };
       }
+      } catch (error) {
+        console.error("Error fetching user mainer data:", error);
+        // Continue with empty user data, component will show appropriate message
+      }
     }
     //console.log("in MainerFeed getFeedData newFeedItems before return");
     //console.log(newFeedItems);
@@ -333,7 +333,7 @@
     if (forceUpdate || updateCounter % 6 === 0) {
       // Retrieve items from backend every 6th time (e.g. 6 * 10sec = 1min)
       console.log("Time to run getFeedData again");
-      allItems = await getFeedData();
+      allItems = await getFeedData(!showAllEvents);
       console.log("after getFeedData allItems");
       console.log(allItems);
     }
@@ -351,13 +351,32 @@
     updateCounter++;
   }
 
+  // Handle toggle change
+  async function handleToggleChange() {
+    currentIndex = 0;
+    feedItems = [];
+    await updateFeed(true);
+  }
+
+  // Reset state when authentication status changes
+  $: if (!$store.isAuthed) {
+    feedItems = [];
+    allItems = [];
+    currentIndex = 0;
+    loading = false;
+    updating = false;
+  }
+
   $: {
     console.log("MainerFeed reactive agentCanisterActors", agentCanisterActors);
     console.log("MainerFeed reactive agentCanistersInfo", agentCanistersInfo);
 
-    (async () => {
-      await updateFeed(true);
-    })();
+    // Only update feed if authenticated
+    if ($store.isAuthed) {
+      (async () => {
+        await updateFeed(true);
+      })();
+    }
   }
 
   onMount(async () => {
@@ -370,96 +389,137 @@
   });
 </script>
 
-<div class="h-full overflow-y-auto dark:bg-gray-900 dark:text-white">
-  {#if updating}
+<div class="h-full overflow-y-auto dark:bg-gray-900 dark:text-white flex flex-col">
+  <!-- Toggle controls -->
+  <div class="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Activity Feed</h2>
+      <div class="flex items-center gap-3">
+        <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+          <span class="text-xs">My mAIners only</span>
+          <button
+            type="button"
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                   {showAllEvents ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}"
+            role="switch"
+            aria-checked={showAllEvents}
+            on:click={() => {
+              showAllEvents = !showAllEvents;
+              handleToggleChange();
+            }}
+          >
+            <span class="sr-only">Toggle between all events and my mAIners only</span>
+            <span
+              class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                     {showAllEvents ? 'translate-x-6' : 'translate-x-1'}"
+            ></span>
+          </button>
+          <span class="text-xs">All events</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  {#if updating && $store.isAuthed}
     <div class="flex justify-center py-2">
       <div class="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent dark:border-blue-400"></div>
     </div>
   {/if}
-  <ul 
-    aria-label="mAIner Activity Feed" 
-    role="feed" 
-    class="relative flex flex-col gap-8 py-12 pl-6 text-sm 
-           before:absolute before:top-0 before:left-6 before:h-full before:border-2 before:-translate-x-1/2 before:border-slate-400 before:border-dashed before:z-[1] dark:before:border-slate-400"
-  >
-    {#if loading}
-      <li class="text-center text-gray-600 dark:text-gray-300">Loading feed...</li>
-    {:else if feedItems.length === 0 && !$store.isAuthed}
-      <li class="text-center py-8">
-        <div class="flex flex-col items-center gap-4 text-gray-500 dark:text-gray-400">
-          <div class="text-6xl">🤖</div>
-          <div class="max-w-md">
-            <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Your mAIner Activity Feed
-            </h3>
-            <p class="text-sm leading-relaxed">
-              This feed will display activity from your mAIner agents including:
+  <!-- Info Panel - show when not authenticated or when authenticated but no content -->
+  {#if (!$store.isAuthed) || (feedItems.length === 0 && !loading && !updating)}
+    <div class="flex-1 flex flex-col justify-center items-center px-4 py-6">
+      <div class="flex flex-col items-center gap-4 text-gray-500 dark:text-gray-400">
+        <div class="text-6xl">🤖</div>
+        <div class="max-w-md text-center">
+          <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+            mAIner Activity Feed
+          </h3>
+          <p class="text-sm leading-relaxed">
+            This feed displays activity from mAIner agents including:
+          </p>
+          <ul class="text-sm mt-3 space-y-1">
+            <li>• 🎯 Challenges in the protocol</li>
+            <li>• 💭 Responses from your mAIners</li>
+            <li>• 📊 Scores your mAIners receive</li>
+            <li>• 🏆 All victories and placements</li>
+          </ul>
+          {#if !$store.isAuthed}
+            <p class="text-xs mt-4 text-gray-400 dark:text-gray-500">
+              Please connect your wallet to see personalized activity.
             </p>
-            <ul class="text-sm mt-3 space-y-1 text-left">
-              <li>• 🎯 Challenges your mAIners participate in</li>
-              <li>• 💭 Responses your mAIners submit</li>
-              <li>• 📊 Scores your mAIners receive</li>
-              <li>• 🏆 Victories and placements your mAIners achieve</li>
-            </ul>
-            <p class="text-xs mt-4 text-gray-400 dark:text-gray-500 text-left">
-              Please connect your wallet to see your mAIner activity.
+          {:else}
+            <p class="text-xs mt-4 text-gray-400 dark:text-gray-500">
+              {showAllEvents ? 'No activity yet in the protocol.' : 'No activity yet from your mAIners.'}
             </p>
-          </div>
+          {/if}
         </div>
-      </li>
-    {:else if feedItems.length === 0 && $store.isAuthed}
-      <li class="text-center py-4">
-        <p class="text-sm text-gray-500 dark:text-gray-400">No activity yet from your mAIners.</p>
-      </li>
-    {:else}
-      {#each feedItems as item (item.id)}
-        <li 
-          role="article" 
-          class="relative pl-6 
-                 before:absolute before:z-[20] before:left-0 before:top-2 before:h-3 before:w-3 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 before:shadow-sm animate-fadeIn
-                 {item.type === 'winner' ? 'animate-pulse-winner' : ''}"
-          in:fly="{{ y: 20, duration: 500 }}"
-        >
-          <div class="flex flex-col flex-1 gap-2 {item.type === 'winner' ? getWinnerStyling(item.content.placement || '') + ' p-4 rounded-lg' : ''}">
-            <h4
-              class="text-base font-medium flex justify-between items-center mr-6 text-gray-900 dark:text-gray-100
-                     {item.type === 'winner' ? 'text-lg font-bold' : ''}"
-            >
-              <span class="flex items-center gap-2">
-                {#if item.type === 'winner'}
-                  <span class="text-2xl animate-bounce">{getWinnerIcon(item.content.placement || '')}</span>
-                {/if}
-                {item.mainerName}
-                {#if item.type === 'winner'}
-                  <span class="text-2xl animate-bounce">{getWinnerIcon(item.content.placement || '')}</span>
-                {/if}
-              </span>
-              <span class="text-xs font-normal text-slate-600 dark:text-slate-300">{formatTimestamp(item.timestamp)}</span>
-            </h4>
-            {#if item.type === 'challenge'}
-              <p class="text-slate-600 dark:text-slate-300">Received challenge: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.challenge}</span></p>
-            {:else if item.type === 'response'}
-              <p class="text-slate-600 dark:text-slate-300">Submitted response: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.response}</span></p>
-            {:else if item.type === 'score'}
-              <p class="text-slate-600 dark:text-slate-300">Received score: <span class="font-semibold text-orange-600 dark:text-orange-400">{item.content.score}/5</span></p>
-            {:else if item.type === 'winner'}
-              <div class="text-center">
-                <p class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 to-amber-600 dark:from-yellow-400 dark:to-amber-400 mb-2">
-                  🎉 CONGRATULATIONS! 🎉
-                </p>
-                <p class="text-slate-700 dark:text-slate-200">
-                  Achieved <span class="font-bold text-lg {item.content.placement === 'First Place' ? 'text-yellow-600 dark:text-yellow-400' : item.content.placement === 'Second Place' ? 'text-gray-600 dark:text-gray-400' : 'text-orange-600 dark:text-orange-400'}">{item.content.placement}</span>
-                </p>
-                <p class="text-slate-700 dark:text-slate-200">
-                  and earned <span class="font-bold text-lg text-green-600 dark:text-green-400">{item.content.reward} tokens</span>
-                </p>
-              </div>
-            {/if}
-          </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if feedItems.length > 0 || (loading && $store.isAuthed)}
+    <ul 
+      aria-label="mAIner Activity Feed" 
+      role="feed" 
+      class="relative flex flex-col gap-8 py-12 pl-6 text-sm 
+             before:absolute before:top-0 before:left-6 before:h-full before:border-2 before:-translate-x-1/2 before:border-slate-400 before:border-dashed before:z-[1] dark:before:border-slate-400"
+    >
+      {#if feedItems.length === 0 && loading}
+        <li class="text-center py-4">
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            {showAllEvents ? 'No activity yet in the protocol.' : 'No activity yet from your mAIners.'}
+          </p>
         </li>
-      {/each}
-    {/if}
-  </ul>
+      {:else}
+        {#each feedItems as item (item.id)}
+          <li 
+            role="article" 
+            class="relative pl-6 
+                   before:absolute before:z-[20] before:left-0 before:top-2 before:h-3 before:w-3 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 before:shadow-sm animate-fadeIn
+                   {item.type === 'winner' ? 'animate-pulse-winner' : ''}"
+            in:fly="{{ y: 20, duration: 500 }}"
+          >
+            <div class="flex flex-col flex-1 gap-2 {item.type === 'winner' ? getWinnerStyling(item.content.placement || '') + ' p-4 rounded-lg' : ''}">
+              <h4
+                class="text-base font-medium flex justify-between items-center mr-6 text-gray-900 dark:text-gray-100
+                       {item.type === 'winner' ? 'text-lg font-bold' : ''}"
+              >
+                <span class="flex items-center gap-2">
+                  {#if item.type === 'winner'}
+                    <span class="text-2xl animate-bounce">{getWinnerIcon(item.content.placement || '')}</span>
+                  {/if}
+                  {item.mainerName}
+                  {#if item.type === 'winner'}
+                    <span class="text-2xl animate-bounce">{getWinnerIcon(item.content.placement || '')}</span>
+                  {/if}
+                </span>
+                <span class="text-xs font-normal text-slate-600 dark:text-slate-300">{formatTimestamp(item.timestamp)}</span>
+              </h4>
+              {#if item.type === 'challenge'}
+                <p class="text-slate-600 dark:text-slate-300">New challenge: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.challenge}</span></p>
+              {:else if item.type === 'response'}
+                <p class="text-slate-600 dark:text-slate-300">Submitted response: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.response}</span></p>
+              {:else if item.type === 'score'}
+                <p class="text-slate-600 dark:text-slate-300">Received score: <span class="font-semibold text-orange-600 dark:text-orange-400">{item.content.score}/5</span></p>
+              {:else if item.type === 'winner'}
+                <div class="text-center">
+                  <p class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 to-amber-600 dark:from-yellow-400 dark:to-amber-400 mb-2">
+                    🎉 CONGRATULATIONS! 🎉
+                  </p>
+                  <p class="text-slate-700 dark:text-slate-200">
+                    Achieved <span class="font-bold text-lg {item.content.placement === 'First Place' ? 'text-yellow-600 dark:text-yellow-400' : item.content.placement === 'Second Place' ? 'text-gray-600 dark:text-gray-400' : 'text-orange-600 dark:text-orange-400'}">{item.content.placement}</span>
+                  </p>
+                  <p class="text-slate-700 dark:text-slate-200">
+                    and earned <span class="font-bold text-lg text-green-600 dark:text-green-400">{item.content.reward} tokens</span>
+                  </p>
+                </div>
+              {/if}
+            </div>
+          </li>
+        {/each}
+      {/if}
+    </ul>
+  {/if}
 </div>
 
 <style>
