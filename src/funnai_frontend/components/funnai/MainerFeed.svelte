@@ -171,7 +171,7 @@
           
           // Only show winners that are user's mAIners
           if (mainerIndex !== -1) {
-            const mainerName = `mAIner ${mainerIndex + 1}`;
+            const mainerName = `mAIner ${entry.submittedBy.toString().slice(0, 5)}`;
             //console.log("in MainerFeed getFeedData winners placements mainerIndex");
             //console.log(mainerIndex);
             //console.log("in MainerFeed getFeedData winners placements mainerName");
@@ -243,7 +243,7 @@
               for (const submission of submissionsResult.Ok) {
                 //console.log("in MainerFeed getFeedData agentCanisterActors entries submission");
                 //console.log(submission);
-                const mainerName = `mAIner ${index + 1}`;
+                const mainerName = `mAIner ${agentCanistersInfo[index].address.slice(0, 5)}`;
                 newFeedItems.push({
                   id: submission.submissionId,
                   timestamp: Number(submission.submittedTimestamp),
@@ -451,7 +451,7 @@
                   Achieved <span class="font-bold text-lg {item.content.placement === 'First Place' ? 'text-yellow-600 dark:text-yellow-400' : item.content.placement === 'Second Place' ? 'text-gray-600 dark:text-gray-400' : 'text-orange-600 dark:text-orange-400'}">{item.content.placement}</span>
                 </p>
                 <p class="text-slate-700 dark:text-slate-200">
-                  and earned <span class="font-bold text-lg text-green-600 dark:text-green-400">{item.content.reward} cycles</span>
+                  and earned <span class="font-bold text-lg text-green-600 dark:text-green-400">{item.content.reward} tokens</span>
                 </p>
               </div>
             {/if}
