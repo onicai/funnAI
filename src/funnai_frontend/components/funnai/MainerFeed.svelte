@@ -32,9 +32,17 @@
   let updateCounter = 0;
   let showAllEvents = true; // Default to showing all events
 
-  // Convert milliseconds timestamp to readable time format
+  // Convert timestamp to readable time format
   function formatTimestamp(timestamp: number): string {
-    const date = new Date(timestamp * 1000); // Convert seconds to milliseconds
+    // IC timestamps are typically in nanoseconds, convert to milliseconds
+    const milliseconds = timestamp / 1000000;
+    const date = new Date(milliseconds);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return "Invalid Date";
+    }
+    
     return date.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
