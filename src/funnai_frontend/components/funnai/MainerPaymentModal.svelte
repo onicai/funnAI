@@ -16,6 +16,8 @@
   
   // Protocol address from token_helpers
   const { address: protocolAddress } = protocolConfig;
+
+  console.log("in MainerPaymentModal protocolAddress ", protocolAddress);
   
   // TODO: load token info from token_helpers.ts
   let token: any = null;
