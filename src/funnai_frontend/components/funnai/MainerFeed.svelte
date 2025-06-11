@@ -84,7 +84,7 @@
   }
 
   function sortFeedItemsByTimestamp(feedItems: FeedItem[]): FeedItem[] {
-    return feedItems.sort((a, b) => a.timestamp - b.timestamp);
+    return feedItems.sort((a, b) => b.timestamp - a.timestamp);
   }
 
   async function getFeedData(filterToUserMainers: boolean = false): Promise<FeedItem[]> {
@@ -336,15 +336,10 @@
       allItems = await getFeedData(!showAllEvents);
       console.log("after getFeedData allItems");
       console.log(allItems);
-    }
-    // TODO: only add new items to feed
-    if (currentIndex < allItems.length) {
-      const newItem = {
-        ...allItems[currentIndex],
-        timestamp: Math.floor(Date.now() / 1000), // Set current timestamp in seconds
-      };
-      feedItems = [newItem, ...feedItems];
-      currentIndex++;
+      
+      // Show all items immediately, keeping their real timestamps
+      feedItems = [...allItems]; // Show all items with their real timestamps
+      currentIndex = allItems.length; // Mark all items as displayed
     }
     loading = false;
     updating = false;
@@ -355,6 +350,7 @@
   async function handleToggleChange() {
     currentIndex = 0;
     feedItems = [];
+    allItems = [];
     await updateFeed(true);
   }
 
