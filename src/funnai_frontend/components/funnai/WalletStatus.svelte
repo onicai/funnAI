@@ -90,7 +90,7 @@
               </svg>
               Refreshing...
             {:else}
-              Refresh Balances
+              Refresh
             {/if}
           </button>
           <button
