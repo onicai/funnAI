@@ -393,7 +393,7 @@
   <!-- Toggle controls -->
   <div class="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
     <div class="flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Activity Feed</h2>
+      <h2 class="hidden sm:block text-lg font-semibold text-gray-900 dark:text-white">Activity Feed</h2>
       <div class="flex items-center gap-3">
         <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
           <span class="text-xs">My mAIners only</span>
