@@ -466,7 +466,7 @@
       aria-label="mAIner Activity Feed" 
       role="feed" 
       class="relative flex flex-col gap-8 py-12 pl-6 text-sm 
-             before:absolute before:top-0 before:left-6 before:h-full before:border-2 before:-translate-x-1/2 before:border-slate-400 before:border-dashed before:z-[1] dark:before:border-slate-400"
+             before:absolute before:top-0 before:z-0 before:left-6 before:h-full before:border-2 before:-translate-x-1/2 before:border-slate-400 before:border-dashed before:z-[1] dark:before:border-slate-400"
     >
       {#if feedItems.length === 0 && loading}
         <li class="text-center py-4">
@@ -489,11 +489,11 @@
               >
                 <span class="flex items-center gap-2">
                   {#if item.type === 'winner'}
-                    <span class="text-2xl animate-bounce">{getWinnerIcon(item.content.placement || '')}</span>
+                    <span class="text-2xl animate-bounce-10s">{getWinnerIcon(item.content.placement || '')}</span>
                   {/if}
                   {item.mainerName}
                   {#if item.type === 'winner'}
-                    <span class="text-2xl animate-bounce">{getWinnerIcon(item.content.placement || '')}</span>
+                    <span class="text-2xl animate-bounce-10s">{getWinnerIcon(item.content.placement || '')}</span>
                   {/if}
                 </span>
                 <span class="text-xs font-normal text-slate-600 dark:text-slate-300">{formatTimestamp(item.timestamp)}</span>
@@ -555,8 +555,23 @@
     }
   }
 
+  @keyframes bounce10s {
+    0%, 100% {
+      transform: translateY(-25%);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: none;
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
+
   .animate-fadeIn {
     animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-bounce-10s {
+    animation: bounce10s 1s ease-in-out 10;
   }
 
   .animate-pulse-winner {
@@ -567,7 +582,7 @@
   .winner-shimmer {
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
     background-size: 200% 100%;
-    animation: shimmer 2s infinite;
+    animation: shimmer 2s 6;
   }
 
   /* Dark mode adjustments */
@@ -578,6 +593,6 @@
 
   /* Enhanced winner glow for dark mode */
   :global(.dark) .animate-pulse-winner {
-    box-shadow: 0 0 20px rgba(251, 191, 36, 0.3);
+    box-shadow: 0 0 22px rgba(251, 191, 36, 0.3);
   }
 </style> 
