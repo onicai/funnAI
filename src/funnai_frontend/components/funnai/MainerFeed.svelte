@@ -478,7 +478,7 @@
         {#each feedItems as item (item.id)}
           <li 
             role="article" 
-            class="relative pl-6 
+            class="relative px-6 
                    before:absolute before:z-[20] before:left-0 before:top-2 before:h-3 before:w-3 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 before:shadow-sm animate-fadeIn"
             in:fly="{{ y: 20, duration: 500 }}"
           >
@@ -499,11 +499,11 @@
                 <span class="text-xs font-normal text-slate-600 dark:text-slate-300">{formatTimestamp(item.timestamp)}</span>
               </h4>
               {#if item.type === 'challenge'}
-                <p class="text-slate-600 dark:text-slate-300">New challenge: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.challenge}</span></p>
+                <p class="text-slate-600 dark:text-slate-300 pr-6">New challenge: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.challenge}</span></p>
               {:else if item.type === 'response'}
-                <p class="text-slate-600 dark:text-slate-300">Submitted response: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.response}</span></p>
+                <p class="text-slate-600 dark:text-slate-300 pr-6">Submitted response: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.response}</span></p>
               {:else if item.type === 'score'}
-                <p class="text-slate-600 dark:text-slate-300">Received score: <span class="font-semibold text-orange-600 dark:text-orange-400">{item.content.score}/5</span></p>
+                <p class="text-slate-600 dark:text-slate-300 pr-6">Received score: <span class="font-semibold text-orange-600 dark:text-orange-400">{item.content.score}/5</span></p>
               {:else if item.type === 'winner'}
                 <div class="text-center">
                   <p class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 to-amber-600 dark:from-yellow-400 dark:to-amber-400 mb-2">
