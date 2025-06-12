@@ -841,7 +841,7 @@
           <span class="truncate">{agent.name}</span>
           {#if agent.status === 'inactive'}
             <span 
-              class="ml-1 sm:ml-2 text-xs text-red-600 dark:text-red-400 hidden sm:inline-flex items-center gap-1 cursor-help"
+              class="ml-1 sm:ml-2 text-xs text-red-600 dark:text-red-400 hidden sm:inline cursor-help"
               use:tooltip={{ 
                 text: "You still have some cycles, but not enough to keep going. Please top up to continue.",
                 direction: 'top',
