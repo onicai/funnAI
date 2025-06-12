@@ -4,7 +4,6 @@
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
   import { store } from "../../stores/store";
-  import { mockFeedData } from "../../helpers/mockFeedData";
   import { formatFunnaiAmount } from "../../helpers/utils/numberFormatUtils";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
@@ -50,8 +49,6 @@
       second: "2-digit",
     });
   }
-
-
 
   function getStatusColor(type: string): string {
     switch (type) {
@@ -111,88 +108,88 @@
       //console.log("MainerFeed recentProtocolActivityResult");
       //console.log(recentProtocolActivityResult);
 
-    if ("Ok" in recentProtocolActivityResult && $store.isAuthed) {
-      const { challenges, winners } = recentProtocolActivityResult.Ok;
-      //console.log("in MainerFeed getFeedData winners");
-      //console.log(winners);
+      if ("Ok" in recentProtocolActivityResult && $store.isAuthed) {
+        const { challenges, winners } = recentProtocolActivityResult.Ok;
+        //console.log("in MainerFeed getFeedData winners");
+        //console.log(winners);
 
-      if (filterToUserMainers) {
-        // Collect challenge IDs that user's mAIners have participated in
-        for (const [index, agent] of agentCanisterActors.entries()) {
-          if (agent) {
-            try {
-              const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
-              if ("Ok" in submissionsResult) {
-                for (const submission of submissionsResult.Ok) {
-                  userParticipatedChallenges.add(submission.challengeId);
+        if (filterToUserMainers) {
+          // Collect challenge IDs that user's mAIners have participated in
+          for (const [index, agent] of agentCanisterActors.entries()) {
+            if (agent) {
+              try {
+                const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
+                if ("Ok" in submissionsResult) {
+                  for (const submission of submissionsResult.Ok) {
+                    userParticipatedChallenges.add(submission.challengeId);
+                  }
                 }
+              } catch (error) {
+                console.error("Error fetching submissions for challenge filtering", error);
               }
-            } catch (error) {
-              console.error("Error fetching submissions for challenge filtering", error);
             }
           }
         }
-      }
 
-      // Add challenges based on filter setting
-      challenges.forEach((challenge) => {
-        if (!filterToUserMainers || userParticipatedChallenges.has(challenge.challengeId)) {
-          newFeedItems.push({
-            id: challenge.challengeId,
-            timestamp: Number(challenge.challengeCreationTimestamp),
-            type: "challenge",
-            mainerName: "Protocol",
-            content: { challenge: challenge.challengeQuestion },
-          });
-        }
-      });
-
-      // Add winners based on filter setting
-      winners.forEach((winnerDeclaration) => {
-        //console.log("in MainerFeed getFeedData winners winnerDeclaration");
-        //console.log(winnerDeclaration);
-        const placements = [
-          { position: "First Place", entry: winnerDeclaration.winner },
-          { position: "Second Place", entry: winnerDeclaration.secondPlace },
-          ...(winnerDeclaration.thirdPlace
-            ? [
-                {
-                  position: "Third Place",
-                  entry: winnerDeclaration.thirdPlace,
-                },
-              ]
-            : []),
-        ];
-        //console.log("in MainerFeed getFeedData winners placements");
-        //console.log(placements);
-
-        placements.forEach(({ position, entry }) => {
-          const mainerIndex = agentCanistersInfo.findIndex(
-            (agent) => agent.address === entry.submittedBy.toString(),
-          );
-          
-          // Show all winners or only user's mAIners based on filter
-          if (!filterToUserMainers || mainerIndex !== -1) {
-            const mainerName = mainerIndex !== -1 
-              ? `mAIner ${entry.submittedBy.toString().slice(0, 5)}` 
-              : `mAIner ${entry.submittedBy.toString().slice(0, 5)}`;
-
+        // Add challenges based on filter setting
+        challenges.forEach((challenge) => {
+          if (!filterToUserMainers || userParticipatedChallenges.has(challenge.challengeId)) {
             newFeedItems.push({
-              id: `${entry.submissionId}-winner`,
-              timestamp: Number(winnerDeclaration.finalizedTimestamp),
-              type: "winner",
-              mainerName,
-              content: {
-                placement: position,
-                reward: entry.reward.amount.toString(),
-              },
+              id: challenge.challengeId,
+              timestamp: Number(challenge.challengeCreationTimestamp),
+              type: "challenge",
+              mainerName: "Protocol",
+              content: { challenge: challenge.challengeQuestion },
             });
           }
         });
-      });
-      //console.log("in MainerFeed getFeedData newFeedItems after winners");
-      //console.log(newFeedItems);
-    }
+
+        // Add winners based on filter setting
+        winners.forEach((winnerDeclaration) => {
+          //console.log("in MainerFeed getFeedData winners winnerDeclaration");
+          //console.log(winnerDeclaration);
+          const placements = [
+            { position: "First Place", entry: winnerDeclaration.winner },
+            { position: "Second Place", entry: winnerDeclaration.secondPlace },
+            ...(winnerDeclaration.thirdPlace
+              ? [
+                  {
+                    position: "Third Place",
+                    entry: winnerDeclaration.thirdPlace,
+                  },
+                ]
+              : []),
+          ];
+          //console.log("in MainerFeed getFeedData winners placements");
+          //console.log(placements);
+
+          placements.forEach(({ position, entry }) => {
+            const mainerIndex = agentCanistersInfo.findIndex(
+              (agent) => agent.address === entry.submittedBy.toString(),
+            );
+            
+            // Show all winners or only user's mAIners based on filter
+            if (!filterToUserMainers || mainerIndex !== -1) {
+              const mainerName = mainerIndex !== -1 
+                ? `mAIner ${entry.submittedBy.toString().slice(0, 5)}` 
+                : `mAIner ${entry.submittedBy.toString().slice(0, 5)}`;
+
+              newFeedItems.push({
+                id: `${entry.submissionId}-winner`,
+                timestamp: Number(winnerDeclaration.finalizedTimestamp),
+                type: "winner",
+                mainerName,
+                content: {
+                  placement: position,
+                  reward: entry.reward.amount.toString(),
+                },
+              });
+            }
+          });
+        });
+        //console.log("in MainerFeed getFeedData newFeedItems after winners");
+        //console.log(newFeedItems);
+      }
 
     } catch (error) {
       console.error("Error fetching protocol activity:", error);
