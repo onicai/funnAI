@@ -5,6 +5,7 @@
   import { fly } from "svelte/transition";
   import { store } from "../../stores/store";
   import { mockFeedData } from "../../helpers/mockFeedData";
+  import { formatFunnaiAmount } from "../../helpers/utils/numberFormatUtils";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -49,6 +50,8 @@
       second: "2-digit",
     });
   }
+
+
 
   function getStatusColor(type: string): string {
     switch (type) {
@@ -513,7 +516,7 @@
                     Achieved <span class="font-bold text-lg {item.content.placement === 'First Place' ? 'text-yellow-600 dark:text-yellow-400' : item.content.placement === 'Second Place' ? 'text-gray-600 dark:text-gray-400' : 'text-orange-600 dark:text-orange-400'}">{item.content.placement}</span>
                   </p>
                   <p class="text-slate-700 dark:text-slate-200">
-                    and earned <span class="font-bold text-lg text-green-600 dark:text-green-400">{item.content.reward} tokens</span>
+                    and earned <span class="font-bold text-lg text-green-600 dark:text-green-400">{formatFunnaiAmount(item.content.reward || '0')} FUNNAI</span>
                   </p>
                 </div>
               {/if}
