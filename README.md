@@ -165,6 +165,8 @@ dfx canister call game_state_canister getNumArchivedChallengesAdmin --output jso
 dfx canister call game_state_canister getClosedChallengesAdmin --output json --network $NETWORK
 dfx canister call game_state_canister getNumClosedChallengesAdmin --output json --network $NETWORK
 
+dfx canister call game_state_canister getRecentChallengeWinners --output json --network $NETWORK
+dfx canister call game_state_canister getRecentProtocolActivity --output json --network $NETWORK
 
 # Deploy funnai backend (used mainly for chat):
 dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_backend --network $NETWORK
