@@ -7,6 +7,7 @@
   import MainerTopUpModal from './MainerTopUpModal.svelte';
   import { Principal } from '@dfinity/principal';
   import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
+  import { tooltip } from "../../helpers/utils/tooltip";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -839,7 +840,14 @@
           </svg>
           <span class="truncate">{agent.name}</span>
           {#if agent.status === 'inactive'}
-            <span class="ml-1 sm:ml-2 text-xs text-red-600 dark:text-red-400 hidden sm:inline">(needs cycles)</span>
+            <span 
+              class="ml-1 sm:ml-2 text-xs text-red-600 dark:text-red-400 hidden sm:inline-flex items-center gap-1 cursor-help"
+              use:tooltip={{ 
+                text: "You still have some cycles, but not enough to keep going. Please top up to continue.",
+                direction: 'top',
+                textSize: 'xs'
+              }}
+            >(needs cycles) <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-red-500 dark:text-red-400 inline" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg></span>
           {/if}
         </span>
         <div class="flex items-center flex-shrink-0 ml-2">
