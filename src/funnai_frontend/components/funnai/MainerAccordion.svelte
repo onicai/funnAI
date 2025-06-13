@@ -8,7 +8,7 @@
   import { Principal } from '@dfinity/principal';
   import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
   import { tooltip } from "../../helpers/utils/tooltip";
-  import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive } from "../../helpers/gameState";
+  import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped } from "../../helpers/gameState";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -19,6 +19,9 @@
 
   let isProtocolActiveFlag = true; // Will be loaded
   $: isProtocolActive = isProtocolActiveFlag; // TODO: if protocol is not active, stop activities, especially mAIner creation
+
+  let isMainerCreationStoppedFlag = false; // Will be loaded
+  $: stopMainerCreation = isMainerCreationStoppedFlag; // TODO: if true, disable mAIner creation
 
   let agents = [
     // Add the agent entries dynamically via the calls in onMount
@@ -465,6 +468,7 @@
     //console.log("MainerAccordion onMount agentCanisterActors", agentCanisterActors);
     //console.log("MainerAccordion onMount agentCanistersInfo", agentCanistersInfo);
     isProtocolActiveFlag = await getIsProtocolActive();
+    isMainerCreationStoppedFlag = await getIsMainerCreationStopped(modelType);
     // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
     agents = await loadAgents();
     //console.log("MainerAccordion onMount agents", agents);

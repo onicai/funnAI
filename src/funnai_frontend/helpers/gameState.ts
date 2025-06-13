@@ -67,3 +67,34 @@ export const getIsProtocolActive = async (isRetry=false) => {
     };
   };
 };
+
+export const getIsMainerCreationStopped = async (mainerType, isRetry=false) => {
+  try {
+    let input = mainerType === 'Own' ? { 'Own' : null } : { 'ShareAgent' : null };
+    let response = storeState.gameStateCanisterActor.shouldCreatingMainersBeStopped(input);
+    
+    if ('Ok' in response) {
+      return response.Ok.flag;
+    } else if ('Err' in response) {
+      console.error("Error in getIsMainerCreationStopped:", response.Err);
+      if (isRetry) {
+        return true; // Some issue occurred so indicate to stop as a mesure of precaution
+      } else {
+        console.error("Trying again");
+        setTimeout(() => {
+          return getIsMainerCreationStopped(mainerType, true);          
+        }, 2000);
+      };
+    };
+  } catch (error) {
+    console.error("Failed to getIsMainerCreationStopped:", error);
+    if (isRetry) {
+      return true; // Some issue occurred so indicate to stop as a mesure of precaution
+    } else {
+      console.error("Trying again");
+      setTimeout(() => {
+        return getIsMainerCreationStopped(mainerType, true);          
+      }, 2000);
+    };
+  };
+};
