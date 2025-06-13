@@ -417,6 +417,9 @@ export interface FinishUploadMainerPromptCacheInput {
   'promptText' : string,
   'promptCacheSha256' : string,
 }
+export interface FlagRecord { 'flag' : boolean }
+export type FlagResult = { 'Ok' : FlagRecord } |
+  { 'Err' : ApiError };
 export interface GameStateCanister {
   'addChallenge' : ActorMethod<[NewChallengeInput], ChallengeAdditionResult>,
   'addChallengeTopic' : ActorMethod<
@@ -506,6 +509,9 @@ export interface GameStateCanister {
     [],
     ChallengeResponseSubmissionsResult
   >,
+  'getPauseProtocolFlag' : ActorMethod<[], FlagResult>,
+  'getPriceForOwnMainer' : ActorMethod<[], PriceResult>,
+  'getPriceForShareAgent' : ActorMethod<[], PriceResult>,
   'getProtocolTotalCyclesBurnt' : ActorMethod<[], CyclesBurntResult>,
   'getRandomOpenChallenge' : ActorMethod<[], ChallengeResult>,
   'getRandomOpenChallengeTopic' : ActorMethod<[], ChallengeTopicResult>,
@@ -716,6 +722,9 @@ export type OfficialProtocolCanistersResult = {
 export interface PaymentTransactionBlockId {
   'paymentTransactionBlockId' : bigint,
 }
+export interface PriceRecord { 'price' : bigint }
+export type PriceResult = { 'Ok' : PriceRecord } |
+  { 'Err' : ApiError };
 export interface ProtocolActivityRecord {
   'challenges' : Array<Challenge>,
   'winners' : Array<ChallengeWinnerDeclaration>,

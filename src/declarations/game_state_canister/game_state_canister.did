@@ -234,6 +234,12 @@ type ProtocolActivityRecord =
    challenges: vec Challenge;
    winners: vec ChallengeWinnerDeclaration;
  };
+type PriceResult = 
+ variant {
+   Err: ApiError;
+   Ok: PriceRecord;
+ };
+type PriceRecord = record {price: nat64;};
 type PaymentTransactionBlockId = record {paymentTransactionBlockId: nat64;};
 type OfficialProtocolCanistersResult = 
  variant {
@@ -425,6 +431,9 @@ type GameStateCanister =
    getOpenSubmissionsAdmin: () -> (ChallengeResponseSubmissionsResult) query;
    getOpenSubmissionsForOpenChallengesAdmin: () ->
     (ChallengeResponseSubmissionsResult) query;
+   getPauseProtocolFlag: () -> (FlagResult) query;
+   getPriceForOwnMainer: () -> (PriceResult) query;
+   getPriceForShareAgent: () -> (PriceResult) query;
    getProtocolTotalCyclesBurnt: () -> (CyclesBurntResult) query;
    getRandomOpenChallenge: () -> (ChallengeResult);
    getRandomOpenChallengeTopic: () -> (ChallengeTopicResult);
@@ -486,6 +495,12 @@ type GameStateCanister =
    uploadMainerPromptCacheBytesChunk:
     (UploadMainerPromptCacheBytesChunkInput) -> (StatusCodeRecordResult);
  };
+type FlagResult = 
+ variant {
+   Err: ApiError;
+   Ok: FlagRecord;
+ };
+type FlagRecord = record {flag: bool;};
 type FinishUploadMainerPromptCacheInput = 
  record {
    mainerPromptId: text;

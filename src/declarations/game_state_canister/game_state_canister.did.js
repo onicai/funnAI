@@ -444,6 +444,10 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : IDL.Vec(ChallengeResponseSubmission),
     'Err' : ApiError,
   });
+  const FlagRecord = IDL.Record({ 'flag' : IDL.Bool });
+  const FlagResult = IDL.Variant({ 'Ok' : FlagRecord, 'Err' : ApiError });
+  const PriceRecord = IDL.Record({ 'price' : IDL.Nat64 });
+  const PriceResult = IDL.Variant({ 'Ok' : PriceRecord, 'Err' : ApiError });
   const CyclesBurntResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
   const ChallengeResult = IDL.Variant({ 'Ok' : Challenge, 'Err' : ApiError });
   const ChallengeParticipationResult = IDL.Variant({
@@ -881,6 +885,9 @@ export const idlFactory = ({ IDL }) => {
         [ChallengeResponseSubmissionsResult],
         ['query'],
       ),
+    'getPauseProtocolFlag' : IDL.Func([], [FlagResult], ['query']),
+    'getPriceForOwnMainer' : IDL.Func([], [PriceResult], ['query']),
+    'getPriceForShareAgent' : IDL.Func([], [PriceResult], ['query']),
     'getProtocolTotalCyclesBurnt' : IDL.Func(
         [],
         [CyclesBurntResult],
