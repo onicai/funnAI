@@ -472,7 +472,8 @@ type GameStateCanister =
    setTokenLedgerCanisterId: (text) -> (AuthRecordResult);
    setUpMainerLlmCanister: (OfficialMainerAgentCanister) ->
     (SetUpMainerLlmCanisterResult);
-   shouldCreatingMainersBeStopped: (MainerAgentCanisterType) -> (bool) query;
+   shouldCreatingMainersBeStopped: (MainerAgentCanisterType) ->
+    (FlagResult) query;
    spinUpMainerControllerCanister: (OfficialMainerAgentCanister) ->
     (MainerAgentCanisterResult);
    startUploadJudgePromptCache: () ->

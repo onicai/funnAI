@@ -579,7 +579,7 @@ export interface GameStateCanister {
   >,
   'shouldCreatingMainersBeStopped' : ActorMethod<
     [MainerAgentCanisterType],
-    boolean
+    FlagResult
   >,
   'spinUpMainerControllerCanister' : ActorMethod<
     [OfficialMainerAgentCanister],

@@ -999,7 +999,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'shouldCreatingMainersBeStopped' : IDL.Func(
         [MainerAgentCanisterType],
-        [IDL.Bool],
+        [FlagResult],
         ['query'],
       ),
     'spinUpMainerControllerCanister' : IDL.Func(
