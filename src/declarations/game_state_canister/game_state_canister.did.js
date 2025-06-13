@@ -661,6 +661,18 @@ export const idlFactory = ({ IDL }) => {
     'wasmHash' : IDL.Vec(IDL.Nat8),
     'textNote' : IDL.Text,
   });
+  const RewardPerChallenge = IDL.Record({
+    'amountForAllParticipants' : IDL.Nat,
+    'thirdPlaceAmount' : IDL.Nat,
+    'rewardType' : RewardType,
+    'totalAmount' : IDL.Nat,
+    'winnerAmount' : IDL.Nat,
+    'secondPlaceAmount' : IDL.Nat,
+  });
+  const RewardPerChallengeResult = IDL.Variant({
+    'Ok' : RewardPerChallenge,
+    'Err' : ApiError,
+  });
   const StartUploadJudgePromptCacheRecord = IDL.Record({
     'judgePromptId' : IDL.Text,
   });
@@ -946,19 +958,29 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'setIcpForOwnMainerAdmin' : IDL.Func(
-        [IDL.Nat],
+        [IDL.Nat64],
         [StatusCodeRecordResult],
         [],
       ),
     'setIcpForShareAgentAdmin' : IDL.Func(
-        [IDL.Nat],
+        [IDL.Nat64],
         [StatusCodeRecordResult],
         [],
       ),
     'setInitialChallengeTopics' : IDL.Func([], [StatusCodeRecordResult], []),
+    'setLimitForCreatingMainerAdmin' : IDL.Func(
+        [IDL.Nat, MainerAgentCanisterType],
+        [AuthRecordResult],
+        [],
+      ),
     'setOfficialMainerAgentCanisterWasmHashAdmin' : IDL.Func(
         [UpdateWasmHashInput],
         [CanisterWasmHashRecordResult],
+        [],
+      ),
+    'setRewardPerChallengeAdmin' : IDL.Func(
+        [IDL.Nat],
+        [RewardPerChallengeResult],
         [],
       ),
     'setSubnetsAdmin' : IDL.Func([SubnetIds], [StatusCodeRecordResult], []),
@@ -967,6 +989,11 @@ export const idlFactory = ({ IDL }) => {
         [OfficialMainerAgentCanister],
         [SetUpMainerLlmCanisterResult],
         [],
+      ),
+    'shouldCreatingMainersBeStopped' : IDL.Func(
+        [MainerAgentCanisterType],
+        [IDL.Bool],
+        ['query'],
       ),
     'spinUpMainerControllerCanister' : IDL.Func(
         [OfficialMainerAgentCanister],
@@ -990,6 +1017,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'testMainerCodeIntegrityAdmin' : IDL.Func([], [AuthRecordResult], []),
     'testTokenMintingAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'togglePauseProtocolFlagAdmin' : IDL.Func([], [AuthRecordResult], []),
     'topUpCyclesForMainerAgent' : IDL.Func(
         [MainerAgentTopUpInput],
         [MainerAgentCanisterResult],

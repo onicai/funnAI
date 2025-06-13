@@ -19,6 +19,8 @@
   
   // Protocol address from token_helpers
   const { address: protocolAddress } = protocolConfig;
+
+  console.log("in MainerTopUpModal protocolAddress ", protocolAddress);
   
   // ICP token configuration - load from token_helpers
   let token: any = null;
@@ -254,32 +256,38 @@
   {isOpen}
   onClose={handleClose}
   title="Top up mAIner with ICP"
-  width="480px"
+  width="min(480px, calc(100vw - 2rem))"
   variant="transparent"
   height="auto"
   className="mainer-topup-modal"
   closeOnEscape={true}
   closeOnClickOutside={true}
+  isPadded={true}
 >
-  <div class="p-4 flex flex-col gap-4">
+  <div class="px-2 sm:px-4 py-4 flex flex-col gap-3 sm:gap-4">
     {#if isTokenLoading}
       <div class="flex justify-center py-4">
         <span class="w-6 h-6 border-2 border-gray-400/30 border-t-gray-400 dark:border-gray-400/30 dark:border-t-gray-400 rounded-full animate-spin"></span>
       </div>
     {:else}
       <!-- Token Info Banner -->
-      <div class="flex items-center gap-3 p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100">
-        <div class="w-10 h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
-          <TokenImages tokens={[token]} size={38} showSymbolFallback={true} />
+      <div class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100">
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
+          <div class="sm:hidden">
+            <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
+          </div>
+          <div class="hidden sm:block">
+            <TokenImages tokens={[token]} size={38} showSymbolFallback={true} />
+          </div>
         </div>
-        <div class="flex flex-col">
-          <div class="text-gray-900 font-medium dark:text-gray-100">{token.name}</div>
-          <div class="text-sm text-gray-600 dark:text-gray-400">Balance: {formatBalance(balance.toString(), token.decimals)} {token.symbol}</div>
+        <div class="flex flex-col min-w-0 flex-1">
+          <div class="text-gray-900 font-medium dark:text-gray-100 text-sm sm:text-base truncate">{token.name}</div>
+          <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Balance: {formatBalance(balance.toString(), token.decimals)} {token.symbol}</div>
         </div>
       </div>
 
       <!-- Top-up Info -->
-      <div class="flex flex-col gap-3">
+      <div class="flex flex-col gap-2 sm:gap-3">
         <!-- Recipient Address 
         <div>
           <label class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">Recipient</label>
@@ -306,7 +314,7 @@
           <div class="relative">
             <input
               type="text"
-              class="w-full py-2 px-3 bg-white border border-gray-300 rounded-md text-sm text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+              class="w-full py-2 px-2 sm:px-3 bg-white border border-gray-300 rounded-md text-xs sm:text-sm text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
               value={canisterName ? `${canisterName} (${canisterId})` : canisterId}
               disabled
             />
@@ -323,7 +331,7 @@
             <input
               type="text"
               inputmode="decimal"
-              class="w-full py-2 px-3 bg-white border rounded-md text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-100"
+              class="w-full py-2 px-2 sm:px-3 bg-white border rounded-md text-xs sm:text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-100 pr-12 sm:pr-16"
               class:border-green-400={hasEnoughBalance && isValidAmount}
               class:border-red-400={!hasEnoughBalance && isValidAmount}
               class:border-yellow-400={isBelowMinimum}
@@ -334,7 +342,7 @@
               on:input={handleAmountInput}
             />
             <div class="absolute inset-y-0 right-0 flex items-center">
-              <span class="pr-3 text-sm text-gray-600 dark:text-gray-400">{token.symbol}</span>
+              <span class="pr-2 sm:pr-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">{token.symbol}</span>
             </div>
           </div>
           <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
@@ -348,19 +356,20 @@
         </div>
         
         <!-- Cycles Conversion Display -->
-        <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm flex flex-col gap-2 dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200">
+        <div class="p-2 sm:p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-xs sm:text-sm flex flex-col gap-2 dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200">
           <div class="flex items-center gap-1">
-            <Info size={14} />
+            <Info size={12} class="sm:hidden flex-shrink-0" />
+            <Info size={14} class="hidden sm:block flex-shrink-0" />
             <span class="font-medium">Cycles Conversion</span>
             {#if isLoadingConversionRate}
-              <span class="w-3 h-3 ml-2 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin dark:border-blue-400/30 dark:border-t-blue-400"></span>
+              <span class="w-3 h-3 ml-2 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin dark:border-blue-400/30 dark:border-t-blue-400 flex-shrink-0"></span>
             {/if}
           </div>
           
           {#if !isLoadingConversionRate}
-            <div class="flex justify-between">
-              <span>{amount || '0'} ICP</span>
-              <span class="font-medium">≈ {cyclesAmount} Trillion Cycles</span>
+            <div class="flex justify-between items-center gap-2">
+              <span class="truncate">{amount || '0'} ICP</span>
+              <span class="font-medium text-right flex-shrink-0">≈ {cyclesAmount} Trillion Cycles</span>
             </div>
           {:else}
             <div class="text-blue-600/70 dark:text-blue-300/70">Loading conversion rate...</div>
@@ -369,7 +378,7 @@
 
         <!-- Error message -->
         {#if errorMessage}
-          <div class="mt-1 p-2 rounded bg-red-50 border border-red-200 text-red-700 text-sm dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-400">
+          <div class="mt-1 p-2 rounded bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-400">
             {errorMessage}
           </div>
         {/if}
@@ -378,7 +387,7 @@
         <button
           type="button"
           on:click={handleSubmit}
-          class="mt-2 py-2.5 px-4 rounded-md text-white font-medium flex items-center justify-center gap-2 transition-colors"
+          class="mt-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-md text-white font-medium flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
           class:bg-purple-600={hasEnoughBalance && !isValidating}
           class:hover:bg-purple-500={hasEnoughBalance && !isValidating}
           class:bg-gray-400={!hasEnoughBalance || isValidating}
@@ -390,7 +399,8 @@
             <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
             Processing...
           {:else}
-            <ArrowUp size={16} />
+            <ArrowUp size={14} class="sm:hidden" />
+            <ArrowUp size={16} class="hidden sm:block" />
             Top up {amount || '0'} {token.symbol}
           {/if}
         </button>
@@ -401,8 +411,22 @@
 
 <style>
   :global(.mainer-topup-modal) {
-    max-width: 480px;
+    max-width: min(480px, calc(100vw - 2rem));
     position: relative;
     z-index: 100000;
+  }
+  
+  /* Ensure proper text wrapping on mobile */
+  :global(.mainer-topup-modal .truncate) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  /* Mobile-specific adjustments */
+  @media (max-width: 640px) {
+    :global(.mainer-topup-modal) {
+      margin: 0.5rem;
+    }
   }
 </style> 

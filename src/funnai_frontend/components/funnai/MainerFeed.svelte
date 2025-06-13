@@ -4,7 +4,7 @@
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
   import { store } from "../../stores/store";
-  import { mockFeedData } from "../../helpers/mockFeedData";
+  import { formatFunnaiAmount } from "../../helpers/utils/numberFormatUtils";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -30,10 +30,19 @@
   let currentIndex = 0;
   let updating = false;
   let updateCounter = 0;
+  let showAllEvents = true; // Default to showing all events
 
-  // Convert milliseconds timestamp to readable time format
+  // Convert timestamp to readable time format
   function formatTimestamp(timestamp: number): string {
-    const date = new Date(timestamp * 1000); // Convert seconds to milliseconds
+    // IC timestamps are typically in nanoseconds, convert to milliseconds
+    const milliseconds = timestamp / 1000000;
+    const date = new Date(milliseconds);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return "Invalid Date";
+    }
+    
     return date.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
@@ -50,88 +59,92 @@
       case "score":
         return "before:bg-orange-500";
       case "winner":
-        return "before:bg-emerald-500";
+        return "before:bg-gradient-to-r before:from-yellow-400 before:to-yellow-600 before:shadow-lg before:shadow-yellow-500/50";
       default:
         return "before:bg-gray-500";
     }
   }
 
-  function sortFeedItemsByTimestamp(feedItems: FeedItem[]): FeedItem[] {
-    return feedItems.sort((a, b) => a.timestamp - b.timestamp);
+  function getWinnerStyling(placement: string): string {
+    switch (placement) {
+      case "First Place":
+        return "bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 shadow-lg shadow-yellow-500/20 dark:from-yellow-900/20 dark:to-amber-900/20 dark:border-yellow-600";
+      case "Second Place":
+        return "bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-300 shadow-lg shadow-gray-500/20 dark:from-gray-800/20 dark:to-slate-800/20 dark:border-gray-600";
+      case "Third Place":
+        return "bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-300 shadow-lg shadow-orange-500/20 dark:from-orange-900/20 dark:to-amber-900/20 dark:border-orange-600";
+      default:
+        return "";
+    }
   }
 
-  async function getFeedData(): Promise<FeedItem[]> {
+  function getWinnerIcon(placement: string): string {
+    switch (placement) {
+      case "First Place":
+        return "🏆";
+      case "Second Place":
+        return "🥈";
+      case "Third Place":
+        return "🥉";
+      default:
+        return "🏅";
+    }
+  }
+
+  function sortFeedItemsByTimestamp(feedItems: FeedItem[]): FeedItem[] {
+    return feedItems.sort((a, b) => b.timestamp - a.timestamp);
+  }
+
+  async function getFeedData(filterToUserMainers: boolean = false): Promise<FeedItem[]> {
     //console.log("in MainerFeed getFeedData");
     // Get activity data for the feed from the backend canisters
-    // Challenges and winners from Game State
-    let recentProtocolActivityResult =
-      await $store.gameStateCanisterActor.getRecentProtocolActivity();
-    //let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity_mockup();
-    //console.log("MainerFeed recentProtocolActivityResult");
-    //console.log(recentProtocolActivityResult);
     let newFeedItems: FeedItem[] = [];
-    // recentProtocolActivityResult looks like so: type ProtocolActivityResult = { 'Ok' : ProtocolActivityRecord } | { 'Err' : ApiError };
-    /* export interface ProtocolActivityRecord {
-        'challenges' : Array<Challenge>,
-        'winners' : Array<ChallengeWinnerDeclaration>,
-      } */
-    /* interface Challenge {
-        'challengeClosedTimestamp' : [] | [bigint],
-        'challengeTopicStatus' : ChallengeTopicStatus,
-        'challengeTopicCreationTimestamp' : bigint,
-        'challengeCreationTimestamp' : bigint,
-        'challengeCreatedBy' : CanisterAddress,
-        'challengeTopicId' : string,
-        'challengeStatus' : ChallengeStatus,
-        'challengeQuestionSeed' : number,
-        'challengeQuestion' : string,
-        'challengeId' : string,
-        'challengeTopic' : string,
-        'submissionCyclesRequired' : bigint,
-      } */
-    /* interface ChallengeWinnerDeclaration {
-        'participants' : List_1,
-        'thirdPlace' : ChallengeParticipantEntry,
-        'winner' : ChallengeParticipantEntry,
-        'secondPlace' : ChallengeParticipantEntry,
-        'finalizedTimestamp' : bigint,
-        'challengeId' : string,
-      } */
+    let userParticipatedChallenges: Set<string> = new Set();
 
-    if ("Ok" in recentProtocolActivityResult) {
-      const { challenges, winners } = recentProtocolActivityResult.Ok;
-      //console.log("in MainerFeed getFeedData winners");
-      //console.log(winners);
-      // all challenges in challenges are open, for each challenge create an entry for feedItems
-      // including challengeCreationTimestamp as timestamp and challengeQuestion as content
-      // as mainerName use "Protocol"
-      challenges.forEach((challenge) => {
-        newFeedItems.push({
-          id: challenge.challengeId,
-          timestamp: Number(challenge.challengeCreationTimestamp),
-          type: "challenge",
-          mainerName: "Protocol",
-          content: { challenge: challenge.challengeQuestion },
+    try {
+      let recentProtocolActivityResult =
+        await $store.gameStateCanisterActor.getRecentProtocolActivity();
+      //let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity_mockup();
+      //console.log("MainerFeed recentProtocolActivityResult");
+      //console.log(recentProtocolActivityResult);
+
+      if ("Ok" in recentProtocolActivityResult && $store.isAuthed) {
+        const { challenges, winners } = recentProtocolActivityResult.Ok;
+        //console.log("in MainerFeed getFeedData winners");
+        //console.log(winners);
+
+        if (filterToUserMainers) {
+          // Collect challenge IDs that user's mAIners have participated in
+          for (const [index, agent] of agentCanisterActors.entries()) {
+            if (agent) {
+              try {
+                const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
+                if ("Ok" in submissionsResult) {
+                  for (const submission of submissionsResult.Ok) {
+                    userParticipatedChallenges.add(submission.challengeId);
+                  }
+                }
+              } catch (error) {
+                console.error("Error fetching submissions for challenge filtering", error);
+              }
+            }
+          }
+        }
+
+        // Add challenges based on filter setting
+        challenges.forEach((challenge) => {
+          if (!filterToUserMainers || userParticipatedChallenges.has(challenge.challengeId)) {
+            newFeedItems.push({
+              id: challenge.challengeId,
+              timestamp: Number(challenge.challengeCreationTimestamp),
+              type: "challenge",
+              mainerName: "Protocol",
+              content: { challenge: challenge.challengeQuestion },
+            });
+          }
         });
-      });
 
-      // for each ChallengeWinnerDeclaration in winners, create several entries for feedItems
-      // one feedItems entry for the winner
-      // one feedItems entry for the secondPlace
-      // one feedItems entry for the thirdPlace (if there is a thirdPlace)
-      /* use the fields on winner, secondPlace and thirdPlace: interface ChallengeParticipantEntry {
-        'result' : ChallengeParticipationResult,
-        'reward' : ChallengeWinnerReward,
-        'ownedBy' : Principal,
-        'submittedBy' : Principal,
-        'submissionId' : string,
-      } */
-      // submittedBy on ChallengeParticipantEntry is the mAIner agent that submitted it, compare it to the address field of the entries in agentCanistersInfo (which is an array with each element being an object with info on an agent) and use the index as mainerName (e.g. "mAIner 1", "mAIner 2")
-      //console.log("in MainerFeed getFeedData agentCanistersInfo before winners");
-      //console.log(agentCanistersInfo);
-      //console.log(agentCanistersInfo[0]);
-
-      if ($store.isAuthed) {
+        // Add winners based on filter setting
         winners.forEach((winnerDeclaration) => {
           //console.log("in MainerFeed getFeedData winners winnerDeclaration");
           //console.log(winnerDeclaration);
@@ -151,46 +164,36 @@
           //console.log(placements);
 
           placements.forEach(({ position, entry }) => {
-            //console.log("in MainerFeed getFeedData winners placements position");
-            //console.log(position);
-            //console.log("in MainerFeed getFeedData winners placements entry");
-            //console.log(entry);
-            //console.log(entry.submittedBy);
-            //console.log(entry.submittedBy.toString());
-            //console.log("in MainerFeed getFeedData agentCanistersInfo address");
-            //console.log(agentCanistersInfo[0].address);
-            //console.log(agentCanistersInfo[1]?.address);
-            //console.log(agentCanistersInfo[0].address === entry.submittedBy.toString());
-            //console.log(agentCanistersInfo[1].address === entry.submittedBy.toString());
             const mainerIndex = agentCanistersInfo.findIndex(
               (agent) => agent.address === entry.submittedBy.toString(),
             );
-            //console.log("in MainerFeed getFeedData winners placements mainerIndex");
-            //console.log(mainerIndex);
-            const mainerName =
-              mainerIndex !== -1
-                ? `mAIner ${mainerIndex + 1}`
-                : `Other User's Agent`;
-            //console.log("in MainerFeed getFeedData winners placements mainerIndex");
-            //console.log(mainerIndex);
-            //console.log("in MainerFeed getFeedData winners placements mainerName");
-            //console.log(mainerName);
+            
+            // Show all winners or only user's mAIners based on filter
+            if (!filterToUserMainers || mainerIndex !== -1) {
+              const mainerName = mainerIndex !== -1 
+                ? `mAIner ${entry.submittedBy.toString().slice(0, 5)}` 
+                : `mAIner ${entry.submittedBy.toString().slice(0, 5)}`;
 
-            newFeedItems.push({
-              id: `${entry.submissionId}-winner`,
-              timestamp: Number(winnerDeclaration.finalizedTimestamp),
-              type: "winner",
-              mainerName,
-              content: {
-                placement: position,
-                reward: entry.reward.amount.toString(),
-              },
-            });
+              newFeedItems.push({
+                id: `${entry.submissionId}-winner`,
+                timestamp: Number(winnerDeclaration.finalizedTimestamp),
+                type: "winner",
+                mainerName,
+                content: {
+                  placement: position,
+                  reward: entry.reward.amount.toString(),
+                },
+              });
+            }
           });
         });
+        //console.log("in MainerFeed getFeedData newFeedItems after winners");
+        //console.log(newFeedItems);
       }
-      //console.log("in MainerFeed getFeedData newFeedItems after winners");
-      //console.log(newFeedItems);
+
+    } catch (error) {
+      console.error("Error fetching protocol activity:", error);
+      // Return empty array on error, component will show appropriate message
     }
 
     if ($store.isAuthed) {
@@ -200,7 +203,9 @@
       //console.log(agentCanistersInfo);
       // Add user's mAIner agents' submissions and scores (for submissions) to newFeedItems
       // for each agent in the array agentCanisterActors, retrieve the agent's submissions
-      for (const [index, agent] of agentCanisterActors.entries()) {
+      
+      try {
+        for (const [index, agent] of agentCanisterActors.entries()) {
         //console.log("in MainerFeed getFeedData agentCanisterActors entries index");
         //console.log(index);
         //console.log("in MainerFeed getFeedData agentCanisterActors entries agent");
@@ -242,7 +247,7 @@
               for (const submission of submissionsResult.Ok) {
                 //console.log("in MainerFeed getFeedData agentCanisterActors entries submission");
                 //console.log(submission);
-                const mainerName = `mAIner ${index + 1}`;
+                const mainerName = `mAIner ${agentCanistersInfo[index].address.slice(0, 5)}`;
                 newFeedItems.push({
                   id: submission.submissionId,
                   timestamp: Number(submission.submittedTimestamp),
@@ -321,6 +326,10 @@
           };
         };
       }
+      } catch (error) {
+        console.error("Error fetching user mainer data:", error);
+        // Continue with empty user data, component will show appropriate message
+      }
     }
     //console.log("in MainerFeed getFeedData newFeedItems before return");
     //console.log(newFeedItems);
@@ -332,31 +341,46 @@
     if (forceUpdate || updateCounter % 6 === 0) {
       // Retrieve items from backend every 6th time (e.g. 6 * 10sec = 1min)
       console.log("Time to run getFeedData again");
-      allItems = await getFeedData();
+      allItems = await getFeedData(!showAllEvents);
       console.log("after getFeedData allItems");
       console.log(allItems);
-    }
-    // TODO: only add new items to feed
-    if (currentIndex < allItems.length) {
-      const newItem = {
-        ...allItems[currentIndex],
-        timestamp: Math.floor(Date.now() / 1000), // Set current timestamp in seconds
-      };
-      feedItems = [newItem, ...feedItems];
-      currentIndex++;
+      
+      // Show all items immediately, keeping their real timestamps
+      feedItems = [...allItems]; // Show all items with their real timestamps
+      currentIndex = allItems.length; // Mark all items as displayed
     }
     loading = false;
     updating = false;
     updateCounter++;
   }
 
+  // Handle toggle change
+  async function handleToggleChange() {
+    currentIndex = 0;
+    feedItems = [];
+    allItems = [];
+    await updateFeed(true);
+  }
+
+  // Reset state when authentication status changes
+  $: if (!$store.isAuthed) {
+    feedItems = [];
+    allItems = [];
+    currentIndex = 0;
+    loading = false;
+    updating = false;
+  }
+
   $: {
     console.log("MainerFeed reactive agentCanisterActors", agentCanisterActors);
     console.log("MainerFeed reactive agentCanistersInfo", agentCanistersInfo);
 
-    (async () => {
-      await updateFeed(true);
-    })();
+    // Only update feed if authenticated
+    if ($store.isAuthed) {
+      (async () => {
+        await updateFeed(true);
+      })();
+    }
   }
 
   onMount(async () => {
@@ -369,50 +393,136 @@
   });
 </script>
 
-<div class="max-h-[600px] overflow-y-auto dark:bg-gray-900 dark:text-white">
-  {#if updating}
+<div class="h-full overflow-y-auto dark:bg-gray-900 dark:text-white flex flex-col">
+  <!-- Toggle controls -->
+  <div class="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
+    <div class="flex items-center justify-between">
+      <h2 class="hidden sm:block text-lg font-semibold text-gray-900 dark:text-white">Activity Feed</h2>
+      <div class="flex items-center gap-3">
+        <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+          <span class="text-xs">My mAIners only</span>
+          <button
+            type="button"
+            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors
+                   {showAllEvents ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}"
+            role="switch"
+            aria-checked={showAllEvents}
+            on:click={() => {
+              showAllEvents = !showAllEvents;
+              handleToggleChange();
+            }}
+          >
+            <span class="sr-only">Toggle between all events and my mAIners only</span>
+            <span
+              class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                     {showAllEvents ? 'translate-x-6' : 'translate-x-1'}"
+            ></span>
+          </button>
+          <span class="text-xs">All events</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  {#if updating && $store.isAuthed}
     <div class="flex justify-center py-2">
       <div class="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent dark:border-blue-400"></div>
     </div>
   {/if}
-  <ul 
-    aria-label="mAIner Activity Feed" 
-    role="feed" 
-    class="relative flex flex-col gap-8 py-12 pl-6 text-sm 
-           before:absolute before:top-0 before:left-6 before:h-full before:border before:-translate-x-1/2 before:border-slate-200 before:border-dashed before:z-[-1] dark:before:border-slate-700
-           after:absolute after:top-6 after:left-6 after:bottom-6 after:border after:-translate-x-1/2 after:border-slate-200 after:z-[-1] dark:after:border-slate-700"
-  >
-    {#if loading}
-      <li class="text-center text-gray-500 dark:text-gray-400">Loading feed...</li>
-    {:else}
-      {#each feedItems as item (item.id)}
-        <li 
-          role="article" 
-          class="relative pl-6 
-                 before:absolute before:z-10 before:left-0 before:top-2 before:h-2 before:w-2 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 animate-fadeIn"
-          in:fly="{{ y: 20, duration: 500 }}"
-        >
-          <div class="flex flex-col flex-1 gap-2">
-            <h4
-              class="text-base font-medium flex justify-between items-center mr-6"
-            >
-              {item.mainerName}
-              <span class="text-xs font-normal text-slate-500 dark:text-slate-400">{formatTimestamp(item.timestamp)}</span>
-            </h4>
-            {#if item.type === 'challenge'}
-              <p class="text-slate-500 dark:text-slate-400">Received challenge: {item.content.challenge}</p>
-            {:else if item.type === 'response'}
-              <p class="text-slate-500 dark:text-slate-400">Submitted response: {item.content.response}</p>
-            {:else if item.type === 'score'}
-              <p class="text-slate-500 dark:text-slate-400">Received score: {item.content.score}/5</p>
-            {:else if item.type === 'winner'}
-              <p class="text-slate-500 dark:text-slate-400">Achieved {item.content.placement} and earned {item.content.reward}</p>
-            {/if}
-          </div>
+  <!-- Info Panel - show when not authenticated or when authenticated but no content -->
+  {#if (!$store.isAuthed) || (feedItems.length === 0 && !loading && !updating)}
+    <div class="flex-1 flex flex-col justify-center items-center px-4 py-6">
+      <div class="flex flex-col items-center gap-4 text-gray-500 dark:text-gray-400">
+        <div class="text-6xl">🤖</div>
+        <div class="max-w-md text-center">
+          <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+            mAIner Activity Feed
+          </h3>
+          <p class="text-sm leading-relaxed">
+            This feed displays activity from mAIner agents including:
+          </p>
+          <ul class="text-sm mt-3 space-y-1">
+            <li>• 🎯 Challenges in the protocol</li>
+            <li>• 💭 Responses from your mAIners</li>
+            <li>• 📊 Scores your mAIners receive</li>
+            <li>• 🏆 All victories and placements</li>
+          </ul>
+          {#if !$store.isAuthed}
+            <p class="text-xs mt-4 text-gray-400 dark:text-gray-500">
+              Please connect your wallet to see personalized activity.
+            </p>
+          {:else}
+            <p class="text-xs mt-4 text-gray-400 dark:text-gray-500">
+              {showAllEvents ? 'No activity yet in the protocol.' : 'No activity yet from your mAIners.'}
+            </p>
+          {/if}
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  {#if feedItems.length > 0 || (loading && $store.isAuthed)}
+    <ul 
+      aria-label="mAIner Activity Feed" 
+      role="feed" 
+      class="relative flex flex-col gap-8 py-12 pl-6 text-sm 
+             before:absolute before:top-0 before:z-0 before:left-6 before:h-full before:border-2 before:-translate-x-1/2 before:border-slate-400 before:border-dashed before:z-[1] dark:before:border-slate-400"
+    >
+      {#if feedItems.length === 0 && loading}
+        <li class="text-center py-4">
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            {showAllEvents ? 'No activity yet in the protocol.' : 'No activity yet from your mAIners.'}
+          </p>
         </li>
-      {/each}
-    {/if}
-  </ul>
+      {:else}
+        {#each feedItems as item (item.id)}
+          <li 
+            role="article" 
+            class="relative px-6 
+                   before:absolute before:z-[20] before:left-0 before:top-2 before:h-3 before:w-3 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 before:shadow-sm animate-fadeIn"
+            in:fly="{{ y: 20, duration: 500 }}"
+          >
+            <div class="flex flex-col flex-1 gap-2 {item.type === 'winner' ? getWinnerStyling(item.content.placement || '') + ' p-4 rounded-lg animate-pulse-winner' : ''}">
+              <h4
+                class="text-base font-medium flex justify-between items-center mr-6 text-gray-900 dark:text-gray-100
+                       {item.type === 'winner' ? 'text-lg font-bold' : ''}"
+              >
+                <span class="flex items-center gap-2">
+                  {#if item.type === 'winner'}
+                    <span class="text-2xl animate-bounce-10s">{getWinnerIcon(item.content.placement || '')}</span>
+                  {/if}
+                  {item.mainerName}
+                  {#if item.type === 'winner'}
+                    <span class="text-2xl animate-bounce-10s">{getWinnerIcon(item.content.placement || '')}</span>
+                  {/if}
+                </span>
+                <span class="text-xs font-normal text-slate-600 dark:text-slate-300">{formatTimestamp(item.timestamp)}</span>
+              </h4>
+              {#if item.type === 'challenge'}
+                <p class="text-slate-600 dark:text-slate-300 pr-6">New challenge: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.challenge}</span></p>
+              {:else if item.type === 'response'}
+                <p class="text-slate-600 dark:text-slate-300 pr-6">Submitted response: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.response}</span></p>
+              {:else if item.type === 'score'}
+                <p class="text-slate-600 dark:text-slate-300 pr-6">Received score: <span class="font-semibold text-orange-600 dark:text-orange-400">{item.content.score}/5</span></p>
+              {:else if item.type === 'winner'}
+                <div class="text-center">
+                  <p class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 to-amber-600 dark:from-yellow-400 dark:to-amber-400 mb-2">
+                    🎉 CONGRATULATIONS! 🎉
+                  </p>
+                  <p class="text-slate-700 dark:text-slate-200">
+                    Achieved <span class="font-bold text-lg {item.content.placement === 'First Place' ? 'text-yellow-600 dark:text-yellow-400' : item.content.placement === 'Second Place' ? 'text-gray-600 dark:text-gray-400' : 'text-orange-600 dark:text-orange-400'}">{item.content.placement}</span>
+                  </p>
+                  <p class="text-slate-700 dark:text-slate-200">
+                    and earned <span class="font-bold text-lg text-green-600 dark:text-green-400">{formatFunnaiAmount(item.content.reward || '0')} FUNNAI</span>
+                  </p>
+                </div>
+              {/if}
+            </div>
+          </li>
+        {/each}
+      {/if}
+    </ul>
+  {/if}
 </div>
 
 <style>
@@ -427,13 +537,62 @@
     }
   }
 
+  @keyframes pulseWinner {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+    }
+    50% {
+      box-shadow: 0 0 0 10px rgba(251, 191, 36, 0);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  @keyframes bounce10s {
+    0%, 100% {
+      transform: translateY(-25%);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: none;
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
+
   .animate-fadeIn {
     animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-bounce-10s {
+    animation: bounce10s 1s ease-in-out 10;
+  }
+
+  .animate-pulse-winner {
+    animation: pulseWinner 2s 5;
+  }
+
+  /* Shimmer effect for winner text */
+  .winner-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s 6;
   }
 
   /* Dark mode adjustments */
   :global(.dark) .animate-spin {
     border-color: rgba(96, 165, 250, 0.8);
     border-top-color: transparent;
+  }
+
+  /* Enhanced winner glow for dark mode */
+  :global(.dark) .animate-pulse-winner {
+    box-shadow: 0 0 22px rgba(251, 191, 36, 0.3);
   }
 </style> 

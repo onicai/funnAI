@@ -55,7 +55,45 @@
   $: formattedCycles = cyclesCount?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'");
 </script>
 
-<div class="flex items-center p-4 bg-gradient-to-r from-orange-100 to-orange-50 rounded-lg shadow-sm border border-orange-200">
-  <span class="text-orange-600 font-semibold">{label}</span>
-  <span class="ml-4 text-xl font-bold text-orange-500 font-mono w-[8ch] text-right">{formattedCycles}</span>
+<div class="relative overflow-hidden bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 transition-all duration-300 hover:shadow-xl">
+  <!-- Background pattern -->
+  <div class="absolute inset-0 bg-gradient-to-br from-orange-50/50 to-red-50/30 dark:from-orange-900/10 dark:to-red-900/5"></div>
+  
+  <!-- Content -->
+  <div class="relative z-10 flex flex-col gap-3">
+    <!-- Icon and Label -->
+    <div class="flex items-center space-x-3">
+      <!-- Fire/Burn Icon -->
+      <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center shadow-md">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 1-4 4-4 2.207 0 4 1.793 4 4 0 .211-.031.418-.075.618C18.003 10.755 19 11.823 19 13c0 1.657-1.343 3-3 3v-2c0-1.105.895-2 2-2s2 .895 2 2s-1.343 2-3 2H8a3 3 0 01-3-3c0-1.657 1.343-3 3-3v-1c-2.209 0-4 1.791-4 4 0 2.209 1.791 4 4 4h8c2.209 0 4-1.791 4-4 0-2.209-1.791-4-4-4z" />
+        </svg>
+      </div>
+      
+      <!-- Label -->
+      <div class="flex flex-col">
+        <span class="text-gray-600 dark:text-gray-400 text-xs font-medium uppercase tracking-wide">Metric</span>
+        <span class="text-gray-800 dark:text-gray-200 text-sm font-semibold">{label}</span>
+      </div>
+    </div>
+    
+    <!-- Value Section -->
+    <div class="flex flex-col items-start">
+      <div class="flex items-baseline space-x-1">
+        <span class="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent font-mono tabular-nums">
+          {formattedCycles}
+        </span>
+        <span class="hidden sm:inline text-xs text-gray-500 dark:text-gray-400 font-medium">cycles</span>
+      </div>
+      
+      <!-- Optional trend indicator -->
+      <div class="flex items-center space-x-1 mt-1">
+        <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+        <span class="text-xs text-gray-500 dark:text-gray-400">Active</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Bottom accent bar -->
+  <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-red-500"></div>
 </div> 

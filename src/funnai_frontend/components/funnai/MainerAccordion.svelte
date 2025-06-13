@@ -7,10 +7,14 @@
   import MainerTopUpModal from './MainerTopUpModal.svelte';
   import { Principal } from '@dfinity/principal';
   import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
+  import { tooltip } from "../../helpers/utils/tooltip";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
   $: isAuthenticated = $store.isAuthed;
+  $: isCreatingMainer = $store.isCreatingMainer;
+  $: mainerCreationProgress = $store.mainerCreationProgress;
+  $: shouldOpenFirstMainerAfterCreation = $store.shouldOpenFirstMainerAfterCreation;
 
   let agents = [
     // Add the agent entries dynamically via the calls in onMount
@@ -29,11 +33,6 @@
   let mainerTopUpModalOpen = false;
   let selectedCanister = { id: "", name: "" };
   
-  // Progress tracking for mAIner creation
-  let isCreatingMainer = false;
-  let mainerCreationProgress: {message: string, timestamp: string, complete: boolean}[] = [];
-  let shouldOpenFirstMainerAfterCreation = false; // Flag to control when to auto-open
-
   // Track which agents are being topped up (agent-specific loading states)
   let agentsBeingToppedUp = new Set<string>();
 
@@ -44,6 +43,9 @@
   $: activeMainers = agents.filter(agent => agent.status === 'active').length;
   $: inactiveMainers = agents.filter(agent => agent.status === 'inactive').length;
   $: totalMainers = agents.length;
+
+  // Reactive mAIner price based on model type
+  $: mainerPrice = modelType === 'Own' ? '0.0003' : '1.1';
 
   // For testing UI only - set to true to use mock data for the mainer accordion displaying canister INFO
   let useMockData = false;
@@ -151,7 +153,7 @@
           }
         }
         
-        shouldOpenFirstMainerAfterCreation = false; // Reset the flag
+        store.resetMainerCreationAfterOpen(); // Reset the flag using store method
       }, 300); // Increased timeout to ensure DOM is ready
     }
   };
@@ -260,9 +262,8 @@
     console.log("Payment completed" + (txId ? ` with transaction ID: ${txId}` : ""));
     mainerPaymentModalOpen = false;
     
-    // Set the creation process as started
-    isCreatingMainer = true;
-    shouldOpenFirstMainerAfterCreation = true; // Set flag to auto-open the new mAIner
+    // Set the creation process as started using store
+    store.startMainerCreation();
     
     // Start the staged creation process
     // Step 1: Begin registration
@@ -274,8 +275,7 @@
       await handleFullMainerCreation(txId);
     } else {
       addProgressMessage("Backend methods not available for mAIner creation");
-      isCreatingMainer = false;
-      shouldOpenFirstMainerAfterCreation = false;
+      store.completeMainerCreation();
     }
   };
 
@@ -341,7 +341,6 @@
           // Step 5: Completion
           setTimeout(() => {
             addProgressMessage("mAIner successfully created! You can start using it while LLM setup completes in the background.", true);
-            shouldOpenFirstMainerAfterCreation = true; // Ensure flag is set before reloading
             setTimeout(() => {
               // Refresh the list of agents to show the newly created one
               store.loadUserMainerCanisters().then(() => {
@@ -350,8 +349,7 @@
                   openFirstMainerAccordion();
                   // Reset the terminal after opening the accordion
                   setTimeout(() => {
-                    isCreatingMainer = false;
-                    mainerCreationProgress = [];
+                    store.completeMainerCreation();
                   }, 4000);
                 }, 4000); // Increased timeout for better reliability
               });
@@ -360,18 +358,18 @@
         } else if ('Err' in spinUpMainerControllerCanisterResponse) {
           console.error("Error in spinUpMainerControllerCanister:", spinUpMainerControllerCanisterResponse.Err);
           addProgressMessage("Error creating controller: " + JSON.stringify(spinUpMainerControllerCanisterResponse.Err));
-          isCreatingMainer = false;
+          store.completeMainerCreation();
         };
       } else if ('Err' in createUserMainerAgentResponse) {
         // Handle error response
         console.error("Error in createUserMainerAgent:", createUserMainerAgentResponse.Err);
         addProgressMessage("Error creating mAIner: " + JSON.stringify(createUserMainerAgentResponse.Err));
-        isCreatingMainer = false;
+        store.completeMainerCreation();
       };
     } catch (creationError) {
       console.error("Failed to create mAIner:", creationError);
       addProgressMessage("Failed to create mAIner: " + creationError.message);
-      isCreatingMainer = false;
+      store.completeMainerCreation();
     };
   };
 
@@ -379,18 +377,12 @@
     // This method is no longer needed since createUserMainerAgent is available
     // But keeping it for potential future use
     addProgressMessage("Simplified creation flow not implemented");
-    isCreatingMainer = false;
+    store.completeMainerCreation();
   };
 
   // Helper function to add a progress message with timestamp
   function addProgressMessage(message: string, isComplete = false) {
-    const now = new Date();
-    const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-    
-    mainerCreationProgress = [
-      ...mainerCreationProgress,
-      { message, timestamp, complete: isComplete }
-    ];
+    store.addMainerCreationProgress(message, isComplete);
   }
 
   function copyAddress() {
@@ -484,10 +476,10 @@
         }
       }
     }, 100);
-  } else if (agents.length > 0 && !shouldOpenFirstMainerAfterCreation) {
-    // If we have agents and this isn't triggered by creation, open the latest mAIner
+  } else if (agents.length > 0 && !shouldOpenFirstMainerAfterCreation && !isCreatingMainer) {
+    // If we have agents and this isn't triggered by creation, and we're not currently creating a mAIner, open the latest mAIner
     setTimeout(() => {
-      // First, ensure create accordion is closed
+      // First, ensure create accordion is closed (only if not creating)
       const createContent = document.getElementById(`content-create`);
       const createIcon = document.getElementById(`icon-create`);
       if (createContent && createIcon && createContent.classList.contains('accordion-open')) {
@@ -513,15 +505,20 @@
 
 <!-- Create Agent Accordion -->
 <div class="border-b border-gray-300 dark:border-gray-700 bg-gradient-to-r from-purple-600/20 to-blue-600/20 dark:from-purple-900/40 dark:to-blue-900/40 rounded-t-lg">
-  <button on:click={() => toggleAccordion('create')} class="w-full flex justify-between items-center py-5 px-4 text-gray-800 dark:text-gray-200 text-sm font-medium">
-    <span class="flex items-center">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-purple-600 dark:text-purple-400" viewBox="0 0 20 20" fill="currentColor">
-        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
-      </svg>
-      Create new mAIner
+  <button on:click={() => toggleAccordion('create')} class="w-full flex justify-between items-center py-4 sm:py-8 px-4 sm:px-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-sm sm:text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform border border-purple-500/20">
+    <span class="flex items-center min-w-0 flex-1">
+      <div class="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 bg-white/20 rounded-lg flex items-center justify-center mr-2 sm:mr-3 shadow-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div class="flex flex-col items-start min-w-0">
+        <span class="text-base sm:text-lg font-bold truncate">Create new mAIner</span>
+        <span class="text-purple-100 text-xs sm:text-xs font-normal hidden sm:block">Start your AI mining journey</span>
+      </div>
     </span>
-    <span id="icon-create" class="text-gray-600 dark:text-gray-400 transition-transform duration-300" style="transform: rotate(180deg)">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
+    <span id="icon-create" class="text-white/80 transition-transform duration-300 bg-white/10 rounded-full p-1 flex-shrink-0 ml-2" style="transform: rotate(180deg)">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 sm:w-5 sm:h-5">
         <path fill-rule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
       </svg>
     </span>
@@ -537,9 +534,117 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
                 </svg>
             </span>
-            <h3 class="font-medium leading-tight mb-2 dark:text-gray-300">AI Agent Type</h3>
+            <h3 class="font-medium leading-tight mb-3 dark:text-gray-300">AI Agent Type</h3>
+            
+            <!-- Modern Agent Type Selector -->
+            <div class="space-y-3 mb-2">
+              <!-- Shared Model Card -->
+              <div 
+                class="relative border-2 rounded-xl p-3 sm:p-4 cursor-pointer transition-all duration-200 hover:shadow-md {modelType === 'Shared' 
+                  ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' 
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-600'}"
+                on:click={() => modelType = 'Shared'}
+                on:keydown={(e) => e.key === 'Enter' && (modelType = 'Shared')}
+                role="button"
+                tabindex="0"
+              >
+                <!-- Selection indicator -->
+                <div class="absolute top-2 sm:top-3 right-2 sm:right-3">
+                  {#if modelType === 'Shared'}
+                    <div class="w-4 h-4 sm:w-5 sm:h-5 bg-purple-600 rounded-full flex items-center justify-center">
+                      <svg class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                    </div>
+                  {:else}
+                    <div class="w-4 h-4 sm:w-5 sm:h-5 border-2 border-gray-300 dark:border-gray-600 rounded-full"></div>
+                  {/if}
+                </div>
+
+                <div class="flex items-start space-x-3 pr-6 sm:pr-8">
+                  <!-- Icon -->
+                  <div class="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                  </div>
+
+                  <!-- Content -->
+                  <div class="flex-1 min-w-0">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mb-1">
+                      <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">mAIner Agent</h4>
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 w-fit mt-1 sm:mt-0">
+                        Ready
+                      </span>
+                    </div>
+                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                      Shared infrastructure with optimized performance
+                    </p>
+                    <div class="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0 text-xs text-gray-500 dark:text-gray-400">
+                      <div class="flex items-center space-x-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                        </svg>
+                        <span>{mainerPrice} ICP</span>
+                      </div>
+                      <div class="flex items-center space-x-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        <span>Instant deploy</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Own Model Card (Disabled/Coming Soon) -->
+              <!-- 
+              <div 
+                class="relative border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-800/50 opacity-60"
+              >
+                <div class="absolute top-3 right-3">
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                    Coming Soon
+                  </span>
+                </div>
+
+                <div class="flex items-start space-x-3 pr-20">
+                  <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                  </div>
+
+                  <div class="flex-1 min-w-0">
+                    <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Custom Model</h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-500 mb-2">
+                      Deploy your own AI model with full control
+                    </p>
+                    <div class="flex items-center space-x-4 text-xs text-gray-400 dark:text-gray-500">
+                      <div class="flex items-center space-x-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                        </svg>
+                        <span>0.0003 ICP</span>
+                      </div>
+                      <div class="flex items-center space-x-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span>Custom setup</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              -->
+            </div>
+
+            <!-- Original button code commented out
             <div class="inline-flex rounded-full shadow-xs w-full justify-start mb-1" role="group">
-              <!-- <button 
+              <button 
                 type="button" 
                 class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-s-full focus:z-10 focus:ring-2 focus:ring-blue-700 
                 {modelType === 'Own' 
@@ -548,7 +653,7 @@
                 on:click={() => modelType = 'Own'}
               >
                 Own model
-              </button> -->
+              </button>
               <button 
                 type="button" 
                 class="px-4 py-2 text-xs cursor-default font-medium border border-gray-200 dark:border-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-700
@@ -560,6 +665,7 @@
                 mAIner
               </button>
             </div>
+            -->
         </li>
         <li class="mb-6 ms-6">            
             <span class="absolute flex items-center justify-center w-8 h-8 {selectedModel ? 'bg-green-200 dark:bg-green-800' : 'bg-gray-200 dark:bg-gray-800'} rounded-full -start-4 ring-4 ring-white dark:ring-gray-900">
@@ -612,39 +718,37 @@
         </li>
       </ol>
 
-      <div class="flex flex-col items-end">
+      <div class="flex flex-col items-stretch sm:items-end">
         <button 
           on:click={createAgent} 
           disabled={isCreatingMainer}
-          class="bg-purple-600 dark:bg-purple-700 w-1/2 hover:bg-purple-700 dark:hover:bg-purple-800 text-white px-4 py-2 rounded-[16px] transition-colors"
+          class="bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-800 text-white px-4 py-2 rounded-xl transition-colors mb-2 w-full sm:w-auto sm:mr-2 text-sm sm:text-base"
           class:opacity-50={isCreatingMainer}
           class:cursor-not-allowed={isCreatingMainer}
         >
-          Create mAIner
+          Create mAIner Agent
         </button>
-        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
-          {modelType === 'Own' ? '1.1' : '1.1'} ICP
-        </div>
+        <!-- <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
+          {modelType === 'Own' ? '0.0003' : '0.0002'} ICP
+        </div> -->
       </div>
       
       <!-- Terminal-style progress component -->
       {#if isCreatingMainer}
-        <div class="mt-4 bg-gray-900 text-green-400 font-mono text-sm rounded-lg p-3 border border-gray-700 overflow-hidden">
+        <div class="mt-4 bg-gray-900 text-green-400 font-mono text-xs sm:text-sm rounded-lg p-2 sm:p-3 border border-gray-700 overflow-hidden">
           <div class="flex items-center justify-between mb-2 border-b border-gray-700 pb-2">
             <div class="text-gray-300 text-xs">mAIner Creation Progress</div>
-            <div class="flex space-x-2">
-              <div class="h-3 w-3 rounded-full bg-red-500"></div>
-              <div class="h-3 w-3 rounded-full bg-yellow-500"></div>
-              <div class="h-3 w-3 rounded-full bg-green-500"></div>
+            <div class="flex items-center">
+              <div class="h-3 w-3 sm:h-4 sm:w-4 border-2 border-gray-400/30 border-t-green-400 rounded-full animate-spin"></div>
             </div>
           </div>
-          <div class="h-40 overflow-y-auto terminal-scroll">
+          <div class="h-32 sm:h-40 overflow-y-auto terminal-scroll">
             {#each mainerCreationProgress as progress}
               <div class="flex mb-1 items-start" class:text-green-300={progress.complete}>
-                <span class="text-gray-500 mr-2">[{progress.timestamp}]</span>
-                <span class="flex-1">{progress.message}</span>
+                <span class="text-gray-500 mr-1 sm:mr-2 text-xs hidden sm:inline">[{progress.timestamp}]</span>
+                <span class="flex-1 text-xs sm:text-sm break-words">{progress.message}</span>
                 {#if progress.complete}
-                  <span class="text-green-500">✓</span>
+                  <span class="text-green-500 ml-1">✓</span>
                 {/if}
               </div>
             {/each}
@@ -656,7 +760,7 @@
       {/if}
     {:else}
       <div class="flex flex-col items-center justify-center py-8">
-        <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2 mt-8">You need to login first</h3>
+        <h3 class="text-xl font-medium text-gray-700 dark:text-gray-100 mb-2 mt-8">You need to login first</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 text-center">
           Connect your wallet to create and manage your mAIners
         </p>
@@ -700,26 +804,25 @@
 
 <!-- mAIner Summary Header -->
 {#if totalMainers > 0}
-  <div class="mt-2 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-2">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center space-x-4">
-        <div class="flex items-center space-x-3">
+  <div class="mt-2 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4 mb-2">
+    <div class="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+      <div class="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0">
+        <div class="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-3 sm:space-y-0">
           <div class="flex items-center space-x-1">
             <div class="w-3 h-3 rounded-full bg-green-500"></div>
-            <span class="text-sm text-green-700 dark:text-green-400 font-medium">{activeMainers} Active</span>
+            <span class="text-xs sm:text-sm text-green-700 dark:text-green-400 font-medium">{activeMainers} Active</span>
           </div>
           <div class="flex items-center space-x-1">
             <div class="w-3 h-3 rounded-full bg-gray-400"></div>
-            <span class="text-sm text-gray-600 dark:text-gray-400 font-medium">{inactiveMainers} Inactive</span>
-            {#if inactiveMainers > 0}
-              <div class="mt-2 text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2 py-1 rounded-md">
-                ⚠️ {inactiveMainers} mAIner{inactiveMainers === 1 ? '' : 's'} need{inactiveMainers === 1 ? 's' : ''} cycles
-              </div>
-            {/if}
+            <span class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">{inactiveMainers} Inactive</span>
           </div>
         </div>
+        {#if inactiveMainers > 0}
+          <div class="text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2 py-1 rounded-md w-fit">
+            ⚠️ {inactiveMainers} mAIner{inactiveMainers === 1 ? '' : 's'} need{inactiveMainers === 1 ? 's' : ''} cycles
+          </div>
+        {/if}
       </div>
-      
     </div>
   </div>
 {/if}
@@ -728,47 +831,54 @@
 {#each agents as agent, index}
   {#if agent && agent.id}
     {@const sanitizedId = agent.id.replace(/[^a-zA-Z0-9-_]/g, '_')}
-    {@const buttonClasses = `w-full flex justify-between items-center py-5 px-4 text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 ${agent.status === 'inactive' ? 'bg-red-50 dark:bg-red-900/10' : ''}`}
+    {@const buttonClasses = `w-full flex justify-between items-center py-3 sm:py-5 px-3 sm:px-4 text-gray-800 dark:text-gray-200 ${agent.status === 'inactive' ? 'bg-red-50 dark:bg-red-900/10' : ''}`}
     <div class="border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900" class:opacity-75={agent.status === 'inactive'}>
       <button on:click={() => toggleAccordion(agent.id)} class={buttonClasses}>
-        <span class="flex items-center font-medium text-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-600 dark:text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+        <span class="flex items-center font-medium text-sm min-w-0 flex-1">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-gray-600 dark:text-gray-400 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v7c0 1.1.9 2 2 2h2l1 2v7h2v-7l1-2h2l1 2v7h2v-7l1-2h2c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 10H4V4h2v6zm4 0H8V4h2v6zm4 0h-2V4h2v6zm4 0h-2V4h2v6z"/>
           </svg>
-          {agent.name}
+          <span class="truncate">{agent.name}</span>
           {#if agent.status === 'inactive'}
-            <span class="ml-2 text-xs text-red-600 dark:text-red-400">(needs cycles)</span>
+            <span 
+              class="ml-1 sm:ml-2 text-xs text-red-600 dark:text-red-400 hidden sm:inline cursor-help"
+              use:tooltip={{ 
+                text: "You still have some cycles, but not enough to keep going. Please top up to continue.",
+                direction: 'top',
+                textSize: 'xs'
+              }}
+            >(needs cycles) <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-red-500 dark:text-red-400 inline" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg></span>
           {/if}
         </span>
-        <div class="flex items-center">
+        <div class="flex items-center flex-shrink-0 ml-2">
           <!-- Add LLM setup status badge when applicable -->
           {#if agent.mainerType === 'Own' && agent.llmSetupStatus === 'inProgress'}
-            <span class="mr-2 px-2 py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-400">
-              LLM setup in progress
+            <span class="mr-1 sm:mr-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-400 hidden sm:inline-block">
+              LLM setup
             </span>
           {/if}
-          <span class={`mr-4 px-2 py-1 rounded-full text-xs ${agent.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400' : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-400'}`}>
+          <span class={`mr-2 sm:mr-4 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs ${agent.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400' : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-400'}`}>
             {agent.status}
           </span>
           <span id="icon-{sanitizedId}" class="text-gray-600 dark:text-gray-400 transition-transform duration-300" style="transform: rotate(180deg)">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 sm:w-4 sm:h-4">
               <path fill-rule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
             </svg>
           </span>
         </div>
       </button>
       <div id="content-{sanitizedId}" class="accordion-content">
-        <div class="pb-5 text-sm text-gray-700 dark:text-gray-300 p-4 bg-gray-5 dark:bg-gray-900">
+        <div class="pb-3 sm:pb-5 text-xs sm:text-sm text-gray-700 dark:text-gray-300 p-3 sm:p-4 bg-gray-5 dark:bg-gray-900">
           <!-- Canister Information Section -->
           <div class="flex flex-col space-y-2 mb-2">
-            <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg">
-              <h2 class="text-sm mb-2 font-medium">Canister Information</h2>
+            <div class="w-full p-3 sm:p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg">
+              <h2 class="text-xs sm:text-sm mb-2 font-medium">Canister Information</h2>
               <div class="flex flex-col gap-2">
-                <div class="flex items-center flex-wrap">
-                  <span class="text-xs mr-2 w-24">Controller ID:</span>
-                  <a href="https://dashboard.internetcomputer.org/canister/{agent.id}" target="_blank" rel="noopener noreferrer" class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-green-400 border border-green-400 break-all hover:bg-green-200 dark:hover:bg-gray-600 transition-colors flex items-center">
-                    <span>{agent.id}</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:flex-wrap">
+                  <span class="text-xs mr-2 mb-1 sm:mb-0 sm:w-24 font-medium">Controller ID:</span>
+                  <a href="https://dashboard.internetcomputer.org/canister/{agent.id}" target="_blank" rel="noopener noreferrer" class="ml-auto bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-green-400 border border-green-400 break-all hover:bg-green-200 dark:hover:bg-gray-600 transition-colors flex items-center w-fit">
+                    <span class="truncate max-w-[200px] sm:max-w-none">{agent.id}</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                       <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
                     </svg>
                   </a>
@@ -830,12 +940,12 @@
           </div>
           
           <div class="flex flex-col space-y-2 mb-2">
-            <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
-              <div class="flex items-center justify-between">
-                  <h2 class="text-sm mb-2">Top up cycles</h2>
+            <div class="w-full p-3 sm:p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
+              <div class="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                  <h2 class="text-xs sm:text-sm font-medium">Top up cycles</h2>
                   <button 
                     type="button" 
-                    class="py-2.5 px-5 me-2 text-xs font-medium text-gray-900 dark:text-gray-300 focus:outline-none bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400"
+                    class="py-2 sm:py-2.5 px-4 sm:px-5 text-xs font-medium text-gray-900 dark:text-gray-300 focus:outline-none bg-white dark:bg-gray-700 rounded-full border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400 w-full sm:w-auto"
                     class:opacity-50={agentsBeingToppedUp.has(agent.id)}
                     class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id)}
                     disabled={agentsBeingToppedUp.has(agent.id)}
@@ -848,15 +958,15 @@
                   </button>
               </div>
               <!-- Cycle Balance Display -->
-              <div class="mt-2 flex items-center">
-                <span class="text-xs text-gray-500 dark:text-gray-400">Current balance:</span>
+              <div class="mt-2 flex flex-col sm:flex-row sm:items-center">
+                <span class="text-xs text-gray-500 dark:text-gray-400 mb-1 sm:mb-0">Current balance:</span>
                 {#if agentsBeingToppedUp.has(agent.id)}
-                  <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center">
+                  <span class="ml-auto text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center w-fit">
                     <span class="w-3 h-3 mr-2 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin"></span>
                     Updating...
                   </span>
                 {:else}
-                  <span class="ml-2 text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  <span class="ml-auto text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 w-fit">
                     {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)} T cycles
                   </span>
                 {/if}
@@ -865,13 +975,13 @@
           </div>
 
           <div class="flex flex-col space-y-2 mb-2">
-            <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
+            <div class="w-full p-3 sm:p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
               <div class="flex flex-col">
-                  <h2 class="text-sm mb-2">Set daily burn rate</h2>
+                  <h2 class="text-xs sm:text-sm mb-2 font-medium">Set daily burn rate</h2>
                   <div class="inline-flex rounded-full shadow-xs w-full justify-end" role="group">
                     <button 
                       type="button" 
-                      class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-s-full focus:z-10 focus:ring-2 focus:ring-blue-700 
+                      class="px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-s-full focus:z-10 focus:ring-2 focus:ring-blue-700 
                       {agent.cyclesBurnRateSetting === 'Low' 
                         ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
                         : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
@@ -884,7 +994,7 @@
                     </button>
                     <button 
                       type="button" 
-                      class="px-4 py-2 text-xs font-medium border-t border-b border-gray-200 dark:border-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-700
+                      class="px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-medium border-t border-b border-gray-200 dark:border-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-700
                       {agent.cyclesBurnRateSetting === 'Medium' 
                         ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
                         : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
@@ -897,7 +1007,7 @@
                     </button>
                     <button 
                       type="button" 
-                      class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-e-full focus:z-10 focus:ring-2 focus:ring-blue-700
+                      class="px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-e-full focus:z-10 focus:ring-2 focus:ring-blue-700
                       {agent.cyclesBurnRateSetting === 'High' 
                         ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
                         : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
@@ -910,9 +1020,9 @@
                     </button>
                   </div>
                   {#if agentsBeingUpdated.has(agent.id)}
-                    <div class="flex items-center justify-center mt-2">
-                      <span class="w-4 h-4 mr-2 border-2 border-purple-400/30 border-t-purple-600 rounded-full animate-spin"></span>
-                      <span class="text-xs text-purple-600 dark:text-purple-400">Updating burn rate setting...</span>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-center mt-2">
+                      <span class="w-3 h-3 sm:w-4 sm:h-4 mr-0 sm:mr-2 border-2 border-purple-400/30 border-t-purple-600 rounded-full animate-spin mb-1 sm:mb-0 self-center"></span>
+                      <span class="text-xs text-purple-600 dark:text-purple-400 text-center sm:text-left">Updating burn rate setting...</span>
                     </div>
                   {/if}
                 </div>
@@ -955,8 +1065,15 @@
   }
   
   .terminal-scroll::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
+  }
+  
+  @media (min-width: 640px) {
+    .terminal-scroll::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
   }
   
   .terminal-scroll::-webkit-scrollbar-track {
@@ -977,5 +1094,36 @@
   
   .blink {
     animation: blink 1s step-end infinite;
+  }
+
+  /* Mobile optimizations */
+  @media (max-width: 639px) {
+    /* Improve touch targets on mobile */
+    button {
+      min-height: 44px;
+    }
+    
+    /* Better text wrapping on small screens */
+    .break-words {
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    
+    /* Improve spacing for mobile */
+    .space-y-1 > * + * {
+      margin-top: 0.25rem;
+    }
+    
+    /* Better modal positioning on mobile */
+    .fixed {
+      position: fixed !important;
+    }
+  }
+  
+  /* Improve text readability on very small screens */
+  @media (max-width: 375px) {
+    .text-xs {
+      font-size: 0.65rem;
+    }
   }
 </style>

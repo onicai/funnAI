@@ -368,30 +368,36 @@
   isOpen={isOpen}
   onClose={handleClose}
   title="Send {token.name}"
-  width="480px"
+  width="min(480px, calc(100vw - 2rem))"
   variant="transparent"
   height="auto"
   className="send-token-modal"
+  isPadded={true}
 >
-  <div class="p-4 flex flex-col gap-4">
+  <div class="px-2 sm:px-4 py-4 flex flex-col gap-3 sm:gap-4">
     <!-- Token Info Banner -->
     <div 
-      class="flex items-center gap-3 p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100 transition-all duration-300"
+      class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100 transition-all duration-300"
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '10px')});"
     >
-      <div class="w-10 h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
-        <TokenImages tokens={[token]} size={38} showSymbolFallback={true} />
+      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
+        <div class="sm:hidden">
+          <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
+        </div>
+        <div class="hidden sm:block">
+          <TokenImages tokens={[token]} size={38} showSymbolFallback={true} />
+        </div>
       </div>
-      <div class="flex flex-col">
-        <div class="text-gray-900 font-medium dark:text-gray-100">{token.name}</div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Balance: {formatBalance(balances.default.toString(), token.decimals)} {token.symbol}</div>
+      <div class="flex flex-col min-w-0 flex-1">
+        <div class="text-gray-900 font-medium dark:text-gray-100 text-sm sm:text-base truncate">{token.name}</div>
+        <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Balance: {formatBalance(balances.default.toString(), token.decimals)} {token.symbol}</div>
       </div>
     </div>
 
     <!-- Send Form -->
     <form 
       on:submit|preventDefault={handleSubmit}
-      class="flex flex-col gap-3 transition-all duration-300"
+      class="flex flex-col gap-2 sm:gap-3 transition-all duration-300"
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '20px')});"
     >
       <!-- Recipient Address Input -->
@@ -401,7 +407,7 @@
           <input
             id="recipient-address"
             type="text"
-            class="w-full py-2 px-3 bg-white border rounded-md text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-100"
+            class="w-full py-2 px-2 sm:px-3 bg-white border rounded-md text-xs sm:text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-100 pr-16 sm:pr-20"
             class:border-green-400={addressValidation.isValid}
             class:border-red-400={!addressValidation.isValid && recipientAddress}
             class:border-gray-300={!recipientAddress}
@@ -412,26 +418,29 @@
           />
           <div class="absolute inset-y-0 right-0 flex items-center gap-0.5">
             {#if addressValidation.isValid}
-              <div class="p-1.5 text-green-500">
-                <Check size={16} />
+              <div class="p-1 sm:p-1.5 text-green-500">
+                <Check size={14} class="sm:hidden" />
+                <Check size={16} class="hidden sm:block" />
               </div>
             {/if}
             <button
               type="button"
-              class="p-1.5 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
+              class="p-1 sm:p-1.5 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
               on:click={handleAddressPaste}
               use:tooltip={{ text: "Paste from clipboard", direction: "top" }}
             >
-              <Clipboard size={16} />
+              <Clipboard size={14} class="sm:hidden" />
+              <Clipboard size={16} class="hidden sm:block" />
             </button>
             {#if hasCamera}
               <button
                 type="button"
-                class="p-1.5 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
+                class="p-1 sm:p-1.5 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
                 on:click={handleScanClick}
                 use:tooltip={{ text: "Scan QR code", direction: "top" }}
               >
-                <Camera size={16} />
+                <Camera size={14} class="sm:hidden" />
+                <Camera size={16} class="hidden sm:block" />
               </button>
             {/if}
           </div>
@@ -460,7 +469,7 @@
             id="amount-input"
             type="text"
             inputmode="decimal"
-            class="w-full py-2 px-3 bg-white border rounded-md text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-100"
+            class="w-full py-2 px-2 sm:px-3 bg-white border rounded-md text-xs sm:text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-100 pr-12 sm:pr-16"
             class:border-green-400={amountValidation.isValid && amount}
             class:border-red-400={!amountValidation.isValid && amount}
             class:border-gray-300={!amount}
@@ -470,7 +479,7 @@
             on:input={handleAmountInput}
           />
           <div class="absolute inset-y-0 right-0 flex items-center">
-            <span class="pr-3 text-sm text-gray-600 dark:text-gray-400">{token.symbol}</span>
+            <span class="pr-2 sm:pr-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">{token.symbol}</span>
           </div>
         </div>
         {#if Number(amount) > 0}
@@ -482,7 +491,7 @@
 
       <!-- Error message -->
       {#if errorMessage}
-        <div class="mt-1 p-2 rounded bg-red-50 border border-red-200 text-red-700 text-sm dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-400">
+        <div class="mt-1 p-2 rounded bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-400">
           {errorMessage}
         </div>
       {/if}
@@ -490,7 +499,7 @@
       <!-- Send Button -->
       <button
         type="submit"
-        class="mt-2 py-2.5 px-4 rounded-md text-white font-medium flex items-center justify-center gap-2 transition-colors"
+        class="mt-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-md text-white font-medium flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
         class:bg-blue-600={isFormValid && !isValidating}
         class:hover:bg-blue-500={isFormValid && !isValidating}
         class:bg-gray-400={!isFormValid || isValidating}
@@ -503,7 +512,8 @@
           <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
           Processing...
         {:else}
-          <ArrowUp size={16} />
+          <ArrowUp size={14} class="sm:hidden" />
+          <ArrowUp size={16} class="hidden sm:block" />
           Send {token.symbol}
         {/if}
       </button>
@@ -540,9 +550,23 @@
 <style>
   /* Custom styling for component - ensures proper z-indexing */
   :global(.send-token-modal) {
-    max-width: 480px;
+    max-width: min(480px, calc(100vw - 2rem));
     position: relative;
     z-index: 100000;
+  }
+  
+  /* Ensure proper text wrapping on mobile */
+  :global(.send-token-modal .truncate) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  /* Mobile-specific adjustments */
+  @media (max-width: 640px) {
+    :global(.send-token-modal) {
+      margin: 0.5rem;
+    }
   }
   
   /* Ensure QR scanner is above the modal */
