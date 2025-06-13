@@ -8,7 +8,7 @@
   import BigNumber from "bignumber.js";
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
   import { fetchTokens, protocolConfig } from "../../helpers/token_helpers";
-  import { getSharedAgentPrice, getOwnAgentPrice } from "../../helpers/gameState";
+  import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped } from "../../helpers/gameState";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
@@ -55,6 +55,12 @@
   let tokenFee: bigint = BigInt(0); // Will be set once token is loaded
   let balance: bigint = BigInt(0);
   let mainerPrice = 1000; // Will be loaded
+
+  let isProtocolActiveFlag = true; // Will be loaded
+  $: isProtocolActive = isProtocolActiveFlag; // TODO: if protocol is not active, stop activities, especially mAIner creation
+
+  let isMainerCreationStoppedFlag = false; // Will be loaded
+  $: stopMainerCreation = isMainerCreationStoppedFlag; // TODO: if true, disable mAIner creation
   
   // Determine payment amount based on model type
   $: paymentAmount = mainerPrice;
@@ -144,6 +150,8 @@
   onMount(async () => {
     await loadTokenData();
     loadBalance();
+    isProtocolActiveFlag = await getIsProtocolActive();
+    isMainerCreationStoppedFlag = await getIsMainerCreationStopped(modelType);
     mainerPrice = await getMainerPrice();
   });
 </script>
