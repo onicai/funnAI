@@ -36,3 +36,34 @@ export const getOwnAgentPrice = async () => {
     return -1;
   };
 };
+
+export const getIsProtocolActive = async (isRetry=false) => {
+  try {
+    let response = storeState.gameStateCanisterActor.getPauseProtocolFlag();
+    
+    if ('Ok' in response) {
+      let isPaused = response.Ok.flag;
+      return !isPaused;
+    } else if ('Err' in response) {
+      console.error("Error in getPauseProtocol:", response.Err);
+      if (isRetry) {
+        return false; // Some issue occurred so indicate that the protocol is not active as a mesure of precaution
+      } else {
+        console.error("Trying again");
+        setTimeout(() => {
+          return getIsProtocolActive(true);          
+        }, 3000);
+      };
+    };
+  } catch (error) {
+    console.error("Failed to getPauseProtocol:", error);
+    if (isRetry) {
+      return false; // Some issue occurred so indicate that the protocol is not active as a mesure of precaution
+    } else {
+      console.error("Trying again");
+      setTimeout(() => {
+        return getIsProtocolActive(true);          
+      }, 3000);
+    };
+  };
+};
