@@ -8,6 +8,7 @@
   import BigNumber from "bignumber.js";
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
   import { fetchTokens, protocolConfig } from "../../helpers/token_helpers";
+  import { getSharedAgentPrice, getOwnAgentPrice } from "../../helpers/gameState";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
@@ -53,9 +54,10 @@
   let errorMessage: string = "";
   let tokenFee: bigint = BigInt(0); // Will be set once token is loaded
   let balance: bigint = BigInt(0);
+  let mainerPrice = 1000; // Will be loaded
   
   // Determine payment amount based on model type
-  $: paymentAmount = modelType === 'Own' ? '1.1' : '1.1';
+  $: paymentAmount = mainerPrice;
   $: amountBigInt = token ? BigInt(new BigNumber(paymentAmount).times(new BigNumber(10).pow(token.decimals)).toString()) : BigInt(0);
   $: hasEnoughBalance = balance >= (amountBigInt + tokenFee);
   $: if (token) {
@@ -76,7 +78,23 @@
     } catch (error) {
       console.error("Error loading balance:", error);
     }
-  }
+  };
+
+  async function getMainerPrice() {
+    try {
+      let price = modelType === 'Own' ? await getOwnAgentPrice() : await getSharedAgentPrice();
+
+      if (price <= 0) {
+        console.error("Issue getting mAIner price as it's 0 or negative.");
+        errorMessage = `The price for the mAIner didn't load correctly. Please try again.`;
+      };
+
+      return price;      
+    } catch (error) {
+      console.error("Error getting mAIner price:", error);
+      errorMessage = `There was an error loading the price for the mAIner. Please try again.`;
+    }
+  };
 
   async function handleSubmit() {
     if (isValidating || !token) return;
@@ -126,6 +144,7 @@
   onMount(async () => {
     await loadTokenData();
     loadBalance();
+    mainerPrice = await getMainerPrice();
   });
 </script>
 

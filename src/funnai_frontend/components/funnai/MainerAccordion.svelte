@@ -8,6 +8,7 @@
   import { Principal } from '@dfinity/principal';
   import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
   import { tooltip } from "../../helpers/utils/tooltip";
+  import { getSharedAgentPrice, getOwnAgentPrice } from "../../helpers/gameState";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -45,7 +46,24 @@
   $: totalMainers = agents.length;
 
   // Reactive mAIner price based on model type
-  $: mainerPrice = modelType === 'Own' ? '0.0003' : '1.1';
+  let currentMainerPrice = 1000; // Will be loaded
+  $: mainerPrice = currentMainerPrice;
+
+  async function getMainerPrice() {
+    try {
+      let price = modelType === 'Own' ? await getOwnAgentPrice() : await getSharedAgentPrice();
+
+      if (price <= 0) {
+        console.error("Issue getting mAIner price as it's 0 or negative.");
+        //TODO: if price doesn't load, disable payment and show errorMessage = `The price for the mAIner didn't load correctly. Please try again.`;
+      };
+
+      return price;      
+    } catch (error) {
+      console.error("Error getting mAIner price:", error);
+      //TODO: if price doesn't load, disable payment and show errorMessage = `There was an error loading the price for the mAIner. Please try again.`;
+    }
+  };
 
   // For testing UI only - set to true to use mock data for the mainer accordion displaying canister INFO
   let useMockData = false;
@@ -460,7 +478,9 @@
           toggleAccordion(latestAgent.id);
         }
       }, 100);
-    }
+    };
+
+    currentMainerPrice = await getMainerPrice();
   });
 
   // Watch for changes in agents or auth status
