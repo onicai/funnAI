@@ -44,7 +44,7 @@
         name: "Internet Computer",
         symbol: "ICP",
         decimals: 8,
-        fee_fixed: "10000", // standard ICP fee
+        fee_fixed: "20010000", // 0.2001 ICP fee
         canister_id: "ryjl3-tyaaa-aaaaa-aaaba-cai" // ICP Ledger canister ID
       };
     } finally {
@@ -346,7 +346,7 @@
             </div>
           </div>
           <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-            Fee: {formatBalance(tokenFee.toString(), token.decimals)} {token.symbol}
+            Fee: 0.2 + {formatBalance(tokenFee.toString(), token.decimals)} {token.symbol}
           </div>
           {#if isBelowMinimum}
             <div class="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
