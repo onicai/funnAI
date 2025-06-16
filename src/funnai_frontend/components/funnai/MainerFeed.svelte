@@ -6,6 +6,8 @@
   import { store } from "../../stores/store";
   import { formatFunnaiAmount } from "../../helpers/utils/numberFormatUtils";
 
+  export let showAllEvents: boolean = true;
+
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
 
@@ -30,7 +32,6 @@
   let currentIndex = 0;
   let updating = false;
   let updateCounter = 0;
-  let showAllEvents = true; // Default to showing all events
 
   // Convert timestamp to readable time format
   function formatTimestamp(timestamp: number): string {
@@ -354,12 +355,12 @@
     updateCounter++;
   }
 
-  // Handle toggle change
-  async function handleToggleChange() {
+  // Handle toggle changes
+  $: if (showAllEvents !== undefined) {
     currentIndex = 0;
     feedItems = [];
     allItems = [];
-    await updateFeed(true);
+    updateFeed(true);
   }
 
   // Reset state when authentication status changes
@@ -394,35 +395,6 @@
 </script>
 
 <div class="h-full overflow-y-auto dark:bg-gray-900 dark:text-white flex flex-col">
-  <!-- Toggle controls -->
-  <div class="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3">
-    <div class="flex items-center justify-between">
-      <h2 class="hidden sm:block text-lg font-semibold text-gray-900 dark:text-white">Activity Feed</h2>
-      <div class="flex items-center gap-3">
-        <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
-          <span class="text-xs">My mAIners only</span>
-          <button
-            type="button"
-            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors
-                   {showAllEvents ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'}"
-            role="switch"
-            aria-checked={showAllEvents}
-            on:click={() => {
-              showAllEvents = !showAllEvents;
-              handleToggleChange();
-            }}
-          >
-            <span class="sr-only">Toggle between all events and my mAIners only</span>
-            <span
-              class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform
-                     {showAllEvents ? 'translate-x-6' : 'translate-x-1'}"
-            ></span>
-          </button>
-          <span class="text-xs">All events</span>
-        </label>
-      </div>
-    </div>
-  </div>
 
   {#if updating && $store.isAuthed}
     <div class="flex justify-center py-2">
