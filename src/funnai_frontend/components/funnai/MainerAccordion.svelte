@@ -367,7 +367,7 @@
 
           // Step 5: Completion
           setTimeout(() => {
-            addProgressMessage("Successfully created! The mAIner is up and running", true);
+            addProgressMessage("mAIner successfully created!", true);
             setTimeout(() => {
               // Refresh the list of agents to show the newly created one
               store.loadUserMainerCanisters().then(() => {
