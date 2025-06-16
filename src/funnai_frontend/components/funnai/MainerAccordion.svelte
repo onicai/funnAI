@@ -367,7 +367,7 @@
 
           // Step 5: Completion
           setTimeout(() => {
-            addProgressMessage("mAIner successfully created! You can start using it while LLM setup completes in the background.", true);
+            addProgressMessage("Successfully created! The mAIner is up and running", true);
             setTimeout(() => {
               // Refresh the list of agents to show the newly created one
               store.loadUserMainerCanisters().then(() => {
