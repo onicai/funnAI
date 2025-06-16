@@ -989,12 +989,12 @@
               <div class="mt-2 flex flex-col sm:flex-row sm:items-center">
                 <span class="text-xs text-gray-500 dark:text-gray-400 mb-1 sm:mb-0">Current balance:</span>
                 {#if agentsBeingToppedUp.has(agent.id)}
-                  <span class="ml-auto text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center w-fit">
+                  <span class="ml-auto text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center w-fit">
                     <span class="w-3 h-3 mr-2 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin"></span>
                     Updating...
                   </span>
                 {:else}
-                  <span class="ml-auto text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-sm dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 w-fit">
+                  <span class="ml-auto text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 w-fit">
                     {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)} T cycles
                   </span>
                 {/if}
