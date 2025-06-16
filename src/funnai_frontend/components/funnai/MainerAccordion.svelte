@@ -46,6 +46,9 @@
   // Track which agents are having their burn rate updated
   let agentsBeingUpdated = new Set<string>();
 
+  // Track which agents are having their balance refreshed
+  let agentsBeingRefreshed = new Set<string>();
+
   // Reactive counters for mAIner status
   $: activeMainers = agents.filter(agent => agent.status === 'active').length;
   $: inactiveMainers = agents.filter(agent => agent.status === 'inactive').length;
@@ -529,6 +532,29 @@
       }
     }, 100);
   }
+
+  // Add refresh balance function
+  async function refreshAgentBalance(agent) {
+    console.log("Refreshing balance for agent:", agent.id);
+    
+    // Add this agent to the refreshing set
+    agentsBeingRefreshed.add(agent.id);
+    agentsBeingRefreshed = agentsBeingRefreshed; // Trigger reactivity
+    
+    try {
+      // Refresh the list of agents to show updated balances
+      await store.loadUserMainerCanisters();
+      // Explicitly reload agents after store update
+      agents = await loadAgents();
+      console.log("Agent balance refreshed successfully");
+    } catch (refreshError) {
+      console.error("Error refreshing agent balance:", refreshError);
+    } finally {
+      // Remove from refreshing set after processing
+      agentsBeingRefreshed.delete(agent.id);
+      agentsBeingRefreshed = agentsBeingRefreshed; // Trigger reactivity
+    }
+  }
 </script>
 
 <!-- Create Agent Accordion -->
@@ -602,7 +628,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mb-1">
                       <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">mAIner Agent</h4>
                       <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 w-fit mt-1 sm:mt-0">
-                        Ready
+                        Available to deploy
                       </span>
                     </div>
                     <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">
@@ -988,16 +1014,36 @@
               <!-- Cycle Balance Display -->
               <div class="mt-2 flex flex-col sm:flex-row sm:items-center">
                 <span class="text-xs text-gray-500 dark:text-gray-400 mb-1 sm:mb-0">Current balance:</span>
-                {#if agentsBeingToppedUp.has(agent.id)}
+                {#if agentsBeingToppedUp.has(agent.id) || agentsBeingRefreshed.has(agent.id)}
                   <span class="ml-auto text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center w-fit">
                     <span class="w-3 h-3 mr-2 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin"></span>
-                    Updating...
+                    {agentsBeingToppedUp.has(agent.id) ? 'Updating...' : 'Refreshing...'}
                   </span>
                 {:else}
                   <span class="ml-auto text-xs sm:text-sm font-medium bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 w-fit">
                     {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)} T cycles
                   </span>
                 {/if}
+              </div>
+              <!-- Refresh Balance Button -->
+              <div class="mt-2 flex justify-end">
+                <button 
+                  type="button" 
+                  class="py-1.5 px-3 text-xs font-medium text-gray-600 dark:text-gray-400 focus:outline-none bg-gray-50 dark:bg-gray-600 rounded-md border border-gray-200 dark:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-500 hover:text-gray-900 dark:hover:text-gray-200 flex items-center transition-colors"
+                  class:opacity-50={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
+                  class:cursor-not-allowed={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
+                  disabled={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
+                  on:click={() => refreshAgentBalance(agent)}
+                >
+                  {#if agentsBeingRefreshed.has(agent.id)}
+                    <span class="w-3 h-3 mr-1 border-2 border-gray-400/30 border-t-gray-600 rounded-full animate-spin"></span>
+                  {:else}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  {/if}
+                  Refresh cycles balance
+                </button>
               </div>
             </div>
           </div>
