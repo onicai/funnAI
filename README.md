@@ -238,6 +238,13 @@ dfx canister call game_state_canister setCyclesFlowAdmin '( record {
 })'
 ```
 
+Adjust reward per challenge:
+
+```bash
+# e.g. to 1000 FUNNAI
+dfx canister call game_state_canister setRewardPerChallengeAdmin '100000000000' --network $NETWORK
+```
+
 # The GameState Thresholds
 
 The Thresholds are stored in stable memory.
