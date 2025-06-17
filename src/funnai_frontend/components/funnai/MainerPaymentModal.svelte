@@ -72,7 +72,7 @@
   
   // Calculate total amount including fee for display
   $: totalPaymentAmount = token ? new BigNumber(paymentAmount).toString() : paymentAmount;
-  
+
   async function loadBalance() {
     try {
       if (!$store.principal || !token) return;
@@ -281,7 +281,7 @@
         <!-- Insufficient balance helper -->
         {#if !hasEnoughBalance && !isValidating && token}
           <div class="mt-2 p-2 rounded bg-orange-50 border border-orange-200 text-orange-700 text-xs sm:text-sm dark:bg-orange-900/30 dark:border-orange-800/30 dark:text-orange-300">
-            You need {formatBalance((amountBigInt + tokenFee - balance).toString(), token.decimals)} more {token.symbol} to create this mAIner.
+            You need {formatBalance((amountBigInt - balance).toString(), token.decimals)} more {token.symbol} to create this mAIner.
           </div>
         {/if}
       </div>
