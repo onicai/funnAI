@@ -346,7 +346,7 @@
             </div>
           </div>
           <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-            Fee: {formatBalance(tokenFee.toString(), token.decimals)} {token.symbol}
+            Protocol fees included
           </div>
           {#if isBelowMinimum}
             <div class="mt-1 text-xs text-yellow-600 dark:text-yellow-400">

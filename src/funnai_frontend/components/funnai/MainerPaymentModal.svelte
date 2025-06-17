@@ -71,7 +71,7 @@
   }
   
   // Calculate total amount including fee for display
-  $: totalPaymentAmount = token ? new BigNumber(paymentAmount).dividedBy(new BigNumber(10).pow(token.decimals))).toString() : paymentAmount;
+  $: totalPaymentAmount = token ? new BigNumber(paymentAmount).toString() : paymentAmount;
   
   async function loadBalance() {
     try {
@@ -227,7 +227,7 @@
             </div>
           </div>
           <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-            Includes network fee: {formatBalance(tokenFee.toString(), token.decimals)} {token.symbol}
+            Protocol fees included
           </div>
         </div>
         
