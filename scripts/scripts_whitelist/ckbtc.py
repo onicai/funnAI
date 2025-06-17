@@ -100,41 +100,27 @@ else:
     print("Not OK, response is:")
     print(response)
 
-# # Initialize the agent (no identity needed for anonymous query)
-# client = Client()
-# agent = Agent(Identity(), client)
-
-# # Load the index canister interface (from its Candid .did, omitted for brevity)
-# index_did = """
-# service : {
-#   get_account_transactions: (record { account: record { owner: principal; subaccount: opt blob }; start: opt nat; max_results: nat }) -> (variant { Ok: record { transactions: vec record { id: nat; transaction: record { transfer: opt record { from: record { owner: principal; subaccount: opt blob }; to: record { owner: principal; subaccount: opt blob }; amount: nat; fee: opt nat; memo: opt vec nat8; created_at_time: opt nat64 } }; timestamp: nat64 } }; Err: record { message: text } }) query;
-# }
-# """
-# ckbtc_index = Canister(agent, canister_id="n5wcd-faaaa-aaaar-qaaea-cai", candid=IDL.from_text(index_did))
-
-# Define the account: owner principal and (optional) subaccount.
-# Here we assume the address is a principal and use subaccount=None.
-
 bioniq_ckbtc_canister_id = "aclt4-uaaaa-aaaak-qb4zq-cai"
 
 # Load the whitelist transactions from JSON file
-json_path = Path(__file__).parent / "ckbtc_bioniq_whitelist_transactions.json"
+json_path = Path(__file__).parent / "bioniq_claims_form_output.json"
 with open(json_path, "r") as f:
     ckbtc_claim_transactions = json.load(f)
 
 for ckbtc_claim_transaction in ckbtc_claim_transactions:
-    from_bioniq_principal = ckbtc_claim_transaction["from_bioniq_principal"]
-    to_funnai_principal = ckbtc_claim_transaction["to_funnai_principal"]
-    print(f"Fetching transactions for {to_funnai_principal}...")
+    bioniq_ckbtc_address = ckbtc_claim_transaction["bioniq_ckbtc_address"]
+    bioniq_btc_address = ckbtc_claim_transaction["bioniq_btc_address"]
+    funnai_principal = ckbtc_claim_transaction["funnai_principal"]
+    print(f"Fetching transactions for {funnai_principal}...")
 
     # Define the ckBTC index accounts of the transaction to look up
-    sub = bytes(principal_to_subaccount(from_bioniq_principal))   # or change the helper to return bytes directly
+    sub = bytes(principal_to_subaccount(bioniq_ckbtc_address))   # or change the helper to return bytes directly
     from_bioniq_account = {
         "owner": bioniq_ckbtc_canister_id,
         "subaccount": [sub] # opt blob
     }
     to_funnai_account = {
-        "owner": to_funnai_principal,
+        "owner": funnai_principal,
         "subaccount": [] # opt blob , null means no subaccount
     }
 
@@ -157,7 +143,7 @@ for ckbtc_claim_transaction in ckbtc_claim_transactions:
             on_chain_subaccount = rec['transfer'][0]['from']['subaccount']   # could be [], [[…]], …
 
             if (on_chain_owner.to_str()== bioniq_ckbtc_canister_id       # owner matches
-                and matches_principal(on_chain_subaccount, from_bioniq_principal)):
+                and matches_principal(on_chain_subaccount, bioniq_ckbtc_address)):
                 print("✅ found a transfer from the expected Bioniq sub-account > approve whitelist")
                 whitelist = True
                 break
@@ -165,5 +151,5 @@ for ckbtc_claim_transaction in ckbtc_claim_transactions:
         print("Error:", response["Err"]["message"])
 
     if whitelist:
-        print(f"TODO - Whitelisting ok for funnAI ckBTCprincipal {to_funnai_principal}...")
+        print(f"TODO - Whitelisting ok for funnAI ckBTCprincipal {funnai_principal}...")
        
