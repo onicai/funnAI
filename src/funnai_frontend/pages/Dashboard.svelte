@@ -26,7 +26,7 @@
         <!-- Toggle controls -->
         <div class="flex-shrink-0 mb-4 border-b border-gray-200 dark:border-gray-700 pb-3">
           <div class="flex items-center justify-between">
-            <h2 class="hidden sm:block text-lg font-semibold text-gray-900 dark:text-white">Activity Feed</h2>
+            <h2 class="hidden sm:block text-lg font-semibold text-gray-900 dark:text-white">Activity feed</h2>
             <div class="flex items-center gap-3">
               <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                 <span class="text-xs">My mAIners only</span>

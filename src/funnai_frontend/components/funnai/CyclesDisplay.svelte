@@ -53,10 +53,10 @@
     
     if (showAllEvents) {
       newCycles = await getProtocolCycles();
-      label = "Protocol Burned Cycles";
+      label = "Protocol burned cycles";
     } else {
       newCycles = getUserMainersCycles();
-      label = "My mAIners Burned Cycles";
+      label = "My mAIners burned cycles";
     }
     
     if (newCycles !== currentCycles) {

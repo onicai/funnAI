@@ -408,7 +408,7 @@
         <div class="text-6xl">🤖</div>
         <div class="max-w-md text-center">
           <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-            mAIner Activity Feed
+            mAIner activity feed
           </h3>
           <p class="text-sm leading-relaxed">
             This feed displays activity from mAIner agents including:
@@ -435,7 +435,7 @@
 
   {#if feedItems.length > 0 || (loading && $store.isAuthed)}
     <ul 
-      aria-label="mAIner Activity Feed" 
+      aria-label="mAIner Activity feed" 
       role="feed" 
       class="relative flex flex-col gap-8 py-12 pl-6 text-sm 
              before:absolute before:top-0 before:z-0 before:left-6 before:h-full before:border-2 before:-translate-x-1/2 before:border-slate-400 before:border-dashed before:z-[0] dark:before:border-slate-400"
