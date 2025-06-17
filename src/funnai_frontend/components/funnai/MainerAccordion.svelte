@@ -8,7 +8,7 @@
   import { Principal } from '@dfinity/principal';
   import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
   import { tooltip } from "../../helpers/utils/tooltip";
-  import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped } from "../../helpers/gameState";
+  import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped, getWhitelistAgentPrice, getPauseWhitelistMainerCreationFlag, getIsWhitelistPhaseActive } from "../../helpers/gameState";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -18,10 +18,17 @@
   $: shouldOpenFirstMainerAfterCreation = $store.shouldOpenFirstMainerAfterCreation;
 
   let isProtocolActiveFlag = true; // Will be loaded
-  $: isProtocolActive = isProtocolActiveFlag; // TODO: if protocol is not active, stop activities, especially mAIner creation
+  $: isProtocolActive = isProtocolActiveFlag;
 
   let isMainerCreationStoppedFlag = false; // Will be loaded
-  $: stopMainerCreation = isMainerCreationStoppedFlag; // TODO: if true, disable mAIner creation
+  $: stopMainerCreation = isMainerCreationStoppedFlag;
+
+  // Whitelist phase variables
+  let isWhitelistPhaseActiveFlag = false; // Will be loaded
+  $: isWhitelistPhaseActive = isWhitelistPhaseActiveFlag;
+  
+  let isPauseWhitelistMainerCreationFlag = false; // Will be loaded
+  $: isPauseWhitelistMainerCreation = isPauseWhitelistMainerCreationFlag;
 
   let agents = [
     // Add the agent entries dynamically via the calls in onMount
@@ -29,6 +36,9 @@
     /* { id: 1, name: "mAIner 1", status: "active", burnedCycles: 1234567 },
     { id: 2, name: "mAIner 2", status: "inactive", burnedCycles: 890123 } */
   ];
+
+  // Separate unlocked mAIners for whitelist phase
+  let unlockedMainers = [];
 
   let selectedBurnRate: 'Low' | 'Medium' | 'High' = 'Medium'; // Default value
   let showCopyIndicator = false;
@@ -39,6 +49,9 @@
   let mainerPaymentModalOpen = false;
   let mainerTopUpModalOpen = false;
   let selectedCanister = { id: "", name: "" };
+  
+  // Track selected unlocked mAIner for whitelist creation
+  let selectedUnlockedMainer = null;
   
   // Track which agents are being topped up (agent-specific loading states)
   let agentsBeingToppedUp = new Set<string>();
@@ -54,9 +67,10 @@
   $: inactiveMainers = agents.filter(agent => agent.status === 'inactive').length;
   $: totalMainers = agents.length;
 
-  // Reactive mAIner price based on model type
+  // Reactive mAIner price based on model type and whitelist phase
   let currentMainerPrice = 1000; // Will be loaded
-  $: mainerPrice = currentMainerPrice;
+  let currentWhitelistPrice = 500; // Will be loaded
+  $: mainerPrice = isWhitelistPhaseActive ? currentWhitelistPrice : currentMainerPrice;
 
   async function getMainerPrice() {
     try {
@@ -189,6 +203,13 @@
     // Open the MainerPaymentModal to handle the payment
     mainerPaymentModalOpen = true;
   };
+
+  function createWhitelistAgent(unlockedMainer) {
+    // Set the selected unlocked mAIner for whitelist creation
+    selectedUnlockedMainer = unlockedMainer;
+    // Open the MainerPaymentModal with whitelist pricing
+    mainerPaymentModalOpen = true;
+  };
   
   function openTopUpModal(agent) {
     // Set the selected canister
@@ -294,14 +315,96 @@
     
     // Start the staged creation process
     // Step 1: Begin registration
-    addProgressMessage("Registering new mAIner...");
-    
-    // Check which backend methods are available and use the appropriate flow
-    if (typeof $store.gameStateCanisterActor.createUserMainerAgent === 'function') {
-      // Use the full creation flow with all backend methods
-      await handleFullMainerCreation(txId);
+    if (selectedUnlockedMainer) {
+      addProgressMessage("Creating whitelist mAIner...");
+      await handleWhitelistMainerCreation(txId);
     } else {
-      addProgressMessage("Backend methods not available for mAIner creation");
+      addProgressMessage("Registering new mAIner...");
+      
+      // Check which backend methods are available and use the appropriate flow
+      if (typeof $store.gameStateCanisterActor.createUserMainerAgent === 'function') {
+        // Use the full creation flow with all backend methods
+        await handleFullMainerCreation(txId);
+      } else {
+        addProgressMessage("Backend methods not available for mAIner creation");
+        store.completeMainerCreation();
+      }
+    }
+    
+    // Reset selected unlocked mAIner
+    selectedUnlockedMainer = null;
+  };
+
+  async function handleWhitelistMainerCreation(txId?: string) {
+    try {
+      // Prepare the mAIner creation input for whitelist creation
+      let mainerCreationInput = {
+        owner: [$store.principal] as [] | [Principal],
+        paymentTransactionBlockId: BigInt(txId),
+        mainerConfig: selectedUnlockedMainer.originalCanisterInfo.mainerConfig,
+      };
+
+      // Call unlockUserMainerAgent for whitelist creation
+      let unlockUserMainerAgentResponse = await $store.gameStateCanisterActor.unlockUserMainerAgent(mainerCreationInput);
+      console.log("unlockUserMainerAgentResponse:", unlockUserMainerAgentResponse);
+      
+      if ('Ok' in unlockUserMainerAgentResponse) {
+        addProgressMessage("Whitelist mAIner unlocked successfully!");
+        
+        // Step 2: Create controller
+        addProgressMessage("Creating mAIner controller...");
+        let spinUpMainerControllerCanisterResponse = await $store.gameStateCanisterActor.spinUpMainerControllerCanister(unlockUserMainerAgentResponse.Ok);
+        
+        if ('Ok' in spinUpMainerControllerCanisterResponse) {
+          // Step 3: Set up LLM if needed (same as normal flow)
+          if (selectedUnlockedMainer.mainerType === 'Own') {
+            addProgressMessage("Starting LLM environment setup in the background...");
+            
+            // Trigger LLM setup without awaiting it
+            $store.gameStateCanisterActor.setUpMainerLlmCanister(spinUpMainerControllerCanisterResponse.Ok)
+              .then((response) => {
+                console.log("LLM canister setup triggered successfully:", response);
+              })
+              .catch((error) => {
+                console.error("Error triggering LLM setup:", error);
+              });
+            
+            addProgressMessage("LLM setup will continue in the background (it may take several minutes to complete)");
+          }
+          
+          // Step 4: Final configuration
+          addProgressMessage("Configuring mAIner parameters...");
+
+          // Step 5: Completion
+          setTimeout(() => {
+            addProgressMessage("Whitelist mAIner successfully created!", true);
+            setTimeout(() => {
+              // Refresh the list of agents to show the newly created one
+              store.loadUserMainerCanisters().then(() => {
+                // Wait for the reactive update to complete, then open the first mAIner (newest one)
+                setTimeout(() => {
+                  openFirstMainerAccordion();
+                  // Reset the terminal after opening the accordion
+                  setTimeout(() => {
+                    store.completeMainerCreation();
+                  }, 4000);
+                }, 4000);
+              });
+            }, 14000);
+          }, 9000);
+        } else if ('Err' in spinUpMainerControllerCanisterResponse) {
+          console.error("Error in spinUpMainerControllerCanister:", spinUpMainerControllerCanisterResponse.Err);
+          addProgressMessage("Error creating controller: " + JSON.stringify(spinUpMainerControllerCanisterResponse.Err));
+          store.completeMainerCreation();
+        }
+      } else if ('Err' in unlockUserMainerAgentResponse) {
+        console.error("Error in unlockUserMainerAgent:", unlockUserMainerAgentResponse.Err);
+        addProgressMessage("Error unlocking whitelist mAIner: " + JSON.stringify(unlockUserMainerAgentResponse.Err));
+        store.completeMainerCreation();
+      }
+    } catch (creationError) {
+      console.error("Failed to create whitelist mAIner:", creationError);
+      addProgressMessage("Failed to create whitelist mAIner: " + creationError.message);
       store.completeMainerCreation();
     }
   };
@@ -420,9 +523,12 @@
     // The store now provides enriched canister info with status, cycles, etc.
     const enrichedCanistersInfo = agentCanistersInfo;
 
-    // Convert the enriched info to the format expected by the component
-    return enrichedCanistersInfo.map((canisterInfo, index) => {
-      // Get the correct actor by index
+    // Separate unlocked mAIners from active agents
+    const activeAgents = [];
+    const unlockedAgents = [];
+
+    enrichedCanistersInfo.forEach((canisterInfo, index) => {
+      // Get the correct actor by index (might be null for unlocked mAIners)
       const agentActor = agentCanisterActors[index];
       
       // Determine mainer type from the canister info
@@ -435,11 +541,13 @@
         }
       }
 
-      // All the heavy lifting is now done in the store
-      return {
-        id: canisterInfo.address,
-        name: `mAIner ${canisterInfo.address.slice(0, 5)}`,
-        status: canisterInfo.uiStatus || "active",  // Use uiStatus from enriched data
+      // Check if this is an unlocked mAIner
+      const isUnlocked = canisterInfo.status && 'Unlocked' in canisterInfo.status;
+      
+      const mainerData = {
+        id: canisterInfo.address || `unlocked-${index}`, // Use index for unlocked without address
+        name: isUnlocked ? `Unlocked mAIner ${index + 1}` : `mAIner ${canisterInfo.address?.slice(0, 5) || 'Unknown'}`,
+        status: isUnlocked ? "unlocked" : (canisterInfo.uiStatus || "active"),
         burnedCycles: canisterInfo.burnedCycles || 0,
         cycleBalance: canisterInfo.cycleBalance || 0,
         cyclesBurnRate: canisterInfo.cyclesBurnRate || {},
@@ -447,9 +555,22 @@
         mainerType,
         llmCanisters: canisterInfo.llmCanisters || [],
         llmSetupStatus: canisterInfo.llmSetupStatus || '',
-        hasError: canisterInfo.hasError || false
+        hasError: canisterInfo.hasError || false,
+        isUnlocked,
+        originalCanisterInfo: canisterInfo // Store original for whitelist creation
       };
+
+      if (isUnlocked) {
+        unlockedAgents.push(mainerData);
+      } else {
+        activeAgents.push(mainerData);
+      }
     });
+
+    // Update unlocked mAIners list
+    unlockedMainers = unlockedAgents;
+    
+    return activeAgents;
   };
 
   $: {
@@ -472,16 +593,21 @@
     //console.log("MainerAccordion onMount agentCanistersInfo", agentCanistersInfo);
     isProtocolActiveFlag = await getIsProtocolActive();
     isMainerCreationStoppedFlag = await getIsMainerCreationStopped(modelType);
+    isWhitelistPhaseActiveFlag = await getIsWhitelistPhaseActive();
+    isPauseWhitelistMainerCreationFlag = await getPauseWhitelistMainerCreationFlag();
+    
     // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
     agents = await loadAgents();
     //console.log("MainerAccordion onMount agents", agents);
+    //console.log("MainerAccordion onMount unlockedMainers", unlockedMainers);
     
-    // Automatically open the create accordion if no agents exist, or open latest mAIner if agents exist
-    if (agents.length === 0) {
+    // Automatically open the create accordion if no agents exist and not in whitelist phase
+    // In whitelist phase, show unlocked mAIners instead
+    if (agents.length === 0 && !isWhitelistPhaseActive) {
       setTimeout(() => {
         toggleAccordion('create');
       }, 100);
-    } else {
+    } else if (agents.length > 0) {
       // Open the latest mAIner if agents exist
       setTimeout(() => {
         const latestAgent = agents[agents.length - 1];
@@ -492,6 +618,7 @@
     };
 
     currentMainerPrice = await getMainerPrice();
+    currentWhitelistPrice = await getWhitelistAgentPrice();
   });
 
   // Watch for changes in agents or auth status
@@ -557,7 +684,8 @@
   }
 </script>
 
-<!-- Create Agent Accordion -->
+<!-- Create Agent Accordion (only show when not in whitelist phase) -->
+{#if !isWhitelistPhaseActive}
 <div class="border-b border-gray-300 dark:border-gray-700 bg-gradient-to-r from-purple-600/20 to-blue-600/20 dark:from-purple-900/40 dark:to-blue-900/40 rounded-t-lg">
   <button on:click={() => toggleAccordion('create')} class="w-full flex justify-between items-center py-4 sm:py-8 px-4 sm:px-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-sm sm:text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform border border-purple-500/20">
     <span class="flex items-center min-w-0 flex-1">
@@ -832,6 +960,88 @@
     </div>
   </div>
 </div>
+{/if}
+
+<!-- Whitelist mAIners Section (only show when in whitelist phase) -->
+{#if isWhitelistPhaseActive && isAuthenticated}
+  {#if unlockedMainers.length > 0}
+    <div class="mb-4">
+      <div class="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 sm:p-4 mb-2">
+        <div class="flex items-center space-x-2 mb-2">
+          <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+          <span class="text-lg font-medium text-yellow-800 dark:text-yellow-200">Whitelist Phase Active</span>
+        </div>
+        <p class="text-sm text-yellow-700 dark:text-yellow-300">
+          Special whitelist pricing available! Create your mAIner from the unlocked options below at {currentWhitelistPrice} ICP (normally {currentMainerPrice} ICP).
+        </p>
+      </div>
+    </div>
+
+    <!-- Unlocked mAIners List -->
+    {#each unlockedMainers as unlockedMainer, index}
+      <div class="border-b border-gray-300 dark:border-gray-700 bg-gradient-to-r from-yellow-50/50 to-orange-50/50 dark:from-yellow-900/10 dark:to-orange-900/10">
+        <div class="w-full flex justify-between items-center py-3 sm:py-5 px-3 sm:px-4 text-gray-800 dark:text-gray-200">
+          <span class="flex items-center font-medium text-sm min-w-0 flex-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-yellow-600 dark:text-yellow-400 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            <span class="truncate">{unlockedMainer.name}</span>
+          </span>
+          <div class="flex items-center flex-shrink-0 ml-2 space-x-2">
+            <span class="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-400">
+              Unlocked
+            </span>
+            <button
+              on:click={() => createWhitelistAgent(unlockedMainer)}
+              disabled={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive}
+              class="bg-yellow-600 dark:bg-yellow-700 hover:bg-yellow-700 dark:hover:bg-yellow-800 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
+              class:opacity-50={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive}
+              class:cursor-not-allowed={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive}
+            >
+              {#if isCreatingMainer}
+                Creating...
+              {:else}
+                Create ({currentWhitelistPrice} ICP)
+              {/if}
+            </button>
+          </div>
+        </div>
+      </div>
+    {/each}
+  {:else}
+    <div class="mb-4">
+      <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center">
+        <svg class="w-8 h-8 text-gray-400 dark:text-gray-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+        <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-1">No Unlocked mAIners Available</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          You don't have any unlocked mAIners available for whitelist creation at this time.
+        </p>
+      </div>
+    </div>
+  {/if}
+{:else if isWhitelistPhaseActive && !isAuthenticated}
+  <div class="mb-4">
+    <div class="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-center">
+      <svg class="w-8 h-8 text-yellow-600 dark:text-yellow-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+      </svg>
+      <h3 class="text-lg font-medium text-yellow-800 dark:text-yellow-200 mb-2">Whitelist Phase Active</h3>
+      <p class="text-sm text-yellow-700 dark:text-yellow-300 mb-3">
+        Connect your wallet to see available whitelist mAIners and take advantage of special pricing.
+      </p>
+      <button 
+        on:click={toggleLoginModal} 
+        class="bg-yellow-600 dark:bg-yellow-700 hover:bg-yellow-700 dark:hover:bg-yellow-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+      >
+        Connect Wallet
+      </button>
+    </div>
+  </div>
+{/if}
 
 {#if loginModalOpen}
   <LoginModal toggleModal={toggleLoginModal} />
@@ -843,6 +1053,8 @@
     onClose={() => mainerPaymentModalOpen = false}
     onSuccess={handleSendComplete}
     {modelType}
+    {selectedUnlockedMainer}
+    {isWhitelistPhaseActive}
   />
 {/if}
 

@@ -8,12 +8,14 @@
   import BigNumber from "bignumber.js";
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
   import { fetchTokens, protocolConfig } from "../../helpers/token_helpers";
-  import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped } from "../../helpers/gameState";
+  import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped, getWhitelistAgentPrice } from "../../helpers/gameState";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
   export let onSuccess: (txId?: string) => void = () => {};
   export let modelType: 'Own' | 'Shared' = 'Own';
+  export let selectedUnlockedMainer: any = null;
+  export let isWhitelistPhaseActive: boolean = false;
   
   // Protocol address from token_helpers
   const { address: protocolAddress } = protocolConfig;
@@ -88,7 +90,14 @@
 
   async function getMainerPrice() {
     try {
-      let price = modelType === 'Own' ? await getOwnAgentPrice() : await getSharedAgentPrice();
+      let price;
+      
+      // Use whitelist pricing if in whitelist phase and we have a selected unlocked mAIner
+      if (isWhitelistPhaseActive && selectedUnlockedMainer) {
+        price = await getWhitelistAgentPrice();
+      } else {
+        price = modelType === 'Own' ? await getOwnAgentPrice() : await getSharedAgentPrice();
+      }
 
       if (price <= 0) {
         console.error("Issue getting mAIner price as it's 0 or negative.");
@@ -159,7 +168,7 @@
 <Modal
   {isOpen}
   onClose={onClose}
-  title="mAIner Creation Payment"
+  title={isWhitelistPhaseActive && selectedUnlockedMainer ? "Whitelist mAIner Creation Payment" : "mAIner Creation Payment"}
   width="min(480px, calc(100vw - 2rem))"
   variant="transparent"
   height="auto"
@@ -232,8 +241,12 @@
         </div>
         
         <!-- Payment Description -->
-        <div class="p-2 sm:p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-xs sm:text-sm dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200">
-          This payment ({totalPaymentAmount} {token.symbol} total including network fees) is used to create your mAIner. Once payment is complete, your mAIner will be created automatically.
+        <div class="p-2 sm:p-3 rounded-lg {isWhitelistPhaseActive && selectedUnlockedMainer ? 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800/30 dark:text-yellow-200' : 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200'} text-xs sm:text-sm">
+          {#if isWhitelistPhaseActive && selectedUnlockedMainer}
+            This whitelist payment ({totalPaymentAmount} {token.symbol} total including network fees) allows you to create your pre-unlocked mAIner at a special discounted price. Once payment is complete, your mAIner will be created automatically.
+          {:else}
+            This payment ({totalPaymentAmount} {token.symbol} total including network fees) is used to create your mAIner. Once payment is complete, your mAIner will be created automatically.
+          {/if}
         </div>
 
         <!-- Error message -->
