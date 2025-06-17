@@ -71,7 +71,7 @@
   }
   
   // Calculate total amount including fee for display
-  $: totalPaymentAmount = token ? new BigNumber(paymentAmount).plus(new BigNumber(tokenFee.toString()).dividedBy(new BigNumber(10).pow(token.decimals))).toString() : paymentAmount;
+  $: totalPaymentAmount = token ? new BigNumber(paymentAmount).dividedBy(new BigNumber(10).pow(token.decimals))).toString() : paymentAmount;
   
   async function loadBalance() {
     try {
