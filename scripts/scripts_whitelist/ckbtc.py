@@ -11,6 +11,16 @@ from pathlib import Path
 from .ic_py_canister import get_canister, run_dfx_command
 
 # ------------------------------------------------------------------------------
+# Read the NFT collection snapshots from file
+json_path = Path(__file__).parent / "snapshots" / "charles.json"
+with open(json_path, "r") as f:
+    charles = json.load(f)
+
+json_path = Path(__file__).parent / "snapshots" / "icpp_art.json"
+with open(json_path, "r") as f:
+    icpp_art = json.load(f)
+
+# ------------------------------------------------------------------------------
 # Helper functions
 # ──────────────────────────────────────────────────────────────
 # Textual principal  ↔  raw principal‐bytes (payload only)
@@ -86,21 +96,58 @@ def matches_principal(sub_blob: OptBlob, principal: str) -> bool:
 # ---------------------------------------------------------------------------
 # get ic-py based Canister instance for the ckBTC index canister
 canister_name = ""
-candid_path = Path(__file__).parent / "ckbtc.did"
+candid_path = Path(__file__).parent / "ckbtc_index_canister.did"
 network = "ic" 
 canister_id = "n5wcd-faaaa-aaaar-qaaea-cai"  # ckBTC index canister ID
-canister_instance = get_canister(canister_name, candid_path, network, canister_id)
+ckbtc_index_canister = get_canister(canister_name, candid_path, network, canister_id)
 
 # check status (liveness)
-print("--\nChecking status of canister")
-response = canister_instance.status()
+print("--\nChecking status of ckbtc index canister")
+response = ckbtc_index_canister.status()
 if "num_blocks_synced" in response[0].keys():
     print("Ok!")
 else:
     print("Not OK, response is:")
     print(response)
 
+# ---------------------------------------------------------------------------
+# get ic-py based Canister instance for the ckBTC ledger canister
+canister_name = ""
+candid_path = Path(__file__).parent / "ckbtc_ledger_canister.did"
+network = "ic" 
+canister_id = "mxzaz-hqaaa-aaaar-qaada-cai"  # ckBTC ledger canister ID
+ckbtc_ledger_canister = get_canister(canister_name, candid_path, network, canister_id)
+
+# check status (liveness)
+print("--\nChecking readiness of ckbtc ledgercanister")
+response = ckbtc_ledger_canister.is_ledger_ready()
+if response[0]:
+    print("Ok!")
+else:
+    print("Not OK, response is:")
+    print(response)
+
+# ---------------------------------------------------------------------------
+# get ic-py based Canister instance for the ckBTC minter canister
+canister_name = ""
+candid_path = Path(__file__).parent / "ckbtc_minter_canister.did"
+network = "ic" 
+canister_id = "mqygn-kiaaa-aaaar-qaadq-cai"  # ckBTC minter canister ID
+ckbtc_minter_canister = get_canister(canister_name, candid_path, network, canister_id)
+
+# check status (liveness)
+print("--\nChecking readiness of ckbtc minter canister")
+response = ckbtc_minter_canister.get_canister_status()
+if response[0].get("status") == {'running': None}:
+    print("Ok!")
+else:
+    print("Not OK, response is:")
+    print(response)
+        
+# ---------------------------------------------------------------------------
 bioniq_ckbtc_canister_id = "aclt4-uaaaa-aaaak-qb4zq-cai"
+
+
 
 # Load the whitelist transactions from JSON file
 json_path = Path(__file__).parent / "bioniq_claims_form_output.json"
@@ -129,18 +176,22 @@ for ckbtc_claim_transaction in ckbtc_claim_transactions:
         "start": [], # opt nat, empty means start from most recent
         "max_results": int(1000)   # adjust as needed for all history
     }
-    getTransactionsResult = canister_instance.get_account_transactions(arg)
+    getTransactionsResult = ckbtc_index_canister.get_account_transactions(arg)
     response = getTransactionsResult[0]  # Get the first element of the tuple
 
     # Print timestamp, sender, amount, and transaction ID
     whitelist = False
     if "Ok" in response:
         txs = response["Ok"]["transactions"]
+
+        
         for tx in txs:
             rec = tx["transaction"]
             # Check if the transfer is from the Bioniq account
             on_chain_owner = rec['transfer'][0]['from']['owner']
             on_chain_subaccount = rec['transfer'][0]['from']['subaccount']   # could be [], [[…]], …
+
+            print(f"on_chain_owner: {on_chain_owner}, on_chain_subaccount: {on_chain_subaccount}")
 
             if (on_chain_owner.to_str()== bioniq_ckbtc_canister_id       # owner matches
                 and matches_principal(on_chain_subaccount, bioniq_ckbtc_address)):
@@ -151,5 +202,25 @@ for ckbtc_claim_transaction in ckbtc_claim_transactions:
         print("Error:", response["Err"]["message"])
 
     if whitelist:
-        print(f"TODO - Whitelisting ok for funnAI ckBTCprincipal {funnai_principal}...")
+        # Get the BTC address for this bioniq ckBTC address
+        sub = bytes(principal_to_subaccount(bioniq_ckbtc_address)) 
+        arg = {
+            "owner": [bioniq_ckbtc_canister_id], # opt principal
+            "subaccount": [sub] # opt blob
+        }
+        response = ckbtc_minter_canister.get_btc_address(arg)
+        bioniq_btc_address = response[0]
+        
+        print("------------------------------------------------------------------")
+        print(f"Whitelisting ok")
+        print(f"  FunnAI principal    : {funnai_principal}")
+        print(f"  Bioniq ckBTC address: {bioniq_ckbtc_address}")
+        print(f"  Bioniq BTC address  : {bioniq_btc_address}")
+
+        # OOPS --- WE NOW FOUND OUT THAT THE BIONIQ BTC ADDRESS IS NOT A CKBTC MANAGED ADDRESS... 
+        #          RE-EVALUATING THE APPROACH TO ACCOUNT OWNERSHIP VERIFICATION...
+        
+        # Check how many Charles NFTs this user owns
+        # TODO...
+
        
