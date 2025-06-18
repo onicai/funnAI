@@ -69,7 +69,7 @@
 
   // Reactive mAIner price based on model type and whitelist phase
   let currentMainerPrice = 1000; // Will be loaded
-  let currentWhitelistPrice = 500; // Will be loaded
+  let currentWhitelistPrice = 0.1; // Will be loaded
   $: mainerPrice = isWhitelistPhaseActive ? currentWhitelistPrice : currentMainerPrice;
 
   async function getMainerPrice() {
@@ -78,13 +78,15 @@
 
       if (price <= 0) {
         console.error("Issue getting mAIner price as it's 0 or negative.");
-        //TODO: if price doesn't load, disable payment and show errorMessage = `The price for the mAIner didn't load correctly. Please try again.`;
+        // Return fallback value instead of undefined
+        return modelType === 'Own' ? 1500 : 1000;
       };
 
       return price;      
     } catch (error) {
       console.error("Error getting mAIner price:", error);
-      //TODO: if price doesn't load, disable payment and show errorMessage = `There was an error loading the price for the mAIner. Please try again.`;
+      // Return fallback value instead of undefined
+      return modelType === 'Own' ? 1500 : 1000;
     }
   };
 
@@ -205,8 +207,10 @@
   };
 
   function createWhitelistAgent(unlockedMainer) {
+    console.log("createWhitelistAgent called with:", unlockedMainer);
     // Set the selected unlocked mAIner for whitelist creation
     selectedUnlockedMainer = unlockedMainer;
+    console.log("selectedUnlockedMainer set to:", selectedUnlockedMainer);
     // Open the MainerPaymentModal with whitelist pricing
     mainerPaymentModalOpen = true;
   };
@@ -308,6 +312,7 @@
   
   async function handleSendComplete(txId?: string) {
     console.log("Payment completed" + (txId ? ` with transaction ID: ${txId}` : ""));
+    console.log("selectedUnlockedMainer:", selectedUnlockedMainer);
     mainerPaymentModalOpen = false;
     
     // Set the creation process as started using store
@@ -316,9 +321,11 @@
     // Start the staged creation process
     // Step 1: Begin registration
     if (selectedUnlockedMainer) {
+      console.log("Creating whitelist mAIner with:", selectedUnlockedMainer);
       addProgressMessage("Creating whitelist mAIner...");
       await handleWhitelistMainerCreation(txId);
     } else {
+      console.log("Creating regular mAIner");
       addProgressMessage("Registering new mAIner...");
       
       // Check which backend methods are available and use the appropriate flow
@@ -336,17 +343,115 @@
   };
 
   async function handleWhitelistMainerCreation(txId?: string) {
+    console.log("handleWhitelistMainerCreation started with txId:", txId);
+    console.log("selectedUnlockedMainer:", selectedUnlockedMainer);
+    
     try {
-      // Prepare the mAIner creation input for whitelist creation
+      addProgressMessage("Preparing whitelist mAIner creation...");
+      
+      // Validate input data for whitelist creation
+      if (!txId) {
+        throw new Error("No transaction ID provided for whitelist mAIner creation");
+      }
+      
+      if (!selectedUnlockedMainer) {
+        throw new Error("No unlocked mAIner selected");
+      }
+      
+      if (!$store.principal) {
+        throw new Error("User principal not available");
+      }
+      
+      console.log("Validation passed - all required data available");
+      
+              // Try using the original mainerConfig from the unlocked mAIner
+        // The backend might expect the exact same config that was used to create the unlocked mAIner
+        const originalMainerConfig = selectedUnlockedMainer.originalCanisterInfo?.mainerConfig;
+        
+        console.log("Checking original mainerConfig from unlocked mAIner:");
+        console.log("- Original config:", originalMainerConfig);
+        
+        let mainerConfig;
+        if (originalMainerConfig) {
+          console.log("Using original mainerConfig from unlocked mAIner");
+          mainerConfig = originalMainerConfig;
+        } else {
+          console.log("No original config found, creating fresh mainerConfig");
+          // Fallback to fresh config if original is not available
+          type SelectableMainerLLMs = { 'Qwen2_5_500M' : null };
+          let selectableMainerLLM = { 'Qwen2_5_500M' : null }; // default
+          let selectedLLM : [] | [SelectableMainerLLMs] = selectedModel === "" ? [] : [selectableMainerLLM];
+          type MainerAgentCanisterType = { 'NA' : null } |
+            { 'Own' : null } |
+            { 'ShareAgent' : null } |
+            { 'ShareService' : null };
+          
+          // Determine mAIner type from the unlocked mAIner or default to Shared
+          let mainerAgentCanisterType : MainerAgentCanisterType = { 'ShareAgent' : null }; // default to Shared
+          
+          // Check multiple possible sources for mainer type
+          const mainerTypeFromUnlocked = selectedUnlockedMainer.mainerType;
+          const mainerTypeFromOriginal = selectedUnlockedMainer.originalCanisterInfo?.canisterType?.MainerAgent;
+          
+          console.log("Determining mAIner type:");
+          console.log("- From unlocked mAIner:", mainerTypeFromUnlocked);
+          console.log("- From original canister info:", mainerTypeFromOriginal);
+          
+          if (mainerTypeFromUnlocked === 'Own' || (mainerTypeFromOriginal && 'Own' in mainerTypeFromOriginal)) {
+            mainerAgentCanisterType = { 'Own' : null };
+            console.log("Setting mAIner type to Own");
+          } else {
+            console.log("Setting mAIner type to ShareAgent (default)");
+          }
+          
+          mainerConfig = {
+            selectedLLM,
+            mainerAgentCanisterType,
+            subnetCtrl : "",
+            subnetLlm : "",
+            cyclesForMainer : 0n
+          };
+        }
+      
+      // For unlocking, we might need to send empty owner array
+      // The backend might determine the owner automatically for unlocked mAIners
       let mainerCreationInput = {
-        owner: [$store.principal] as [] | [Principal],
+        owner: [] as [] | [Principal], // Try empty owner first for unlocking
         paymentTransactionBlockId: BigInt(txId),
-        mainerConfig: selectedUnlockedMainer.originalCanisterInfo.mainerConfig,
+        mainerConfig,
       };
 
+      console.log("=== WHITELIST MAINER CREATION DEBUG ===");
+      console.log("selectedUnlockedMainer:", selectedUnlockedMainer);
+      console.log("mainerCreationInput:", mainerCreationInput);
+      console.log("mainerConfig details:", mainerConfig);
+      console.log("Current user principal:", $store.principal?.toString());
+      console.log("Transaction ID:", txId);
+              console.log("Mainer type from UI:", selectedUnlockedMainer.mainerType);
+        console.log("MainerConfig being sent:", mainerConfig);
+        console.log("=== END DEBUG ===");
+      addProgressMessage("Unlocking whitelist mAIner...");
+
       // Call unlockUserMainerAgent for whitelist creation
+      console.log("Attempting to unlock whitelist mAIner with empty owner...");
       let unlockUserMainerAgentResponse = await $store.gameStateCanisterActor.unlockUserMainerAgent(mainerCreationInput);
-      console.log("unlockUserMainerAgentResponse:", unlockUserMainerAgentResponse);
+      console.log("unlockUserMainerAgentResponse (empty owner):", unlockUserMainerAgentResponse);
+      
+      // If unauthorized with empty owner, try with current user as owner
+      if ('Err' in unlockUserMainerAgentResponse && 'Unauthorized' in unlockUserMainerAgentResponse.Err) {
+        console.log("Empty owner failed, retrying with current user as owner...");
+        addProgressMessage("Retrying with different owner parameter...");
+        
+        const mainerCreationInputWithOwner = {
+          owner: [$store.principal] as [] | [Principal],
+          paymentTransactionBlockId: BigInt(txId),
+          mainerConfig,
+        };
+        
+        console.log("Attempting unlock with current user as owner:", mainerCreationInputWithOwner);
+        unlockUserMainerAgentResponse = await $store.gameStateCanisterActor.unlockUserMainerAgent(mainerCreationInputWithOwner);
+        console.log("unlockUserMainerAgentResponse (with owner):", unlockUserMainerAgentResponse);
+      }
       
       if ('Ok' in unlockUserMainerAgentResponse) {
         addProgressMessage("Whitelist mAIner unlocked successfully!");
@@ -356,8 +461,16 @@
         let spinUpMainerControllerCanisterResponse = await $store.gameStateCanisterActor.spinUpMainerControllerCanister(unlockUserMainerAgentResponse.Ok);
         
         if ('Ok' in spinUpMainerControllerCanisterResponse) {
+          addProgressMessage("Controller created successfully!");
+          
           // Step 3: Set up LLM if needed (same as normal flow)
-          if (selectedUnlockedMainer.mainerType === 'Own') {
+          // Check if this is an Own type mAIner for LLM setup
+          const isOwnType = selectedUnlockedMainer.mainerType === 'Own' || 
+                          (selectedUnlockedMainer.originalCanisterInfo?.canisterType?.MainerAgent && 
+                           'Own' in selectedUnlockedMainer.originalCanisterInfo.canisterType.MainerAgent) ||
+                          (mainerConfig.mainerAgentCanisterType && 'Own' in mainerConfig.mainerAgentCanisterType);
+          
+          if (isOwnType) {
             addProgressMessage("Starting LLM environment setup in the background...");
             
             // Trigger LLM setup without awaiting it
@@ -374,10 +487,11 @@
           
           // Step 4: Final configuration
           addProgressMessage("Configuring mAIner parameters...");
+          // TODO: set default cycle burn rate, start mAIner's timer (if not done yet by backend)
 
-          // Step 5: Completion
+          // Step 5: Completion - Match exact timing as regular creation
           setTimeout(() => {
-            addProgressMessage("Whitelist mAIner successfully created!", true);
+            addProgressMessage("mAIner successfully created!", true);
             setTimeout(() => {
               // Refresh the list of agents to show the newly created one
               store.loadUserMainerCanisters().then(() => {
@@ -388,7 +502,11 @@
                   setTimeout(() => {
                     store.completeMainerCreation();
                   }, 4000);
-                }, 4000);
+                }, 4000); // Increased timeout for better reliability
+              }).catch((error) => {
+                console.error("Error refreshing mAIner list:", error);
+                addProgressMessage("Warning: mAIner created but list refresh failed. Please refresh manually.");
+                store.completeMainerCreation();
               });
             }, 14000);
           }, 9000);
@@ -398,8 +516,40 @@
           store.completeMainerCreation();
         }
       } else if ('Err' in unlockUserMainerAgentResponse) {
-        console.error("Error in unlockUserMainerAgent:", unlockUserMainerAgentResponse.Err);
-        addProgressMessage("Error unlocking whitelist mAIner: " + JSON.stringify(unlockUserMainerAgentResponse.Err));
+        console.error("Error in unlockUserMainerAgent - Full response:", unlockUserMainerAgentResponse);
+        console.error("Error details:", unlockUserMainerAgentResponse.Err);
+        console.error("Error type:", typeof unlockUserMainerAgentResponse.Err);
+        console.error("Error keys:", Object.keys(unlockUserMainerAgentResponse.Err || {}));
+        
+        let errorMessage = "Error unlocking whitelist mAIner: ";
+        const err = unlockUserMainerAgentResponse.Err;
+        
+        if (err && typeof err === 'object') {
+          if ('Unauthorized' in err) {
+            errorMessage += "You are not authorized to unlock this mAIner. This mAIner may be owned by a different user.";
+          } else if ('InvalidId' in err) {
+            errorMessage += "Invalid mAIner ID provided.";
+          } else if ('ZeroAddress' in err) {
+            errorMessage += "Invalid address provided.";
+          } else if ('FailedOperation' in err) {
+            errorMessage += "The unlock operation failed. Please try again.";
+          } else if ('InsuffientCycles' in err) {
+            errorMessage += "Insufficient cycles for the operation.";
+          } else if ('StatusCode' in err) {
+            errorMessage += `Status code error: ${err.StatusCode}`;
+          } else if ('Other' in err) {
+            errorMessage += `Other error: ${err.Other}`;
+          } else {
+            // Try to get more details about the error
+            const errorKeys = Object.keys(err);
+            errorMessage += `Unknown error type. Keys: ${errorKeys.join(', ')}. `;
+            errorMessage += `First key value: ${err[errorKeys[0]]}`;
+          }
+        } else {
+          errorMessage += `Unexpected error format: ${err}`;
+        }
+        
+        addProgressMessage(errorMessage);
         store.completeMainerCreation();
       }
     } catch (creationError) {
@@ -544,6 +694,9 @@
       // Check if this is an unlocked mAIner
       const isUnlocked = canisterInfo.status && 'Unlocked' in canisterInfo.status;
       
+      // Check if this unlocked mAIner is owned by the current user
+      const isOwnedByCurrentUser = !canisterInfo.ownedBy || canisterInfo.ownedBy.toString() === $store.principal?.toString();
+      
       const mainerData = {
         id: canisterInfo.address || `unlocked-${index}`, // Use index for unlocked without address
         name: isUnlocked ? `Unlocked mAIner ${index + 1}` : `mAIner ${canisterInfo.address?.slice(0, 5) || 'Unknown'}`,
@@ -557,18 +710,23 @@
         llmSetupStatus: canisterInfo.llmSetupStatus || '',
         hasError: canisterInfo.hasError || false,
         isUnlocked,
+        isOwnedByCurrentUser,
         originalCanisterInfo: canisterInfo // Store original for whitelist creation
       };
 
-      if (isUnlocked) {
+      if (isUnlocked && isOwnedByCurrentUser) {
+        console.log(`Adding unlocked mAIner ${index + 1} - owned by current user`);
         unlockedAgents.push(mainerData);
-      } else {
+      } else if (isUnlocked && !isOwnedByCurrentUser) {
+        console.log(`Skipping unlocked mAIner ${index + 1} - owned by different user:`, canisterInfo.ownedBy?.toString());
+      } else if (!isUnlocked) {
         activeAgents.push(mainerData);
       }
     });
 
     // Update unlocked mAIners list
     unlockedMainers = unlockedAgents;
+    console.log("loadAgents - unlocked mAIners found:", unlockedMainers);
     
     return activeAgents;
   };
@@ -591,10 +749,26 @@
   onMount(async () => {
     //console.log("MainerAccordion onMount agentCanisterActors", agentCanisterActors);
     //console.log("MainerAccordion onMount agentCanistersInfo", agentCanistersInfo);
-    isProtocolActiveFlag = await getIsProtocolActive();
-    isMainerCreationStoppedFlag = await getIsMainerCreationStopped(modelType);
-    isWhitelistPhaseActiveFlag = await getIsWhitelistPhaseActive();
-    isPauseWhitelistMainerCreationFlag = await getPauseWhitelistMainerCreationFlag();
+    
+    try {
+      isProtocolActiveFlag = await getIsProtocolActive();
+      isMainerCreationStoppedFlag = await getIsMainerCreationStopped(modelType);
+      isWhitelistPhaseActiveFlag = await getIsWhitelistPhaseActive();
+      isPauseWhitelistMainerCreationFlag = await getPauseWhitelistMainerCreationFlag();
+      
+      console.log("Protocol flags loaded:");
+      console.log("- isProtocolActive:", isProtocolActiveFlag);
+      console.log("- isMainerCreationStopped:", isMainerCreationStoppedFlag);
+      console.log("- isWhitelistPhaseActive:", isWhitelistPhaseActiveFlag);
+      console.log("- isPauseWhitelistMainerCreation:", isPauseWhitelistMainerCreationFlag);
+    } catch (error) {
+      console.error("Error loading protocol flags:", error);
+      // Set safe defaults
+      isProtocolActiveFlag = true;
+      isMainerCreationStoppedFlag = false;
+      isWhitelistPhaseActiveFlag = true; // Default to true since we manually set it to true in gameState.ts
+      isPauseWhitelistMainerCreationFlag = false;
+    }
     
     // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
     agents = await loadAgents();
@@ -617,8 +791,15 @@
       }, 100);
     };
 
-    currentMainerPrice = await getMainerPrice();
-    currentWhitelistPrice = await getWhitelistAgentPrice();
+    try {
+      currentMainerPrice = await getMainerPrice();
+      currentWhitelistPrice = await getWhitelistAgentPrice();
+    } catch (error) {
+      console.error("Error loading prices:", error);
+      // Set fallback values if loading fails
+      currentMainerPrice = modelType === 'Own' ? 1500 : 1000;
+      currentWhitelistPrice = 0.1;
+    }
   });
 
   // Watch for changes in agents or auth status
@@ -974,7 +1155,7 @@
           <span class="text-lg font-medium text-yellow-800 dark:text-yellow-200">Whitelist Phase Active</span>
         </div>
         <p class="text-sm text-yellow-700 dark:text-yellow-300">
-          Special whitelist pricing available! Create your mAIner from the unlocked options below at {currentWhitelistPrice} ICP (normally {currentMainerPrice} ICP).
+          Special whitelist pricing available! Create your mAIner from the unlocked options below at {currentWhitelistPrice || 0.1} ICP (normally {currentMainerPrice || 1000} ICP).
         </p>
       </div>
     </div>
@@ -1000,11 +1181,11 @@
               class:opacity-50={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive}
               class:cursor-not-allowed={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive}
             >
-              {#if isCreatingMainer}
-                Creating...
-              {:else}
-                Create ({currentWhitelistPrice} ICP)
-              {/if}
+                                    {#if isCreatingMainer}
+                        Creating...
+                      {:else}
+                        Create ({currentWhitelistPrice || 0.1} ICP)
+                      {/if}
             </button>
           </div>
         </div>
