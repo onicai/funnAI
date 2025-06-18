@@ -1009,13 +1009,13 @@
                   </svg>
                 </div>
                 <div>
-                  <h3 class="text-lg sm:text-xl font-bold text-white drop-shadow-sm">Whitelist Phase Active</h3>
+                <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white backdrop-blur-sm">
+                      Limited Time
+                    </div>
+                  <h3 class="text-lg sm:text-xl font-bold text-white drop-shadow-sm">Whitelist phase active</h3>
                   <div class="flex items-center space-x-2 mt-1">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white backdrop-blur-sm">
-                      Limited Time
-                    </span>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white backdrop-blur-sm">
-                      Special Pricing
+                      Special pricing
                     </span>
                     {#if unlockedMainers.length > 0}
                       <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-white backdrop-blur-sm">
@@ -1106,21 +1106,60 @@
     </div>
   {/if}
 {:else if isWhitelistPhaseActive && !isAuthenticated}
-  <div class="mb-4">
-    <div class="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 text-center">
-      <svg class="w-8 h-8 text-yellow-600 dark:text-yellow-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-      </svg>
-      <h3 class="text-lg font-medium text-yellow-800 dark:text-yellow-200 mb-2">Whitelist Phase Active</h3>
-      <p class="text-sm text-yellow-700 dark:text-yellow-300 mb-3">
-        Connect your wallet to see available whitelist mAIners and take advantage of special pricing.
-      </p>
-      <button 
-        on:click={toggleLoginModal} 
-        class="bg-yellow-600 dark:bg-yellow-700 hover:bg-yellow-700 dark:hover:bg-yellow-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-      >
-        Connect Wallet
-      </button>
+  <div class="mb-4 h-full">
+    <div class="relative overflow-hidden bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 dark:from-amber-600 dark:via-yellow-600 dark:to-orange-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform h-full">
+      <!-- Background decoration -->
+      <div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent"></div>
+      <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-16 translate-x-16"></div>
+      <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
+      
+      <div class="relative h-full flex items-center justify-center p-4 sm:p-6">
+        <div class="flex flex-col items-center text-center space-y-4 sm:space-y-5 max-w-lg mx-auto">
+          <!-- Icon with enhanced styling -->
+          <div class="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-sm">
+            <svg class="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+          </div>
+          
+          <!-- Content section -->
+            <div class="space-y-3 sm:space-y-4">
+              <div class="flex flex-col items-center text-center space-y-2">
+                <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white backdrop-blur-sm">
+                  Limited time
+                </div>
+                <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-sm">Whitelist phase active</h3>
+            </div>
+            
+            <div class="text-white/90 text-sm sm:text-base leading-relaxed max-w-md mx-auto space-y-2">
+              <p class="font-semibold text-base sm:text-lg">🎉 Exclusive access available!</p>
+              <p>Connect your wallet to see available whitelist mAIners and take advantage of special pricing.</p>
+            </div>
+            
+            <!-- Enhanced button -->
+            <div class="pt-3">
+              <button 
+                on:click={toggleLoginModal} 
+                class="group relative inline-flex items-center justify-center px-6 py-3 text-base font-bold text-amber-600 bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-102 border-2 border-white/20 backdrop-blur-sm"
+              >
+                <svg class="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd" />
+                </svg>
+                Connect Wallet
+                <div class="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-100 to-yellow-100 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+              </button>
+            </div>
+            
+            <!-- Additional info -->
+            <div class="text-xs text-white/80 bg-white/15 backdrop-blur-sm rounded-xl px-3 py-2 border border-white/20 shadow-sm">
+              <div class="flex items-center justify-center space-x-2">
+                <span class="text-sm">💡</span>
+                <span class="font-medium">Get early access to mAIners with exclusive whitelist pricing</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 {/if}
