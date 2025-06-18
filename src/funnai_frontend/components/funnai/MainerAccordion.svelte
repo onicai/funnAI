@@ -1091,17 +1091,74 @@
     {/each}
   {:else}
     <div class="mb-4">
-      <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center">
-        <svg class="w-8 h-8 text-gray-400 dark:text-gray-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-        </svg>
-        <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-1">No unlocked mAIners available</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400">
-          You don't have any unlocked mAIners available for whitelist creation at this time.
-        </p>
-        <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
-          Debug: Total mAIners loaded: {agentCanistersInfo.length}, Unlocked for you: {unlockedMainers.length}
-        </p>
+      <div class="relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-800 dark:via-blue-900/20 dark:to-indigo-900/20 border border-slate-200/60 dark:border-slate-700/60 rounded-xl shadow-sm">
+        <!-- Background decorative elements -->
+        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-200/20 to-indigo-200/20 dark:from-blue-600/10 dark:to-indigo-600/10 rounded-full -translate-y-16 translate-x-16"></div>
+        <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-purple-200/20 to-pink-200/20 dark:from-purple-600/10 dark:to-pink-600/10 rounded-full translate-y-12 -translate-x-12"></div>
+        
+        <div class="relative p-6 sm:p-8 text-center">
+          <!-- Enhanced icon with background -->
+          <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-800/30 dark:to-indigo-800/30 rounded-2xl shadow-sm border border-blue-200/50 dark:border-blue-700/50 mx-auto mb-4">
+            <svg class="w-8 h-8 sm:w-10 sm:h-10 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+          </div>
+          
+          <!-- Main heading -->
+          <h3 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 mb-3">
+            Whitelist phase complete! 🎉
+          </h3>
+          
+          <!-- Description -->
+          <div class="space-y-3 mb-6">
+            <p class="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-md mx-auto">
+              All whitelist mAIners have been successfully claimed by early supporters.
+            </p>
+            
+            <!-- Public sale announcement -->
+            <div class="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200/60 dark:border-emerald-700/60 rounded-lg p-4 max-w-sm mx-auto">
+              <div class="flex items-center justify-center space-x-2 mb-2">
+                <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span class="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Public Sale Opens</span>
+              </div>
+              <div class="text-2xl sm:text-3xl font-bold text-emerald-700 dark:text-emerald-300 mb-1">
+                June 29
+              </div>
+              <p class="text-xs text-emerald-600 dark:text-emerald-400">
+                Mark your calendar!
+              </p>
+            </div>
+          </div>
+          
+          <!-- Call to action -->
+          <div class="space-y-3">
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              🚀 <span class="font-medium">Coming soon:</span> Create your own mAIner and start AI mining!
+            </p>
+            
+            <!-- Notification signup hint -->
+            <div class="inline-flex items-center space-x-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/30 rounded-full border border-blue-200 dark:border-blue-700">
+              <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+              </svg>
+              <span class="text-xs font-medium text-blue-700 dark:text-blue-300">Stay tuned for launch updates</span>
+            </div>
+          </div>
+          
+          <!-- Debug info - only show in development -->
+          {#if import.meta.env.DEV}
+            <details class="mt-4 text-left">
+              <summary class="text-xs text-slate-400 dark:text-slate-500 cursor-pointer hover:text-slate-600 dark:hover:text-slate-400">Debug Info</summary>
+              <div class="mt-2 p-2 bg-slate-100 dark:bg-slate-800 rounded text-xs text-slate-500 dark:text-slate-400">
+                Total mAIners loaded: {agentCanistersInfo.length}<br>
+                Unlocked for you: {unlockedMainers.length}
+              </div>
+            </details>
+          {/if}
+        </div>
       </div>
     </div>
   {/if}
