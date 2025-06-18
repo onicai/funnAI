@@ -33,22 +33,30 @@
   let updating = false;
   let updateCounter = 0;
 
-  // Convert timestamp to readable time format
-  function formatTimestamp(timestamp: number): string {
+  // Convert timestamp to readable date and time format
+  function formatTimestamp(timestamp: number): { date: string; time: string } {
     // IC timestamps are typically in nanoseconds, convert to milliseconds
     const milliseconds = timestamp / 1000000;
-    const date = new Date(milliseconds);
+    const dateObj = new Date(milliseconds);
     
     // Check if date is valid
-    if (isNaN(date.getTime())) {
-      return "Invalid Date";
+    if (isNaN(dateObj.getTime())) {
+      return { date: "Invalid", time: "Date" };
     }
     
-    return date.toLocaleTimeString([], {
+    const date = dateObj.toLocaleDateString([], {
+      month: "2-digit",
+      day: "2-digit",
+      year: "2-digit",
+    });
+    
+    const time = dateObj.toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
     });
+    
+    return { date, time };
   }
 
   function getStatusColor(type: string): string {
@@ -468,7 +476,10 @@
                     <span class="text-2xl animate-bounce-10s">{getWinnerIcon(item.content.placement || '')}</span>
                   {/if}
                 </span>
-                <span class="text-xs font-normal text-slate-600 dark:text-slate-300">{formatTimestamp(item.timestamp)}</span>
+                <div class="text-2xs font-bold text-slate-600 dark:text-slate-300 text-right opacity-60">
+                  <div>{formatTimestamp(item.timestamp).date}</div>
+                  <div class="opacity-40">{formatTimestamp(item.timestamp).time}</div>
+                </div>
               </h4>
               {#if item.type === 'challenge'}
                 <p class="text-slate-600 dark:text-slate-300 pr-6">New challenge: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.challenge}</span></p>
@@ -498,6 +509,12 @@
 </div>
 
 <style>
+  /* Custom text size smaller than text-xs */
+  .text-2xs {
+    font-size: 0.625rem; /* 10px */
+    line-height: 0.75rem; /* 12px */
+  }
+
   @keyframes fadeIn {
     from {
       opacity: 0;
