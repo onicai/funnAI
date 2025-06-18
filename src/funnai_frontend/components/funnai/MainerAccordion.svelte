@@ -992,7 +992,7 @@
 {#if isWhitelistPhaseActive && isAuthenticated}
   {#if unlockedMainers.length > 0}
     <div class="mb-4">
-      <div class="relative overflow-hidden bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 dark:from-amber-600 dark:via-yellow-600 dark:to-orange-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5">
+      <div class="relative overflow-hidden bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 dark:from-amber-600 dark:via-yellow-600 dark:to-orange-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform">
         <!-- Background decoration -->
         <div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent"></div>
         <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-16 translate-x-16"></div>
