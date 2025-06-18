@@ -17,6 +17,9 @@
   $: mainerCreationProgress = $store.mainerCreationProgress;
   $: shouldOpenFirstMainerAfterCreation = $store.shouldOpenFirstMainerAfterCreation;
 
+  // Loading state for protocol flags
+  let protocolFlagsLoading = true;
+
   let isProtocolActiveFlag = true; // Will be loaded
   $: isProtocolActive = isProtocolActiveFlag;
 
@@ -30,12 +33,7 @@
   let isPauseWhitelistMainerCreationFlag = false; // Will be loaded
   $: isPauseWhitelistMainerCreation = isPauseWhitelistMainerCreationFlag;
 
-  let agents = [
-    // Add the agent entries dynamically via the calls in onMount
-    // TODO: remove these dummy entries
-    /* { id: 1, name: "mAIner 1", status: "active", burnedCycles: 1234567 },
-    { id: 2, name: "mAIner 2", status: "inactive", burnedCycles: 890123 } */
-  ];
+  let agents = [];
 
   // Separate unlocked mAIners for whitelist phase
   let unlockedMainers = [];
@@ -62,6 +60,9 @@
   // Track which agents are having their balance refreshed
   let agentsBeingRefreshed = new Set<string>();
 
+  // Add loading state for individual whitelist mAIner creation
+  let whitelistMainersBeingCreated = new Set<string>();
+
   // Reactive counters for mAIner status
   $: activeMainers = agents.filter(agent => agent.status === 'active').length;
   $: inactiveMainers = agents.filter(agent => agent.status === 'inactive').length;
@@ -69,7 +70,7 @@
 
   // Reactive mAIner price based on model type and whitelist phase
   let currentMainerPrice = 1000; // Will be loaded
-  let currentWhitelistPrice = 0.1; // Will be loaded
+  let currentWhitelistPrice = 0.5; // Will be loaded
   $: mainerPrice = isWhitelistPhaseActive ? currentWhitelistPrice : currentMainerPrice;
 
   async function getMainerPrice() {
@@ -90,8 +91,7 @@
     }
   };
 
-  // For testing UI only - set to true to use mock data for the mainer accordion displaying canister INFO
-  let useMockData = false;
+
 
   /**
    * Updates the agent settings based on user-selected burn rate level.
@@ -100,11 +100,6 @@
    * @param {object} agent - The mAIner agent to update
   */
   async function updateAgentBurnRate(level, agent) {
-    console.log("in MainerAccordion updateAgentBurnRate level ", level);
-    console.log("in MainerAccordion updateAgentBurnRate agent ", agent);
-    console.log("in MainerAccordion updateAgentBurnRate agentCanisterActors ", agentCanisterActors);
-    console.log("in MainerAccordion updateAgentBurnRate agentCanisterActors[0] ", agentCanisterActors[0]);
-    
     // Add this agent to the updating set
     agentsBeingUpdated.add(agent.id);
     agentsBeingUpdated = agentsBeingUpdated; // Trigger reactivity
@@ -138,16 +133,13 @@
     }
 
     try {
-      console.log("in MainerAccordion updateAgentBurnRate burnRateSetting ", burnRateSetting);
       await agentActor.updateAgentSettings(burnRateSetting);
-      console.log(`Successfully updated burn rate to ${level}`);
       
       // Refresh the list of agents to show updated settings
       try {
         await store.loadUserMainerCanisters();
         // Explicitly reload agents after store update  
         agents = await loadAgents();
-        console.log("Agents refreshed after burn rate update");
       } catch (refreshError) {
         console.error("Error refreshing agents after burn rate update:", refreshError);
       }
@@ -207,10 +199,17 @@
   };
 
   function createWhitelistAgent(unlockedMainer) {
-    console.log("createWhitelistAgent called with:", unlockedMainer);
+    console.log("🔵 createWhitelistAgent called with:", unlockedMainer);
     // Set the selected unlocked mAIner for whitelist creation
     selectedUnlockedMainer = unlockedMainer;
-    console.log("selectedUnlockedMainer set to:", selectedUnlockedMainer);
+    console.log("🔵 selectedUnlockedMainer set to:", selectedUnlockedMainer);
+    console.log("🔵 Opening payment modal...");
+    
+    // Add this mAIner to the loading set (using id or a unique identifier)
+    const mainerIdentifier = unlockedMainer.id || unlockedMainer.name || `unlocked-${Date.now()}`;
+    whitelistMainersBeingCreated.add(mainerIdentifier);
+    whitelistMainersBeingCreated = whitelistMainersBeingCreated; // Trigger reactivity
+    
     // Open the MainerPaymentModal with whitelist pricing
     mainerPaymentModalOpen = true;
   };
@@ -255,7 +254,6 @@
   
   // Handle top-up completion
   async function handleTopUpComplete(txId: string, canisterId: string) {
-    console.log("Top-up completed" + (txId ? ` with transaction ID: ${txId}` : ""));
     mainerTopUpModalOpen = false;
 
     // Add this agent to the loading set
@@ -264,7 +262,6 @@
     
     // Get mAIner info from agentCanistersInfo via canisterId
     let mainerAgent = findAgentByAddress(canisterId);
-    console.log("handleTopUpComplete mainerAgent: ", mainerAgent);
     if (!mainerAgent) {
       console.error("Error in handleTopUpComplete: no agent for canisterId");
       // Remove from loading set on error
@@ -275,7 +272,6 @@
 
     // Clean the enriched data to get only original backend fields
     let cleanMainerAgent = getOriginalCanisterInfo(mainerAgent);
-    console.log("handleTopUpComplete cleanMainerAgent: ", cleanMainerAgent);
 
     let mainerAgentTopUpInput = {
       paymentTransactionBlockId: BigInt(txId),
@@ -283,11 +279,9 @@
     };
     try {
       let topUpUserMainerAgentResponse = await $store.gameStateCanisterActor.topUpCyclesForMainerAgent(mainerAgentTopUpInput);
-      console.log("handleTopUpComplete topUpUserMainerAgentResponse: ", topUpUserMainerAgentResponse);
       
       if ('Ok' in topUpUserMainerAgentResponse) {
         // top up was successful
-        console.log("Top-up successful");
       } else if ('Err' in topUpUserMainerAgentResponse) {
         console.error("Error in topUpCyclesForMainerAgent:", topUpUserMainerAgentResponse.Err);
       };
@@ -300,7 +294,6 @@
       await store.loadUserMainerCanisters();
       // Explicitly reload agents after store update
       agents = await loadAgents();
-      console.log("Agents refreshed after top-up");
     } catch (refreshError) {
       console.error("Error refreshing agents after top-up:", refreshError);
     } finally {
@@ -311,21 +304,24 @@
   }
   
   async function handleSendComplete(txId?: string) {
-    console.log("Payment completed" + (txId ? ` with transaction ID: ${txId}` : ""));
-    console.log("selectedUnlockedMainer:", selectedUnlockedMainer);
     mainerPaymentModalOpen = false;
+    
+    // Clear the individual whitelist mAIner loading state since global creation starts
+    whitelistMainersBeingCreated.clear();
+    whitelistMainersBeingCreated = whitelistMainersBeingCreated; // Trigger reactivity
     
     // Set the creation process as started using store
     store.startMainerCreation();
     
+    // Store the selected unlocked mAIner before starting creation to prevent null reference
+    const selectedMainerForCreation = selectedUnlockedMainer;
+    
     // Start the staged creation process
     // Step 1: Begin registration
-    if (selectedUnlockedMainer) {
-      console.log("Creating whitelist mAIner with:", selectedUnlockedMainer);
+    if (selectedMainerForCreation) {
       addProgressMessage("Creating whitelist mAIner...");
-      await handleWhitelistMainerCreation(txId);
+      await handleWhitelistMainerCreation(txId, selectedMainerForCreation);
     } else {
-      console.log("Creating regular mAIner");
       addProgressMessage("Registering new mAIner...");
       
       // Check which backend methods are available and use the appropriate flow
@@ -342,10 +338,7 @@
     selectedUnlockedMainer = null;
   };
 
-  async function handleWhitelistMainerCreation(txId?: string) {
-    console.log("handleWhitelistMainerCreation started with txId:", txId);
-    console.log("selectedUnlockedMainer:", selectedUnlockedMainer);
-    
+  async function handleWhitelistMainerCreation(txId?: string, selectedMainer?: any) {
     try {
       addProgressMessage("Preparing whitelist mAIner creation...");
       
@@ -354,7 +347,7 @@
         throw new Error("No transaction ID provided for whitelist mAIner creation");
       }
       
-      if (!selectedUnlockedMainer) {
+      if (!selectedMainer) {
         throw new Error("No unlocked mAIner selected");
       }
       
@@ -362,96 +355,25 @@
         throw new Error("User principal not available");
       }
       
-      console.log("Validation passed - all required data available");
-      
-              // Try using the original mainerConfig from the unlocked mAIner
-        // The backend might expect the exact same config that was used to create the unlocked mAIner
-        const originalMainerConfig = selectedUnlockedMainer.originalCanisterInfo?.mainerConfig;
+      // Use the new WhitelistMainerCreationInput structure for whitelistCreateUserMainerAgent
+      const originalCanisterInfo = selectedMainer.originalCanisterInfo;
         
-        console.log("Checking original mainerConfig from unlocked mAIner:");
-        console.log("- Original config:", originalMainerConfig);
-        
-        let mainerConfig;
-        if (originalMainerConfig) {
-          console.log("Using original mainerConfig from unlocked mAIner");
-          mainerConfig = originalMainerConfig;
-        } else {
-          console.log("No original config found, creating fresh mainerConfig");
-          // Fallback to fresh config if original is not available
-          type SelectableMainerLLMs = { 'Qwen2_5_500M' : null };
-          let selectableMainerLLM = { 'Qwen2_5_500M' : null }; // default
-          let selectedLLM : [] | [SelectableMainerLLMs] = selectedModel === "" ? [] : [selectableMainerLLM];
-          type MainerAgentCanisterType = { 'NA' : null } |
-            { 'Own' : null } |
-            { 'ShareAgent' : null } |
-            { 'ShareService' : null };
-          
-          // Determine mAIner type from the unlocked mAIner or default to Shared
-          let mainerAgentCanisterType : MainerAgentCanisterType = { 'ShareAgent' : null }; // default to Shared
-          
-          // Check multiple possible sources for mainer type
-          const mainerTypeFromUnlocked = selectedUnlockedMainer.mainerType;
-          const mainerTypeFromOriginal = selectedUnlockedMainer.originalCanisterInfo?.canisterType?.MainerAgent;
-          
-          console.log("Determining mAIner type:");
-          console.log("- From unlocked mAIner:", mainerTypeFromUnlocked);
-          console.log("- From original canister info:", mainerTypeFromOriginal);
-          
-          if (mainerTypeFromUnlocked === 'Own' || (mainerTypeFromOriginal && 'Own' in mainerTypeFromOriginal)) {
-            mainerAgentCanisterType = { 'Own' : null };
-            console.log("Setting mAIner type to Own");
-          } else {
-            console.log("Setting mAIner type to ShareAgent (default)");
-          }
-          
-          mainerConfig = {
-            selectedLLM,
-            mainerAgentCanisterType,
-            subnetCtrl : "",
-            subnetLlm : "",
-            cyclesForMainer : 0n
-          };
-        }
-      
-      // For unlocking, we might need to send empty owner array
-      // The backend might determine the owner automatically for unlocked mAIners
-      let mainerCreationInput = {
-        owner: [] as [] | [Principal], // Try empty owner first for unlocking
-        paymentTransactionBlockId: BigInt(txId),
-        mainerConfig,
-      };
-
-      console.log("=== WHITELIST MAINER CREATION DEBUG ===");
-      console.log("selectedUnlockedMainer:", selectedUnlockedMainer);
-      console.log("mainerCreationInput:", mainerCreationInput);
-      console.log("mainerConfig details:", mainerConfig);
-      console.log("Current user principal:", $store.principal?.toString());
-      console.log("Transaction ID:", txId);
-              console.log("Mainer type from UI:", selectedUnlockedMainer.mainerType);
-        console.log("MainerConfig being sent:", mainerConfig);
-        console.log("=== END DEBUG ===");
-      addProgressMessage("Unlocking whitelist mAIner...");
-
-      // Call unlockUserMainerAgent for whitelist creation
-      console.log("Attempting to unlock whitelist mAIner with empty owner...");
-      let unlockUserMainerAgentResponse = await $store.gameStateCanisterActor.unlockUserMainerAgent(mainerCreationInput);
-      console.log("unlockUserMainerAgentResponse (empty owner):", unlockUserMainerAgentResponse);
-      
-      // If unauthorized with empty owner, try with current user as owner
-      if ('Err' in unlockUserMainerAgentResponse && 'Unauthorized' in unlockUserMainerAgentResponse.Err) {
-        console.log("Empty owner failed, retrying with current user as owner...");
-        addProgressMessage("Retrying with different owner parameter...");
-        
-        const mainerCreationInputWithOwner = {
-          owner: [$store.principal] as [] | [Principal],
+        // Build the WhitelistMainerCreationInput with all required fields
+        let whitelistMainerCreationInput = {
+          address: originalCanisterInfo.address || "",
+          canisterType: originalCanisterInfo.canisterType,
+          createdBy: originalCanisterInfo.createdBy,
+          creationTimestamp: originalCanisterInfo.creationTimestamp,
+          mainerConfig: originalCanisterInfo.mainerConfig,
+          ownedBy: originalCanisterInfo.ownedBy,
+          owner: [$store.principal] as [] | [Principal], // Set current user as new owner
           paymentTransactionBlockId: BigInt(txId),
-          mainerConfig,
+          status: originalCanisterInfo.status,
+          subnet: originalCanisterInfo.subnet || "",
         };
         
-        console.log("Attempting unlock with current user as owner:", mainerCreationInputWithOwner);
-        unlockUserMainerAgentResponse = await $store.gameStateCanisterActor.unlockUserMainerAgent(mainerCreationInputWithOwner);
-        console.log("unlockUserMainerAgentResponse (with owner):", unlockUserMainerAgentResponse);
-      }
+        // Call whitelistCreateUserMainerAgent for whitelist creation (now deployed!)
+        let unlockUserMainerAgentResponse = await $store.gameStateCanisterActor.whitelistCreateUserMainerAgent(whitelistMainerCreationInput);
       
       if ('Ok' in unlockUserMainerAgentResponse) {
         addProgressMessage("Whitelist mAIner unlocked successfully!");
@@ -465,19 +387,16 @@
           
           // Step 3: Set up LLM if needed (same as normal flow)
           // Check if this is an Own type mAIner for LLM setup
-          const isOwnType = selectedUnlockedMainer.mainerType === 'Own' || 
-                          (selectedUnlockedMainer.originalCanisterInfo?.canisterType?.MainerAgent && 
-                           'Own' in selectedUnlockedMainer.originalCanisterInfo.canisterType.MainerAgent) ||
-                          (mainerConfig.mainerAgentCanisterType && 'Own' in mainerConfig.mainerAgentCanisterType);
+          const isOwnType = selectedMainer.mainerType === 'Own' || 
+                          (selectedMainer.originalCanisterInfo?.canisterType?.MainerAgent && 
+                           'Own' in selectedMainer.originalCanisterInfo.canisterType.MainerAgent) ||
+                          (whitelistMainerCreationInput.mainerConfig.mainerAgentCanisterType && 'Own' in whitelistMainerCreationInput.mainerConfig.mainerAgentCanisterType);
           
           if (isOwnType) {
             addProgressMessage("Starting LLM environment setup in the background...");
             
             // Trigger LLM setup without awaiting it
             $store.gameStateCanisterActor.setUpMainerLlmCanister(spinUpMainerControllerCanisterResponse.Ok)
-              .then((response) => {
-                console.log("LLM canister setup triggered successfully:", response);
-              })
               .catch((error) => {
                 console.error("Error triggering LLM setup:", error);
               });
@@ -495,14 +414,29 @@
             setTimeout(() => {
               // Refresh the list of agents to show the newly created one
               store.loadUserMainerCanisters().then(() => {
-                // Wait for the reactive update to complete, then open the first mAIner (newest one)
-                setTimeout(() => {
-                  openFirstMainerAccordion();
-                  // Reset the terminal after opening the accordion
+                // Reload agents to get the updated list
+                loadAgents().then((updatedAgents) => {
+                  agents = updatedAgents;
+                  // Wait for the reactive update to complete, then open the latest mAIner
                   setTimeout(() => {
-                    store.completeMainerCreation();
-                  }, 4000);
-                }, 4000); // Increased timeout for better reliability
+                    // Force open the latest mAIner accordion (newest one)
+                    if (agents.length > 0) {
+                      const latestAgent = agents[agents.length - 1];
+                      const sanitizedId = latestAgent.id.replace(/[^a-zA-Z0-9-_]/g, '_');
+                      const content = document.getElementById(`content-${sanitizedId}`);
+                      const icon = document.getElementById(`icon-${sanitizedId}`);
+                      
+                      if (content && icon) {
+                        content.classList.add('accordion-open');
+                        icon.style.transform = 'rotate(0deg)';
+                      }
+                    }
+                    // Reset the terminal after opening the accordion
+                    setTimeout(() => {
+                      store.completeMainerCreation();
+                    }, 4000);
+                  }, 1000); // Increased timeout for better reliability
+                });
               }).catch((error) => {
                 console.error("Error refreshing mAIner list:", error);
                 addProgressMessage("Warning: mAIner created but list refresh failed. Please refresh manually.");
@@ -516,10 +450,7 @@
           store.completeMainerCreation();
         }
       } else if ('Err' in unlockUserMainerAgentResponse) {
-        console.error("Error in unlockUserMainerAgent - Full response:", unlockUserMainerAgentResponse);
-        console.error("Error details:", unlockUserMainerAgentResponse.Err);
-        console.error("Error type:", typeof unlockUserMainerAgentResponse.Err);
-        console.error("Error keys:", Object.keys(unlockUserMainerAgentResponse.Err || {}));
+
         
         let errorMessage = "Error unlocking whitelist mAIner: ";
         const err = unlockUserMainerAgentResponse.Err;
@@ -586,7 +517,6 @@
     };
     try {
       let createUserMainerAgentResponse = await $store.gameStateCanisterActor.createUserMainerAgent(mainerCreationInput);
-      console.log("createUserMainerAgentResponse:", createUserMainerAgentResponse);
       
       // Check if the response has the Ok property (successful response)
       if ('Ok' in createUserMainerAgentResponse) {
@@ -604,9 +534,6 @@
             
             // Trigger LLM setup without awaiting it
             $store.gameStateCanisterActor.setUpMainerLlmCanister(spinUpMainerControllerCanisterResponse.Ok)
-              .then((response) => {
-                console.log("LLM canister setup triggered successfully:", response);
-              })
               .catch((error) => {
                 console.error("Error triggering LLM setup:", error);
               });
@@ -677,6 +604,8 @@
     const activeAgents = [];
     const unlockedAgents = [];
 
+    console.log("🔍 loadAgents - Total canister info items:", enrichedCanistersInfo.length);
+
     enrichedCanistersInfo.forEach((canisterInfo, index) => {
       // Get the correct actor by index (might be null for unlocked mAIners)
       const agentActor = agentCanisterActors[index];
@@ -697,6 +626,15 @@
       // Check if this unlocked mAIner is owned by the current user
       const isOwnedByCurrentUser = !canisterInfo.ownedBy || canisterInfo.ownedBy.toString() === $store.principal?.toString();
       
+      console.log(`🔍 mAIner ${index + 1}:`, {
+        isUnlocked,
+        isOwnedByCurrentUser,
+        mainerType,
+        address: canisterInfo.address,
+        ownedBy: canisterInfo.ownedBy?.toString(),
+        currentUser: $store.principal?.toString()
+      });
+      
       const mainerData = {
         id: canisterInfo.address || `unlocked-${index}`, // Use index for unlocked without address
         name: isUnlocked ? `Unlocked mAIner ${index + 1}` : `mAIner ${canisterInfo.address?.slice(0, 5) || 'Unknown'}`,
@@ -715,10 +653,10 @@
       };
 
       if (isUnlocked && isOwnedByCurrentUser) {
-        console.log(`Adding unlocked mAIner ${index + 1} - owned by current user`);
+        console.log(`✅ Adding unlocked mAIner ${index + 1} - owned by current user`);
         unlockedAgents.push(mainerData);
       } else if (isUnlocked && !isOwnedByCurrentUser) {
-        console.log(`Skipping unlocked mAIner ${index + 1} - owned by different user:`, canisterInfo.ownedBy?.toString());
+        console.log(`⏭️ Skipping unlocked mAIner ${index + 1} - owned by different user:`, canisterInfo.ownedBy?.toString());
       } else if (!isUnlocked) {
         activeAgents.push(mainerData);
       }
@@ -726,14 +664,21 @@
 
     // Update unlocked mAIners list
     unlockedMainers = unlockedAgents;
-    console.log("loadAgents - unlocked mAIners found:", unlockedMainers);
+    
+    console.log("🔍 Final results:", {
+      totalCanisters: enrichedCanistersInfo.length,
+      activeAgents: activeAgents.length,
+      unlockedAgents: unlockedAgents.length,
+      unlockedMainers: unlockedMainers.length
+    });
     
     return activeAgents;
   };
 
   $: {
-    console.log("MainerAccordion reactive agentCanisterActors", agentCanisterActors); // TODO: the usage of agentCanisterActors here is needed to react to changes to it, but this should be made nicer (not via this print statement)
-    console.log("MainerAccordion reactive agentCanistersInfo", agentCanistersInfo); // TODO: the usage of agentCanistersInfo here is needed to react to changes to it, but this should be made nicer (not via this print statement)
+    // React to changes in agentCanisterActors and agentCanistersInfo
+    agentCanisterActors;
+    agentCanistersInfo;
 
     (async () => {
       agents = await loadAgents();
@@ -747,8 +692,6 @@
   }
 
   onMount(async () => {
-    //console.log("MainerAccordion onMount agentCanisterActors", agentCanisterActors);
-    //console.log("MainerAccordion onMount agentCanistersInfo", agentCanistersInfo);
     
     try {
       isProtocolActiveFlag = await getIsProtocolActive();
@@ -756,11 +699,7 @@
       isWhitelistPhaseActiveFlag = await getIsWhitelistPhaseActive();
       isPauseWhitelistMainerCreationFlag = await getPauseWhitelistMainerCreationFlag();
       
-      console.log("Protocol flags loaded:");
-      console.log("- isProtocolActive:", isProtocolActiveFlag);
-      console.log("- isMainerCreationStopped:", isMainerCreationStoppedFlag);
-      console.log("- isWhitelistPhaseActive:", isWhitelistPhaseActiveFlag);
-      console.log("- isPauseWhitelistMainerCreation:", isPauseWhitelistMainerCreationFlag);
+
     } catch (error) {
       console.error("Error loading protocol flags:", error);
       // Set safe defaults
@@ -768,12 +707,13 @@
       isMainerCreationStoppedFlag = false;
       isWhitelistPhaseActiveFlag = true; // Default to true since we manually set it to true in gameState.ts
       isPauseWhitelistMainerCreationFlag = false;
+    } finally {
+      // Set loading to false after flags are loaded (whether successful or not)
+      protocolFlagsLoading = false;
     }
     
     // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
     agents = await loadAgents();
-    //console.log("MainerAccordion onMount agents", agents);
-    //console.log("MainerAccordion onMount unlockedMainers", unlockedMainers);
     
     // Automatically open the create accordion if no agents exist and not in whitelist phase
     // In whitelist phase, show unlocked mAIners instead
@@ -843,8 +783,6 @@
 
   // Add refresh balance function
   async function refreshAgentBalance(agent) {
-    console.log("Refreshing balance for agent:", agent.id);
-    
     // Add this agent to the refreshing set
     agentsBeingRefreshed.add(agent.id);
     agentsBeingRefreshed = agentsBeingRefreshed; // Trigger reactivity
@@ -854,7 +792,6 @@
       await store.loadUserMainerCanisters();
       // Explicitly reload agents after store update
       agents = await loadAgents();
-      console.log("Agent balance refreshed successfully");
     } catch (refreshError) {
       console.error("Error refreshing agent balance:", refreshError);
     } finally {
@@ -863,10 +800,30 @@
       agentsBeingRefreshed = agentsBeingRefreshed; // Trigger reactivity
     }
   }
+
+  // Handle modal close without payment completion
+  function handlePaymentModalClose() {
+    mainerPaymentModalOpen = false;
+    // Clear any individual loading states when modal closes without payment
+    whitelistMainersBeingCreated.clear();
+    whitelistMainersBeingCreated = whitelistMainersBeingCreated; // Trigger reactivity
+    selectedUnlockedMainer = null;
+  };
 </script>
 
-<!-- Create Agent Accordion (only show when not in whitelist phase) -->
-{#if !isWhitelistPhaseActive}
+<!-- Loading state for protocol flags -->
+{#if protocolFlagsLoading}
+  <div class="border-b border-gray-300 dark:border-gray-700 bg-gradient-to-r from-gray-100/50 to-gray-200/50 dark:from-gray-800/50 dark:to-gray-900/50 rounded-t-lg">
+    <div class="w-full flex justify-center items-center py-8 px-6 text-gray-600 dark:text-gray-400">
+      <div class="flex items-center space-x-3">
+        <div class="w-6 h-6 border-2 border-gray-300/30 border-t-gray-600 dark:border-gray-600/30 dark:border-t-gray-400 rounded-full animate-spin"></div>
+        <span class="text-sm font-medium">Loading creation options...</span>
+      </div>
+    </div>
+  </div>
+{:else}
+  <!-- Create Agent Accordion (only show when not in whitelist phase) -->
+  {#if !isWhitelistPhaseActive}
 <div class="border-b border-gray-300 dark:border-gray-700 bg-gradient-to-r from-purple-600/20 to-blue-600/20 dark:from-purple-900/40 dark:to-blue-900/40 rounded-t-lg">
   <button on:click={() => toggleAccordion('create')} class="w-full flex justify-between items-center py-4 sm:py-8 px-4 sm:px-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white text-sm sm:text-base font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform border border-purple-500/20">
     <span class="flex items-center min-w-0 flex-1">
@@ -961,74 +918,10 @@
                 </div>
               </div>
 
-              <!-- Own Model Card (Disabled/Coming Soon) -->
-              <!-- 
-              <div 
-                class="relative border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-800/50 opacity-60"
-              >
-                <div class="absolute top-3 right-3">
-                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                    Coming Soon
-                  </span>
-                </div>
 
-                <div class="flex items-start space-x-3 pr-20">
-                  <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                    </svg>
-                  </div>
-
-                  <div class="flex-1 min-w-0">
-                    <h4 class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">Custom Model</h4>
-                    <p class="text-xs text-gray-500 dark:text-gray-500 mb-2">
-                      Deploy your own AI model with full control
-                    </p>
-                    <div class="flex items-center space-x-4 text-xs text-gray-400 dark:text-gray-500">
-                      <div class="flex items-center space-x-1">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
-                        </svg>
-                        <span>0.0003 ICP</span>
-                      </div>
-                      <div class="flex items-center space-x-1">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                        <span>Custom setup</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              -->
             </div>
 
-            <!-- Original button code commented out
-            <div class="inline-flex rounded-full shadow-xs w-full justify-start mb-1" role="group">
-              <button 
-                type="button" 
-                class="px-4 py-2 text-xs font-medium border border-gray-200 dark:border-gray-600 rounded-s-full focus:z-10 focus:ring-2 focus:ring-blue-700 
-                {modelType === 'Own' 
-                  ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800' 
-                  : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-blue-700 dark:hover:text-blue-400'}"
-                on:click={() => modelType = 'Own'}
-              >
-                Own model
-              </button>
-              <button 
-                type="button" 
-                class="px-4 py-2 text-xs cursor-default font-medium border border-gray-200 dark:border-gray-600 focus:z-10 focus:ring-2 focus:ring-blue-700
-                {modelType === 'Shared' 
-                  ? 'bg-purple-600 dark:bg-purple-700 text-white' 
-                  : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-300'}"
-                on:click={() => modelType = 'Shared'}
-              >
-                mAIner
-              </button>
-            </div>
-            -->
+
         </li>
         <li class="mb-6 ms-6">            
             <span class="absolute flex items-center justify-center w-8 h-8 {selectedModel ? 'bg-green-200 dark:bg-green-800' : 'bg-gray-200 dark:bg-gray-800'} rounded-full -start-4 ring-4 ring-white dark:ring-gray-900">
@@ -1044,23 +937,7 @@
                   </svg>
                 {/if}
             </span>
-            <!-- Commenting out model selection dropdown
-            {#if modelType === 'Own'}
-              <form class="max-w-sm">
-                <label for="countries" class="block mb-2 text-sm font-medium text-gray-500 dark:text-gray-300">Choose a model</label>
-                <select 
-                  bind:value={selectedModel}
-                  id="countries" 
-                  class="bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-300 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
-                  <option value="">Choose model</option>
-                  <option value="SL">Small LLM</option>
-                  <option value="G2">Gpt-2</option>
-                  <option value="QW">Qwen</option>
-                  <option disabled value="DS">DeepSeek</option>
-                </select>
-              </form>
-            {/if}
-            -->
+
         </li>
         <li class="mb-6 ms-6">
             <span class="absolute flex items-center justify-center w-8 h-8 {addressCopied ? 'bg-green-200 dark:bg-green-800' : 'bg-gray-100 dark:bg-gray-800'} rounded-full -start-4 ring-4 ring-white dark:ring-gray-900">
@@ -1073,11 +950,7 @@
                 {/if}
             </span>
             <h3 class="font-medium leading-tight mb-1 dark:text-gray-300">Pay & Spin up</h3>
-            <!-- <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-md p-3 mb-3">
-              <p class="text-xs text-blue-800 dark:text-blue-300">
-                Creating the mAIner requires a setup fee of <span class="font-medium">{modelType === 'Own' ? '0.0003' : '0.0002'} ICP</span> for {modelType} model
-              </p>
-            </div> -->
+
         </li>
       </ol>
 
@@ -1091,36 +964,8 @@
         >
           Create mAIner Agent
         </button>
-        <!-- <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-right">
-          {modelType === 'Own' ? '0.0003' : '0.0002'} ICP
-        </div> -->
       </div>
-      
-      <!-- Terminal-style progress component -->
-      {#if isCreatingMainer}
-        <div class="mt-4 bg-gray-900 text-green-400 font-mono text-xs sm:text-sm rounded-lg p-2 sm:p-3 border border-gray-700 overflow-hidden">
-          <div class="flex items-center justify-between mb-2 border-b border-gray-700 pb-2">
-            <div class="text-gray-300 text-xs">mAIner Creation Progress</div>
-            <div class="flex items-center">
-              <div class="h-3 w-3 sm:h-4 sm:w-4 border-2 border-gray-400/30 border-t-green-400 rounded-full animate-spin"></div>
-            </div>
-          </div>
-          <div class="h-32 sm:h-40 overflow-y-auto terminal-scroll">
-            {#each mainerCreationProgress as progress}
-              <div class="flex mb-1 items-start" class:text-green-300={progress.complete}>
-                <span class="text-gray-500 mr-1 sm:mr-2 text-xs hidden sm:inline">[{progress.timestamp}]</span>
-                <span class="flex-1 text-xs sm:text-sm break-words">{progress.message}</span>
-                {#if progress.complete}
-                  <span class="text-green-500 ml-1">✓</span>
-                {/if}
-              </div>
-            {/each}
-            {#if mainerCreationProgress.length > 0 && !mainerCreationProgress[mainerCreationProgress.length - 1].complete}
-              <div class="blink">_</div>
-            {/if}
-          </div>
-        </div>
-      {/if}
+
     {:else}
       <div class="flex flex-col items-center justify-center py-8">
         <h3 class="text-xl font-medium text-gray-700 dark:text-gray-100 mb-2 mt-8">You need to login first</h3>
@@ -1147,16 +992,65 @@
 {#if isWhitelistPhaseActive && isAuthenticated}
   {#if unlockedMainers.length > 0}
     <div class="mb-4">
-      <div class="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 sm:p-4 mb-2">
-        <div class="flex items-center space-x-2 mb-2">
-          <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-          </svg>
-          <span class="text-lg font-medium text-yellow-800 dark:text-yellow-200">Whitelist Phase Active</span>
+      <div class="relative overflow-hidden bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 dark:from-amber-600 dark:via-yellow-600 dark:to-orange-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5">
+        <!-- Background decoration -->
+        <div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent"></div>
+        <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-16 translate-x-16"></div>
+        <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
+        
+        <div class="relative p-4 sm:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+            <!-- Left side content -->
+            <div class="flex-1">
+              <div class="flex items-center space-x-3 mb-3">
+                <div class="flex-shrink-0 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-sm">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="text-lg sm:text-xl font-bold text-white drop-shadow-sm">Whitelist Phase Active</h3>
+                  <div class="flex items-center space-x-2 mt-1">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white backdrop-blur-sm">
+                      Limited Time
+                    </span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white backdrop-blur-sm">
+                      Special Pricing
+                    </span>
+                    {#if unlockedMainers.length > 0}
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-500/20 text-white backdrop-blur-sm">
+                        {unlockedMainers.length} Available
+                      </span>
+                    {/if}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="text-white/90 text-sm leading-relaxed">
+                <p class="font-medium mb-2">🎉 Exclusive whitelist pricing now available!</p>
+                <p>Create your mAIner from the unlocked options below for just <span class="font-bold text-white">{currentWhitelistPrice || 0.5} ICP</span> instead of the regular price of <span class="line-through opacity-75">{currentMainerPrice || 1000} ICP</span>.</p>
+                {#if unlockedMainers.length > 0}
+                  <p class="text-xs text-white/80 mt-2">💡 <span class="font-medium">Note:</span> More unlocked mAIners may become available as others are created. Check back periodically during the whitelist phase.</p>
+                {/if}
+              </div>
+            </div>
+            
+            <!-- Right side - Savings highlight -->
+            <div class="flex-shrink-0 sm:ml-6">
+              <div class="bg-white/15 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20 shadow-lg">
+                <div class="text-2xl sm:text-3xl font-bold text-white mb-1">
+                  {Math.round(((currentMainerPrice || 1000) - (currentWhitelistPrice || 0.5)) / (currentMainerPrice || 1000) * 100)}%
+                </div>
+                <div class="text-xs sm:text-sm text-white/80 font-medium uppercase tracking-wide">
+                  Savings
+                </div>
+                <div class="text-xs text-white/70 mt-1">
+                  Save {((currentMainerPrice || 1000) - (currentWhitelistPrice || 0.5)).toFixed(1)} ICP
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <p class="text-sm text-yellow-700 dark:text-yellow-300">
-          Special whitelist pricing available! Create your mAIner from the unlocked options below at {currentWhitelistPrice || 0.1} ICP (normally {currentMainerPrice || 1000} ICP).
-        </p>
       </div>
     </div>
 
@@ -1176,16 +1070,20 @@
             </span>
             <button
               on:click={() => createWhitelistAgent(unlockedMainer)}
-              disabled={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive}
-              class="bg-yellow-600 dark:bg-yellow-700 hover:bg-yellow-700 dark:hover:bg-yellow-800 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
-              class:opacity-50={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive}
-              class:cursor-not-allowed={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive}
+              disabled={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
+              class="bg-yellow-600 dark:bg-yellow-700 hover:bg-yellow-700 dark:hover:bg-yellow-800 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors flex items-center"
+              class:opacity-50={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
+              class:cursor-not-allowed={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
             >
-                                    {#if isCreatingMainer}
-                        Creating...
-                      {:else}
-                        Create ({currentWhitelistPrice || 0.1} ICP)
-                      {/if}
+              {#if isCreatingMainer}
+                <span class="w-3 h-3 mr-1 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                Creating...
+              {:else if whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
+                <span class="w-3 h-3 mr-1 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                Loading...
+              {:else}
+                Create ({currentWhitelistPrice || 0.5} ICP)
+              {/if}
             </button>
           </div>
         </div>
@@ -1200,6 +1098,9 @@
         <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-1">No unlocked mAIners available</h3>
         <p class="text-sm text-gray-500 dark:text-gray-400">
           You don't have any unlocked mAIners available for whitelist creation at this time.
+        </p>
+        <p class="text-xs text-gray-400 dark:text-gray-500 mt-2">
+          Debug: Total mAIners loaded: {agentCanistersInfo.length}, Unlocked for you: {unlockedMainers.length}
         </p>
       </div>
     </div>
@@ -1224,6 +1125,32 @@
   </div>
 {/if}
 
+<!-- Terminal-style progress component (shows for both regular and whitelist creation) -->
+{#if isCreatingMainer}
+  <div class="mt-4 bg-gray-900 text-green-400 font-mono text-xs sm:text-sm rounded-lg p-2 sm:p-3 border border-gray-700 overflow-hidden">
+    <div class="flex items-center justify-between mb-2 border-b border-gray-700 pb-2">
+      <div class="text-gray-300 text-xs">mAIner Creation Progress</div>
+      <div class="flex items-center">
+        <div class="h-3 w-3 sm:h-4 sm:w-4 border-2 border-gray-400/30 border-t-green-400 rounded-full animate-spin"></div>
+      </div>
+    </div>
+    <div class="h-32 sm:h-40 overflow-y-auto terminal-scroll">
+      {#each mainerCreationProgress as progress}
+        <div class="flex mb-1 items-start" class:text-green-300={progress.complete}>
+          <span class="text-gray-500 mr-1 sm:mr-2 text-xs hidden sm:inline">[{progress.timestamp}]</span>
+          <span class="flex-1 text-xs sm:text-sm break-words">{progress.message}</span>
+          {#if progress.complete}
+            <span class="text-green-500 ml-1">✓</span>
+          {/if}
+        </div>
+      {/each}
+      {#if mainerCreationProgress.length > 0 && !mainerCreationProgress[mainerCreationProgress.length - 1].complete}
+        <div class="blink">_</div>
+      {/if}
+    </div>
+  </div>
+{/if}
+
 {#if loginModalOpen}
   <LoginModal toggleModal={toggleLoginModal} />
 {/if}
@@ -1231,7 +1158,7 @@
 {#if mainerPaymentModalOpen}
   <MainerPaymentModal 
     isOpen={mainerPaymentModalOpen}
-    onClose={() => mainerPaymentModalOpen = false}
+    onClose={handlePaymentModalClose}
     onSuccess={handleSendComplete}
     {modelType}
     {selectedUnlockedMainer}
@@ -1330,13 +1257,7 @@
                     </svg>
                   </a>
                 </div>
-                
-                <!-- Show mAIner type 
-                <div class="flex items-center">
-                  <span class="text-xs mr-2 w-24">Type:</span>
-                  <span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-yellow-300 border border-yellow-300">{agent.mainerType}</span>
-                </div>
-                -->
+
                 
                 <!-- For Own type mAIners, show LLM information or setup status -->
                 {#if agent.mainerType === 'Own'}
@@ -1496,13 +1417,7 @@
             </div>
           </div>
 
-          <!-- <div class="flex flex-col space-y-2 my-2">
-            <div class="w-full p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg" role="alert">
-              <div class="flex items-center justify-between">
-                <h2 class="text-sm">Manage settings</h2>
-              </div>
-            </div>
-          </div> -->
+
           <div class="flex flex-col space-y-2 mb-2">
             <CyclesDisplayAgent cycles={agent.burnedCycles} label="Burned Cycles" />
           </div>
@@ -1512,6 +1427,7 @@
     </div>
   {/if}
 {/each}
+{/if}
 
 <style>
   .accordion-content {

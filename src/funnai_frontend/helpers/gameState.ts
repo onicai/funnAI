@@ -39,11 +39,11 @@ export const getOwnAgentPrice = async () => {
 
 export const getWhitelistAgentPrice = async () => {
   try {
-    // Fixed whitelist price of 0.01 ICP for debugging
-    return 0.01;
+    // Fixed whitelist price of 0.5 ICP for debugging
+    return 0.5;
   } catch (error) {
     console.error("Failed to getWhitelistAgentPrice:", error);
-    return 0.01; // Fallback value in case of error
+    return 0.5; // Fallback value in case of error
   };
 };
 
