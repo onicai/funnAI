@@ -5,6 +5,7 @@
   import { fly } from "svelte/transition";
   import { store } from "../../stores/store";
   import { formatFunnaiAmount } from "../../helpers/utils/numberFormatUtils";
+  import ShareFeedItem from "./ShareFeedItem.svelte";
 
   export let showAllEvents: boolean = true;
 
@@ -402,7 +403,7 @@
   });
 </script>
 
-<div class="h-full overflow-y-auto dark:bg-gray-900 dark:text-white flex flex-col">
+<div class="h-full dark:bg-gray-900 dark:text-white flex flex-col" style="overflow-y: auto; overflow-x: visible;">
 
   {#if updating && $store.isAuthed}
     <div class="flex justify-center py-2">
@@ -446,7 +447,7 @@
       aria-label="mAIner Activity feed" 
       role="feed" 
       class="relative flex flex-col gap-8 py-12 pl-6 text-sm 
-             before:absolute before:top-0 before:z-0 before:left-6 before:h-full before:border-2 before:-translate-x-1/2 before:border-slate-400 before:border-dashed before:z-[0] dark:before:border-slate-400"
+             before:absolute before:top-0 before:z-0 before:left-6 before:h-full before:border-2 before:-translate-x-1/2 before:border-slate-400 before:border-dashed dark:before:border-slate-400"
     >
       {#if feedItems.length === 0 && loading}
         <li class="text-center py-4">
@@ -459,7 +460,7 @@
           <li 
             role="article" 
             class="relative px-6 
-                   before:absolute before:z-[20] before:left-0 before:top-2 before:h-3 before:w-3 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 before:shadow-sm animate-fadeIn"
+                   before:absolute before:z-[1] before:left-0 before:top-2 before:h-3 before:w-3 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 before:shadow-sm"
             in:fly="{{ y: 20, duration: 500 }}"
           >
             <div class="flex flex-col flex-1 gap-2 {item.type === 'winner' ? getWinnerStyling(item.content.placement || '') + ' p-4 rounded-lg animate-pulse-winner' : ''}">
@@ -476,9 +477,12 @@
                     <span class="text-2xl animate-bounce-10s">{getWinnerIcon(item.content.placement || '')}</span>
                   {/if}
                 </span>
-                <div class="text-2xs font-bold text-slate-600 dark:text-slate-300 text-right opacity-60">
-                  <div>{formatTimestamp(item.timestamp).date}</div>
-                  <div class="opacity-40">{formatTimestamp(item.timestamp).time}</div>
+                <div class="flex items-center gap-2">
+                  <div class="text-2xs font-bold text-slate-600 dark:text-slate-300 text-right opacity-60">
+                    <div>{formatTimestamp(item.timestamp).date}</div>
+                    <div class="opacity-40">{formatTimestamp(item.timestamp).time}</div>
+                  </div>
+                  <ShareFeedItem feedItem={item} />
                 </div>
               </h4>
               {#if item.type === 'challenge'}
