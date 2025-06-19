@@ -78,7 +78,7 @@ export const getIsMainerCreationStopped = async (mainerType) => {
       return false;
     }
     
-    let input = mainerType === 'Own' ? { 'Own' : null } : { 'ShareAgent' : null };
+    let input = { 'mainerType' : mainerType === 'Own' ? { 'Own': null } : { 'ShareAgent': null } }
     let response = await storeState.gameStateCanisterActor.shouldCreatingMainersBeStopped(input);
     
     // Handle both response types - the backend might return just a boolean or a Result type
