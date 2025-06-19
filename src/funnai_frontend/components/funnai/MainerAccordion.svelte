@@ -1563,7 +1563,7 @@
               
               <div class="relative p-4 sm:p-5">
                 <!-- Header Section -->
-                <div class="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 mb-4">
+                <div class="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0 mb-4">
                   <div class="flex items-center space-x-3">
                     <!-- Icon with gradient background -->
                     <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg flex items-center justify-center">
@@ -1582,7 +1582,7 @@
                   <!-- Primary Top-up Button -->
                   <button 
                     type="button" 
-                    class="group relative inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-emerald-400/50 dark:border-emerald-500/50 w-full sm:w-auto"
+                    class="group relative inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-emerald-400/50 dark:border-emerald-500/50 w-full md:w-auto"
                     class:opacity-50={agentsBeingToppedUp.has(agent.id)}
                     class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id)}
                     class:transform-none={agentsBeingToppedUp.has(agent.id)}
@@ -1698,7 +1698,7 @@
                     <!-- Balance Info Footer -->
                     {#if !agentsBeingToppedUp.has(agent.id) && !agentsBeingRefreshed.has(agent.id)}
                       <div class="pt-2 border-t border-emerald-200/50 dark:border-emerald-700/50">
-                        <div class="flex items-center justify-between text-xs">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs space-y-1 sm:space-y-0">
                           <span class="text-emerald-600 dark:text-emerald-400 opacity-75">
                             💡 Cycles power your mAIner's computational tasks
                           </span>
@@ -1770,11 +1770,11 @@
                   </div>
 
                   <!-- Enhanced Button Group -->
-                  <div class="grid grid-cols-3 gap-2 sm:gap-3" role="group">
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3" role="group">
                     <!-- Low Button -->
                     <button 
                       type="button" 
-                      class="group relative px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 transform border-2 focus:z-10 focus:ring-2 focus:ring-purple-500
+                      class="group relative px-2 sm:px-3 md:px-4 py-2 sm:py-3 md:py-4 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl transition-all duration-300 transform border-2 focus:z-10 focus:ring-2 focus:ring-purple-500
                       {agent.cyclesBurnRateSetting === 'Low' 
                         ? 'bg-gradient-to-r from-green-500 to-emerald-600 dark:from-green-600 dark:to-emerald-700 text-white border-green-400 shadow-lg scale-105' 
                         : 'bg-white/70 dark:bg-gray-800/70 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-500 hover:scale-102'}"
@@ -1800,7 +1800,7 @@
                     <!-- Medium Button -->
                     <button 
                       type="button" 
-                      class="group relative px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 transform border-2 focus:z-10 focus:ring-2 focus:ring-purple-500
+                      class="group relative px-2 sm:px-3 md:px-4 py-2 sm:py-3 md:py-4 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl transition-all duration-300 transform border-2 focus:z-10 focus:ring-2 focus:ring-purple-500
                       {agent.cyclesBurnRateSetting === 'Medium' 
                         ? 'bg-gradient-to-r from-yellow-500 to-orange-600 dark:from-yellow-600 dark:to-orange-700 text-white border-yellow-400 shadow-lg scale-105' 
                         : 'bg-white/70 dark:bg-gray-800/70 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-500 hover:scale-102'}"
@@ -1826,7 +1826,7 @@
                     <!-- High Button -->
                     <button 
                       type="button" 
-                      class="group relative px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 transform border-2 focus:z-10 focus:ring-2 focus:ring-purple-500
+                      class="group relative px-2 sm:px-3 md:px-4 py-2 sm:py-3 md:py-4 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl transition-all duration-300 transform border-2 focus:z-10 focus:ring-2 focus:ring-purple-500
                       {agent.cyclesBurnRateSetting === 'High' 
                         ? 'bg-gradient-to-r from-red-500 to-pink-600 dark:from-red-600 dark:to-pink-700 text-white border-red-400 shadow-lg scale-105' 
                         : 'bg-white/70 dark:bg-gray-800/70 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-500 hover:scale-102'}"
@@ -1855,7 +1855,7 @@
                     <div class="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-lg p-3 mt-3">
                       <div class="flex items-center justify-center space-x-3">
                         <span class="w-5 h-5 border-2 border-purple-400/30 border-t-purple-600 rounded-full animate-spin"></span>
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
+                        <div class="flex flex-col md:flex-row md:items-center md:space-x-2">
                           <span class="text-sm font-medium text-purple-700 dark:text-purple-300">Updating burn rate...</span>
                           <span class="text-xs text-purple-600 dark:text-purple-400 opacity-75">Changes will take effect immediately</span>
                         </div>
@@ -1870,7 +1870,7 @@
                         </svg>
                         <div class="space-y-1">
                           <p><span class="font-medium">💡 Tip:</span> Higher burn rates provide faster AI responses but consume more cycles.</p>
-                          <div class="grid grid-cols-1 sm:grid-cols-3 gap-1 text-xs opacity-75">
+                          <div class="grid grid-cols-1 md:grid-cols-3 gap-1 text-xs opacity-75">
                             <span>🟢 <strong>Low:</strong> ~1-2T cycles/day</span>
                             <span>🟡 <strong>Medium:</strong> ~3-5T cycles/day</span>
                             <span>🔴 <strong>High:</strong> ~6-10T cycles/day</span>
