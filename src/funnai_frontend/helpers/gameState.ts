@@ -110,7 +110,7 @@ export const getPauseWhitelistMainerCreationFlag = async () => {
 export const getIsWhitelistPhaseActive = async (isRetry=false) => {
   try {
     // For testing: manually enable/disable whitelist phase
-    return true;  // 👈 Change this to true/false to enable/disable whitelist phase
+    return false;  // 👈 Change this to true/false to enable/disable whitelist phase
     
     /*
     // For production: uncomment this when backend function is available

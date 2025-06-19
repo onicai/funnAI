@@ -967,20 +967,85 @@
       </div>
 
     {:else}
-      <div class="flex flex-col items-center justify-center py-8">
-        <h3 class="text-xl font-medium text-gray-700 dark:text-gray-100 mb-2 mt-8">You need to login first</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mb-4 text-center">
-          Connect your wallet to create and manage your mAIners
-        </p>
-        <button 
-          on:click={toggleLoginModal} 
-          class="bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-800 text-white px-6 py-2 rounded-full transition-colors flex items-center"
-        >
-          <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd" />
-          </svg>
-          Connect
-        </button>
+      <div class="h-full flex">
+        <div class="relative overflow-hidden bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500 dark:from-blue-600 dark:via-purple-600 dark:to-indigo-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform flex-1 flex flex-col">
+          <!-- Background decoration -->
+          <div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent"></div>
+          <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-16 translate-x-16"></div>
+          <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
+          
+          <div class="relative flex-1 flex items-center justify-center p-4 sm:p-6">
+            <div class="flex flex-col items-center text-center space-y-4 sm:space-y-5 max-w-lg mx-auto">
+              <!-- Icon with enhanced styling -->
+              <div class="flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-sm">
+                <svg class="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+              </div>
+              
+              <!-- Content section -->
+              <div class="space-y-3 sm:space-y-4">
+                <div class="flex flex-col items-center text-center space-y-2">
+                  <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white backdrop-blur-sm">
+                    Get Started
+                  </div>
+                  <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-sm">Connect to begin</h3>
+                </div>
+                
+                <div class="text-white/90 text-sm sm:text-base leading-relaxed max-w-md mx-auto space-y-2">
+                  <p class="font-semibold text-base sm:text-lg">🚀 Ready to start AI mining?</p>
+                  <p>Connect your wallet to create and manage your mAIners, participate in challenges, and earn rewards through AI competitions.</p>
+                </div>
+                
+                <!-- Features list -->
+                <div class="bg-white/15 backdrop-blur-sm rounded-xl p-4 border border-white/20 shadow-sm text-left">
+                  <div class="space-y-2 text-white/90 text-sm">
+                    <div class="flex items-center space-x-2">
+                      <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      <span>Create and manage AI agents</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                      <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      <span>Participate in AI challenges</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                      <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      <span>Earn rewards and tokens</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Enhanced button -->
+                <div class="pt-3">
+                  <button 
+                    on:click={toggleLoginModal} 
+                    class="group relative inline-flex items-center justify-center px-6 py-3 text-base font-bold text-blue-600 bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-102 border-2 border-white/20 backdrop-blur-sm"
+                  >
+                    <svg class="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd" />
+                    </svg>
+                    Connect Wallet
+                    <div class="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-100 to-purple-100 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                  </button>
+                </div>
+                
+                <!-- Additional info -->
+                <div class="text-xs text-white/80 bg-white/15 backdrop-blur-sm rounded-xl px-3 py-2 border border-white/20 shadow-sm">
+                  <div class="flex items-center justify-center space-x-2">
+                    <span class="text-sm">🔒</span>
+                    <span class="font-medium">Secure connection via Internet Identity or NFID</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     {/if}
     </div>
