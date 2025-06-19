@@ -141,6 +141,9 @@
     
     // Apply formatting and validation
     if (value) {
+      // Replace commas with dots to support different decimal separators
+      value = value.replace(',', '.');
+      
       // Check if the input is a valid number
       if (!/^[0-9]*\.?[0-9]*$/.test(value)) {
         return;
