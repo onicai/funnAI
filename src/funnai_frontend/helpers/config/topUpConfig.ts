@@ -5,7 +5,7 @@ export const TOP_UP_CONFIG = {
   
   // Maximum amount for top-up in ICP (configurable)
   // When users top up this amount, they get a special celebration
-  MAX_AMOUNT: 0.2,
+  MAX_AMOUNT: 100,
   
   // Duration for celebration display in milliseconds
   CELEBRATION_DURATION: 5500,
