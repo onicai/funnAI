@@ -157,7 +157,7 @@ function handleThemeToggle() {
        <div class="py-2">
          <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3 px-3">More from onicai</div>
          <a use:link href="/chat" class="block" on:click={closeSidebar}>
-           <button class={`w-full px-4 py-2 text-left rounded-xl transition-all duration-200 flex items-center gap-3 text-sm
+           <button class={`w-full px-4 py-2 text-left bg-gray-200 dark:bg-gray-900 rounded-xl transition-all duration-200 flex items-center gap-3 text-sm
              ${currentPath === '/chat' ? 
                'bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 text-purple-700 font-medium dark:bg-gradient-to-r dark:from-purple-900/30 dark:to-purple-800/30 dark:text-purple-300 dark:border-purple-700' : 
                'text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700 border border-transparent hover:border-gray-200 dark:hover:border-gray-600'}`}>
@@ -175,7 +175,7 @@ function handleThemeToggle() {
         <div class="flex items-center justify-center gap-2">
           <!-- Website Link -->
           <a href="https://www.onicai.com/#/funnai" target="_blank" rel="noopener noreferrer" 
-             class="flex-1 p-3 rounded-xl transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 group flex items-center justify-center">
+             class="flex-1 bg-gray-200 dark:bg-gray-900 p-3 rounded-xl transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 group flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <circle cx="12" cy="12" r="9" stroke-width="2"/>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12h18"/>
@@ -186,7 +186,7 @@ function handleThemeToggle() {
           
           <!-- X (Twitter) Link -->
           <a href="https://x.com/onicaiHQ" target="_blank" rel="noopener noreferrer"
-             class="flex-1 p-3 rounded-xl transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 group flex items-center justify-center">
+             class="flex-1 bg-gray-200 dark:bg-gray-900 p-3 rounded-xl transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 group flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-purple-600 dark:group-hover:text-purple-400" fill="currentColor" viewBox="0 0 24 24">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
             </svg>

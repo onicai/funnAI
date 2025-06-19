@@ -74,55 +74,68 @@
 </script>
 
   {#if !$store.isAuthed}
-    <div class="flex items-center gap-2 sm:gap-2 overflow-x-auto">
-      <!-- Support Link - Always Visible -->
-      <a href="https://docs.google.com/" class="flex-shrink-0 text-gray-900 dark:text-blue-400 bg-blue-100 dark:bg-gray-700 border-2 border-blue-500 hover:border-2 hover:border-blue-600 dark:hover:border-blue-400 hover:bg-blue-200 dark:hover:bg-gray-600 focus:ring-4 focus:outline-none focus:ring-blue-200 dark:focus:ring-blue-700 font-medium rounded-lg text-xs sm:text-sm px-2 sm:px-5 py-2 sm:py-2.5 text-center inline-flex items-center transition-colors min-h-[44px]" style="box-shadow: rgb(214, 195, 219) 0px 0px 2px 0px; border-radius: 16px;">
+    <div class="flex items-center gap-3 sm:gap-3 overflow-x-auto">
+      <!-- Claim Whitelist Button -->
+      <a href="https://docs.google.com/" 
+         class="flex-shrink-0 group relative overflow-hidden px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[44px] bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 dark:hover:from-blue-800/40 dark:hover:to-blue-700/40 border border-blue-200 hover:border-blue-300 dark:border-blue-700 dark:hover:border-blue-600 text-blue-700 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200 font-medium text-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
         <span class="hidden xs:inline">Claim whitelist</span>
         <span class="xs:hidden">Whitelist</span>
       </a>
-      <a 
-        href="https://oc.app/community/mepna-eqaaa-aaaar-bclua-cai/channel/2881126157/?ref=mwte3-ciaaa-aaaaf-ad7aq-cai"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="flex-shrink-0 text-gray-700 bg-gray-100 dark:text-gray-200 dark:bg-gray-700 border-2 border-gray-200 hover:border-2 hover:border-gray-300 dark:hover:border-gray-600 border focus:ring-4 focus:outline-none focus:ring-gray-100 dark:focus:ring-gray-700 font-medium rounded-lg text-xs sm:text-sm px-2 sm:px-5 py-2 sm:py-2.5 text-center inline-flex items-center transition-colors min-h-[44px]" 
-        style="box-shadow: rgb(214, 195, 219) 0px 0px 2px 0px; border-radius: 16px;"
-      >
-        <img src="https://oc.app/icon.png" alt="OpenChat" class="w-4 h-4 me-1 sm:me-2 flex-shrink-0" />
+
+      <!-- Support Button -->
+      <a href="https://oc.app/community/mepna-eqaaa-aaaar-bclua-cai/channel/2881126157/?ref=mwte3-ciaaa-aaaaf-ad7aq-cai"
+         target="_blank"
+         rel="noopener noreferrer"
+         class="flex-shrink-0 group relative overflow-hidden px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[44px] bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600 text-gray-700 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-200 font-medium text-sm">
+        <img src="https://oc.app/icon.png" alt="OpenChat" class="w-4 h-4 flex-shrink-0" />
         <span class="hidden xs:inline">Support</span>
       </a>
       
-      <button type="button" on:click={() => {toggleModal()}} data-modal-target="crypto-modal" data-modal-toggle="crypto-modal" class="flex-shrink-0 text-gray-700 bg-gray-100 dark:text-gray-200 dark:bg-gray-700 border-2 border-gray-200 hover:border-2 hover:border-gray-300 dark:hover:border-gray-600 border focus:ring-4 focus:outline-none focus:ring-gray-100 dark:focus:ring-gray-700 font-medium rounded-lg text-xs sm:text-sm px-2 sm:px-5 py-2 sm:py-2.5 text-center inline-flex items-center min-h-[44px]" style="box-shadow: rgb(214, 195, 219) 0px 0px 2px 0px; border-radius: 16px;">
-        <svg aria-hidden="true" class="w-4 h-4 me-1 sm:me-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
-        <span class="hidden xs:inline">Connect</span>
-      </button>
+             <!-- Connect Button -->
+       <button type="button" 
+               on:click={() => {toggleModal()}} 
+               data-modal-target="crypto-modal" 
+               data-modal-toggle="crypto-modal" 
+               class="flex-shrink-0 group relative overflow-hidden px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[44px] bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 dark:hover:from-purple-800/40 dark:hover:to-purple-700/40 border border-purple-200 hover:border-purple-300 dark:border-purple-700 dark:hover:border-purple-600 text-purple-700 hover:text-purple-800 dark:text-purple-300 dark:hover:text-purple-200 font-medium text-sm">
+         <span class="text-sm flex-shrink-0">🦜</span>
+         <span class="hidden xs:inline">Connect</span>
+       </button>
     </div>
   {:else}
-    <div class="flex items-center gap-2 sm:gap-2 overflow-x-auto">
-      <!-- Support Link - Always Visible -->
-      <a href="https://docs.google.com/" class="flex-shrink-0 text-gray-900 dark:text-blue-400 bg-blue-100 dark:bg-gray-700 border-2 border-blue-500 hover:border-2 hover:border-blue-600 dark:hover:border-blue-400 hover:bg-blue-200 dark:hover:bg-gray-600 focus:ring-4 focus:outline-none focus:ring-blue-200 dark:focus:ring-blue-700 font-medium rounded-lg text-xs sm:text-sm px-2 sm:px-5 py-2 sm:py-2.5 text-center inline-flex items-center transition-colors min-h-[44px]" style="box-shadow: rgb(214, 195, 219) 0px 0px 2px 0px; border-radius: 16px;">
+    <div class="flex items-center gap-3 sm:gap-3 overflow-x-auto">
+      <!-- Claim Whitelist Button -->
+      <a href="https://docs.google.com/" 
+         class="flex-shrink-0 group relative overflow-hidden px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[44px] bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 dark:hover:from-blue-800/40 dark:hover:to-blue-700/40 border border-blue-200 hover:border-blue-300 dark:border-blue-700 dark:hover:border-blue-600 text-blue-700 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200 font-medium text-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
         <span class="hidden xs:inline">Claim whitelist</span>
         <span class="xs:hidden">Whitelist</span>
       </a>
-      <a 
-        href="https://oc.app/community/mepna-eqaaa-aaaar-bclua-cai/channel/2881126157/?ref=mwte3-ciaaa-aaaaf-ad7aq-cai"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="flex-shrink-0 text-gray-700 bg-gray-100 dark:text-gray-200 dark:bg-gray-700 border-2 border-gray-200 hover:border-2 hover:border-gray-300 dark:hover:border-gray-600 border focus:ring-4 focus:outline-none focus:ring-gray-100 dark:focus:ring-gray-700 font-medium rounded-lg text-xs sm:text-sm px-2 sm:px-5 py-2 sm:py-2.5 text-center inline-flex items-center transition-colors min-h-[44px]" 
-        style="box-shadow: rgb(214, 195, 219) 0px 0px 2px 0px; border-radius: 16px;"
-      >
-        <img src="https://oc.app/icon.png" alt="OpenChat" class="w-4 h-4 me-1 sm:me-2 flex-shrink-0" />
+
+      <!-- Support Button -->
+      <a href="https://oc.app/community/mepna-eqaaa-aaaar-bclua-cai/channel/2881126157/?ref=mwte3-ciaaa-aaaaf-ad7aq-cai"
+         target="_blank"
+         rel="noopener noreferrer"
+         class="flex-shrink-0 group relative overflow-hidden px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[44px] bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600 text-gray-700 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-200 font-medium text-sm">
+        <img src="https://oc.app/icon.png" alt="OpenChat" class="w-4 h-4 flex-shrink-0" />
         <span class="hidden xs:inline">Support</span>
       </a>
       
-      <!-- <div class="relative mr-2">
-        <AccessCodesCenter />
-      </div> -->
-      <a use:link href="/wallet" class="flex-shrink-0 text-gray-900 dark:text-orange-400 bg-orange-100 dark:bg-gray-700 border-2 border-orange-500 hover:border-2 hover:border-orange-600 dark:hover:border-orange-400 hover:bg-orange-200 dark:hover:bg-gray-600 focus:ring-4 focus:outline-none focus:ring-orange-200 dark:focus:ring-orange-700 font-medium rounded-lg text-xs sm:text-sm px-2 sm:px-5 py-2 sm:py-2.5 text-center inline-flex items-center transition-colors min-h-[44px]" style="box-shadow: rgb(214, 195, 219) 0px 0px 2px 0px; border-radius: 16px;">
-        <svg class="w-4 h-4 me-1 sm:me-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <!-- Wallet Button -->
+      <a use:link href="/wallet" 
+         class="flex-shrink-0 group relative overflow-hidden px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[44px] bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 dark:hover:from-orange-800/40 dark:hover:to-orange-700/40 border border-orange-200 hover:border-orange-300 dark:border-orange-700 dark:hover:border-orange-600 text-orange-700 hover:text-orange-800 dark:text-orange-300 dark:hover:text-orange-200 font-medium text-sm">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
         </svg>
         <span class="hidden xs:inline">Wallet</span>
       </a>
+      <!-- <div class="relative mr-2">
+        <AccessCodesCenter />
+      </div> -->
       <!-- <div class="relative mr-2">
         <NotificationsCenter />
       </div> -->
