@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import Modal from "../CommonModal.svelte";
   import TokenImages from "../TokenImages.svelte";
+
   import { ArrowUp, Info, Check } from 'lucide-svelte';
   import { MEMO_PAYMENT_PROTOCOL, store, theme } from "../../stores/store";
   import { IcrcService } from "../../helpers/IcrcService";
@@ -10,10 +11,12 @@
   import { fetchTokens, protocolConfig } from "../../helpers/token_helpers";
   import { createAnonymousActorHelper } from "../../helpers/utils/actorUtils";
   import { idlFactory as cmcIdlFactory } from "../../helpers/idls/cmc.idl.js";
+  import { MIN_AMOUNT, MAX_AMOUNT, CELEBRATION_DURATION, CELEBRATION_ENABLED } from "../../helpers/config/topUpConfig";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
   export let onSuccess: (txId: string, canisterId: string) => void = () => {};
+  export let onCelebration: (amount: string, token: string) => void = () => {};
   export let canisterId: string = "";
   export let canisterName: string = "";
   
@@ -61,11 +64,12 @@
   let cyclesAmount: string = "0";
   let conversionRate: BigNumber | null = null;
   
-  // Minimum amount for top-up
-  const MIN_TOPUP_AMOUNT = 0.1;
+
   
-  $: isValidAmount = amount && !isNaN(Number(amount)) && Number(amount) >= MIN_TOPUP_AMOUNT;
-  $: isBelowMinimum = amount && !isNaN(Number(amount)) && Number(amount) > 0 && Number(amount) < MIN_TOPUP_AMOUNT;
+  $: isValidAmount = amount && !isNaN(Number(amount)) && Number(amount) >= MIN_AMOUNT && Number(amount) <= MAX_AMOUNT;
+  $: isBelowMinimum = amount && !isNaN(Number(amount)) && Number(amount) > 0 && Number(amount) < MIN_AMOUNT;
+  $: isMaxAmount = amount && !isNaN(Number(amount)) && Number(amount) === MAX_AMOUNT;
+  $: isAboveMaximum = amount && !isNaN(Number(amount)) && Number(amount) > MAX_AMOUNT;
   $: amountBigInt = isValidAmount && token
     ? BigInt(new BigNumber(amount).times(new BigNumber(10).pow(token.decimals)).toString())
     : BigInt(0);
@@ -200,6 +204,8 @@
     onClose();
   }
 
+
+
   async function handleSubmit() {
     if (isValidating || !hasEnoughBalance || !token) return;
     isValidating = true;
@@ -231,8 +237,21 @@
       if (result && typeof result === 'object' && 'Ok' in result) {
         const txId = result.Ok?.toString();
         console.log("handleSubmit txId: ", txId);
-        onSuccess(txId, canisterId);
-        handleClose();
+        
+        // Check if this was a maximum amount top-up to trigger celebration
+        if (isMaxAmount && CELEBRATION_ENABLED) {
+          // First close the modal, then trigger celebration
+          onSuccess(txId, canisterId);
+          handleClose();
+          
+          // Small delay to ensure modal is closed before showing celebration
+          setTimeout(() => {
+            onCelebration(amount, token?.symbol || 'ICP');
+          }, 300);
+        } else {
+          onSuccess(txId, canisterId);
+          handleClose();
+        }
       } else if (result && typeof result === 'object' && 'Err' in result) {
         const errMsg = typeof result.Err === 'object' 
           ? Object.keys(result.Err)[0]
@@ -329,6 +348,13 @@
         <div>
           <div class="flex justify-between items-center mb-1.5">
             <label for="amount-input" class="block text-xs text-gray-600 dark:text-gray-400">ICP Amount</label>
+            <button
+              type="button"
+              class="text-xs text-purple-600 hover:text-purple-800 dark:text-purple-500 dark:hover:text-purple-400 font-medium"
+              on:click={() => amount = String(MAX_AMOUNT)}
+            >
+              Top up Max ({MAX_AMOUNT} {token?.symbol || 'ICP'})
+            </button>
           </div>
           <div class="relative">
             <input
@@ -336,10 +362,11 @@
               inputmode="decimal"
               class="w-full py-2 px-2 sm:px-3 bg-white border rounded-md text-xs sm:text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-100 pr-12 sm:pr-16"
               class:border-green-400={hasEnoughBalance && isValidAmount}
-              class:border-red-400={!hasEnoughBalance && isValidAmount}
+              class:border-red-400={(!hasEnoughBalance && isValidAmount) || isAboveMaximum}
               class:border-yellow-400={isBelowMinimum}
-              class:border-gray-300={!isValidAmount && !isBelowMinimum}
-              class:dark:border-gray-600={!isValidAmount && !isBelowMinimum}
+              class:border-purple-500={isMaxAmount && hasEnoughBalance}
+              class:border-gray-300={!isValidAmount && !isBelowMinimum && !isAboveMaximum}
+              class:dark:border-gray-600={!isValidAmount && !isBelowMinimum && !isAboveMaximum}
               placeholder="Enter ICP amount to top up"
               bind:value={amount}
               on:input={handleAmountInput}
@@ -353,7 +380,17 @@
           </div>
           {#if isBelowMinimum}
             <div class="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
-              Minimum amount: {MIN_TOPUP_AMOUNT} {token.symbol}
+              Minimum amount: {MIN_AMOUNT} {token.symbol}
+            </div>
+          {/if}
+          {#if isAboveMaximum}
+            <div class="mt-1 text-xs text-red-600 dark:text-red-400">
+              Maximum amount: {MAX_AMOUNT} {token.symbol}
+            </div>
+          {/if}
+          {#if isMaxAmount && hasEnoughBalance}
+            <div class="mt-1 text-xs text-purple-600 dark:text-purple-400 font-medium animate-pulse">
+              🎉 Maximum amount! Get ready for something special! 🎉
             </div>
           {/if}
         </div>
@@ -411,6 +448,8 @@
     {/if}
   </div>
 </Modal>
+
+
 
 <style>
   :global(.mainer-topup-modal) {
