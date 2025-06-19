@@ -862,6 +862,11 @@ export const idlFactory = ({ IDL }) => {
         [MainerAgentCanisterResult],
         ['query'],
       ),
+    'getMainerAgentCanistersAdmin' : IDL.Func(
+        [],
+        [MainerAgentCanistersResult],
+        ['query'],
+      ),
     'getMainerAgentCanistersForUser' : IDL.Func(
         [],
         [MainerAgentCanistersResult],

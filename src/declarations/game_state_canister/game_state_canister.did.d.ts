@@ -481,6 +481,7 @@ export interface GameStateCanister {
     [CanisterRetrieveInput],
     MainerAgentCanisterResult
   >,
+  'getMainerAgentCanistersAdmin' : ActorMethod<[], MainerAgentCanistersResult>,
   'getMainerAgentCanistersForUser' : ActorMethod<
     [],
     MainerAgentCanistersResult
