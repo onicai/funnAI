@@ -9,6 +9,7 @@
   import TokenListSkeleton from "../components/TokenListSkeleton.svelte";
   import LoadingIndicator from "../components/LoadingIndicator.svelte";
   import LoadingEllipsis from "../components/LoadingEllipsis.svelte";
+  import Footer from "../components/funnai/Footer.svelte";
 
   import { store } from "../stores/store";
   import { WalletDataService, walletDataStore } from "../helpers/WalletDataService";
@@ -181,6 +182,8 @@
             </div>
         </div>
     </div>
+
+<Footer />
 
 {#if modalIsOpen}
   <LoginModal {toggleModal} />
