@@ -1312,7 +1312,7 @@
       </div>
     </div>
   {/if}
-{:else if isWhitelistPhaseActive && !isAuthenticated}
+{:else if isWhitelistPhaseActive && (!isAuthenticated || totalMainers > 0)}
   <div class="mb-4 h-full">
     <div class="relative overflow-hidden bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 dark:from-amber-600 dark:via-yellow-600 dark:to-orange-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform h-full">
       <!-- Background decoration -->
@@ -1330,38 +1330,71 @@
           </div>
           
           <!-- Content section -->
-            <div class="space-y-3 sm:space-y-4">
-              <div class="flex flex-col items-center text-center space-y-2">
-                <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white backdrop-blur-sm">
-                  Limited time
-                </div>
-                <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-sm">Whitelist phase active</h3>
+          <div class="space-y-3 sm:space-y-4">
+            <div class="flex flex-col items-center text-center space-y-2">
+              <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white backdrop-blur-sm">
+                Limited time
+              </div>
+              <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-sm">
+                {#if !isAuthenticated}
+                  Whitelist phase active
+                {:else if totalMainers > 0}
+                  Whitelist participant
+                {:else}
+                  Whitelist phase active
+                {/if}
+              </h3>
             </div>
             
             <div class="text-white/90 text-sm sm:text-base leading-relaxed max-w-md mx-auto space-y-2">
-              <p class="font-semibold text-base sm:text-lg">🎉 Exclusive access available!</p>
-              <p>Connect your wallet to see available whitelist mAIners and take advantage of special pricing.</p>
+              {#if !isAuthenticated}
+                <p class="font-semibold text-base sm:text-lg">🎉 Exclusive access available!</p>
+                <p>Connect your wallet to see available whitelist mAIners and take advantage of special pricing.</p>
+              {:else if totalMainers > 0}
+                <p class="font-semibold text-base sm:text-lg">🎉 Welcome back, whitelist member!</p>
+                <p>You successfully claimed your whitelist mAIner. Manage your existing mAIners below or check for additional whitelist opportunities.</p>
+              {:else}
+                <p class="font-semibold text-base sm:text-lg">🎉 Exclusive access available!</p>
+                <p>Connect your wallet to see available whitelist mAIners and take advantage of special pricing.</p>
+              {/if}
             </div>
             
             <!-- Enhanced button -->
             <div class="pt-3">
-              <button 
-                on:click={toggleLoginModal} 
-                class="group relative inline-flex items-center justify-center px-6 py-3 text-base font-bold text-amber-600 bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-102 border-2 border-white/20 backdrop-blur-sm"
-              >
-                <svg class="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd" />
-                </svg>
-                Connect Wallet
-                <div class="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-100 to-yellow-100 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-              </button>
+              {#if !isAuthenticated}
+                <button 
+                  on:click={toggleLoginModal} 
+                  class="group relative inline-flex items-center justify-center px-6 py-3 text-base font-bold text-amber-600 bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-102 border-2 border-white/20 backdrop-blur-sm"
+                >
+                  <svg class="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd" />
+                  </svg>
+                  Connect Wallet
+                  <div class="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-100 to-yellow-100 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                </button>
+              {:else}
+                <div class="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-sm">
+                  <svg class="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  <span class="text-white font-semibold">Whitelist Access Activated</span>
+                </div>
+              {/if}
             </div>
             
             <!-- Additional info -->
             <div class="text-xs text-white/80 bg-white/15 backdrop-blur-sm rounded-xl px-3 py-2 border border-white/20 shadow-sm">
               <div class="flex items-center justify-center space-x-2">
                 <span class="text-sm">💡</span>
-                <span class="font-medium">Get early access to mAIners with exclusive whitelist pricing</span>
+                <span class="font-medium">
+                  {#if !isAuthenticated}
+                    Get early access to mAIners with exclusive whitelist pricing
+                  {:else if totalMainers > 0}
+                    You're part of the exclusive whitelist community
+                  {:else}
+                    Get early access to mAIners with exclusive whitelist pricing
+                  {/if}
+                </span>
               </div>
             </div>
           </div>
