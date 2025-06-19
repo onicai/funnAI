@@ -86,14 +86,14 @@
       if (price <= 0) {
         console.error("Issue getting mAIner price as it's 0 or negative.");
         // Return fallback value instead of undefined
-        return modelType === 'Own' ? 10 : 5;
+        return 10; // Default price for all mAIner types
       };
 
       return price;      
     } catch (error) {
       console.error("Error getting mAIner price:", error);
       // Return fallback value instead of undefined
-      return modelType === 'Own' ? 10 : 5;
+      return 10; // Default price for all mAIner types
     }
   };
 
@@ -757,8 +757,8 @@
     } catch (error) {
       console.error("Error loading prices:", error);
       // Set fallback values if loading fails
-      currentMainerPrice = modelType === 'Own' ? 1500 : 1000;
-      currentWhitelistPrice = 0.1;
+      currentMainerPrice = 10;
+      currentWhitelistPrice = 5;
     }
   });
 

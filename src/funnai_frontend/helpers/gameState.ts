@@ -44,7 +44,7 @@ export const getWhitelistAgentPrice = async () => {
     // Check if the method exists before calling it
     if (!storeState.gameStateCanisterActor.getWhitelistPriceForShareAgent) {
       console.warn("🟠 getWhitelistPriceForShareAgent method not available, using fallback price");
-      return 0.5;
+      return 5;
     }
     
     console.log("🔵 Calling getWhitelistPriceForShareAgent...");
@@ -58,17 +58,17 @@ export const getWhitelistAgentPrice = async () => {
       // If backend returns 0, use fallback value (backend not configured yet)
       if (price <= 0) {
         console.warn("🟠 Backend returned 0 or negative price, using fallback value");
-        return 0.5;
+        return 5;
       }
       
       return price;
     } else if ('Err' in response) {
       console.error("❌ Error in getWhitelistAgentPrice:", response.Err);
-      return 0.5; // Fallback value in case of error
+      return 5; // Fallback value in case of error
     };
   } catch (error) {
     console.error("❌ Failed to getWhitelistAgentPrice:", error);
-    return 0.5; // Fallback value in case of error
+    return 5; // Fallback value in case of error
   };
 };
 
