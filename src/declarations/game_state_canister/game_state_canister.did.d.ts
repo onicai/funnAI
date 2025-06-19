@@ -225,6 +225,7 @@ export type ChallengeWinnersResult = {
   { 'Err' : ApiError };
 export type ChallengesResult = { 'Ok' : Array<Challenge> } |
   { 'Err' : ApiError };
+export interface CheckMainerLimit { 'mainerType' : MainerAgentCanisterType }
 export type CyclesBurntResult = { 'Ok' : bigint } |
   { 'Err' : ApiError };
 export interface CyclesFlow {
@@ -572,7 +573,7 @@ export interface GameStateCanister {
   >,
   'setInitialChallengeTopics' : ActorMethod<[], StatusCodeRecordResult>,
   'setLimitForCreatingMainerAdmin' : ActorMethod<
-    [bigint, MainerAgentCanisterType],
+    [MainerLimitInput],
     AuthRecordResult
   >,
   'setOfficialMainerAgentCanisterWasmHashAdmin' : ActorMethod<
@@ -590,7 +591,7 @@ export interface GameStateCanister {
     SetUpMainerLlmCanisterResult
   >,
   'shouldCreatingMainersBeStopped' : ActorMethod<
-    [MainerAgentCanisterType],
+    [CheckMainerLimit],
     FlagResult
   >,
   'spinUpMainerControllerCanister' : ActorMethod<
@@ -693,6 +694,10 @@ export interface MainerCreationInput {
   'owner' : [] | [Principal],
   'paymentTransactionBlockId' : bigint,
   'mainerConfig' : MainerConfigurationInput,
+}
+export interface MainerLimitInput {
+  'mainerType' : MainerAgentCanisterType,
+  'newLimit' : bigint,
 }
 export interface MainerPromptInfo {
   'promptCacheFilename' : string,

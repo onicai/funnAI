@@ -314,6 +314,11 @@ type MainerPromptInfo =
    promptCacheSha256: text;
    promptText: text;
  };
+type MainerLimitInput = 
+ record {
+   mainerType: MainerAgentCanisterType;
+   newLimit: nat;
+ };
 type MainerCreationInput = 
  record {
    mainerConfig: MainerConfigurationInput;
@@ -482,8 +487,7 @@ type GameStateCanister =
    setIcpForWhitelistOwnMainerAdmin: (nat64) -> (StatusCodeRecordResult);
    setIcpForWhitelistShareAgentAdmin: (nat64) -> (StatusCodeRecordResult);
    setInitialChallengeTopics: () -> (StatusCodeRecordResult);
-   setLimitForCreatingMainerAdmin: (nat, MainerAgentCanisterType) ->
-    (AuthRecordResult);
+   setLimitForCreatingMainerAdmin: (MainerLimitInput) -> (AuthRecordResult);
    setOfficialMainerAgentCanisterWasmHashAdmin: (UpdateWasmHashInput) ->
     (CanisterWasmHashRecordResult);
    setRewardPerChallengeAdmin: (nat) -> (RewardPerChallengeResult);
@@ -491,8 +495,7 @@ type GameStateCanister =
    setTokenLedgerCanisterId: (text) -> (AuthRecordResult);
    setUpMainerLlmCanister: (OfficialMainerAgentCanister) ->
     (SetUpMainerLlmCanisterResult);
-   shouldCreatingMainersBeStopped: (MainerAgentCanisterType) ->
-    (FlagResult) query;
+   shouldCreatingMainersBeStopped: (CheckMainerLimit) -> (FlagResult) query;
    spinUpMainerControllerCanister: (OfficialMainerAgentCanister) ->
     (MainerAgentCanisterResult);
    spinUpMainerControllerCanisterForUserAdmin:
@@ -735,6 +738,7 @@ type CyclesBurntResult =
    Err: ApiError;
    Ok: nat;
  };
+type CheckMainerLimit = record {mainerType: MainerAgentCanisterType;};
 type ChallengesResult = 
  variant {
    Err: ApiError;

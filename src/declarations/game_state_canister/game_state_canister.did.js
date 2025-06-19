@@ -661,6 +661,10 @@ export const idlFactory = ({ IDL }) => {
     'cyclesGenerateResponseSsctrlGs' : IDL.Opt(IDL.Nat),
     'costCreateMainerLlm' : IDL.Opt(IDL.Nat),
   });
+  const MainerLimitInput = IDL.Record({
+    'mainerType' : MainerAgentCanisterType,
+    'newLimit' : IDL.Nat,
+  });
   const UpdateWasmHashInput = IDL.Record({
     'wasmHash' : IDL.Vec(IDL.Nat8),
     'textNote' : IDL.Text,
@@ -676,6 +680,9 @@ export const idlFactory = ({ IDL }) => {
   const RewardPerChallengeResult = IDL.Variant({
     'Ok' : RewardPerChallenge,
     'Err' : ApiError,
+  });
+  const CheckMainerLimit = IDL.Record({
+    'mainerType' : MainerAgentCanisterType,
   });
   const StartUploadJudgePromptCacheRecord = IDL.Record({
     'judgePromptId' : IDL.Text,
@@ -1006,7 +1013,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'setInitialChallengeTopics' : IDL.Func([], [StatusCodeRecordResult], []),
     'setLimitForCreatingMainerAdmin' : IDL.Func(
-        [IDL.Nat, MainerAgentCanisterType],
+        [MainerLimitInput],
         [AuthRecordResult],
         [],
       ),
@@ -1028,7 +1035,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'shouldCreatingMainersBeStopped' : IDL.Func(
-        [MainerAgentCanisterType],
+        [CheckMainerLimit],
         [FlagResult],
         ['query'],
       ),

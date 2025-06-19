@@ -208,6 +208,7 @@ export interface MainerAgentCtrlbCanister {
   >,
   'add_llm_canister' : ActorMethod<[CanisterIDRecord], StatusCodeRecordResult>,
   'amiController' : ActorMethod<[], StatusCodeRecordResult>,
+  'canAgentSettingsBeUpdated' : ActorMethod<[], StatusCodeRecordResult>,
   'checkAccessToLLMs' : ActorMethod<[], StatusCodeRecordResult>,
   'getChallengeQueueAdmin' : ActorMethod<[], ChallengeQueueInputsResult>,
   'getGameStateCanisterId' : ActorMethod<[], string>,
