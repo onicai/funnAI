@@ -1901,12 +1901,15 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        <div class="space-y-1">
+                        <div class="space-y-2">
                           <p><span class="font-medium">💡 Tip:</span> Higher burn rates provide faster AI responses but consume more cycles.</p>
                           <div class="grid grid-cols-1 md:grid-cols-3 gap-1 text-xs opacity-75">
                             <span>🟢 <strong>Low:</strong> ~1-2T cycles/day</span>
                             <span>🟡 <strong>Medium:</strong> ~3-5T cycles/day</span>
                             <span>🔴 <strong>High:</strong> ~6-10T cycles/day</span>
+                          </div>
+                          <div class="border-t border-purple-200/30 dark:border-purple-700/30 pt-2 mt-2">
+                            <p><span class="font-medium">⏰ Important:</span> Burn rate can only be updated once every 24 hours to prevent abuse.</p>
                           </div>
                         </div>
                       </div>
