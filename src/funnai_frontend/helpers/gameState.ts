@@ -39,10 +39,35 @@ export const getOwnAgentPrice = async () => {
 
 export const getWhitelistAgentPrice = async () => {
   try {
-    // Fixed whitelist price of 0.5 ICP for debugging
-    return 0.5;
+    console.log("🔵 getWhitelistAgentPrice called");
+    
+    // Check if the method exists before calling it
+    if (!storeState.gameStateCanisterActor.getWhitelistPriceForShareAgent) {
+      console.warn("🟠 getWhitelistPriceForShareAgent method not available, using fallback price");
+      return 0.5;
+    }
+    
+    console.log("🔵 Calling getWhitelistPriceForShareAgent...");
+    let response = await storeState.gameStateCanisterActor.getWhitelistPriceForShareAgent();
+    console.log("🔵 getWhitelistPriceForShareAgent response:", response);
+    
+    if ('Ok' in response) {
+      const price = response.Ok.price;
+      console.log("✅ Whitelist price obtained:", price);
+      
+      // If backend returns 0, use fallback value (backend not configured yet)
+      if (price <= 0) {
+        console.warn("🟠 Backend returned 0 or negative price, using fallback value");
+        return 0.5;
+      }
+      
+      return price;
+    } else if ('Err' in response) {
+      console.error("❌ Error in getWhitelistAgentPrice:", response.Err);
+      return 0.5; // Fallback value in case of error
+    };
   } catch (error) {
-    console.error("Failed to getWhitelistAgentPrice:", error);
+    console.error("❌ Failed to getWhitelistAgentPrice:", error);
     return 0.5; // Fallback value in case of error
   };
 };
@@ -100,10 +125,23 @@ export const getIsMainerCreationStopped = async (mainerType) => {
 
 export const getPauseWhitelistMainerCreationFlag = async () => {
   try {
-    return false;
+    // Check if the method exists before calling it
+    if (!storeState.gameStateCanisterActor.getPauseWhitelistMainerCreationFlag) {
+      console.warn("getPauseWhitelistMainerCreationFlag method not available, defaulting to not paused");
+      return false;
+    }
+    
+    let response = await storeState.gameStateCanisterActor.getPauseWhitelistMainerCreationFlag();
+    
+    if ('Ok' in response) {
+      return response.Ok.flag;
+    } else if ('Err' in response) {
+      console.error("Error in getPauseWhitelistMainerCreationFlag:", response.Err);
+      return false; // Default to not paused if we can't determine
+    };
   } catch (error) {
     console.error("Failed to getPauseWhitelistMainerCreationFlag:", error);
-    return false;
+    return false; // Default to not paused if we can't determine
   };
 };
 

@@ -75,8 +75,8 @@
   $: totalMainers = agents.length;
 
   // Reactive mAIner price based on model type and whitelist phase
-  let currentMainerPrice = 1000; // Will be loaded
-  let currentWhitelistPrice = 0.5; // Will be loaded
+  let currentMainerPrice = 10; // Will be loaded
+  let currentWhitelistPrice = 5; // Will be loaded
   $: mainerPrice = isWhitelistPhaseActive ? currentWhitelistPrice : currentMainerPrice;
 
   async function getMainerPrice() {
@@ -86,14 +86,14 @@
       if (price <= 0) {
         console.error("Issue getting mAIner price as it's 0 or negative.");
         // Return fallback value instead of undefined
-        return modelType === 'Own' ? 1500 : 1000;
+        return modelType === 'Own' ? 10 : 5;
       };
 
       return price;      
     } catch (error) {
       console.error("Error getting mAIner price:", error);
       // Return fallback value instead of undefined
-      return modelType === 'Own' ? 1500 : 1000;
+      return modelType === 'Own' ? 10 : 5;
     }
   };
 

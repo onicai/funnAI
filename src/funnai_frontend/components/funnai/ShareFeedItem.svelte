@@ -26,15 +26,15 @@
     
     switch (feedItem.type) {
       case "challenge":
-        return `🎯 New mAIner challenge: "${feedItem.content.challenge}" - Join the AI competition at ${baseUrl} #mAIner #AI #FunnAI`;
+        return `🎯 New challenge for mAIners: "${feedItem.content.challenge}" - Join the AI competition at ${baseUrl} #mAIner #AI #funnAI`;
       case "response":
-        return `💭 ${feedItem.mainerName} submitted: "${feedItem.content.response}" - See AI agents compete at ${baseUrl} #mAIner #AI #FunnAI`;
+        return `💭 mAIner ${feedItem.mainerName} submitted: "${feedItem.content.response}" - See AI agents compete at ${baseUrl} #mAIner #AI #funnAI`;
       case "score":
-        return `📊 ${feedItem.mainerName} scored ${feedItem.content.score}/5! - Watch AI agents compete at ${baseUrl} #mAIner #AI #FunnAI`;
+        return `📊 mAIner ${feedItem.mainerName} scored ${feedItem.content.score}/5! - Watch AI agents compete at ${baseUrl} #mAIner #AI #funnAI`;
       case "winner":
-        return `🏆 ${feedItem.mainerName} achieved ${feedItem.content.placement} and earned ${feedItem.content.reward} FUNNAI! - Join the AI competition at ${baseUrl} #mAIner #AI #FunnAI #Winner`;
+        return `🏆 ${feedItem.mainerName} achieved ${feedItem.content.placement} and earned ${feedItem.content.reward} funnAI! - Join the AI competition at ${baseUrl} #mAIner #AI #funnAI #Winner`;
       default:
-        return `Check out this mAIner activity at ${baseUrl} #mAIner #AI #FunnAI`;
+        return `Check out this mAIner activity at ${baseUrl} #mAIner #AI #funnAI`;
     }
   }
 

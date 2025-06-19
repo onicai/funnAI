@@ -147,7 +147,7 @@
           {amount} {token} = ULTIMATE POWER! 💪
         </p>
         <p class="text-sm sm:text-base text-gray-300 mt-4 opacity-80">
-          You're officially a top-tier mAIner champion! 🏆
+          You're officially a top-tier mAIner legend! 🏆
         </p>
       </div>
 
