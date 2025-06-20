@@ -399,31 +399,37 @@ type GameStateTresholds =
  };
 type GameStateCanister = 
  service {
-   addChallenge: (NewChallengeInput) -> (ChallengeAdditionResult);
-   addChallengeTopic: (ChallengeTopicInput) -> (ChallengeTopicResult);
-   addLlmCanisterToMainer: (OfficialMainerAgentCanister) ->
+   addChallenge: (newChallenge: NewChallengeInput) ->
+    (ChallengeAdditionResult);
+   addChallengeTopic: (challengeTopicInput: ChallengeTopicInput) ->
+    (ChallengeTopicResult);
+   addLlmCanisterToMainer: (mainerInfo: OfficialMainerAgentCanister) ->
     (SetUpMainerLlmCanisterResult);
-   addMainerAgentCanister: (OfficialMainerAgentCanister) ->
-    (MainerAgentCanisterResult);
-   addMainerAgentCanisterAdmin: (OfficialMainerAgentCanister) ->
-    (MainerAgentCanisterResult);
-   addOfficialCanister: (CanisterInput) -> (StatusCodeRecordResult);
-   addScoredResponse: (ScoredResponseInput) -> (ScoredResponseResult);
+   addMainerAgentCanister: (canisterEntryToAdd:
+    OfficialMainerAgentCanister) -> (MainerAgentCanisterResult);
+   addMainerAgentCanisterAdmin: (canisterEntryToAdd:
+    OfficialMainerAgentCanister) -> (MainerAgentCanisterResult);
+   addOfficialCanister: (canisterEntryToAdd: CanisterInput) ->
+    (StatusCodeRecordResult);
+   addScoredResponse: (scoredResponseInput: ScoredResponseInput) ->
+    (ScoredResponseResult);
    cleanUnlockedMainerStoragesAdmin: () -> (AuthRecordResult);
-   createUserMainerAgent: (MainerCreationInput) ->
+   createUserMainerAgent: (mainerCreationInput: MainerCreationInput) ->
     (MainerAgentCanisterResult);
-   deriveNewMainerAgentCanisterWasmHashAdmin: (DeriveWasmHashInput) ->
-    (CanisterWasmHashRecordResult);
+   deriveNewMainerAgentCanisterWasmHashAdmin: (deriveWasmHashInput:
+    DeriveWasmHashInput) -> (CanisterWasmHashRecordResult);
    downloadJudgePromptCacheBytesChunk:
-    (DownloadJudgePromptCacheBytesChunkInput) ->
+    (downloadJudgePromptCacheBytesChunkInput:
+    DownloadJudgePromptCacheBytesChunkInput) ->
     (DownloadJudgePromptCacheBytesChunkRecordResult) query;
    downloadMainerPromptCacheBytesChunk:
-    (DownloadMainerPromptCacheBytesChunkInput) ->
+    (downloadMainerPromptCacheBytesChunkInput:
+    DownloadMainerPromptCacheBytesChunkInput) ->
     (DownloadMainerPromptCacheBytesChunkRecordResult) query;
-   finishUploadJudgePromptCache: (FinishUploadJudgePromptCacheInput) ->
-    (StatusCodeRecordResult);
-   finishUploadMainerPromptCache: (FinishUploadMainerPromptCacheInput) ->
-    (StatusCodeRecordResult);
+   finishUploadJudgePromptCache: (finishUploadJudgePromptCacheInput:
+    FinishUploadJudgePromptCacheInput) -> (StatusCodeRecordResult);
+   finishUploadMainerPromptCache: (finishUploadMainerPromptCacheInput:
+    FinishUploadMainerPromptCacheInput) -> (StatusCodeRecordResult);
    getArchivedChallengesAdmin: () -> (ChallengesResult) query;
    getCanisterPrincipal: () -> (text) query;
    getClosedChallengesAdmin: () -> (ChallengesResult) query;
@@ -431,12 +437,13 @@ type GameStateCanister =
    getCurrentChallengesAdmin: () -> (ChallengesResult) query;
    getCyclesFlowAdmin: () -> (CyclesFlowResult);
    getGameStateThresholdsAdmin: () -> (GameStateTresholdsResult) query;
-   getJudgePromptInfo: (text) -> (JudgePromptInfoResult) query;
-   getMainerAgentCanisterInfo: (CanisterRetrieveInput) ->
-    (MainerAgentCanisterResult) query;
+   getJudgePromptInfo: (judgePromptId: text) -> (JudgePromptInfoResult) query;
+   getMainerAgentCanisterInfo: (canisterEntryToRetrieve:
+    CanisterRetrieveInput) -> (MainerAgentCanisterResult) query;
    getMainerAgentCanistersForUser: () -> (MainerAgentCanistersResult) query;
    getMainerCyclesUsedPerResponse: () -> (NatResult);
-   getMainerPromptInfo: (text) -> (MainerPromptInfoResult) query;
+   getMainerPromptInfo: (mainerPromptId: text) ->
+    (MainerPromptInfoResult) query;
    getNextSubmissionToJudge: () -> (ChallengeResponseSubmissionResult);
    getNumArchivedChallengesAdmin: () -> (NatResult) query;
    getNumClosedChallengesAdmin: () -> (NatResult) query;
@@ -460,12 +467,12 @@ type GameStateCanister =
    getRecentChallengeWinners: () -> (ChallengeWinnersResult) query;
    getRecentProtocolActivity: () -> (ProtocolActivityResult) query;
    getRecentProtocolActivity_mockup: () -> (ProtocolActivityResult) query;
-   getRedeemedTransactionBlockAdmin: (PaymentTransactionBlockId) ->
-    (RedeemedTransactionBlockResult);
-   getScoreForSubmission: (SubmissionRetrievalInput) ->
+   getRedeemedTransactionBlockAdmin: (paymentTransactionBlockId:
+    PaymentTransactionBlockId) -> (RedeemedTransactionBlockResult);
+   getScoreForSubmission: (submissionInput: SubmissionRetrievalInput) ->
     (ScoredResponseRetrievalResult) query;
-   getScoreForSubmission_mockup: (SubmissionRetrievalInput) ->
-    (ScoredResponseRetrievalResult) query;
+   getScoreForSubmission_mockup: (submissionInput:
+    SubmissionRetrievalInput) -> (ScoredResponseRetrievalResult) query;
    getScoredChallengesAdmin: () -> (ScoredChallengesResult) query;
    getSharedServiceCanistersAdmin: () -> (OfficialProtocolCanistersResult);
    getSubmissionsAdmin: () -> (ChallengeResponseSubmissionsResult) query;
@@ -473,55 +480,66 @@ type GameStateCanister =
    getWhitelistPriceForOwnMainer: () -> (PriceResult) query;
    getWhitelistPriceForShareAgent: () -> (PriceResult) query;
    health: () -> (StatusCodeRecordResult) query;
-   removeRedeemedTransactionBlockAdmin: (PaymentTransactionBlockId) ->
-    (TextResult);
+   removeRedeemedTransactionBlockAdmin: (paymentTransactionBlockId:
+    PaymentTransactionBlockId) -> (TextResult);
    removeSharedServiceCanisterAdmin: (record {canisterId: text;}) ->
     (StatusCodeRecordResult);
    resetCurrentChallengesAdmin: () -> (StatusCodeRecordResult);
    resetCyclesFlowAdmin: () -> (StatusCodeRecordResult);
-   setCyclesFlowAdmin: (CyclesFlowSettings) -> (StatusCodeRecordResult);
-   setGameStateThresholdsAdmin: (GameStateTresholds) ->
+   setCyclesFlowAdmin: (settings: CyclesFlowSettings) ->
     (StatusCodeRecordResult);
-   setIcpForOwnMainerAdmin: (nat64) -> (StatusCodeRecordResult);
-   setIcpForShareAgentAdmin: (nat64) -> (StatusCodeRecordResult);
-   setIcpForWhitelistOwnMainerAdmin: (nat64) -> (StatusCodeRecordResult);
-   setIcpForWhitelistShareAgentAdmin: (nat64) -> (StatusCodeRecordResult);
+   setGameStateThresholdsAdmin: (thresholds: GameStateTresholds) ->
+    (StatusCodeRecordResult);
+   setIcpForOwnMainerAdmin: (icpForOwnMainer: nat64) ->
+    (StatusCodeRecordResult);
+   setIcpForShareAgentAdmin: (icpForShareAgent: nat64) ->
+    (StatusCodeRecordResult);
+   setIcpForWhitelistOwnMainerAdmin: (icpForOwnMainer: nat64) ->
+    (StatusCodeRecordResult);
+   setIcpForWhitelistShareAgentAdmin: (icpForShareAgent: nat64) ->
+    (StatusCodeRecordResult);
    setInitialChallengeTopics: () -> (StatusCodeRecordResult);
-   setLimitForCreatingMainerAdmin: (MainerLimitInput) -> (AuthRecordResult);
-   setOfficialMainerAgentCanisterWasmHashAdmin: (UpdateWasmHashInput) ->
-    (CanisterWasmHashRecordResult);
-   setRewardPerChallengeAdmin: (nat) -> (RewardPerChallengeResult);
-   setSubnetsAdmin: (SubnetIds) -> (StatusCodeRecordResult);
-   setTokenLedgerCanisterId: (text) -> (AuthRecordResult);
-   setUpMainerLlmCanister: (OfficialMainerAgentCanister) ->
+   setLimitForCreatingMainerAdmin: (newLimitInput: MainerLimitInput) ->
+    (AuthRecordResult);
+   setOfficialMainerAgentCanisterWasmHashAdmin: (updateWasmHashInput:
+    UpdateWasmHashInput) -> (CanisterWasmHashRecordResult);
+   setRewardPerChallengeAdmin: (totalReward: nat) ->
+    (RewardPerChallengeResult);
+   setSubnetsAdmin: (subnets: SubnetIds) -> (StatusCodeRecordResult);
+   setTokenLedgerCanisterId: (_token_ledger_canister_id: text) ->
+    (AuthRecordResult);
+   setUpMainerLlmCanister: (mainerInfo: OfficialMainerAgentCanister) ->
     (SetUpMainerLlmCanisterResult);
-   shouldCreatingMainersBeStopped: (CheckMainerLimit) -> (FlagResult) query;
-   spinUpMainerControllerCanister: (OfficialMainerAgentCanister) ->
-    (MainerAgentCanisterResult);
-   spinUpMainerControllerCanisterForUserAdmin:
-    (OfficialMainerAgentCanister) -> (MainerAgentCanisterResult);
+   shouldCreatingMainersBeStopped: (checkInput: CheckMainerLimit) ->
+    (FlagResult) query;
+   spinUpMainerControllerCanister: (mainerInfo:
+    OfficialMainerAgentCanister) -> (MainerAgentCanisterResult);
+   spinUpMainerControllerCanisterForUserAdmin: (mainerInfo:
+    OfficialMainerAgentCanister) -> (MainerAgentCanisterResult);
    startUploadJudgePromptCache: () ->
     (StartUploadJudgePromptCacheRecordResult);
    startUploadMainerPromptCache: () ->
     (StartUploadMainerPromptCacheRecordResult);
-   submitChallengeResponse: (ChallengeResponseSubmissionInput) ->
+   submitChallengeResponse: (challengeResponseSubmissionInput:
+    ChallengeResponseSubmissionInput) ->
     (ChallengeResponseSubmissionMetadataResult);
    testMainerCodeIntegrityAdmin: () -> (AuthRecordResult);
    testTokenMintingAdmin: () -> (AuthRecordResult);
    togglePauseProtocolFlagAdmin: () -> (AuthRecordResult);
    togglePauseWhitelistMainerCreationFlagAdmin: () -> (AuthRecordResult);
-   topUpCyclesForMainerAgent: (MainerAgentTopUpInput) ->
+   topUpCyclesForMainerAgent: (mainerTopUpInfo: MainerAgentTopUpInput) ->
     (MainerAgentCanisterResult);
-   unlockUserMainerAgent: (MainerCreationInput) ->
+   unlockUserMainerAgent: (mainerCreationInput: MainerCreationInput) ->
     (MainerAgentCanisterResult);
-   upgradeMainerControllerAdmin: (MainerctrlUpgradeInput) ->
-    (MainerAgentCanisterResult);
-   uploadJudgePromptCacheBytesChunk:
-    (UploadJudgePromptCacheBytesChunkInput) -> (StatusCodeRecordResult);
+   upgradeMainerControllerAdmin: (mainerctrlUpgradeInput:
+    MainerctrlUpgradeInput) -> (MainerAgentCanisterResult);
+   uploadJudgePromptCacheBytesChunk: (uploadJudgePromptCacheBytesChunkInput:
+    UploadJudgePromptCacheBytesChunkInput) -> (StatusCodeRecordResult);
    uploadMainerPromptCacheBytesChunk:
-    (UploadMainerPromptCacheBytesChunkInput) -> (StatusCodeRecordResult);
-   whitelistCreateUserMainerAgent: (WhitelistMainerCreationInput) ->
-    (MainerAgentCanisterResult);
+    (uploadMainerPromptCacheBytesChunkInput:
+    UploadMainerPromptCacheBytesChunkInput) -> (StatusCodeRecordResult);
+   whitelistCreateUserMainerAgent: (mainerCreationInput:
+    WhitelistMainerCreationInput) -> (MainerAgentCanisterResult);
  };
 type FlagResult = 
  variant {

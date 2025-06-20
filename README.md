@@ -11,7 +11,7 @@ Then, do the following:
 conda activate llama_cpp_canister
 
 # Set NETWORK environment variable
-NETWORK=testing  # [local|ic|development|testing|demo]
+NETWORK=testing  # [local|ic|development|testing|demo|prd
 
 # MONITORING SCRIPTS
 # (-) scripts read from 'scripts/canister_ids-<network>.env'
@@ -47,29 +47,41 @@ scripts/deploy-all.sh --mode install --network $NETWORK
 #      to avoid reuploading the models and thus saving a lot of time
 
 # -----------------------------------------------------------------------------------
-# Deploy additional LLMs for the Judge on another subnet
-TODO -- the script is ready, but needs to be tested ---
-
-# -----------------------------------------------------------------------------------
 # Deploy mAIner of type #ShareService
 #
 # IMPORTANT: Record the canister ids in scripts/canister_ids-<network>.env
 #            for canister monitoring, management & logging purposes
 #
 
-# Always deploy a mAIner of type #ShareService, since this is a protocol canister
-# Set the SubnetIds in the GameState canister, for example for the 'testing' environment
-dfx canister --network testing call game_state_canister setSubnetsAdmin '(record {subnetShareAgentCtrl = "csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"; subnetShareServiceCtrl ="csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"; subnetShareServiceLlm = "qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" })'
+# Deploy a mAIner of type #ShareService, since this is a protocol canister
+# Set environment variables for the subnets.
+# Option 1: source the file for the environment & verify things are set
+source scripts/canister_ids-$NETWORK.env
+SUBNETSACTRL=$SUBNET_0
+SUBNETSSCTRL=$SUBNET_0
+SUBNETSSLLM=$SUBNET_2_1
+# Option 2: set them manually
+SUBNETSACTRL=...
+SUBNETSSCTRL=...
+SUBNETSSLLM=...
+# Set the SubnetIds in the GameState canister
+dfx canister --network $NETWORK call game_state_canister setSubnetsAdmin "(record {subnetShareAgentCtrl = \"$SUBNETSACTRL\"; subnetShareServiceCtrl = \"$SUBNETSSCTRL\"; subnetShareServiceLlm = \"$SUBNETSSLLM\" })"
+# Verify the subnets are set correctly
+dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
+# Now install the ShareService Controller
 scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.sh --mode install --network $NETWORK
 
-# Edit the next script to set SUBNET_SHARE_SERVICE_LLM, then run it to install the first LLM
-# Set the SubnetIds in the GameState canister, for example for the 'testing' environment
-dfx canister --network testing call game_state_canister setSubnetsAdmin '(record {subnetShareAgentCtrl = "csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"; subnetShareServiceCtrl ="csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"; subnetShareServiceLlm = "qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" })'
+# Install the first LLM to the correct subnet
+# Verify the subnets are set correctly
+dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
+# If Ok, install the first Ssllm
 scripts/scripts-gamestate/deploy-mainers-ShareService-FirstLLM-via-gamestate.sh --mode install --network $NETWORK
 
-# Set the SubnetIds in the GameState canister, for example for the 'testing' environment
-dfx canister --network testing call game_state_canister setSubnetsAdmin '(record {subnetShareAgentCtrl = "csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"; subnetShareServiceCtrl ="csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"; subnetShareServiceLlm = "qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" })'
-# -> This process is clunky and needs improvement, but it works for now...
+# Install the next LLMs to the correct subnet
+# Set the SubnetIds in the GameState canister as explained above
+# Verify the subnets are set correctly
+dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
+# Now install the Ssllm to the correct subnet
 scripts/scripts-gamestate/deploy-mainers-ShareService-AddLLM-via-gamestate.sh --mode install --network $NETWORK
 
 # -----------------------------------------
@@ -80,6 +92,16 @@ scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode inst
 # Deploy mAIners of type #Own
 # TODO - fix the script
 # scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install --network $NETWORK
+
+# #########################################################################
+# Adding controllers
+# If you maintain a file 'scripts/canister_ids-$NETWORK.env' , you can add
+# the pre-defined controllers (patrick & arjaan) to all canisters at once.
+#
+# If you need others, just update the script 'scripts/add_controllers.py'
+#
+scripts/add_controllers.sh --network $NETWORK
+scripts/list_controllers.sh --network $NETWORK
 
 # #########################################################################
 # Upgrading for new GameState code

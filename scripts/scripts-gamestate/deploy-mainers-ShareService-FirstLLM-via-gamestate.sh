@@ -14,10 +14,10 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --network)
             shift
-            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ] || [ "$1" = "development" ] || [ "$1" = "demo" ]; then
+            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ] || [ "$1" = "development" ] || [ "$1" = "demo" ] || [ "$1" = "prd" ]; then
                 NETWORK_TYPE=$1
             else
-                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing' or 'development' or 'demo'."
+                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing' or 'development' or 'demo' or 'prd'."
                 exit 1
             fi
             shift
@@ -34,7 +34,7 @@ while [ $# -gt 0 ]; do
             ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd]"
             exit 1
             ;;
     esac
@@ -48,20 +48,6 @@ CANISTER_ID_MAINER_CREATOR_CANISTER=$(dfx canister --network $NETWORK_TYPE id ma
 
 # go back to the funnAI folder
 cd ../../../
-
-if [ "$NETWORK_TYPE" = "ic" ]; then
-    SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0
-elif [ "$NETWORK_TYPE" = "testing" ]; then
-    SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0
-elif [ "$NETWORK_TYPE" = "demo" ]; then
-    SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0
-elif [ "$NETWORK_TYPE" = "development" ]; then
-    echo "TODO for $NETWORK_TYPE"
-    exit 1
-else
-    echo "TODO for $NETWORK_TYPE"
-    exit 1
-fi
 
 # ================================================================
 # some helper functions
@@ -241,5 +227,4 @@ echo "RESULT_3A (getMainerAgentCanisterInfo) summary from ShareService Controlle
 
 echo " "
 echo "Succesfully completed setup of ShareService LLM: $CANISTER_ID_SHARE_SERVICE_LLM"
-echo "On Subnet                                      : $SUBNET_SHARE_SERVICE_LLM"
 echo " "
