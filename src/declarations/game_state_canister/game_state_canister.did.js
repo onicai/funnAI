@@ -214,6 +214,8 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : ScoredResponseReturn,
     'Err' : ApiError,
   });
+  const AuthRecord = IDL.Record({ 'auth' : IDL.Text });
+  const AuthRecordResult = IDL.Variant({ 'Ok' : AuthRecord, 'Err' : ApiError });
   const MainerCreationInput = IDL.Record({
     'owner' : IDL.Opt(IDL.Principal),
     'paymentTransactionBlockId' : IDL.Nat64,
@@ -429,6 +431,9 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : ChallengeResponseSubmission,
     'Err' : ApiError,
   });
+  const CheckMainerLimit = IDL.Record({
+    'mainerType' : MainerAgentCanisterType,
+  });
   const OfficialProtocolCanister = IDL.Record({
     'status' : CanisterStatus,
     'canisterType' : ProtocolCanisterType,
@@ -438,12 +443,14 @@ export const idlFactory = ({ IDL }) => {
     'subnet' : IDL.Text,
     'address' : CanisterAddress,
   });
-  const AuthRecord = IDL.Record({ 'auth' : IDL.Text });
-  const AuthRecordResult = IDL.Variant({ 'Ok' : AuthRecord, 'Err' : ApiError });
   const ChallengeResponseSubmissionsResult = IDL.Variant({
     'Ok' : IDL.Vec(ChallengeResponseSubmission),
     'Err' : ApiError,
   });
+  const FlagRecord = IDL.Record({ 'flag' : IDL.Bool });
+  const FlagResult = IDL.Variant({ 'Ok' : FlagRecord, 'Err' : ApiError });
+  const PriceRecord = IDL.Record({ 'price' : IDL.Nat64 });
+  const PriceResult = IDL.Variant({ 'Ok' : PriceRecord, 'Err' : ApiError });
   const CyclesBurntResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
   const ChallengeResult = IDL.Variant({ 'Ok' : Challenge, 'Err' : ApiError });
   const ChallengeParticipationResult = IDL.Variant({
@@ -657,6 +664,10 @@ export const idlFactory = ({ IDL }) => {
     'cyclesGenerateResponseSsctrlGs' : IDL.Opt(IDL.Nat),
     'costCreateMainerLlm' : IDL.Opt(IDL.Nat),
   });
+  const MainerLimitInput = IDL.Record({
+    'mainerType' : MainerAgentCanisterType,
+    'newLimit' : IDL.Nat,
+  });
   const UpdateWasmHashInput = IDL.Record({
     'wasmHash' : IDL.Vec(IDL.Nat8),
     'textNote' : IDL.Text,
@@ -751,6 +762,18 @@ export const idlFactory = ({ IDL }) => {
     'chunkID' : IDL.Nat,
     'bytesChunk' : IDL.Vec(IDL.Nat8),
   });
+  const WhitelistMainerCreationInput = IDL.Record({
+    'status' : CanisterStatus,
+    'canisterType' : ProtocolCanisterType,
+    'ownedBy' : IDL.Principal,
+    'owner' : IDL.Opt(IDL.Principal),
+    'creationTimestamp' : IDL.Nat64,
+    'createdBy' : IDL.Principal,
+    'paymentTransactionBlockId' : IDL.Nat64,
+    'mainerConfig' : MainerConfigurationInput,
+    'subnet' : IDL.Text,
+    'address' : CanisterAddress,
+  });
   const GameStateCanister = IDL.Service({
     'addChallenge' : IDL.Func(
         [NewChallengeInput],
@@ -787,6 +810,7 @@ export const idlFactory = ({ IDL }) => {
         [ScoredResponseResult],
         [],
       ),
+    'cleanUnlockedMainerStoragesAdmin' : IDL.Func([], [AuthRecordResult], []),
     'createUserMainerAgent' : IDL.Func(
         [MainerCreationInput],
         [MainerAgentCanisterResult],
@@ -838,6 +862,11 @@ export const idlFactory = ({ IDL }) => {
         [MainerAgentCanisterResult],
         ['query'],
       ),
+    'getMainerAgentCanistersAdmin' : IDL.Func(
+        [],
+        [MainerAgentCanistersResult],
+        ['query'],
+      ),
     'getMainerAgentCanistersForUser' : IDL.Func(
         [],
         [MainerAgentCanistersResult],
@@ -865,6 +894,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getNumScoredChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumSubmissionsAdmin' : IDL.Func([], [NatResult], ['query']),
+    'getNumberMainerAgentsAdmin' : IDL.Func(
+        [CheckMainerLimit],
+        [NatResult],
+        ['query'],
+      ),
     'getOfficialCanistersAdmin' : IDL.Func(
         [],
         [IDL.Vec(OfficialProtocolCanister)],
@@ -881,6 +915,14 @@ export const idlFactory = ({ IDL }) => {
         [ChallengeResponseSubmissionsResult],
         ['query'],
       ),
+    'getPauseProtocolFlag' : IDL.Func([], [FlagResult], ['query']),
+    'getPauseWhitelistMainerCreationFlag' : IDL.Func(
+        [],
+        [FlagResult],
+        ['query'],
+      ),
+    'getPriceForOwnMainer' : IDL.Func([], [PriceResult], ['query']),
+    'getPriceForShareAgent' : IDL.Func([], [PriceResult], ['query']),
     'getProtocolTotalCyclesBurnt' : IDL.Func(
         [],
         [CyclesBurntResult],
@@ -934,6 +976,8 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getSubnetsAdmin' : IDL.Func([], [SubnetIdsResult], ['query']),
+    'getWhitelistPriceForOwnMainer' : IDL.Func([], [PriceResult], ['query']),
+    'getWhitelistPriceForShareAgent' : IDL.Func([], [PriceResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
     'removeRedeemedTransactionBlockAdmin' : IDL.Func(
         [PaymentTransactionBlockId],
@@ -967,9 +1011,19 @@ export const idlFactory = ({ IDL }) => {
         [StatusCodeRecordResult],
         [],
       ),
+    'setIcpForWhitelistOwnMainerAdmin' : IDL.Func(
+        [IDL.Nat64],
+        [StatusCodeRecordResult],
+        [],
+      ),
+    'setIcpForWhitelistShareAgentAdmin' : IDL.Func(
+        [IDL.Nat64],
+        [StatusCodeRecordResult],
+        [],
+      ),
     'setInitialChallengeTopics' : IDL.Func([], [StatusCodeRecordResult], []),
     'setLimitForCreatingMainerAdmin' : IDL.Func(
-        [IDL.Nat, MainerAgentCanisterType],
+        [MainerLimitInput],
         [AuthRecordResult],
         [],
       ),
@@ -991,11 +1045,16 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'shouldCreatingMainersBeStopped' : IDL.Func(
-        [MainerAgentCanisterType],
-        [IDL.Bool],
+        [CheckMainerLimit],
+        [FlagResult],
         ['query'],
       ),
     'spinUpMainerControllerCanister' : IDL.Func(
+        [OfficialMainerAgentCanister],
+        [MainerAgentCanisterResult],
+        [],
+      ),
+    'spinUpMainerControllerCanisterForUserAdmin' : IDL.Func(
         [OfficialMainerAgentCanister],
         [MainerAgentCanisterResult],
         [],
@@ -1018,6 +1077,11 @@ export const idlFactory = ({ IDL }) => {
     'testMainerCodeIntegrityAdmin' : IDL.Func([], [AuthRecordResult], []),
     'testTokenMintingAdmin' : IDL.Func([], [AuthRecordResult], []),
     'togglePauseProtocolFlagAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'togglePauseWhitelistMainerCreationFlagAdmin' : IDL.Func(
+        [],
+        [AuthRecordResult],
+        [],
+      ),
     'topUpCyclesForMainerAgent' : IDL.Func(
         [MainerAgentTopUpInput],
         [MainerAgentCanisterResult],
@@ -1041,6 +1105,11 @@ export const idlFactory = ({ IDL }) => {
     'uploadMainerPromptCacheBytesChunk' : IDL.Func(
         [UploadMainerPromptCacheBytesChunkInput],
         [StatusCodeRecordResult],
+        [],
+      ),
+    'whitelistCreateUserMainerAgent' : IDL.Func(
+        [WhitelistMainerCreationInput],
+        [MainerAgentCanisterResult],
         [],
       ),
   });

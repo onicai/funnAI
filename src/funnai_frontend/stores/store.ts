@@ -432,6 +432,14 @@ export const createStore = ({
       hasError: false
     };
 
+    // Check if this is an unlocked mAIner (no address and status is Unlocked)
+    const isUnlocked = canisterInfo.status && 'Unlocked' in canisterInfo.status;
+    if (isUnlocked) {
+      enrichedInfo.uiStatus = "unlocked";
+      // For unlocked mAIners, we don't need to fetch additional data as they don't have actors yet
+      return enrichedInfo;
+    }
+
     // Determine LLM setup status from canister info
     if (canisterInfo.status) {
       if ('LlmSetupInProgress' in canisterInfo.status) {
@@ -514,10 +522,18 @@ export const createStore = ({
         // @ts-ignore
         const rawUserCanisters = getMainersResult.Ok;
         
-        // Filter out any canisters without valid addresses
-        userCanisters = rawUserCanisters.filter(canister => 
-          canister.address && canister.address.trim() !== ""
-        );
+        // Filter canisters: keep valid addresses and unlocked mAIners (which may not have addresses yet)
+        userCanisters = rawUserCanisters.filter(canister => {
+          // Keep canisters with valid addresses
+          if (canister.address && canister.address.trim() !== "") {
+            return true;
+          }
+          // Also keep unlocked mAIners (status: Unlocked) even if they don't have addresses yet
+          if (canister.status && 'Unlocked' in canister.status) {
+            return true;
+          }
+          return false;
+        });
         
         console.log(`Filtered ${rawUserCanisters.length - userCanisters.length} invalid canisters`);
         

@@ -225,6 +225,7 @@ export type ChallengeWinnersResult = {
   { 'Err' : ApiError };
 export type ChallengesResult = { 'Ok' : Array<Challenge> } |
   { 'Err' : ApiError };
+export interface CheckMainerLimit { 'mainerType' : MainerAgentCanisterType }
 export type CyclesBurntResult = { 'Ok' : bigint } |
   { 'Err' : ApiError };
 export interface CyclesFlow {
@@ -417,6 +418,9 @@ export interface FinishUploadMainerPromptCacheInput {
   'promptText' : string,
   'promptCacheSha256' : string,
 }
+export interface FlagRecord { 'flag' : boolean }
+export type FlagResult = { 'Ok' : FlagRecord } |
+  { 'Err' : ApiError };
 export interface GameStateCanister {
   'addChallenge' : ActorMethod<[NewChallengeInput], ChallengeAdditionResult>,
   'addChallengeTopic' : ActorMethod<
@@ -440,6 +444,7 @@ export interface GameStateCanister {
     [ScoredResponseInput],
     ScoredResponseResult
   >,
+  'cleanUnlockedMainerStoragesAdmin' : ActorMethod<[], AuthRecordResult>,
   'createUserMainerAgent' : ActorMethod<
     [MainerCreationInput],
     MainerAgentCanisterResult
@@ -476,6 +481,7 @@ export interface GameStateCanister {
     [CanisterRetrieveInput],
     MainerAgentCanisterResult
   >,
+  'getMainerAgentCanistersAdmin' : ActorMethod<[], MainerAgentCanistersResult>,
   'getMainerAgentCanistersForUser' : ActorMethod<
     [],
     MainerAgentCanistersResult
@@ -493,6 +499,7 @@ export interface GameStateCanister {
   'getNumOpenSubmissionsForOpenChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumScoredChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumSubmissionsAdmin' : ActorMethod<[], NatResult>,
+  'getNumberMainerAgentsAdmin' : ActorMethod<[CheckMainerLimit], NatResult>,
   'getOfficialCanistersAdmin' : ActorMethod<
     [],
     Array<OfficialProtocolCanister>
@@ -506,6 +513,10 @@ export interface GameStateCanister {
     [],
     ChallengeResponseSubmissionsResult
   >,
+  'getPauseProtocolFlag' : ActorMethod<[], FlagResult>,
+  'getPauseWhitelistMainerCreationFlag' : ActorMethod<[], FlagResult>,
+  'getPriceForOwnMainer' : ActorMethod<[], PriceResult>,
+  'getPriceForShareAgent' : ActorMethod<[], PriceResult>,
   'getProtocolTotalCyclesBurnt' : ActorMethod<[], CyclesBurntResult>,
   'getRandomOpenChallenge' : ActorMethod<[], ChallengeResult>,
   'getRandomOpenChallengeTopic' : ActorMethod<[], ChallengeTopicResult>,
@@ -531,6 +542,8 @@ export interface GameStateCanister {
   >,
   'getSubmissionsAdmin' : ActorMethod<[], ChallengeResponseSubmissionsResult>,
   'getSubnetsAdmin' : ActorMethod<[], SubnetIdsResult>,
+  'getWhitelistPriceForOwnMainer' : ActorMethod<[], PriceResult>,
+  'getWhitelistPriceForShareAgent' : ActorMethod<[], PriceResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
   'removeRedeemedTransactionBlockAdmin' : ActorMethod<
     [PaymentTransactionBlockId],
@@ -552,9 +565,17 @@ export interface GameStateCanister {
   >,
   'setIcpForOwnMainerAdmin' : ActorMethod<[bigint], StatusCodeRecordResult>,
   'setIcpForShareAgentAdmin' : ActorMethod<[bigint], StatusCodeRecordResult>,
+  'setIcpForWhitelistOwnMainerAdmin' : ActorMethod<
+    [bigint],
+    StatusCodeRecordResult
+  >,
+  'setIcpForWhitelistShareAgentAdmin' : ActorMethod<
+    [bigint],
+    StatusCodeRecordResult
+  >,
   'setInitialChallengeTopics' : ActorMethod<[], StatusCodeRecordResult>,
   'setLimitForCreatingMainerAdmin' : ActorMethod<
-    [bigint, MainerAgentCanisterType],
+    [MainerLimitInput],
     AuthRecordResult
   >,
   'setOfficialMainerAgentCanisterWasmHashAdmin' : ActorMethod<
@@ -572,10 +593,14 @@ export interface GameStateCanister {
     SetUpMainerLlmCanisterResult
   >,
   'shouldCreatingMainersBeStopped' : ActorMethod<
-    [MainerAgentCanisterType],
-    boolean
+    [CheckMainerLimit],
+    FlagResult
   >,
   'spinUpMainerControllerCanister' : ActorMethod<
+    [OfficialMainerAgentCanister],
+    MainerAgentCanisterResult
+  >,
+  'spinUpMainerControllerCanisterForUserAdmin' : ActorMethod<
     [OfficialMainerAgentCanister],
     MainerAgentCanisterResult
   >,
@@ -594,6 +619,10 @@ export interface GameStateCanister {
   'testMainerCodeIntegrityAdmin' : ActorMethod<[], AuthRecordResult>,
   'testTokenMintingAdmin' : ActorMethod<[], AuthRecordResult>,
   'togglePauseProtocolFlagAdmin' : ActorMethod<[], AuthRecordResult>,
+  'togglePauseWhitelistMainerCreationFlagAdmin' : ActorMethod<
+    [],
+    AuthRecordResult
+  >,
   'topUpCyclesForMainerAgent' : ActorMethod<
     [MainerAgentTopUpInput],
     MainerAgentCanisterResult
@@ -613,6 +642,10 @@ export interface GameStateCanister {
   'uploadMainerPromptCacheBytesChunk' : ActorMethod<
     [UploadMainerPromptCacheBytesChunkInput],
     StatusCodeRecordResult
+  >,
+  'whitelistCreateUserMainerAgent' : ActorMethod<
+    [WhitelistMainerCreationInput],
+    MainerAgentCanisterResult
   >,
 }
 export interface GameStateTresholds {
@@ -663,6 +696,10 @@ export interface MainerCreationInput {
   'owner' : [] | [Principal],
   'paymentTransactionBlockId' : bigint,
   'mainerConfig' : MainerConfigurationInput,
+}
+export interface MainerLimitInput {
+  'mainerType' : MainerAgentCanisterType,
+  'newLimit' : bigint,
 }
 export interface MainerPromptInfo {
   'promptCacheFilename' : string,
@@ -716,6 +753,9 @@ export type OfficialProtocolCanistersResult = {
 export interface PaymentTransactionBlockId {
   'paymentTransactionBlockId' : bigint,
 }
+export interface PriceRecord { 'price' : bigint }
+export type PriceResult = { 'Ok' : PriceRecord } |
+  { 'Err' : ApiError };
 export interface ProtocolActivityRecord {
   'challenges' : Array<Challenge>,
   'winners' : Array<ChallengeWinnerDeclaration>,
@@ -904,6 +944,18 @@ export interface UploadMainerPromptCacheBytesChunkInput {
   'mainerPromptId' : string,
   'chunkID' : bigint,
   'bytesChunk' : Uint8Array | number[],
+}
+export interface WhitelistMainerCreationInput {
+  'status' : CanisterStatus,
+  'canisterType' : ProtocolCanisterType,
+  'ownedBy' : Principal,
+  'owner' : [] | [Principal],
+  'creationTimestamp' : bigint,
+  'createdBy' : Principal,
+  'paymentTransactionBlockId' : bigint,
+  'mainerConfig' : MainerConfigurationInput,
+  'subnet' : string,
+  'address' : CanisterAddress,
 }
 export interface _SERVICE extends GameStateCanister {}
 export declare const idlFactory: IDL.InterfaceFactory;

@@ -1,3 +1,16 @@
+type WhitelistMainerCreationInput = 
+ record {
+   address: CanisterAddress;
+   canisterType: ProtocolCanisterType;
+   createdBy: principal;
+   creationTimestamp: nat64;
+   mainerConfig: MainerConfigurationInput;
+   ownedBy: principal;
+   owner: opt principal;
+   paymentTransactionBlockId: nat64;
+   status: CanisterStatus;
+   subnet: text;
+ };
 type UploadMainerPromptCacheBytesChunkInput = 
  record {
    bytesChunk: blob;
@@ -234,6 +247,12 @@ type ProtocolActivityRecord =
    challenges: vec Challenge;
    winners: vec ChallengeWinnerDeclaration;
  };
+type PriceResult = 
+ variant {
+   Err: ApiError;
+   Ok: PriceRecord;
+ };
+type PriceRecord = record {price: nat64;};
 type PaymentTransactionBlockId = record {paymentTransactionBlockId: nat64;};
 type OfficialProtocolCanistersResult = 
  variant {
@@ -294,6 +313,11 @@ type MainerPromptInfo =
    promptCacheNumberOfChunks: nat;
    promptCacheSha256: text;
    promptText: text;
+ };
+type MainerLimitInput = 
+ record {
+   mainerType: MainerAgentCanisterType;
+   newLimit: nat;
  };
 type MainerCreationInput = 
  record {
@@ -385,6 +409,7 @@ type GameStateCanister =
     (MainerAgentCanisterResult);
    addOfficialCanister: (CanisterInput) -> (StatusCodeRecordResult);
    addScoredResponse: (ScoredResponseInput) -> (ScoredResponseResult);
+   cleanUnlockedMainerStoragesAdmin: () -> (AuthRecordResult);
    createUserMainerAgent: (MainerCreationInput) ->
     (MainerAgentCanisterResult);
    deriveNewMainerAgentCanisterWasmHashAdmin: (DeriveWasmHashInput) ->
@@ -409,6 +434,7 @@ type GameStateCanister =
    getJudgePromptInfo: (text) -> (JudgePromptInfoResult) query;
    getMainerAgentCanisterInfo: (CanisterRetrieveInput) ->
     (MainerAgentCanisterResult) query;
+   getMainerAgentCanistersAdmin: () -> (MainerAgentCanistersResult) query;
    getMainerAgentCanistersForUser: () -> (MainerAgentCanistersResult) query;
    getMainerCyclesUsedPerResponse: () -> (NatResult);
    getMainerPromptInfo: (text) -> (MainerPromptInfoResult) query;
@@ -420,11 +446,16 @@ type GameStateCanister =
    getNumOpenSubmissionsForOpenChallengesAdmin: () -> (NatResult) query;
    getNumScoredChallengesAdmin: () -> (NatResult) query;
    getNumSubmissionsAdmin: () -> (NatResult) query;
+   getNumberMainerAgentsAdmin: (CheckMainerLimit) -> (NatResult) query;
    getOfficialCanistersAdmin: () -> (vec OfficialProtocolCanister) query;
    getOfficialChallengerCanisters: () -> (AuthRecordResult);
    getOpenSubmissionsAdmin: () -> (ChallengeResponseSubmissionsResult) query;
    getOpenSubmissionsForOpenChallengesAdmin: () ->
     (ChallengeResponseSubmissionsResult) query;
+   getPauseProtocolFlag: () -> (FlagResult) query;
+   getPauseWhitelistMainerCreationFlag: () -> (FlagResult) query;
+   getPriceForOwnMainer: () -> (PriceResult) query;
+   getPriceForShareAgent: () -> (PriceResult) query;
    getProtocolTotalCyclesBurnt: () -> (CyclesBurntResult) query;
    getRandomOpenChallenge: () -> (ChallengeResult);
    getRandomOpenChallengeTopic: () -> (ChallengeTopicResult);
@@ -441,6 +472,8 @@ type GameStateCanister =
    getSharedServiceCanistersAdmin: () -> (OfficialProtocolCanistersResult);
    getSubmissionsAdmin: () -> (ChallengeResponseSubmissionsResult) query;
    getSubnetsAdmin: () -> (SubnetIdsResult) query;
+   getWhitelistPriceForOwnMainer: () -> (PriceResult) query;
+   getWhitelistPriceForShareAgent: () -> (PriceResult) query;
    health: () -> (StatusCodeRecordResult) query;
    removeRedeemedTransactionBlockAdmin: (PaymentTransactionBlockId) ->
     (TextResult);
@@ -453,9 +486,10 @@ type GameStateCanister =
     (StatusCodeRecordResult);
    setIcpForOwnMainerAdmin: (nat64) -> (StatusCodeRecordResult);
    setIcpForShareAgentAdmin: (nat64) -> (StatusCodeRecordResult);
+   setIcpForWhitelistOwnMainerAdmin: (nat64) -> (StatusCodeRecordResult);
+   setIcpForWhitelistShareAgentAdmin: (nat64) -> (StatusCodeRecordResult);
    setInitialChallengeTopics: () -> (StatusCodeRecordResult);
-   setLimitForCreatingMainerAdmin: (nat, MainerAgentCanisterType) ->
-    (AuthRecordResult);
+   setLimitForCreatingMainerAdmin: (MainerLimitInput) -> (AuthRecordResult);
    setOfficialMainerAgentCanisterWasmHashAdmin: (UpdateWasmHashInput) ->
     (CanisterWasmHashRecordResult);
    setRewardPerChallengeAdmin: (nat) -> (RewardPerChallengeResult);
@@ -463,9 +497,11 @@ type GameStateCanister =
    setTokenLedgerCanisterId: (text) -> (AuthRecordResult);
    setUpMainerLlmCanister: (OfficialMainerAgentCanister) ->
     (SetUpMainerLlmCanisterResult);
-   shouldCreatingMainersBeStopped: (MainerAgentCanisterType) -> (bool) query;
+   shouldCreatingMainersBeStopped: (CheckMainerLimit) -> (FlagResult) query;
    spinUpMainerControllerCanister: (OfficialMainerAgentCanister) ->
     (MainerAgentCanisterResult);
+   spinUpMainerControllerCanisterForUserAdmin:
+    (OfficialMainerAgentCanister) -> (MainerAgentCanisterResult);
    startUploadJudgePromptCache: () ->
     (StartUploadJudgePromptCacheRecordResult);
    startUploadMainerPromptCache: () ->
@@ -475,6 +511,7 @@ type GameStateCanister =
    testMainerCodeIntegrityAdmin: () -> (AuthRecordResult);
    testTokenMintingAdmin: () -> (AuthRecordResult);
    togglePauseProtocolFlagAdmin: () -> (AuthRecordResult);
+   togglePauseWhitelistMainerCreationFlagAdmin: () -> (AuthRecordResult);
    topUpCyclesForMainerAgent: (MainerAgentTopUpInput) ->
     (MainerAgentCanisterResult);
    unlockUserMainerAgent: (MainerCreationInput) ->
@@ -485,7 +522,15 @@ type GameStateCanister =
     (UploadJudgePromptCacheBytesChunkInput) -> (StatusCodeRecordResult);
    uploadMainerPromptCacheBytesChunk:
     (UploadMainerPromptCacheBytesChunkInput) -> (StatusCodeRecordResult);
+   whitelistCreateUserMainerAgent: (WhitelistMainerCreationInput) ->
+    (MainerAgentCanisterResult);
  };
+type FlagResult = 
+ variant {
+   Err: ApiError;
+   Ok: FlagRecord;
+ };
+type FlagRecord = record {flag: bool;};
 type FinishUploadMainerPromptCacheInput = 
  record {
    mainerPromptId: text;
@@ -695,6 +740,7 @@ type CyclesBurntResult =
    Err: ApiError;
    Ok: nat;
  };
+type CheckMainerLimit = record {mainerType: MainerAgentCanisterType;};
 type ChallengesResult = 
  variant {
    Err: ApiError;

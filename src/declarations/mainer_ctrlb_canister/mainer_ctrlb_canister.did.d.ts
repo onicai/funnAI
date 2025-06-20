@@ -208,6 +208,7 @@ export interface MainerAgentCtrlbCanister {
   >,
   'add_llm_canister' : ActorMethod<[CanisterIDRecord], StatusCodeRecordResult>,
   'amiController' : ActorMethod<[], StatusCodeRecordResult>,
+  'canAgentSettingsBeUpdated' : ActorMethod<[], StatusCodeRecordResult>,
   'checkAccessToLLMs' : ActorMethod<[], StatusCodeRecordResult>,
   'getChallengeQueueAdmin' : ActorMethod<[], ChallengeQueueInputsResult>,
   'getGameStateCanisterId' : ActorMethod<[], string>,
@@ -238,6 +239,7 @@ export interface MainerAgentCtrlbCanister {
   'setShareServiceCanisterId' : ActorMethod<[string], StatusCodeRecordResult>,
   'startTimerExecutionAdmin' : ActorMethod<[], AuthRecordResult>,
   'stopTimerExecutionAdmin' : ActorMethod<[], AuthRecordResult>,
+  'timeToNextAgentSettingsUpdate' : ActorMethod<[], NatResult>,
   'triggerChallengeResponseAdmin' : ActorMethod<[], AuthRecordResult>,
   'updateAgentSettings' : ActorMethod<
     [MainerAgentSettingsInput],
@@ -255,6 +257,8 @@ export interface MainerConfigurationInput {
   'cyclesForMainer' : bigint,
   'subnetCtrl' : string,
 }
+export type NatResult = { 'Ok' : bigint } |
+  { 'Err' : ApiError };
 export interface OfficialMainerAgentCanister {
   'status' : CanisterStatus,
   'canisterType' : ProtocolCanisterType,

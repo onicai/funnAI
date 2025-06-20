@@ -4,9 +4,13 @@
 
   export let cycles: number;
   export let label: string = "Burned Cycles";
+  export let showAllEvents: boolean = true;
   
   let cyclesCount = 0;
   let intervalId: NodeJS.Timer;
+  let currentCycles = 0;
+  
+  $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
   
   function animateValue(start: number, end: number, duration: number) {
     const stepTime = 50;
@@ -25,32 +29,63 @@
     }, stepTime);
   }
 
-  onMount(async () => {
-    let protocolTotalCyclesBurntResult = await $store.gameStateCanisterActor.getProtocolTotalCyclesBurnt();
-    // @ts-ignore
-    if (protocolTotalCyclesBurntResult.Ok) {
-      // @ts-ignore
-      cycles = Number(protocolTotalCyclesBurntResult.Ok);
-    };
-    animateValue(0, cycles, 1000);
-    
-    // Set up interval to increment cycles every 60 seconds
-    intervalId = setInterval(async () => {
+  async function getProtocolCycles(): Promise<number> {
+    try {
       let protocolTotalCyclesBurntResult = await $store.gameStateCanisterActor.getProtocolTotalCyclesBurnt();
-      // @ts-ignore
-      if (protocolTotalCyclesBurntResult.Ok) {
-        // @ts-ignore
-        cycles = Number(protocolTotalCyclesBurntResult.Ok);
-      } else {
-        cycles += 1000;
-      };
-      animateValue(cyclesCount, cycles, 1000);
+      if ("Ok" in protocolTotalCyclesBurntResult) {
+        return Number(protocolTotalCyclesBurntResult.Ok);
+      }
+    } catch (error) {
+      console.error("Error fetching protocol cycles:", error);
+    }
+    return cycles; // fallback to provided cycles
+  }
+
+  function getUserMainersCycles(): number {
+    if (!$store.isAuthed || !agentCanistersInfo || agentCanistersInfo.length === 0) {
+      return 0;
+    }
+    return agentCanistersInfo.reduce((total, agent) => total + (agent.burnedCycles || 0), 0);
+  }
+
+  async function updateCycles() {
+    let newCycles: number;
+    
+    if (showAllEvents) {
+      newCycles = await getProtocolCycles();
+      label = "Protocol burned cycles";
+    } else {
+      // Refresh the mAIner canister info to get the latest burned cycles
+      await store.loadUserMainerCanisters();
+      newCycles = getUserMainersCycles();
+      label = "My mAIners burned cycles";
+    }
+    
+    if (newCycles !== currentCycles) {
+      animateValue(cyclesCount, newCycles, 1000);
+      currentCycles = newCycles;
+    }
+  }
+
+  onMount(async () => {
+    await updateCycles();
+    
+    // Set up interval to update cycles every 60 seconds
+    intervalId = setInterval(async () => {
+      await updateCycles();
     }, 6000);
   });
 
   onDestroy(() => {
     if (intervalId) clearInterval(intervalId);
   });
+
+  // Update when showAllEvents changes
+  $: if (showAllEvents !== undefined) {
+    updateCycles();
+  }
+
+  // Note: agentCanistersInfo is now refreshed explicitly in updateCycles() when needed
 
   $: formattedCycles = cyclesCount?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'");
 </script>

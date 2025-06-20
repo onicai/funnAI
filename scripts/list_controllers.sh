@@ -1,10 +1,5 @@
 #!/bin/bash
 
-#######################################################################
-# run from parent folder as:
-# scripts/monitor_logs.sh --network [local|ic|testing|development]
-#######################################################################
-
 # Default network type is local
 NETWORK_TYPE="local"
 
@@ -31,4 +26,4 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 
-python -m scripts.monitor_logs --network $NETWORK_TYPE
+python -m scripts.list_controllers --network $NETWORK_TYPE
