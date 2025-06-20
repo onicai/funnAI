@@ -341,7 +341,7 @@
               </svg>
             </div>
             <div class="flex-1">
-              <h3 class="text-sm font-medium text-orange-800 dark:text-orange-200">Cooldown Active</h3>
+              <h3 class="text-sm font-medium text-orange-800 dark:text-orange-200">Countdown active</h3>
               <p class="text-xs text-orange-700 dark:text-orange-300 mt-1">
                 You can change the burn rate again in: 
                 <span class="font-mono font-bold text-orange-800 dark:text-orange-200">
