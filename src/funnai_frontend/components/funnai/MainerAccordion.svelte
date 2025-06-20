@@ -1218,7 +1218,7 @@
                 <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white backdrop-blur-sm">
                   Whitelist Member
                 </div>
-                <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-sm">Welcome back, early supporter! 🎉</h3>
+                <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-sm">Welcome, early supporter! 🎉</h3>
               </div>
               
               <div class="text-white/90 text-sm sm:text-base leading-relaxed max-w-md mx-auto space-y-2">
