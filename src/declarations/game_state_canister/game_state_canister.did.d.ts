@@ -499,6 +499,7 @@ export interface GameStateCanister {
   'getNumOpenSubmissionsForOpenChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumScoredChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumSubmissionsAdmin' : ActorMethod<[], NatResult>,
+  'getNumberMainerAgentsAdmin' : ActorMethod<[CheckMainerLimit], NatResult>,
   'getOfficialCanistersAdmin' : ActorMethod<
     [],
     Array<OfficialProtocolCanister>

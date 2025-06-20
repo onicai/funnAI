@@ -254,6 +254,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const AuthRecord = IDL.Record({ 'auth' : IDL.Text });
   const AuthRecordResult = IDL.Variant({ 'Ok' : AuthRecord, 'Err' : ApiError });
+  const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
   const CyclesBurnRateDefault = IDL.Variant({
     'Low' : IDL.Null,
     'Mid' : IDL.Null,
@@ -346,6 +347,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'startTimerExecutionAdmin' : IDL.Func([], [AuthRecordResult], []),
     'stopTimerExecutionAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'timeToNextAgentSettingsUpdate' : IDL.Func([], [NatResult], []),
     'triggerChallengeResponseAdmin' : IDL.Func([], [AuthRecordResult], []),
     'updateAgentSettings' : IDL.Func(
         [MainerAgentSettingsInput],
