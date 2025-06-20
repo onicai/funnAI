@@ -1269,7 +1269,7 @@
               
               <div class="text-white/90 text-sm sm:text-base leading-relaxed max-w-md mx-auto space-y-2">
                 <p class="font-semibold text-base sm:text-lg">✨ You're part of the exclusive whitelist community!</p>
-                <p>You successfully claimed your whitelist mAIner. Manage your existing mAIners below or check for additional whitelist opportunities.</p>
+                <p>You successfully claimed your whitelist mAIner(s). Manage your existing mAIners below or check for additional whitelist opportunities.</p>
               </div>
               
               <!-- Status indicator -->
