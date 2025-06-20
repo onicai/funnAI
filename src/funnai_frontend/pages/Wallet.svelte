@@ -6,8 +6,10 @@
   import WalletStatus from '../components/funnai/WalletStatus.svelte';
   import LoginModal from '../components/login/LoginModal.svelte';
   import WalletTokenList from "../components/WalletTokenList.svelte";
+  import TokenListSkeleton from "../components/TokenListSkeleton.svelte";
   import LoadingIndicator from "../components/LoadingIndicator.svelte";
   import LoadingEllipsis from "../components/LoadingEllipsis.svelte";
+  import Footer from "../components/funnai/Footer.svelte";
 
   import { store } from "../stores/store";
   import { WalletDataService, walletDataStore } from "../helpers/WalletDataService";
@@ -128,32 +130,39 @@
                 {#if $store.isAuthed}
                     <!-- <WalletTable {transactions} /> -->
 
-                    <!-- Content -->
-                    {#if isDataLoading}
-                        <h3 class="text-sm uppercase font-medium text-gray-100">isDataLoading</h3>
-                        <LoadingIndicator text={"Loading wallet data..."} size={24} />
-                    {:else if loadingError}
-                        <h3 class="text-sm uppercase font-medium text-gray-100">loadingError</h3>
-                        <div class="text-red-500 mb-4">{loadingError}</div>
-                        <button
-                            class="text-sm text-blue-600 hover:opacity-80 transition-colors"
-                            on:click={() => $store.principal && loadTokensOnly($store.principal.toString())}
-                        >
-                            Try Again
-                        </button>
-                    {:else if walletData.tokens.length === 0}
-                        <h3 class="text-sm uppercase font-medium text-gray-100">no tokens</h3>
-                        <LoadingIndicator text="Please connect your wallet..." size={24} />
-                    {:else}
-                        {#key walletData}
-                            <WalletTokenList 
-                                tokens={walletData.tokens} 
-                                showHeader={false} 
-                                showOnlyWithBalance={false}
-                                isLoading={isDataLoading}
-                            />
-                        {/key}
-                    {/if}
+                    <!-- Content with consistent height to prevent flickering -->
+                    <div class="min-h-[400px] relative">
+                        {#if isDataLoading}
+                            <!-- Show skeleton immediately with loading overlay -->
+                            <TokenListSkeleton rows={4} />
+                            <div class="absolute inset-0 bg-gray-800/80 flex items-center justify-center">
+                                <LoadingIndicator text={"Loading wallet data..."} size={24} />
+                            </div>
+                        {:else if loadingError}
+                            <div class="flex flex-col items-center justify-center py-12">
+                                <div class="text-red-500 mb-4 text-center">{loadingError}</div>
+                                <button
+                                    class="text-sm text-blue-600 hover:opacity-80 transition-colors px-4 py-2 bg-gray-800 rounded-lg"
+                                    on:click={() => $store.principal && loadTokensOnly($store.principal.toString())}
+                                >
+                                    Try Again
+                                </button>
+                            </div>
+                        {:else if walletData.tokens.length === 0}
+                            <div class="flex flex-col items-center justify-center py-12">
+                                <LoadingIndicator text="Please connect your wallet..." size={24} />
+                            </div>
+                        {:else}
+                            {#key walletData}
+                                <WalletTokenList 
+                                    tokens={walletData.tokens} 
+                                    showHeader={false} 
+                                    showOnlyWithBalance={false}
+                                    isLoading={isDataLoading}
+                                />
+                            {/key}
+                        {/if}
+                    </div>
 
                 {:else}
                     <div class="text-center py-8 bg-gray-50 dark:bg-gray-700 rounded-lg">
@@ -173,6 +182,8 @@
             </div>
         </div>
     </div>
+
+<Footer />
 
 {#if modalIsOpen}
   <LoginModal {toggleModal} />

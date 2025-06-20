@@ -15,23 +15,38 @@ export const idlFactory = ({ IDL }) => {
   const ChallengeResponseSubmissionInput = IDL.Record({
     'challengeClosedTimestamp' : IDL.Opt(IDL.Nat64),
     'challengeTopicStatus' : ChallengeTopicStatus,
+    'cyclesGenerateResponseOwnctrlOwnllmMEDIUM' : IDL.Nat,
+    'protocolOperationFeesCut' : IDL.Nat,
     'challengeTopicCreationTimestamp' : IDL.Nat64,
     'challengeCreationTimestamp' : IDL.Nat64,
     'challengeCreatedBy' : CanisterAddress,
     'challengeTopicId' : IDL.Text,
+    'cyclesGenerateResponseOwnctrlOwnllmHIGH' : IDL.Nat,
+    'cyclesGenerateResponseOwnctrlOwnllmLOW' : IDL.Nat,
+    'mainerPromptId' : IDL.Text,
+    'cyclesGenerateResponseSsctrlSsllm' : IDL.Nat,
+    'mainerMaxContinueLoopCount' : IDL.Nat,
     'submittedBy' : IDL.Principal,
+    'mainerTemp' : IDL.Float64,
     'challengeStatus' : ChallengeStatus,
+    'cyclesGenerateResponseOwnctrlGs' : IDL.Nat,
     'challengeQuestionSeed' : IDL.Nat32,
+    'mainerNumTokens' : IDL.Nat64,
     'challengeQuestion' : IDL.Text,
     'challengeId' : IDL.Text,
     'challengeQueuedBy' : IDL.Principal,
     'challengeQueuedId' : IDL.Text,
     'challengeQueuedTo' : IDL.Principal,
     'challengeTopic' : IDL.Text,
+    'cyclesGenerateChallengeChctrlChllm' : IDL.Nat,
+    'cyclesGenerateResponseSactrlSsctrl' : IDL.Nat,
+    'judgePromptId' : IDL.Text,
     'challengeAnswerSeed' : IDL.Nat32,
-    'submissionCyclesRequired' : IDL.Nat,
     'challengeAnswer' : IDL.Text,
     'challengeQueuedTimestamp' : IDL.Nat64,
+    'cyclesSubmitResponse' : IDL.Nat,
+    'cyclesGenerateChallengeGsChctrl' : IDL.Nat,
+    'cyclesGenerateResponseSsctrlGs' : IDL.Nat,
   });
   const StatusCode = IDL.Nat16;
   const StatusCodeRecord = IDL.Record({ 'status_code' : StatusCode });
@@ -51,20 +66,35 @@ export const idlFactory = ({ IDL }) => {
   const ChallengeQueueInput = IDL.Record({
     'challengeClosedTimestamp' : IDL.Opt(IDL.Nat64),
     'challengeTopicStatus' : ChallengeTopicStatus,
+    'cyclesGenerateResponseOwnctrlOwnllmMEDIUM' : IDL.Nat,
+    'protocolOperationFeesCut' : IDL.Nat,
     'challengeTopicCreationTimestamp' : IDL.Nat64,
     'challengeCreationTimestamp' : IDL.Nat64,
     'challengeCreatedBy' : CanisterAddress,
     'challengeTopicId' : IDL.Text,
+    'cyclesGenerateResponseOwnctrlOwnllmHIGH' : IDL.Nat,
+    'cyclesGenerateResponseOwnctrlOwnllmLOW' : IDL.Nat,
+    'mainerPromptId' : IDL.Text,
+    'cyclesGenerateResponseSsctrlSsllm' : IDL.Nat,
+    'mainerMaxContinueLoopCount' : IDL.Nat,
+    'mainerTemp' : IDL.Float64,
     'challengeStatus' : ChallengeStatus,
+    'cyclesGenerateResponseOwnctrlGs' : IDL.Nat,
     'challengeQuestionSeed' : IDL.Nat32,
+    'mainerNumTokens' : IDL.Nat64,
     'challengeQuestion' : IDL.Text,
     'challengeId' : IDL.Text,
     'challengeQueuedBy' : IDL.Principal,
     'challengeQueuedId' : IDL.Text,
     'challengeQueuedTo' : IDL.Principal,
     'challengeTopic' : IDL.Text,
-    'submissionCyclesRequired' : IDL.Nat,
+    'cyclesGenerateChallengeChctrlChllm' : IDL.Nat,
+    'cyclesGenerateResponseSactrlSsctrl' : IDL.Nat,
+    'judgePromptId' : IDL.Text,
     'challengeQueuedTimestamp' : IDL.Nat64,
+    'cyclesSubmitResponse' : IDL.Nat,
+    'cyclesGenerateChallengeGsChctrl' : IDL.Nat,
+    'cyclesGenerateResponseSsctrlGs' : IDL.Nat,
   });
   const ChallengeQueueInputResult = IDL.Variant({
     'Ok' : ChallengeQueueInput,
@@ -113,7 +143,10 @@ export const idlFactory = ({ IDL }) => {
   const SelectableMainerLLMs = IDL.Variant({ 'Qwen2_5_500M' : IDL.Null });
   const MainerConfigurationInput = IDL.Record({
     'selectedLLM' : IDL.Opt(SelectableMainerLLMs),
+    'subnetLlm' : IDL.Text,
     'mainerAgentCanisterType' : MainerAgentCanisterType,
+    'cyclesForMainer' : IDL.Nat,
+    'subnetCtrl' : IDL.Text,
   });
   const OfficialMainerAgentCanister = IDL.Record({
     'status' : CanisterStatus,
@@ -122,6 +155,7 @@ export const idlFactory = ({ IDL }) => {
     'creationTimestamp' : IDL.Nat64,
     'createdBy' : IDL.Principal,
     'mainerConfig' : MainerConfigurationInput,
+    'subnet' : IDL.Text,
     'address' : CanisterAddress,
   });
   const MainerAgentCanisterResult = IDL.Variant({
@@ -172,14 +206,24 @@ export const idlFactory = ({ IDL }) => {
   const ChallengeResponseSubmission = IDL.Record({
     'challengeClosedTimestamp' : IDL.Opt(IDL.Nat64),
     'challengeTopicStatus' : ChallengeTopicStatus,
+    'cyclesGenerateResponseOwnctrlOwnllmMEDIUM' : IDL.Nat,
+    'protocolOperationFeesCut' : IDL.Nat,
     'challengeTopicCreationTimestamp' : IDL.Nat64,
     'challengeCreationTimestamp' : IDL.Nat64,
     'challengeCreatedBy' : CanisterAddress,
     'challengeTopicId' : IDL.Text,
+    'cyclesGenerateResponseOwnctrlOwnllmHIGH' : IDL.Nat,
     'submittedTimestamp' : IDL.Nat64,
+    'cyclesGenerateResponseOwnctrlOwnllmLOW' : IDL.Nat,
+    'mainerPromptId' : IDL.Text,
+    'cyclesGenerateResponseSsctrlSsllm' : IDL.Nat,
+    'mainerMaxContinueLoopCount' : IDL.Nat,
     'submittedBy' : IDL.Principal,
+    'mainerTemp' : IDL.Float64,
     'challengeStatus' : ChallengeStatus,
+    'cyclesGenerateResponseOwnctrlGs' : IDL.Nat,
     'challengeQuestionSeed' : IDL.Nat32,
+    'mainerNumTokens' : IDL.Nat64,
     'submissionStatus' : ChallengeResponseSubmissionStatus,
     'challengeQuestion' : IDL.Text,
     'challengeId' : IDL.Text,
@@ -187,11 +231,18 @@ export const idlFactory = ({ IDL }) => {
     'challengeQueuedId' : IDL.Text,
     'challengeQueuedTo' : IDL.Principal,
     'challengeTopic' : IDL.Text,
+    'cyclesGenerateChallengeChctrlChllm' : IDL.Nat,
+    'cyclesGenerateScoreGsJuctrl' : IDL.Nat,
+    'cyclesGenerateResponseSactrlSsctrl' : IDL.Nat,
+    'judgePromptId' : IDL.Text,
     'submissionId' : IDL.Text,
     'challengeAnswerSeed' : IDL.Nat32,
-    'submissionCyclesRequired' : IDL.Nat,
     'challengeAnswer' : IDL.Text,
     'challengeQueuedTimestamp' : IDL.Nat64,
+    'cyclesSubmitResponse' : IDL.Nat,
+    'cyclesGenerateChallengeGsChctrl' : IDL.Nat,
+    'cyclesGenerateScoreJuctrlJullm' : IDL.Nat,
+    'cyclesGenerateResponseSsctrlGs' : IDL.Nat,
   });
   const ChallengeResponseSubmissionsResult = IDL.Variant({
     'Ok' : IDL.Vec(ChallengeResponseSubmission),
@@ -203,6 +254,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const AuthRecord = IDL.Record({ 'auth' : IDL.Text });
   const AuthRecordResult = IDL.Variant({ 'Ok' : AuthRecord, 'Err' : ApiError });
+  const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
   const CyclesBurnRateDefault = IDL.Variant({
     'Low' : IDL.Null,
     'Mid' : IDL.Null,
@@ -241,6 +293,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'amiController' : IDL.Func([], [StatusCodeRecordResult], ['query']),
+    'canAgentSettingsBeUpdated' : IDL.Func([], [StatusCodeRecordResult], []),
     'checkAccessToLLMs' : IDL.Func([], [StatusCodeRecordResult], []),
     'getChallengeQueueAdmin' : IDL.Func(
         [],
@@ -274,6 +327,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
     'ready' : IDL.Func([], [StatusCodeRecordResult], []),
+    'resetChallengeQueueAdmin' : IDL.Func([], [StatusCodeRecordResult], []),
     'reset_llm_canisters' : IDL.Func([], [StatusCodeRecordResult], []),
     'setGameStateCanisterId' : IDL.Func(
         [IDL.Text],
@@ -293,6 +347,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'startTimerExecutionAdmin' : IDL.Func([], [AuthRecordResult], []),
     'stopTimerExecutionAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'timeToNextAgentSettingsUpdate' : IDL.Func([], [NatResult], []),
     'triggerChallengeResponseAdmin' : IDL.Func([], [AuthRecordResult], []),
     'updateAgentSettings' : IDL.Func(
         [MainerAgentSettingsInput],

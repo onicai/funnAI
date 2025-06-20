@@ -14,10 +14,10 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --network)
             shift
-            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ] || [ "$1" = "development" ]; then
+            if [ "$1" = "local" ] || [ "$1" = "ic" ] || [ "$1" = "testing" ] || [ "$1" = "development" ] || [ "$1" = "demo" ] || [ "$1" = "prd" ]; then
                 NETWORK_TYPE=$1
             else
-                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing' or 'development'."
+                echo "Invalid network type: $1. Use 'local' or 'ic' or 'testing' or 'development' or 'demo' or 'prd'."
                 exit 1
             fi
             shift
@@ -34,7 +34,7 @@ while [ $# -gt 0 ]; do
             ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd]"
             exit 1
             ;;
     esac
@@ -50,7 +50,12 @@ elif [ "$NETWORK_TYPE" = "testing" ]; then
     SUBNET_GAME_STATE="csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"
     SUBNET_SHARE_AGENT_CTRL="w4asl-4nmyj-qnr7c-6cqq4-tkwmt-o26di-iupkq-vx4kt-asbrx-jzuxh-4ae" # All share agents are on the same subnet
     SUBNET_SHARE_SERVICE_CTRL="w4asl-4nmyj-qnr7c-6cqq4-tkwmt-o26di-iupkq-vx4kt-asbrx-jzuxh-4ae"
-    SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0,1,2 - overwritten by the LLMs deployment script
+    SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0,1,2 - overwritten by the LLMs deployment 
+elif [ "$NETWORK_TYPE" = "prd" ]; then
+    SUBNET_GAME_STATE="snjp4-xlbw4-mnbog-ddwy6-6ckfd-2w5a2-eipqo-7l436-pxqkh-l6fuv-vae"
+    SUBNET_SHARE_AGENT_CTRL="snjp4-xlbw4-mnbog-ddwy6-6ckfd-2w5a2-eipqo-7l436-pxqkh-l6fuv-vae"
+    SUBNET_SHARE_SERVICE_CTRL="snjp4-xlbw4-mnbog-ddwy6-6ckfd-2w5a2-eipqo-7l436-pxqkh-l6fuv-vae"
+    SUBNET_SHARE_SERVICE_LLM="lspz2-jx4pu-k3e7p-znm7j-q4yum-ork6e-6w4q6-pijwq-znehu-4jabe-kqe" # LLMs 0,1,2 - overwritten by the LLMs deployment script
 elif [ "$NETWORK_TYPE" = "development" ]; then
     SUBNET_GAME_STATE="none"  # TODO
     SUBNET_SHARE_AGENT_CTRL="none"  # TODO
@@ -66,7 +71,7 @@ fi
 echo "Using network type : $NETWORK_TYPE"
 echo "Deploying to subnet: $SUBNET_GAME_STATE"
 
-echo "We are going to   : $DEPLOY_MODE"
+echo "We are going to    : $DEPLOY_MODE"
 
 # Check if user wants to reinstall and confirm
 if [ "$DEPLOY_MODE" = "reinstall" ]; then
@@ -86,10 +91,11 @@ echo " "
 echo "--------------------------------------------------"
 echo "Deploying the game_state_canister"
 
-if [ "$NETWORK_TYPE" = "ic" ] || [ "$NETWORK_TYPE" = "testing" ]; then
+if [ "$NETWORK_TYPE" = "ic" ] || [ "$NETWORK_TYPE" = "testing" ] || [ "$NETWORK_TYPE" = "development" ] || [ "$NETWORK_TYPE" = "demo" ] || [ "$NETWORK_TYPE" = "prd" ]; then
     if [ "$SUBNET_GAME_STATE" = "none" ]; then
         dfx deploy game_state_canister --mode $DEPLOY_MODE --yes --network $NETWORK_TYPE
     else
+        echo "--mode $DEPLOY_MODE --yes --network $NETWORK_TYPE --subnet $SUBNET_GAME_STATE"
         dfx deploy game_state_canister --mode $DEPLOY_MODE --yes --network $NETWORK_TYPE --subnet $SUBNET_GAME_STATE
     fi
 else

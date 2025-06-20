@@ -1,6 +1,7 @@
 {
   "funnai_backend": {
     "backup": "",
+    "demo": "dtxtp-ciaaa-aaaah-are5a-cai",
     "development": "bom4f-cyaaa-aaaah-qqa2a-cai",
     "ic": "yekds-uqaaa-aaaaj-az5la-cai",
     "test": "",
@@ -8,16 +9,18 @@
   },
   "funnai_frontend": {
     "backup": "",
+    "demo": "l556b-uaaaa-aaaai-q3xta-cai",
     "development": "zlbtt-2yaaa-aaaak-qufwa-cai",
     "ic": "ydlfg-ziaaa-aaaaj-az5lq-cai",
     "test": "",
     "testing": ""
   },
   "game_state_canister": {
+    "demo": "4tr6r-mqaaa-aaaae-qfcta-cai",
     "development": "ciqqv-4iaaa-aaaag-auara-cai",
     "ic": "xzpy6-hiaaa-aaaaj-az4pq-cai",
     "local": "",
-    "testing": "dcw5x-2aaaa-aaaaf-qaqha-cai"
+    "prd": "r5m5y-diaaa-aaaaa-qanaa-cai"
   },
   "mainer_ctrlb_canister": {
     "ic": "x6o6k-kqaaa-aaaaj-az4pa-cai"

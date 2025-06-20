@@ -15,6 +15,7 @@ export type AuthRecordResult = { 'Ok' : AuthRecord } |
 export type CanisterAddress = string;
 export interface CanisterInput {
   'canisterType' : ProtocolCanisterType,
+  'subnet' : string,
   'address' : CanisterAddress,
 }
 export interface CanisterRetrieveInput { 'address' : CanisterAddress }
@@ -39,16 +40,31 @@ export type CanisterWasmHashRecordResult = { 'Ok' : CanisterWasmHashRecord } |
 export interface Challenge {
   'challengeClosedTimestamp' : [] | [bigint],
   'challengeTopicStatus' : ChallengeTopicStatus,
+  'cyclesGenerateResponseOwnctrlOwnllmMEDIUM' : bigint,
+  'protocolOperationFeesCut' : bigint,
   'challengeTopicCreationTimestamp' : bigint,
   'challengeCreationTimestamp' : bigint,
   'challengeCreatedBy' : CanisterAddress,
   'challengeTopicId' : string,
+  'cyclesGenerateResponseOwnctrlOwnllmHIGH' : bigint,
+  'cyclesGenerateResponseOwnctrlOwnllmLOW' : bigint,
+  'mainerPromptId' : string,
+  'cyclesGenerateResponseSsctrlSsllm' : bigint,
+  'mainerMaxContinueLoopCount' : bigint,
+  'mainerTemp' : number,
   'challengeStatus' : ChallengeStatus,
+  'cyclesGenerateResponseOwnctrlGs' : bigint,
   'challengeQuestionSeed' : number,
+  'mainerNumTokens' : bigint,
   'challengeQuestion' : string,
   'challengeId' : string,
   'challengeTopic' : string,
-  'submissionCyclesRequired' : bigint,
+  'cyclesGenerateChallengeChctrlChllm' : bigint,
+  'cyclesGenerateResponseSactrlSsctrl' : bigint,
+  'judgePromptId' : string,
+  'cyclesSubmitResponse' : bigint,
+  'cyclesGenerateChallengeGsChctrl' : bigint,
+  'cyclesGenerateResponseSsctrlGs' : bigint,
 }
 export type ChallengeAdditionResult = { 'Ok' : Challenge } |
   { 'Err' : ApiError };
@@ -67,14 +83,24 @@ export type ChallengeParticipationResult = { 'ThirdPlace' : null } |
 export interface ChallengeResponseSubmission {
   'challengeClosedTimestamp' : [] | [bigint],
   'challengeTopicStatus' : ChallengeTopicStatus,
+  'cyclesGenerateResponseOwnctrlOwnllmMEDIUM' : bigint,
+  'protocolOperationFeesCut' : bigint,
   'challengeTopicCreationTimestamp' : bigint,
   'challengeCreationTimestamp' : bigint,
   'challengeCreatedBy' : CanisterAddress,
   'challengeTopicId' : string,
+  'cyclesGenerateResponseOwnctrlOwnllmHIGH' : bigint,
   'submittedTimestamp' : bigint,
+  'cyclesGenerateResponseOwnctrlOwnllmLOW' : bigint,
+  'mainerPromptId' : string,
+  'cyclesGenerateResponseSsctrlSsllm' : bigint,
+  'mainerMaxContinueLoopCount' : bigint,
   'submittedBy' : Principal,
+  'mainerTemp' : number,
   'challengeStatus' : ChallengeStatus,
+  'cyclesGenerateResponseOwnctrlGs' : bigint,
   'challengeQuestionSeed' : number,
+  'mainerNumTokens' : bigint,
   'submissionStatus' : ChallengeResponseSubmissionStatus,
   'challengeQuestion' : string,
   'challengeId' : string,
@@ -82,37 +108,61 @@ export interface ChallengeResponseSubmission {
   'challengeQueuedId' : string,
   'challengeQueuedTo' : Principal,
   'challengeTopic' : string,
+  'cyclesGenerateChallengeChctrlChllm' : bigint,
+  'cyclesGenerateScoreGsJuctrl' : bigint,
+  'cyclesGenerateResponseSactrlSsctrl' : bigint,
+  'judgePromptId' : string,
   'submissionId' : string,
   'challengeAnswerSeed' : number,
-  'submissionCyclesRequired' : bigint,
   'challengeAnswer' : string,
   'challengeQueuedTimestamp' : bigint,
+  'cyclesSubmitResponse' : bigint,
+  'cyclesGenerateChallengeGsChctrl' : bigint,
+  'cyclesGenerateScoreJuctrlJullm' : bigint,
+  'cyclesGenerateResponseSsctrlGs' : bigint,
 }
 export interface ChallengeResponseSubmissionInput {
   'challengeClosedTimestamp' : [] | [bigint],
   'challengeTopicStatus' : ChallengeTopicStatus,
+  'cyclesGenerateResponseOwnctrlOwnllmMEDIUM' : bigint,
+  'protocolOperationFeesCut' : bigint,
   'challengeTopicCreationTimestamp' : bigint,
   'challengeCreationTimestamp' : bigint,
   'challengeCreatedBy' : CanisterAddress,
   'challengeTopicId' : string,
+  'cyclesGenerateResponseOwnctrlOwnllmHIGH' : bigint,
+  'cyclesGenerateResponseOwnctrlOwnllmLOW' : bigint,
+  'mainerPromptId' : string,
+  'cyclesGenerateResponseSsctrlSsllm' : bigint,
+  'mainerMaxContinueLoopCount' : bigint,
   'submittedBy' : Principal,
+  'mainerTemp' : number,
   'challengeStatus' : ChallengeStatus,
+  'cyclesGenerateResponseOwnctrlGs' : bigint,
   'challengeQuestionSeed' : number,
+  'mainerNumTokens' : bigint,
   'challengeQuestion' : string,
   'challengeId' : string,
   'challengeQueuedBy' : Principal,
   'challengeQueuedId' : string,
   'challengeQueuedTo' : Principal,
   'challengeTopic' : string,
+  'cyclesGenerateChallengeChctrlChllm' : bigint,
+  'cyclesGenerateResponseSactrlSsctrl' : bigint,
+  'judgePromptId' : string,
   'challengeAnswerSeed' : number,
-  'submissionCyclesRequired' : bigint,
   'challengeAnswer' : string,
   'challengeQueuedTimestamp' : bigint,
+  'cyclesSubmitResponse' : bigint,
+  'cyclesGenerateChallengeGsChctrl' : bigint,
+  'cyclesGenerateResponseSsctrlGs' : bigint,
 }
 export interface ChallengeResponseSubmissionMetadata {
   'submittedTimestamp' : bigint,
   'submissionStatus' : ChallengeResponseSubmissionStatus,
+  'cyclesGenerateScoreGsJuctrl' : bigint,
   'submissionId' : string,
+  'cyclesGenerateScoreJuctrlJullm' : bigint,
 }
 export type ChallengeResponseSubmissionMetadataResult = {
     'Ok' : ChallengeResponseSubmissionMetadata
@@ -144,6 +194,8 @@ export interface ChallengeTopic {
   'challengeTopicCreationTimestamp' : bigint,
   'challengeTopicId' : string,
   'challengeTopic' : string,
+  'cyclesGenerateChallengeChctrlChllm' : bigint,
+  'cyclesGenerateChallengeGsChctrl' : bigint,
 }
 export interface ChallengeTopicInput { 'challengeTopic' : string }
 export type ChallengeTopicResult = { 'Ok' : ChallengeTopic } |
@@ -173,12 +225,202 @@ export type ChallengeWinnersResult = {
   { 'Err' : ApiError };
 export type ChallengesResult = { 'Ok' : Array<Challenge> } |
   { 'Err' : ApiError };
+export interface CheckMainerLimit { 'mainerType' : MainerAgentCanisterType }
 export type CyclesBurntResult = { 'Ok' : bigint } |
   { 'Err' : ApiError };
+export interface CyclesFlow {
+  'costCreateMcMainerLlm' : bigint,
+  'cyclesCreateMainerMarginGs' : bigint,
+  'costCreateMainerCtrl' : bigint,
+  'costCreateMcMainerCtrl' : bigint,
+  'cyclesBurntChallengeGeneration' : bigint,
+  'cyclesGenerateResponseOwnctrlOwnllmMEDIUM' : bigint,
+  'protocolOperationFeesCut' : bigint,
+  'dailyChallenges' : bigint,
+  'dailySubmissionsPerShareMEDIUM' : bigint,
+  'cyclesBurntResponseGenerationShare' : bigint,
+  'numShareServiceLlms' : bigint,
+  'numChallengerLlms' : bigint,
+  'costIdleBurnRateJuctrl' : bigint,
+  'cyclesGenerateResponseOwnctrlOwnllmHIGH' : bigint,
+  'cyclesBurntResponseGenerationOwn' : bigint,
+  'dailySubmissionsPerShareLOW' : bigint,
+  'cyclesGenerateResponseOwnctrlOwnllmLOW' : bigint,
+  'costGenerateResponseOwnctrl' : bigint,
+  'costGenerateChallengeChctrl' : bigint,
+  'costIdleBurnRateSactrl' : bigint,
+  'dailySubmissionsPerOwnLOW' : bigint,
+  'cyclesGenerateResponseSsctrlSsllm' : bigint,
+  'costIdleBurnRateOwnctrl' : bigint,
+  'dailySubmissionsPerOwnMEDIUM' : bigint,
+  'costIdleBurnRateChllm' : bigint,
+  'cyclesCreateMainerLlmTargetBalance' : bigint,
+  'cyclesGenerateResponseOwnctrlGs' : bigint,
+  'costIdleBurnRateOwnllm' : bigint,
+  'dailySubmissionsPerShareHIGH' : bigint,
+  'costIdleBurnRateJullm' : bigint,
+  'costIdleBurnRateGs' : bigint,
+  'costIdleBurnRateMc' : bigint,
+  'marginCost' : bigint,
+  'costGenerateResponseShareGs' : bigint,
+  'costGenerateChallengeGs' : bigint,
+  'costGenerateResponseSactrl' : bigint,
+  'costIdleBurnRateSallm' : bigint,
+  'cyclesCreatemMainerMarginMc' : bigint,
+  'cyclesGenerateChallengeChctrlChllm' : bigint,
+  'costGenerateResponseOwnGs' : bigint,
+  'costIdleBurnRateSsllm' : bigint,
+  'dailySubmissionsPerOwnHIGH' : bigint,
+  'costGenerateResponseOwnllm' : bigint,
+  'dailySubmissionsAllShare' : bigint,
+  'cyclesGenerateScoreGsJuctrl' : bigint,
+  'cyclesBurntJudgeScoring' : bigint,
+  'cyclesGenerateResponseSactrlSsctrl' : bigint,
+  'costGenerateScoreJullm' : bigint,
+  'submissionFee' : bigint,
+  'costIdleBurnRateSsctrl' : bigint,
+  'costUpgradeMainerCtrl' : bigint,
+  'costGenerateScoreGs' : bigint,
+  'cyclesFailedSubmissionCut' : bigint,
+  'costGenerateScoreJuctrl' : bigint,
+  'costGenerateChallengeChllm' : bigint,
+  'costUpgradeMcMainerLlm' : bigint,
+  'costUpgradeMainerLlm' : bigint,
+  'dailySubmissionsAllOwn' : bigint,
+  'cyclesSubmitResponse' : bigint,
+  'cyclesGenerateChallengeGsChctrl' : bigint,
+  'cyclesGenerateScoreJuctrlJullm' : bigint,
+  'costGenerateResponseSsctrl' : bigint,
+  'costGenerateResponseSsllm' : bigint,
+  'marginFailedSubmissionCut' : bigint,
+  'numJudgeLlms' : bigint,
+  'costUpgradeMcMainerCtrl' : bigint,
+  'costIdleBurnRateChctrl' : bigint,
+  'cyclesGenerateResponseSsctrlGs' : bigint,
+  'costCreateMainerLlm' : bigint,
+}
+export type CyclesFlowResult = { 'Ok' : CyclesFlow } |
+  { 'Err' : ApiError };
+export interface CyclesFlowSettings {
+  'costCreateMcMainerLlm' : [] | [bigint],
+  'cyclesCreateMainerMarginGs' : [] | [bigint],
+  'costCreateMainerCtrl' : [] | [bigint],
+  'cyclesUpgradeMainerllmMcMainerllm' : [] | [bigint],
+  'costCreateMcMainerCtrl' : [] | [bigint],
+  'cyclesBurntChallengeGeneration' : [] | [bigint],
+  'cyclesGenerateResponseOwnctrlOwnllmMEDIUM' : [] | [bigint],
+  'protocolOperationFeesCut' : [] | [bigint],
+  'dailyChallenges' : [] | [bigint],
+  'dailySubmissionsPerShareMEDIUM' : [] | [bigint],
+  'cyclesBurntResponseGenerationShare' : [] | [bigint],
+  'numShareServiceLlms' : [] | [bigint],
+  'cyclesUpgradeMainerctrlGsMc' : [] | [bigint],
+  'numChallengerLlms' : [] | [bigint],
+  'costIdleBurnRateJuctrl' : [] | [bigint],
+  'cyclesGenerateResponseOwnctrlOwnllmHIGH' : [] | [bigint],
+  'cyclesBurntResponseGenerationOwn' : [] | [bigint],
+  'dailySubmissionsPerShareLOW' : [] | [bigint],
+  'cyclesUpgradeMainerctrlMcMainerctrl' : [] | [bigint],
+  'cyclesGenerateResponseOwnctrlOwnllmLOW' : [] | [bigint],
+  'costGenerateResponseOwnctrl' : [] | [bigint],
+  'costGenerateChallengeChctrl' : [] | [bigint],
+  'costIdleBurnRateSactrl' : [] | [bigint],
+  'dailySubmissionsPerOwnLOW' : [] | [bigint],
+  'cyclesGenerateResponseSsctrlSsllm' : [] | [bigint],
+  'costIdleBurnRateOwnctrl' : [] | [bigint],
+  'dailySubmissionsPerOwnMEDIUM' : [] | [bigint],
+  'costIdleBurnRateChllm' : [] | [bigint],
+  'cyclesCreateMainerLlmTargetBalance' : [] | [bigint],
+  'cyclesGenerateResponseOwnctrlGs' : [] | [bigint],
+  'costIdleBurnRateOwnllm' : [] | [bigint],
+  'dailySubmissionsPerShareHIGH' : [] | [bigint],
+  'costIdleBurnRateJullm' : [] | [bigint],
+  'costIdleBurnRateGs' : [] | [bigint],
+  'costIdleBurnRateMc' : [] | [bigint],
+  'marginCost' : [] | [bigint],
+  'costGenerateResponseShareGs' : [] | [bigint],
+  'costGenerateChallengeGs' : [] | [bigint],
+  'costGenerateResponseSactrl' : [] | [bigint],
+  'costIdleBurnRateSallm' : [] | [bigint],
+  'cyclesCreatemMainerMarginMc' : [] | [bigint],
+  'cyclesGenerateChallengeChctrlChllm' : [] | [bigint],
+  'costGenerateResponseOwnGs' : [] | [bigint],
+  'costIdleBurnRateSsllm' : [] | [bigint],
+  'dailySubmissionsPerOwnHIGH' : [] | [bigint],
+  'costGenerateResponseOwnllm' : [] | [bigint],
+  'dailySubmissionsAllShare' : [] | [bigint],
+  'cyclesGenerateScoreGsJuctrl' : [] | [bigint],
+  'cyclesBurntJudgeScoring' : [] | [bigint],
+  'cyclesGenerateResponseSactrlSsctrl' : [] | [bigint],
+  'costGenerateScoreJullm' : [] | [bigint],
+  'submissionFee' : [] | [bigint],
+  'costIdleBurnRateSsctrl' : [] | [bigint],
+  'costUpgradeMainerCtrl' : [] | [bigint],
+  'costGenerateScoreGs' : [] | [bigint],
+  'cyclesFailedSubmissionCut' : [] | [bigint],
+  'costGenerateScoreJuctrl' : [] | [bigint],
+  'costGenerateChallengeChllm' : [] | [bigint],
+  'costUpgradeMcMainerLlm' : [] | [bigint],
+  'costUpgradeMainerLlm' : [] | [bigint],
+  'dailySubmissionsAllOwn' : [] | [bigint],
+  'cyclesSubmitResponse' : [] | [bigint],
+  'cyclesGenerateChallengeGsChctrl' : [] | [bigint],
+  'cyclesGenerateScoreJuctrlJullm' : [] | [bigint],
+  'costGenerateResponseSsctrl' : [] | [bigint],
+  'costGenerateResponseSsllm' : [] | [bigint],
+  'marginFailedSubmissionCut' : [] | [bigint],
+  'numJudgeLlms' : [] | [bigint],
+  'costUpgradeMcMainerCtrl' : [] | [bigint],
+  'cyclesUpgradeMainerllmGsMc' : [] | [bigint],
+  'costIdleBurnRateChctrl' : [] | [bigint],
+  'cyclesGenerateResponseSsctrlGs' : [] | [bigint],
+  'costCreateMainerLlm' : [] | [bigint],
+}
 export interface DeriveWasmHashInput {
   'textNote' : string,
   'address' : CanisterAddress,
 }
+export interface DownloadJudgePromptCacheBytesChunkInput {
+  'chunkID' : bigint,
+  'judgePromptId' : string,
+}
+export interface DownloadJudgePromptCacheBytesChunkRecord {
+  'chunkID' : bigint,
+  'bytesChunk' : Uint8Array | number[],
+  'judgePromptId' : string,
+}
+export type DownloadJudgePromptCacheBytesChunkRecordResult = {
+    'Ok' : DownloadJudgePromptCacheBytesChunkRecord
+  } |
+  { 'Err' : ApiError };
+export interface DownloadMainerPromptCacheBytesChunkInput {
+  'mainerPromptId' : string,
+  'chunkID' : bigint,
+}
+export interface DownloadMainerPromptCacheBytesChunkRecord {
+  'mainerPromptId' : string,
+  'chunkID' : bigint,
+  'bytesChunk' : Uint8Array | number[],
+}
+export type DownloadMainerPromptCacheBytesChunkRecordResult = {
+    'Ok' : DownloadMainerPromptCacheBytesChunkRecord
+  } |
+  { 'Err' : ApiError };
+export interface FinishUploadJudgePromptCacheInput {
+  'promptCacheFilename' : string,
+  'promptText' : string,
+  'judgePromptId' : string,
+  'promptCacheSha256' : string,
+}
+export interface FinishUploadMainerPromptCacheInput {
+  'promptCacheFilename' : string,
+  'mainerPromptId' : string,
+  'promptText' : string,
+  'promptCacheSha256' : string,
+}
+export interface FlagRecord { 'flag' : boolean }
+export type FlagResult = { 'Ok' : FlagRecord } |
+  { 'Err' : ApiError };
 export interface GameStateCanister {
   'addChallenge' : ActorMethod<[NewChallengeInput], ChallengeAdditionResult>,
   'addChallengeTopic' : ActorMethod<
@@ -202,6 +444,7 @@ export interface GameStateCanister {
     [ScoredResponseInput],
     ScoredResponseResult
   >,
+  'cleanUnlockedMainerStoragesAdmin' : ActorMethod<[], AuthRecordResult>,
   'createUserMainerAgent' : ActorMethod<
     [MainerCreationInput],
     MainerAgentCanisterResult
@@ -210,42 +453,80 @@ export interface GameStateCanister {
     [DeriveWasmHashInput],
     CanisterWasmHashRecordResult
   >,
+  'downloadJudgePromptCacheBytesChunk' : ActorMethod<
+    [DownloadJudgePromptCacheBytesChunkInput],
+    DownloadJudgePromptCacheBytesChunkRecordResult
+  >,
+  'downloadMainerPromptCacheBytesChunk' : ActorMethod<
+    [DownloadMainerPromptCacheBytesChunkInput],
+    DownloadMainerPromptCacheBytesChunkRecordResult
+  >,
+  'finishUploadJudgePromptCache' : ActorMethod<
+    [FinishUploadJudgePromptCacheInput],
+    StatusCodeRecordResult
+  >,
+  'finishUploadMainerPromptCache' : ActorMethod<
+    [FinishUploadMainerPromptCacheInput],
+    StatusCodeRecordResult
+  >,
+  'getArchivedChallengesAdmin' : ActorMethod<[], ChallengesResult>,
   'getCanisterPrincipal' : ActorMethod<[], string>,
+  'getClosedChallengesAdmin' : ActorMethod<[], ChallengesResult>,
   'getCurrentChallenges' : ActorMethod<[], ChallengesResult>,
   'getCurrentChallengesAdmin' : ActorMethod<[], ChallengesResult>,
+  'getCyclesFlowAdmin' : ActorMethod<[], CyclesFlowResult>,
   'getGameStateThresholdsAdmin' : ActorMethod<[], GameStateTresholdsResult>,
+  'getJudgePromptInfo' : ActorMethod<[string], JudgePromptInfoResult>,
   'getMainerAgentCanisterInfo' : ActorMethod<
     [CanisterRetrieveInput],
     MainerAgentCanisterResult
   >,
+  'getMainerAgentCanistersAdmin' : ActorMethod<[], MainerAgentCanistersResult>,
   'getMainerAgentCanistersForUser' : ActorMethod<
     [],
     MainerAgentCanistersResult
   >,
+  'getMainerCyclesUsedPerResponse' : ActorMethod<[], NatResult>,
+  'getMainerPromptInfo' : ActorMethod<[string], MainerPromptInfoResult>,
   'getNextSubmissionToJudge' : ActorMethod<
     [],
     ChallengeResponseSubmissionResult
   >,
+  'getNumArchivedChallengesAdmin' : ActorMethod<[], NatResult>,
+  'getNumClosedChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumCurrentChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumOpenSubmissionsAdmin' : ActorMethod<[], NatResult>,
+  'getNumOpenSubmissionsForOpenChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumScoredChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumSubmissionsAdmin' : ActorMethod<[], NatResult>,
+  'getNumberMainerAgentsAdmin' : ActorMethod<[CheckMainerLimit], NatResult>,
   'getOfficialCanistersAdmin' : ActorMethod<
     [],
     Array<OfficialProtocolCanister>
   >,
   'getOfficialChallengerCanisters' : ActorMethod<[], AuthRecordResult>,
-  'getOfficialSharedServiceCanisters' : ActorMethod<[], AuthRecordResult>,
   'getOpenSubmissionsAdmin' : ActorMethod<
     [],
     ChallengeResponseSubmissionsResult
   >,
+  'getOpenSubmissionsForOpenChallengesAdmin' : ActorMethod<
+    [],
+    ChallengeResponseSubmissionsResult
+  >,
+  'getPauseProtocolFlag' : ActorMethod<[], FlagResult>,
+  'getPauseWhitelistMainerCreationFlag' : ActorMethod<[], FlagResult>,
+  'getPriceForOwnMainer' : ActorMethod<[], PriceResult>,
+  'getPriceForShareAgent' : ActorMethod<[], PriceResult>,
   'getProtocolTotalCyclesBurnt' : ActorMethod<[], CyclesBurntResult>,
   'getRandomOpenChallenge' : ActorMethod<[], ChallengeResult>,
   'getRandomOpenChallengeTopic' : ActorMethod<[], ChallengeTopicResult>,
   'getRecentChallengeWinners' : ActorMethod<[], ChallengeWinnersResult>,
   'getRecentProtocolActivity' : ActorMethod<[], ProtocolActivityResult>,
   'getRecentProtocolActivity_mockup' : ActorMethod<[], ProtocolActivityResult>,
+  'getRedeemedTransactionBlockAdmin' : ActorMethod<
+    [PaymentTransactionBlockId],
+    RedeemedTransactionBlockResult
+  >,
   'getScoreForSubmission' : ActorMethod<
     [SubmissionRetrievalInput],
     ScoredResponseRetrievalResult
@@ -255,29 +536,81 @@ export interface GameStateCanister {
     ScoredResponseRetrievalResult
   >,
   'getScoredChallengesAdmin' : ActorMethod<[], ScoredChallengesResult>,
+  'getSharedServiceCanistersAdmin' : ActorMethod<
+    [],
+    OfficialProtocolCanistersResult
+  >,
   'getSubmissionsAdmin' : ActorMethod<[], ChallengeResponseSubmissionsResult>,
+  'getSubnetsAdmin' : ActorMethod<[], SubnetIdsResult>,
+  'getWhitelistPriceForOwnMainer' : ActorMethod<[], PriceResult>,
+  'getWhitelistPriceForShareAgent' : ActorMethod<[], PriceResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
-  'removeOfficialSharedServiceCanisters' : ActorMethod<
-    [string],
-    AuthRecordResult
+  'removeRedeemedTransactionBlockAdmin' : ActorMethod<
+    [PaymentTransactionBlockId],
+    TextResult
+  >,
+  'removeSharedServiceCanisterAdmin' : ActorMethod<
+    [{ 'canisterId' : string }],
+    StatusCodeRecordResult
+  >,
+  'resetCurrentChallengesAdmin' : ActorMethod<[], StatusCodeRecordResult>,
+  'resetCyclesFlowAdmin' : ActorMethod<[], StatusCodeRecordResult>,
+  'setCyclesFlowAdmin' : ActorMethod<
+    [CyclesFlowSettings],
+    StatusCodeRecordResult
   >,
   'setGameStateThresholdsAdmin' : ActorMethod<
     [GameStateTresholds],
     StatusCodeRecordResult
   >,
+  'setIcpForOwnMainerAdmin' : ActorMethod<[bigint], StatusCodeRecordResult>,
+  'setIcpForShareAgentAdmin' : ActorMethod<[bigint], StatusCodeRecordResult>,
+  'setIcpForWhitelistOwnMainerAdmin' : ActorMethod<
+    [bigint],
+    StatusCodeRecordResult
+  >,
+  'setIcpForWhitelistShareAgentAdmin' : ActorMethod<
+    [bigint],
+    StatusCodeRecordResult
+  >,
   'setInitialChallengeTopics' : ActorMethod<[], StatusCodeRecordResult>,
+  'setLimitForCreatingMainerAdmin' : ActorMethod<
+    [MainerLimitInput],
+    AuthRecordResult
+  >,
   'setOfficialMainerAgentCanisterWasmHashAdmin' : ActorMethod<
     [UpdateWasmHashInput],
     CanisterWasmHashRecordResult
   >,
+  'setRewardPerChallengeAdmin' : ActorMethod<
+    [bigint],
+    RewardPerChallengeResult
+  >,
+  'setSubnetsAdmin' : ActorMethod<[SubnetIds], StatusCodeRecordResult>,
   'setTokenLedgerCanisterId' : ActorMethod<[string], AuthRecordResult>,
   'setUpMainerLlmCanister' : ActorMethod<
     [OfficialMainerAgentCanister],
     SetUpMainerLlmCanisterResult
   >,
+  'shouldCreatingMainersBeStopped' : ActorMethod<
+    [CheckMainerLimit],
+    FlagResult
+  >,
   'spinUpMainerControllerCanister' : ActorMethod<
     [OfficialMainerAgentCanister],
     MainerAgentCanisterResult
+  >,
+  'spinUpMainerControllerCanisterForUserAdmin' : ActorMethod<
+    [OfficialMainerAgentCanister],
+    MainerAgentCanisterResult
+  >,
+  'startUploadJudgePromptCache' : ActorMethod<
+    [],
+    StartUploadJudgePromptCacheRecordResult
+  >,
+  'startUploadMainerPromptCache' : ActorMethod<
+    [],
+    StartUploadMainerPromptCacheRecordResult
   >,
   'submitChallengeResponse' : ActorMethod<
     [ChallengeResponseSubmissionInput],
@@ -285,12 +618,33 @@ export interface GameStateCanister {
   >,
   'testMainerCodeIntegrityAdmin' : ActorMethod<[], AuthRecordResult>,
   'testTokenMintingAdmin' : ActorMethod<[], AuthRecordResult>,
+  'togglePauseProtocolFlagAdmin' : ActorMethod<[], AuthRecordResult>,
+  'togglePauseWhitelistMainerCreationFlagAdmin' : ActorMethod<
+    [],
+    AuthRecordResult
+  >,
   'topUpCyclesForMainerAgent' : ActorMethod<
     [MainerAgentTopUpInput],
     MainerAgentCanisterResult
   >,
   'unlockUserMainerAgent' : ActorMethod<
     [MainerCreationInput],
+    MainerAgentCanisterResult
+  >,
+  'upgradeMainerControllerAdmin' : ActorMethod<
+    [MainerctrlUpgradeInput],
+    MainerAgentCanisterResult
+  >,
+  'uploadJudgePromptCacheBytesChunk' : ActorMethod<
+    [UploadJudgePromptCacheBytesChunkInput],
+    StatusCodeRecordResult
+  >,
+  'uploadMainerPromptCacheBytesChunk' : ActorMethod<
+    [UploadMainerPromptCacheBytesChunkInput],
+    StatusCodeRecordResult
+  >,
+  'whitelistCreateUserMainerAgent' : ActorMethod<
+    [WhitelistMainerCreationInput],
     MainerAgentCanisterResult
   >,
 }
@@ -301,6 +655,14 @@ export interface GameStateTresholds {
   'thresholdScoredResponsesPerChallenge' : bigint,
 }
 export type GameStateTresholdsResult = { 'Ok' : GameStateTresholds } |
+  { 'Err' : ApiError };
+export interface JudgePromptInfo {
+  'promptCacheFilename' : string,
+  'promptText' : string,
+  'promptCacheNumberOfChunks' : bigint,
+  'promptCacheSha256' : string,
+}
+export type JudgePromptInfoResult = { 'Ok' : JudgePromptInfo } |
   { 'Err' : ApiError };
 export type List = [] | [[ScoredResponse, List]];
 export type List_1 = [] | [[ChallengeParticipantEntry, List_1]];
@@ -325,22 +687,45 @@ export interface MainerAgentTopUpInput {
 }
 export interface MainerConfigurationInput {
   'selectedLLM' : [] | [SelectableMainerLLMs],
+  'subnetLlm' : string,
   'mainerAgentCanisterType' : MainerAgentCanisterType,
+  'cyclesForMainer' : bigint,
+  'subnetCtrl' : string,
 }
 export interface MainerCreationInput {
   'owner' : [] | [Principal],
   'paymentTransactionBlockId' : bigint,
   'mainerConfig' : MainerConfigurationInput,
 }
+export interface MainerLimitInput {
+  'mainerType' : MainerAgentCanisterType,
+  'newLimit' : bigint,
+}
+export interface MainerPromptInfo {
+  'promptCacheFilename' : string,
+  'promptText' : string,
+  'promptCacheNumberOfChunks' : bigint,
+  'promptCacheSha256' : string,
+}
+export type MainerPromptInfoResult = { 'Ok' : MainerPromptInfo } |
+  { 'Err' : ApiError };
+export interface MainerctrlUpgradeInput { 'canisterAddress' : CanisterAddress }
 export type NatResult = { 'Ok' : bigint } |
   { 'Err' : ApiError };
 export interface NewChallengeInput {
   'challengeTopicStatus' : ChallengeTopicStatus,
   'challengeTopicCreationTimestamp' : bigint,
   'challengeTopicId' : string,
+  'mainerPromptId' : string,
+  'mainerMaxContinueLoopCount' : bigint,
+  'mainerTemp' : number,
   'challengeQuestionSeed' : number,
+  'mainerNumTokens' : bigint,
   'challengeQuestion' : string,
   'challengeTopic' : string,
+  'cyclesGenerateChallengeChctrlChllm' : bigint,
+  'judgePromptId' : string,
+  'cyclesGenerateChallengeGsChctrl' : bigint,
 }
 export interface OfficialMainerAgentCanister {
   'status' : CanisterStatus,
@@ -349,6 +734,7 @@ export interface OfficialMainerAgentCanister {
   'creationTimestamp' : bigint,
   'createdBy' : Principal,
   'mainerConfig' : MainerConfigurationInput,
+  'subnet' : string,
   'address' : CanisterAddress,
 }
 export interface OfficialProtocolCanister {
@@ -357,8 +743,19 @@ export interface OfficialProtocolCanister {
   'ownedBy' : Principal,
   'creationTimestamp' : bigint,
   'createdBy' : Principal,
+  'subnet' : string,
   'address' : CanisterAddress,
 }
+export type OfficialProtocolCanistersResult = {
+    'Ok' : Array<OfficialProtocolCanister>
+  } |
+  { 'Err' : ApiError };
+export interface PaymentTransactionBlockId {
+  'paymentTransactionBlockId' : bigint,
+}
+export interface PriceRecord { 'price' : bigint }
+export type PriceResult = { 'Ok' : PriceRecord } |
+  { 'Err' : ApiError };
 export interface ProtocolActivityRecord {
   'challenges' : Array<Challenge>,
   'winners' : Array<ChallengeWinnerDeclaration>,
@@ -371,6 +768,31 @@ export type ProtocolCanisterType = { 'MainerAgent' : MainerAgentCanisterType } |
   { 'Judge' : null } |
   { 'Verifier' : null } |
   { 'MainerCreator' : null };
+export type RedeemedForOptions = {
+    'MainerCreation' : MainerAgentCanisterType
+  } |
+  { 'MainerTopUp' : CanisterAddress };
+export interface RedeemedTransactionBlock {
+  'redeemedBy' : Principal,
+  'creationTimestamp' : bigint,
+  'paymentTransactionBlockId' : bigint,
+  'redeemedFor' : RedeemedForOptions,
+  'amount' : bigint,
+}
+export type RedeemedTransactionBlockResult = {
+    'Ok' : RedeemedTransactionBlock
+  } |
+  { 'Err' : ApiError };
+export interface RewardPerChallenge {
+  'amountForAllParticipants' : bigint,
+  'thirdPlaceAmount' : bigint,
+  'rewardType' : RewardType,
+  'totalAmount' : bigint,
+  'winnerAmount' : bigint,
+  'secondPlaceAmount' : bigint,
+}
+export type RewardPerChallengeResult = { 'Ok' : RewardPerChallenge } |
+  { 'Err' : ApiError };
 export type RewardType = { 'ICP' : null } |
   { 'Coupon' : string } |
   { 'MainerToken' : null } |
@@ -381,15 +803,25 @@ export type ScoredChallengesResult = { 'Ok' : Array<[string, List]> } |
 export interface ScoredResponse {
   'challengeClosedTimestamp' : [] | [bigint],
   'challengeTopicStatus' : ChallengeTopicStatus,
+  'cyclesGenerateResponseOwnctrlOwnllmMEDIUM' : bigint,
+  'protocolOperationFeesCut' : bigint,
   'challengeTopicCreationTimestamp' : bigint,
   'challengeCreationTimestamp' : bigint,
   'challengeCreatedBy' : CanisterAddress,
   'challengeTopicId' : string,
+  'cyclesGenerateResponseOwnctrlOwnllmHIGH' : bigint,
   'judgedBy' : Principal,
   'submittedTimestamp' : bigint,
+  'cyclesGenerateResponseOwnctrlOwnllmLOW' : bigint,
+  'mainerPromptId' : string,
+  'cyclesGenerateResponseSsctrlSsllm' : bigint,
+  'mainerMaxContinueLoopCount' : bigint,
   'submittedBy' : Principal,
+  'mainerTemp' : number,
   'challengeStatus' : ChallengeStatus,
+  'cyclesGenerateResponseOwnctrlGs' : bigint,
   'challengeQuestionSeed' : number,
+  'mainerNumTokens' : bigint,
   'submissionStatus' : ChallengeResponseSubmissionStatus,
   'score' : bigint,
   'challengeQuestion' : string,
@@ -399,25 +831,42 @@ export interface ScoredResponse {
   'challengeQueuedTo' : Principal,
   'challengeTopic' : string,
   'judgedTimestamp' : bigint,
+  'cyclesGenerateChallengeChctrlChllm' : bigint,
+  'cyclesGenerateScoreGsJuctrl' : bigint,
+  'cyclesGenerateResponseSactrlSsctrl' : bigint,
+  'judgePromptId' : string,
   'submissionId' : string,
   'challengeAnswerSeed' : number,
-  'submissionCyclesRequired' : bigint,
   'challengeAnswer' : string,
   'challengeQueuedTimestamp' : bigint,
+  'cyclesSubmitResponse' : bigint,
   'scoreSeed' : number,
+  'cyclesGenerateChallengeGsChctrl' : bigint,
+  'cyclesGenerateScoreJuctrlJullm' : bigint,
+  'cyclesGenerateResponseSsctrlGs' : bigint,
 }
 export interface ScoredResponseInput {
   'challengeClosedTimestamp' : [] | [bigint],
   'challengeTopicStatus' : ChallengeTopicStatus,
+  'cyclesGenerateResponseOwnctrlOwnllmMEDIUM' : bigint,
+  'protocolOperationFeesCut' : bigint,
   'challengeTopicCreationTimestamp' : bigint,
   'challengeCreationTimestamp' : bigint,
   'challengeCreatedBy' : CanisterAddress,
   'challengeTopicId' : string,
+  'cyclesGenerateResponseOwnctrlOwnllmHIGH' : bigint,
   'judgedBy' : Principal,
   'submittedTimestamp' : bigint,
+  'cyclesGenerateResponseOwnctrlOwnllmLOW' : bigint,
+  'mainerPromptId' : string,
+  'cyclesGenerateResponseSsctrlSsllm' : bigint,
+  'mainerMaxContinueLoopCount' : bigint,
   'submittedBy' : Principal,
+  'mainerTemp' : number,
   'challengeStatus' : ChallengeStatus,
+  'cyclesGenerateResponseOwnctrlGs' : bigint,
   'challengeQuestionSeed' : number,
+  'mainerNumTokens' : bigint,
   'submissionStatus' : ChallengeResponseSubmissionStatus,
   'score' : bigint,
   'challengeQuestion' : string,
@@ -426,12 +875,19 @@ export interface ScoredResponseInput {
   'challengeQueuedId' : string,
   'challengeQueuedTo' : Principal,
   'challengeTopic' : string,
+  'cyclesGenerateChallengeChctrlChllm' : bigint,
+  'cyclesGenerateScoreGsJuctrl' : bigint,
+  'cyclesGenerateResponseSactrlSsctrl' : bigint,
+  'judgePromptId' : string,
   'submissionId' : string,
   'challengeAnswerSeed' : number,
-  'submissionCyclesRequired' : bigint,
   'challengeAnswer' : string,
   'challengeQueuedTimestamp' : bigint,
+  'cyclesSubmitResponse' : bigint,
   'scoreSeed' : number,
+  'cyclesGenerateChallengeGsChctrl' : bigint,
+  'cyclesGenerateScoreJuctrlJullm' : bigint,
+  'cyclesGenerateResponseSsctrlGs' : bigint,
 }
 export type ScoredResponseResult = { 'Ok' : ScoredResponseReturn } |
   { 'Err' : ApiError };
@@ -446,6 +902,18 @@ export type SetUpMainerLlmCanisterResult = {
     }
   } |
   { 'Err' : ApiError };
+export interface StartUploadJudgePromptCacheRecord { 'judgePromptId' : string }
+export type StartUploadJudgePromptCacheRecordResult = {
+    'Ok' : StartUploadJudgePromptCacheRecord
+  } |
+  { 'Err' : ApiError };
+export interface StartUploadMainerPromptCacheRecord {
+  'mainerPromptId' : string,
+}
+export type StartUploadMainerPromptCacheRecordResult = {
+    'Ok' : StartUploadMainerPromptCacheRecord
+  } |
+  { 'Err' : ApiError };
 export type StatusCode = number;
 export interface StatusCodeRecord { 'status_code' : StatusCode }
 export type StatusCodeRecordResult = { 'Ok' : StatusCodeRecord } |
@@ -454,9 +922,40 @@ export interface SubmissionRetrievalInput {
   'challengeId' : string,
   'submissionId' : string,
 }
+export interface SubnetIds {
+  'subnetShareServiceCtrl' : string,
+  'subnetShareAgentCtrl' : string,
+  'subnetShareServiceLlm' : string,
+}
+export type SubnetIdsResult = { 'Ok' : SubnetIds } |
+  { 'Err' : ApiError };
+export type TextResult = { 'Ok' : string } |
+  { 'Err' : ApiError };
 export interface UpdateWasmHashInput {
   'wasmHash' : Uint8Array | number[],
   'textNote' : string,
+}
+export interface UploadJudgePromptCacheBytesChunkInput {
+  'chunkID' : bigint,
+  'bytesChunk' : Uint8Array | number[],
+  'judgePromptId' : string,
+}
+export interface UploadMainerPromptCacheBytesChunkInput {
+  'mainerPromptId' : string,
+  'chunkID' : bigint,
+  'bytesChunk' : Uint8Array | number[],
+}
+export interface WhitelistMainerCreationInput {
+  'status' : CanisterStatus,
+  'canisterType' : ProtocolCanisterType,
+  'ownedBy' : Principal,
+  'owner' : [] | [Principal],
+  'creationTimestamp' : bigint,
+  'createdBy' : Principal,
+  'paymentTransactionBlockId' : bigint,
+  'mainerConfig' : MainerConfigurationInput,
+  'subnet' : string,
+  'address' : CanisterAddress,
 }
 export interface _SERVICE extends GameStateCanister {}
 export declare const idlFactory: IDL.InterfaceFactory;

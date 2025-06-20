@@ -266,3 +266,16 @@ export function formatVolume(volume: number): string {
 export function formatNumberWithCommas(num: number): string {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
+
+/**
+ * Convert raw FUNNAI value to decimal format (FUNNAI has 8 decimals)
+ * @param rawAmount Raw amount string from backend
+ * @returns Formatted FUNNAI amount string
+ */
+export function formatFunnaiAmount(rawAmount: string): string {
+  const amount = Number(rawAmount) / 100000000; // Divide by 10^8
+  return amount.toLocaleString(undefined, { 
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 8 
+  });
+}

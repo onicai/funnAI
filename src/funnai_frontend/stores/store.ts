@@ -50,6 +50,9 @@ export const canisterIds = {
   gameStateCanisterId
 };
 
+console.log("in store canisterIds ", canisterIds);
+console.log("in store gameStateCanisterId ", gameStateCanisterId);
+
 export const canisterIDLs = {
   backendIdlFactory,
   gameStateIdlFactory,
@@ -165,6 +168,10 @@ type State = {
   userMainerAgentCanistersInfo: any[];
   sessionExpiry: bigint | null; // Track session expiration time
   sessionRefreshTimer: NodeJS.Timeout | null; // Timer for automatic session refresh
+  // mAIner creation progress state
+  isCreatingMainer: boolean;
+  mainerCreationProgress: {message: string, timestamp: string, complete: boolean}[];
+  shouldOpenFirstMainerAfterCreation: boolean;
 };
 
 let defaultBackendCanisterId = backendCanisterId;
@@ -188,6 +195,10 @@ const defaultState: State = {
   userMainerAgentCanistersInfo: [],
   sessionExpiry: null,
   sessionRefreshTimer: null,
+  // mAIner creation progress state
+  isCreatingMainer: false,
+  mainerCreationProgress: [],
+  shouldOpenFirstMainerAfterCreation: false,
 };
 
 // Add theme support
@@ -421,6 +432,14 @@ export const createStore = ({
       hasError: false
     };
 
+    // Check if this is an unlocked mAIner (no address and status is Unlocked)
+    const isUnlocked = canisterInfo.status && 'Unlocked' in canisterInfo.status;
+    if (isUnlocked) {
+      enrichedInfo.uiStatus = "unlocked";
+      // For unlocked mAIners, we don't need to fetch additional data as they don't have actors yet
+      return enrichedInfo;
+    }
+
     // Determine LLM setup status from canister info
     if (canisterInfo.status) {
       if ('LlmSetupInProgress' in canisterInfo.status) {
@@ -503,10 +522,18 @@ export const createStore = ({
         // @ts-ignore
         const rawUserCanisters = getMainersResult.Ok;
         
-        // Filter out any canisters without valid addresses
-        userCanisters = rawUserCanisters.filter(canister => 
-          canister.address && canister.address.trim() !== ""
-        );
+        // Filter canisters: keep valid addresses and unlocked mAIners (which may not have addresses yet)
+        userCanisters = rawUserCanisters.filter(canister => {
+          // Keep canisters with valid addresses
+          if (canister.address && canister.address.trim() !== "") {
+            return true;
+          }
+          // Also keep unlocked mAIners (status: Unlocked) even if they don't have addresses yet
+          if (canister.status && 'Unlocked' in canister.status) {
+            return true;
+          }
+          return false;
+        });
         
         console.log(`Filtered ${rawUserCanisters.length - userCanisters.length} invalid canisters`);
         
@@ -954,6 +981,45 @@ export const createStore = ({
     }
   };
 
+  // mAIner creation progress management functions
+  const startMainerCreation = () => {
+    update((state) => ({
+      ...state,
+      isCreatingMainer: true,
+      mainerCreationProgress: [],
+      shouldOpenFirstMainerAfterCreation: true
+    }));
+  };
+
+  const addMainerCreationProgress = (message: string, isComplete = false) => {
+    const now = new Date();
+    const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+    
+    update((state) => ({
+      ...state,
+      mainerCreationProgress: [
+        ...state.mainerCreationProgress,
+        { message, timestamp, complete: isComplete }
+      ]
+    }));
+  };
+
+  const completeMainerCreation = () => {
+    update((state) => ({
+      ...state,
+      isCreatingMainer: false,
+      mainerCreationProgress: [],
+      shouldOpenFirstMainerAfterCreation: false
+    }));
+  };
+
+  const resetMainerCreationAfterOpen = () => {
+    update((state) => ({
+      ...state,
+      shouldOpenFirstMainerAfterCreation: false
+    }));
+  };
+
   return {
     subscribe,
     update,
@@ -966,7 +1032,11 @@ export const createStore = ({
     getActor,
     refreshUserSession,
     getStoredSessionInfo,
-    clearSessionInfo
+    clearSessionInfo,
+    startMainerCreation,
+    addMainerCreationProgress,
+    completeMainerCreation,
+    resetMainerCreationAfterOpen
   };
 };
 

@@ -1,7 +1,48 @@
+type WhitelistMainerCreationInput = 
+ record {
+   address: CanisterAddress;
+   canisterType: ProtocolCanisterType;
+   createdBy: principal;
+   creationTimestamp: nat64;
+   mainerConfig: MainerConfigurationInput;
+   ownedBy: principal;
+   owner: opt principal;
+   paymentTransactionBlockId: nat64;
+   status: CanisterStatus;
+   subnet: text;
+ };
+type UploadMainerPromptCacheBytesChunkInput = 
+ record {
+   bytesChunk: blob;
+   chunkID: nat;
+   mainerPromptId: text;
+ };
+type UploadJudgePromptCacheBytesChunkInput = 
+ record {
+   bytesChunk: blob;
+   chunkID: nat;
+   judgePromptId: text;
+ };
 type UpdateWasmHashInput = 
  record {
    textNote: text;
    wasmHash: blob;
+ };
+type TextResult = 
+ variant {
+   Err: ApiError;
+   Ok: text;
+ };
+type SubnetIdsResult = 
+ variant {
+   Err: ApiError;
+   Ok: SubnetIds;
+ };
+type SubnetIds = 
+ record {
+   subnetShareAgentCtrl: text;
+   subnetShareServiceCtrl: text;
+   subnetShareServiceLlm: text;
  };
 type SubmissionRetrievalInput = 
  record {
@@ -15,6 +56,18 @@ type StatusCodeRecordResult =
  };
 type StatusCodeRecord = record {status_code: StatusCode;};
 type StatusCode = nat16;
+type StartUploadMainerPromptCacheRecordResult = 
+ variant {
+   Err: ApiError;
+   Ok: StartUploadMainerPromptCacheRecord;
+ };
+type StartUploadMainerPromptCacheRecord = record {mainerPromptId: text;};
+type StartUploadJudgePromptCacheRecordResult = 
+ variant {
+   Err: ApiError;
+   Ok: StartUploadJudgePromptCacheRecord;
+ };
+type StartUploadJudgePromptCacheRecord = record {judgePromptId: text;};
 type SetUpMainerLlmCanisterResult = 
  variant {
    Err: ApiError;
@@ -55,10 +108,27 @@ type ScoredResponseInput =
    challengeTopicCreationTimestamp: nat64;
    challengeTopicId: text;
    challengeTopicStatus: ChallengeTopicStatus;
+   cyclesGenerateChallengeChctrlChllm: nat;
+   cyclesGenerateChallengeGsChctrl: nat;
+   cyclesGenerateResponseOwnctrlGs: nat;
+   cyclesGenerateResponseOwnctrlOwnllmHIGH: nat;
+   cyclesGenerateResponseOwnctrlOwnllmLOW: nat;
+   cyclesGenerateResponseOwnctrlOwnllmMEDIUM: nat;
+   cyclesGenerateResponseSactrlSsctrl: nat;
+   cyclesGenerateResponseSsctrlGs: nat;
+   cyclesGenerateResponseSsctrlSsllm: nat;
+   cyclesGenerateScoreGsJuctrl: nat;
+   cyclesGenerateScoreJuctrlJullm: nat;
+   cyclesSubmitResponse: nat;
+   judgePromptId: text;
    judgedBy: principal;
+   mainerMaxContinueLoopCount: nat;
+   mainerNumTokens: nat64;
+   mainerPromptId: text;
+   mainerTemp: float64;
+   protocolOperationFeesCut: nat;
    score: nat;
    scoreSeed: nat32;
-   submissionCyclesRequired: nat;
    submissionId: text;
    submissionStatus: ChallengeResponseSubmissionStatus;
    submittedBy: principal;
@@ -83,11 +153,28 @@ type ScoredResponse =
    challengeTopicCreationTimestamp: nat64;
    challengeTopicId: text;
    challengeTopicStatus: ChallengeTopicStatus;
+   cyclesGenerateChallengeChctrlChllm: nat;
+   cyclesGenerateChallengeGsChctrl: nat;
+   cyclesGenerateResponseOwnctrlGs: nat;
+   cyclesGenerateResponseOwnctrlOwnllmHIGH: nat;
+   cyclesGenerateResponseOwnctrlOwnllmLOW: nat;
+   cyclesGenerateResponseOwnctrlOwnllmMEDIUM: nat;
+   cyclesGenerateResponseSactrlSsctrl: nat;
+   cyclesGenerateResponseSsctrlGs: nat;
+   cyclesGenerateResponseSsctrlSsllm: nat;
+   cyclesGenerateScoreGsJuctrl: nat;
+   cyclesGenerateScoreJuctrlJullm: nat;
+   cyclesSubmitResponse: nat;
+   judgePromptId: text;
    judgedBy: principal;
    judgedTimestamp: nat64;
+   mainerMaxContinueLoopCount: nat;
+   mainerNumTokens: nat64;
+   mainerPromptId: text;
+   mainerTemp: float64;
+   protocolOperationFeesCut: nat;
    score: nat;
    scoreSeed: nat32;
-   submissionCyclesRequired: nat;
    submissionId: text;
    submissionStatus: ChallengeResponseSubmissionStatus;
    submittedBy: principal;
@@ -109,6 +196,38 @@ type RewardType =
    MainerToken;
    Other: text;
  };
+type RewardPerChallengeResult = 
+ variant {
+   Err: ApiError;
+   Ok: RewardPerChallenge;
+ };
+type RewardPerChallenge = 
+ record {
+   amountForAllParticipants: nat;
+   rewardType: RewardType;
+   secondPlaceAmount: nat;
+   thirdPlaceAmount: nat;
+   totalAmount: nat;
+   winnerAmount: nat;
+ };
+type RedeemedTransactionBlockResult = 
+ variant {
+   Err: ApiError;
+   Ok: RedeemedTransactionBlock;
+ };
+type RedeemedTransactionBlock = 
+ record {
+   amount: nat;
+   creationTimestamp: nat64;
+   paymentTransactionBlockId: nat64;
+   redeemedBy: principal;
+   redeemedFor: RedeemedForOptions;
+ };
+type RedeemedForOptions = 
+ variant {
+   MainerCreation: MainerAgentCanisterType;
+   MainerTopUp: CanisterAddress;
+ };
 type ProtocolCanisterType = 
  variant {
    Challenger;
@@ -128,6 +247,18 @@ type ProtocolActivityRecord =
    challenges: vec Challenge;
    winners: vec ChallengeWinnerDeclaration;
  };
+type PriceResult = 
+ variant {
+   Err: ApiError;
+   Ok: PriceRecord;
+ };
+type PriceRecord = record {price: nat64;};
+type PaymentTransactionBlockId = record {paymentTransactionBlockId: nat64;};
+type OfficialProtocolCanistersResult = 
+ variant {
+   Err: ApiError;
+   Ok: vec OfficialProtocolCanister;
+ };
 type OfficialProtocolCanister = 
  record {
    address: CanisterAddress;
@@ -136,6 +267,7 @@ type OfficialProtocolCanister =
    creationTimestamp: nat64;
    ownedBy: principal;
    status: CanisterStatus;
+   subnet: text;
  };
 type OfficialMainerAgentCanister = 
  record {
@@ -146,6 +278,7 @@ type OfficialMainerAgentCanister =
    mainerConfig: MainerConfigurationInput;
    ownedBy: principal;
    status: CanisterStatus;
+   subnet: text;
  };
 type NewChallengeInput = 
  record {
@@ -155,11 +288,36 @@ type NewChallengeInput =
    challengeTopicCreationTimestamp: nat64;
    challengeTopicId: text;
    challengeTopicStatus: ChallengeTopicStatus;
+   cyclesGenerateChallengeChctrlChllm: nat;
+   cyclesGenerateChallengeGsChctrl: nat;
+   judgePromptId: text;
+   mainerMaxContinueLoopCount: nat;
+   mainerNumTokens: nat64;
+   mainerPromptId: text;
+   mainerTemp: float64;
  };
 type NatResult = 
  variant {
    Err: ApiError;
    Ok: nat;
+ };
+type MainerctrlUpgradeInput = record {canisterAddress: CanisterAddress;};
+type MainerPromptInfoResult = 
+ variant {
+   Err: ApiError;
+   Ok: MainerPromptInfo;
+ };
+type MainerPromptInfo = 
+ record {
+   promptCacheFilename: text;
+   promptCacheNumberOfChunks: nat;
+   promptCacheSha256: text;
+   promptText: text;
+ };
+type MainerLimitInput = 
+ record {
+   mainerType: MainerAgentCanisterType;
+   newLimit: nat;
  };
 type MainerCreationInput = 
  record {
@@ -169,8 +327,11 @@ type MainerCreationInput =
  };
 type MainerConfigurationInput = 
  record {
+   cyclesForMainer: nat;
    mainerAgentCanisterType: MainerAgentCanisterType;
    selectedLLM: opt SelectableMainerLLMs;
+   subnetCtrl: text;
+   subnetLlm: text;
  };
 type MainerAgentTopUpInput = 
  record {
@@ -212,6 +373,18 @@ type List =
        ScoredResponse;
        List;
      };
+type JudgePromptInfoResult = 
+ variant {
+   Err: ApiError;
+   Ok: JudgePromptInfo;
+ };
+type JudgePromptInfo = 
+ record {
+   promptCacheFilename: text;
+   promptCacheNumberOfChunks: nat;
+   promptCacheSha256: text;
+   promptText: text;
+ };
 type GameStateTresholdsResult = 
  variant {
    Err: ApiError;
@@ -236,69 +409,338 @@ type GameStateCanister =
     (MainerAgentCanisterResult);
    addOfficialCanister: (CanisterInput) -> (StatusCodeRecordResult);
    addScoredResponse: (ScoredResponseInput) -> (ScoredResponseResult);
+   cleanUnlockedMainerStoragesAdmin: () -> (AuthRecordResult);
    createUserMainerAgent: (MainerCreationInput) ->
     (MainerAgentCanisterResult);
    deriveNewMainerAgentCanisterWasmHashAdmin: (DeriveWasmHashInput) ->
     (CanisterWasmHashRecordResult);
+   downloadJudgePromptCacheBytesChunk:
+    (DownloadJudgePromptCacheBytesChunkInput) ->
+    (DownloadJudgePromptCacheBytesChunkRecordResult) query;
+   downloadMainerPromptCacheBytesChunk:
+    (DownloadMainerPromptCacheBytesChunkInput) ->
+    (DownloadMainerPromptCacheBytesChunkRecordResult) query;
+   finishUploadJudgePromptCache: (FinishUploadJudgePromptCacheInput) ->
+    (StatusCodeRecordResult);
+   finishUploadMainerPromptCache: (FinishUploadMainerPromptCacheInput) ->
+    (StatusCodeRecordResult);
+   getArchivedChallengesAdmin: () -> (ChallengesResult) query;
    getCanisterPrincipal: () -> (text) query;
+   getClosedChallengesAdmin: () -> (ChallengesResult) query;
    getCurrentChallenges: () -> (ChallengesResult) query;
    getCurrentChallengesAdmin: () -> (ChallengesResult) query;
+   getCyclesFlowAdmin: () -> (CyclesFlowResult);
    getGameStateThresholdsAdmin: () -> (GameStateTresholdsResult) query;
+   getJudgePromptInfo: (text) -> (JudgePromptInfoResult) query;
    getMainerAgentCanisterInfo: (CanisterRetrieveInput) ->
     (MainerAgentCanisterResult) query;
+   getMainerAgentCanistersAdmin: () -> (MainerAgentCanistersResult) query;
    getMainerAgentCanistersForUser: () -> (MainerAgentCanistersResult) query;
+   getMainerCyclesUsedPerResponse: () -> (NatResult);
+   getMainerPromptInfo: (text) -> (MainerPromptInfoResult) query;
    getNextSubmissionToJudge: () -> (ChallengeResponseSubmissionResult);
+   getNumArchivedChallengesAdmin: () -> (NatResult) query;
+   getNumClosedChallengesAdmin: () -> (NatResult) query;
    getNumCurrentChallengesAdmin: () -> (NatResult) query;
    getNumOpenSubmissionsAdmin: () -> (NatResult) query;
+   getNumOpenSubmissionsForOpenChallengesAdmin: () -> (NatResult) query;
    getNumScoredChallengesAdmin: () -> (NatResult) query;
    getNumSubmissionsAdmin: () -> (NatResult) query;
+   getNumberMainerAgentsAdmin: (CheckMainerLimit) -> (NatResult) query;
    getOfficialCanistersAdmin: () -> (vec OfficialProtocolCanister) query;
    getOfficialChallengerCanisters: () -> (AuthRecordResult);
-   getOfficialSharedServiceCanisters: () -> (AuthRecordResult);
    getOpenSubmissionsAdmin: () -> (ChallengeResponseSubmissionsResult) query;
+   getOpenSubmissionsForOpenChallengesAdmin: () ->
+    (ChallengeResponseSubmissionsResult) query;
+   getPauseProtocolFlag: () -> (FlagResult) query;
+   getPauseWhitelistMainerCreationFlag: () -> (FlagResult) query;
+   getPriceForOwnMainer: () -> (PriceResult) query;
+   getPriceForShareAgent: () -> (PriceResult) query;
    getProtocolTotalCyclesBurnt: () -> (CyclesBurntResult) query;
    getRandomOpenChallenge: () -> (ChallengeResult);
    getRandomOpenChallengeTopic: () -> (ChallengeTopicResult);
    getRecentChallengeWinners: () -> (ChallengeWinnersResult) query;
    getRecentProtocolActivity: () -> (ProtocolActivityResult) query;
    getRecentProtocolActivity_mockup: () -> (ProtocolActivityResult) query;
+   getRedeemedTransactionBlockAdmin: (PaymentTransactionBlockId) ->
+    (RedeemedTransactionBlockResult);
    getScoreForSubmission: (SubmissionRetrievalInput) ->
     (ScoredResponseRetrievalResult) query;
    getScoreForSubmission_mockup: (SubmissionRetrievalInput) ->
     (ScoredResponseRetrievalResult) query;
    getScoredChallengesAdmin: () -> (ScoredChallengesResult) query;
+   getSharedServiceCanistersAdmin: () -> (OfficialProtocolCanistersResult);
    getSubmissionsAdmin: () -> (ChallengeResponseSubmissionsResult) query;
+   getSubnetsAdmin: () -> (SubnetIdsResult) query;
+   getWhitelistPriceForOwnMainer: () -> (PriceResult) query;
+   getWhitelistPriceForShareAgent: () -> (PriceResult) query;
    health: () -> (StatusCodeRecordResult) query;
-   removeOfficialSharedServiceCanisters: (text) -> (AuthRecordResult);
+   removeRedeemedTransactionBlockAdmin: (PaymentTransactionBlockId) ->
+    (TextResult);
+   removeSharedServiceCanisterAdmin: (record {canisterId: text;}) ->
+    (StatusCodeRecordResult);
+   resetCurrentChallengesAdmin: () -> (StatusCodeRecordResult);
+   resetCyclesFlowAdmin: () -> (StatusCodeRecordResult);
+   setCyclesFlowAdmin: (CyclesFlowSettings) -> (StatusCodeRecordResult);
    setGameStateThresholdsAdmin: (GameStateTresholds) ->
     (StatusCodeRecordResult);
+   setIcpForOwnMainerAdmin: (nat64) -> (StatusCodeRecordResult);
+   setIcpForShareAgentAdmin: (nat64) -> (StatusCodeRecordResult);
+   setIcpForWhitelistOwnMainerAdmin: (nat64) -> (StatusCodeRecordResult);
+   setIcpForWhitelistShareAgentAdmin: (nat64) -> (StatusCodeRecordResult);
    setInitialChallengeTopics: () -> (StatusCodeRecordResult);
+   setLimitForCreatingMainerAdmin: (MainerLimitInput) -> (AuthRecordResult);
    setOfficialMainerAgentCanisterWasmHashAdmin: (UpdateWasmHashInput) ->
     (CanisterWasmHashRecordResult);
+   setRewardPerChallengeAdmin: (nat) -> (RewardPerChallengeResult);
+   setSubnetsAdmin: (SubnetIds) -> (StatusCodeRecordResult);
    setTokenLedgerCanisterId: (text) -> (AuthRecordResult);
    setUpMainerLlmCanister: (OfficialMainerAgentCanister) ->
     (SetUpMainerLlmCanisterResult);
+   shouldCreatingMainersBeStopped: (CheckMainerLimit) -> (FlagResult) query;
    spinUpMainerControllerCanister: (OfficialMainerAgentCanister) ->
     (MainerAgentCanisterResult);
+   spinUpMainerControllerCanisterForUserAdmin:
+    (OfficialMainerAgentCanister) -> (MainerAgentCanisterResult);
+   startUploadJudgePromptCache: () ->
+    (StartUploadJudgePromptCacheRecordResult);
+   startUploadMainerPromptCache: () ->
+    (StartUploadMainerPromptCacheRecordResult);
    submitChallengeResponse: (ChallengeResponseSubmissionInput) ->
     (ChallengeResponseSubmissionMetadataResult);
    testMainerCodeIntegrityAdmin: () -> (AuthRecordResult);
    testTokenMintingAdmin: () -> (AuthRecordResult);
+   togglePauseProtocolFlagAdmin: () -> (AuthRecordResult);
+   togglePauseWhitelistMainerCreationFlagAdmin: () -> (AuthRecordResult);
    topUpCyclesForMainerAgent: (MainerAgentTopUpInput) ->
     (MainerAgentCanisterResult);
    unlockUserMainerAgent: (MainerCreationInput) ->
     (MainerAgentCanisterResult);
+   upgradeMainerControllerAdmin: (MainerctrlUpgradeInput) ->
+    (MainerAgentCanisterResult);
+   uploadJudgePromptCacheBytesChunk:
+    (UploadJudgePromptCacheBytesChunkInput) -> (StatusCodeRecordResult);
+   uploadMainerPromptCacheBytesChunk:
+    (UploadMainerPromptCacheBytesChunkInput) -> (StatusCodeRecordResult);
+   whitelistCreateUserMainerAgent: (WhitelistMainerCreationInput) ->
+    (MainerAgentCanisterResult);
+ };
+type FlagResult = 
+ variant {
+   Err: ApiError;
+   Ok: FlagRecord;
+ };
+type FlagRecord = record {flag: bool;};
+type FinishUploadMainerPromptCacheInput = 
+ record {
+   mainerPromptId: text;
+   promptCacheFilename: text;
+   promptCacheSha256: text;
+   promptText: text;
+ };
+type FinishUploadJudgePromptCacheInput = 
+ record {
+   judgePromptId: text;
+   promptCacheFilename: text;
+   promptCacheSha256: text;
+   promptText: text;
+ };
+type DownloadMainerPromptCacheBytesChunkRecordResult = 
+ variant {
+   Err: ApiError;
+   Ok: DownloadMainerPromptCacheBytesChunkRecord;
+ };
+type DownloadMainerPromptCacheBytesChunkRecord = 
+ record {
+   bytesChunk: blob;
+   chunkID: nat;
+   mainerPromptId: text;
+ };
+type DownloadMainerPromptCacheBytesChunkInput = 
+ record {
+   chunkID: nat;
+   mainerPromptId: text;
+ };
+type DownloadJudgePromptCacheBytesChunkRecordResult = 
+ variant {
+   Err: ApiError;
+   Ok: DownloadJudgePromptCacheBytesChunkRecord;
+ };
+type DownloadJudgePromptCacheBytesChunkRecord = 
+ record {
+   bytesChunk: blob;
+   chunkID: nat;
+   judgePromptId: text;
+ };
+type DownloadJudgePromptCacheBytesChunkInput = 
+ record {
+   chunkID: nat;
+   judgePromptId: text;
  };
 type DeriveWasmHashInput = 
  record {
    address: CanisterAddress;
    textNote: text;
  };
+type CyclesFlowSettings = 
+ record {
+   costCreateMainerCtrl: opt nat;
+   costCreateMainerLlm: opt nat;
+   costCreateMcMainerCtrl: opt nat;
+   costCreateMcMainerLlm: opt nat;
+   costGenerateChallengeChctrl: opt nat;
+   costGenerateChallengeChllm: opt nat;
+   costGenerateChallengeGs: opt nat;
+   costGenerateResponseOwnGs: opt nat;
+   costGenerateResponseOwnctrl: opt nat;
+   costGenerateResponseOwnllm: opt nat;
+   costGenerateResponseSactrl: opt nat;
+   costGenerateResponseShareGs: opt nat;
+   costGenerateResponseSsctrl: opt nat;
+   costGenerateResponseSsllm: opt nat;
+   costGenerateScoreGs: opt nat;
+   costGenerateScoreJuctrl: opt nat;
+   costGenerateScoreJullm: opt nat;
+   costIdleBurnRateChctrl: opt nat;
+   costIdleBurnRateChllm: opt nat;
+   costIdleBurnRateGs: opt nat;
+   costIdleBurnRateJuctrl: opt nat;
+   costIdleBurnRateJullm: opt nat;
+   costIdleBurnRateMc: opt nat;
+   costIdleBurnRateOwnctrl: opt nat;
+   costIdleBurnRateOwnllm: opt nat;
+   costIdleBurnRateSactrl: opt nat;
+   costIdleBurnRateSallm: opt nat;
+   costIdleBurnRateSsctrl: opt nat;
+   costIdleBurnRateSsllm: opt nat;
+   costUpgradeMainerCtrl: opt nat;
+   costUpgradeMainerLlm: opt nat;
+   costUpgradeMcMainerCtrl: opt nat;
+   costUpgradeMcMainerLlm: opt nat;
+   cyclesBurntChallengeGeneration: opt nat;
+   cyclesBurntJudgeScoring: opt nat;
+   cyclesBurntResponseGenerationOwn: opt nat;
+   cyclesBurntResponseGenerationShare: opt nat;
+   cyclesCreateMainerLlmTargetBalance: opt nat;
+   cyclesCreateMainerMarginGs: opt nat;
+   cyclesCreatemMainerMarginMc: opt nat;
+   cyclesFailedSubmissionCut: opt nat;
+   cyclesGenerateChallengeChctrlChllm: opt nat;
+   cyclesGenerateChallengeGsChctrl: opt nat;
+   cyclesGenerateResponseOwnctrlGs: opt nat;
+   cyclesGenerateResponseOwnctrlOwnllmHIGH: opt nat;
+   cyclesGenerateResponseOwnctrlOwnllmLOW: opt nat;
+   cyclesGenerateResponseOwnctrlOwnllmMEDIUM: opt nat;
+   cyclesGenerateResponseSactrlSsctrl: opt nat;
+   cyclesGenerateResponseSsctrlGs: opt nat;
+   cyclesGenerateResponseSsctrlSsllm: opt nat;
+   cyclesGenerateScoreGsJuctrl: opt nat;
+   cyclesGenerateScoreJuctrlJullm: opt nat;
+   cyclesSubmitResponse: opt nat;
+   cyclesUpgradeMainerctrlGsMc: opt nat;
+   cyclesUpgradeMainerctrlMcMainerctrl: opt nat;
+   cyclesUpgradeMainerllmGsMc: opt nat;
+   cyclesUpgradeMainerllmMcMainerllm: opt nat;
+   dailyChallenges: opt nat;
+   dailySubmissionsAllOwn: opt nat;
+   dailySubmissionsAllShare: opt nat;
+   dailySubmissionsPerOwnHIGH: opt nat;
+   dailySubmissionsPerOwnLOW: opt nat;
+   dailySubmissionsPerOwnMEDIUM: opt nat;
+   dailySubmissionsPerShareHIGH: opt nat;
+   dailySubmissionsPerShareLOW: opt nat;
+   dailySubmissionsPerShareMEDIUM: opt nat;
+   marginCost: opt nat;
+   marginFailedSubmissionCut: opt nat;
+   numChallengerLlms: opt nat;
+   numJudgeLlms: opt nat;
+   numShareServiceLlms: opt nat;
+   protocolOperationFeesCut: opt nat;
+   submissionFee: opt nat;
+ };
+type CyclesFlowResult = 
+ variant {
+   Err: ApiError;
+   Ok: CyclesFlow;
+ };
+type CyclesFlow = 
+ record {
+   costCreateMainerCtrl: nat;
+   costCreateMainerLlm: nat;
+   costCreateMcMainerCtrl: nat;
+   costCreateMcMainerLlm: nat;
+   costGenerateChallengeChctrl: nat;
+   costGenerateChallengeChllm: nat;
+   costGenerateChallengeGs: nat;
+   costGenerateResponseOwnGs: nat;
+   costGenerateResponseOwnctrl: nat;
+   costGenerateResponseOwnllm: nat;
+   costGenerateResponseSactrl: nat;
+   costGenerateResponseShareGs: nat;
+   costGenerateResponseSsctrl: nat;
+   costGenerateResponseSsllm: nat;
+   costGenerateScoreGs: nat;
+   costGenerateScoreJuctrl: nat;
+   costGenerateScoreJullm: nat;
+   costIdleBurnRateChctrl: nat;
+   costIdleBurnRateChllm: nat;
+   costIdleBurnRateGs: nat;
+   costIdleBurnRateJuctrl: nat;
+   costIdleBurnRateJullm: nat;
+   costIdleBurnRateMc: nat;
+   costIdleBurnRateOwnctrl: nat;
+   costIdleBurnRateOwnllm: nat;
+   costIdleBurnRateSactrl: nat;
+   costIdleBurnRateSallm: nat;
+   costIdleBurnRateSsctrl: nat;
+   costIdleBurnRateSsllm: nat;
+   costUpgradeMainerCtrl: nat;
+   costUpgradeMainerLlm: nat;
+   costUpgradeMcMainerCtrl: nat;
+   costUpgradeMcMainerLlm: nat;
+   cyclesBurntChallengeGeneration: nat;
+   cyclesBurntJudgeScoring: nat;
+   cyclesBurntResponseGenerationOwn: nat;
+   cyclesBurntResponseGenerationShare: nat;
+   cyclesCreateMainerLlmTargetBalance: nat;
+   cyclesCreateMainerMarginGs: nat;
+   cyclesCreatemMainerMarginMc: nat;
+   cyclesFailedSubmissionCut: nat;
+   cyclesGenerateChallengeChctrlChllm: nat;
+   cyclesGenerateChallengeGsChctrl: nat;
+   cyclesGenerateResponseOwnctrlGs: nat;
+   cyclesGenerateResponseOwnctrlOwnllmHIGH: nat;
+   cyclesGenerateResponseOwnctrlOwnllmLOW: nat;
+   cyclesGenerateResponseOwnctrlOwnllmMEDIUM: nat;
+   cyclesGenerateResponseSactrlSsctrl: nat;
+   cyclesGenerateResponseSsctrlGs: nat;
+   cyclesGenerateResponseSsctrlSsllm: nat;
+   cyclesGenerateScoreGsJuctrl: nat;
+   cyclesGenerateScoreJuctrlJullm: nat;
+   cyclesSubmitResponse: nat;
+   dailyChallenges: nat;
+   dailySubmissionsAllOwn: nat;
+   dailySubmissionsAllShare: nat;
+   dailySubmissionsPerOwnHIGH: nat;
+   dailySubmissionsPerOwnLOW: nat;
+   dailySubmissionsPerOwnMEDIUM: nat;
+   dailySubmissionsPerShareHIGH: nat;
+   dailySubmissionsPerShareLOW: nat;
+   dailySubmissionsPerShareMEDIUM: nat;
+   marginCost: nat;
+   marginFailedSubmissionCut: nat;
+   numChallengerLlms: nat;
+   numJudgeLlms: nat;
+   numShareServiceLlms: nat;
+   protocolOperationFeesCut: nat;
+   submissionFee: nat;
+ };
 type CyclesBurntResult = 
  variant {
    Err: ApiError;
    Ok: nat;
  };
+type CheckMainerLimit = record {mainerType: MainerAgentCanisterType;};
 type ChallengesResult = 
  variant {
    Err: ApiError;
@@ -345,6 +787,8 @@ type ChallengeTopic =
    challengeTopicCreationTimestamp: nat64;
    challengeTopicId: text;
    challengeTopicStatus: ChallengeTopicStatus;
+   cyclesGenerateChallengeChctrlChllm: nat;
+   cyclesGenerateChallengeGsChctrl: nat;
  };
 type ChallengeStatus = 
  variant {
@@ -385,6 +829,8 @@ type ChallengeResponseSubmissionMetadataResult =
  };
 type ChallengeResponseSubmissionMetadata = 
  record {
+   cyclesGenerateScoreGsJuctrl: nat;
+   cyclesGenerateScoreJuctrlJullm: nat;
    submissionId: text;
    submissionStatus: ChallengeResponseSubmissionStatus;
    submittedTimestamp: nat64;
@@ -408,7 +854,22 @@ type ChallengeResponseSubmissionInput =
    challengeTopicCreationTimestamp: nat64;
    challengeTopicId: text;
    challengeTopicStatus: ChallengeTopicStatus;
-   submissionCyclesRequired: nat;
+   cyclesGenerateChallengeChctrlChllm: nat;
+   cyclesGenerateChallengeGsChctrl: nat;
+   cyclesGenerateResponseOwnctrlGs: nat;
+   cyclesGenerateResponseOwnctrlOwnllmHIGH: nat;
+   cyclesGenerateResponseOwnctrlOwnllmLOW: nat;
+   cyclesGenerateResponseOwnctrlOwnllmMEDIUM: nat;
+   cyclesGenerateResponseSactrlSsctrl: nat;
+   cyclesGenerateResponseSsctrlGs: nat;
+   cyclesGenerateResponseSsctrlSsllm: nat;
+   cyclesSubmitResponse: nat;
+   judgePromptId: text;
+   mainerMaxContinueLoopCount: nat;
+   mainerNumTokens: nat64;
+   mainerPromptId: text;
+   mainerTemp: float64;
+   protocolOperationFeesCut: nat;
    submittedBy: principal;
  };
 type ChallengeResponseSubmission = 
@@ -430,7 +891,24 @@ type ChallengeResponseSubmission =
    challengeTopicCreationTimestamp: nat64;
    challengeTopicId: text;
    challengeTopicStatus: ChallengeTopicStatus;
-   submissionCyclesRequired: nat;
+   cyclesGenerateChallengeChctrlChllm: nat;
+   cyclesGenerateChallengeGsChctrl: nat;
+   cyclesGenerateResponseOwnctrlGs: nat;
+   cyclesGenerateResponseOwnctrlOwnllmHIGH: nat;
+   cyclesGenerateResponseOwnctrlOwnllmLOW: nat;
+   cyclesGenerateResponseOwnctrlOwnllmMEDIUM: nat;
+   cyclesGenerateResponseSactrlSsctrl: nat;
+   cyclesGenerateResponseSsctrlGs: nat;
+   cyclesGenerateResponseSsctrlSsllm: nat;
+   cyclesGenerateScoreGsJuctrl: nat;
+   cyclesGenerateScoreJuctrlJullm: nat;
+   cyclesSubmitResponse: nat;
+   judgePromptId: text;
+   mainerMaxContinueLoopCount: nat;
+   mainerNumTokens: nat64;
+   mainerPromptId: text;
+   mainerTemp: float64;
+   protocolOperationFeesCut: nat;
    submissionId: text;
    submissionStatus: ChallengeResponseSubmissionStatus;
    submittedBy: principal;
@@ -470,7 +948,22 @@ type Challenge =
    challengeTopicCreationTimestamp: nat64;
    challengeTopicId: text;
    challengeTopicStatus: ChallengeTopicStatus;
-   submissionCyclesRequired: nat;
+   cyclesGenerateChallengeChctrlChllm: nat;
+   cyclesGenerateChallengeGsChctrl: nat;
+   cyclesGenerateResponseOwnctrlGs: nat;
+   cyclesGenerateResponseOwnctrlOwnllmHIGH: nat;
+   cyclesGenerateResponseOwnctrlOwnllmLOW: nat;
+   cyclesGenerateResponseOwnctrlOwnllmMEDIUM: nat;
+   cyclesGenerateResponseSactrlSsctrl: nat;
+   cyclesGenerateResponseSsctrlGs: nat;
+   cyclesGenerateResponseSsctrlSsllm: nat;
+   cyclesSubmitResponse: nat;
+   judgePromptId: text;
+   mainerMaxContinueLoopCount: nat;
+   mainerNumTokens: nat64;
+   mainerPromptId: text;
+   mainerTemp: float64;
+   protocolOperationFeesCut: nat;
  };
 type CanisterWasmHashRecordResult = 
  variant {
@@ -502,6 +995,7 @@ type CanisterInput =
  record {
    address: CanisterAddress;
    canisterType: ProtocolCanisterType;
+   subnet: text;
  };
 type CanisterAddress = text;
 type AuthRecordResult = 
