@@ -1346,11 +1346,10 @@
             
             <!-- Notification signup hint -->
             <div class="inline-flex items-center space-x-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/30 rounded-full border border-blue-200 dark:border-blue-700">
-              <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 8a7.002 7.002 0 00-7-7" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 1a7.002 7.002 0 00-7 7v6l-2 3h18l-2-3V8" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 17v1M12 21h.01" />
-              </svg>
+                                              <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                </svg>
+
               <span class="text-xs font-medium text-blue-700 dark:text-blue-300">Stay tuned for launch updates</span>
             </div>
           </div>
