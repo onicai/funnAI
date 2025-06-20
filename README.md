@@ -107,6 +107,9 @@ dfx canister call game_state_canister addOfficialCanister '(record { address = "
 dfx canister call game_state_canister getOfficialCanistersAdmin --network $NETWORK
 #
 # Upgrade the #ShareAgent canisters with new mAIner code, by repeating this call for all of them
+# Get user's mAIners
+dfx canister call game_state_canister getNumberMainerAgentsAdmin --output json --network $NETWORK
+dfx canister call game_state_canister getMainerAgentCanistersAdmin --output json --network $NETWORK
 # TODO: write a script that automates these calls over all ShareAgent canisters
 scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode upgrade --canister <canisterId> --network $NETWORK
 #
