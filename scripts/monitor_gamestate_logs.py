@@ -131,7 +131,7 @@ def main(network):
     print(f"\nMonitoring changes to {gamestate_name} ({gamestate_canister_id}) on '{network}' network...\n")
 
     timer = 0
-    delay = 10  # seconds
+    delay = 2  # seconds
     while True:
         new_lines = []
         log_lines = get_logs(gamestate_canister_id, network)
