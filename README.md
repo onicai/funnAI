@@ -11,14 +11,27 @@ Then, do the following:
 conda activate llama_cpp_canister
 
 # Set NETWORK environment variable
-NETWORK=testing  # [local|ic|development|testing|demo|prd
+NETWORK=testing  # [local|ic|development|testing|demo|prd]
 
-# MONITORING SCRIPTS
-# (-) scripts read from 'scripts/canister_ids-<network>.env'
+# ADMIN MONITORING & HELPER SCRIPTS
+# The scripts read the canister ids from these files:
+# - protocol: 'scripts/canister_ids-<network>.env'
+# - mainers : 'scripts/canister_ids_mainers-<network>.env'
 pip install -r scripts/requirements.txt
-scripts/monitor_logs.sh --network $NETWORK
-scripts/monitor_gamestate.sh --network $NETWORK
-scripts/monitor_balance.sh --network $NETWORK
+# Update the file 'scripts/canister_ids_mainers-<network>.env'
+scripts/get_mainers.sh --network $NETWORK
+# Then run these
+scripts/monitor_logs.sh --network $NETWORK --canister-types [all|protocol|mainers]
+scripts/monitor_gamestate_metrics.sh --network $NETWORK 
+scripts/monitor_gamestate_logs.sh --network $NETWORK 
+scripts/monitor_balance.sh --network $NETWORK --canister-types [all|protocol|mainers]
+scripts/list_controllers.sh --network $NETWORK --canister-types [all|protocol|mainers]
+scripts/add_controllers.sh --network $NETWORK --canister-types [all|protocol|mainers]
+scripts/start_timers.sh --network $NETWORK --canister-types [all|protocol|mainers]
+scripts/stop_timers.sh --network $NETWORK --canister-types [all|protocol|mainers]
+# Carefull with these ones -> FOR TESTING ONLY
+scripts/update_mainer_burnrates.sh --network $NETWORK --burnrate [Low|Mid|High|VeryHigh]
+scripts/topup.sh --network $NETWORK --canister-types [all|protocol|mainers] --tc <TCycles>
 
 # When running local
 # We are using dfx deps for:
@@ -86,6 +99,9 @@ scripts/scripts-gamestate/deploy-mainers-ShareService-AddLLM-via-gamestate.sh --
 
 # -----------------------------------------
 # Deploy mAIners of type #ShareAgent
+# Verify that 'subnetShareAgentCtrl' is set correctly in GameState
+dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
+# Deploy a new ShareAgent via Admin command
 scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install --network $NETWORK
 
 # -----------------------------------------
