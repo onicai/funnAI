@@ -243,7 +243,7 @@
         <!-- Payment Description -->
         <div class="p-2 sm:p-3 rounded-lg {isWhitelistPhaseActive && selectedUnlockedMainer ? 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800/30 dark:text-yellow-200' : 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200'} text-xs sm:text-sm">
           {#if isWhitelistPhaseActive && selectedUnlockedMainer}
-            This whitelist payment ({totalPaymentAmount} {token.symbol} total including network fees) allows you to create your pre-unlocked mAIner at a special discounted price. Once payment is complete, your mAIner will be created automatically.
+            This whitelist payment ({totalPaymentAmount} {token.symbol} total including network fees) allows you to finish the set up of your pre-unlocked mAIner at a special discounted price. Once payment is complete, your mAIner will be created automatically.
           {:else}
             This payment ({totalPaymentAmount} {token.symbol} total including network fees) is used to create your mAIner. Once payment is complete, your mAIner will be created automatically.
           {/if}

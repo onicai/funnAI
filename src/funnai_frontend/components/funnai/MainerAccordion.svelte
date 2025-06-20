@@ -75,8 +75,8 @@
   $: totalMainers = agents.length;
 
   // Reactive mAIner price based on model type and whitelist phase
-  let currentMainerPrice = 1000; // Will be loaded
-  let currentWhitelistPrice = 0.5; // Will be loaded
+  let currentMainerPrice = 10; // Will be loaded
+  let currentWhitelistPrice = 5; // Will be loaded
   $: mainerPrice = isWhitelistPhaseActive ? currentWhitelistPrice : currentMainerPrice;
 
   async function getMainerPrice() {
@@ -86,14 +86,14 @@
       if (price <= 0) {
         console.error("Issue getting mAIner price as it's 0 or negative.");
         // Return fallback value instead of undefined
-        return modelType === 'Own' ? 1500 : 1000;
+        return 10; // Default price for all mAIner types
       };
 
       return price;      
     } catch (error) {
       console.error("Error getting mAIner price:", error);
       // Return fallback value instead of undefined
-      return modelType === 'Own' ? 1500 : 1000;
+      return 10; // Default price for all mAIner types
     }
   };
 
@@ -757,8 +757,8 @@
     } catch (error) {
       console.error("Error loading prices:", error);
       // Set fallback values if loading fails
-      currentMainerPrice = modelType === 'Own' ? 1500 : 1000;
-      currentWhitelistPrice = 0.1;
+      currentMainerPrice = 10;
+      currentWhitelistPrice = 5;
     }
   });
 
@@ -1312,7 +1312,7 @@
       </div>
     </div>
   {/if}
-{:else if isWhitelistPhaseActive && !isAuthenticated}
+{:else if isWhitelistPhaseActive && (!isAuthenticated || totalMainers > 0)}
   <div class="mb-4 h-full">
     <div class="relative overflow-hidden bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 dark:from-amber-600 dark:via-yellow-600 dark:to-orange-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform h-full">
       <!-- Background decoration -->
@@ -1330,38 +1330,71 @@
           </div>
           
           <!-- Content section -->
-            <div class="space-y-3 sm:space-y-4">
-              <div class="flex flex-col items-center text-center space-y-2">
-                <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white backdrop-blur-sm">
-                  Limited time
-                </div>
-                <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-sm">Whitelist phase active</h3>
+          <div class="space-y-3 sm:space-y-4">
+            <div class="flex flex-col items-center text-center space-y-2">
+              <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white backdrop-blur-sm">
+                Limited time
+              </div>
+              <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-sm">
+                {#if !isAuthenticated}
+                  Whitelist phase active
+                {:else if totalMainers > 0}
+                  Whitelist participant
+                {:else}
+                  Whitelist phase active
+                {/if}
+              </h3>
             </div>
             
             <div class="text-white/90 text-sm sm:text-base leading-relaxed max-w-md mx-auto space-y-2">
-              <p class="font-semibold text-base sm:text-lg">🎉 Exclusive access available!</p>
-              <p>Connect your wallet to see available whitelist mAIners and take advantage of special pricing.</p>
+              {#if !isAuthenticated}
+                <p class="font-semibold text-base sm:text-lg">🎉 Exclusive access available!</p>
+                <p>Connect your wallet to see available whitelist mAIners and take advantage of special pricing.</p>
+              {:else if totalMainers > 0}
+                <p class="font-semibold text-base sm:text-lg">🎉 Welcome back, whitelist member!</p>
+                <p>You successfully claimed your whitelist mAIner. Manage your existing mAIners below or check for additional whitelist opportunities.</p>
+              {:else}
+                <p class="font-semibold text-base sm:text-lg">🎉 Exclusive access available!</p>
+                <p>Connect your wallet to see available whitelist mAIners and take advantage of special pricing.</p>
+              {/if}
             </div>
             
             <!-- Enhanced button -->
             <div class="pt-3">
-              <button 
-                on:click={toggleLoginModal} 
-                class="group relative inline-flex items-center justify-center px-6 py-3 text-base font-bold text-amber-600 bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-102 border-2 border-white/20 backdrop-blur-sm"
-              >
-                <svg class="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd" />
-                </svg>
-                Connect Wallet
-                <div class="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-100 to-yellow-100 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-              </button>
+              {#if !isAuthenticated}
+                <button 
+                  on:click={toggleLoginModal} 
+                  class="group relative inline-flex items-center justify-center px-6 py-3 text-base font-bold text-amber-600 bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-102 border-2 border-white/20 backdrop-blur-sm"
+                >
+                  <svg class="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform duration-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd" />
+                  </svg>
+                  Connect Wallet
+                  <div class="absolute inset-0 rounded-2xl bg-gradient-to-r from-amber-100 to-yellow-100 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                </button>
+              {:else}
+                <div class="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl border border-white/30 shadow-sm">
+                  <svg class="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  <span class="text-white font-semibold">Whitelist Access Activated</span>
+                </div>
+              {/if}
             </div>
             
             <!-- Additional info -->
             <div class="text-xs text-white/80 bg-white/15 backdrop-blur-sm rounded-xl px-3 py-2 border border-white/20 shadow-sm">
               <div class="flex items-center justify-center space-x-2">
                 <span class="text-sm">💡</span>
-                <span class="font-medium">Get early access to mAIners with exclusive whitelist pricing</span>
+                <span class="font-medium">
+                  {#if !isAuthenticated}
+                    Get early access to mAIners with exclusive whitelist pricing
+                  {:else if totalMainers > 0}
+                    You're part of the exclusive whitelist community
+                  {:else}
+                    Get early access to mAIners with exclusive whitelist pricing
+                  {/if}
+                </span>
               </div>
             </div>
           </div>
@@ -1563,7 +1596,7 @@
               
               <div class="relative p-4 sm:p-5">
                 <!-- Header Section -->
-                <div class="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 mb-4">
+                <div class="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0 mb-4">
                   <div class="flex items-center space-x-3">
                     <!-- Icon with gradient background -->
                     <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg flex items-center justify-center">
@@ -1582,7 +1615,7 @@
                   <!-- Primary Top-up Button -->
                   <button 
                     type="button" 
-                    class="group relative inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-emerald-400/50 dark:border-emerald-500/50 w-full sm:w-auto"
+                    class="group relative inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-emerald-400/50 dark:border-emerald-500/50 w-full md:w-auto"
                     class:opacity-50={agentsBeingToppedUp.has(agent.id)}
                     class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id)}
                     class:transform-none={agentsBeingToppedUp.has(agent.id)}
@@ -1698,7 +1731,7 @@
                     <!-- Balance Info Footer -->
                     {#if !agentsBeingToppedUp.has(agent.id) && !agentsBeingRefreshed.has(agent.id)}
                       <div class="pt-2 border-t border-emerald-200/50 dark:border-emerald-700/50">
-                        <div class="flex items-center justify-between text-xs">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs space-y-1 sm:space-y-0">
                           <span class="text-emerald-600 dark:text-emerald-400 opacity-75">
                             💡 Cycles power your mAIner's computational tasks
                           </span>
@@ -1770,11 +1803,11 @@
                   </div>
 
                   <!-- Enhanced Button Group -->
-                  <div class="grid grid-cols-3 gap-2 sm:gap-3" role="group">
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3" role="group">
                     <!-- Low Button -->
                     <button 
                       type="button" 
-                      class="group relative px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 transform border-2 focus:z-10 focus:ring-2 focus:ring-purple-500
+                      class="group relative px-2 sm:px-3 md:px-4 py-2 sm:py-3 md:py-4 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl transition-all duration-300 transform border-2 focus:z-10 focus:ring-2 focus:ring-purple-500
                       {agent.cyclesBurnRateSetting === 'Low' 
                         ? 'bg-gradient-to-r from-green-500 to-emerald-600 dark:from-green-600 dark:to-emerald-700 text-white border-green-400 shadow-lg scale-105' 
                         : 'bg-white/70 dark:bg-gray-800/70 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-500 hover:scale-102'}"
@@ -1800,7 +1833,7 @@
                     <!-- Medium Button -->
                     <button 
                       type="button" 
-                      class="group relative px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 transform border-2 focus:z-10 focus:ring-2 focus:ring-purple-500
+                      class="group relative px-2 sm:px-3 md:px-4 py-2 sm:py-3 md:py-4 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl transition-all duration-300 transform border-2 focus:z-10 focus:ring-2 focus:ring-purple-500
                       {agent.cyclesBurnRateSetting === 'Medium' 
                         ? 'bg-gradient-to-r from-yellow-500 to-orange-600 dark:from-yellow-600 dark:to-orange-700 text-white border-yellow-400 shadow-lg scale-105' 
                         : 'bg-white/70 dark:bg-gray-800/70 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-500 hover:scale-102'}"
@@ -1826,7 +1859,7 @@
                     <!-- High Button -->
                     <button 
                       type="button" 
-                      class="group relative px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-bold rounded-xl transition-all duration-300 transform border-2 focus:z-10 focus:ring-2 focus:ring-purple-500
+                      class="group relative px-2 sm:px-3 md:px-4 py-2 sm:py-3 md:py-4 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl transition-all duration-300 transform border-2 focus:z-10 focus:ring-2 focus:ring-purple-500
                       {agent.cyclesBurnRateSetting === 'High' 
                         ? 'bg-gradient-to-r from-red-500 to-pink-600 dark:from-red-600 dark:to-pink-700 text-white border-red-400 shadow-lg scale-105' 
                         : 'bg-white/70 dark:bg-gray-800/70 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-500 hover:scale-102'}"
@@ -1855,7 +1888,7 @@
                     <div class="bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-lg p-3 mt-3">
                       <div class="flex items-center justify-center space-x-3">
                         <span class="w-5 h-5 border-2 border-purple-400/30 border-t-purple-600 rounded-full animate-spin"></span>
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-2">
+                        <div class="flex flex-col md:flex-row md:items-center md:space-x-2">
                           <span class="text-sm font-medium text-purple-700 dark:text-purple-300">Updating burn rate...</span>
                           <span class="text-xs text-purple-600 dark:text-purple-400 opacity-75">Changes will take effect immediately</span>
                         </div>
@@ -1868,12 +1901,15 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        <div class="space-y-1">
+                        <div class="space-y-2">
                           <p><span class="font-medium">💡 Tip:</span> Higher burn rates provide faster AI responses but consume more cycles.</p>
-                          <div class="grid grid-cols-1 sm:grid-cols-3 gap-1 text-xs opacity-75">
+                          <div class="grid grid-cols-1 md:grid-cols-3 gap-1 text-xs opacity-75">
                             <span>🟢 <strong>Low:</strong> ~1-2T cycles/day</span>
                             <span>🟡 <strong>Medium:</strong> ~3-5T cycles/day</span>
                             <span>🔴 <strong>High:</strong> ~6-10T cycles/day</span>
+                          </div>
+                          <div class="border-t border-purple-200/30 dark:border-purple-700/30 pt-2 mt-2">
+                            <p><span class="font-medium">⏰ Important:</span> Burn rate can only be updated once every 24 hours to prevent abuse.</p>
                           </div>
                         </div>
                       </div>

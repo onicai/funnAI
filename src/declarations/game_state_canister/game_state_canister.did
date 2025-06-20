@@ -437,9 +437,10 @@ type GameStateCanister =
    getCurrentChallengesAdmin: () -> (ChallengesResult) query;
    getCyclesFlowAdmin: () -> (CyclesFlowResult);
    getGameStateThresholdsAdmin: () -> (GameStateTresholdsResult) query;
-   getJudgePromptInfo: (judgePromptId: text) -> (JudgePromptInfoResult) query;
-   getMainerAgentCanisterInfo: (canisterEntryToRetrieve:
-    CanisterRetrieveInput) -> (MainerAgentCanisterResult) query;
+   getJudgePromptInfo: (text) -> (JudgePromptInfoResult) query;
+   getMainerAgentCanisterInfo: (CanisterRetrieveInput) ->
+    (MainerAgentCanisterResult) query;
+   getMainerAgentCanistersAdmin: () -> (MainerAgentCanistersResult) query;
    getMainerAgentCanistersForUser: () -> (MainerAgentCanistersResult) query;
    getMainerCyclesUsedPerResponse: () -> (NatResult);
    getMainerPromptInfo: (mainerPromptId: text) ->
