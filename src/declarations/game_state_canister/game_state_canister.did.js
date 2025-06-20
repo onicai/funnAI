@@ -431,6 +431,9 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : ChallengeResponseSubmission,
     'Err' : ApiError,
   });
+  const CheckMainerLimit = IDL.Record({
+    'mainerType' : MainerAgentCanisterType,
+  });
   const OfficialProtocolCanister = IDL.Record({
     'status' : CanisterStatus,
     'canisterType' : ProtocolCanisterType,
@@ -681,9 +684,6 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : RewardPerChallenge,
     'Err' : ApiError,
   });
-  const CheckMainerLimit = IDL.Record({
-    'mainerType' : MainerAgentCanisterType,
-  });
   const StartUploadJudgePromptCacheRecord = IDL.Record({
     'judgePromptId' : IDL.Text,
   });
@@ -894,6 +894,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getNumScoredChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumSubmissionsAdmin' : IDL.Func([], [NatResult], ['query']),
+    'getNumberMainerAgentsAdmin' : IDL.Func(
+        [CheckMainerLimit],
+        [NatResult],
+        ['query'],
+      ),
     'getOfficialCanistersAdmin' : IDL.Func(
         [],
         [IDL.Vec(OfficialProtocolCanister)],
