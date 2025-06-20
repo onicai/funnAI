@@ -78,6 +78,11 @@
     tokenFee = BigInt(token.fee_fixed);
   }
   
+  // Reactive statement to automatically calculate cycles when amount or conversion rate changes
+  $: if (conversionRate && amount && token) {
+    calculateCycles();
+  }
+  
   async function loadBalance() {
     try {
       if (!$store.principal || !token) return;
