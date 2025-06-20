@@ -292,6 +292,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'amiController' : IDL.Func([], [StatusCodeRecordResult], ['query']),
+    'canAgentSettingsBeUpdated' : IDL.Func([], [StatusCodeRecordResult], []),
     'checkAccessToLLMs' : IDL.Func([], [StatusCodeRecordResult], []),
     'getChallengeQueueAdmin' : IDL.Func(
         [],

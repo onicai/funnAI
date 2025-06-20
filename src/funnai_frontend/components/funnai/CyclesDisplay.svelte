@@ -53,10 +53,12 @@
     
     if (showAllEvents) {
       newCycles = await getProtocolCycles();
-      label = "Protocol Burned Cycles";
+      label = "Protocol burned cycles";
     } else {
+      // Refresh the mAIner canister info to get the latest burned cycles
+      await store.loadUserMainerCanisters();
       newCycles = getUserMainersCycles();
-      label = "My mAIners Burned Cycles";
+      label = "My mAIners burned cycles";
     }
     
     if (newCycles !== currentCycles) {
@@ -83,10 +85,7 @@
     updateCycles();
   }
 
-  // Update when agentCanistersInfo changes (for user mAIner cycles)
-  $: if (!showAllEvents && agentCanistersInfo) {
-    updateCycles();
-  }
+  // Note: agentCanistersInfo is now refreshed explicitly in updateCycles() when needed
 
   $: formattedCycles = cyclesCount?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'");
 </script>
