@@ -104,7 +104,7 @@
         errorMessage = `The price for the mAIner didn't load correctly. Please try again.`;
       };
 
-      return price;      
+      return Number(price);      
     } catch (error) {
       console.error("Error getting mAIner price:", error);
       errorMessage = `There was an error loading the price for the mAIner. Please try again.`;

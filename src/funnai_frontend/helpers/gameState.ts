@@ -7,26 +7,30 @@ store.subscribe((value) => storeState = value);
 
 export const getSharedAgentPrice = async () => {
   try {
+    console.log("🔵 getSharedAgentPrice called");
     let response = await storeState.gameStateCanisterActor.getPriceForShareAgent();
+    console.log("🔵 getSharedAgentPrice response ", response);
     
     if ('Ok' in response) {
-      return response.Ok.price;
+      return Number(response.Ok.price);
     } else if ('Err' in response) {
       console.error("Error in getSharedAgentPrice:", response.Err);
-      return 1000; // Fallback value in case of error
+      return 10; // Fallback value in case of error
     };
   } catch (error) {
     console.error("Failed to getSharedAgentPrice:", error);
-    return 1000; // Fallback value in case of error
+    return 10; // Fallback value in case of error
   };
 };
 
 export const getOwnAgentPrice = async () => {
   try {
+    console.log("🔵 getOwnAgentPrice called");
     let response = await storeState.gameStateCanisterActor.getPriceForOwnMainer();
+    console.log("🔵 getOwnAgentPrice response ", response);
     
     if ('Ok' in response) {
-      return response.Ok.price;
+      return Number(response.Ok.price);
     } else if ('Err' in response) {
       console.error("Error in getOwnAgentPrice:", response.Err);
       return 1500; // Fallback value in case of error
@@ -52,7 +56,7 @@ export const getWhitelistAgentPrice = async () => {
     console.log("🔵 getWhitelistPriceForShareAgent response:", response);
     
     if ('Ok' in response) {
-      const price = response.Ok.price;
+      const price = Number(response.Ok.price);
       console.log("✅ Whitelist price obtained:", price);
       
       // If backend returns 0, use fallback value (backend not configured yet)
@@ -74,6 +78,7 @@ export const getWhitelistAgentPrice = async () => {
 
 export const getIsProtocolActive = async () => {
   try {
+    console.log("🔵 getIsProtocolActive called");
     // Check if the method exists before calling it
     if (!storeState.gameStateCanisterActor.getPauseProtocolFlag) {
       console.warn("getPauseProtocolFlag method not available, defaulting to active");
@@ -81,22 +86,24 @@ export const getIsProtocolActive = async () => {
     }
     
     let response = await storeState.gameStateCanisterActor.getPauseProtocolFlag();
+    console.log("🔵 getIsProtocolActive response:", response);
     
     if ('Ok' in response) {
       let isPaused = response.Ok.flag;
       return !isPaused;
     } else if ('Err' in response) {
       console.error("Error in getPauseProtocol:", response.Err);
-      return true; // Default to active if we can't determine
+      return false; // Default to inactive if we can't determine
     };
   } catch (error) {
     console.error("Failed to getPauseProtocol:", error);
-    return true; // Default to active if we can't determine
+    return false; // Default to inactive if we can't determine
   };
 };
 
 export const getIsMainerCreationStopped = async (mainerType) => {
   try {
+    console.log("🔵 getIsMainerCreationStopped called");
     // Check if the method exists before calling it
     if (!storeState.gameStateCanisterActor.shouldCreatingMainersBeStopped) {
       console.warn("shouldCreatingMainersBeStopped method not available, defaulting to not stopped");
@@ -105,6 +112,7 @@ export const getIsMainerCreationStopped = async (mainerType) => {
     
     let input = { 'mainerType' : mainerType === 'Own' ? { 'Own': null } : { 'ShareAgent': null } }
     let response = await storeState.gameStateCanisterActor.shouldCreatingMainersBeStopped(input);
+    console.log("🔵 getIsMainerCreationStopped response:", response);
     
     // Handle both response types - the backend might return just a boolean or a Result type
     if (typeof response === 'boolean') {
@@ -113,17 +121,18 @@ export const getIsMainerCreationStopped = async (mainerType) => {
       return response.Ok.flag;
     } else if ('Err' in response) {
       console.error("Error in getIsMainerCreationStopped:", response.Err);
-      return false; // Default to not stopped if we can't determine
+      return true; // Default to stopped if we can't determine
     };
     
     return false; // Default fallback
   } catch (error) {
     console.error("Failed to getIsMainerCreationStopped:", error);
-    return false; // Default to not stopped if we can't determine
+    return true; // Default to stopped if we can't determine
   };
 };
 
 export const getPauseWhitelistMainerCreationFlag = async () => {
+  console.log("🔵 getPauseWhitelistMainerCreationFlag called");
   try {
     // Check if the method exists before calling it
     if (!storeState.gameStateCanisterActor.getPauseWhitelistMainerCreationFlag) {
@@ -132,16 +141,17 @@ export const getPauseWhitelistMainerCreationFlag = async () => {
     }
     
     let response = await storeState.gameStateCanisterActor.getPauseWhitelistMainerCreationFlag();
+    console.log("🔵 getPauseWhitelistMainerCreationFlag response:", response);
     
     if ('Ok' in response) {
       return response.Ok.flag;
     } else if ('Err' in response) {
       console.error("Error in getPauseWhitelistMainerCreationFlag:", response.Err);
-      return false; // Default to not paused if we can't determine
+      return true; // Default to paused if we can't determine
     };
   } catch (error) {
     console.error("Failed to getPauseWhitelistMainerCreationFlag:", error);
-    return false; // Default to not paused if we can't determine
+    return true; // Default to paused if we can't determine
   };
 };
 

@@ -82,6 +82,7 @@
   async function getMainerPrice() {
     try {
       let price = modelType === 'Own' ? await getOwnAgentPrice() : await getSharedAgentPrice();
+      price = Number(price);
 
       if (price <= 0) {
         console.error("Issue getting mAIner price as it's 0 or negative.");
@@ -96,8 +97,6 @@
       return 10; // Default price for all mAIner types
     }
   };
-
-
 
   // Handle burn rate update from the DailyBurnRatePanel component
   async function handleBurnRateUpdate() {
@@ -704,8 +703,11 @@
     };
 
     try {
+      console.log("in MainerAccordion before getMainerPrice");
       currentMainerPrice = await getMainerPrice();
+      console.log("in MainerAccordion currentMainerPrice ", currentMainerPrice);
       currentWhitelistPrice = await getWhitelistAgentPrice();
+      console.log("in MainerAccordion currentWhitelistPrice ", currentWhitelistPrice);
     } catch (error) {
       console.error("Error loading prices:", error);
       // Set fallback values if loading fails
