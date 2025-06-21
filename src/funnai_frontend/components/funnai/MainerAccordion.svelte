@@ -1560,115 +1560,123 @@
     
     <div class="relative p-4 sm:p-5">
       <!-- Header Section -->
-      <div class="flex flex-col space-y-3 mb-4">
+      <div class="flex flex-col space-y-3 xl:flex-row xl:items-center xl:justify-between xl:space-y-0 mb-4">
         <div class="flex items-center space-x-3">
           <!-- Enhanced icon with gradient background -->
-          <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-xl shadow-lg flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div class="flex-shrink-0 w-10 h-10 xl:w-12 xl:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-xl shadow-lg flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 xl:h-6 xl:w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
             </svg>
           </div>
           
           <!-- Title and subtitle -->
           <div class="flex flex-col">
-            <h2 class="text-sm font-bold text-slate-900 dark:text-slate-100">Flock overview</h2>
+            <h2 class="text-sm xl:text-base font-bold text-slate-900 dark:text-slate-100">Flock overview</h2>
             <p class="text-xs text-slate-600 dark:text-slate-400">
               {totalMainers} mAIner{totalMainers === 1 ? '' : 's'} in your flock
             </p>
           </div>
         </div>
         
-        <!-- Quick Stats Summary - Now always visible and responsive -->
-        <div class="flex flex-wrap items-center gap-2">
+        <!-- Quick Stats Summary - Compact header badges -->
+        <div class="flex flex-wrap items-center gap-1.5 xl:gap-2">
           {#if activeMainers > 0}
-            <div class="flex items-center space-x-2 px-2.5 py-1.5 bg-green-100/60 dark:bg-green-900/30 rounded-lg border border-green-200/50 dark:border-green-700/50">
-              <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <div class="flex items-center space-x-1.5 px-2 py-1 xl:px-2.5 xl:py-1.5 bg-green-100/60 dark:bg-green-900/30 rounded-md border border-green-200/50 dark:border-green-700/50">
+              <div class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
               <span class="text-xs font-medium text-green-700 dark:text-green-300">{activeMainers} Mining</span>
             </div>
           {/if}
           {#if inactiveMainers > 0}
-            <div class="flex items-center space-x-2 px-2.5 py-1.5 bg-orange-100/60 dark:bg-orange-900/30 rounded-lg border border-orange-200/50 dark:border-orange-700/50">
-              <div class="w-2 h-2 bg-orange-500 rounded-full"></div>
+            <div class="flex items-center space-x-1.5 px-2 py-1 xl:px-2.5 xl:py-1.5 bg-orange-100/60 dark:bg-orange-900/30 rounded-md border border-orange-200/50 dark:border-orange-700/50">
+              <div class="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
               <span class="text-xs font-medium text-orange-700 dark:text-orange-300">{inactiveMainers} Need attention</span>
             </div>
           {/if}
         </div>
       </div>
 
-      <!-- Status Cards Grid -->
-      <div class="grid grid-cols-1 gap-3">
+      <!-- Status Cards Grid - Compact Version -->
+      <div class="grid grid-cols-1 gap-2">
         <!-- Active mAIners Card -->
-        <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-green-200/40 dark:border-green-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
-          <div class="absolute top-0 right-0 w-16 h-16 bg-green-200/20 dark:bg-green-600/10 rounded-full -translate-y-8 translate-x-8"></div>
+        <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg p-3 border border-green-200/40 dark:border-green-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
+          <div class="absolute top-0 right-0 w-10 h-10 bg-green-200/20 dark:bg-green-600/10 rounded-full -translate-y-5 translate-x-5"></div>
           <div class="relative">
-            <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center justify-between">
               <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 bg-green-100 dark:bg-green-900/40 rounded-lg flex items-center justify-center">
-                  <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                <div class="w-6 h-6 bg-green-100 dark:bg-green-900/40 rounded-md flex items-center justify-center">
+                  <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 </div>
-                <span class="text-sm font-medium text-green-700 dark:text-green-300">Active</span>
+                <div class="flex flex-col">
+                  <span class="text-xs font-medium text-green-700 dark:text-green-300">Active</span>
+                  <span class="text-xs text-green-600/70 dark:text-green-400/70">Mining challenges</span>
+                </div>
               </div>
-              <span class="text-2xl font-bold text-green-600 dark:text-green-400">{activeMainers}</span>
+              <span class="text-lg font-bold text-green-600 dark:text-green-400">{activeMainers}</span>
             </div>
-            <p class="text-xs text-green-600/80 dark:text-green-400/80">Currently mining AI challenges</p>
           </div>
         </div>
 
         <!-- Inactive mAIners Card -->
-        <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/40 dark:border-gray-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
-          <div class="absolute top-0 right-0 w-16 h-16 bg-gray-200/20 dark:bg-gray-600/10 rounded-full -translate-y-8 translate-x-8"></div>
+        <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg p-3 border border-gray-200/40 dark:border-gray-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
+          <div class="absolute top-0 right-0 w-10 h-10 bg-gray-200/20 dark:bg-gray-600/10 rounded-full -translate-y-5 translate-x-5"></div>
           <div class="relative">
-            <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center justify-between">
               <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 bg-gray-100 dark:bg-gray-800/60 rounded-lg flex items-center justify-center">
-                  <div class="w-3 h-3 bg-gray-400 rounded-full"></div>
+                <div class="w-6 h-6 bg-gray-100 dark:bg-gray-800/60 rounded-md flex items-center justify-center">
+                  <div class="w-2 h-2 bg-gray-400 rounded-full"></div>
                 </div>
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Inactive</span>
+                <div class="flex flex-col">
+                  <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Inactive</span>
+                  <span class="text-xs text-gray-600/70 dark:text-gray-400/70">Need cycles</span>
+                </div>
               </div>
-              <span class="text-2xl font-bold text-gray-600 dark:text-gray-400">{inactiveMainers}</span>
+              <span class="text-lg font-bold text-gray-600 dark:text-gray-400">{inactiveMainers}</span>
             </div>
-            <p class="text-xs text-gray-600/80 dark:text-gray-400/80">Awaiting cycles top-up</p>
           </div>
         </div>
 
         <!-- Action Required Card (only show if there are inactive mAIners) -->
         {#if inactiveMainers > 0}
-          <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-orange-200/40 dark:border-orange-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
-            <div class="absolute top-0 right-0 w-16 h-16 bg-orange-200/20 dark:bg-orange-600/10 rounded-full -translate-y-8 translate-x-8"></div>
+          <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg p-3 border border-orange-200/40 dark:border-orange-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
+            <div class="absolute top-0 right-0 w-10 h-10 bg-orange-200/20 dark:bg-orange-600/10 rounded-full -translate-y-5 translate-x-5"></div>
             <div class="relative">
-              <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                  <div class="w-8 h-8 bg-orange-100 dark:bg-orange-900/40 rounded-lg flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div class="w-6 h-6 bg-orange-100 dark:bg-orange-900/40 rounded-md flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
                     </svg>
                   </div>
-                  <span class="text-sm font-medium text-orange-700 dark:text-orange-300">Attention</span>
+                  <div class="flex flex-col">
+                    <span class="text-xs font-medium text-orange-700 dark:text-orange-300">Attention</span>
+                    <span class="text-xs text-orange-600/70 dark:text-orange-400/70">
+                      {inactiveMainers} need{inactiveMainers === 1 ? 's' : ''} top-up
+                    </span>
+                  </div>
                 </div>
-                <span class="text-xl font-bold text-orange-600 dark:text-orange-400">!</span>
+                <span class="text-lg font-bold text-orange-600 dark:text-orange-400">!</span>
               </div>
-              <p class="text-xs text-orange-600/80 dark:text-orange-400/80">
-                {inactiveMainers} mAIner{inactiveMainers === 1 ? '' : 's'} need{inactiveMainers === 1 ? 's' : ''} cycles to continue mining
-              </p>
             </div>
           </div>
         {:else}
           <!-- All Good Card when no inactive mAIners -->
-          <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-emerald-200/40 dark:border-emerald-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
-            <div class="absolute top-0 right-0 w-16 h-16 bg-emerald-200/20 dark:bg-emerald-600/10 rounded-full -translate-y-8 translate-x-8"></div>
+          <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg p-3 border border-emerald-200/40 dark:border-emerald-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
+            <div class="absolute top-0 right-0 w-10 h-10 bg-emerald-200/20 dark:bg-emerald-600/10 rounded-full -translate-y-5 translate-x-5"></div>
             <div class="relative">
-              <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                  <div class="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/40 rounded-lg flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div class="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/40 rounded-md flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                     </svg>
                   </div>
-                  <span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">All Systems</span>
+                  <div class="flex flex-col">
+                    <span class="text-xs font-medium text-emerald-700 dark:text-emerald-300">All Systems</span>
+                    <span class="text-xs text-emerald-600/70 dark:text-emerald-400/70">Operational</span>
+                  </div>
                 </div>
-                <span class="text-xl font-bold text-emerald-600 dark:text-emerald-400">✓</span>
+                <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400">✓</span>
               </div>
-              <p class="text-xs text-emerald-600/80 dark:text-emerald-400/80">All mAIners operational and mining</p>
             </div>
           </div>
         {/if}
