@@ -257,7 +257,10 @@
       // Remove from loading set after processing
       agentsBeingToppedUp.delete(canisterId);
       agentsBeingToppedUp = agentsBeingToppedUp; // Trigger reactivity
-    }
+    };
+    
+    // Reload flags
+    await loadProtocolFlags();
   }
 
   // Handle celebration trigger from top-up modal
@@ -307,6 +310,28 @@
     
     // Reset selected unlocked mAIner
     selectedUnlockedMainer = null;
+
+    // Reload flags
+    await loadProtocolFlags();
+  };
+
+  async function loadProtocolFlags() {
+    try {
+      isProtocolActiveFlag = await getIsProtocolActive();
+      isMainerCreationStoppedFlag = await getIsMainerCreationStopped(modelType);
+      isWhitelistPhaseActiveFlag = await getIsWhitelistPhaseActive();
+      isPauseWhitelistMainerCreationFlag = await getPauseWhitelistMainerCreationFlag();
+    } catch (error) {
+      console.error("Error loading protocol flags:", error);
+      // Set safe defaults
+      isProtocolActiveFlag = true;
+      isMainerCreationStoppedFlag = false;
+      isWhitelistPhaseActiveFlag = true; // Default to true since we manually set it to true in gameState.ts
+      isPauseWhitelistMainerCreationFlag = false;
+    } finally {
+      // Set loading to false after flags are loaded (whether successful or not)
+      protocolFlagsLoading = false;
+    };    
   };
 
   async function handleWhitelistMainerCreation(txId?: string, selectedMainer?: any) {
@@ -664,22 +689,8 @@
 
   onMount(async () => {
     
-    try {
-      isProtocolActiveFlag = await getIsProtocolActive();
-      isMainerCreationStoppedFlag = await getIsMainerCreationStopped(modelType);
-      isWhitelistPhaseActiveFlag = await getIsWhitelistPhaseActive();
-      isPauseWhitelistMainerCreationFlag = await getPauseWhitelistMainerCreationFlag();
-    } catch (error) {
-      console.error("Error loading protocol flags:", error);
-      // Set safe defaults
-      isProtocolActiveFlag = true;
-      isMainerCreationStoppedFlag = false;
-      isWhitelistPhaseActiveFlag = true; // Default to true since we manually set it to true in gameState.ts
-      isPauseWhitelistMainerCreationFlag = false;
-    } finally {
-      // Set loading to false after flags are loaded (whether successful or not)
-      protocolFlagsLoading = false;
-    }
+    // Load initial state of flags
+    await loadProtocolFlags();
     
     // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
     agents = await loadAgents();
@@ -774,12 +785,14 @@
   }
 
   // Handle modal close without payment completion
-  function handlePaymentModalClose() {
+  async function handlePaymentModalClose() {
     mainerPaymentModalOpen = false;
     // Clear any individual loading states when modal closes without payment
     whitelistMainersBeingCreated.clear();
     whitelistMainersBeingCreated = whitelistMainersBeingCreated; // Trigger reactivity
     selectedUnlockedMainer = null;
+    // Reload flags
+    await loadProtocolFlags();
   };
 </script>
 
