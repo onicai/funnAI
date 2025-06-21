@@ -1099,34 +1099,34 @@
       {#each unlockedMainers as unlockedMainer, index}
         <div class="relative overflow-hidden bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-900/20 dark:via-yellow-900/20 dark:to-orange-900/20 border border-amber-200/60 dark:border-amber-700/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5">
           <!-- Background decorative elements -->
-          <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-200/30 to-amber-200/30 dark:from-yellow-600/10 dark:to-amber-600/10 rounded-full -translate-y-10 translate-x-10"></div>
-          <div class="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-orange-200/30 to-yellow-200/30 dark:from-orange-600/10 dark:to-yellow-600/10 rounded-full translate-y-8 -translate-x-8"></div>
+          <div class="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-yellow-200/30 to-amber-200/30 dark:from-yellow-600/10 dark:to-amber-600/10 rounded-full -translate-y-8 translate-x-8"></div>
+          <div class="absolute bottom-0 left-0 w-12 h-12 bg-gradient-to-tr from-orange-200/30 to-yellow-200/30 dark:from-orange-600/10 dark:to-yellow-600/10 rounded-full translate-y-6 -translate-x-6"></div>
           
-          <div class="relative p-4 sm:p-5">
-            <div class="flex flex-col space-y-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+          <div class="relative p-3 md:p-4">
+            <div class="flex flex-col space-y-3 xl:flex-row xl:items-center xl:justify-between xl:space-y-0">
               <!-- Left side - mAIner info -->
-              <div class="flex items-center space-x-3 min-w-0 flex-1">
+              <div class="flex items-start space-x-3 min-w-0 flex-1">
                 <!-- Premium icon with glow effect -->
-                <div class="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-400 to-amber-500 dark:from-yellow-500 dark:to-amber-600 rounded-xl shadow-lg flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                <div class="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-yellow-400 to-amber-500 dark:from-yellow-500 dark:to-amber-600 rounded-lg shadow-lg flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                   </svg>
                 </div>
                 
                 <!-- mAIner details -->
                 <div class="flex-1 min-w-0">
-                  <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-3">
-                    <h3 class="font-semibold text-base sm:text-lg text-amber-900 dark:text-amber-100 truncate">
+                  <div class="flex flex-col space-y-2">
+                    <h3 class="font-semibold text-sm md:text-base text-amber-900 dark:text-amber-100 truncate">
                       {unlockedMainer.name}
                     </h3>
-                    <div class="flex items-center space-x-2 mt-1 sm:mt-0">
-                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
                         <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                         </svg>
                         Unlocked
                       </span>
-                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700">
                         <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                         </svg>
@@ -1136,15 +1136,15 @@
                   </div>
                   
                   <!-- Type and special pricing info -->
-                  <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-2 space-y-1 sm:space-y-0">
+                  <div class="flex flex-col space-y-1 mt-2 lg:flex-row lg:items-center lg:space-x-4 lg:space-y-0">
                     <div class="flex items-center space-x-1 text-xs text-amber-700 dark:text-amber-300">
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
                       </svg>
                       <span class="font-medium">Quick start</span>
                     </div>
                     <div class="flex items-center space-x-1 text-xs text-emerald-700 dark:text-emerald-300">
-                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
                       </svg>
                       <span class="font-medium">Only {currentWhitelistPrice || 0.5} ICP</span>
@@ -1155,11 +1155,11 @@
               </div>
               
               <!-- Right side - Action button -->
-              <div class="flex-shrink-0 sm:ml-4">
+              <div class="flex-shrink-0 xl:ml-4">
                 <button
                   on:click={() => createWhitelistAgent(unlockedMainer)}
                   disabled={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
-                  class="group relative inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-amber-400/50 dark:border-amber-500/50 w-full sm:w-auto"
+                  class="group relative inline-flex items-center justify-center px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-amber-400/50 dark:border-amber-500/50 w-full xl:w-auto"
                   class:opacity-50={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
                   class:cursor-not-allowed={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
                   class:transform-none={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
@@ -1168,22 +1168,22 @@
                   {#if isCreatingMainer}
                     <div class="flex items-center space-x-2">
                       <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                      <span>Creating...</span>
+                      <span class="text-xs md:text-sm">Creating...</span>
                     </div>
                   {:else if whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
                     <div class="flex items-center space-x-2">
                       <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                      <span>Loading...</span>
+                      <span class="text-xs md:text-sm">Loading...</span>
                     </div>
                   {:else}
                     <div class="flex items-center space-x-2">
                       <svg class="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                       </svg>
-                      <span>Create Now</span>
+                      <span class="text-xs md:text-sm">Create Now</span>
                     </div>
                   {/if}
-                  <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-yellow-100 to-amber-100 dark:from-yellow-600/20 dark:to-amber-600/20 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                  <div class="absolute inset-0 rounded-lg bg-gradient-to-r from-yellow-100 to-amber-100 dark:from-yellow-600/20 dark:to-amber-600/20 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
                 </button>
               </div>
             </div>
@@ -1218,7 +1218,7 @@
                 <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white backdrop-blur-sm">
                   Whitelist Member
                 </div>
-                <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-sm">Welcome back, early supporter! 🎉</h3>
+                <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-sm">Welcome, early supporter! 🎉</h3>
               </div>
               
               <div class="text-white/90 text-sm sm:text-base leading-relaxed max-w-md mx-auto space-y-2">
