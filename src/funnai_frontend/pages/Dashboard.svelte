@@ -67,7 +67,7 @@
           <div class="mt-3">
             <p class="text-xs text-gray-500 dark:text-gray-400 text-center sm:text-left">
               {showAllEvents 
-                ? 'Viewing challenges and responses from all mAIners in the protocol' 
+                ? 'Viewing major events across the protocol' 
                 : 'Viewing all activity from your mAIners, including victories and rewards'}
             </p>
           </div>
