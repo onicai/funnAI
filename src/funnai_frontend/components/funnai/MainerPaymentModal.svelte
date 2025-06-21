@@ -8,7 +8,7 @@
   import BigNumber from "bignumber.js";
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
   import { fetchTokens, protocolConfig } from "../../helpers/token_helpers";
-  import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped, getWhitelistAgentPrice } from "../../helpers/gameState";
+  import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped, getWhitelistAgentPrice, getPauseWhitelistMainerCreationFlag } from "../../helpers/gameState";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
@@ -63,6 +63,9 @@
 
   let isMainerCreationStoppedFlag = false; // Will be loaded
   $: stopMainerCreation = isMainerCreationStoppedFlag; // TODO: if true, disable mAIner creation
+
+  let isPauseWhitelistMainerCreationFlag = false; // Will be loaded
+  $: isPauseWhitelistMainerCreation = isPauseWhitelistMainerCreationFlag;
   
   // Determine payment amount based on model type
   $: paymentAmount = mainerPrice;
@@ -169,6 +172,7 @@
     loadBalance();
     isProtocolActiveFlag = await getIsProtocolActive();
     isMainerCreationStoppedFlag = await getIsMainerCreationStopped(modelType);
+    isPauseWhitelistMainerCreationFlag = await getPauseWhitelistMainerCreationFlag();
     mainerPrice = await getMainerPrice();
   });
 </script>
@@ -275,10 +279,10 @@
           class:gap-2={!(!hasEnoughBalance && !isValidating)}
           class:bg-purple-600={hasEnoughBalance && !isValidating}
           class:hover:bg-purple-500={hasEnoughBalance && !isValidating}
-          class:bg-gray-400={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation}
-          class:cursor-not-allowed={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation}
-          class:dark:bg-gray-700={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation}
-          disabled={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation}
+          class:bg-gray-400={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
+          class:cursor-not-allowed={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
+          class:dark:bg-gray-700={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
+          disabled={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
         >
           {#if isValidating}
             <div class="flex items-center justify-center gap-2">
@@ -294,7 +298,7 @@
             <div class="flex flex-col items-center justify-center gap-1">
               <div class="text-center">Protocol is currently paused. Please check back in a couple of minutes.</div>
             </div>
-          {:else if stopMainerCreation}
+          {:else if stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
             <div class="flex flex-col items-center justify-center gap-1">
               <div class="text-center">mAIner creation is currently paused. Please check official announcements.</div>
             </div>

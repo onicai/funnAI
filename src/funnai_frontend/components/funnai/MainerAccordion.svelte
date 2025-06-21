@@ -669,8 +669,6 @@
       isMainerCreationStoppedFlag = await getIsMainerCreationStopped(modelType);
       isWhitelistPhaseActiveFlag = await getIsWhitelistPhaseActive();
       isPauseWhitelistMainerCreationFlag = await getPauseWhitelistMainerCreationFlag();
-      
-
     } catch (error) {
       console.error("Error loading protocol flags:", error);
       // Set safe defaults
