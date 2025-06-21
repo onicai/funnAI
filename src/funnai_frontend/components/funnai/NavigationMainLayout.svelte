@@ -85,16 +85,7 @@
         <span class="xs:hidden">Whitelist</span>
       </a>
 
-      <!-- Support Button -->
-      <a href="https://oc.app/community/mepna-eqaaa-aaaar-bclua-cai/channel/2881126157/?ref=mwte3-ciaaa-aaaaf-ad7aq-cai"
-         target="_blank"
-         rel="noopener noreferrer"
-         class="flex-shrink-0 group relative overflow-hidden px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[44px] bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600 text-gray-700 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-200 font-medium text-sm">
-        <img src="https://oc.app/icon.png" alt="OpenChat" class="w-4 h-4 flex-shrink-0" />
-        <span class="hidden xs:inline">Support</span>
-      </a>
-      
-             <!-- Connect Button -->
+      <!-- Connect Button -->
        <button type="button" 
                on:click={() => {toggleModal()}} 
                data-modal-target="crypto-modal" 
@@ -116,15 +107,6 @@
         <span class="xs:hidden">Whitelist</span>
       </a>
 
-      <!-- Support Button -->
-      <a href="https://oc.app/community/mepna-eqaaa-aaaar-bclua-cai/channel/2881126157/?ref=mwte3-ciaaa-aaaaf-ad7aq-cai"
-         target="_blank"
-         rel="noopener noreferrer"
-         class="flex-shrink-0 group relative overflow-hidden px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[44px] bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600 text-gray-700 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-200 font-medium text-sm">
-        <img src="https://oc.app/icon.png" alt="OpenChat" class="w-4 h-4 flex-shrink-0" />
-        <span class="hidden xs:inline">Support</span>
-      </a>
-      
       <!-- Wallet Button -->
       <a use:link href="/wallet" 
          class="flex-shrink-0 group relative overflow-hidden px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[44px] bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 dark:from-orange-900/30 dark:to-orange-800/30 dark:hover:from-orange-800/40 dark:hover:to-orange-700/40 border border-orange-200 hover:border-orange-300 dark:border-orange-700 dark:hover:border-orange-600 text-orange-700 hover:text-orange-800 dark:text-orange-300 dark:hover:text-orange-200 font-medium text-sm">
@@ -132,6 +114,15 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
         </svg>
         <span class="hidden xs:inline">Wallet</span>
+      </a>
+
+      <!-- mAIners Button -->
+      <a use:link href="/" 
+         class="flex-shrink-0 group relative overflow-hidden px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[44px] bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 dark:hover:from-purple-800/40 dark:hover:to-purple-700/40 border border-purple-200 hover:border-purple-300 dark:border-purple-700 dark:hover:border-purple-600 text-purple-700 hover:text-purple-800 dark:text-purple-300 dark:hover:text-purple-200 font-medium text-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+        <span class="hidden xs:inline">mAIners</span>
       </a>
       <!-- <div class="relative mr-2">
         <AccessCodesCenter />
