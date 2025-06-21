@@ -162,8 +162,8 @@
     console.log("🔵 selectedUnlockedMainer set to:", selectedUnlockedMainer);
     console.log("🔵 Opening payment modal...");
     
-    // Add this mAIner to the loading set (using id or a unique identifier)
-    const mainerIdentifier = unlockedMainer.id || unlockedMainer.name || `unlocked-${Date.now()}`;
+    // Add this mAIner to the loading set (using consistent identifier)
+    const mainerIdentifier = unlockedMainer.id || unlockedMainer.name || `unlocked-${unlockedMainer.originalCanisterInfo?.address || Date.now()}`;
     whitelistMainersBeingCreated.add(mainerIdentifier);
     whitelistMainersBeingCreated = whitelistMainersBeingCreated; // Trigger reactivity
     
@@ -418,15 +418,18 @@
   async function handleSendComplete(txId?: string) {
     mainerPaymentModalOpen = false;
     
-    // Clear the individual whitelist mAIner loading state since global creation starts
-    whitelistMainersBeingCreated.clear();
-    whitelistMainersBeingCreated = whitelistMainersBeingCreated; // Trigger reactivity
+    // Store the selected unlocked mAIner before starting creation to prevent null reference
+    const selectedMainerForCreation = selectedUnlockedMainer;
+    
+    // Clear only the specific whitelist mAIner loading state that was selected
+    if (selectedMainerForCreation) {
+      const mainerIdentifier = selectedMainerForCreation.id || selectedMainerForCreation.name || `unlocked-${selectedMainerForCreation.originalCanisterInfo?.address || Date.now()}`;
+      whitelistMainersBeingCreated.delete(mainerIdentifier);
+      whitelistMainersBeingCreated = whitelistMainersBeingCreated; // Trigger reactivity
+    }
     
     // Set the creation process as started using store
     store.startMainerCreation();
-    
-    // Store the selected unlocked mAIner before starting creation to prevent null reference
-    const selectedMainerForCreation = selectedUnlockedMainer;
     
     // Start the staged creation process
     // Step 1: Begin registration
@@ -810,8 +813,14 @@
       unlockedMainers: unlockedMainers.length
     });
     
-    // Reverse the order so newest mAIners appear first
-    return activeAgents.reverse();
+    // Sort by creation timestamp so newest mAIners appear first
+    return activeAgents.sort((a, b) => {
+      const tsA: bigint = a.originalCanisterInfo?.creationTimestamp ?? 0n;
+      const tsB: bigint = b.originalCanisterInfo?.creationTimestamp ?? 0n;
+      if (tsA === tsB) return 0;
+      // Newest first => larger timestamp comes before smaller one
+      return tsA < tsB ? 1 : -1;
+    });
   };
 
   $: {
@@ -899,9 +908,12 @@
   // Handle modal close without payment completion
   async function handlePaymentModalClose() {
     mainerPaymentModalOpen = false;
-    // Clear any individual loading states when modal closes without payment
-    whitelistMainersBeingCreated.clear();
-    whitelistMainersBeingCreated = whitelistMainersBeingCreated; // Trigger reactivity
+    // Clear only the specific mAIner's loading state when modal closes without payment
+    if (selectedUnlockedMainer) {
+      const mainerIdentifier = selectedUnlockedMainer.id || selectedUnlockedMainer.name || `unlocked-${selectedUnlockedMainer.originalCanisterInfo?.address || Date.now()}`;
+      whitelistMainersBeingCreated.delete(mainerIdentifier);
+      whitelistMainersBeingCreated = whitelistMainersBeingCreated; // Trigger reactivity
+    }
     selectedUnlockedMainer = null;
     // Reload flags
     await loadProtocolFlags();
@@ -1275,22 +1287,17 @@
               <div class="flex-shrink-0 xl:ml-4">
                 <button
                   on:click={() => createWhitelistAgent(unlockedMainer)}
-                  disabled={isCreatingMainer || isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
+                  disabled={isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name || `unlocked-${unlockedMainer.originalCanisterInfo?.address || index}`)}
                   class="group relative inline-flex items-center justify-center px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-amber-400/50 dark:border-amber-500/50 w-full xl:w-auto"
-                  class:opacity-50={isCreatingMainer || isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
-                  class:cursor-not-allowed={isCreatingMainer || isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
-                  class:transform-none={isCreatingMainer || isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
-                  class:hover:scale-100={isCreatingMainer || isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
+                  class:opacity-50={isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name || `unlocked-${unlockedMainer.originalCanisterInfo?.address || index}`)}
+                  class:cursor-not-allowed={isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name || `unlocked-${unlockedMainer.originalCanisterInfo?.address || index}`)}
+                  class:transform-none={isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name || `unlocked-${unlockedMainer.originalCanisterInfo?.address || index}`)}
+                  class:hover:scale-100={isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name || `unlocked-${unlockedMainer.originalCanisterInfo?.address || index}`)}
                 >
-                  {#if isCreatingMainer}
+                  {#if whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name || `unlocked-${unlockedMainer.originalCanisterInfo?.address || index}`)}
                     <div class="flex items-center space-x-2">
                       <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                      <span class="text-xs md:text-sm">Creating...</span>
-                    </div>
-                  {:else if whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
-                    <div class="flex items-center space-x-2">
-                      <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                      <span class="text-xs md:text-sm">Loading...</span>
+                      <span class="text-xs md:text-sm">Processing...</span>
                     </div>
                   {:else}
                     <div class="flex items-center space-x-2">
@@ -1717,7 +1724,7 @@
               
                              <!-- mAIner number badge -->
                <div class="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center border-2 border-white/50">
-                 <span class="text-xs sm:text-sm font-bold text-gray-800">#{index + 1}</span>
+                 <span class="text-xs sm:text-sm font-bold text-gray-800">#{totalMainers - index}</span>
                </div>
               
               <!-- Status indicator dot -->
