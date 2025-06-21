@@ -258,7 +258,7 @@
       agentsBeingToppedUp.delete(canisterId);
       agentsBeingToppedUp = agentsBeingToppedUp; // Trigger reactivity
     };
-    
+
     // Reload flags
     await loadProtocolFlags();
   }
@@ -325,9 +325,13 @@
       console.error("Error loading protocol flags:", error);
       // Set safe defaults
       isProtocolActiveFlag = true;
-      isMainerCreationStoppedFlag = false;
-      isWhitelistPhaseActiveFlag = true; // Default to true since we manually set it to true in gameState.ts
-      isPauseWhitelistMainerCreationFlag = false;
+      isMainerCreationStoppedFlag = true;
+      isWhitelistPhaseActiveFlag = false;
+      isPauseWhitelistMainerCreationFlag = true;
+      // Retry
+      setTimeout(async () => {
+        await loadProtocolFlags();
+      }, 2000);
     } finally {
       // Set loading to false after flags are loaded (whether successful or not)
       protocolFlagsLoading = false;

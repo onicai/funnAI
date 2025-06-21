@@ -165,14 +165,30 @@
     } finally {
       isValidating = false;
     }
-  }
+  };
+
+  async function loadProtocolFlags() {
+    try {
+      isProtocolActiveFlag = await getIsProtocolActive();
+      isMainerCreationStoppedFlag = await getIsMainerCreationStopped(modelType);
+      isPauseWhitelistMainerCreationFlag = await getPauseWhitelistMainerCreationFlag();
+    } catch (error) {
+      console.error("Error loading protocol flags:", error);
+      // Set safe defaults
+      isProtocolActiveFlag = true;
+      isMainerCreationStoppedFlag = true;
+      isPauseWhitelistMainerCreationFlag = true;
+      // Retry
+      setTimeout(async () => {
+        await loadProtocolFlags();
+      }, 2000);
+    };
+  };
 
   onMount(async () => {
     await loadTokenData();
     loadBalance();
-    isProtocolActiveFlag = await getIsProtocolActive();
-    isMainerCreationStoppedFlag = await getIsMainerCreationStopped(modelType);
-    isPauseWhitelistMainerCreationFlag = await getPauseWhitelistMainerCreationFlag();
+    await loadProtocolFlags();
     mainerPrice = await getMainerPrice();
   });
 </script>
