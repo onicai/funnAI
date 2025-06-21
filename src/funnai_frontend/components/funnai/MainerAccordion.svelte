@@ -891,11 +891,7 @@
                   </div>
                 </div>
               </div>
-
-
             </div>
-
-
         </li>
         <li class="mb-6 ms-6">            
             <span class="absolute flex items-center justify-center w-8 h-8 {selectedModel ? 'bg-green-200 dark:bg-green-800' : 'bg-gray-200 dark:bg-gray-800'} rounded-full -start-4 ring-4 ring-white dark:ring-gray-900">
@@ -911,7 +907,6 @@
                   </svg>
                 {/if}
             </span>
-
         </li>
         <li class="mb-6 ms-6">
             <span class="absolute flex items-center justify-center w-8 h-8 {addressCopied ? 'bg-green-200 dark:bg-green-800' : 'bg-gray-100 dark:bg-gray-800'} rounded-full -start-4 ring-4 ring-white dark:ring-gray-900">
@@ -924,17 +919,16 @@
                 {/if}
             </span>
             <h3 class="font-medium leading-tight mb-1 dark:text-gray-300">Pay & Spin up</h3>
-
         </li>
       </ol>
 
       <div class="flex flex-col items-stretch sm:items-end">
         <button 
           on:click={createAgent} 
-          disabled={isCreatingMainer || !isProtocolActive}
+          disabled={isCreatingMainer || !isProtocolActive || stopMainerCreation}
           class="bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-800 text-white px-4 py-2 rounded-xl transition-colors mb-2 w-full sm:w-auto sm:mr-2 text-sm sm:text-base"
-          class:opacity-50={isCreatingMainer || !isProtocolActive}
-          class:cursor-not-allowed={isCreatingMainer || !isProtocolActive}
+          class:opacity-50={isCreatingMainer || !isProtocolActive || stopMainerCreation}
+          class:cursor-not-allowed={isCreatingMainer || !isProtocolActive || stopMainerCreation}
         >
           Create mAIner Agent
         </button>
@@ -1158,12 +1152,12 @@
               <div class="flex-shrink-0 xl:ml-4">
                 <button
                   on:click={() => createWhitelistAgent(unlockedMainer)}
-                  disabled={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
+                  disabled={isCreatingMainer || isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
                   class="group relative inline-flex items-center justify-center px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-amber-400/50 dark:border-amber-500/50 w-full xl:w-auto"
-                  class:opacity-50={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
-                  class:cursor-not-allowed={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
-                  class:transform-none={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
-                  class:hover:scale-100={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
+                  class:opacity-50={isCreatingMainer || isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
+                  class:cursor-not-allowed={isCreatingMainer || isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
+                  class:transform-none={isCreatingMainer || isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
+                  class:hover:scale-100={isCreatingMainer || isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
                 >
                   {#if isCreatingMainer}
                     <div class="flex items-center space-x-2">

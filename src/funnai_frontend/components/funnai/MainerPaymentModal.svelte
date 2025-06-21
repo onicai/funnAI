@@ -119,7 +119,11 @@
     try {
       if (!isProtocolActive) {
         throw new Error("Protocol is not active and actions are paused");
-      }
+      };
+
+      if (stopMainerCreation) {
+        throw new Error("mAIner creation is currently stopped");
+      };
 
       if (!$store.principal) {
         throw new Error("Authentication not initialized");
@@ -271,10 +275,10 @@
           class:gap-2={!(!hasEnoughBalance && !isValidating)}
           class:bg-purple-600={hasEnoughBalance && !isValidating}
           class:hover:bg-purple-500={hasEnoughBalance && !isValidating}
-          class:bg-gray-400={!hasEnoughBalance || isValidating || !isProtocolActive}
-          class:cursor-not-allowed={!hasEnoughBalance || isValidating || !isProtocolActive}
-          class:dark:bg-gray-700={!hasEnoughBalance || isValidating || !isProtocolActive}
-          disabled={!hasEnoughBalance || isValidating || !isProtocolActive}
+          class:bg-gray-400={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation}
+          class:cursor-not-allowed={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation}
+          class:dark:bg-gray-700={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation}
+          disabled={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation}
         >
           {#if isValidating}
             <div class="flex items-center justify-center gap-2">
@@ -289,6 +293,10 @@
           {:else if !isProtocolActive}
             <div class="flex flex-col items-center justify-center gap-1">
               <div class="text-center">Protocol is currently paused. Please check back in a couple of minutes.</div>
+            </div>
+          {:else if stopMainerCreation}
+            <div class="flex flex-col items-center justify-center gap-1">
+              <div class="text-center">mAIner creation is currently paused. Please check official announcements.</div>
             </div>
           {:else}
             <div class="flex items-center justify-center gap-2">
