@@ -257,7 +257,10 @@
       // Remove from loading set after processing
       agentsBeingToppedUp.delete(canisterId);
       agentsBeingToppedUp = agentsBeingToppedUp; // Trigger reactivity
-    }
+    };
+
+    // Reload flags
+    await loadProtocolFlags();
   }
 
   // Handle celebration trigger from top-up modal
@@ -307,6 +310,32 @@
     
     // Reset selected unlocked mAIner
     selectedUnlockedMainer = null;
+
+    // Reload flags
+    await loadProtocolFlags();
+  };
+
+  async function loadProtocolFlags() {
+    try {
+      isProtocolActiveFlag = await getIsProtocolActive();
+      isMainerCreationStoppedFlag = await getIsMainerCreationStopped(modelType);
+      isWhitelistPhaseActiveFlag = await getIsWhitelistPhaseActive();
+      isPauseWhitelistMainerCreationFlag = await getPauseWhitelistMainerCreationFlag();
+    } catch (error) {
+      console.error("Error loading protocol flags:", error);
+      // Set safe defaults
+      isProtocolActiveFlag = true;
+      isMainerCreationStoppedFlag = true;
+      isWhitelistPhaseActiveFlag = false;
+      isPauseWhitelistMainerCreationFlag = true;
+      // Retry
+      setTimeout(async () => {
+        await loadProtocolFlags();
+      }, 2000);
+    } finally {
+      // Set loading to false after flags are loaded (whether successful or not)
+      protocolFlagsLoading = false;
+    };    
   };
 
   async function handleWhitelistMainerCreation(txId?: string, selectedMainer?: any) {
@@ -664,24 +693,8 @@
 
   onMount(async () => {
     
-    try {
-      isProtocolActiveFlag = await getIsProtocolActive();
-      isMainerCreationStoppedFlag = await getIsMainerCreationStopped(modelType);
-      isWhitelistPhaseActiveFlag = await getIsWhitelistPhaseActive();
-      isPauseWhitelistMainerCreationFlag = await getPauseWhitelistMainerCreationFlag();
-      
-
-    } catch (error) {
-      console.error("Error loading protocol flags:", error);
-      // Set safe defaults
-      isProtocolActiveFlag = true;
-      isMainerCreationStoppedFlag = false;
-      isWhitelistPhaseActiveFlag = true; // Default to true since we manually set it to true in gameState.ts
-      isPauseWhitelistMainerCreationFlag = false;
-    } finally {
-      // Set loading to false after flags are loaded (whether successful or not)
-      protocolFlagsLoading = false;
-    }
+    // Load initial state of flags
+    await loadProtocolFlags();
     
     // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
     agents = await loadAgents();
@@ -776,12 +789,14 @@
   }
 
   // Handle modal close without payment completion
-  function handlePaymentModalClose() {
+  async function handlePaymentModalClose() {
     mainerPaymentModalOpen = false;
     // Clear any individual loading states when modal closes without payment
     whitelistMainersBeingCreated.clear();
     whitelistMainersBeingCreated = whitelistMainersBeingCreated; // Trigger reactivity
     selectedUnlockedMainer = null;
+    // Reload flags
+    await loadProtocolFlags();
   };
 </script>
 
@@ -891,11 +906,7 @@
                   </div>
                 </div>
               </div>
-
-
             </div>
-
-
         </li>
         <li class="mb-6 ms-6">            
             <span class="absolute flex items-center justify-center w-8 h-8 {selectedModel ? 'bg-green-200 dark:bg-green-800' : 'bg-gray-200 dark:bg-gray-800'} rounded-full -start-4 ring-4 ring-white dark:ring-gray-900">
@@ -911,7 +922,6 @@
                   </svg>
                 {/if}
             </span>
-
         </li>
         <li class="mb-6 ms-6">
             <span class="absolute flex items-center justify-center w-8 h-8 {addressCopied ? 'bg-green-200 dark:bg-green-800' : 'bg-gray-100 dark:bg-gray-800'} rounded-full -start-4 ring-4 ring-white dark:ring-gray-900">
@@ -924,17 +934,16 @@
                 {/if}
             </span>
             <h3 class="font-medium leading-tight mb-1 dark:text-gray-300">Pay & Spin up</h3>
-
         </li>
       </ol>
 
       <div class="flex flex-col items-stretch sm:items-end">
         <button 
           on:click={createAgent} 
-          disabled={isCreatingMainer}
+          disabled={isCreatingMainer || !isProtocolActive || stopMainerCreation}
           class="bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-800 text-white px-4 py-2 rounded-xl transition-colors mb-2 w-full sm:w-auto sm:mr-2 text-sm sm:text-base"
-          class:opacity-50={isCreatingMainer}
-          class:cursor-not-allowed={isCreatingMainer}
+          class:opacity-50={isCreatingMainer || !isProtocolActive || stopMainerCreation}
+          class:cursor-not-allowed={isCreatingMainer || !isProtocolActive || stopMainerCreation}
         >
           Create mAIner Agent
         </button>
@@ -1158,12 +1167,12 @@
               <div class="flex-shrink-0 xl:ml-4">
                 <button
                   on:click={() => createWhitelistAgent(unlockedMainer)}
-                  disabled={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
+                  disabled={isCreatingMainer || isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
                   class="group relative inline-flex items-center justify-center px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-500 dark:from-amber-600 dark:to-yellow-600 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-amber-400/50 dark:border-amber-500/50 w-full xl:w-auto"
-                  class:opacity-50={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
-                  class:cursor-not-allowed={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
-                  class:transform-none={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
-                  class:hover:scale-100={isCreatingMainer || isPauseWhitelistMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
+                  class:opacity-50={isCreatingMainer || isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
+                  class:cursor-not-allowed={isCreatingMainer || isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
+                  class:transform-none={isCreatingMainer || isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
+                  class:hover:scale-100={isCreatingMainer || isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name)}
                 >
                   {#if isCreatingMainer}
                     <div class="flex items-center space-x-2">
@@ -1311,7 +1320,7 @@
           <!-- Debug info - only show in development -->
           {#if import.meta.env.DEV}
             <details class="mt-4 text-left">
-              <summary class="text-xs text-slate-400 dark:text-slate-500 cursor-pointer hover:text-slate-600 dark:hover:text-slate-400">Debug Info</summary>
+              <!-- <summary class="text-xs text-slate-400 dark:text-slate-500 cursor-pointer hover:text-slate-600 dark:hover:text-slate-400">Debug Info</summary> -->
               <div class="mt-2 p-2 bg-slate-100 dark:bg-slate-800 rounded text-xs text-slate-500 dark:text-slate-400">
                 Total mAIners loaded: {agentCanistersInfo.length}<br>
                 Unlocked for you: {unlockedMainers.length}<br>
@@ -1594,11 +1603,11 @@
                   <button 
                     type="button" 
                     class="group relative inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-emerald-400/50 dark:border-emerald-500/50 w-full md:w-auto"
-                    class:opacity-50={agentsBeingToppedUp.has(agent.id)}
-                    class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id)}
-                    class:transform-none={agentsBeingToppedUp.has(agent.id)}
-                    class:hover:scale-100={agentsBeingToppedUp.has(agent.id)}
-                    disabled={agentsBeingToppedUp.has(agent.id)}
+                    class:opacity-50={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                    class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                    class:transform-none={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                    class:hover:scale-100={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                    disabled={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
                     on:click={() => openTopUpModal(agent)}
                   >
                     {#if agentsBeingToppedUp.has(agent.id)}
