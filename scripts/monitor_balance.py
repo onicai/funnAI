@@ -54,7 +54,7 @@ def main(network, canister_types):
     initial_balances = {name: None for name in CANISTERS.keys()} 
     max_name_length = max(len(name) for name in CANISTERS.keys())
     timer = 0
-    delay = 10  # seconds  
+    delay = 60*60  # 60 minutes  
     while True:
         for name, canister_id in CANISTERS.items():
             balance = get_balance(canister_id, network)
