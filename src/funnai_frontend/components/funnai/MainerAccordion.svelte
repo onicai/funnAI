@@ -129,12 +129,12 @@
   };
 
   function openFirstMainerAccordion() {
-    // Open the last mAIner's accordion (which will be the newest one in original order)
+    // Open the first mAIner's accordion (which will be the newest one since we reverse the order)
     if (agents.length > 0 && shouldOpenFirstMainerAfterCreation) {
-      const lastMainerAccordion = agents[agents.length - 1]; // Get the last (newest) mAIner
+      const firstMainerAccordion = agents[0]; // Get the first (newest) mAIner
       
       setTimeout(() => {
-        const sanitizedId = lastMainerAccordion.id.replace(/[^a-zA-Z0-9-_]/g, '_');
+        const sanitizedId = firstMainerAccordion.id.replace(/[^a-zA-Z0-9-_]/g, '_');
         const content = document.getElementById(`content-${sanitizedId}`);
         const icon = document.getElementById(`icon-${sanitizedId}`);
         
@@ -207,6 +207,144 @@
     } = enrichedCanisterInfo;
     
     return originalInfo;
+  };
+
+  // Helper function to generate consistent visual identity for each mAIner
+  function getMainerVisualIdentity(agentId: string) {
+    // Create a simple hash from the agent ID for consistent colors
+    let hash = 0;
+    for (let i = 0; i < agentId.length; i++) {
+      const char = agentId.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    
+    // Define a set of beautiful color schemes
+    const colorSchemes = [
+      {
+        bg: 'from-purple-500 to-indigo-600',
+        bgHover: 'from-purple-600 to-indigo-700',
+        accent: 'bg-purple-100/30',
+        icon: 'text-purple-100',
+        text: 'text-purple-50',
+        border: 'border-purple-400/30'
+      },
+      {
+        bg: 'from-emerald-500 to-teal-600',
+        bgHover: 'from-emerald-600 to-teal-700',
+        accent: 'bg-emerald-100/30',
+        icon: 'text-emerald-100',
+        text: 'text-emerald-50',
+        border: 'border-emerald-400/30'
+      },
+      {
+        bg: 'from-blue-500 to-cyan-600',
+        bgHover: 'from-blue-600 to-cyan-700',
+        accent: 'bg-blue-100/30',
+        icon: 'text-blue-100',
+        text: 'text-blue-50',
+        border: 'border-blue-400/30'
+      },
+      {
+        bg: 'from-rose-500 to-pink-600',
+        bgHover: 'from-rose-600 to-pink-700',
+        accent: 'bg-rose-100/30',
+        icon: 'text-rose-100',
+        text: 'text-rose-50',
+        border: 'border-rose-400/30'
+      },
+      {
+        bg: 'from-amber-500 to-orange-600',
+        bgHover: 'from-amber-600 to-orange-700',
+        accent: 'bg-amber-100/30',
+        icon: 'text-amber-100',
+        text: 'text-amber-50',
+        border: 'border-amber-400/30'
+      },
+      {
+        bg: 'from-violet-500 to-purple-600',
+        bgHover: 'from-violet-600 to-purple-700',
+        accent: 'bg-violet-100/30',
+        icon: 'text-violet-100',
+        text: 'text-violet-50',
+        border: 'border-violet-400/30'
+      },
+      {
+        bg: 'from-teal-500 to-cyan-600',
+        bgHover: 'from-teal-600 to-cyan-700',
+        accent: 'bg-teal-100/30',
+        icon: 'text-teal-100',
+        text: 'text-teal-50',
+        border: 'border-teal-400/30'
+      },
+      {
+        bg: 'from-indigo-500 to-blue-600',
+        bgHover: 'from-indigo-600 to-blue-700',
+        accent: 'bg-indigo-100/30',
+        icon: 'text-indigo-100',
+        text: 'text-indigo-50',
+        border: 'border-indigo-400/30'
+      }
+    ];
+    
+    // Define different avatar patterns/icons
+    const avatarIcons = [
+      // Robot variants
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-full h-full">
+        <path d="M20 9V7c0-1.1-.9-2-2-2h-3c0-1.66-1.34-3-3-3S9 3.34 9 5H6c-1.1 0-2 .9-2 2v2c-1.66 0-3 1.34-3 3s1.34 3 3 3v4c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-4c1.66 0 3-1.34 3-3s-1.34-3-3-3zM9 12c0-.55-.45-1-1-1s-1 .45-1 1 .45 1 1 1 1-.45 1-1zm8 0c0-.55-.45-1-1-1s-1 .45-1 1 .45 1 1 1 1-.45 1-1zm-4 4c-1.1 0-2-.9-2-2h4c0 1.1-.9 2-2 2z"/>
+      </svg>`,
+      // Chip/processor
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-full h-full">
+        <path d="M6 7h12v10H6V7zm-2-2v14h16V5H4zm5 3v8h6V8H9zm2 2h2v4h-2v-4z"/>
+        <rect x="2" y="8" width="2" height="2"/>
+        <rect x="2" y="12" width="2" height="2"/>
+        <rect x="20" y="8" width="2" height="2"/>
+        <rect x="20" y="12" width="2" height="2"/>
+        <rect x="8" y="2" width="2" height="2"/>
+        <rect x="12" y="2" width="2" height="2"/>
+        <rect x="8" y="20" width="2" height="2"/>
+        <rect x="12" y="20" width="2" height="2"/>
+      </svg>`,
+      // Neural network
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-full h-full">
+        <circle cx="6" cy="6" r="2"/>
+        <circle cx="18" cy="6" r="2"/>
+        <circle cx="6" cy="18" r="2"/>
+        <circle cx="18" cy="18" r="2"/>
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M8 6l2.5 4.5M8 18l2.5-4.5M16 6l-2.5 4.5M16 18l-2.5-4.5"/>
+      </svg>`,
+      // Diamond
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-full h-full">
+        <path d="M12 2l4 4-4 4-4-4 4-4zm6 6l4 4-4 4-4-4 4-4zM6 8l4 4-4 4-4-4 4-4zm6 6l4 4-4 4-4-4 4-4z"/>
+      </svg>`,
+      // Hexagon
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-full h-full">
+        <path d="M17.5 3.5L22 12l-4.5 8.5h-11L2 12l4.5-8.5h11zm-1 2h-9L5 12l2.5 6.5h9L19 12l-2.5-6.5z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>`,
+      // Star
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-full h-full">
+        <path d="M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z"/>
+      </svg>`,
+      // Lightning
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-full h-full">
+        <path d="M13 2L4 14h7v7l9-11h-7V2z"/>
+      </svg>`,
+      // Crystal
+      `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-full h-full">
+        <path d="M12 1l8 5v12l-8 5-8-5V6l8-5zm0 2.5L6 8v8l6 3.5L18 16V8l-6-4.5zm0 3L8 10v4l4 2 4-2v-4l-4-3.5z"/>
+      </svg>`
+    ];
+    
+    // Get consistent values based on hash
+    const colorIndex = Math.abs(hash) % colorSchemes.length;
+    const iconIndex = Math.abs(hash >> 3) % avatarIcons.length;
+    
+    return {
+      colors: colorSchemes[colorIndex],
+      icon: avatarIcons[iconIndex]
+    };
   };
   
   // Handle top-up completion
@@ -417,12 +555,12 @@
                 // Reload agents to get the updated list
                 loadAgents().then((updatedAgents) => {
                   agents = updatedAgents;
-                  // Wait for the reactive update to complete, then open the latest mAIner
+                  // Wait for the reactive update to complete, then open the first mAIner
                   setTimeout(() => {
-                    // Force open the latest mAIner accordion (newest one)
+                    // Force open the first mAIner accordion (newest one since we reverse the order)
                     if (agents.length > 0) {
-                      const latestAgent = agents[agents.length - 1];
-                      const sanitizedId = latestAgent.id.replace(/[^a-zA-Z0-9-_]/g, '_');
+                      const firstAgent = agents[0];
+                      const sanitizedId = firstAgent.id.replace(/[^a-zA-Z0-9-_]/g, '_');
                       const content = document.getElementById(`content-${sanitizedId}`);
                       const icon = document.getElementById(`icon-${sanitizedId}`);
                       
@@ -672,7 +810,8 @@
       unlockedMainers: unlockedMainers.length
     });
     
-    return activeAgents;
+    // Reverse the order so newest mAIners appear first
+    return activeAgents.reverse();
   };
 
   $: {
@@ -699,21 +838,14 @@
     // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
     agents = await loadAgents();
     
-    // Automatically open the create accordion if no agents exist and not in whitelist phase
+    // Only auto-open create accordion if no agents exist and not in whitelist phase
     // In whitelist phase, show unlocked mAIners instead
     if (agents.length === 0 && !isWhitelistPhaseActive) {
       setTimeout(() => {
         toggleAccordion('create');
       }, 100);
-    } else if (agents.length > 0) {
-      // Open the latest mAIner if agents exist
-      setTimeout(() => {
-        const latestAgent = agents[agents.length - 1];
-        if (latestAgent && latestAgent.id) {
-          toggleAccordion(latestAgent.id);
-        }
-      }, 100);
-    };
+    }
+    // Don't auto-open any mAIner accordions by default
 
     try {
       console.log("in MainerAccordion before getMainerPrice");
@@ -729,7 +861,7 @@
     }
   });
 
-  // Watch for changes in agents or auth status
+  // Watch for changes in agents or auth status - only auto-open create accordion when no agents
   $: if (agents.length === 0) {
     // Only open create accordion if no agents
     setTimeout(() => {
@@ -737,30 +869,6 @@
       const icon = document.getElementById(`icon-create`);
       if (content && icon) {
         if (!content.classList.contains('accordion-open')) {
-          content.classList.add('accordion-open');
-          icon.style.transform = 'rotate(0deg)';
-        }
-      }
-    }, 100);
-  } else if (agents.length > 0 && !shouldOpenFirstMainerAfterCreation && !isCreatingMainer) {
-    // If we have agents and this isn't triggered by creation, and we're not currently creating a mAIner, open the latest mAIner
-    setTimeout(() => {
-      // First, ensure create accordion is closed (only if not creating)
-      const createContent = document.getElementById(`content-create`);
-      const createIcon = document.getElementById(`icon-create`);
-      if (createContent && createIcon && createContent.classList.contains('accordion-open')) {
-        createContent.classList.remove('accordion-open');
-        createIcon.style.transform = 'rotate(180deg)';
-      }
-      
-      // Then open the latest mAIner
-      const latestAgent = agents[agents.length - 1];
-      if (latestAgent && latestAgent.id) {
-        const sanitizedId = latestAgent.id.replace(/[^a-zA-Z0-9-_]/g, '_');
-        const content = document.getElementById(`content-${sanitizedId}`);
-        const icon = document.getElementById(`icon-${sanitizedId}`);
-        
-        if (content && icon && !content.classList.contains('accordion-open')) {
           content.classList.add('accordion-open');
           icon.style.transform = 'rotate(0deg)';
         }
@@ -1443,28 +1551,132 @@
   />
 {/if}
 
-<!-- mAIner Summary Header -->
+<!-- Enhanced mAIner Summary Header -->
 {#if totalMainers > 0}
-  <div class="mt-2 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4 mb-2">
-    <div class="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-      <div class="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0">
-        <div class="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-3 sm:space-y-0">
-          <div class="flex items-center space-x-1">
-            <div class="w-3 h-3 rounded-full bg-green-500"></div>
-            <span class="text-xs sm:text-sm text-green-700 dark:text-green-400 font-medium">{activeMainers} Active</span>
+  <div class="mt-2 mb-4 relative overflow-hidden bg-gradient-to-r from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-800/50 dark:via-blue-900/30 dark:to-indigo-900/30 border border-slate-200/60 dark:border-slate-700/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
+    <!-- Background decorative elements matching app style -->
+    <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-200/20 to-indigo-200/20 dark:from-blue-600/10 dark:to-indigo-600/10 rounded-full -translate-y-12 translate-x-12"></div>
+    <div class="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-tr from-purple-200/20 to-blue-200/20 dark:from-purple-600/10 dark:to-blue-600/10 rounded-full translate-y-10 -translate-x-10"></div>
+    
+    <div class="relative p-4 sm:p-5">
+      <!-- Header Section -->
+      <div class="flex flex-col space-y-3 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 mb-4">
+        <div class="flex items-center space-x-3">
+          <!-- Enhanced icon with gradient background -->
+          <div class="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-xl shadow-lg flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
           </div>
-          <div class="flex items-center space-x-1">
-            <div class="w-3 h-3 rounded-full bg-gray-400"></div>
-            <span class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">{inactiveMainers} Inactive</span>
+          
+          <!-- Title and subtitle -->
+          <div class="flex flex-col">
+            <h2 class="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">Flock overview</h2>
+            <p class="text-xs text-slate-600 dark:text-slate-400">
+              {totalMainers} mAIner{totalMainers === 1 ? '' : 's'} in your flock
+            </p>
           </div>
         </div>
+        
+        <!-- Quick Stats Summary for larger screens -->
+        <div class="hidden lg:flex items-center space-x-4">
+          {#if activeMainers > 0}
+            <div class="flex items-center space-x-2 px-3 py-2 bg-green-100/60 dark:bg-green-900/30 rounded-lg border border-green-200/50 dark:border-green-700/50">
+              <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span class="text-sm font-medium text-green-700 dark:text-green-300">{activeMainers} Mining</span>
+            </div>
+          {/if}
+          {#if inactiveMainers > 0}
+            <div class="flex items-center space-x-2 px-3 py-2 bg-orange-100/60 dark:bg-orange-900/30 rounded-lg border border-orange-200/50 dark:border-orange-700/50">
+              <div class="w-2 h-2 bg-orange-500 rounded-full"></div>
+              <span class="text-sm font-medium text-orange-700 dark:text-orange-300">{inactiveMainers} Need attention</span>
+            </div>
+          {/if}
+        </div>
+      </div>
+
+      <!-- Status Cards Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <!-- Active mAIners Card -->
+        <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-green-200/40 dark:border-green-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
+          <div class="absolute top-0 right-0 w-16 h-16 bg-green-200/20 dark:bg-green-600/10 rounded-full -translate-y-8 translate-x-8"></div>
+          <div class="relative">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-green-100 dark:bg-green-900/40 rounded-lg flex items-center justify-center">
+                  <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                </div>
+                <span class="text-sm font-medium text-green-700 dark:text-green-300">Active</span>
+              </div>
+              <span class="text-2xl font-bold text-green-600 dark:text-green-400">{activeMainers}</span>
+            </div>
+            <p class="text-xs text-green-600/80 dark:text-green-400/80">Currently mining AI challenges</p>
+          </div>
+        </div>
+
+        <!-- Inactive mAIners Card -->
+        <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200/40 dark:border-gray-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
+          <div class="absolute top-0 right-0 w-16 h-16 bg-gray-200/20 dark:bg-gray-600/10 rounded-full -translate-y-8 translate-x-8"></div>
+          <div class="relative">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-gray-100 dark:bg-gray-800/60 rounded-lg flex items-center justify-center">
+                  <div class="w-3 h-3 bg-gray-400 rounded-full"></div>
+                </div>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Inactive</span>
+              </div>
+              <span class="text-2xl font-bold text-gray-600 dark:text-gray-400">{inactiveMainers}</span>
+            </div>
+            <p class="text-xs text-gray-600/80 dark:text-gray-400/80">Awaiting cycles top-up</p>
+          </div>
+        </div>
+
+        <!-- Action Required Card (only show if there are inactive mAIners) -->
         {#if inactiveMainers > 0}
-          <div class="text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2 py-1 rounded-md w-fit">
-            ⚠️ {inactiveMainers} mAIner{inactiveMainers === 1 ? '' : 's'} need{inactiveMainers === 1 ? 's' : ''} cycles
+          <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-orange-200/40 dark:border-orange-700/40 shadow-sm hover:shadow-md transition-all duration-300 group sm:col-span-2 lg:col-span-1">
+            <div class="absolute top-0 right-0 w-16 h-16 bg-orange-200/20 dark:bg-orange-600/10 rounded-full -translate-y-8 translate-x-8"></div>
+            <div class="relative">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 bg-orange-100 dark:bg-orange-900/40 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                  </div>
+                  <span class="text-sm font-medium text-orange-700 dark:text-orange-300">Attention</span>
+                </div>
+                <span class="text-xl font-bold text-orange-600 dark:text-orange-400">!</span>
+              </div>
+              <p class="text-xs text-orange-600/80 dark:text-orange-400/80">
+                {inactiveMainers} mAIner{inactiveMainers === 1 ? '' : 's'} need{inactiveMainers === 1 ? 's' : ''} cycles to continue mining
+              </p>
+            </div>
+          </div>
+        {:else}
+          <!-- All Good Card when no inactive mAIners -->
+          <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-emerald-200/40 dark:border-emerald-700/40 shadow-sm hover:shadow-md transition-all duration-300 group sm:col-span-2 lg:col-span-1">
+            <div class="absolute top-0 right-0 w-16 h-16 bg-emerald-200/20 dark:bg-emerald-600/10 rounded-full -translate-y-8 translate-x-8"></div>
+            <div class="relative">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/40 rounded-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  </div>
+                  <span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">All Systems</span>
+                </div>
+                <span class="text-xl font-bold text-emerald-600 dark:text-emerald-400">✓</span>
+              </div>
+              <p class="text-xs text-emerald-600/80 dark:text-emerald-400/80">All mAIners operational and mining</p>
+            </div>
           </div>
         {/if}
       </div>
     </div>
+    
+    <!-- Bottom accent line matching app style -->
+    <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-400 dark:via-blue-500 to-transparent"></div>
   </div>
 {/if}
 
@@ -1472,106 +1684,294 @@
 {#each agents as agent, index}
   {#if agent && agent.id}
     {@const sanitizedId = agent.id.replace(/[^a-zA-Z0-9-_]/g, '_')}
-    {@const buttonClasses = `w-full flex justify-between items-center py-3 sm:py-5 px-3 sm:px-4 text-gray-800 dark:text-gray-200 ${agent.status === 'inactive' ? 'bg-red-50 dark:bg-red-900/10' : ''}`}
-    <div class="border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900" class:opacity-75={agent.status === 'inactive'}>
-      <button on:click={() => toggleAccordion(agent.id)} class={buttonClasses}>
-        <span class="flex items-center font-medium text-sm min-w-0 flex-1">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-gray-600 dark:text-gray-400 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20 2H4c-1.1 0-2 .9-2 2v7c0 1.1.9 2 2 2h2l1 2v7h2v-7l1-2h2l1 2v7h2v-7l1-2h2c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 10H4V4h2v6zm4 0H8V4h2v6zm4 0h-2V4h2v6zm4 0h-2V4h2v6z"/>
-          </svg>
-          <span class="truncate">{agent.name}</span>
-          {#if agent.status === 'inactive'}
-            <span 
-              class="ml-1 sm:ml-2 text-xs text-red-600 dark:text-red-400 hidden sm:inline cursor-help"
-              use:tooltip={{ 
-                text: "You still have some cycles, but not enough to keep going. Please top up to continue.",
-                direction: 'top',
-                textSize: 'xs'
-              }}
-            >(needs cycles) <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-red-500 dark:text-red-400 inline" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg></span>
-          {/if}
-        </span>
-        <div class="flex items-center flex-shrink-0 ml-2">
-          <!-- Add LLM setup status badge when applicable -->
-          {#if agent.mainerType === 'Own' && agent.llmSetupStatus === 'inProgress'}
-            <span class="mr-1 sm:mr-2 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-400 hidden sm:inline-block">
-              LLM setup
-            </span>
-          {/if}
-          <span class={`mr-2 sm:mr-4 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs ${agent.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-400' : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-400'}`}>
-            {agent.status}
-          </span>
-          <span id="icon-{sanitizedId}" class="text-gray-600 dark:text-gray-400 transition-transform duration-300" style="transform: rotate(180deg)">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 sm:w-4 sm:h-4">
-              <path fill-rule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
-            </svg>
-          </span>
+    {@const identity = getMainerVisualIdentity(agent.id)}
+    <div class="border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 mb-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300" class:opacity-75={agent.status === 'inactive'}>
+      <button 
+        on:click={() => toggleAccordion(agent.id)} 
+        class="w-full relative overflow-hidden bg-gradient-to-r {identity.colors.bg} hover:{identity.colors.bgHover} {identity.colors.border} border-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform group"
+      >
+        <!-- Background decorative elements -->
+        <div class="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-white/5"></div>
+        <div class="absolute top-0 right-0 w-32 h-32 {identity.colors.accent} rounded-full -translate-y-16 translate-x-16 opacity-30"></div>
+        <div class="absolute bottom-0 left-0 w-24 h-24 {identity.colors.accent} rounded-full translate-y-12 -translate-x-12 opacity-20"></div>
+        
+        <div class="relative flex items-center py-3 sm:py-4 px-4 sm:px-6">
+          <!-- Left section: Avatar and Info -->
+          <div class="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
+            <!-- Unique avatar with visual identity -->
+            <div class="relative flex-shrink-0">
+              <!-- Avatar container with glow effect -->
+              <div class="w-12 h-12 sm:w-16 sm:h-16 {identity.colors.accent} backdrop-blur-sm rounded-xl shadow-lg flex items-center justify-center border-2 border-white/20 group-hover:scale-105 transition-transform duration-300">
+                <div class="w-6 h-6 sm:w-8 sm:h-8 {identity.colors.icon}">
+                  {@html identity.icon}
+                </div>
+              </div>
+              
+                             <!-- mAIner number badge -->
+               <div class="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center border-2 border-white/50">
+                 <span class="text-xs sm:text-sm font-bold text-gray-800">#{index + 1}</span>
+               </div>
+              
+              <!-- Status indicator dot -->
+              <div class="absolute -bottom-1 -left-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-white shadow-lg flex items-center justify-center">
+                <div class={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${agent.status === 'active' ? 'bg-green-400' : 'bg-red-400'} animate-pulse`}></div>
+              </div>
+            </div>
+            
+            <!-- mAIner info -->
+            <div class="flex flex-col items-start min-w-0 flex-1">
+                             <div class="flex items-center space-x-2 mb-1">
+                 <h3 class="font-bold text-base sm:text-lg {identity.colors.text} truncate">
+                   {agent.name}
+                 </h3>
+                <!-- <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-white/20 {identity.colors.text} backdrop-blur-sm">
+                  {agent.mainerType}
+                </span> -->
+              </div>
+              
+              <div class="flex flex-wrap items-center gap-1 sm:gap-2">
+                <!-- Status badge -->
+                <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm border ${agent.status === 'active' 
+                  ? 'bg-green-100/80 text-green-800 border-green-300/50' 
+                  : 'bg-red-100/80 text-red-800 border-red-300/50'}`}>
+                  <div class={`w-2 h-2 rounded-full mr-1 ${agent.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  {agent.status}
+                </span>
+                
+                <!-- LLM setup status badge -->
+                {#if agent.mainerType === 'Own' && agent.llmSetupStatus === 'inProgress'}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100/80 text-yellow-800 border border-yellow-300/50 backdrop-blur-sm">
+                    <svg class="w-3 h-3 mr-1 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke-width="4" stroke-opacity="0.25"/>
+                      <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" stroke-opacity="0.75"/>
+                    </svg>
+                    LLM Setup
+                  </span>
+                {/if}
+                
+                <!-- Cycles warning -->
+                {#if agent.status === 'inactive'}
+                  <span 
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100/80 text-red-800 border border-red-300/50 backdrop-blur-sm cursor-help"
+                    use:tooltip={{ 
+                      text: "You still have some cycles, but not enough to keep going. Please top up to continue.",
+                      direction: 'top',
+                      textSize: 'xs'
+                    }}
+                  >
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                    Needs Cycles
+                  </span>
+                {/if}
+              </div>
+              
+              <!-- Canister ID preview -->
+              <div class="text-xs {identity.colors.text} opacity-75 truncate max-w-full mt-1 font-mono">
+                ID: {agent.id.slice(0, 8)}...{agent.id.slice(-6)}
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right section: Expand indicator -->
+          <div class="flex-shrink-0 ml-4">
+            <div class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30 shadow-sm group-hover:bg-white/30 transition-all duration-300">
+              <span id="icon-{sanitizedId}" class="{identity.colors.text} transition-transform duration-300 group-hover:scale-110" style="transform: rotate(180deg)">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 sm:w-5 sm:h-5">
+                  <path fill-rule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
+                </svg>
+              </span>
+            </div>
+          </div>
         </div>
+        
+        <!-- Bottom accent line with pulse animation for active mAIners -->
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent {agent.status === 'active' ? 'animate-pulse' : ''}"></div>
       </button>
       <div id="content-{sanitizedId}" class="accordion-content">
         <div class="pb-3 sm:pb-5 text-xs sm:text-sm text-gray-700 dark:text-gray-300 p-3 sm:p-4 bg-gray-5 dark:bg-gray-900">
-          <!-- Canister Information Section -->
+          <!-- Enhanced Canister Information Section -->
           <div class="flex flex-col space-y-2 mb-2">
-            <div class="w-full p-3 sm:p-4 text-gray-900 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg">
-              <h2 class="text-xs sm:text-sm mb-2 font-medium">Canister Information</h2>
-              <div class="flex flex-col gap-2">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:flex-wrap">
-                  <span class="text-xs mr-2 mb-1 sm:mb-0 sm:w-24 font-medium">Controller ID:</span>
-                  <a href="https://dashboard.internetcomputer.org/canister/{agent.id}" target="_blank" rel="noopener noreferrer" class="ml-auto bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-green-400 border border-green-400 break-all hover:bg-green-200 dark:hover:bg-gray-600 transition-colors flex items-center w-fit">
-                    <span class="truncate max-w-[200px] sm:max-w-none">{agent.id}</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
+            <div class="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 border border-blue-200/60 dark:border-blue-700/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
+              <!-- Background decorative elements -->
+              <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 dark:from-blue-600/10 dark:to-indigo-600/10 rounded-full -translate-y-10 translate-x-10"></div>
+              <div class="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-purple-200/30 to-blue-200/30 dark:from-purple-600/10 dark:to-blue-600/10 rounded-full translate-y-8 -translate-x-8"></div>
+              
+              <div class="relative p-4 sm:p-5">
+                <!-- Header Section -->
+                <div class="flex items-center space-x-3 mb-4">
+                  <!-- Enhanced icon with gradient background -->
+                  <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-xl shadow-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
                     </svg>
-                  </a>
+                  </div>
+                  
+                  <!-- Title and subtitle -->
+                  <div class="flex flex-col">
+                    <h2 class="text-sm sm:text-base font-bold text-blue-900 dark:text-blue-100">Canister Information</h2>
+                    <p class="text-xs text-blue-700 dark:text-blue-300">Internet Computer infrastructure details</p>
+                  </div>
                 </div>
 
+                <!-- Controller ID Section -->
+                <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-blue-200/40 dark:border-blue-700/40 shadow-sm">
+                  <div class="flex flex-col space-y-3">
+                    <!-- Controller ID Header -->
+                    <div class="flex items-center space-x-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                      </svg>
+                      <span class="text-sm font-medium text-blue-900 dark:text-blue-100">Controller ID</span>
+                    </div>
+                    
+                    <!-- Enhanced Controller ID Link -->
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div class="flex-1 min-w-0">
+                        <div class="font-mono text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-3 py-2 rounded-lg border border-blue-200/50 dark:border-blue-700/50">
+                          <span class="break-all">{agent.id}</span>
+                        </div>
+                      </div>
+                      
+                      <a 
+                        href="https://dashboard.internetcomputer.org/canister/{agent.id}" 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        class="group relative inline-flex items-center justify-center px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-blue-400/50 dark:border-blue-500/50 w-full sm:w-auto"
+                      >
+                        <div class="flex items-center space-x-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                          </svg>
+                          <span>View on Dashboard</span>
+                        </div>
+                        <div class="absolute inset-0 rounded-lg bg-gradient-to-r from-indigo-100 to-blue-100 dark:from-indigo-600/20 dark:to-blue-600/20 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                      </a>
+                    </div>
+                    
+                    <!-- Additional info -->
+                    <div class="pt-2 border-t border-blue-200/50 dark:border-blue-700/50">
+                      <div class="flex items-center space-x-2 text-xs text-blue-600/80 dark:text-blue-400/80">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>Canister runs on Internet Computer Protocol</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Bottom accent line -->
+              <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-400 dark:via-blue-500 to-transparent"></div>
+            </div>
+            
                 
                 <!-- For Own type mAIners, show LLM information or setup status -->
                 {#if agent.mainerType === 'Own'}
-                  <div class="flex flex-col mt-2">
-                    <!-- Show LLM setup status if in progress -->
-                    {#if agent.llmSetupStatus === 'inProgress'}
-                      <div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-md p-3 my-2">
-                        <div class="flex items-center">
-                          <svg class="animate-spin h-4 w-4 text-yellow-600 dark:text-yellow-400 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <div class="relative overflow-hidden bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 dark:from-purple-900/20 dark:via-indigo-900/20 dark:to-blue-900/20 border border-purple-200/60 dark:border-purple-700/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 mt-2">
+                    <!-- Background decorative elements -->
+                    <div class="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-200/30 to-indigo-200/30 dark:from-purple-600/10 dark:to-indigo-600/10 rounded-full -translate-y-8 translate-x-8"></div>
+                    <div class="absolute bottom-0 left-0 w-12 h-12 bg-gradient-to-tr from-indigo-200/30 to-purple-200/30 dark:from-indigo-600/10 dark:to-purple-600/10 rounded-full translate-y-6 -translate-x-6"></div>
+                    
+                    <div class="relative p-4 sm:p-5">
+                      <!-- Header Section for LLM -->
+                      <div class="flex items-center space-x-3 mb-4">
+                        <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 dark:from-purple-600 dark:to-indigo-700 rounded-xl shadow-lg flex items-center justify-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
                           </svg>
-                          <p class="text-xs text-yellow-800 dark:text-yellow-300">
-                            <span class="font-medium">LLM setup in progress</span> - This may take several minutes to complete and will happen in the background. You can use the mAIner with shared LLMs in the meantime.
-                          </p>
+                        </div>
+                        <div class="flex flex-col">
+                          <h3 class="text-sm sm:text-base font-bold text-purple-900 dark:text-purple-100">LLM Environment</h3>
+                          <p class="text-xs text-purple-700 dark:text-purple-300">Private AI language model infrastructure</p>
                         </div>
                       </div>
-                    {/if}
-                  
-                    <span class="text-xs mb-1">Attached LLMs:</span>
-                    {#if agent.llmCanisters && agent.llmCanisters.length > 0}
-                      <div class="flex flex-col gap-2 ml-2 mt-1">
-                        {#each agent.llmCanisters as llmCanister, i}
-                          <div class="flex items-center flex-wrap">
-                            <span class="text-xs mr-2 w-20">LLM {i+1}:</span>
-                            <a href="https://dashboard.internetcomputer.org/canister/{llmCanister}" target="_blank" rel="noopener noreferrer" class="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-sm dark:bg-gray-700 dark:text-indigo-400 border border-indigo-400 break-all hover:bg-indigo-200 dark:hover:bg-gray-600 transition-colors flex items-center">
-                              <span>{llmCanister}</span>
-                              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ml-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" transform="rotate(45, 10, 10)" />
-                              </svg>
-                            </a>
+
+                      <!-- Show LLM setup status if in progress -->
+                      {#if agent.llmSetupStatus === 'inProgress'}
+                        <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-yellow-200/60 dark:border-yellow-700/60 shadow-sm mb-4">
+                          <div class="flex items-start space-x-3">
+                            <svg class="animate-spin h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <div class="flex-1">
+                              <p class="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-1">
+                                LLM Setup in Progress
+                              </p>
+                              <p class="text-xs text-yellow-700 dark:text-yellow-400 leading-relaxed">
+                                Setting up your private AI environment. This may take several minutes and will continue in the background. You can use shared LLMs in the meantime.
+                              </p>
+                            </div>
                           </div>
-                        {/each}
-                      </div>
-                    {:else}
-                      <div class="ml-2 mt-1">
-                        {#if agent.llmSetupStatus === 'inProgress'}
-                          <span class="text-xs italic text-yellow-500 dark:text-yellow-400">LLM canister setup in progress...</span>
+                        </div>
+                      {/if}
+                      
+                      <!-- LLM Canisters Section -->
+                      <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-purple-200/40 dark:border-purple-700/40 shadow-sm">
+                        <div class="flex items-center space-x-2 mb-3">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 00-2 2v2m0 0V9a2 2 0 012-2h14a2 2 0 012 2v2M7 7V6a3 3 0 016 0v1"/>
+                          </svg>
+                          <span class="text-sm font-medium text-purple-900 dark:text-purple-100">Attached LLMs</span>
+                        </div>
+                        
+                        {#if agent.llmCanisters && agent.llmCanisters.length > 0}
+                          <div class="space-y-3">
+                            {#each agent.llmCanisters as llmCanister, i}
+                              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-purple-50/50 dark:bg-purple-900/20 rounded-lg border border-purple-200/30 dark:border-purple-700/30">
+                                <div class="flex items-center space-x-2">
+                                  <div class="w-6 h-6 bg-purple-100 dark:bg-purple-800/40 rounded-md flex items-center justify-center">
+                                    <span class="text-xs font-bold text-purple-600 dark:text-purple-400">{i+1}</span>
+                                  </div>
+                                  <div class="font-mono text-xs text-purple-700 dark:text-purple-300 bg-purple-100/50 dark:bg-purple-900/30 px-2 py-1 rounded border border-purple-200/50 dark:border-purple-700/50">
+                                    <span class="break-all">{llmCanister}</span>
+                                  </div>
+                                </div>
+                                <a 
+                                  href="https://dashboard.internetcomputer.org/canister/{llmCanister}" 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  class="group inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-100/60 dark:bg-purple-800/30 hover:bg-purple-200/70 dark:hover:bg-purple-700/40 rounded-md border border-purple-300/50 dark:border-purple-600/50 transition-all duration-200 hover:scale-105 hover:shadow-sm w-full sm:w-auto"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 mr-1.5 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                  </svg>
+                                  View LLM
+                                </a>
+                              </div>
+                            {/each}
+                          </div>
                         {:else}
-                          <span class="text-xs italic text-gray-500 dark:text-gray-400">No LLM canisters attached yet</span>
+                          <div class="text-center py-4">
+                            {#if agent.llmSetupStatus === 'inProgress'}
+                              <div class="flex items-center justify-center space-x-3 text-yellow-600 dark:text-yellow-400">
+                                <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span class="text-sm font-medium">Setting up LLM environment...</span>
+                              </div>
+                            {:else}
+                              <div class="text-gray-500 dark:text-gray-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                                </svg>
+                                <p class="text-sm font-medium mb-1">No LLMs attached yet</p>
+                                <p class="text-xs">Your private AI environment is being prepared</p>
+                              </div>
+                            {/if}
+                          </div>
                         {/if}
                       </div>
-                    {/if}
+                    </div>
+                    
+                    <!-- Bottom accent line -->
+                    <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-purple-400 dark:via-purple-500 to-transparent"></div>
                   </div>
                 {/if}
-              </div>
-            </div>
           </div>
           
           <div class="flex flex-col space-y-2 mb-2">
