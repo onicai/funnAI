@@ -790,7 +790,9 @@
         hasError: canisterInfo.hasError || false,
         isUnlocked,
         isOwnedByCurrentUser,
-        originalCanisterInfo: canisterInfo // Store original for whitelist creation
+        originalCanisterInfo: canisterInfo, // Store original for whitelist creation
+        // NEW: store creation timestamp in milliseconds for easy display
+        createdAt: canisterInfo.creationTimestamp ? Number(canisterInfo.creationTimestamp / 1000000n) : null
       };
 
       if (isUnlocked && isOwnedByCurrentUser) {
@@ -815,8 +817,9 @@
     
     // Sort by creation timestamp so newest mAIners appear first
     return activeAgents.sort((a, b) => {
-      const tsA: bigint = a.originalCanisterInfo?.creationTimestamp ?? 0n;
-      const tsB: bigint = b.originalCanisterInfo?.creationTimestamp ?? 0n;
+      const nowNs = BigInt(Date.now()) * 1000000n; // current time in nanoseconds approximation
+      const tsA: bigint = (a.originalCanisterInfo?.creationTimestamp && a.originalCanisterInfo.creationTimestamp > 0n) ? a.originalCanisterInfo.creationTimestamp : nowNs;
+      const tsB: bigint = (b.originalCanisterInfo?.creationTimestamp && b.originalCanisterInfo.creationTimestamp > 0n) ? b.originalCanisterInfo.creationTimestamp : nowNs;
       if (tsA === tsB) return 0;
       // Newest first => larger timestamp comes before smaller one
       return tsA < tsB ? 1 : -1;
@@ -918,6 +921,13 @@
     // Reload flags
     await loadProtocolFlags();
   };
+
+  // Helper function to format creation date for display
+  function formatDate(ms: number | null) {
+    if (!ms) return "";
+    const date = new Date(ms);
+    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
 </script>
 
 <!-- Loading state for protocol flags -->
@@ -1786,6 +1796,11 @@
               <div class="text-xs {identity.colors.text} opacity-75 truncate max-w-full mt-1 font-mono">
                 ID: {agent.id.slice(0, 8)}...{agent.id.slice(-6)}
               </div>
+              {#if agent.createdAt}
+                <div class="text-xs {identity.colors.text} opacity-60 mt-0.5">
+                  Created: {formatDate(agent.createdAt)}
+                </div>
+              {/if}
             </div>
           </div>
           
