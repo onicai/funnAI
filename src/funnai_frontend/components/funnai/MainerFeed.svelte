@@ -35,9 +35,11 @@
   let updateCounter = 0;
   let lastFetchTimestamp = 0;
 
-  // Storage keys for persistence
-  const FEED_STORAGE_KEY = 'mainer_feed_items';
-  const LAST_FETCH_KEY = 'mainer_feed_last_fetch';
+  // Storage keys for persistence - separate caches for different modes
+  const FEED_STORAGE_KEY_MY_MAINERS = 'mainer_feed_items_my_mainers';
+  const FEED_STORAGE_KEY_ALL_EVENTS = 'mainer_feed_items_all_events';
+  const LAST_FETCH_KEY_MY_MAINERS = 'mainer_feed_last_fetch_my_mainers';
+  const LAST_FETCH_KEY_ALL_EVENTS = 'mainer_feed_last_fetch_all_events';
 
   // Smart date filtering
   function isWithinDateRange(timestamp: number, days: number): boolean {
@@ -56,14 +58,30 @@
     return items.filter(item => isWithinDateRange(item.timestamp, days));
   }
 
+  // Get the appropriate storage keys based on current mode
+  function getStorageKeys() {
+    return {
+      feedKey: showAllEvents ? FEED_STORAGE_KEY_ALL_EVENTS : FEED_STORAGE_KEY_MY_MAINERS,
+      fetchKey: showAllEvents ? LAST_FETCH_KEY_ALL_EVENTS : LAST_FETCH_KEY_MY_MAINERS
+    };
+  }
+
   // Load cached feed items from localStorage
   function loadCachedFeedItems(): FeedItem[] {
     try {
-      const cached = localStorage.getItem(FEED_STORAGE_KEY);
+      const { feedKey } = getStorageKeys();
+      const cached = localStorage.getItem(feedKey);
       if (cached) {
         const items = JSON.parse(cached) as FeedItem[];
-        // Filter cached items to only include those from last 3 days
-        return filterItemsByDate(items);
+        // Filter cached items to only include those from last 3 days and ensure no winner events in "All events"
+        let filteredItems = filterItemsByDate(items);
+        
+        // Additional filter: remove winner events from "All events" cache
+        if (showAllEvents) {
+          filteredItems = filteredItems.filter(item => item.type !== 'winner');
+        }
+        
+        return filteredItems;
       }
     } catch (error) {
       console.error('Error loading cached feed items:', error);
@@ -74,10 +92,17 @@
   // Save feed items to localStorage
   function saveFeedItemsToCache(items: FeedItem[]) {
     try {
+      const { feedKey, fetchKey } = getStorageKeys();
       // Only save items from last 3 days to keep storage lean
-      const recentItems = filterItemsByDate(items);
-      localStorage.setItem(FEED_STORAGE_KEY, JSON.stringify(recentItems));
-      localStorage.setItem(LAST_FETCH_KEY, Date.now().toString());
+      let recentItems = filterItemsByDate(items);
+      
+      // Additional filter: remove winner events from "All events" cache
+      if (showAllEvents) {
+        recentItems = recentItems.filter(item => item.type !== 'winner');
+      }
+      
+      localStorage.setItem(feedKey, JSON.stringify(recentItems));
+      localStorage.setItem(fetchKey, Date.now().toString());
     } catch (error) {
       console.error('Error saving feed items to cache:', error);
     }
@@ -86,7 +111,8 @@
   // Get the last fetch timestamp
   function getLastFetchTimestamp(): number {
     try {
-      const cached = localStorage.getItem(LAST_FETCH_KEY);
+      const { fetchKey } = getStorageKeys();
+      const cached = localStorage.getItem(fetchKey);
       return cached ? parseInt(cached) : 0;
     } catch (error) {
       console.error('Error loading last fetch timestamp:', error);
@@ -98,7 +124,12 @@
   function mergeItems(existingItems: FeedItem[], newItems: FeedItem[]): FeedItem[] {
     const existingIds = new Set(existingItems.map(item => item.id));
     const uniqueNewItems = newItems.filter(item => !existingIds.has(item.id));
-    const merged = [...existingItems, ...uniqueNewItems];
+    let merged = [...existingItems, ...uniqueNewItems];
+    
+    // Additional safety filter: remove winner events from "All events" mode
+    if (showAllEvents) {
+      merged = merged.filter(item => item.type !== 'winner');
+    }
     
     // Sort by timestamp (items are already filtered by date in getFeedData)
     return sortFeedItemsByTimestamp(merged);
@@ -561,8 +592,10 @@
     allItems = [];
     // Clear cache when switching modes since data structure changes
     try {
-      localStorage.removeItem(FEED_STORAGE_KEY);
-      localStorage.removeItem(LAST_FETCH_KEY);
+      localStorage.removeItem(FEED_STORAGE_KEY_MY_MAINERS);
+      localStorage.removeItem(FEED_STORAGE_KEY_ALL_EVENTS);
+      localStorage.removeItem(LAST_FETCH_KEY_MY_MAINERS);
+      localStorage.removeItem(LAST_FETCH_KEY_ALL_EVENTS);
     } catch (error) {
       console.error('Error clearing cache:', error);
     }
@@ -578,8 +611,10 @@
     updating = false;
     // Clear cache when user logs out
     try {
-      localStorage.removeItem(FEED_STORAGE_KEY);
-      localStorage.removeItem(LAST_FETCH_KEY);
+      localStorage.removeItem(FEED_STORAGE_KEY_MY_MAINERS);
+      localStorage.removeItem(FEED_STORAGE_KEY_ALL_EVENTS);
+      localStorage.removeItem(LAST_FETCH_KEY_MY_MAINERS);
+      localStorage.removeItem(LAST_FETCH_KEY_ALL_EVENTS);
     } catch (error) {
       console.error('Error clearing cache:', error);
     }
@@ -600,7 +635,8 @@
   // Cleanup old cached items
   function cleanupOldCachedItems() {
     try {
-      const cached = localStorage.getItem(FEED_STORAGE_KEY);
+      const { feedKey } = getStorageKeys();
+      const cached = localStorage.getItem(feedKey);
       if (cached) {
         const items = JSON.parse(cached) as FeedItem[];
         const recentItems = filterItemsByDate(items);
@@ -615,8 +651,17 @@
   }
 
   onMount(async () => {
-    // Clean up old cached items on mount
-    cleanupOldCachedItems();
+    // Clean up ALL old cached items on mount (including old format)
+    try {
+      // Remove old format caches
+      localStorage.removeItem('mainer_feed_items');
+      localStorage.removeItem('mainer_feed_last_fetch');
+      
+      // Clean up current format caches
+      cleanupOldCachedItems();
+    } catch (error) {
+      console.error('Error cleaning up cached items:', error);
+    }
     
     // Load cached items immediately for better UX
     const cachedItems = loadCachedFeedItems();
@@ -696,7 +741,7 @@
           </p>
         </li>
       {:else}
-        {#each feedItems as item (item.id)}
+        {#each feedItems.filter(item => !showAllEvents || item.type !== 'winner') as item (item.id)}
           <li 
             role="article" 
             class="relative px-6 
