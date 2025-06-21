@@ -20,6 +20,36 @@ def get_data(canister_id, network):
 
         # -----------------------------------------------------
         result = subprocess.check_output(
+            ["dfx", "canister", "call", canister_id, "getScoredChallengesAdmin", "--output", "json", "--network", network],
+            stderr=subprocess.DEVNULL,
+            text=True
+        )
+        data = json.loads(result)
+        numJudgedResponses = 0
+        max_depth = 100 # Limit to prevent infinite loops
+        for challenge in data.get('Ok', []):
+            l1 = challenge["1"]
+            depth = 0
+            while len(l1) > 0 and depth < max_depth:
+                depth += 1
+                l1_0 = l1[0]
+                l1_0_0 = l1_0.get('0', {})
+                submissionStatus = l1_0_0.get('submissionStatus', {})
+                if submissionStatus == {'Judged': None}:
+                    numJudgedResponses += 1
+                else:
+                    print(f"Unexpected submissionStatus: {submissionStatus}")
+
+                l1 = l1_0.get('1', {})  # Move to the next item in the list
+
+                if depth > 10:
+                    print(f"Warning: depth = {depth} : exceeded 10 for challenge {challenge['0']}. Possible infinite loop detected.")
+                    
+                
+        output += f"- numJudgedResponses = {numJudgedResponses} \n"
+
+        # -----------------------------------------------------
+        result = subprocess.check_output(
             ["dfx", "canister", "call", canister_id, "getNumArchivedChallengesAdmin", "--output", "json", "--network", network],
             stderr=subprocess.DEVNULL,
             text=True
