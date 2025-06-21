@@ -7,7 +7,7 @@
   import { formatFunnaiAmount } from "../../helpers/utils/numberFormatUtils";
   import ShareFeedItem from "./ShareFeedItem.svelte";
 
-  export let showAllEvents: boolean = false;
+  export let showAllEvents: boolean = true; // Will be overridden by parent based on auth status
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -41,17 +41,12 @@
   const LAST_FETCH_KEY_MY_MAINERS = 'mainer_feed_last_fetch_my_mainers';
   const LAST_FETCH_KEY_ALL_EVENTS = 'mainer_feed_last_fetch_all_events';
 
-  // Smart date filtering
-  function isWithinDateRange(timestamp: number, days: number): boolean {
+  // Smart date filtering - simplified to only last 3 days
+  function isWithinDateRange(timestamp: number, days: number = 3): boolean {
     const now = Date.now();
     const itemTime = timestamp / 1000000; // Convert from nanoseconds to milliseconds
     const daysDiff = (now - itemTime) / (24 * 60 * 60 * 1000);
     return daysDiff <= days && daysDiff >= 0; // Also ensure not future dates
-  }
-
-  function shouldFilterByDate(filterToUserMainers: boolean): boolean {
-    // For "my mainers only" mode, don't filter by date - show all events
-    return !filterToUserMainers;
   }
 
   function filterItemsByDate(items: FeedItem[], days: number = 3): FeedItem[] {
@@ -207,66 +202,64 @@
   }
 
   async function getFeedData(filterToUserMainers: boolean = false): Promise<FeedItem[]> {
-    // Helper function to get items with specific date filtering
-    async function getItemsWithDateFilter(dayRange: number | null): Promise<FeedItem[]> {
-      let newFeedItems: FeedItem[] = [];
-      let userParticipatedChallenges: Set<string> = new Set();
+    console.log("getFeedData called with filterToUserMainers:", filterToUserMainers);
+    let newFeedItems: FeedItem[] = [];
+    let userParticipatedChallenges: Set<string> = new Set();
 
-      try {
-        let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity();
+    try {
+      let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity();
 
-        if ("Ok" in recentProtocolActivityResult && $store.isAuthed) {
-          const { challenges, winners } = recentProtocolActivityResult.Ok;
+      if ("Ok" in recentProtocolActivityResult && $store.isAuthed) {
+        const { challenges, winners } = recentProtocolActivityResult.Ok;
+        console.log("Retrieved challenges:", challenges.length, "winners:", winners.length);
 
-          if (filterToUserMainers) {
-            // Collect challenge IDs that user's mAIners have participated in
-            for (const [index, agent] of agentCanisterActors.entries()) {
-              if (agent) {
-                try {
-                  const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
-                  if ("Ok" in submissionsResult) {
-                    for (const submission of submissionsResult.Ok) {
-                      userParticipatedChallenges.add(submission.challengeId);
-                    }
+        if (filterToUserMainers) {
+          // Collect challenge IDs that user's mAIners have participated in
+          for (const [index, agent] of agentCanisterActors.entries()) {
+            if (agent) {
+              try {
+                const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
+                if ("Ok" in submissionsResult) {
+                  console.log(`Agent ${index} has ${submissionsResult.Ok.length} submissions`);
+                  for (const submission of submissionsResult.Ok) {
+                    userParticipatedChallenges.add(submission.challengeId);
                   }
-                } catch (error) {
-                  console.error("Error fetching submissions for challenge filtering", error);
                 }
+              } catch (error) {
+                console.error("Error fetching submissions for challenge filtering", error);
               }
             }
           }
+          console.log("User participated in challenges:", userParticipatedChallenges.size);
+        }
 
-          // Add challenges
-          challenges.forEach((challenge) => {
-            const challengeTimestamp = Number(challenge.challengeCreationTimestamp);
-            const passesDateFilter = dayRange === null || isWithinDateRange(challengeTimestamp, dayRange);
-            const passesUserFilter = !filterToUserMainers || userParticipatedChallenges.has(challenge.challengeId);
-            
-            if (passesDateFilter && passesUserFilter) {
-              newFeedItems.push({
-                id: challenge.challengeId,
-                timestamp: challengeTimestamp,
-                type: "challenge",
-                mainerName: "Protocol",
-                content: { challenge: challenge.challengeQuestion },
-              });
-            }
-          });
+        // Add challenges (only last 3 days)
+        challenges.forEach((challenge) => {
+          const challengeTimestamp = Number(challenge.challengeCreationTimestamp);
+          const passesDateFilter = isWithinDateRange(challengeTimestamp, 3);
+          const passesUserFilter = !filterToUserMainers || userParticipatedChallenges.has(challenge.challengeId);
+          
+          if (passesDateFilter && passesUserFilter) {
+            newFeedItems.push({
+              id: challenge.challengeId,
+              timestamp: challengeTimestamp,
+              type: "challenge",
+              mainerName: "Protocol",
+              content: { challenge: challenge.challengeQuestion },
+            });
+          }
+        });
 
-          // Add winners
+        // Add winners (only for "My mAIners" and only last 3 days)
+        if (filterToUserMainers) {
           winners.forEach((winnerDeclaration) => {
             const winnerTimestamp = Number(winnerDeclaration.finalizedTimestamp);
-            const passesDateFilter = dayRange === null || isWithinDateRange(winnerTimestamp, dayRange);
+            const passesDateFilter = isWithinDateRange(winnerTimestamp, 3);
             
             if (!passesDateFilter) {
               return;
             }
 
-            // Only add winner events for "My mAIners only" feed (when filterToUserMainers is true)
-            if (!filterToUserMainers) {
-              return;
-            }
-
             const placements = [
               { position: "First Place", entry: winnerDeclaration.winner },
               { position: "Second Place", entry: winnerDeclaration.secondPlace },
@@ -280,10 +273,9 @@
                 (agent) => agent.address === entry.submittedBy.toString(),
               );
               
-              if (!filterToUserMainers || mainerIndex !== -1) {
-                const mainerName = mainerIndex !== -1 
-                  ? `mAIner ${entry.submittedBy.toString().slice(0, 5)}` 
-                  : `mAIner ${entry.submittedBy.toString().slice(0, 5)}`;
+              // Only show if it's the user's mAIner
+              if (mainerIndex !== -1) {
+                const mainerName = `mAIner ${entry.submittedBy.toString().slice(0, 5)}`;
 
                 newFeedItems.push({
                   id: `${entry.submissionId}-winner`,
@@ -299,243 +291,81 @@
             });
           });
         }
+      }
 
-        // Add user mainer data if authenticated
-        if ($store.isAuthed) {
-          try {
-            for (const [index, agent] of agentCanisterActors.entries()) {
-              if (agent) {
-                try {
-                  const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
+      // Add user mainer data if authenticated (only last 3 days)
+      if ($store.isAuthed) {
+        console.log("Processing user mAIner data, agentCanisterActors count:", agentCanisterActors.length);
+        try {
+          for (const [index, agent] of agentCanisterActors.entries()) {
+            if (agent) {
+              try {
+                const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
 
-                  if ("Ok" in submissionsResult) {
-                    for (const submission of submissionsResult.Ok) {
-                      const submissionTimestamp = Number(submission.submittedTimestamp);
-                      
-                      // Apply date filtering only if dayRange is specified
-                      const passesDateFilter = dayRange === null || isWithinDateRange(submissionTimestamp, dayRange);
-                      if (!passesDateFilter) {
-                        continue;
-                      }
+                if ("Ok" in submissionsResult) {
+                  console.log(`Agent ${index} submissions:`, submissionsResult.Ok.length);
+                  for (const submission of submissionsResult.Ok) {
+                    const submissionTimestamp = Number(submission.submittedTimestamp);
+                    
+                    // Only include submissions from last 3 days
+                    const passesDateFilter = isWithinDateRange(submissionTimestamp, 3);
+                    console.log(`Submission ${submission.submissionId} timestamp:`, new Date(submissionTimestamp / 1000000), "passes filter:", passesDateFilter);
+                    if (!passesDateFilter) {
+                      continue;
+                    }
 
-                      const mainerName = `mAIner ${agentCanistersInfo[index].address.slice(0, 5)}`;
-                      newFeedItems.push({
-                        id: submission.submissionId,
-                        timestamp: submissionTimestamp,
-                        type: "response",
-                        mainerName,
-                        content: { response: submission.challengeAnswer },
+                    const mainerName = `mAIner ${agentCanistersInfo[index].address.slice(0, 5)}`;
+                    
+                    // Add response
+                    newFeedItems.push({
+                      id: submission.submissionId,
+                      timestamp: submissionTimestamp,
+                      type: "response",
+                      mainerName,
+                      content: { response: submission.challengeAnswer },
+                    });
+
+                    // Get score for this submission
+                    try {
+                      const scoreResult = await $store.gameStateCanisterActor.getScoreForSubmission({
+                        challengeId: submission.challengeId,
+                        submissionId: submission.submissionId,
                       });
 
-                      // Get score for this submission
-                      try {
-                        const scoreResult = await $store.gameStateCanisterActor.getScoreForSubmission({
-                          challengeId: submission.challengeId,
-                          submissionId: submission.submissionId,
-                        });
-
-                        if ("Ok" in scoreResult) {
-                          const judgedTimestamp = Number(scoreResult.Ok.judgedTimestamp);
-                          const scorePassesDateFilter = dayRange === null || isWithinDateRange(judgedTimestamp, dayRange);
-                          
-                          if (scorePassesDateFilter) {
-                            newFeedItems.push({
-                              id: `${submission.submissionId}-score`,
-                              timestamp: judgedTimestamp,
-                              type: "score",
-                              mainerName,
-                              content: { score: Number(scoreResult.Ok.score) },
-                            });
-                          }
-                        }
-                      } catch (error) {
-                        console.error("Error fetching score for submission", error);
-                      }
-                    }
-                  }
-                } catch (error) {
-                  console.error("Error fetching submissions", error);
-                }
-              }
-            }
-          } catch (error) {
-            console.error("Error fetching user mainer data:", error);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching protocol activity:", error);
-      }
-
-      return newFeedItems;
-    }
-
-    // Helper function to get latest items regardless of age (fallback)
-    async function getLatestItemsRegardlessOfAge(maxItems: number): Promise<FeedItem[]> {
-      let newFeedItems: FeedItem[] = [];
-      let userParticipatedChallenges: Set<string> = new Set();
-
-      try {
-        let recentProtocolActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity();
-
-        if ("Ok" in recentProtocolActivityResult && $store.isAuthed) {
-          const { challenges, winners } = recentProtocolActivityResult.Ok;
-
-          if (filterToUserMainers) {
-            // Collect challenge IDs that user's mAIners have participated in
-            for (const [index, agent] of agentCanisterActors.entries()) {
-              if (agent) {
-                try {
-                  const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
-                  if ("Ok" in submissionsResult) {
-                    for (const submission of submissionsResult.Ok) {
-                      userParticipatedChallenges.add(submission.challengeId);
-                    }
-                  }
-                } catch (error) {
-                  console.error("Error fetching submissions for challenge filtering", error);
-                }
-              }
-            }
-          }
-
-          // Add challenges without date filtering
-          challenges.forEach((challenge) => {
-            const challengeTimestamp = Number(challenge.challengeCreationTimestamp);
-            const passesUserFilter = !filterToUserMainers || userParticipatedChallenges.has(challenge.challengeId);
-            
-            if (passesUserFilter) {
-              newFeedItems.push({
-                id: challenge.challengeId,
-                timestamp: challengeTimestamp,
-                type: "challenge",
-                mainerName: "Protocol",
-                content: { challenge: challenge.challengeQuestion },
-              });
-            }
-          });
-
-          // Add winners without date filtering
-          winners.forEach((winnerDeclaration) => {
-            const winnerTimestamp = Number(winnerDeclaration.finalizedTimestamp);
-
-            // Only add winner events for "My mAIners only" feed (when filterToUserMainers is true)
-            if (!filterToUserMainers) {
-              return;
-            }
-
-            const placements = [
-              { position: "First Place", entry: winnerDeclaration.winner },
-              { position: "Second Place", entry: winnerDeclaration.secondPlace },
-              ...(winnerDeclaration.thirdPlace
-                ? [{ position: "Third Place", entry: winnerDeclaration.thirdPlace }]
-                : []),
-            ];
-
-            placements.forEach(({ position, entry }) => {
-              const mainerIndex = agentCanistersInfo.findIndex(
-                (agent) => agent.address === entry.submittedBy.toString(),
-              );
-              
-              if (!filterToUserMainers || mainerIndex !== -1) {
-                const mainerName = mainerIndex !== -1 
-                  ? `mAIner ${entry.submittedBy.toString().slice(0, 5)}` 
-                  : `mAIner ${entry.submittedBy.toString().slice(0, 5)}`;
-
-                newFeedItems.push({
-                  id: `${entry.submissionId}-winner`,
-                  timestamp: winnerTimestamp,
-                  type: "winner",
-                  mainerName,
-                  content: {
-                    placement: position,
-                    reward: entry.reward.amount.toString(),
-                  },
-                });
-              }
-            });
-          });
-
-          // Add user mainer data if authenticated (without date filtering)
-          if ($store.isAuthed) {
-            try {
-              for (const [index, agent] of agentCanisterActors.entries()) {
-                if (agent) {
-                  try {
-                    const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
-
-                    if ("Ok" in submissionsResult) {
-                      for (const submission of submissionsResult.Ok) {
-                        const submissionTimestamp = Number(submission.submittedTimestamp);
-                        const mainerName = `mAIner ${agentCanistersInfo[index].address.slice(0, 5)}`;
+                      if ("Ok" in scoreResult) {
+                        const judgedTimestamp = Number(scoreResult.Ok.judgedTimestamp);
+                        const scorePassesDateFilter = isWithinDateRange(judgedTimestamp, 3);
                         
-                        newFeedItems.push({
-                          id: submission.submissionId,
-                          timestamp: submissionTimestamp,
-                          type: "response",
-                          mainerName,
-                          content: { response: submission.challengeAnswer },
-                        });
-
-                        // Get score for this submission
-                        try {
-                          const scoreResult = await $store.gameStateCanisterActor.getScoreForSubmission({
-                            challengeId: submission.challengeId,
-                            submissionId: submission.submissionId,
+                        if (scorePassesDateFilter) {
+                          newFeedItems.push({
+                            id: `${submission.submissionId}-score`,
+                            timestamp: judgedTimestamp,
+                            type: "score",
+                            mainerName,
+                            content: { score: Number(scoreResult.Ok.score) },
                           });
-
-                          if ("Ok" in scoreResult) {
-                            const judgedTimestamp = Number(scoreResult.Ok.judgedTimestamp);
-                            
-                            newFeedItems.push({
-                              id: `${submission.submissionId}-score`,
-                              timestamp: judgedTimestamp,
-                              type: "score",
-                              mainerName,
-                              content: { score: Number(scoreResult.Ok.score) },
-                            });
-                          }
-                        } catch (error) {
-                          console.error("Error fetching score for submission", error);
                         }
                       }
+                    } catch (error) {
+                      console.error("Error fetching score for submission", error);
                     }
-                  } catch (error) {
-                    console.error("Error fetching submissions", error);
                   }
                 }
+              } catch (error) {
+                console.error("Error fetching submissions", error);
               }
-            } catch (error) {
-              console.error("Error fetching user mainer data:", error);
             }
           }
-        }
-      } catch (error) {
-        console.error("Error fetching protocol activity:", error);
-      }
-
-      // Sort by timestamp and return only the latest maxItems
-      const sortedItems = sortFeedItemsByTimestamp(newFeedItems);
-      return sortedItems.slice(0, maxItems);
-    }
-
-    // Smart filtering logic
-    if (!shouldFilterByDate(filterToUserMainers)) {
-      // For "my mainers only", show all events without date filtering
-      return sortFeedItemsByTimestamp(await getItemsWithDateFilter(null));
-    } else {
-      // For "all events", try 3 days first, then 7 days, then latest items regardless of age
-      let items = await getItemsWithDateFilter(3);
-      if (items.length === 0) {
-        console.log("No items found in last 3 days, trying 7 days");
-        items = await getItemsWithDateFilter(7);
-        
-        if (items.length === 0) {
-          console.log("No items found in last 7 days, showing latest available items");
-          items = await getLatestItemsRegardlessOfAge(20); // Show latest 20 items
+        } catch (error) {
+          console.error("Error fetching user mainer data:", error);
         }
       }
-      return sortFeedItemsByTimestamp(items);
+    } catch (error) {
+      console.error("Error fetching protocol activity:", error);
     }
+
+    console.log("Returning", newFeedItems.length, "feed items");
+    return sortFeedItemsByTimestamp(newFeedItems);
   }
 
   async function updateFeed(forceUpdate = false) {
@@ -707,15 +537,21 @@
           </p>
           <ul class="text-sm mt-3 space-y-1">
             <li>• 🎯 Challenges in the protocol</li>
+            {#if $store.isAuthed}
             <li>• 💭 Responses from your mAIners</li>
             <li>• 📊 Scores your mAIners receive</li>
+            {/if}
             {#if !showAllEvents}
             <li>• 🏆 Your mAIners' victories and placements</li>
+            {/if}
+            {#if !$store.isAuthed}
+            <li>• 💭 Responses from mAIners</li>
+            <li>• 📊 Scores received by mAIners</li>
             {/if}
           </ul>
           {#if !$store.isAuthed}
             <p class="text-xs mt-4 text-gray-400 dark:text-gray-500">
-              Please connect your wallet to see personalized activity.
+              Connect your wallet to create your own mAIners and see personalized activity.
             </p>
           {:else}
             <p class="text-xs mt-4 text-gray-400 dark:text-gray-500">

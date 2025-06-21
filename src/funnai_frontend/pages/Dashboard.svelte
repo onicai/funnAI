@@ -8,6 +8,10 @@
 
   let showAllEvents = false; // Changed default to "My mAIners only"
 
+  // Set default based on authentication status
+  // Non-logged users: "All events" (true), Logged users: "My mAIners" (false)
+  $: showAllEvents = !$store.isAuthed;
+
   // Handle toggle change
   async function handleToggleChange() {
     showAllEvents = !showAllEvents;
@@ -43,7 +47,7 @@
                     handleToggleChange();
                   }}
                 >
-                  My mAIners
+                  {$store.isAuthed ? 'My mAIners' : 'Personal View'}
                 </button>
                 <button
                   type="button"
@@ -51,9 +55,8 @@
                          {showAllEvents 
                            ? 'bg-blue-600 text-white shadow-sm' 
                            : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'}
-                         {!$store.isAuthed ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                         cursor-pointer
                          focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800"
-                  disabled={!$store.isAuthed}
                   on:click={() => {
                     if (showAllEvents) return;
                     handleToggleChange();
@@ -66,9 +69,15 @@
           </div>
           <div class="mt-3">
             <p class="text-xs text-gray-500 dark:text-gray-400 text-center sm:text-left">
-              {showAllEvents 
-                ? 'Viewing major events across the protocol' 
-                : 'Viewing all activity from your mAIners, including victories and rewards'}
+              {#if !$store.isAuthed}
+                {showAllEvents 
+                  ? 'Viewing major events across the protocol' 
+                  : 'Connect your wallet to see personalized mAIner activity'}
+              {:else}
+                {showAllEvents 
+                  ? 'Viewing major events across the protocol' 
+                  : 'Viewing all activity from your mAIners, including victories and rewards'}
+              {/if}
             </p>
           </div>
         </div>
