@@ -7,7 +7,7 @@
   import { formatFunnaiAmount } from "../../helpers/utils/numberFormatUtils";
   import ShareFeedItem from "./ShareFeedItem.svelte";
 
-  export let showAllEvents: boolean = true;
+  export let showAllEvents: boolean = false;
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -231,6 +231,11 @@
               return;
             }
 
+            // Only add winner events for "My mAIners only" feed (when filterToUserMainers is true)
+            if (!filterToUserMainers) {
+              return;
+            }
+
             const placements = [
               { position: "First Place", entry: winnerDeclaration.winner },
               { position: "Second Place", entry: winnerDeclaration.secondPlace },
@@ -381,6 +386,11 @@
           // Add winners without date filtering
           winners.forEach((winnerDeclaration) => {
             const winnerTimestamp = Number(winnerDeclaration.finalizedTimestamp);
+
+            // Only add winner events for "My mAIners only" feed (when filterToUserMainers is true)
+            if (!filterToUserMainers) {
+              return;
+            }
 
             const placements = [
               { position: "First Place", entry: winnerDeclaration.winner },
@@ -654,7 +664,9 @@
             <li>• 🎯 Challenges in the protocol</li>
             <li>• 💭 Responses from your mAIners</li>
             <li>• 📊 Scores your mAIners receive</li>
-            <li>• 🏆 All victories and placements</li>
+            {#if !showAllEvents}
+            <li>• 🏆 Your mAIners' victories and placements</li>
+            {/if}
           </ul>
           {#if !$store.isAuthed}
             <p class="text-xs mt-4 text-gray-400 dark:text-gray-500">
