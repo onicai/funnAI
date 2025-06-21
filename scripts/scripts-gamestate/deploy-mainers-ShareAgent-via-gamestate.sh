@@ -160,7 +160,7 @@ for record in records:
 # ================================================================
 
 #######################################################################
-NUMCYCLES_TO_ADD=3000000000000  # 3 TCycles
+NUMCYCLES_TO_ADD=6500000000000  # 6.5 TCycles
 if [ "$DEPLOY_MODE" = "upgrade" ]; then
     NUMCYCLES_TO_ADD=10000000000  # 10 BCycles for upgrade
 fi

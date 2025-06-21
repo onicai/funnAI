@@ -13,6 +13,18 @@ from .monitor_common import get_canisters, ensure_log_dir
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
+def get_logs(canister_id, network):
+    """Fetch logs using dfx for a given canister."""
+    try:
+        output = subprocess.check_output(
+            ["dfx", "canister", "logs", canister_id, "--network", network],
+            stderr=subprocess.DEVNULL,
+            text=True
+        )
+        return output.strip().splitlines()
+    except subprocess.CalledProcessError:
+        return []
+
 def get_data(canister_id, network):
     """Fetch data from gamestate using dfx."""
     try:
@@ -87,7 +99,7 @@ def get_data(canister_id, network):
         return []
 
 def main(network):
-    (CANISTERS, CANISTER_COLORS, RESET_COLOR) = get_canisters(network)
+    (CANISTERS, CANISTER_COLORS, RESET_COLOR) = get_canisters(network, "protocol")
 
     gamestate_name = None
     gamestate_canister_id = None
@@ -98,14 +110,6 @@ def main(network):
         if "GAMESTATE" in name.upper():
             gamestate_name = name
             gamestate_canister_id = canister_id
-        elif "CHALLENGER" in name.upper():
-            challenger_name = name
-        elif "JUDGE" in name.upper():
-            judge_name = name
-        elif "SHARE_SERVICE" in name.upper():
-            share_service_name = name
-        
-        if gamestate_name and judge_name and share_service_name:
             break
             
 
@@ -115,7 +119,7 @@ def main(network):
     
     # Log directory (also relative to script location)
     LOG_DIR = os.path.join(SCRIPT_DIR, f"logs-{network}")
-    MONITOR_GAMESTATE_FILE = os.path.join(LOG_DIR, "monitor_gamestate.log")
+    MONITOR_GAMESTATE_FILE = os.path.join(LOG_DIR, "monitor_gamestate_logs.log")
     PREVIOUS_LOGS = defaultdict(set)
 
     ensure_log_dir(LOG_DIR)
@@ -124,31 +128,29 @@ def main(network):
     with open(MONITOR_GAMESTATE_FILE, "w"):
         pass
 
-    print(f"\nMonitoring changes to stats for {gamestate_name} ({gamestate_canister_id}) on '{network}' network...\n")
+    print(f"\nMonitoring changes to {gamestate_name} ({gamestate_canister_id}) on '{network}' network...\n")
 
     timer = 0
-    delay = 10  # seconds
+    delay = 2  # seconds
     while True:
         new_lines = []
-        log_lines = get_data(gamestate_canister_id, network)
+        log_lines = get_logs(gamestate_canister_id, network)
         for line in log_lines:
             if line not in PREVIOUS_LOGS[name]:
                 PREVIOUS_LOGS[name].add(line)
                 new_lines.append(line)
 
         if new_lines:
-            with open(MONITOR_GAMESTATE_FILE, "a") as f:
-                for line in new_lines:
-                    color_line = CANISTER_COLORS[gamestate_name]
-                    if "getNumCurrentChallengesAdmin" in line:
-                        color_line = CANISTER_COLORS[challenger_name]
-                    elif "getNumScoredChallengesAdmin" in line:
-                        color_line = CANISTER_COLORS[judge_name]
-                    elif "getNumOpenSubmissionsForOpenChallengesAdmin" in line or "getNumOpenSubmissionsAdmin" in line or "getNumSubmissionsAdmin" in line:
-                        color_line = CANISTER_COLORS[share_service_name]
-                    f.write(line + "\n")
-                    # print(f"{CANISTER_COLORS[gamestate_name]}{timer:10,}s-[{gamestate_name}]{color_line}({gamestate_canister_id}) {line}")
-                    print(f"{color_line}{timer:10,}s-{line}")
+                individual_log_path = os.path.join(LOG_DIR, f"{name}.log")
+                with open(individual_log_path, "a") as f_individual:
+                    for line in new_lines:
+                        f_individual.write(line + "\n")
+                        print(f"{CANISTER_COLORS[name]}[{name}]{RESET_COLOR}({canister_id}) {line}")
+        
+        if timer == 0:
+            print(f"\nInitial log retrieval completed for {len(CANISTERS)} canisters on '{network}' network.")
+            print(f"Will report changes in logs. Checking every {delay} seconds...")
+
         time.sleep(delay)
         timer += delay
 
