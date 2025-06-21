@@ -1560,43 +1560,43 @@
     
     <div class="relative p-4 sm:p-5">
       <!-- Header Section -->
-      <div class="flex flex-col space-y-3 xl:flex-row xl:items-center xl:justify-between xl:space-y-0 mb-4">
+      <div class="flex flex-col space-y-3 mb-4">
         <div class="flex items-center space-x-3">
           <!-- Enhanced icon with gradient background -->
-          <div class="flex-shrink-0 w-10 h-10 xl:w-12 xl:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-xl shadow-lg flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 xl:h-6 xl:w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-xl shadow-lg flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
             </svg>
           </div>
           
           <!-- Title and subtitle -->
           <div class="flex flex-col">
-            <h2 class="text-sm xl:text-base font-bold text-slate-900 dark:text-slate-100">Flock overview</h2>
+            <h2 class="text-sm font-bold text-slate-900 dark:text-slate-100">Flock overview</h2>
             <p class="text-xs text-slate-600 dark:text-slate-400">
               {totalMainers} mAIner{totalMainers === 1 ? '' : 's'} in your flock
             </p>
           </div>
         </div>
         
-        <!-- Quick Stats Summary - Responsive positioning -->
-        <div class="flex flex-wrap items-center gap-2 xl:gap-4">
+        <!-- Quick Stats Summary - Now always visible and responsive -->
+        <div class="flex flex-wrap items-center gap-2">
           {#if activeMainers > 0}
-            <div class="flex items-center space-x-2 px-2.5 py-1.5 xl:px-3 xl:py-2 bg-green-100/60 dark:bg-green-900/30 rounded-lg border border-green-200/50 dark:border-green-700/50">
+            <div class="flex items-center space-x-2 px-2.5 py-1.5 bg-green-100/60 dark:bg-green-900/30 rounded-lg border border-green-200/50 dark:border-green-700/50">
               <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span class="text-xs xl:text-sm font-medium text-green-700 dark:text-green-300">{activeMainers} Mining</span>
+              <span class="text-xs font-medium text-green-700 dark:text-green-300">{activeMainers} Mining</span>
             </div>
           {/if}
           {#if inactiveMainers > 0}
-            <div class="flex items-center space-x-2 px-2.5 py-1.5 xl:px-3 xl:py-2 bg-orange-100/60 dark:bg-orange-900/30 rounded-lg border border-orange-200/50 dark:border-orange-700/50">
+            <div class="flex items-center space-x-2 px-2.5 py-1.5 bg-orange-100/60 dark:bg-orange-900/30 rounded-lg border border-orange-200/50 dark:border-orange-700/50">
               <div class="w-2 h-2 bg-orange-500 rounded-full"></div>
-              <span class="text-xs xl:text-sm font-medium text-orange-700 dark:text-orange-300">{inactiveMainers} Need attention</span>
+              <span class="text-xs font-medium text-orange-700 dark:text-orange-300">{inactiveMainers} Need attention</span>
             </div>
           {/if}
         </div>
       </div>
 
       <!-- Status Cards Grid -->
-      <div class="grid grid-cols-1 xl:grid-cols-3 gap-3 xl:gap-4">
+      <div class="grid grid-cols-1 gap-3">
         <!-- Active mAIners Card -->
         <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-green-200/40 dark:border-green-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
           <div class="absolute top-0 right-0 w-16 h-16 bg-green-200/20 dark:bg-green-600/10 rounded-full -translate-y-8 translate-x-8"></div>
@@ -1633,7 +1633,7 @@
 
         <!-- Action Required Card (only show if there are inactive mAIners) -->
         {#if inactiveMainers > 0}
-          <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-orange-200/40 dark:border-orange-700/40 shadow-sm hover:shadow-md transition-all duration-300 group xl:col-span-1">
+          <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-orange-200/40 dark:border-orange-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
             <div class="absolute top-0 right-0 w-16 h-16 bg-orange-200/20 dark:bg-orange-600/10 rounded-full -translate-y-8 translate-x-8"></div>
             <div class="relative">
               <div class="flex items-center justify-between mb-2">
@@ -1654,7 +1654,7 @@
           </div>
         {:else}
           <!-- All Good Card when no inactive mAIners -->
-          <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-emerald-200/40 dark:border-emerald-700/40 shadow-sm hover:shadow-md transition-all duration-300 group xl:col-span-1">
+          <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-emerald-200/40 dark:border-emerald-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
             <div class="absolute top-0 right-0 w-16 h-16 bg-emerald-200/20 dark:bg-emerald-600/10 rounded-full -translate-y-8 translate-x-8"></div>
             <div class="relative">
               <div class="flex items-center justify-between mb-2">
