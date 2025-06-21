@@ -117,6 +117,10 @@
     errorMessage = "";
 
     try {
+      if (!isProtocolActive) {
+        throw new Error("Protocol is not active and actions are paused");
+      }
+
       if (!$store.principal) {
         throw new Error("Authentication not initialized");
       }
@@ -267,10 +271,10 @@
           class:gap-2={!(!hasEnoughBalance && !isValidating)}
           class:bg-purple-600={hasEnoughBalance && !isValidating}
           class:hover:bg-purple-500={hasEnoughBalance && !isValidating}
-          class:bg-gray-400={!hasEnoughBalance || isValidating}
-          class:cursor-not-allowed={!hasEnoughBalance || isValidating}
-          class:dark:bg-gray-700={!hasEnoughBalance || isValidating}
-          disabled={!hasEnoughBalance || isValidating}
+          class:bg-gray-400={!hasEnoughBalance || isValidating || !isProtocolActive}
+          class:cursor-not-allowed={!hasEnoughBalance || isValidating || !isProtocolActive}
+          class:dark:bg-gray-700={!hasEnoughBalance || isValidating || !isProtocolActive}
+          disabled={!hasEnoughBalance || isValidating || !isProtocolActive}
         >
           {#if isValidating}
             <div class="flex items-center justify-center gap-2">
@@ -281,6 +285,10 @@
             <div class="flex flex-col items-center justify-center gap-1">
               <div class="text-center">Insufficient Balance</div>
               <a href="/#/wallet" class="underline text-xs sm:text-sm text-orange-800 dark:text-orange-200 hover:text-orange-900 dark:hover:text-orange-100">Please fund your wallet ↗</a>
+            </div>
+          {:else if !isProtocolActive}
+            <div class="flex flex-col items-center justify-center gap-1">
+              <div class="text-center">Protocol is currently paused. Please check back in a couple of minutes.</div>
             </div>
           {:else}
             <div class="flex items-center justify-center gap-2">
