@@ -1207,7 +1207,7 @@
               
               <div class="text-white/90 text-sm leading-relaxed">
                 <p class="font-medium mb-2">🎉 Exclusive whitelist pricing now available!</p>
-                <p>Create your mAIner from the unlocked options below for just <span class="font-bold text-white">{currentWhitelistPrice || 0.5} ICP</span> instead of the regular price of <span class="line-through opacity-75">{currentMainerPrice || 1000} ICP</span>.</p>
+                <p>Create your mAIner from the unlocked options below for just <span class="font-bold text-white">{currentWhitelistPrice || 5} ICP</span> instead of the regular price of <span class="line-through opacity-75">{currentMainerPrice || 10} ICP</span>.</p>
                 {#if unlockedMainers.length > 0}
                   <p class="text-xs text-white/80 mt-2">💡 <span class="font-medium">Note:</span> More unlocked mAIners may become available as others are created. Check back periodically during the whitelist phase.</p>
                 {/if}
@@ -1218,13 +1218,13 @@
             <div class="flex-shrink-0 sm:ml-6">
               <div class="bg-white/15 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20 shadow-lg">
                 <div class="text-2xl sm:text-3xl font-bold text-white mb-1">
-                  {Math.round(((currentMainerPrice || 1000) - (currentWhitelistPrice || 0.5)) / (currentMainerPrice || 1000) * 100)}%
+                  {Math.round(((currentMainerPrice || 10) - (currentWhitelistPrice || 5)) / (currentMainerPrice || 10) * 100)}%
                 </div>
                 <div class="text-xs sm:text-sm text-white/80 font-medium uppercase tracking-wide">
                   Savings
                 </div>
                 <div class="text-xs text-white/70 mt-1">
-                  Save {((currentMainerPrice || 1000) - (currentWhitelistPrice || 0.5)).toFixed(1)} ICP
+                  Save {((currentMainerPrice || 10) - (currentWhitelistPrice || 5)).toFixed(1)} ICP
                 </div>
               </div>
             </div>
@@ -1286,8 +1286,8 @@
                       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
                       </svg>
-                      <span class="font-medium">Only {currentWhitelistPrice || 0.5} ICP</span>
-                      <span class="line-through text-xs opacity-60">{currentMainerPrice || 1000} ICP</span>
+                      <span class="font-medium">Only {currentWhitelistPrice || 5} ICP</span>
+                      <span class="line-through text-xs opacity-60">{currentMainerPrice || 10} ICP</span>
                     </div>
                   </div>
                 </div>
