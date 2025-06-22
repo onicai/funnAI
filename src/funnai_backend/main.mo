@@ -416,6 +416,50 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     return #Ok(settingsUpdated);
   };
 
+// Max mAIner topups
+  stable var maxMainerTopups : List.List<Types.TopUpRecord> = List.nil<Types.TopUpRecord>();
+
+  private func putMaxMainerTopup(topupEntry : Types.TopUpRecord) : Bool {
+      maxMainerTopups := List.push<Types.TopUpRecord>(topupEntry, maxMainerTopups);
+      return true;
+  };
+
+  private func getMaxMainerTopup(paymentTransactionBlockId : Nat64) : ?Types.TopUpRecord {
+      return List.find<Types.TopUpRecord>(maxMainerTopups, func(topupEntry: Types.TopUpRecord) : Bool { topupEntry.paymentTransactionBlockId == paymentTransactionBlockId } ); 
+  };
+
+  private func getMaxMainerTopups() : [Types.TopUpRecord] {
+      return List.toArray<Types.TopUpRecord>(maxMainerTopups);
+  };
+
+  private func removeMaxMainerTopup(paymentTransactionBlockId : Nat64) : Bool {
+      maxMainerTopups := List.filter(maxMainerTopups, func(topupEntry: Types.TopUpRecord) : Bool { topupEntry.paymentTransactionBlockId != paymentTransactionBlockId });
+      return true;
+  };
+
+  private func addMaxMainerTopups(entriesToAdd : List.List<Types.TopUpRecord>) : Bool {
+      maxMainerTopups := List.append<Types.TopUpRecord>(entriesToAdd, maxMainerTopups);
+      return true;
+  };
+
+  public shared (msg) func addMaxMainerTopup(maxTopUpInput : Types.MaxMainerTopUpInput) : async Types.MaxMainerTopUpStorageResult {
+      if (Principal.isAnonymous(msg.caller)) {
+          return #Err(#Unauthorized);
+      };
+
+      let newEntry : Types.TopUpRecord = {
+        timestamp : Nat64 = Nat64.fromNat(Int.abs(Time.now()));
+        caller : Text = Principal.toText(msg.caller);
+        paymentTransactionBlockId : Nat64 = maxTopUpInput.paymentTransactionBlockId;
+        toppedUpMainerId : Text = maxTopUpInput.toppedUpMainerId;
+        amount : Nat = maxTopUpInput.amount;
+      };
+      
+      let result = putMaxMainerTopup(newEntry);
+
+      return #Ok({stored = true;});
+  };
+
 // Email Signups from Website
   stable var emailSubscribersStorageStable : [(Text, Types.EmailSubscriber)] = [];
   var emailSubscribersStorage : HashMap.HashMap<Text, Types.EmailSubscriber> = HashMap.HashMap(0, Text.equal, Text.hash);
