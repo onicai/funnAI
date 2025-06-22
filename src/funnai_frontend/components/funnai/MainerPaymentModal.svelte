@@ -56,7 +56,7 @@
   let errorMessage: string = "";
   let tokenFee: bigint = BigInt(0); // Will be set once token is loaded
   let balance: bigint = BigInt(0);
-  let mainerPrice = 1000; // Will be loaded
+  let mainerPrice = 100; // Will be loaded
 
   let isProtocolActiveFlag = true; // Will be loaded
   $: isProtocolActive = isProtocolActiveFlag; // TODO: if protocol is not active, stop activities, especially mAIner creation
@@ -120,6 +120,7 @@
     errorMessage = "";
 
     try {
+      await loadProtocolFlags();
       if (!isProtocolActive) {
         throw new Error("Protocol is not active and actions are paused");
       };
