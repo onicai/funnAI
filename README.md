@@ -131,21 +131,9 @@ scripts/scripts-gamestate/register-all.sh --network $NETWORK
 dfx canister call game_state_canister resetCyclesFlowAdmin --network $NETWORK
 
 # #########################################################################
-# Upgrading for new mAIner code
-#
-# Store the new mAIner did & wasm in mAinerCreator/files, then issue these commands to upgrade the system
-cd PoAIW
-scripts/deploy-mainer-creator.sh  --network $NETWORK --mode upgrade
-# 
-# go back to funnAI folder
-cd ..
-#
-# Upgrade the #ShareService with the new mAIner code
-scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.sh --mode upgrade --network $NETWORK
-# Add a previous ShareService if need be, e.g.
-dfx canister call game_state_canister addOfficialCanister '(record { address = "ecpt4-ayaaa-aaaad-qhk4a-cai"; subnet = ""; canisterType = variant { MainerAgent = variant { ShareService } } })' --network $NETWORK
-# Verify with
-dfx canister call game_state_canister getOfficialCanistersAdmin --network $NETWORK
+# Upgrading for new mAIner code -> See file README-prd-upgrade-PoAIW.md
+
+
 #
 # Upgrade the #ShareAgent canisters with new mAIner code, by repeating this call for all of them
 # Get user's mAIners

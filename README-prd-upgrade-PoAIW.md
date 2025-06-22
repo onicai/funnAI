@@ -91,18 +91,78 @@ Then view the logs to ensure that:
 
 # Upgrade of GameState
 
+Upgrading the GameState is typically easy. Just make sure everything is paused, then run:
+
 ```bash
 # from funnAI folder
 scripts/scripts-gamestate/deploy.sh --network $NETWORK --mode upgrade
 ```
 
-# Upgrade of mAIners
+# Upgrade of mAIner Controllers
 
-First, ensure the new wasm & did files are in 
-```bash
-# from PoAIW folder
-scripts/deploy-mainer-creator.sh --network $NETWORK --mode upgrade
-```
+Upgrading mAIner Controllers involves several steps, because the mAIners are upgraded via the mAInerCreator.
+
+- Build the wasm & did file for the new mAIner code
+
+    ```bash
+    # Temporarily start the local network in a separate terminal
+    # From folder: funnAI
+    dfx start --clean
+
+    # From folder: PoAIW/src/mAIner
+    dfx deploy mainer_ctrlb_canister_0
+
+    # Stop the local network
+    dfx stop
+    ```
+
+- Copy & rename these files to the mAInerCreator/files folder:
+
+    - `PoAIW/src/mAIner/.dfx/local/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.did` to `PoAIW/src/mAInerCreator/files/mainer_ctrlb_canister.did`
+    - `PoAIW/src/mAIner/.dfx/local/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.wasm` to `PoAIW/src/mAInerCreator/files/mainer_ctrlb_canister.wasm`
+    
+- Upgrade the mAInerCreator. 
+
+    This command will:
+    - Deploy the latest mAInerCreator code
+    - Upload `files/mainer_ctrlb_canister.wasm`
+    - Upload `files/llama_cpp_canister.wasm`  *(For LLM upgrades described below)*
+
+    ```bash
+    # from folder: PoAIW
+    NETWORK=prd
+    scripts/deploy-mainer-creator.sh --network $NETWORK --mode upgrade
+    ```
+
+- Upgrade the ShareService, which is using the regular mAIner code
+
+    ```bash
+    from folder: funnAI
+    NETWORK=prd
+    scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.sh --mode upgrade --network $NETWORK
+
+    # Note: How to fix it if the script fails because you also updated GameState and wiped out some data
+    # Verify if the ShareService mAIner is still registered with GameState as an official canister
+    dfx canister call game_state_canister getOfficialCanistersAdmin --network $NETWORK
+    # If not, re-register it with GameState
+    dfx canister call game_state_canister addOfficialCanister '(record { address = ; subnet = "<canister-id-of-shareservice>"; canisterType = variant { MainerAgent = variant { ShareService } } })' --network $NETWORK
+    ```
+
+- Upgrade all the ShareAgent mAIners
+
+    ```bash
+    # from folder: funnAI
+    NETWORK=prd
+
+    # First try it out on one of our mAIners
+    scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode upgrade --canister <canisterId> --network $NETWORK
+
+    # Update the file 'scripts/canister_ids_mainers-<network>.env'
+    scripts/get_mainers.sh --network $NETWORK
+
+    # Upgrade ALL mAIners
+    scripts/upgrade_mainers.sh --network $NETWORK
+    ```
 
 # Upgrade of ShareService
 
