@@ -164,6 +164,14 @@ Upgrading mAIner Controllers involves several steps, because the mAIners are upg
     scripts/upgrade_mainers.sh --network $NETWORK
     ```
 
+- Update gamestate to the latest wasmhash. <canisterId> is the address of one of the upgraded ShareAgent canisters
+
+    ```bash
+    # from folder: funnAI
+    NETWORK=prd
+    dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="New wasm deployed"})' --network $NETWORK
+    ```
+
 # Upgrade of ShareService
 
 todo
