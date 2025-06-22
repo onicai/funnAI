@@ -185,14 +185,6 @@ The ShareService Controller is using the regular mAIner code, and you should alw
 
 It is unfortunate, but because the upgrade goes over the mAInerCreator, any code change for the ShareService specifically will modify the mAIner's wasm and the wasmhash, ALL the mAIners must be updated if there is a code change.
 
-# Upgrade of ShareAgent mAIners
-
-todo
-
-# Upgrade of Power mAIners
-
-todo 
-
 # Upgrade of Challenger & Judge Controllers
 
 ```bash
@@ -205,7 +197,7 @@ scripts/deploy-judge.sh --network $NETWORK --mode upgrade
 scripts/scripts-gamestate/register-all.sh --network $NETWORK
 ```
 
-## How to modify the Challenger & Judge LLM configuration
+## Update Challenger & Judge LLM configuration
 
 This is a more tricky item, but not that hard either, just be CAREFUL !
 
@@ -374,3 +366,6 @@ This is a more tricky item, but not that hard either, just be CAREFUL !
         scripts/scripts-gamestate/register-all.sh --network $NETWORK
         ```
 
+## Update ShareService LLM configuration
+
+todo
