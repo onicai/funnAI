@@ -133,18 +133,6 @@ dfx canister call game_state_canister resetCyclesFlowAdmin --network $NETWORK
 # #########################################################################
 # Upgrading for new mAIner code -> See file README-prd-upgrade-PoAIW.md
 
-
-#
-# Upgrade the #ShareAgent canisters with new mAIner code, by repeating this call for all of them
-# Get user's mAIners
-dfx canister call game_state_canister getNumberMainerAgentsAdmin --output json --network $NETWORK
-dfx canister call game_state_canister getMainerAgentCanistersAdmin --output json --network $NETWORK
-# TODO: write a script that automates these calls over all ShareAgent canisters
-scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode upgrade --canister <canisterId> --network $NETWORK
-#
-# Update gamestate to the latest wasmhash. <canisterId> is the address of one of the upgraded ShareAgent canisters
-dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="New wasm deployed"})' --network $NETWORK
-
 # #########################################################################
 # Admin functions to clean up redeemed payments in case the creation failed.
 # This is used during testing, but can also be used in production in case the mAIner creation failed, but user payment was accepted
@@ -270,7 +258,7 @@ dfx canister call game_state_canister setCyclesFlowAdmin '( record {
 })'
 ```
 
-Adjust reward per challenge:
+# Adjust reward per challenge:
 
 ```bash
 # e.g. to 1000 FUNNAI

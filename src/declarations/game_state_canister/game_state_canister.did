@@ -437,9 +437,9 @@ type GameStateCanister =
    getCurrentChallengesAdmin: () -> (ChallengesResult) query;
    getCyclesFlowAdmin: () -> (CyclesFlowResult);
    getGameStateThresholdsAdmin: () -> (GameStateTresholdsResult) query;
-   getJudgePromptInfo: (text) -> (JudgePromptInfoResult) query;
-   getMainerAgentCanisterInfo: (CanisterRetrieveInput) ->
-    (MainerAgentCanisterResult) query;
+   getJudgePromptInfo: (judgePromptId: text) -> (JudgePromptInfoResult) query;
+   getMainerAgentCanisterInfo: (canisterEntryToRetrieve:
+    CanisterRetrieveInput) -> (MainerAgentCanisterResult) query;
    getMainerAgentCanistersAdmin: () -> (MainerAgentCanistersResult) query;
    getMainerAgentCanistersForUser: () -> (MainerAgentCanistersResult) query;
    getMainerCyclesUsedPerResponse: () -> (NatResult);
@@ -453,6 +453,8 @@ type GameStateCanister =
    getNumOpenSubmissionsForOpenChallengesAdmin: () -> (NatResult) query;
    getNumScoredChallengesAdmin: () -> (NatResult) query;
    getNumSubmissionsAdmin: () -> (NatResult) query;
+   getNumberMainerAgentsAdmin: (checkInput: CheckMainerLimit) ->
+    (NatResult) query;
    getOfficialCanistersAdmin: () -> (vec OfficialProtocolCanister) query;
    getOfficialChallengerCanisters: () -> (AuthRecordResult);
    getOpenSubmissionsAdmin: () -> (ChallengeResponseSubmissionsResult) query;
@@ -470,6 +472,7 @@ type GameStateCanister =
    getRecentProtocolActivity_mockup: () -> (ProtocolActivityResult) query;
    getRedeemedTransactionBlockAdmin: (paymentTransactionBlockId:
     PaymentTransactionBlockId) -> (RedeemedTransactionBlockResult);
+   getRewardPerChallengeAdmin: () -> (RewardPerChallengeResult);
    getScoreForSubmission: (submissionInput: SubmissionRetrievalInput) ->
     (ScoredResponseRetrievalResult) query;
    getScoreForSubmission_mockup: (submissionInput:

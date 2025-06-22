@@ -431,6 +431,9 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : ChallengeResponseSubmission,
     'Err' : ApiError,
   });
+  const CheckMainerLimit = IDL.Record({
+    'mainerType' : MainerAgentCanisterType,
+  });
   const OfficialProtocolCanister = IDL.Record({
     'status' : CanisterStatus,
     'canisterType' : ProtocolCanisterType,
@@ -515,6 +518,18 @@ export const idlFactory = ({ IDL }) => {
   });
   const RedeemedTransactionBlockResult = IDL.Variant({
     'Ok' : RedeemedTransactionBlock,
+    'Err' : ApiError,
+  });
+  const RewardPerChallenge = IDL.Record({
+    'amountForAllParticipants' : IDL.Nat,
+    'thirdPlaceAmount' : IDL.Nat,
+    'rewardType' : RewardType,
+    'totalAmount' : IDL.Nat,
+    'winnerAmount' : IDL.Nat,
+    'secondPlaceAmount' : IDL.Nat,
+  });
+  const RewardPerChallengeResult = IDL.Variant({
+    'Ok' : RewardPerChallenge,
     'Err' : ApiError,
   });
   const SubmissionRetrievalInput = IDL.Record({
@@ -668,21 +683,6 @@ export const idlFactory = ({ IDL }) => {
   const UpdateWasmHashInput = IDL.Record({
     'wasmHash' : IDL.Vec(IDL.Nat8),
     'textNote' : IDL.Text,
-  });
-  const RewardPerChallenge = IDL.Record({
-    'amountForAllParticipants' : IDL.Nat,
-    'thirdPlaceAmount' : IDL.Nat,
-    'rewardType' : RewardType,
-    'totalAmount' : IDL.Nat,
-    'winnerAmount' : IDL.Nat,
-    'secondPlaceAmount' : IDL.Nat,
-  });
-  const RewardPerChallengeResult = IDL.Variant({
-    'Ok' : RewardPerChallenge,
-    'Err' : ApiError,
-  });
-  const CheckMainerLimit = IDL.Record({
-    'mainerType' : MainerAgentCanisterType,
   });
   const StartUploadJudgePromptCacheRecord = IDL.Record({
     'judgePromptId' : IDL.Text,
@@ -894,6 +894,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getNumScoredChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumSubmissionsAdmin' : IDL.Func([], [NatResult], ['query']),
+    'getNumberMainerAgentsAdmin' : IDL.Func(
+        [CheckMainerLimit],
+        [NatResult],
+        ['query'],
+      ),
     'getOfficialCanistersAdmin' : IDL.Func(
         [],
         [IDL.Vec(OfficialProtocolCanister)],
@@ -945,6 +950,7 @@ export const idlFactory = ({ IDL }) => {
         [RedeemedTransactionBlockResult],
         [],
       ),
+    'getRewardPerChallengeAdmin' : IDL.Func([], [RewardPerChallengeResult], []),
     'getScoreForSubmission' : IDL.Func(
         [SubmissionRetrievalInput],
         [ScoredResponseRetrievalResult],
