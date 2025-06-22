@@ -253,6 +253,16 @@
           setTimeout(() => {
             onCelebration(amount, token?.symbol || 'ICP');
           }, 300);
+          try {
+            let maxTopUpInput = {
+              paymentTransactionBlockId: BigInt(txId),
+              toppedUpMainerId: canisterId,
+              amount: BigInt(amount),
+            };
+            await $store.backendActor.addMaxMainerTopup(maxTopUpInput);            
+          } catch (maxTopUpStorageError) {
+            console.error("Top-up storage error: ", maxTopUpStorageError);            
+          };
         } else {
           onSuccess(txId, canisterId);
           handleClose();
