@@ -197,6 +197,9 @@ dfx canister call game_state_canister getRecentProtocolActivity --output json --
 dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_backend --network $NETWORK
 
 # Deploy funnai frontend:
+## ensure you have the latest from the PoAIW repo
+dfx generate game_state_canister
+dfx generate mainer_ctrlb_canister
 dfx deploy funnai_frontend --network $NETWORK
 
 # Deploy the token ledger canister:
@@ -287,6 +290,11 @@ dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdScoredResponsesPerChallenge = 3 : nat;
     }
 )' --network $NETWORK
+```
+
+# Manually migrate archived challenges to the Archive canister
+```bash
+dfx canister call game_state_canister migrateArchivedChallengesAdmin --network $NETWORK
 ```
 
 # Start & Stop the Game
