@@ -297,6 +297,11 @@ dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
 dfx canister call game_state_canister migrateArchivedChallengesAdmin --network $NETWORK
 ```
 
+# Manually backup mAIners to the Archive canister
+```bash
+dfx canister call game_state_canister backupMainersAdmin --network $NETWORK
+```
+
 # Start & Stop the Game
 
 See instructions in PoAIW/README.md, the sections:
