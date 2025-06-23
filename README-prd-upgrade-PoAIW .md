@@ -98,6 +98,34 @@ Upgrading the GameState is typically easy. Just make sure everything is paused, 
 scripts/scripts-gamestate/deploy.sh --network $NETWORK --mode upgrade
 ```
 
+# Upgrade of Challenger & Judge Controllers & LLM code
+
+```bash
+
+# To upgrade code for both Controllers & LLMs
+# from folder: PoAIW
+scripts/deploy-challenger.sh --network $NETWORK --mode upgrade
+scripts/deploy-judge.sh --network $NETWORK --mode upgrade
+# -> If the upgrade fails due to forward compatibility issues, see Reinstall section
+
+# If you made any changes to the controller canister ids, re-register them with the GameState
+# From folder funnAI:
+scripts/scripts-gamestate/register-all.sh --network $NETWORK
+```
+
+# Reinstall of Challenger & Judge Controllers
+
+```bash
+# To reinstall the code for the controllers, in case upgrade fails
+# from folder: PoAIW/src/Challenger
+scripts/deploy.sh --network $NETWORK --mode reinstall
+# from folder: PoAIW/src/Judge
+scripts/deploy.sh --network $NETWORK --mode reinstall
+
+# -> Now repeat the upgrade steps of previous section.
+#    That will tie all the canisters together again.
+```
+
 # Upgrade of mAIner Controllers (ShareAgent, Own, ShareService)
 
 Upgrading mAIner Controllers involves several steps, because the mAIners are upgraded via the mAInerCreator.
@@ -117,6 +145,12 @@ Upgrading mAIner Controllers involves several steps, because the mAIners are upg
         
         git checkout <new version to deploy to prd network>
         dfx deploy mainer_ctrlb_canister_0 --mode upgrade
+
+        # In case the upgrade fails due to forward compatibility issues, but you have to make the change
+        # Use reinstall
+        # NOTE: The mAIner Agents deploys to prd also must use `reinstall` & this will result in all their stable data being lost !
+        #       This is not that bad, it is mainly that the user settings like CycleBurnRate that will be gone.
+        dfx deploy mainer_ctrlb_canister_0 --mode reinstall
     ```
 
 - Copy & rename these files to the mAInerCreator/files folder:
@@ -143,10 +177,14 @@ Upgrading mAIner Controllers involves several steps, because the mAIners are upg
 
 - Upgrade the ShareService, which is using the regular mAIner code
 
+  Note: allways first upgrade the ShareService, so it has the latest code before you upgrade the mAIners.
+        the mAIners register themselves with the ShareService
+
     ```bash
         from folder: funnAI
         NETWORK=prd
         scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.sh --mode upgrade --network $NETWORK
+        # NOTE: `--mode reinstall` is also supported
 
         # Note: UNLIKELY you need this, but here how to fix it if the script fails because you also updated GameState and wiped out some data
         # Verify if the ShareService mAIner is still registered with GameState as an official canister
@@ -163,12 +201,16 @@ Upgrading mAIner Controllers involves several steps, because the mAIners are upg
 
         # First try it out on one of our mAIners
         scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode upgrade --canister <canisterId> --network $NETWORK
+        # NOTE: `--mode reinstall [--force]` is also supported.
 
         # Update the file 'scripts/canister_ids_mainers-<network>.env'
         scripts/get_mainers.sh --network $NETWORK
 
         # Upgrade ALL mAIners
         scripts/upgrade_mainers.sh --network $NETWORK
+
+        # NOTE: To reinstall ALL mAIners
+        scripts/reinstall_mainers.sh --network $NETWORK
     ```
 
 - Update gamestate to the latest wasmhash. <canisterId> is the address of one of the upgraded ShareAgent canisters
@@ -185,19 +227,7 @@ The ShareService Controller is using the regular mAIner code, and you should alw
 
 It is unfortunate, but because the upgrade goes over the mAInerCreator, any code change for the ShareService specifically will modify the mAIner's wasm and the wasmhash, ALL the mAIners must be updated if there is a code change.
 
-# Upgrade of Challenger & Judge Controllers
-
-```bash
-# from PoAIW folder
-scripts/deploy-challenger.sh --network $NETWORK --mode upgrade
-scripts/deploy-judge.sh --network $NETWORK --mode upgrade
-
-# If you made any changes to the controller canister ids, re-register them with the GameState
-# From folder funnAI:
-scripts/scripts-gamestate/register-all.sh --network $NETWORK
-```
-
-## Update Challenger & Judge LLM configuration
+# Update Challenger & Judge LLM configuration
 
 This is a more tricky item, but not that hard either, just be CAREFUL !
 
@@ -366,6 +396,13 @@ This is a more tricky item, but not that hard either, just be CAREFUL !
         scripts/scripts-gamestate/register-all.sh --network $NETWORK
         ```
 
-## Update ShareService LLM configuration
+# Update ShareService LLM configuration
 
 todo
+
+    - Re-register all LLMs with the ShareService Agent
+        It reads the LLMs from `scripts/canister_ids-$NETWORK.env`
+        ```bash
+            # from folder: funnAI
+            scripts/register_ssllms.sh --network $NETWORK
+        ```

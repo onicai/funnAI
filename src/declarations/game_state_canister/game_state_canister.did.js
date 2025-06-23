@@ -278,6 +278,22 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : IDL.Vec(Challenge),
     'Err' : ApiError,
   });
+  const TimeInterval = IDL.Variant({ 'Daily' : IDL.Null });
+  const CyclesBurnRate = IDL.Record({
+    'cycles' : IDL.Nat,
+    'timeInterval' : TimeInterval,
+  });
+  const CyclesBurnRateDefault = IDL.Variant({
+    'Low' : IDL.Null,
+    'Mid' : IDL.Null,
+    'VeryHigh' : IDL.Null,
+    'High' : IDL.Null,
+    'Custom' : CyclesBurnRate,
+  });
+  const CyclesBurnRateResult = IDL.Variant({
+    'Ok' : CyclesBurnRate,
+    'Err' : ApiError,
+  });
   const CyclesFlow = IDL.Record({
     'costCreateMcMainerLlm' : IDL.Nat,
     'cyclesCreateMainerMarginGs' : IDL.Nat,
@@ -600,7 +616,14 @@ export const idlFactory = ({ IDL }) => {
     'subnetShareServiceLlm' : IDL.Text,
   });
   const SubnetIdsResult = IDL.Variant({ 'Ok' : SubnetIds, 'Err' : ApiError });
+  const MainerctrlReinstallInput = IDL.Record({
+    'canisterAddress' : CanisterAddress,
+  });
   const TextResult = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : ApiError });
+  const SetCyclesBurnRateInput = IDL.Record({
+    'cyclesBurnRate' : CyclesBurnRate,
+    'cyclesBurnRateDefault' : CyclesBurnRateDefault,
+  });
   const CyclesFlowSettings = IDL.Record({
     'costCreateMcMainerLlm' : IDL.Opt(IDL.Nat),
     'cyclesCreateMainerMarginGs' : IDL.Opt(IDL.Nat),
@@ -611,7 +634,9 @@ export const idlFactory = ({ IDL }) => {
     'cyclesGenerateResponseOwnctrlOwnllmMEDIUM' : IDL.Opt(IDL.Nat),
     'protocolOperationFeesCut' : IDL.Opt(IDL.Nat),
     'dailyChallenges' : IDL.Opt(IDL.Nat),
+    'cyclesReinstallMainerllmGsMc' : IDL.Opt(IDL.Nat),
     'dailySubmissionsPerShareMEDIUM' : IDL.Opt(IDL.Nat),
+    'cyclesReinstallMainerllmMcMainerllm' : IDL.Opt(IDL.Nat),
     'cyclesBurntResponseGenerationShare' : IDL.Opt(IDL.Nat),
     'numShareServiceLlms' : IDL.Opt(IDL.Nat),
     'cyclesUpgradeMainerctrlGsMc' : IDL.Opt(IDL.Nat),
@@ -628,6 +653,7 @@ export const idlFactory = ({ IDL }) => {
     'dailySubmissionsPerOwnLOW' : IDL.Opt(IDL.Nat),
     'cyclesGenerateResponseSsctrlSsllm' : IDL.Opt(IDL.Nat),
     'costIdleBurnRateOwnctrl' : IDL.Opt(IDL.Nat),
+    'cyclesReinstallMainerctrlMcMainerctrl' : IDL.Opt(IDL.Nat),
     'dailySubmissionsPerOwnMEDIUM' : IDL.Opt(IDL.Nat),
     'costIdleBurnRateChllm' : IDL.Opt(IDL.Nat),
     'cyclesCreateMainerLlmTargetBalance' : IDL.Opt(IDL.Nat),
@@ -670,6 +696,7 @@ export const idlFactory = ({ IDL }) => {
     'costGenerateResponseSsllm' : IDL.Opt(IDL.Nat),
     'marginFailedSubmissionCut' : IDL.Opt(IDL.Nat),
     'numJudgeLlms' : IDL.Opt(IDL.Nat),
+    'cyclesReinstallMainerctrlGsMc' : IDL.Opt(IDL.Nat),
     'costUpgradeMcMainerCtrl' : IDL.Opt(IDL.Nat),
     'cyclesUpgradeMainerllmGsMc' : IDL.Opt(IDL.Nat),
     'costIdleBurnRateChctrl' : IDL.Opt(IDL.Nat),
@@ -846,6 +873,11 @@ export const idlFactory = ({ IDL }) => {
     'getClosedChallengesAdmin' : IDL.Func([], [ChallengesResult], ['query']),
     'getCurrentChallenges' : IDL.Func([], [ChallengesResult], ['query']),
     'getCurrentChallengesAdmin' : IDL.Func([], [ChallengesResult], ['query']),
+    'getCyclesBurnRate' : IDL.Func(
+        [CyclesBurnRateDefault],
+        [CyclesBurnRateResult],
+        [],
+      ),
     'getCyclesFlowAdmin' : IDL.Func([], [CyclesFlowResult], []),
     'getGameStateThresholdsAdmin' : IDL.Func(
         [],
@@ -980,6 +1012,11 @@ export const idlFactory = ({ IDL }) => {
     'getWhitelistPriceForOwnMainer' : IDL.Func([], [PriceResult], ['query']),
     'getWhitelistPriceForShareAgent' : IDL.Func([], [PriceResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
+    'reinstallMainerControllerAdmin' : IDL.Func(
+        [MainerctrlReinstallInput],
+        [MainerAgentCanisterResult],
+        [],
+      ),
     'removeRedeemedTransactionBlockAdmin' : IDL.Func(
         [PaymentTransactionBlockId],
         [TextResult],
@@ -992,6 +1029,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'resetCurrentChallengesAdmin' : IDL.Func([], [StatusCodeRecordResult], []),
     'resetCyclesFlowAdmin' : IDL.Func([], [StatusCodeRecordResult], []),
+    'setCyclesBurnRateAdmin' : IDL.Func(
+        [SetCyclesBurnRateInput],
+        [StatusCodeRecordResult],
+        [],
+      ),
     'setCyclesFlowAdmin' : IDL.Func(
         [CyclesFlowSettings],
         [StatusCodeRecordResult],
