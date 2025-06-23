@@ -273,6 +273,21 @@ Adjust reward per challenge:
 dfx canister call game_state_canister setRewardPerChallengeAdmin '100000000000' --network $NETWORK
 ```
 
+## Adjust cycles security buffer
+This determines the threshold of conversion to ICP. If the Game State's cycle balance is underneath the buffer, it converts incoming ICP payments to cycles. If the cycle balance is above the threshold it doesn't convert ICP to cycles but uses the cycles from its balance.
+```bash
+dfx canister call game_state_canister getProtocolCyclesBalanceBuffer --network $NETWORK
+# parameter is in trillion cycles, e.g. to 400 means 400T cycles
+dfx canister call game_state_canister setProtocolCyclesBalanceBuffer '400' --network $NETWORK
+```
+
+## Adjust mAIner creation buffer
+This determines the threshold of allowing more mAIners to be created and is a security measurement against concurrent creation requests from users (to avoid that they pay but then are blocked from the creation).
+```bash
+dfx canister call game_state_canister getBufferMainerCreation --network $NETWORK
+dfx canister call game_state_canister setBufferMainerCreation '10' --network $NETWORK
+```
+
 # The GameState Thresholds
 
 The Thresholds are stored in stable memory.
