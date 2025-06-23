@@ -444,6 +444,7 @@ export interface GameStateCanister {
     [ScoredResponseInput],
     ScoredResponseResult
   >,
+  'backupMainersAdmin' : ActorMethod<[], NatResult>,
   'cleanUnlockedMainerStoragesAdmin' : ActorMethod<[], AuthRecordResult>,
   'createUserMainerAgent' : ActorMethod<
     [MainerCreationInput],
@@ -545,6 +546,7 @@ export interface GameStateCanister {
   'getWhitelistPriceForOwnMainer' : ActorMethod<[], PriceResult>,
   'getWhitelistPriceForShareAgent' : ActorMethod<[], PriceResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
+  'migrateArchivedChallengesAdmin' : ActorMethod<[], NatResult>,
   'removeRedeemedTransactionBlockAdmin' : ActorMethod<
     [PaymentTransactionBlockId],
     TextResult
@@ -555,6 +557,7 @@ export interface GameStateCanister {
   >,
   'resetCurrentChallengesAdmin' : ActorMethod<[], StatusCodeRecordResult>,
   'resetCyclesFlowAdmin' : ActorMethod<[], StatusCodeRecordResult>,
+  'setArchiveCanisterId' : ActorMethod<[string], AuthRecordResult>,
   'setCyclesFlowAdmin' : ActorMethod<
     [CyclesFlowSettings],
     StatusCodeRecordResult
