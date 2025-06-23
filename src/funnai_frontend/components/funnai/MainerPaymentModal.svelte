@@ -129,6 +129,10 @@
         throw new Error("mAIner creation is currently stopped");
       };
 
+      if (isWhitelistPhaseActive && isPauseWhitelistMainerCreation) {
+        throw new Error("The whitelist sale is currently stopped");
+      };
+
       if (!$store.principal) {
         throw new Error("Authentication not initialized");
       }

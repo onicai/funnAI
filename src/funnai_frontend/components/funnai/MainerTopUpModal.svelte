@@ -12,6 +12,7 @@
   import { createAnonymousActorHelper } from "../../helpers/utils/actorUtils";
   import { idlFactory as cmcIdlFactory } from "../../helpers/idls/cmc.idl.js";
   import { MIN_AMOUNT, MAX_AMOUNT, CELEBRATION_DURATION, CELEBRATION_ENABLED } from "../../helpers/config/topUpConfig";
+  import { getIsProtocolActive } from "../../helpers/gameState";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
@@ -217,6 +218,11 @@
     errorMessage = "";
 
     try {
+      const isProtocolActive = await getIsProtocolActive();
+      if (!isProtocolActive) {
+        throw new Error("Protocol is not active and actions are paused");
+      };
+
       if (!$store.principal) {
         throw new Error("Authentication not initialized");
       }
