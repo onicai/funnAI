@@ -36,6 +36,10 @@ export interface EmailSubscriber {
   'pageSubmittedFrom' : string,
 }
 export interface FunnAIBackend {
+  'addMaxMainerTopup' : ActorMethod<
+    [MaxMainerTopUpInput],
+    MaxMainerTopUpStorageResult
+  >,
   'create_chat' : ActorMethod<[Array<Message>], ChatCreationResult>,
   'delete_chat' : ActorMethod<[string], ChatResult>,
   'delete_email_subscriber' : ActorMethod<[string], boolean>,
@@ -62,6 +66,16 @@ export interface FunnAIBackend {
   'update_chat_messages' : ActorMethod<[string, Array<Message>], ChatIdResult>,
   'update_chat_metadata' : ActorMethod<[UpdateChatObject], ChatIdResult>,
 }
+export interface MaxMainerTopUpInput {
+  'paymentTransactionBlockId' : bigint,
+  'toppedUpMainerId' : string,
+  'amount' : bigint,
+}
+export interface MaxMainerTopUpStorageResponse { 'stored' : boolean }
+export type MaxMainerTopUpStorageResult = {
+    'Ok' : MaxMainerTopUpStorageResponse
+  } |
+  { 'Err' : ApiError };
 export interface Message { 'content' : string, 'sender' : string }
 export interface PaymentInfoInput { 'block_index' : bigint }
 export interface SignUpFormInput {
