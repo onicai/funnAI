@@ -149,7 +149,9 @@ Upgrading mAIner Controllers involves several steps, because the mAIners are upg
         # In case the upgrade fails due to forward compatibility issues, but you have to make the change
         # Use reinstall
         # NOTE: The mAIner Agents deploys to prd also must use `reinstall` & this will result in all their stable data being lost !
-        #       This is not that bad, it is mainly that the user settings like CycleBurnRate that will be gone.
+        #       This is not disastrous, it is mainly that the following stable data will be lost:
+        #       - user settings like CycleBurnRate
+        #       - generatedResponses and submittedResponses
         dfx deploy mainer_ctrlb_canister_0 --mode reinstall
     ```
 
