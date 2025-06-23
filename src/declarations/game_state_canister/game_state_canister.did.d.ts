@@ -471,6 +471,7 @@ export interface GameStateCanister {
     StatusCodeRecordResult
   >,
   'getArchivedChallengesAdmin' : ActorMethod<[], ChallengesResult>,
+  'getBufferMainerCreation' : ActorMethod<[], NatResult>,
   'getCanisterPrincipal' : ActorMethod<[], string>,
   'getClosedChallengesAdmin' : ActorMethod<[], ChallengesResult>,
   'getCurrentChallenges' : ActorMethod<[], ChallengesResult>,
@@ -558,6 +559,7 @@ export interface GameStateCanister {
   'resetCurrentChallengesAdmin' : ActorMethod<[], StatusCodeRecordResult>,
   'resetCyclesFlowAdmin' : ActorMethod<[], StatusCodeRecordResult>,
   'setArchiveCanisterId' : ActorMethod<[string], AuthRecordResult>,
+  'setBufferMainerCreation' : ActorMethod<[bigint], AuthRecordResult>,
   'setCyclesFlowAdmin' : ActorMethod<
     [CyclesFlowSettings],
     StatusCodeRecordResult

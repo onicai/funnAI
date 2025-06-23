@@ -426,6 +426,7 @@ type GameStateCanister =
    finishUploadMainerPromptCache: (FinishUploadMainerPromptCacheInput) ->
     (StatusCodeRecordResult);
    getArchivedChallengesAdmin: () -> (ChallengesResult) query;
+   getBufferMainerCreation: () -> (NatResult) query;
    getCanisterPrincipal: () -> (text) query;
    getClosedChallengesAdmin: () -> (ChallengesResult) query;
    getCurrentChallenges: () -> (ChallengesResult) query;
@@ -484,6 +485,7 @@ type GameStateCanister =
    resetCurrentChallengesAdmin: () -> (StatusCodeRecordResult);
    resetCyclesFlowAdmin: () -> (StatusCodeRecordResult);
    setArchiveCanisterId: (text) -> (AuthRecordResult);
+   setBufferMainerCreation: (nat) -> (AuthRecordResult);
    setCyclesFlowAdmin: (CyclesFlowSettings) -> (StatusCodeRecordResult);
    setGameStateThresholdsAdmin: (GameStateTresholds) ->
     (StatusCodeRecordResult);

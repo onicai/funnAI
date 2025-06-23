@@ -843,6 +843,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'getArchivedChallengesAdmin' : IDL.Func([], [ChallengesResult], ['query']),
+    'getBufferMainerCreation' : IDL.Func([], [NatResult], ['query']),
     'getCanisterPrincipal' : IDL.Func([], [IDL.Text], ['query']),
     'getClosedChallengesAdmin' : IDL.Func([], [ChallengesResult], ['query']),
     'getCurrentChallenges' : IDL.Func([], [ChallengesResult], ['query']),
@@ -994,6 +995,7 @@ export const idlFactory = ({ IDL }) => {
     'resetCurrentChallengesAdmin' : IDL.Func([], [StatusCodeRecordResult], []),
     'resetCyclesFlowAdmin' : IDL.Func([], [StatusCodeRecordResult], []),
     'setArchiveCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
+    'setBufferMainerCreation' : IDL.Func([IDL.Nat], [AuthRecordResult], []),
     'setCyclesFlowAdmin' : IDL.Func(
         [CyclesFlowSettings],
         [StatusCodeRecordResult],
