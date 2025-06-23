@@ -460,6 +460,19 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
       return #Ok({stored = true;});
   };
 
+  public query (msg) func getMaxMainerTopupsAdmin() : async Types.MaxMainerTopUpsResult {
+      if (Principal.isAnonymous(msg.caller)) {
+          return #Err(#Unauthorized);
+      };
+      if (not Principal.isController(msg.caller)) {
+        return #Err(#Unauthorized);
+      };
+      
+      let result = getMaxMainerTopups();
+
+      return #Ok(result);
+  };
+
 // Email Signups from Website
   stable var emailSubscribersStorageStable : [(Text, Types.EmailSubscriber)] = [];
   var emailSubscribersStorage : HashMap.HashMap<Text, Types.EmailSubscriber> = HashMap.HashMap(0, Text.equal, Text.hash);
