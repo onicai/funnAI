@@ -93,13 +93,13 @@ echo "Deploying the game_state_canister"
 
 if [ "$NETWORK_TYPE" = "ic" ] || [ "$NETWORK_TYPE" = "testing" ] || [ "$NETWORK_TYPE" = "development" ] || [ "$NETWORK_TYPE" = "demo" ] || [ "$NETWORK_TYPE" = "prd" ]; then
     if [ "$SUBNET_GAME_STATE" = "none" ]; then
-        dfx deploy game_state_canister --mode $DEPLOY_MODE --yes --network $NETWORK_TYPE
+        dfx deploy game_state_canister --mode $DEPLOY_MODE --network $NETWORK_TYPE
     else
-        echo "--mode $DEPLOY_MODE --yes --network $NETWORK_TYPE --subnet $SUBNET_GAME_STATE"
-        dfx deploy game_state_canister --mode $DEPLOY_MODE --yes --network $NETWORK_TYPE --subnet $SUBNET_GAME_STATE
+        echo "--mode $DEPLOY_MODE --network $NETWORK_TYPE --subnet $SUBNET_GAME_STATE"
+        dfx deploy game_state_canister --mode $DEPLOY_MODE --network $NETWORK_TYPE --subnet $SUBNET_GAME_STATE
     fi
 else
-    dfx deploy game_state_canister --mode $DEPLOY_MODE --yes --network $NETWORK_TYPE
+    dfx deploy game_state_canister --mode $DEPLOY_MODE --network $NETWORK_TYPE
 fi
 
 echo " "
