@@ -925,6 +925,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getPriceForOwnMainer' : IDL.Func([], [PriceResult], ['query']),
     'getPriceForShareAgent' : IDL.Func([], [PriceResult], ['query']),
+    'getProtocolCyclesBalanceBuffer' : IDL.Func([], [NatResult], ['query']),
     'getProtocolTotalCyclesBurnt' : IDL.Func(
         [],
         [CyclesBurntResult],
@@ -1035,6 +1036,11 @@ export const idlFactory = ({ IDL }) => {
     'setOfficialMainerAgentCanisterWasmHashAdmin' : IDL.Func(
         [UpdateWasmHashInput],
         [CanisterWasmHashRecordResult],
+        [],
+      ),
+    'setProtocolCyclesBalanceBuffer' : IDL.Func(
+        [IDL.Nat],
+        [AuthRecordResult],
         [],
       ),
     'setRewardPerChallengeAdmin' : IDL.Func(

@@ -519,6 +519,7 @@ export interface GameStateCanister {
   'getPauseWhitelistMainerCreationFlag' : ActorMethod<[], FlagResult>,
   'getPriceForOwnMainer' : ActorMethod<[], PriceResult>,
   'getPriceForShareAgent' : ActorMethod<[], PriceResult>,
+  'getProtocolCyclesBalanceBuffer' : ActorMethod<[], NatResult>,
   'getProtocolTotalCyclesBurnt' : ActorMethod<[], CyclesBurntResult>,
   'getRandomOpenChallenge' : ActorMethod<[], ChallengeResult>,
   'getRandomOpenChallengeTopic' : ActorMethod<[], ChallengeTopicResult>,
@@ -587,6 +588,7 @@ export interface GameStateCanister {
     [UpdateWasmHashInput],
     CanisterWasmHashRecordResult
   >,
+  'setProtocolCyclesBalanceBuffer' : ActorMethod<[bigint], AuthRecordResult>,
   'setRewardPerChallengeAdmin' : ActorMethod<
     [bigint],
     RewardPerChallengeResult

@@ -458,6 +458,7 @@ type GameStateCanister =
    getPauseWhitelistMainerCreationFlag: () -> (FlagResult) query;
    getPriceForOwnMainer: () -> (PriceResult) query;
    getPriceForShareAgent: () -> (PriceResult) query;
+   getProtocolCyclesBalanceBuffer: () -> (NatResult) query;
    getProtocolTotalCyclesBurnt: () -> (CyclesBurntResult) query;
    getRandomOpenChallenge: () -> (ChallengeResult);
    getRandomOpenChallengeTopic: () -> (ChallengeTopicResult);
@@ -497,6 +498,7 @@ type GameStateCanister =
    setLimitForCreatingMainerAdmin: (MainerLimitInput) -> (AuthRecordResult);
    setOfficialMainerAgentCanisterWasmHashAdmin: (UpdateWasmHashInput) ->
     (CanisterWasmHashRecordResult);
+   setProtocolCyclesBalanceBuffer: (nat) -> (AuthRecordResult);
    setRewardPerChallengeAdmin: (nat) -> (RewardPerChallengeResult);
    setSubnetsAdmin: (SubnetIds) -> (StatusCodeRecordResult);
    setTokenLedgerCanisterId: (text) -> (AuthRecordResult);
