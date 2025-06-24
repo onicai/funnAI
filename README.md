@@ -70,8 +70,8 @@ scripts/deploy-all.sh --mode install --network $NETWORK
 # Set environment variables for the subnets.
 # Option 1: source the file for the environment & verify things are set
 source scripts/canister_ids-$NETWORK.env
-SUBNETSACTRL=$SUBNET_0
-SUBNETSSCTRL=$SUBNET_0
+SUBNETSACTRL=$SUBNET_0_1
+SUBNETSSCTRL=$SUBNET_0_1
 SUBNETSSLLM=$SUBNET_2_1
 # Option 2: set them manually
 SUBNETSACTRL=...
