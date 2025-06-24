@@ -49,8 +49,21 @@ type Message =
    content: text;
    sender: text;
  };
+type MaxMainerTopUpStorageResult = 
+ variant {
+   Err: ApiError;
+   Ok: MaxMainerTopUpStorageResponse;
+ };
+type MaxMainerTopUpStorageResponse = record {stored: bool;};
+type MaxMainerTopUpInput = 
+ record {
+   amount: nat;
+   paymentTransactionBlockId: nat64;
+   toppedUpMainerId: text;
+ };
 type FunnAIBackend = 
  service {
+   addMaxMainerTopup: (MaxMainerTopUpInput) -> (MaxMainerTopUpStorageResult);
    create_chat: (vec Message) -> (ChatCreationResult);
    delete_chat: (text) -> (ChatResult);
    delete_email_subscriber: (text) -> (bool);

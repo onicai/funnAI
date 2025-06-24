@@ -416,6 +416,7 @@ type GameStateCanister =
     (MainerAgentCanisterResult);
    addOfficialCanister: (CanisterInput) -> (StatusCodeRecordResult);
    addScoredResponse: (ScoredResponseInput) -> (ScoredResponseResult);
+   backupMainersAdmin: () -> (NatResult);
    cleanUnlockedMainerStoragesAdmin: () -> (AuthRecordResult);
    createUserMainerAgent: (MainerCreationInput) ->
     (MainerAgentCanisterResult);
@@ -432,6 +433,7 @@ type GameStateCanister =
    finishUploadMainerPromptCache: (FinishUploadMainerPromptCacheInput) ->
     (StatusCodeRecordResult);
    getArchivedChallengesAdmin: () -> (ChallengesResult) query;
+   getBufferMainerCreation: () -> (NatResult) query;
    getCanisterPrincipal: () -> (text) query;
    getClosedChallengesAdmin: () -> (ChallengesResult) query;
    getCurrentChallenges: () -> (ChallengesResult) query;
@@ -465,6 +467,7 @@ type GameStateCanister =
    getPauseWhitelistMainerCreationFlag: () -> (FlagResult) query;
    getPriceForOwnMainer: () -> (PriceResult) query;
    getPriceForShareAgent: () -> (PriceResult) query;
+   getProtocolCyclesBalanceBuffer: () -> (NatResult) query;
    getProtocolTotalCyclesBurnt: () -> (CyclesBurntResult) query;
    getRandomOpenChallenge: () -> (ChallengeResult);
    getRandomOpenChallengeTopic: () -> (ChallengeTopicResult);
@@ -484,6 +487,7 @@ type GameStateCanister =
    getWhitelistPriceForOwnMainer: () -> (PriceResult) query;
    getWhitelistPriceForShareAgent: () -> (PriceResult) query;
    health: () -> (StatusCodeRecordResult) query;
+   migrateArchivedChallengesAdmin: () -> (NatResult);
    removeRedeemedTransactionBlockAdmin: (PaymentTransactionBlockId) ->
     (TextResult);
    reinstallMainerControllerAdmin: (mainerctrlReinstallInput:
@@ -494,6 +498,8 @@ type GameStateCanister =
     (StatusCodeRecordResult);
    resetCurrentChallengesAdmin: () -> (StatusCodeRecordResult);
    resetCyclesFlowAdmin: () -> (StatusCodeRecordResult);
+   setArchiveCanisterId: (text) -> (AuthRecordResult);
+   setBufferMainerCreation: (nat) -> (AuthRecordResult);
    setCyclesFlowAdmin: (CyclesFlowSettings) -> (StatusCodeRecordResult);
    setGameStateThresholdsAdmin: (GameStateTresholds) ->
    setCyclesBurnRateAdmin: (cyclesBurnRateInput: SetCyclesBurnRateInput) ->
@@ -506,6 +512,7 @@ type GameStateCanister =
    setLimitForCreatingMainerAdmin: (MainerLimitInput) -> (AuthRecordResult);
    setOfficialMainerAgentCanisterWasmHashAdmin: (UpdateWasmHashInput) ->
     (CanisterWasmHashRecordResult);
+   setProtocolCyclesBalanceBuffer: (nat) -> (AuthRecordResult);
    setRewardPerChallengeAdmin: (nat) -> (RewardPerChallengeResult);
    setSubnetsAdmin: (SubnetIds) -> (StatusCodeRecordResult);
    setTokenLedgerCanisterId: (text) -> (AuthRecordResult);

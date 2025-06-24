@@ -95,6 +95,28 @@ module {
     #Err : E;
   };
 
+  // Max mAiner topups
+  public type TopUpRecord = {
+    timestamp : Nat64;
+    caller : Text;
+    paymentTransactionBlockId : Nat64;
+    toppedUpMainerId : Text;
+    amount : Nat;
+  };
+
+  public type MaxMainerTopUpInput = {
+    paymentTransactionBlockId : Nat64;
+    toppedUpMainerId : Text;
+    amount : Nat;
+  };
+
+  public type MaxMainerTopUpStorageResponse = {
+    stored : Bool;
+  };
+
+  public type MaxMainerTopUpStorageResult = Result<MaxMainerTopUpStorageResponse, ApiError>;
+  public type MaxMainerTopUpsResult = Result<[TopUpRecord], ApiError>;
+
   public type OwnerResult = Result<Principal, ApiError>;
   public type TxReceipt = Result<Nat, ApiError>;
   

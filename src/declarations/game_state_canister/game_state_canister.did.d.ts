@@ -459,6 +459,7 @@ export interface GameStateCanister {
     [ScoredResponseInput],
     ScoredResponseResult
   >,
+  'backupMainersAdmin' : ActorMethod<[], NatResult>,
   'cleanUnlockedMainerStoragesAdmin' : ActorMethod<[], AuthRecordResult>,
   'createUserMainerAgent' : ActorMethod<
     [MainerCreationInput],
@@ -485,6 +486,7 @@ export interface GameStateCanister {
     StatusCodeRecordResult
   >,
   'getArchivedChallengesAdmin' : ActorMethod<[], ChallengesResult>,
+  'getBufferMainerCreation' : ActorMethod<[], NatResult>,
   'getCanisterPrincipal' : ActorMethod<[], string>,
   'getClosedChallengesAdmin' : ActorMethod<[], ChallengesResult>,
   'getCurrentChallenges' : ActorMethod<[], ChallengesResult>,
@@ -536,6 +538,7 @@ export interface GameStateCanister {
   'getPauseWhitelistMainerCreationFlag' : ActorMethod<[], FlagResult>,
   'getPriceForOwnMainer' : ActorMethod<[], PriceResult>,
   'getPriceForShareAgent' : ActorMethod<[], PriceResult>,
+  'getProtocolCyclesBalanceBuffer' : ActorMethod<[], NatResult>,
   'getProtocolTotalCyclesBurnt' : ActorMethod<[], CyclesBurntResult>,
   'getRandomOpenChallenge' : ActorMethod<[], ChallengeResult>,
   'getRandomOpenChallengeTopic' : ActorMethod<[], ChallengeTopicResult>,
@@ -565,6 +568,7 @@ export interface GameStateCanister {
   'getWhitelistPriceForOwnMainer' : ActorMethod<[], PriceResult>,
   'getWhitelistPriceForShareAgent' : ActorMethod<[], PriceResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
+  'migrateArchivedChallengesAdmin' : ActorMethod<[], NatResult>,
   'reinstallMainerControllerAdmin' : ActorMethod<
     [MainerctrlReinstallInput],
     MainerAgentCanisterResult
@@ -579,6 +583,8 @@ export interface GameStateCanister {
   >,
   'resetCurrentChallengesAdmin' : ActorMethod<[], StatusCodeRecordResult>,
   'resetCyclesFlowAdmin' : ActorMethod<[], StatusCodeRecordResult>,
+  'setArchiveCanisterId' : ActorMethod<[string], AuthRecordResult>,
+  'setBufferMainerCreation' : ActorMethod<[bigint], AuthRecordResult>,
   'setCyclesBurnRateAdmin' : ActorMethod<
     [SetCyclesBurnRateInput],
     StatusCodeRecordResult
@@ -610,6 +616,7 @@ export interface GameStateCanister {
     [UpdateWasmHashInput],
     CanisterWasmHashRecordResult
   >,
+  'setProtocolCyclesBalanceBuffer' : ActorMethod<[bigint], AuthRecordResult>,
   'setRewardPerChallengeAdmin' : ActorMethod<
     [bigint],
     RewardPerChallengeResult

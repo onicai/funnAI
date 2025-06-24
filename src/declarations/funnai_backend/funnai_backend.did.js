@@ -1,11 +1,21 @@
 export const idlFactory = ({ IDL }) => {
-  const Message = IDL.Record({ 'content' : IDL.Text, 'sender' : IDL.Text });
+  const MaxMainerTopUpInput = IDL.Record({
+    'paymentTransactionBlockId' : IDL.Nat64,
+    'toppedUpMainerId' : IDL.Text,
+    'amount' : IDL.Nat,
+  });
+  const MaxMainerTopUpStorageResponse = IDL.Record({ 'stored' : IDL.Bool });
   const ApiError = IDL.Variant({
     'InvalidId' : IDL.Null,
     'ZeroAddress' : IDL.Null,
     'Unauthorized' : IDL.Null,
     'Other' : IDL.Text,
   });
+  const MaxMainerTopUpStorageResult = IDL.Variant({
+    'Ok' : MaxMainerTopUpStorageResponse,
+    'Err' : ApiError,
+  });
+  const Message = IDL.Record({ 'content' : IDL.Text, 'sender' : IDL.Text });
   const ChatCreationResult = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : ApiError });
   const Chat = IDL.Record({
     'id' : IDL.Text,
@@ -69,6 +79,11 @@ export const idlFactory = ({ IDL }) => {
     'chatTitle' : IDL.Text,
   });
   const FunnAIBackend = IDL.Service({
+    'addMaxMainerTopup' : IDL.Func(
+        [MaxMainerTopUpInput],
+        [MaxMainerTopUpStorageResult],
+        [],
+      ),
     'create_chat' : IDL.Func([IDL.Vec(Message)], [ChatCreationResult], []),
     'delete_chat' : IDL.Func([IDL.Text], [ChatResult], []),
     'delete_email_subscriber' : IDL.Func([IDL.Text], [IDL.Bool], []),
