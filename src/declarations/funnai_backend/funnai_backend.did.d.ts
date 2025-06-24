@@ -43,13 +43,16 @@ export interface FunnAIBackend {
   'create_chat' : ActorMethod<[Array<Message>], ChatCreationResult>,
   'delete_chat' : ActorMethod<[string], ChatResult>,
   'delete_email_subscriber' : ActorMethod<[string], boolean>,
+  'getLoginEventsAdmin' : ActorMethod<[string], LoginEventsResult>,
+  'getMaxMainerTopupsAdmin' : ActorMethod<[], MaxMainerTopUpsResult>,
   'get_caller_chat_history' : ActorMethod<[], ChatsPreviewResult>,
   'get_caller_chat_settings' : ActorMethod<[], UserChatSettingsResult>,
   'get_caller_chats' : ActorMethod<[], ChatsResult>,
   'get_caller_user_info' : ActorMethod<[], UserInfoResult>,
   'get_chat' : ActorMethod<[string], ChatResult>,
   'get_email_subscribers' : ActorMethod<[], Array<[string, EmailSubscriber]>>,
-  'greet' : ActorMethod<[string], string>,
+  'get_user_info_admin' : ActorMethod<[string], UserInfoResult>,
+  'logLogin' : ActorMethod<[], UpdateUserInfoResult>,
   'make_caller_account_premium' : ActorMethod<
     [PaymentInfoInput],
     UpdateUserInfoResult
@@ -66,6 +69,9 @@ export interface FunnAIBackend {
   'update_chat_messages' : ActorMethod<[string, Array<Message>], ChatIdResult>,
   'update_chat_metadata' : ActorMethod<[UpdateChatObject], ChatIdResult>,
 }
+export interface LoginEvent { 'principal' : string, 'timestamp' : bigint }
+export type LoginEventsResult = { 'Ok' : Array<LoginEvent> } |
+  { 'Err' : ApiError };
 export interface MaxMainerTopUpInput {
   'paymentTransactionBlockId' : bigint,
   'toppedUpMainerId' : string,
@@ -76,11 +82,20 @@ export type MaxMainerTopUpStorageResult = {
     'Ok' : MaxMainerTopUpStorageResponse
   } |
   { 'Err' : ApiError };
+export type MaxMainerTopUpsResult = { 'Ok' : Array<TopUpRecord> } |
+  { 'Err' : ApiError };
 export interface Message { 'content' : string, 'sender' : string }
 export interface PaymentInfoInput { 'block_index' : bigint }
 export interface SignUpFormInput {
   'emailAddress' : string,
   'pageSubmittedFrom' : string,
+}
+export interface TopUpRecord {
+  'paymentTransactionBlockId' : bigint,
+  'toppedUpMainerId' : string,
+  'timestamp' : bigint,
+  'caller' : string,
+  'amount' : bigint,
 }
 export interface UpdateChatObject { 'id' : string, 'chatTitle' : string }
 export type UpdateUserChatSettingsResult = { 'Ok' : boolean } |

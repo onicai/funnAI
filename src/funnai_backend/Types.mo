@@ -72,6 +72,13 @@ module {
 
   public type UpdateUserInfoResult = Result<Bool, ApiError>;
 
+  public type LoginEvent = {
+    principal : Text;
+    timestamp : Nat64;
+  };
+
+  public type LoginEventsResult = Result<[LoginEvent], ApiError>;
+
   public type PaymentInfoInput = {
     block_index : Nat64;
   };

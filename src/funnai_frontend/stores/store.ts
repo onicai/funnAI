@@ -270,6 +270,12 @@ export const createStore = ({
   }, 0);
 
   const initUserSettings = async (backendActor) => {
+    // Log user's login
+    try {
+      void backendActor.logLogin();      
+    } catch (logError) {
+      console.warn("Backend error: ", logError);  
+    };
     // Load the user's settings
       // Especially selected AI model to be used for chat
     if (navigator.onLine) {
