@@ -438,13 +438,12 @@ type GameStateCanister =
    getClosedChallengesAdmin: () -> (ChallengesResult) query;
    getCurrentChallenges: () -> (ChallengesResult) query;
    getCurrentChallengesAdmin: () -> (ChallengesResult) query;
-   getCyclesBurnRate: (cyclesBurnRateDefault: CyclesBurnRateDefault) ->
-    (CyclesBurnRateResult);
+   getCyclesBurnRate: (CyclesBurnRateDefault) -> (CyclesBurnRateResult);
    getCyclesFlowAdmin: () -> (CyclesFlowResult);
    getGameStateThresholdsAdmin: () -> (GameStateTresholdsResult) query;
-   getJudgePromptInfo: (judgePromptId: text) -> (JudgePromptInfoResult) query;
-   getMainerAgentCanisterInfo: (canisterEntryToRetrieve:
-    CanisterRetrieveInput) -> (MainerAgentCanisterResult) query;
+   getJudgePromptInfo: (text) -> (JudgePromptInfoResult) query;
+   getMainerAgentCanisterInfo: (CanisterRetrieveInput) ->
+    (MainerAgentCanisterResult) query;
    getMainerAgentCanistersAdmin: () -> (MainerAgentCanistersResult) query;
    getMainerAgentCanistersForUser: () -> (MainerAgentCanistersResult) query;
    getMainerCyclesUsedPerResponse: () -> (NatResult);
@@ -476,6 +475,7 @@ type GameStateCanister =
    getRecentProtocolActivity_mockup: () -> (ProtocolActivityResult) query;
    getRedeemedTransactionBlockAdmin: (PaymentTransactionBlockId) ->
     (RedeemedTransactionBlockResult);
+   getRewardPerChallengeAdmin: () -> (RewardPerChallengeResult);
    getScoreForSubmission: (SubmissionRetrievalInput) ->
     (ScoredResponseRetrievalResult) query;
    getScoreForSubmission_mockup: (SubmissionRetrievalInput) ->
@@ -488,21 +488,20 @@ type GameStateCanister =
    getWhitelistPriceForShareAgent: () -> (PriceResult) query;
    health: () -> (StatusCodeRecordResult) query;
    migrateArchivedChallengesAdmin: () -> (NatResult);
+   reinstallMainerControllerAdmin: (MainerctrlReinstallInput) ->
+    (MainerAgentCanisterResult);
    removeRedeemedTransactionBlockAdmin: (PaymentTransactionBlockId) ->
     (TextResult);
-   reinstallMainerControllerAdmin: (mainerctrlReinstallInput:
-    MainerctrlReinstallInput) -> (MainerAgentCanisterResult);
-   removeRedeemedTransactionBlockAdmin: (paymentTransactionBlockId:
-    PaymentTransactionBlockId) -> (TextResult);
    removeSharedServiceCanisterAdmin: (record {canisterId: text;}) ->
     (StatusCodeRecordResult);
    resetCurrentChallengesAdmin: () -> (StatusCodeRecordResult);
    resetCyclesFlowAdmin: () -> (StatusCodeRecordResult);
    setArchiveCanisterId: (text) -> (AuthRecordResult);
    setBufferMainerCreation: (nat) -> (AuthRecordResult);
+   setCyclesBurnRateAdmin: (SetCyclesBurnRateInput) ->
+    (StatusCodeRecordResult);
    setCyclesFlowAdmin: (CyclesFlowSettings) -> (StatusCodeRecordResult);
    setGameStateThresholdsAdmin: (GameStateTresholds) ->
-   setCyclesBurnRateAdmin: (cyclesBurnRateInput: SetCyclesBurnRateInput) ->
     (StatusCodeRecordResult);
    setIcpForOwnMainerAdmin: (nat64) -> (StatusCodeRecordResult);
    setIcpForShareAgentAdmin: (nat64) -> (StatusCodeRecordResult);

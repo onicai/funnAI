@@ -43,6 +43,16 @@ type NatResult =
    Err: ApiError;
    Ok: nat;
  };
+type MainerTimersResult = 
+ variant {
+   Err: ApiError;
+   Ok: MainerTimers;
+ };
+type MainerTimers = 
+ record {
+   action1RegularityInSeconds: nat;
+   action2RegularityInSeconds: nat;
+ };
 type MainerConfigurationInput = 
  record {
    cyclesForMainer: nat;
@@ -80,6 +90,7 @@ type MainerAgentCtrlbCanister =
    getShareServiceCanisterId: () -> (text) query;
    getSubmittedResponsesAdmin: () ->
     (ChallengeResponseSubmissionsResult) query;
+   getTimerActionRegularityInSecondsAdmin: () -> (MainerTimersResult) query;
    health: () -> (StatusCodeRecordResult) query;
    ready: () -> (StatusCodeRecordResult);
    resetChallengeQueueAdmin: () -> (StatusCodeRecordResult);
@@ -89,6 +100,7 @@ type MainerAgentCtrlbCanister =
     (StatusCodeRecordResult);
    setRoundRobinLLMs: (nat) -> (StatusCodeRecordResult);
    setShareServiceCanisterId: (text) -> (StatusCodeRecordResult);
+   setTimerAction2RegularityInSecondsAdmin: (nat) -> (StatusCodeRecordResult);
    startTimerExecutionAdmin: () -> (AuthRecordResult);
    stopTimerExecutionAdmin: () -> (AuthRecordResult);
    timeToNextAgentSettingsUpdate: () -> (NatResult);

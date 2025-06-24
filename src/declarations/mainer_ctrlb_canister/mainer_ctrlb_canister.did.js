@@ -252,6 +252,14 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : CanisterIDRecord,
     'Err' : ApiError,
   });
+  const MainerTimers = IDL.Record({
+    'action2RegularityInSeconds' : IDL.Nat,
+    'action1RegularityInSeconds' : IDL.Nat,
+  });
+  const MainerTimersResult = IDL.Variant({
+    'Ok' : MainerTimers,
+    'Err' : ApiError,
+  });
   const AuthRecord = IDL.Record({ 'auth' : IDL.Text });
   const AuthRecordResult = IDL.Variant({ 'Ok' : AuthRecord, 'Err' : ApiError });
   const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
@@ -325,6 +333,11 @@ export const idlFactory = ({ IDL }) => {
         [ChallengeResponseSubmissionsResult],
         ['query'],
       ),
+    'getTimerActionRegularityInSecondsAdmin' : IDL.Func(
+        [],
+        [MainerTimersResult],
+        ['query'],
+      ),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
     'ready' : IDL.Func([], [StatusCodeRecordResult], []),
     'resetChallengeQueueAdmin' : IDL.Func([], [StatusCodeRecordResult], []),
@@ -342,6 +355,11 @@ export const idlFactory = ({ IDL }) => {
     'setRoundRobinLLMs' : IDL.Func([IDL.Nat], [StatusCodeRecordResult], []),
     'setShareServiceCanisterId' : IDL.Func(
         [IDL.Text],
+        [StatusCodeRecordResult],
+        [],
+      ),
+    'setTimerAction2RegularityInSecondsAdmin' : IDL.Func(
+        [IDL.Nat],
         [StatusCodeRecordResult],
         [],
       ),
