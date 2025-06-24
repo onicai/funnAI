@@ -711,6 +711,18 @@ export const idlFactory = ({ IDL }) => {
     'wasmHash' : IDL.Vec(IDL.Nat8),
     'textNote' : IDL.Text,
   });
+  const RewardPerChallenge = IDL.Record({
+    'amountForAllParticipants' : IDL.Nat,
+    'thirdPlaceAmount' : IDL.Nat,
+    'rewardType' : RewardType,
+    'totalAmount' : IDL.Nat,
+    'winnerAmount' : IDL.Nat,
+    'secondPlaceAmount' : IDL.Nat,
+  });
+  const RewardPerChallengeResult = IDL.Variant({
+    'Ok' : RewardPerChallenge,
+    'Err' : ApiError,
+  });
   const StartUploadJudgePromptCacheRecord = IDL.Record({
     'judgePromptId' : IDL.Text,
   });

@@ -239,6 +239,7 @@ export interface MainerAgentCtrlbCanister {
   'setShareServiceCanisterId' : ActorMethod<[string], StatusCodeRecordResult>,
   'startTimerExecutionAdmin' : ActorMethod<[], AuthRecordResult>,
   'stopTimerExecutionAdmin' : ActorMethod<[], AuthRecordResult>,
+  'timeToNextAgentSettingsUpdate' : ActorMethod<[], NatResult>,
   'triggerChallengeResponseAdmin' : ActorMethod<[], AuthRecordResult>,
   'updateAgentSettings' : ActorMethod<
     [MainerAgentSettingsInput],
@@ -256,6 +257,8 @@ export interface MainerConfigurationInput {
   'cyclesForMainer' : bigint,
   'subnetCtrl' : string,
 }
+export type NatResult = { 'Ok' : bigint } |
+  { 'Err' : ApiError };
 export interface OfficialMainerAgentCanister {
   'status' : CanisterStatus,
   'canisterType' : ProtocolCanisterType,
