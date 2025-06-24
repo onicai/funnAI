@@ -189,6 +189,7 @@ dfx canister call game_state_canister getRecentChallengeWinners --output json --
 dfx canister call game_state_canister getRecentProtocolActivity --output json --network $NETWORK
 
 # Deploy funnai backend (used mainly for chat):
+dfx generate funnai_backend
 dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_backend --network $NETWORK
 
 # Deploy funnai frontend:
