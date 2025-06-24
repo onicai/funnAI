@@ -9,15 +9,26 @@ from dotenv import dotenv_values
 import json
 
 from .monitor_common import get_canisters, ensure_log_dir
+from datetime import datetime, timezone
 
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 def get_data(canister_id, network):
-    """Fetch data from gamestate using dfx."""
-    try:
-        output = "\n"
+    """Fetch data from gamestate using dfx, only output changed values."""
+    if not hasattr(get_data, "previous_values"):
+        get_data.previous_values = {}
 
+    previous_values = get_data.previous_values
+    current_values = {}
+    output = "\n"
+
+    def should_include(key, value):
+        prev = previous_values.get(key)
+        current_values[key] = value
+        return prev != value
+
+    try:
         # -----------------------------------------------------
         result = subprocess.check_output(
             ["dfx", "canister", "call", canister_id, "getScoredChallengesAdmin", "--output", "json", "--network", network],
@@ -26,7 +37,7 @@ def get_data(canister_id, network):
         )
         data = json.loads(result)
         numJudgedResponses = 0
-        max_depth = 100 # Limit to prevent infinite loops
+        max_depth = 100
         for challenge in data.get('Ok', []):
             l1 = challenge["1"]
             depth = 0
@@ -39,79 +50,37 @@ def get_data(canister_id, network):
                     numJudgedResponses += 1
                 else:
                     print(f"Unexpected submissionStatus: {submissionStatus}")
+                l1 = l1_0.get('1', {})
 
-                l1 = l1_0.get('1', {})  # Move to the next item in the list
+                if depth > 50:
+                    print(f"Warning: depth = {depth} : exceeded 50 for challenge {challenge['0']}. Possible infinite loop detected.")
 
-                if depth > 10:
-                    print(f"Warning: depth = {depth} : exceeded 10 for challenge {challenge['0']}. Possible infinite loop detected.")
-                    
-                
-        output += f"- numJudgedResponses = {numJudgedResponses} \n"
-
-        # -----------------------------------------------------
-        result = subprocess.check_output(
-            ["dfx", "canister", "call", canister_id, "getNumArchivedChallengesAdmin", "--output", "json", "--network", network],
-            stderr=subprocess.DEVNULL,
-            text=True
-        )
-        data = json.loads(result)
-        output += f"- getNumArchivedChallengesAdmin               = {data.get('Ok')} \n"
+        if should_include("numJudgedResponses", numJudgedResponses):
+            output += f"- numJudgedResponses = {numJudgedResponses} \n"
 
         # -----------------------------------------------------
-        result = subprocess.check_output(
-            ["dfx", "canister", "call", canister_id, "getNumClosedChallengesAdmin", "--output", "json", "--network", network],
-            stderr=subprocess.DEVNULL,
-            text=True
-        )
-        data = json.loads(result)
-        output += f"- getNumClosedChallengesAdmin                 = {data.get('Ok')} \n"
+        methods = [
+            ("getNumArchivedChallengesAdmin", "ArchivedChallenges"),
+            ("getNumClosedChallengesAdmin", "ClosedChallenges"),
+            ("getNumScoredChallengesAdmin", "ScoredChallenges"),
+            ("getNumCurrentChallengesAdmin", "CurrentChallenges"),
+            ("getNumSubmissionsAdmin", "Submissions"),
+            ("getNumOpenSubmissionsAdmin", "OpenSubmissions"),
+            ("getNumOpenSubmissionsForOpenChallengesAdmin", "OpenSubsForOpenChallenges"),
+        ]
 
-        # -----------------------------------------------------
-        result = subprocess.check_output(
-            ["dfx", "canister", "call", canister_id, "getNumScoredChallengesAdmin", "--output", "json", "--network", network],
-            stderr=subprocess.DEVNULL,
-            text=True
-        )
-        data = json.loads(result)
-        output += f"- getNumScoredChallengesAdmin                 = {data.get('Ok')} \n"
+        for method, label in methods:
+            result = subprocess.check_output(
+                ["dfx", "canister", "call", canister_id, method, "--output", "json", "--network", network],
+                stderr=subprocess.DEVNULL,
+                text=True
+            )
+            data = json.loads(result)
+            val = data.get('Ok')
+            if should_include(label, val):
+                output += f"- {method:<45} = {val} \n"
 
-        # -----------------------------------------------------
-        result = subprocess.check_output(
-            ["dfx", "canister", "call", canister_id, "getNumCurrentChallengesAdmin", "--output", "json", "--network", network],
-            stderr=subprocess.DEVNULL,
-            text=True
-        )
-        data = json.loads(result)
-        output += f"- getNumCurrentChallengesAdmin                = {data.get('Ok')} \n"
-
-        # -----------------------------------------------------
-        result = subprocess.check_output(
-            ["dfx", "canister", "call", canister_id, "getNumSubmissionsAdmin", "--output", "json", "--network", network],
-            stderr=subprocess.DEVNULL,
-            text=True
-        )
-        data = json.loads(result)
-        output += f"- getNumSubmissionsAdmin                      = {data.get('Ok')} \n"
-
-         # -----------------------------------------------------
-        result = subprocess.check_output(
-            ["dfx", "canister", "call", canister_id, "getNumOpenSubmissionsAdmin", "--output", "json", "--network", network],
-            stderr=subprocess.DEVNULL,
-            text=True
-        )
-        data = json.loads(result)
-        output += f"- getNumOpenSubmissionsAdmin                  = {data.get('Ok')} \n"
-
-        # -----------------------------------------------------
-        result = subprocess.check_output(
-            ["dfx", "canister", "call", canister_id, "getNumOpenSubmissionsForOpenChallengesAdmin", "--output", "json", "--network", network],
-            stderr=subprocess.DEVNULL,
-            text=True
-        )
-        data = json.loads(result)
-        output += f"- getNumOpenSubmissionsForOpenChallengesAdmin = {data.get('Ok')} \n"
-
-        # -----------------------------------------------------
+        get_data.previous_values = current_values
         return output.strip().splitlines()
     except subprocess.CalledProcessError:
         return []
@@ -154,18 +123,20 @@ def main(network):
     with open(MONITOR_GAMESTATE_FILE, "w"):
         pass
 
-    print(f"\nMonitoring changes to stats for {gamestate_name} ({gamestate_canister_id}) on '{network}' network...\n")
+    delay = 2  # seconds
 
-    timer = 0
-    delay = 10  # seconds
+    print(f"\nEvery {delay} seconds, monitoring changes to stats for {gamestate_name} ({gamestate_canister_id}) on '{network}' network...\n")
     while True:
         new_lines = []
         log_lines = get_data(gamestate_canister_id, network)
+        CURRENT_LOGS = defaultdict(set)
         for line in log_lines:
-            if line not in PREVIOUS_LOGS[name]:
-                PREVIOUS_LOGS[name].add(line)
+            if line not in PREVIOUS_LOGS[gamestate_name]:
+                CURRENT_LOGS[gamestate_name].add(line)
                 new_lines.append(line)
 
+        PREVIOUS_LOGS = CURRENT_LOGS
+        
         if new_lines:
             with open(MONITOR_GAMESTATE_FILE, "a") as f:
                 for line in new_lines:
@@ -177,10 +148,9 @@ def main(network):
                     elif "getNumOpenSubmissionsForOpenChallengesAdmin" in line or "getNumOpenSubmissionsAdmin" in line or "getNumSubmissionsAdmin" in line:
                         color_line = CANISTER_COLORS[share_service_name]
                     f.write(line + "\n")
-                    # print(f"{CANISTER_COLORS[gamestate_name]}{timer:10,}s-[{gamestate_name}]{color_line}({gamestate_canister_id}) {line}")
-                    print(f"{color_line}{timer:10,}s-{line}")
+                    current_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+                    print(f"{color_line}[{current_time}]-{line}")
         time.sleep(delay)
-        timer += delay
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Monitor DFINITY canister logs.")

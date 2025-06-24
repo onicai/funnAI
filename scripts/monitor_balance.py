@@ -8,6 +8,7 @@ from collections import defaultdict
 from dotenv import dotenv_values
 
 from .monitor_common import get_canisters, ensure_log_dir
+from datetime import datetime, timezone
 
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -53,9 +54,10 @@ def main(network, canister_types):
     balances = {name: None for name in CANISTERS.keys()} 
     initial_balances = {name: None for name in CANISTERS.keys()} 
     max_name_length = max(len(name) for name in CANISTERS.keys())
-    timer = 0
-    delay = 60*60  # 60 minutes  
+    delay = 60 * 60  # 60 minutes
+    first = True
     while True:
+        current_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
         for name, canister_id in CANISTERS.items():
             balance = get_balance(canister_id, network)
 
@@ -81,14 +83,14 @@ def main(network, canister_types):
                     change_from_initial = balance - (initial_balances[name] or 0)
                     line += f"(Δ: {change:>+20_} | total Δ: {change_from_initial:>+20_}) "
                 f.write(line + "\n")
-                print(f"{CANISTER_COLORS[name]}[{name:{max_name_length}}]{timer:10,}s: {line}{RESET_COLOR}")
+                print(f"{CANISTER_COLORS[name]}[{name:{max_name_length}}][{current_time}]: {line}{RESET_COLOR}")
         
-        if timer == 0:
+        if first:
+            first = False
             print(f"\nInitial balance check completed for {len(CANISTERS)} canisters on '{network}' network.")
             print(f"Will report changes in balance of {BALANCE_CHANGE_THRESHOLD:_} Cycles. Checking every {delay} seconds...")
 
         time.sleep(delay)
-        timer += delay
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Monitor DFINITY canister logs.")
