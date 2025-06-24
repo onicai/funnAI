@@ -55,7 +55,7 @@ Get & set the values with the GameState canister:
 
     dfx canister --network $NETWORK call game_state_canister setCyclesBurnRateAdmin '( record {cyclesBurnRateDefault = variant {Low}     ; cyclesBurnRate = record { cycles = 1_000_000_000_000 : nat; timeInterval = variant { Daily }; } } )'
     dfx canister --network $NETWORK call game_state_canister setCyclesBurnRateAdmin '( record {cyclesBurnRateDefault = variant {Mid}     ; cyclesBurnRate = record { cycles = 2_000_000_000_000 : nat; timeInterval = variant { Daily }; } } )'
-    dfx canister --network $NETWORK call game_state_canister setCyclesBurnRateAdmin '( record {cyclesBurnRateDefault = variant {High}    ; cyclesBurnRate = record { cycles = 3_000_000_000_000 : nat; timeInterval = variant { Daily }; } } )'
+    dfx canister --network $NETWORK call game_state_canister setCyclesBurnRateAdmin '( record {cyclesBurnRateDefault = variant {High}    ; cyclesBurnRate = record { cycles = 4_000_000_000_000 : nat; timeInterval = variant { Daily }; } } )'
     dfx canister --network $NETWORK call game_state_canister setCyclesBurnRateAdmin '( record {cyclesBurnRateDefault = variant {VeryHigh}; cyclesBurnRate = record { cycles = 6_000_000_000_000 : nat; timeInterval = variant { Daily }; } } )'
 ```
 
@@ -67,8 +67,17 @@ To test it out on a mAIner, do the following:
 
     # Check the new timer settings
     dfx canister --network $NETWORK call <canister-id> getTimerActionRegularityInSecondsAdmin 
-
 ```
+
+The game state setting that impacts the actual timing: `cyclesUsedPerResponse 394_591_568_000`
+
+With this, the timers end up as:
+
+- Low      -> 1 TCycles / day -> 43_200 seconds = Every  12 hours ==>  2 *0.4=0.8 TCycles / day
+- Mid      -> 2 TCycles / day -> 17_280 seconds = Every 4.8 hours ==>  5 *0.4=2.0 TCycles / day
+- High     -> 4 TCycles / day ->  8_640 seconds = Every 2.5 hours ==> 9.6*0.4=3.8 TCycles / day
+- VeryHigh -> 6 TCycles / day ->  5_760 seconds = Every 1.6 hours ==> 15 *0.4=6.0 TCycles / day
+
 
 # Challenger, Judge & ShareService timer delays
 
@@ -77,7 +86,7 @@ To test it out on a mAIner, do the following:
 source scripts/canister_ids-prd.env
 
 # Note: These calls will also (re-)start the timers
-dfx canister --network $NETWORK call $SUBNET_0_CHALLENGER    setTimerActionRegularityInSecondsAdmin  '( 5 : nat)' 
+dfx canister --network $NETWORK call $SUBNET_0_CHALLENGER    setTimerActionRegularityInSecondsAdmin  '( 300 : nat)' 
 dfx canister --network $NETWORK call $SUBNET_0_JUDGE         setTimerActionRegularityInSecondsAdmin  '( 5 : nat)'
 dfx canister --network $NETWORK call $SUBNET_0_SHARE_SERVICE setTimerAction2RegularityInSecondsAdmin '( 5 : nat)'
 
@@ -97,19 +106,22 @@ dfx canister --network $NETWORK call $SUBNET_0_JUDGE         startTimerExecution
 dfx canister --network $NETWORK call $SUBNET_0_SHARE_SERVICE startTimerExecutionAdmin
 ```
 
-# Max Number of open Challenges
-
-todo
-
 # Max Number of unscored resposes
 
 todo
 
 
+# Max number of mAIners & Whitelisting
 
-# Max number of mAIners
+```bash
+dfx canister --network $NETWORK call game_state_canister getPauseProtocolFlag
+dfx canister --network $NETWORK call game_state_canister getPauseWhitelistMainerCreationFlagAdmin
 
-todo
+dfx canister --network $NETWORK call game_state_canister togglePauseProtocolFlagAdmin
+dfx canister --network $NETWORK call game_state_canister togglePauseWhitelistMainerCreationFlagAdmin
+
+dfx canister --network $NETWORK call game_state_canister setLimitForCreatingMainerAdmin ...Types.MainerLimitInput...
+
 
 
 
