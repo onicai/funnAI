@@ -17,6 +17,12 @@
     const savedTheme = localStorage.getItem("theme") || "dark";
     theme.set(savedTheme);
     applyTheme(savedTheme);
+    try {
+      // Check login state
+      void store.checkExistingLoginAndConnect();      
+    } catch (error) {
+      console.warn("Error checking login state: ", error);      
+    };
   });
   
   // React to theme changes
