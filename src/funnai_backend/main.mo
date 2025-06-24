@@ -15,11 +15,6 @@ import Types "./Types";
 shared actor class FunnAIBackend(custodian: Principal) = Self {
   stable var custodians = List.make<Principal>(custodian);
 
-// TODO: instead add functions to manage cycles balance and gather stats
-  public func greet(name : Text) : async Text {
-    return "Hello, " # name # "!";
-  };
-
   // https://forum.dfinity.org/t/is-there-any-address-0-equivalent-at-dfinity-motoko/5445/3
   let null_address : Principal = Principal.fromText("aaaaa-aa");
 
