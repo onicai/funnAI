@@ -32,8 +32,8 @@ dfx canister call game_state_canister getGameStateThresholdsAdmin --output json 
 dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdArchiveClosedChallenges = 150 : nat;
         thresholdMaxOpenChallenges= 6 : nat;
-        thresholdMaxOpenSubmissions = 70 : nat;
-        thresholdScoredResponsesPerChallenge = 10 : nat;
+        thresholdMaxOpenSubmissions = 140 : nat;
+        thresholdScoredResponsesPerChallenge = 20 : nat;
     }
 )' --network $NETWORK
 ```
@@ -86,24 +86,24 @@ With this, the timers end up as:
 source scripts/canister_ids-prd.env
 
 # Note: These calls will also (re-)start the timers
-dfx canister --network $NETWORK call $SUBNET_0_CHALLENGER    setTimerActionRegularityInSecondsAdmin  '( 300 : nat)' 
-dfx canister --network $NETWORK call $SUBNET_0_JUDGE         setTimerActionRegularityInSecondsAdmin  '( 5 : nat)'
-dfx canister --network $NETWORK call $SUBNET_0_SHARE_SERVICE setTimerAction2RegularityInSecondsAdmin '( 5 : nat)'
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    setTimerActionRegularityInSecondsAdmin  '( 300 : nat)' 
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         setTimerActionRegularityInSecondsAdmin  '( 5 : nat)'
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE setTimerAction2RegularityInSecondsAdmin '( 5 : nat)'
 
 # Get the timer regularity 
-dfx canister --network $NETWORK call $SUBNET_0_CHALLENGER    getTimerActionRegularityInSecondsAdmin
-dfx canister --network $NETWORK call $SUBNET_0_JUDGE         getTimerActionRegularityInSecondsAdmin
-dfx canister --network $NETWORK call $SUBNET_0_SHARE_SERVICE getTimerActionRegularityInSecondsAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    getTimerActionRegularityInSecondsAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         getTimerActionRegularityInSecondsAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getTimerActionRegularityInSecondsAdmin
 
 # Stopping the timers
-dfx canister --network $NETWORK call $SUBNET_0_CHALLENGER    stopTimerExecutionAdmin
-dfx canister --network $NETWORK call $SUBNET_0_JUDGE         stopTimerExecutionAdmin
-dfx canister --network $NETWORK call $SUBNET_0_SHARE_SERVICE stopTimerExecutionAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    stopTimerExecutionAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         stopTimerExecutionAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE stopTimerExecutionAdmin
 
 # (Re-)Starting the timers
-dfx canister --network $NETWORK call $SUBNET_0_CHALLENGER    startTimerExecutionAdmin
-dfx canister --network $NETWORK call $SUBNET_0_JUDGE         startTimerExecutionAdmin
-dfx canister --network $NETWORK call $SUBNET_0_SHARE_SERVICE startTimerExecutionAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    startTimerExecutionAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         startTimerExecutionAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE startTimerExecutionAdmin
 ```
 
 # Max Number of unscored resposes

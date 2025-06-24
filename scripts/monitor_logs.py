@@ -8,6 +8,7 @@ from collections import defaultdict
 from dotenv import dotenv_values
 
 from .monitor_common import get_canisters, ensure_log_dir
+from datetime import datetime, timezone
 
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -39,8 +40,8 @@ def main(network, canister_types):
         pass
 
     print(f"Retrieving logs for {len(CANISTERS)} canisters on '{network}' network...")
-    timer = 0
     delay = 3  # seconds  
+    first = True
     while True:
         for name, canister_id in CANISTERS.items():
             new_lines = []
@@ -56,15 +57,14 @@ def main(network, canister_types):
                     for line in new_lines:
                         f_individual.write(line + "\n")
                         f_common.write(line + "\n")
-                        # print(line)
                         print(f"{CANISTER_COLORS[name]}[{name}]{RESET_COLOR}({canister_id}) {line}")
-        
-        if timer == 0:
+
+        if first:
+            first = False
             print(f"\nInitial log retrieval completed for {len(CANISTERS)} canisters on '{network}' network.")
             print(f"Will report changes in logs. Checking every {delay} seconds...")
 
         time.sleep(delay)
-        timer += delay
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Monitor DFINITY canister logs.")
