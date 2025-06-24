@@ -98,6 +98,58 @@ Upgrading the GameState is typically easy. Just make sure everything is paused, 
 scripts/scripts-gamestate/deploy.sh --network $NETWORK --mode upgrade
 ```
 
+# Reinstall of GameState
+
+This is not something we should do, because all data is lost, but this is the procedure:
+
+```bash
+NETWORK=prd
+
+# from funnAI folder
+scripts/scripts-gamestate/deploy.sh --network $NETWORK --mode reinstall
+
+# Reconnect Challenger, Judge & mAInerCreator, simply by doing an upgrade
+# from folder: PoAIW
+scripts/deploy-challenger.sh --network $NETWORK --mode upgrade
+scripts/deploy-judge.sh --network $NETWORK --mode upgrade
+scripts/deploy-mainer-creator.sh --network $NETWORK --mode upgrade
+# From folder funnAI:
+scripts/scripts-gamestate/register-all.sh --network $NETWORK
+
+# Reconnect ShareService, by doing an upgrade
+# from folder: funnAI
+dfx canister call game_state_canister addMainerAgentCanisterAdmin '(record { 
+    address = "rilmv-caaaa-aaaaa-qandq-cai" ; 
+    subnet = "snjp4-xlbw4-mnbog-ddwy6-6ckfd-2w5a2-eipqo-7l436-pxqkh-l6fuv-vae"; 
+    canisterType = variant { MainerAgent = variant { ShareService } }; 
+    creationTimestamp = 1750799357;
+    createdBy = principal "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae";
+    ownedBy = principal "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae";
+    status = variant { Running };
+    mainerConfig = record {
+            mainerAgentCanisterType = variant { ShareService };
+            selectedLLM = opt variant {Qwen2_5_500M};
+            cyclesForMainer = 0;
+            subnetCtrl = "snjp4-xlbw4-mnbog-ddwy6-6ckfd-2w5a2-eipqo-7l436-pxqkh-l6fuv-vae";
+            subnetLlm = "4zbus-z2bmt-ilreg-xakz4-6tyre-hsqj4-slb4g-zjwqo-snjcc-iqphi-3qe";
+        };
+    })' --network $NETWORK
+dfx canister call game_state_canister addOfficialCanister '(record {
+    address = "rilmv-caaaa-aaaaa-qandq-cai" ; 
+    subnet = "snjp4-xlbw4-mnbog-ddwy6-6ckfd-2w5a2-eipqo-7l436-pxqkh-l6fuv-vae"; 
+    canisterType = variant { MainerAgent = variant { ShareService } } 
+    })' --network $NETWORK
+dfx canister call game_state_canister getOfficialCanistersAdmin --network $NETWORK
+scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.sh --mode upgrade --network $NETWORK
+
+# Update the wasm-hash, using the Admin owned test mAIner ShareAgent
+dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="vg3fp-pyaaa-aaaaa-qavba-cai"; textNote="Reinstall of GameState"})' --network $NETWORK
+
+# Set the parameters according to README-prd-settings.md
+```
+
+
+
 # Upgrade of Challenger & Judge Controllers & LLM code
 
 ```bash
@@ -183,16 +235,10 @@ Upgrading mAIner Controllers involves several steps, because the mAIners are upg
         the mAIners register themselves with the ShareService
 
     ```bash
-        from folder: funnAI
+        # from folder: funnAI
         NETWORK=prd
         scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.sh --mode upgrade --network $NETWORK
         # NOTE: `--mode reinstall` is also supported
-
-        # Note: UNLIKELY you need this, but here how to fix it if the script fails because you also updated GameState and wiped out some data
-        # Verify if the ShareService mAIner is still registered with GameState as an official canister
-        dfx canister call game_state_canister getOfficialCanistersAdmin --network $NETWORK
-        # If not, re-register it with GameState
-        dfx canister call game_state_canister addOfficialCanister '(record { address = ; subnet = "<canister-id-of-shareservice>"; canisterType = variant { MainerAgent = variant { ShareService } } })' --network $NETWORK
     ```
 
 - Upgrade all the ShareAgent mAIners
