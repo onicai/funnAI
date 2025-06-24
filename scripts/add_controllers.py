@@ -36,8 +36,8 @@ def add_controllers(canister_id, network):
         except subprocess.CalledProcessError:
             print(f"ERROR: Unable to add controller {controller} for canister {canister_id} on network {network}")
 
-def main(network):
-    (CANISTERS, CANISTER_COLORS, RESET_COLOR) = get_canisters(network)
+def main(network, canister_types):
+    (CANISTERS, CANISTER_COLORS, RESET_COLOR) = get_canisters(network, canister_types)
 
     print(f"Updating controllers of {len(CANISTERS)} canisters on '{network}' network...")
     for name, canister_id in CANISTERS.items():
@@ -53,5 +53,11 @@ if __name__ == "__main__":
         default="local",
         help="Specify the network to use (default: local)",
     )
+    parser.add_argument(
+        "--canister-types",
+        choices=["all", "protocol", "mainers"],
+        default="protocol",
+        help="Specify the network to use (default: local)",
+    )
     args = parser.parse_args()
-    main(args.network)
+    main(args.network, args.canister_types)

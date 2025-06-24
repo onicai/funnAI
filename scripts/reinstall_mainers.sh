@@ -2,7 +2,6 @@
 
 # Default network type is local
 NETWORK_TYPE="local"
-CANISTER_TYPES="protocol"
 
 # Parse command line arguments for network type
 while [ $# -gt 0 ]; do
@@ -17,19 +16,9 @@ while [ $# -gt 0 ]; do
             fi
             shift
             ;;
-        --canister-types)
-            shift
-            if [ "$1" = "all" ] || [ "$1" = "protocol" ] || [ "$1" = "mainers" ]; then
-                CANISTER_TYPES=$1
-            else
-                echo "Invalid network type: $1. Use 'all' or 'protocol' or 'mainers'."
-                exit 1
-            fi
-            shift
-            ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --canister-types [all|protocol|mainers]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --burnrate [Low|Mid|High|VeryHigh]"
             exit 1
             ;;
     esac
@@ -37,4 +26,12 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 
-python -m scripts.monitor_balance --network $NETWORK_TYPE --canister-types $CANISTER_TYPES
+echo " "
+read -p "Are you sure you want to reinstall all the mAIners? This will OVERWRITE all the data and code in the canisters. (y/n) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Reinstall cancelled."
+    exit 1
+fi
+
+python -m scripts.reinstall_mainers --network $NETWORK_TYPE

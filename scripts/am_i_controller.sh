@@ -29,7 +29,7 @@ while [ $# -gt 0 ]; do
             ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --canister-types [all|protocol|mainers]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd]"
             exit 1
             ;;
     esac
@@ -37,4 +37,4 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 
-python -m scripts.monitor_balance --network $NETWORK_TYPE --canister-types $CANISTER_TYPES
+python -m scripts.am_i_controller --network $NETWORK_TYPE --canister-types $CANISTER_TYPES

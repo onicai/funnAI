@@ -28,6 +28,7 @@ type UpdateWasmHashInput =
    textNote: text;
    wasmHash: blob;
  };
+type TimeInterval = variant {Daily;};
 type TextResult = 
  variant {
    Err: ApiError;
@@ -76,6 +77,11 @@ type SetUpMainerLlmCanisterResult =
       controllerCanisterEntry: OfficialMainerAgentCanister;
       llmCanisterId: text;
     };
+ };
+type SetCyclesBurnRateInput = 
+ record {
+   cyclesBurnRate: CyclesBurnRate;
+   cyclesBurnRateDefault: CyclesBurnRateDefault;
  };
 type SelectableMainerLLMs = variant {Qwen2_5_500M;};
 type ScoredResponseReturn = record {success: bool;};
@@ -302,6 +308,7 @@ type NatResult =
    Ok: nat;
  };
 type MainerctrlUpgradeInput = record {canisterAddress: CanisterAddress;};
+type MainerctrlReinstallInput = record {canisterAddress: CanisterAddress;};
 type MainerPromptInfoResult = 
  variant {
    Err: ApiError;
@@ -431,11 +438,13 @@ type GameStateCanister =
    getClosedChallengesAdmin: () -> (ChallengesResult) query;
    getCurrentChallenges: () -> (ChallengesResult) query;
    getCurrentChallengesAdmin: () -> (ChallengesResult) query;
+   getCyclesBurnRate: (cyclesBurnRateDefault: CyclesBurnRateDefault) ->
+    (CyclesBurnRateResult);
    getCyclesFlowAdmin: () -> (CyclesFlowResult);
    getGameStateThresholdsAdmin: () -> (GameStateTresholdsResult) query;
-   getJudgePromptInfo: (text) -> (JudgePromptInfoResult) query;
-   getMainerAgentCanisterInfo: (CanisterRetrieveInput) ->
-    (MainerAgentCanisterResult) query;
+   getJudgePromptInfo: (judgePromptId: text) -> (JudgePromptInfoResult) query;
+   getMainerAgentCanisterInfo: (canisterEntryToRetrieve:
+    CanisterRetrieveInput) -> (MainerAgentCanisterResult) query;
    getMainerAgentCanistersAdmin: () -> (MainerAgentCanistersResult) query;
    getMainerAgentCanistersForUser: () -> (MainerAgentCanistersResult) query;
    getMainerCyclesUsedPerResponse: () -> (NatResult);
@@ -481,6 +490,10 @@ type GameStateCanister =
    migrateArchivedChallengesAdmin: () -> (NatResult);
    removeRedeemedTransactionBlockAdmin: (PaymentTransactionBlockId) ->
     (TextResult);
+   reinstallMainerControllerAdmin: (mainerctrlReinstallInput:
+    MainerctrlReinstallInput) -> (MainerAgentCanisterResult);
+   removeRedeemedTransactionBlockAdmin: (paymentTransactionBlockId:
+    PaymentTransactionBlockId) -> (TextResult);
    removeSharedServiceCanisterAdmin: (record {canisterId: text;}) ->
     (StatusCodeRecordResult);
    resetCurrentChallengesAdmin: () -> (StatusCodeRecordResult);
@@ -489,6 +502,7 @@ type GameStateCanister =
    setBufferMainerCreation: (nat) -> (AuthRecordResult);
    setCyclesFlowAdmin: (CyclesFlowSettings) -> (StatusCodeRecordResult);
    setGameStateThresholdsAdmin: (GameStateTresholds) ->
+   setCyclesBurnRateAdmin: (cyclesBurnRateInput: SetCyclesBurnRateInput) ->
     (StatusCodeRecordResult);
    setIcpForOwnMainerAdmin: (nat64) -> (StatusCodeRecordResult);
    setIcpForShareAgentAdmin: (nat64) -> (StatusCodeRecordResult);
@@ -643,6 +657,10 @@ type CyclesFlowSettings =
    cyclesGenerateResponseSsctrlSsllm: opt nat;
    cyclesGenerateScoreGsJuctrl: opt nat;
    cyclesGenerateScoreJuctrlJullm: opt nat;
+   cyclesReinstallMainerctrlGsMc: opt nat;
+   cyclesReinstallMainerctrlMcMainerctrl: opt nat;
+   cyclesReinstallMainerllmGsMc: opt nat;
+   cyclesReinstallMainerllmMcMainerllm: opt nat;
    cyclesSubmitResponse: opt nat;
    cyclesUpgradeMainerctrlGsMc: opt nat;
    cyclesUpgradeMainerctrlMcMainerctrl: opt nat;
@@ -746,6 +764,24 @@ type CyclesBurntResult =
  variant {
    Err: ApiError;
    Ok: nat;
+ };
+type CyclesBurnRateResult = 
+ variant {
+   Err: ApiError;
+   Ok: CyclesBurnRate;
+ };
+type CyclesBurnRateDefault = 
+ variant {
+   Custom: CyclesBurnRate;
+   High;
+   Low;
+   Mid;
+   VeryHigh;
+ };
+type CyclesBurnRate = 
+ record {
+   cycles: nat;
+   timeInterval: TimeInterval;
  };
 type CheckMainerLimit = record {mainerType: MainerAgentCanisterType;};
 type ChallengesResult = 

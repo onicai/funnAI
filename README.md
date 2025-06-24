@@ -11,14 +11,27 @@ Then, do the following:
 conda activate llama_cpp_canister
 
 # Set NETWORK environment variable
-NETWORK=testing  # [local|ic|development|testing|demo|prd
+NETWORK=testing  # [local|ic|development|testing|demo|prd]
 
-# MONITORING SCRIPTS
-# (-) scripts read from 'scripts/canister_ids-<network>.env'
+# ADMIN MONITORING & HELPER SCRIPTS
+# The scripts read the canister ids from these files:
+# - protocol: 'scripts/canister_ids-<network>.env'
+# - mainers : 'scripts/canister_ids_mainers-<network>.env'
 pip install -r scripts/requirements.txt
-scripts/monitor_logs.sh --network $NETWORK
-scripts/monitor_gamestate.sh --network $NETWORK
-scripts/monitor_balance.sh --network $NETWORK
+# Update the file 'scripts/canister_ids_mainers-<network>.env'
+scripts/get_mainers.sh --network $NETWORK
+# Then run these
+scripts/monitor_logs.sh --network $NETWORK --canister-types [all|protocol|mainers]
+scripts/monitor_gamestate_metrics.sh --network $NETWORK 
+scripts/monitor_gamestate_logs.sh --network $NETWORK 
+scripts/monitor_balance.sh --network $NETWORK --canister-types [all|protocol|mainers]
+scripts/list_controllers.sh --network $NETWORK --canister-types [all|protocol|mainers]
+scripts/add_controllers.sh --network $NETWORK --canister-types [all|protocol|mainers]
+scripts/start_timers.sh --network $NETWORK --canister-types [all|protocol|mainers]
+scripts/stop_timers.sh --network $NETWORK --canister-types [all|protocol|mainers]
+# Carefull with these ones -> FOR TESTING ONLY
+scripts/update_mainer_burnrates.sh --network $NETWORK --burnrate [Low|Mid|High|VeryHigh]
+scripts/topup.sh --network $NETWORK --canister-types [all|protocol|mainers] --tc <TCycles>
 
 # When running local
 # We are using dfx deps for:
@@ -86,7 +99,13 @@ scripts/scripts-gamestate/deploy-mainers-ShareService-AddLLM-via-gamestate.sh --
 
 # -----------------------------------------
 # Deploy mAIners of type #ShareAgent
+# Verify that 'subnetShareAgentCtrl' is set correctly in GameState
+dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
+# Deploy a new ShareAgent via Admin command
 scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install --network $NETWORK
+
+# To increase limit of ShareAgent mAIners
+dfx canister --network prd call game_state_canister setLimitForCreatingMainerAdmin '(record {mainerType = variant { ShareAgent } ; newLimit = 450 : nat;} )'
 
 # -----------------------------------------
 # Deploy mAIners of type #Own
@@ -112,31 +131,7 @@ scripts/scripts-gamestate/register-all.sh --network $NETWORK
 dfx canister call game_state_canister resetCyclesFlowAdmin --network $NETWORK
 
 # #########################################################################
-# Upgrading for new mAIner code
-#
-# Store the new mAIner did & wasm in mAinerCreator/files, then issue these commands to upgrade the system
-cd PoAIW
-scripts/deploy-mainer-creator.sh  --network $NETWORK --mode upgrade
-# 
-# go back to funnAI folder
-cd ..
-#
-# Upgrade the #ShareService with the new mAIner code
-scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.sh --mode upgrade --network $NETWORK
-# Add a previous ShareService if need be, e.g.
-dfx canister call game_state_canister addOfficialCanister '(record { address = "ecpt4-ayaaa-aaaad-qhk4a-cai"; subnet = ""; canisterType = variant { MainerAgent = variant { ShareService } } })' --network $NETWORK
-# Verify with
-dfx canister call game_state_canister getOfficialCanistersAdmin --network $NETWORK
-#
-# Upgrade the #ShareAgent canisters with new mAIner code, by repeating this call for all of them
-# Get user's mAIners
-dfx canister call game_state_canister getNumberMainerAgentsAdmin --output json --network $NETWORK
-dfx canister call game_state_canister getMainerAgentCanistersAdmin --output json --network $NETWORK
-# TODO: write a script that automates these calls over all ShareAgent canisters
-scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode upgrade --canister <canisterId> --network $NETWORK
-#
-# Update gamestate to the latest wasmhash. <canisterId> is the address of one of the upgraded ShareAgent canisters
-dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="New wasm deployed"})' --network $NETWORK
+# Upgrading for new mAIner code -> See file README-prd-upgrade-PoAIW.md
 
 # #########################################################################
 # Admin functions to clean up redeemed payments in case the creation failed.
@@ -266,7 +261,7 @@ dfx canister call game_state_canister setCyclesFlowAdmin '( record {
 })'
 ```
 
-Adjust reward per challenge:
+# Adjust reward per challenge:
 
 ```bash
 # e.g. to 1000 FUNNAI
