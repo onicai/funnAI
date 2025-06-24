@@ -1398,27 +1398,27 @@
             </svg>
           </div>
           
-          <!-- Main heading -->
+          <!-- Main heading temp change: Whitelist phase complete! 🎉 --> 
           <h3 class="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100 mb-3">
-            Whitelist phase complete! 🎉
+            Whitelist phase active! 🎉
           </h3>
           
-          <!-- Description -->
+          <!-- Description temp change: All whitelist mAIners have been successfully claimed by early supporters. -->
           <div class="space-y-3 mb-6">
             <p class="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-md mx-auto">
-              All whitelist mAIners have been successfully claimed by early supporters.
+              Claim your whitelist spots and become an early mAIner.
             </p>
             
-            <!-- Public sale announcement -->
+            <!-- Public sale announcement temp change: Public Sale Opens June 29 -->
             <div class="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200/60 dark:border-emerald-700/60 rounded-lg p-4 max-w-sm mx-auto">
               <div class="flex items-center justify-center space-x-2 mb-2">
                 <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
-                <span class="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Public Sale Opens</span>
+                <span class="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Whitelist Sale Opens</span>
               </div>
               <div class="text-2xl sm:text-3xl font-bold text-emerald-700 dark:text-emerald-300 mb-1">
-                June 29
+                June 28
               </div>
               <p class="text-xs text-emerald-600 dark:text-emerald-400">
                 Mark your calendar!
