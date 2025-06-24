@@ -3,6 +3,7 @@
 # Default network type is local
 NETWORK_TYPE="local"
 CANISTER_TYPES="protocol"
+TC=2 # Default number of top-up T cycles
 
 # Parse command line arguments for network type
 while [ $# -gt 0 ]; do
@@ -27,9 +28,14 @@ while [ $# -gt 0 ]; do
             fi
             shift
             ;;
+        --tc)
+            shift
+            TC=$1
+            shift
+            ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --canister-types [all|protocol|mainers]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd]"
             exit 1
             ;;
     esac
@@ -37,4 +43,4 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 
-python -m scripts.monitor_balance --network $NETWORK_TYPE --canister-types $CANISTER_TYPES
+python -m scripts.topup --network $NETWORK_TYPE --canister-types $CANISTER_TYPES --tc $TC

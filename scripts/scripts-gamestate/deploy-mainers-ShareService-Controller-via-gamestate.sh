@@ -46,15 +46,12 @@ echo "We are going to   : $DEPLOY_MODE"
 # Check if user wants to reinstall and confirm
 if [ "$DEPLOY_MODE" = "reinstall" ]; then
     echo " "
-    echo "reinstall of ShareService Controller is not yet supported."
-    exit 1
-    # echo "WARNING: You are about to reinstall the ShareService. You will lose all persistent data."
-    # echo "Are you really sure you want to reinstall the ShareService? (y/N)"
-    # read -r confirmation
-    # if [ "$confirmation" != "y" ] && [ "$confirmation" != "Y" ]; then
-    #     echo "Reinstall cancelled."
-    #     exit 1
-    # fi
+    read -p "Are you sure you want to reinstall? This will OVERWRITE all the data and code in the canister. (y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Reinstall cancelled."
+        exit 1
+    fi
 fi
 
 CANISTER_ID_GAME_STATE_CANISTER=$(dfx canister --network $NETWORK_TYPE id game_state_canister)
@@ -153,9 +150,10 @@ for record in records:
 
 #######################################################################
 NUMCYCLES_TO_ADD=5000000000000  # 5 TCycles
-if [ "$DEPLOY_MODE" = "upgrade" ]; then
+if [ "$DEPLOY_MODE" = "upgrade" ] || [ "$DEPLOY_MODE" = "reinstall" ]; then
     NUMCYCLES_TO_ADD=10000000000  # 10 BCycles for upgrade
 fi
+
 if [ "$NETWORK_TYPE" = "local" ]; then
     echo " "
     echo "--------------------------------------------------"
@@ -175,7 +173,7 @@ echo " "
 echo "--------------------------------------------------"
 echo "$DEPLOY_MODE a mAInerController canister of type #ShareService"
 
-if [ "$DEPLOY_MODE" = "upgrade" ]; then
+if [ "$DEPLOY_MODE" = "upgrade" ] || [ "$DEPLOY_MODE" = "reinstall" ]; then
     echo " "
     echo "--------------------------------------------------"
     output=$(dfx canister --network $NETWORK_TYPE call $CANISTER_ID_GAME_STATE_CANISTER getSharedServiceCanistersAdmin)
@@ -205,44 +203,6 @@ if [ "$DEPLOY_MODE" = "upgrade" ]; then
 fi
 
 
-########################################################
-echo " "
-echo "--------------------------------------------------"
-echo "Checking balances at start of $DEPLOY_MODE:"
-echo " "
-GAME_STATE_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:" | awk '{print $2}')
-GAME_STATE_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
-GAME_STATE_BALANCE_0_T=$(echo "scale=4; $GAME_STATE_BALANCE_0 / 1000000000000" | bc)
-
-MAINER_CREATOR_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_MAINER_CREATOR_CANISTER 2>&1 | grep "Balance:"| awk '{print $2}')
-MAINER_CREATOR_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_MAINER_CREATOR_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
-MAINER_CREATOR_BALANCE_0_T=$(echo "scale=4; $MAINER_CREATOR_BALANCE_0 / 1000000000000" | bc)
-
-if [ "$DEPLOY_MODE" = "upgrade" ]; then
-    SHARE_SERVICE_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_SHARE_SERVICE_CONTROLLER 2>&1 | grep "Balance:"| awk '{print $2}')
-    SHARE_SERVICE_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_SHARE_SERVICE_CONTROLLER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
-    SHARE_SERVICE_BALANCE_0_T=$(echo "scale=4; $SHARE_SERVICE_BALANCE_0 / 1000000000000" | bc)
-fi
-
-echo " "
-echo "--------------------------------------------------"
-echo "Balances at start of $DEPLOY_MODE:"
-echo " "
-echo "GameState     ($CANISTER_ID_GAME_STATE_CANISTER) "
-echo "-> Balance: $GAME_STATE_BALANCE_0_T TCycles ($GAME_STATE_BALANCE_0_)"
-
-echo " "
-echo "MainerCreator ($CANISTER_ID_MAINER_CREATOR_CANISTER) "
-echo "-> Balance: $MAINER_CREATOR_BALANCE_0_T TCycles ($MAINER_CREATOR_BALANCE_0_)"
-
-if [ "$DEPLOY_MODE" = "upgrade" ]; then
-    echo " "
-    echo "ShareService Controller ($CANISTER_ID_SHARE_SERVICE_CONTROLLER) "
-    echo "-> Balance: $SHARE_SERVICE_BALANCE_0_T TCycles ($SHARE_SERVICE_BALANCE_0_)"
-fi
-
-########################################################
-
 if [ "$DEPLOY_MODE" = "upgrade" ]; then
     echo " "
     echo "Calling upgradeMainerControllerAdmin"
@@ -271,6 +231,38 @@ if [ "$DEPLOY_MODE" = "upgrade" ]; then
     fi
 
     echo "RESULT_2A (upgradeMainerControllerAdmin): $RESULT_2A"
+elif [ "$DEPLOY_MODE" = "reinstall" ]; then
+    echo " "
+    echo "Calling reinstallMainerControllerAdmin"
+    output=$(dfx canister call game_state_canister reinstallMainerControllerAdmin "(record {canisterAddress = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\" })" --network $NETWORK_TYPE)
+    if [[ "$output" != *"Ok = record"* ]]; then
+        echo $output
+        echo "Call to reinstallMainerControllerAdmin. Exiting."    
+        exit 1
+    else
+        RESULT_2=$(extract_record_from_variant "$output")
+        echo "RESULT_2 (reinstallMainerControllerAdmin): $RESULT_2"
+
+        echo " "
+        echo "Going into a loop to wait for the ShareService Controller reinstall to finish."
+        CANISTER_STATUS=$(echo "$RESULT_2" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
+        echo "CANISTER_STATUS: $CANISTER_STATUS"
+        WAIT_TIME=5
+        while [[ "$CANISTER_STATUS" != "Running" ]]; do
+            echo "sleep for $WAIT_TIME seconds..."
+            sleep $WAIT_TIME
+            output=$(dfx canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\";})" --network $NETWORK_TYPE)
+            RESULT_2A=$(extract_record_from_variant "$output")
+            CANISTER_STATUS=$(echo "$RESULT_2A" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
+            echo "CANISTER_STATUS: $CANISTER_STATUS"
+        done
+    fi
+
+    echo "RESULT_2A (reinstallMainerControllerAdmin): $RESULT_2A"
+
+    echo "Calling scripts/register_ssllms.sh"
+    scripts/register_ssllms.sh --network $NETWORK_TYPE
+
 else
     echo " "
     echo "Calling createUserMainerAgent"
@@ -340,60 +332,3 @@ else
         echo "Successfully called addOfficialCanister for ShareService mAIner canister $CANISTER_ID_SHARE_SERVICE_CONTROLLER."
     fi
 fi 
-
-##############################################################
-GAME_STATE_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:"| awk '{print $2}')
-GAME_STATE_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
-GAME_STATE_BALANCE_1_T=$(echo "scale=4; $GAME_STATE_BALANCE_1 / 1000000000000" | bc)
-GAME_STATE_CYCLES_CHANGE_1=$(echo "$GAME_STATE_BALANCE_1 - $GAME_STATE_BALANCE_0" | bc)
-GAME_STATE_CYCLES_CHANGE_1_T=$(echo "scale=4; $GAME_STATE_CYCLES_CHANGE_1 / 1000000000000" | bc)
-
-MAINER_CREATOR_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_MAINER_CREATOR_CANISTER 2>&1 | grep "Balance:"| awk '{print $2}')
-MAINER_CREATOR_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_MAINER_CREATOR_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
-MAINER_CREATOR_BALANCE_1_T=$(echo "scale=4; $MAINER_CREATOR_BALANCE_1 / 1000000000000" | bc)
-MAINER_CREATOR_CYCLES_CHANGE_1=$(echo "$MAINER_CREATOR_BALANCE_1 - $MAINER_CREATOR_BALANCE_0" | bc)
-MAINER_CREATOR_CYCLES_CHANGE_1_T=$(echo "scale=4; $MAINER_CREATOR_CYCLES_CHANGE_1 / 1000000000000" | bc)
-
-SHARE_SERVICE_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_SHARE_SERVICE_CONTROLLER 2>&1 | grep "Balance:"| awk '{print $2}')
-SHARE_SERVICE_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_SHARE_SERVICE_CONTROLLER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
-SHARE_SERVICE_BALANCE_1_T=$(echo "scale=4; $SHARE_SERVICE_BALANCE_1 / 1000000000000" | bc)
-if [ "$DEPLOY_MODE" = "upgrade" ]; then
-    SHARE_SERVICE_CYCLES_CHANGE_1=$(echo "$SHARE_SERVICE_BALANCE_1 - $SHARE_SERVICE_BALANCE_0" | bc)
-    SHARE_SERVICE_CYCLES_CHANGE_1_T=$(echo "scale=4; $SHARE_SERVICE_CYCLES_CHANGE_1 / 1000000000000" | bc)
-fi
-
-# COST_TO_SPINUP_SHARE_SERVICE_CONTROLLER=$(echo "- $GAME_STATE_CYCLES_CHANGE_1 - $MAINER_CREATOR_CYCLES_CHANGE_1 - $SHARE_SERVICE_BALANCE_1" | bc)
-# COST_TO_SPINUP_SHARE_SERVICE_CONTROLLER_T=$(echo "scale=4; $COST_TO_SPINUP_SHARE_SERVICE_CONTROLLER / 1000000000000" | bc)
-
-echo " "
-echo "--------------------------------------------------"
-
-echo "Balance after $DEPLOY_MODE: "
-echo " "
-
-echo "GameState     ($CANISTER_ID_GAME_STATE_CANISTER) "
-echo "-> Balance: $GAME_STATE_BALANCE_1_T TCycles ($GAME_STATE_BALANCE_1_)"
-echo "-> Change : $GAME_STATE_CYCLES_CHANGE_1_T TCycles ($GAME_STATE_CYCLES_CHANGE_1)"
-
-echo " "
-echo "MainerCreator ($CANISTER_ID_MAINER_CREATOR_CANISTER) "
-echo "-> Balance: $MAINER_CREATOR_BALANCE_1_T TCycles ($MAINER_CREATOR_BALANCE_1_)"
-echo "-> Change : $MAINER_CREATOR_CYCLES_CHANGE_1_T TCycles ($MAINER_CREATOR_CYCLES_CHANGE_1)"
-
-echo " "
-echo "ShareService  ($CANISTER_ID_SHARE_SERVICE_CONTROLLER) "
-echo "-> Balance: $SHARE_SERVICE_BALANCE_1_T TCycles ($SHARE_SERVICE_BALANCE_1_)"
-if [ "$DEPLOY_MODE" = "upgrade" ]; then
-    echo "-> Change : $SHARE_SERVICE_CYCLES_CHANGE_1_T TCycles ($SHARE_SERVICE_CYCLES_CHANGE_1)"
-fi
-
-# echo " "
-# echo "Cost to spinup ShareService controller: $COST_TO_SPINUP_SHARE_SERVICE_CONTROLLER_T TCycles ($COST_TO_SPINUP_SHARE_SERVICE_CONTROLLER)"
-##############################################################
-
-echo "========================================================================"
-echo "The timers are running! To stop timers for ShareService $CANISTER_ID_SHARE_SERVICE_CONTROLLER, call the ShareService controller:"
-echo " "
-echo "dfx canister call $CANISTER_ID_SHARE_SERVICE_CONTROLLER stopTimerExecutionAdmin --network $NETWORK_TYPE"
-echo " "
-echo "========================================================================"

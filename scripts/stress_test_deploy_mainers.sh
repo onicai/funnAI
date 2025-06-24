@@ -1,12 +1,8 @@
 #!/bin/bash
 
-#######################################################################
-# run from parent folder as:
-# scripts/log.sh --network [local|ic]
-#######################################################################
-
 # Default network type is local
 NETWORK_TYPE="local"
+NUMBER=1
 
 # Parse command line arguments for network type
 while [ $# -gt 0 ]; do
@@ -21,6 +17,16 @@ while [ $# -gt 0 ]; do
             fi
             shift
             ;;
+        --number)
+            shift
+            if [[ "$1" =~ ^[0-9]+$ ]]; then
+                NUMBER="$1"
+            else
+                echo "Invalid number: $1. Must be a positive integer."
+                exit 1
+            fi
+            shift
+            ;;
         *)
             echo "Unknown argument: $1"
             echo "Usage: $0 --network [local|ic|testing|development|demo|prd]"
@@ -29,6 +35,10 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-echo "Using network type: $NETWORK_TYPE"
+echo "Deploying $NUMBER mAIners to network: $NETWORK_TYPE"
 
-python -m scripts.monitor_gamestate --network $NETWORK_TYPE
+for ((i=1; i<=NUMBER; i++)); do
+    echo "----------------------------------------"
+    echo "Deploying mAIner $i of $NUMBER"
+    scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install --network "$NETWORK_TYPE"
+done

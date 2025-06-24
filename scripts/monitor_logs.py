@@ -24,8 +24,8 @@ def get_logs(canister_id, network):
     except subprocess.CalledProcessError:
         return []
 
-def main(network):
-    (CANISTERS, CANISTER_COLORS, RESET_COLOR) = get_canisters(network)
+def main(network, canister_types):
+    (CANISTERS, CANISTER_COLORS, RESET_COLOR) = get_canisters(network, canister_types)
 
     # Log directory (also relative to script location)
     LOG_DIR = os.path.join(SCRIPT_DIR, f"logs-{network}")
@@ -74,5 +74,11 @@ if __name__ == "__main__":
         default="local",
         help="Specify the network to use (default: local)",
     )
+    parser.add_argument(
+        "--canister-types",
+        choices=["all", "protocol", "mainers"],
+        default="protocol",
+        help="Specify the network to use (default: local)",
+    )
     args = parser.parse_args()
-    main(args.network)
+    main(args.network, args.canister_types)
