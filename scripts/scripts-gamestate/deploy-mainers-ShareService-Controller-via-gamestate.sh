@@ -58,6 +58,9 @@ CANISTER_ID_GAME_STATE_CANISTER=$(dfx canister --network $NETWORK_TYPE id game_s
 cd PoAIW/src/mAInerCreator
 CANISTER_ID_MAINER_CREATOR_CANISTER=$(dfx canister --network $NETWORK_TYPE id mainer_creator_canister)
 
+echo "CANISTER_ID_GAME_STATE_CANISTER: $CANISTER_ID_GAME_STATE_CANISTER"
+echo "CANISTER_ID_MAINER_CREATOR_CANISTER: $CANISTER_ID_MAINER_CREATOR_CANISTER"
+
 # go back to the funnAI folder
 cd ../../../
 

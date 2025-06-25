@@ -113,15 +113,17 @@ todo
 
 # Max number of mAIners & Whitelisting
 
+todo - finish these...
+
 ```bash
 dfx canister --network $NETWORK call game_state_canister getPauseProtocolFlag
-dfx canister --network $NETWORK call game_state_canister getPauseWhitelistMainerCreationFlagAdmin
+dfx canister --network $NETWORK call game_state_canister getPauseWhitelistMainerCreationFlag
 
 dfx canister --network $NETWORK call game_state_canister togglePauseProtocolFlagAdmin
 dfx canister --network $NETWORK call game_state_canister togglePauseWhitelistMainerCreationFlagAdmin
 
 dfx canister --network $NETWORK call game_state_canister setLimitForCreatingMainerAdmin ...Types.MainerLimitInput...
-
+```
 
 
 
