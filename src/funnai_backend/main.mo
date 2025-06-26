@@ -103,8 +103,9 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     return chatId;
   };
 
-  /* public shared({ caller }) func create_chat(messages : [Types.Message]) : async Types.ChatCreationResult {
-    // don't allow anonymous Principal
+  public shared({ caller }) func create_chat(messages : [Types.Message]) : async Types.ChatCreationResult {
+    // disabled
+    return #Err(#Unauthorized);
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
@@ -181,7 +182,8 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
   public shared({ caller }) func update_chat_metadata(updateChatObject : Types.UpdateChatObject) : async Types.ChatIdResult {
-    // don't allow anonymous Principal
+    // disabled
+    return #Err(#Unauthorized);
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
@@ -212,7 +214,8 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
   public shared({ caller }) func update_chat_messages(chatId : Text, updatedMessages : [Types.Message]) : async Types.ChatIdResult {
-    // don't allow anonymous Principal
+    // disabled
+    return #Err(#Unauthorized);
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
@@ -243,7 +246,8 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
   public shared ({caller}) func delete_chat(chatId : Text) : async Types.ChatResult {
-    // don't allow anonymous Principal
+    // disabled
+    return #Err(#Unauthorized);
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
@@ -262,7 +266,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
         return #Ok(chat);
       };
     };
-  }; */
+  };
 
 // User Info and Settings
 // User Info
@@ -315,6 +319,15 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
+
+    switch (updatedInfoObject.emailAddress) {
+      case (null) {};
+      case (?emailAddress) {
+        if (emailAddress.size() > 70) {
+          return #Err(#Unauthorized);
+        };
+      };
+    };
 
     switch (getUserInfo(caller)) {
       case (null) {
@@ -448,7 +461,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     return true;
   };
 
-  /* public shared query ({caller}) func get_caller_chat_settings() : async Types.UserChatSettingsResult {
+  public shared query ({caller}) func get_caller_chat_settings() : async Types.UserChatSettingsResult {
     // don't allow anonymous Principal
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
@@ -471,14 +484,15 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
   public shared({ caller }) func update_caller_chat_settings(updatedSettingsObject : Types.UserChatSettings) : async Types.UpdateUserChatSettingsResult {
-    // don't allow anonymous Principal
+    // disabled
+    return #Err(#Unauthorized);
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
 
     let settingsUpdated = putUserChatSettings(caller, updatedSettingsObject);
     return #Ok(settingsUpdated);
-  }; */
+  };
 
 // Max mAIner topups
   stable var maxMainerTopups : List.List<Types.TopUpRecord> = List.nil<Types.TopUpRecord>();
