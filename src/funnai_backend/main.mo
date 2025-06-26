@@ -556,6 +556,9 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   // User can submit a form to sign up for email updates
     // For now, we only capture the email address provided by the user and on which page they submitted the form
   public shared ({caller}) func submit_signup_form(submittedSignUpForm : Types.SignUpFormInput) : async Text {
+    if (submittedSignUpForm.emailAddress.size() > 70) {
+      return "There was an error signing up. Please try again.";
+    };
     switch(getEmailSubscriber(submittedSignUpForm.emailAddress)) {
       case null {
         // New subscriber
