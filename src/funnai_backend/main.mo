@@ -104,7 +104,8 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
   public shared({ caller }) func create_chat(messages : [Types.Message]) : async Types.ChatCreationResult {
-    // don't allow anonymous Principal
+    // disabled
+    return #Err(#Unauthorized);
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
@@ -181,7 +182,8 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
   public shared({ caller }) func update_chat_metadata(updateChatObject : Types.UpdateChatObject) : async Types.ChatIdResult {
-    // don't allow anonymous Principal
+    // disabled
+    return #Err(#Unauthorized);
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
@@ -212,7 +214,8 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
   public shared({ caller }) func update_chat_messages(chatId : Text, updatedMessages : [Types.Message]) : async Types.ChatIdResult {
-    // don't allow anonymous Principal
+    // disabled
+    return #Err(#Unauthorized);
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
@@ -243,7 +246,8 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
   public shared ({caller}) func delete_chat(chatId : Text) : async Types.ChatResult {
-    // don't allow anonymous Principal
+    // disabled
+    return #Err(#Unauthorized);
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
@@ -315,6 +319,15 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
+
+    switch (updatedInfoObject.emailAddress) {
+      case (null) {};
+      case (?emailAddress) {
+        if (emailAddress.size() > 70) {
+          return #Err(#Unauthorized);
+        };
+      };
+    };
 
     switch (getUserInfo(caller)) {
       case (null) {
@@ -471,7 +484,8 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
   public shared({ caller }) func update_caller_chat_settings(updatedSettingsObject : Types.UserChatSettings) : async Types.UpdateUserChatSettingsResult {
-    // don't allow anonymous Principal
+    // disabled
+    return #Err(#Unauthorized);
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
@@ -511,17 +525,26 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
           return #Err(#Unauthorized);
       };
 
-      let newEntry : Types.TopUpRecord = {
-        timestamp : Nat64 = Nat64.fromNat(Int.abs(Time.now()));
-        caller : Text = Principal.toText(msg.caller);
-        paymentTransactionBlockId : Nat64 = maxTopUpInput.paymentTransactionBlockId;
-        toppedUpMainerId : Text = maxTopUpInput.toppedUpMainerId;
-        amount : Nat = maxTopUpInput.amount;
-      };
-      
-      let result = putMaxMainerTopup(newEntry);
+      // ensure caller is user
+      switch (getUserInfo(msg.caller)) {
+        case (null) {
+          // Not a user
+          return #Err(#Unauthorized);
+        };
+        case (?userInfo) {
+          let newEntry : Types.TopUpRecord = {
+            timestamp : Nat64 = Nat64.fromNat(Int.abs(Time.now()));
+            caller : Text = Principal.toText(msg.caller);
+            paymentTransactionBlockId : Nat64 = maxTopUpInput.paymentTransactionBlockId;
+            toppedUpMainerId : Text = maxTopUpInput.toppedUpMainerId;
+            amount : Nat = maxTopUpInput.amount;
+          };
+          
+          let result = putMaxMainerTopup(newEntry);
 
-      return #Ok({stored = true;});
+          return #Ok({stored = true;});          
+        };
+      };
   };
 
   public query (msg) func getMaxMainerTopupsAdmin() : async Types.MaxMainerTopUpsResult {
@@ -556,6 +579,9 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   // User can submit a form to sign up for email updates
     // For now, we only capture the email address provided by the user and on which page they submitted the form
   public shared ({caller}) func submit_signup_form(submittedSignUpForm : Types.SignUpFormInput) : async Text {
+    if (submittedSignUpForm.emailAddress.size() > 70) {
+      return "There was an error signing up. Please try again.";
+    };
     switch(getEmailSubscriber(submittedSignUpForm.emailAddress)) {
       case null {
         // New subscriber
