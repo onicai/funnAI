@@ -155,14 +155,17 @@ export const getPauseWhitelistMainerCreationFlag = async () => {
   };
 };
 
-export const getIsWhitelistPhaseActive = async (isRetry=false) => {
+export const getIsWhitelistPhaseActive = async (isRetry = false) => {
+  console.log("🔵 getIsWhitelistPhaseActive called");
   try {
-    // For testing: manually enable/disable whitelist phase
-    return true;  // 👈 Change this to true/false to enable/disable whitelist phase
+    // Check if the method exists before calling it
+    if (!storeState.gameStateCanisterActor.getIsWhitelistPhaseActive) {
+      console.warn("getIsWhitelistPhaseActive method not available, defaulting to false");
+      return false;
+    };
     
-    /*
-    // For production: uncomment this when backend function is available
     let response = await storeState.gameStateCanisterActor.getIsWhitelistPhaseActive();
+    console.log("🔵 getIsWhitelistPhaseActive response:", response);
     
     if ('Ok' in response) {
       return response.Ok.flag;
@@ -177,9 +180,8 @@ export const getIsWhitelistPhaseActive = async (isRetry=false) => {
         }, 2000);
       };
     };
-    */
   } catch (error) {
-    console.error("Failed to getIsWhitelistPhaseActive:", error);
+    console.error("Failed to getIsWhitelistPhaseActive: ", error);
     if (isRetry) {
       return false; // Some issue occurred so indicate no whitelist phase as a measure of precaution
     } else {
