@@ -42,12 +42,12 @@ done
 
 # WARNING: when updating here, also update in scripts/scripts-gamestate/deploy-mainers-ShareService-LLMs-via-gamestate.sh
 if [ "$NETWORK_TYPE" = "ic" ]; then
-    SUBNET_GAME_STATE="csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"
+    SUBNET_GAME_STATE="yinp6-35cfo-wgcd2-oc4ty-2kqpf-t4dul-rfk33-fsq3r-mfmua-m2ngh-jqe"
     SUBNET_SHARE_AGENT_CTRL="w4asl-4nmyj-qnr7c-6cqq4-tkwmt-o26di-iupkq-vx4kt-asbrx-jzuxh-4ae" # All share agents are on the same subnet
     SUBNET_SHARE_SERVICE_CTRL="w4asl-4nmyj-qnr7c-6cqq4-tkwmt-o26di-iupkq-vx4kt-asbrx-jzuxh-4ae"
     SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0,1,2 - overwritten by the LLMs deployment script
 elif [ "$NETWORK_TYPE" = "testing" ]; then
-    SUBNET_GAME_STATE="csyj4-zmann-ys6ge-3kzi6-onexi-obayx-2fvak-zersm-euci4-6pslt-lae"
+    SUBNET_GAME_STATE="yinp6-35cfo-wgcd2-oc4ty-2kqpf-t4dul-rfk33-fsq3r-mfmua-m2ngh-jqe"
     SUBNET_SHARE_AGENT_CTRL="w4asl-4nmyj-qnr7c-6cqq4-tkwmt-o26di-iupkq-vx4kt-asbrx-jzuxh-4ae" # All share agents are on the same subnet
     SUBNET_SHARE_SERVICE_CTRL="w4asl-4nmyj-qnr7c-6cqq4-tkwmt-o26di-iupkq-vx4kt-asbrx-jzuxh-4ae"
     SUBNET_SHARE_SERVICE_LLM="qxesv-zoxpm-vc64m-zxguk-5sj74-35vrb-tbgwg-pcird-5gr26-62oxl-cae" # LLMs 0,1,2 - overwritten by the LLMs deployment 

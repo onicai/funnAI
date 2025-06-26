@@ -103,6 +103,8 @@ scripts/scripts-gamestate/deploy-mainers-ShareService-AddLLM-via-gamestate.sh --
 dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
 # Deploy a new ShareAgent via Admin command
 scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install --network $NETWORK
+# Update gamestate to the latest wasmhash. <canisterId> is the address of one of the upgraded ShareAgent canisters
+dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="New wasm deployed"})' --network $NETWORK
 
 # To increase limit of ShareAgent mAIners
 dfx canister --network prd call game_state_canister setLimitForCreatingMainerAdmin '(record {mainerType = variant { ShareAgent } ; newLimit = 450 : nat;} )'
@@ -127,6 +129,8 @@ scripts/list_controllers.sh --network $NETWORK
 # NEVER, EVER reinstall the GameState. Always upgrade...
 scripts/deploy-gamestate.sh --mode upgrade --network $NETWORK
 scripts/scripts-gamestate/register-all.sh --network $NETWORK
+# Update gamestate to the latest wasmhash. <canisterId> is the address of one of the upgraded ShareAgent canisters
+dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="New wasm deployed"})' --network $NETWORK
 # Be careful, but you might need to do these to apply new settings and values for stable memory:
 dfx canister call game_state_canister resetCyclesFlowAdmin --network $NETWORK
 
@@ -222,8 +226,9 @@ dfx canister call game_state_canister resetCurrentChallengesAdmin --network $NET
 # test a single Challenge Generation by the Challenger
 scripts/scripts-testing/generate-a-challenge.sh --network $NETWORK
 
-# test a single Response Generation by your first mAIner of type #ShareAgent
-scripts/scripts-testing/generate-a-response-ShareAgent.sh --network $NETWORK
+# This has been deactivated
+## test a single Response Generation by your first mAIner of type #ShareAgent
+## scripts/scripts-testing/generate-a-response-ShareAgent.sh --network $NETWORK
 
 # test a single Response Generation by your first mAIner of type #Own
 # TODO UPDATE SCRIPT scripts/scripts-testing/generate-a-response-Own.sh --network $NETWORK
