@@ -525,17 +525,26 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
           return #Err(#Unauthorized);
       };
 
-      let newEntry : Types.TopUpRecord = {
-        timestamp : Nat64 = Nat64.fromNat(Int.abs(Time.now()));
-        caller : Text = Principal.toText(msg.caller);
-        paymentTransactionBlockId : Nat64 = maxTopUpInput.paymentTransactionBlockId;
-        toppedUpMainerId : Text = maxTopUpInput.toppedUpMainerId;
-        amount : Nat = maxTopUpInput.amount;
-      };
-      
-      let result = putMaxMainerTopup(newEntry);
+      // ensure caller is user
+      switch (getUserInfo(msg.caller)) {
+        case (null) {
+          // Not a user
+          return #Err(#Unauthorized);
+        };
+        case (?userInfo) {
+          let newEntry : Types.TopUpRecord = {
+            timestamp : Nat64 = Nat64.fromNat(Int.abs(Time.now()));
+            caller : Text = Principal.toText(msg.caller);
+            paymentTransactionBlockId : Nat64 = maxTopUpInput.paymentTransactionBlockId;
+            toppedUpMainerId : Text = maxTopUpInput.toppedUpMainerId;
+            amount : Nat = maxTopUpInput.amount;
+          };
+          
+          let result = putMaxMainerTopup(newEntry);
 
-      return #Ok({stored = true;});
+          return #Ok({stored = true;});          
+        };
+      };
   };
 
   public query (msg) func getMaxMainerTopupsAdmin() : async Types.MaxMainerTopUpsResult {
