@@ -64,22 +64,17 @@ export function validateAddress(
   tokenSymbol: string,
   tokenName: string
 ): { isValid: boolean; errorMessage: string; addressType: "principal" | "account" | null } {
-  console.log("in validateAddress address ", address);
-  console.log("in validateAddress tokenSymbol ", tokenSymbol);
-  console.log("in validateAddress tokenName ", tokenName);
   if (!address) {
     return { isValid: false, errorMessage: "Address is required", addressType: null };
   }
 
   const cleanAddress = address.trim();
-  console.log("in validateAddress cleanAddress ", cleanAddress);
 
   if (cleanAddress.length === 0) {
     return { isValid: false, errorMessage: "Address cannot be empty", addressType: null };
   }
 
   const addressType = detectAddressType(cleanAddress);
-  console.log("in validateAddress addressType ", addressType);
 
   if (addressType === "account" && tokenSymbol !== "ICP") {
     return { 

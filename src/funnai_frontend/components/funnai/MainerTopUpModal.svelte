@@ -107,15 +107,12 @@
       try {
         // Create the CMC actor using the imported IDL factory
         const cmcActor = await createAnonymousActorHelper(cmcCanisterId, cmcIdlFactory);
-        console.log("loadConversionRate cmcActor: ", cmcActor);
         
         // Get conversion rate from CMC
         const response = await cmcActor.get_icp_xdr_conversion_rate();
-        console.log("loadConversionRate cmcActor response: ", response);
         
         if (response && response.data) {
           const xdrRate = Number(response.data.xdr_permyriad_per_icp);
-          console.log("loadConversionRate xdrRate: ", xdrRate);
           
           // 1 XDR = 1 trillion cycles, and the rate is in 10,000ths (permyriad)
           const CYCLES_PER_XDR = new BigNumber("1000000000000"); // 1 trillion cycles
@@ -243,7 +240,6 @@
           memo: MEMO_PAYMENT_PROTOCOL
         }
       );
-      console.log("handleSubmit result: ", result);
 
       if (result && typeof result === 'object' && 'Ok' in result) {
         const txId = result.Ok?.toString();

@@ -31,15 +31,15 @@ import { idlFactory as icpIDL } from "../helpers/idls/icp.idl.js";
 // TODO: move this into a utils file
 const getCyclesBurnRateLabel = (cyclesBurnRate) => {
   const cycles = BigInt(cyclesBurnRate.cycles);
-  
+  // TODO: these ranges need to be kept up to date with the backend (Game State: mAIner Burn Rates)
   if (cycles === 1_000_000_000_000n) {
     return "Low";
+  } else if (cycles === 2_000_000_000_000n) {
+    return "Medium";
   } else if (cycles === 4_000_000_000_000n) {
-    return "Medium";
-  } else if (cycles === 10_000_000_000_000n) {
     return "High";
-  } else if (cycles === 20_000_000_000_000n) {
-    return "Medium";
+  } else if (cycles === 6_000_000_000_000n) {
+    return "Very High";
   } else {
     return "Medium";
   }
@@ -50,9 +50,6 @@ export const canisterIds = {
   gameStateCanisterId
 };
 
-console.log("in store canisterIds ", canisterIds);
-console.log("in store gameStateCanisterId ", gameStateCanisterId);
-
 export const canisterIDLs = {
   backendIdlFactory,
   gameStateIdlFactory,
@@ -60,15 +57,6 @@ export const canisterIDLs = {
   icrc2: icrc2IDL,
   ICP: icpIDL,
 };
-
-// TODO: remove debug print statements
-console.log("funnai_backend");
-console.log(funnai_backend);
-console.log(backendCanisterId);
-
-console.log("game_state_canister");
-console.log(game_state_canister);
-console.log(gameStateCanisterId);
 
 //__________Local vs Mainnet Development____________
 /* export const HOST =

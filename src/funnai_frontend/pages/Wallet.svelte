@@ -106,9 +106,7 @@
   }
 
   onMount(async () => {
-    console.log("in Wallet $store.principal.toString() ", $store?.principal?.toString());
     await WalletDataService.initializeWallet($store?.principal?.toString());
-    console.log("in Wallet walletData ", walletData);
   });
 
 

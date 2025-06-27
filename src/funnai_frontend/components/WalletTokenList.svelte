@@ -25,9 +25,6 @@
   let walletData;
   walletDataStore.subscribe((value) => walletData = value);
 
-  console.log("in WalletTokenList tokens ", tokens);
-  console.log("in WalletTokenList showOnlyWithBalance ", showOnlyWithBalance);
-
   $: isLoadingBalances =
     isLoading ||
     walletData.isLoading /* ||
@@ -39,17 +36,9 @@
   // Calculate formatted values reactively based on wallet balances and filter out zero balances
   $: formattedTokens = tokens
     .map((token) => {
-      console.log("in WalletTokenList map tokens ", tokens);
-      console.log("in WalletTokenList map showOnlyWithBalance ", showOnlyWithBalance);
-      console.log("in WalletTokenList map token ", token);
-      console.log("in WalletTokenList map walletData ", walletData);
-      console.log("in WalletTokenList map walletData.balances ", walletData.balances);
       const balance = walletData.balances[token.canister_id];
-      console.log("in WalletTokenList map balance ", balance);
       const balanceAmount = balance?.in_tokens || BigInt(0);
       const totalSupply = token.metrics?.total_supply || "0";
-      console.log("in WalletTokenList map balanceAmount ", balanceAmount);
-      console.log("in WalletTokenList map totalSupply ", totalSupply);
 
       const percentOfSupply =
         Number(totalSupply) > 0
@@ -57,7 +46,6 @@
           : 0;
 
       const isWhale = percentOfSupply >= WHALE_THRESHOLD;
-      console.log("in WalletTokenList map before return ", isWhale);
       return {
         ...token,
         balanceAmount,
@@ -69,8 +57,6 @@
       };
     })
     .filter((token) => {
-      console.log("in WalletTokenList filter token ", token);
-      console.log("in WalletTokenList filter !showOnlyWithBalance ", !showOnlyWithBalance);
       return !showOnlyWithBalance || token.balanceAmount > BigInt(0);
     })
     .sort((a, b) => {

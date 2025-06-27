@@ -28,11 +28,11 @@ NETWORK=prd
 scripts/get_mainers.sh --network $NETWORK
 
 # Verify ownership
-scripts/am_i_controller.sh –network $NETWORK --canister-types [all|protocol|mainers]
+scripts/am_i_controller.sh --network $NETWORK --canister-types [all|protocol|mainers]
 
 # If needed, ask another controller to add you
 # -> first edit 'scripts/add_controllers.py'
-scripts/add_controllers.sh –network $NETWORK --canister-types [all|protocol|mainers]
+scripts/add_controllers.sh --network $NETWORK --canister-types [all|protocol|mainers]
 ```
 
 Ensure that you are a controller of the protocol canisters:
