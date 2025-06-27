@@ -30,7 +30,12 @@ def claims_odin(claims: list, wl_allocs: dict, total_wl_allocs: dict):
     # ------------------------------------------------------------------------------
     # PROCESS ODIN CLAIMS
     print(f"-------------------------------------------------------")
-    ICONFUCIUS_AGENT_PRINCIPAL = "xijdk-rtoet-smgxl-a4apd-ahchq-bslha-ope4a-zlpaw-ldxat-prh6f-jqe"  # ICONFUCIUS agent principal
+    ICONFUCIUS_AGENT_PRINCIPAL = "xijdk-rtoet-smgxl-a4apd-ahchq-bslha-ope4a-zlpaw-ldxat-prh6f-jqe"
+    ABHISHEK_PRINCIPAL = "2n6cp-b2ooy-4rphf-5b6qh-v2fou-6zuhq-5ud23-kvkhf-weahy-dwxq4-3qe"
+    ARJAAN_PRINCIPAL = "2fkbl-w6vfw-vjumq-teego-arg7t-hil5u-dyq7d-ted5t-33cuw-rked4-uqe"
+    NUNO_PRINCIPAL = "wn7rp-bfj4y-lc4uy-pgt7p-3p7ev-qdf67-qnqhz-d23qu-jxvht-cc6uu-bqe"
+    PATRICK_PRICIPAL = "qcrrl-k4uug-tgnhv-wj5st-l46cy-tyx7o-fpudp-6p73z-jhjlo-shqy5-7qe"
+
     for claim in claims:
         funnai_principal = claim.get("funnai_principal")
         odin_user_id = claim.get("odin_user_id")
@@ -76,6 +81,9 @@ def claims_odin(claims: list, wl_allocs: dict, total_wl_allocs: dict):
         alloc_iconfucius = alloc_rule_iconfucius(iconfucius_share, cap=15)
         
         alloc_iconfucius_lp = alloc_rule_iconfucius_lp(iconfucius_lp_share, cap=5)
+
+        if funnai_principal == ABHISHEK_PRINCIPAL:
+            alloc_iconfucius = max(alloc_iconfucius, 4)  # Abhishek gets at least 4
 
         print(f"Odin based WL allocations: {alloc_iconfucius} ({iconfucius_share:.2f}%), {alloc_iconfucius_lp} ({iconfucius_lp_share:.2f}%))")
 
