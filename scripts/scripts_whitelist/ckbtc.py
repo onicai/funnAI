@@ -11,16 +11,6 @@ from pathlib import Path
 from .ic_py_canister import get_canister, run_dfx_command
 
 # ------------------------------------------------------------------------------
-# Read the NFT collection snapshots from file
-json_path = Path(__file__).parent / "snapshots" / "charles.json"
-with open(json_path, "r") as f:
-    charles = json.load(f)
-
-json_path = Path(__file__).parent / "snapshots" / "icpp_art.json"
-with open(json_path, "r") as f:
-    icpp_art = json.load(f)
-
-# ------------------------------------------------------------------------------
 # Helper functions
 # ──────────────────────────────────────────────────────────────
 # Textual principal  ↔  raw principal‐bytes (payload only)
@@ -145,34 +135,22 @@ else:
     print(response)
         
 # ---------------------------------------------------------------------------
-bioniq_ckbtc_canister_id = "aclt4-uaaaa-aaaak-qb4zq-cai"
-
-
-
-# Load the whitelist transactions from JSON file
-json_path = Path(__file__).parent / "bioniq_claims_form_output.json"
-with open(json_path, "r") as f:
-    ckbtc_claim_transactions = json.load(f)
-
-for ckbtc_claim_transaction in ckbtc_claim_transactions:
-    bioniq_ckbtc_address = ckbtc_claim_transaction["bioniq_ckbtc_address"]
-    bioniq_btc_address = ckbtc_claim_transaction["bioniq_btc_address"]
-    funnai_principal = ckbtc_claim_transaction["funnai_principal"]
-    print(f"Fetching transactions for {funnai_principal}...")
+def check_ckbtc_transaction(from_principal, to_principal):
+    print(f"Fetching transactions for {to_principal}...")
 
     # Define the ckBTC index accounts of the transaction to look up
-    sub = bytes(principal_to_subaccount(bioniq_ckbtc_address))   # or change the helper to return bytes directly
-    from_bioniq_account = {
-        "owner": bioniq_ckbtc_canister_id,
-        "subaccount": [sub] # opt blob
+    # sub = bytes(principal_to_subaccount(from_principal))   # or change the helper to return bytes directly
+    from_account = {
+        "owner": from_principal,
+        "subaccount": [] # opt blob , null means no subaccount
     }
-    to_funnai_account = {
-        "owner": funnai_principal,
+    to_account = {
+        "owner": to_principal,
         "subaccount": [] # opt blob , null means no subaccount
     }
 
     arg = {
-        "account": to_funnai_account,
+        "account": to_account,
         "start": [], # opt nat, empty means start from most recent
         "max_results": int(1000)   # adjust as needed for all history
     }
@@ -193,34 +171,12 @@ for ckbtc_claim_transaction in ckbtc_claim_transactions:
 
             print(f"on_chain_owner: {on_chain_owner}, on_chain_subaccount: {on_chain_subaccount}")
 
-            if (on_chain_owner.to_str()== bioniq_ckbtc_canister_id       # owner matches
-                and matches_principal(on_chain_subaccount, bioniq_ckbtc_address)):
-                print("✅ found a transfer from the expected Bioniq sub-account > approve whitelist")
-                whitelist = True
-                break
+            if on_chain_owner.to_str() == from_principal:
+                print("✅ found a ckBTC transfer from the expected from_principal > approve whitelist")
+                return True
+        
+        print("ERROR - can not find a ckBTC transfer from the expected from_principal > deny whitelist")
+        return False
     else:
         print("Error:", response["Err"]["message"])
-
-    if whitelist:
-        # Get the BTC address for this bioniq ckBTC address
-        sub = bytes(principal_to_subaccount(bioniq_ckbtc_address)) 
-        arg = {
-            "owner": [bioniq_ckbtc_canister_id], # opt principal
-            "subaccount": [sub] # opt blob
-        }
-        response = ckbtc_minter_canister.get_btc_address(arg)
-        bioniq_btc_address = response[0]
-        
-        print("------------------------------------------------------------------")
-        print(f"Whitelisting ok")
-        print(f"  FunnAI principal    : {funnai_principal}")
-        print(f"  Bioniq ckBTC address: {bioniq_ckbtc_address}")
-        print(f"  Bioniq BTC address  : {bioniq_btc_address}")
-
-        # OOPS --- WE NOW FOUND OUT THAT THE BIONIQ BTC ADDRESS IS NOT A CKBTC MANAGED ADDRESS... 
-        #          RE-EVALUATING THE APPROACH TO ACCOUNT OWNERSHIP VERIFICATION...
-        
-        # Check how many Charles NFTs this user owns
-        # TODO...
-
-       
+        return False
