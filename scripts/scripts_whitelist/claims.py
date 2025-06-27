@@ -20,6 +20,39 @@ def main (category: str):
         for row in reader:
             claims.append(row)
 
+    print(f"-------------------------------------------------------")
+    print("Merging duplicate claims based on funnai_principal")
+    # Merge duplicate claims based on funnai_principal, keeping the first occurrence.
+    unique_claims = {}
+    for claim in claims:
+        principal = claim.get("funnai_principal")
+        if principal in unique_claims:
+            existing_claim = unique_claims[principal]
+            print("-------------------------------------------------------")
+            print(f"Duplicate claim for {principal}':")
+            print(f"  Existing claim:")
+            pprint.pprint(existing_claim)
+            print(f"  New claim     : ")
+            pprint.pprint(claim)
+            for key in claim:
+                if key in ['timestamp', 'funnai_principal', 'x_post'] or claim[key] == '':
+                    continue
+                elif existing_claim.get(key) == '':
+                    # If the existing claim has an empty value, replace it with the new claim's value.
+                    existing_claim[key] = claim[key]
+                elif claim[key] != existing_claim.get(key):
+                    print(f"Differing detail in field '{key}':")
+                    print(f"  Existing: {existing_claim.get(key)}  (keeping this value )")
+                    print(f"  New: {claim[key]}")
+            print(f"  Merged claim:")
+            pprint.pprint(existing_claim)
+        else:
+            unique_claims[principal] = claim
+
+    # Replace original claims list with the merged unique claims.
+    claims[:] = list(unique_claims.values())
+    
+
     # ---------------------------------------------------------------------------
     # Start with zero WL spots allocated for each category
     
