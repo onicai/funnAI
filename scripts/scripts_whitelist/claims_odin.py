@@ -30,20 +30,29 @@ def claims_odin(claims: list, wl_allocs: dict, total_wl_allocs: dict):
     # ------------------------------------------------------------------------------
     # PROCESS ODIN CLAIMS
     print(f"-------------------------------------------------------")
+    ICONFUCIUS_AGENT_PRINCIPAL = "xijdk-rtoet-smgxl-a4apd-ahchq-bslha-ope4a-zlpaw-ldxat-prh6f-jqe"  # ICONFUCIUS agent principal
     for claim in claims:
         funnai_principal = claim.get("funnai_principal")
         odin_user_id = claim.get("odin_user_id")
         odin_username_block = funnai_principal[:23]
         
         found_odin_holder = False
+        is_iconfucius_agent = False
         iconfucius_share = 0.0 # %
-        for odin_holder in iconfucius_odin_holders:
-            if odin_username_block in odin_holder['user_username'].lower():
-                print(f"Found odin_holder username {odin_holder['user_username']} for {funnai_principal}")
-                found_odin_holder = True
-                odin_holder_balance = odin_holder.get('balance', 0)
-                iconfucius_share = odin_holder_balance / total_iconfucius / 1000000000 # convert to %-age share of total token supply
-                break
+        if funnai_principal == ICONFUCIUS_AGENT_PRINCIPAL:
+            found_odin_holder = True
+            is_iconfucius_agent = True
+            iconfucius_share = 10 # Include dev account balance in the allocation
+            odin_holder_balance = iconfucius_share * total_iconfucius * 1000000000
+            print(f"Found ICONFUCIUS agent {funnai_principal} - adding 10% of total supply to allocation from dev account")
+        else:
+            for odin_holder in iconfucius_odin_holders:
+                if odin_username_block in odin_holder['user_username'].lower():
+                    print(f"Found odin_holder username {odin_holder['user_username']} for {funnai_principal}")
+                    found_odin_holder = True
+                    odin_holder_balance = odin_holder.get('balance', 0)
+                    iconfucius_share = odin_holder_balance / total_iconfucius / 1000000000 # convert to %-age share of total token supply
+                    break
 
         found_odin_lp = False
         iconfucius_lp_share = 0.0 # %
