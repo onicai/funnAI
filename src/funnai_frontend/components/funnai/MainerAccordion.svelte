@@ -156,11 +156,8 @@
   };
 
   function createWhitelistAgent(unlockedMainer) {
-    console.log("🔵 createWhitelistAgent called with:", unlockedMainer);
     // Set the selected unlocked mAIner for whitelist creation
     selectedUnlockedMainer = unlockedMainer;
-    console.log("🔵 selectedUnlockedMainer set to:", selectedUnlockedMainer);
-    console.log("🔵 Opening payment modal...");
     
     // Add this mAIner to the loading set (using consistent identifier)
     const mainerIdentifier = unlockedMainer.id || unlockedMainer.name || `unlocked-${unlockedMainer.originalCanisterInfo?.address || Date.now()}`;
@@ -745,8 +742,6 @@
     const activeAgents = [];
     const unlockedAgents = [];
 
-    console.log("🔍 loadAgents - Total canister info items:", enrichedCanistersInfo.length);
-
     enrichedCanistersInfo.forEach((canisterInfo, index) => {
       // Get the correct actor by index (might be null for unlocked mAIners)
       const agentActor = agentCanisterActors[index];
@@ -766,15 +761,6 @@
       
       // Check if this unlocked mAIner is owned by the current user
       const isOwnedByCurrentUser = !canisterInfo.ownedBy || canisterInfo.ownedBy.toString() === $store.principal?.toString();
-      
-      console.log(`🔍 mAIner ${index + 1}:`, {
-        isUnlocked,
-        isOwnedByCurrentUser,
-        mainerType,
-        address: canisterInfo.address,
-        ownedBy: canisterInfo.ownedBy?.toString(),
-        currentUser: $store.principal?.toString()
-      });
       
       const mainerData = {
         id: canisterInfo.address || `unlocked-${index}`, // Use index for unlocked without address
@@ -796,10 +782,9 @@
       };
 
       if (isUnlocked && isOwnedByCurrentUser) {
-        console.log(`✅ Adding unlocked mAIner ${index + 1} - owned by current user`);
         unlockedAgents.push(mainerData);
       } else if (isUnlocked && !isOwnedByCurrentUser) {
-        console.log(`⏭️ Skipping unlocked mAIner ${index + 1} - owned by different user:`, canisterInfo.ownedBy?.toString());
+        //console.log(`⏭️ Skipping unlocked mAIner ${index + 1} - owned by different user:`, canisterInfo.ownedBy?.toString());
       } else if (!isUnlocked) {
         activeAgents.push(mainerData);
       }
@@ -807,13 +792,6 @@
 
     // Update unlocked mAIners list
     unlockedMainers = unlockedAgents;
-    
-    console.log("🔍 Final results:", {
-      totalCanisters: enrichedCanistersInfo.length,
-      activeAgents: activeAgents.length,
-      unlockedAgents: unlockedAgents.length,
-      unlockedMainers: unlockedMainers.length
-    });
     
     // Sort by creation timestamp so newest mAIners appear first
     return activeAgents.sort((a, b) => {
@@ -860,11 +838,8 @@
     // Don't auto-open any mAIner accordions by default
 
     try {
-      console.log("in MainerAccordion before getMainerPrice");
       currentMainerPrice = await getMainerPrice();
-      console.log("in MainerAccordion currentMainerPrice ", currentMainerPrice);
       currentWhitelistPrice = await getWhitelistAgentPrice();
-      console.log("in MainerAccordion currentWhitelistPrice ", currentWhitelistPrice);
     } catch (error) {
       console.error("Error loading prices:", error);
       // Set fallback values if loading fails

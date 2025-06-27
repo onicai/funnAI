@@ -441,17 +441,22 @@ type GameStateCanister =
    getCyclesBurnRate: (CyclesBurnRateDefault) -> (CyclesBurnRateResult);
    getCyclesFlowAdmin: () -> (CyclesFlowResult);
    getGameStateThresholdsAdmin: () -> (GameStateTresholdsResult) query;
+   getIsWhitelistPhaseActive: () -> (FlagResult) query;
    getJudgePromptInfo: (text) -> (JudgePromptInfoResult) query;
+   getLimitForCreatingMainerAdmin: (CheckMainerLimit) -> (NatResult) query;
    getMainerAgentCanisterInfo: (CanisterRetrieveInput) ->
     (MainerAgentCanisterResult) query;
    getMainerAgentCanistersAdmin: () -> (MainerAgentCanistersResult) query;
    getMainerAgentCanistersForUser: () -> (MainerAgentCanistersResult) query;
+   getMainerAgentCanistersForUserAdmin: (text) ->
+    (MainerAgentCanistersResult) query;
    getMainerCyclesUsedPerResponse: () -> (NatResult);
    getMainerPromptInfo: (text) -> (MainerPromptInfoResult) query;
    getNextSubmissionToJudge: () -> (ChallengeResponseSubmissionResult);
    getNumArchivedChallengesAdmin: () -> (NatResult) query;
    getNumClosedChallengesAdmin: () -> (NatResult) query;
    getNumCurrentChallengesAdmin: () -> (NatResult) query;
+   getNumMainerAgentCanistersForUserAdmin: (text) -> (NatResult) query;
    getNumOpenSubmissionsAdmin: () -> (NatResult) query;
    getNumOpenSubmissionsForOpenChallengesAdmin: () -> (NatResult) query;
    getNumScoredChallengesAdmin: () -> (NatResult) query;
@@ -472,13 +477,10 @@ type GameStateCanister =
    getRandomOpenChallengeTopic: () -> (ChallengeTopicResult);
    getRecentChallengeWinners: () -> (ChallengeWinnersResult) query;
    getRecentProtocolActivity: () -> (ProtocolActivityResult) query;
-   getRecentProtocolActivity_mockup: () -> (ProtocolActivityResult) query;
    getRedeemedTransactionBlockAdmin: (PaymentTransactionBlockId) ->
     (RedeemedTransactionBlockResult);
    getRewardPerChallengeAdmin: () -> (RewardPerChallengeResult);
    getScoreForSubmission: (SubmissionRetrievalInput) ->
-    (ScoredResponseRetrievalResult) query;
-   getScoreForSubmission_mockup: (SubmissionRetrievalInput) ->
     (ScoredResponseRetrievalResult) query;
    getScoredChallengesAdmin: () -> (ScoredChallengesResult) query;
    getSharedServiceCanistersAdmin: () -> (OfficialProtocolCanistersResult);
@@ -532,6 +534,7 @@ type GameStateCanister =
    testTokenMintingAdmin: () -> (AuthRecordResult);
    togglePauseProtocolFlagAdmin: () -> (AuthRecordResult);
    togglePauseWhitelistMainerCreationFlagAdmin: () -> (AuthRecordResult);
+   toggleWhitelistPhaseActiveFlagAdmin: () -> (AuthRecordResult);
    topUpCyclesForMainerAgent: (MainerAgentTopUpInput) ->
     (MainerAgentCanisterResult);
    unlockUserMainerAgent: (MainerCreationInput) ->

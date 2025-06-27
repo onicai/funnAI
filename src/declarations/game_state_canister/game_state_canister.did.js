@@ -377,6 +377,8 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : GameStateTresholds,
     'Err' : ApiError,
   });
+  const FlagRecord = IDL.Record({ 'flag' : IDL.Bool });
+  const FlagResult = IDL.Variant({ 'Ok' : FlagRecord, 'Err' : ApiError });
   const JudgePromptInfo = IDL.Record({
     'promptCacheFilename' : IDL.Text,
     'promptText' : IDL.Text,
@@ -386,6 +388,9 @@ export const idlFactory = ({ IDL }) => {
   const JudgePromptInfoResult = IDL.Variant({
     'Ok' : JudgePromptInfo,
     'Err' : ApiError,
+  });
+  const CheckMainerLimit = IDL.Record({
+    'mainerType' : MainerAgentCanisterType,
   });
   const CanisterRetrieveInput = IDL.Record({ 'address' : CanisterAddress });
   const MainerAgentCanistersResult = IDL.Variant({
@@ -447,9 +452,6 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : ChallengeResponseSubmission,
     'Err' : ApiError,
   });
-  const CheckMainerLimit = IDL.Record({
-    'mainerType' : MainerAgentCanisterType,
-  });
   const OfficialProtocolCanister = IDL.Record({
     'status' : CanisterStatus,
     'canisterType' : ProtocolCanisterType,
@@ -463,8 +465,6 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : IDL.Vec(ChallengeResponseSubmission),
     'Err' : ApiError,
   });
-  const FlagRecord = IDL.Record({ 'flag' : IDL.Bool });
-  const FlagResult = IDL.Variant({ 'Ok' : FlagRecord, 'Err' : ApiError });
   const PriceRecord = IDL.Record({ 'price' : IDL.Nat64 });
   const PriceResult = IDL.Variant({ 'Ok' : PriceRecord, 'Err' : ApiError });
   const CyclesBurntResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
@@ -886,9 +886,15 @@ export const idlFactory = ({ IDL }) => {
         [GameStateTresholdsResult],
         ['query'],
       ),
+    'getIsWhitelistPhaseActive' : IDL.Func([], [FlagResult], ['query']),
     'getJudgePromptInfo' : IDL.Func(
         [IDL.Text],
         [JudgePromptInfoResult],
+        ['query'],
+      ),
+    'getLimitForCreatingMainerAdmin' : IDL.Func(
+        [CheckMainerLimit],
+        [NatResult],
         ['query'],
       ),
     'getMainerAgentCanisterInfo' : IDL.Func(
@@ -906,6 +912,11 @@ export const idlFactory = ({ IDL }) => {
         [MainerAgentCanistersResult],
         ['query'],
       ),
+    'getMainerAgentCanistersForUserAdmin' : IDL.Func(
+        [IDL.Text],
+        [MainerAgentCanistersResult],
+        ['query'],
+      ),
     'getMainerCyclesUsedPerResponse' : IDL.Func([], [NatResult], []),
     'getMainerPromptInfo' : IDL.Func(
         [IDL.Text],
@@ -920,6 +931,11 @@ export const idlFactory = ({ IDL }) => {
     'getNumArchivedChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumClosedChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumCurrentChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
+    'getNumMainerAgentCanistersForUserAdmin' : IDL.Func(
+        [IDL.Text],
+        [NatResult],
+        ['query'],
+      ),
     'getNumOpenSubmissionsAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumOpenSubmissionsForOpenChallengesAdmin' : IDL.Func(
         [],
@@ -975,11 +991,6 @@ export const idlFactory = ({ IDL }) => {
         [ProtocolActivityResult],
         ['query'],
       ),
-    'getRecentProtocolActivity_mockup' : IDL.Func(
-        [],
-        [ProtocolActivityResult],
-        ['query'],
-      ),
     'getRedeemedTransactionBlockAdmin' : IDL.Func(
         [PaymentTransactionBlockId],
         [RedeemedTransactionBlockResult],
@@ -987,11 +998,6 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getRewardPerChallengeAdmin' : IDL.Func([], [RewardPerChallengeResult], []),
     'getScoreForSubmission' : IDL.Func(
-        [SubmissionRetrievalInput],
-        [ScoredResponseRetrievalResult],
-        ['query'],
-      ),
-    'getScoreForSubmission_mockup' : IDL.Func(
         [SubmissionRetrievalInput],
         [ScoredResponseRetrievalResult],
         ['query'],
@@ -1132,6 +1138,11 @@ export const idlFactory = ({ IDL }) => {
     'testTokenMintingAdmin' : IDL.Func([], [AuthRecordResult], []),
     'togglePauseProtocolFlagAdmin' : IDL.Func([], [AuthRecordResult], []),
     'togglePauseWhitelistMainerCreationFlagAdmin' : IDL.Func(
+        [],
+        [AuthRecordResult],
+        [],
+      ),
+    'toggleWhitelistPhaseActiveFlagAdmin' : IDL.Func(
         [],
         [AuthRecordResult],
         [],

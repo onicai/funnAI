@@ -497,7 +497,9 @@ export interface GameStateCanister {
   >,
   'getCyclesFlowAdmin' : ActorMethod<[], CyclesFlowResult>,
   'getGameStateThresholdsAdmin' : ActorMethod<[], GameStateTresholdsResult>,
+  'getIsWhitelistPhaseActive' : ActorMethod<[], FlagResult>,
   'getJudgePromptInfo' : ActorMethod<[string], JudgePromptInfoResult>,
+  'getLimitForCreatingMainerAdmin' : ActorMethod<[CheckMainerLimit], NatResult>,
   'getMainerAgentCanisterInfo' : ActorMethod<
     [CanisterRetrieveInput],
     MainerAgentCanisterResult
@@ -505,6 +507,10 @@ export interface GameStateCanister {
   'getMainerAgentCanistersAdmin' : ActorMethod<[], MainerAgentCanistersResult>,
   'getMainerAgentCanistersForUser' : ActorMethod<
     [],
+    MainerAgentCanistersResult
+  >,
+  'getMainerAgentCanistersForUserAdmin' : ActorMethod<
+    [string],
     MainerAgentCanistersResult
   >,
   'getMainerCyclesUsedPerResponse' : ActorMethod<[], NatResult>,
@@ -516,6 +522,7 @@ export interface GameStateCanister {
   'getNumArchivedChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumClosedChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumCurrentChallengesAdmin' : ActorMethod<[], NatResult>,
+  'getNumMainerAgentCanistersForUserAdmin' : ActorMethod<[string], NatResult>,
   'getNumOpenSubmissionsAdmin' : ActorMethod<[], NatResult>,
   'getNumOpenSubmissionsForOpenChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumScoredChallengesAdmin' : ActorMethod<[], NatResult>,
@@ -544,17 +551,12 @@ export interface GameStateCanister {
   'getRandomOpenChallengeTopic' : ActorMethod<[], ChallengeTopicResult>,
   'getRecentChallengeWinners' : ActorMethod<[], ChallengeWinnersResult>,
   'getRecentProtocolActivity' : ActorMethod<[], ProtocolActivityResult>,
-  'getRecentProtocolActivity_mockup' : ActorMethod<[], ProtocolActivityResult>,
   'getRedeemedTransactionBlockAdmin' : ActorMethod<
     [PaymentTransactionBlockId],
     RedeemedTransactionBlockResult
   >,
   'getRewardPerChallengeAdmin' : ActorMethod<[], RewardPerChallengeResult>,
   'getScoreForSubmission' : ActorMethod<
-    [SubmissionRetrievalInput],
-    ScoredResponseRetrievalResult
-  >,
-  'getScoreForSubmission_mockup' : ActorMethod<
     [SubmissionRetrievalInput],
     ScoredResponseRetrievalResult
   >,
@@ -658,6 +660,7 @@ export interface GameStateCanister {
     [],
     AuthRecordResult
   >,
+  'toggleWhitelistPhaseActiveFlagAdmin' : ActorMethod<[], AuthRecordResult>,
   'topUpCyclesForMainerAgent' : ActorMethod<
     [MainerAgentTopUpInput],
     MainerAgentCanisterResult

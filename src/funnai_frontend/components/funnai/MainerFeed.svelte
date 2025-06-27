@@ -202,7 +202,6 @@
   }
 
   async function getFeedData(filterToUserMainers: boolean = false): Promise<FeedItem[]> {
-    console.log("getFeedData called with filterToUserMainers:", filterToUserMainers);
     let newFeedItems: FeedItem[] = [];
     let userParticipatedChallenges: Set<string> = new Set();
 
@@ -211,7 +210,6 @@
 
       if ("Ok" in recentProtocolActivityResult && $store.isAuthed) {
         const { challenges, winners } = recentProtocolActivityResult.Ok;
-        console.log("Retrieved challenges:", challenges.length, "winners:", winners.length);
 
         if (filterToUserMainers) {
           // Collect challenge IDs that user's mAIners have participated in
@@ -295,7 +293,6 @@
 
       // Add user mainer data if authenticated (only last 3 days)
       if ($store.isAuthed) {
-        console.log("Processing user mAIner data, agentCanisterActors count:", agentCanisterActors.length);
         try {
           for (const [index, agent] of agentCanisterActors.entries()) {
             if (agent) {
@@ -309,7 +306,6 @@
                     
                     // Only include submissions from last 3 days
                     const passesDateFilter = isWithinDateRange(submissionTimestamp, 3);
-                    console.log(`Submission ${submission.submissionId} timestamp:`, new Date(submissionTimestamp / 1000000), "passes filter:", passesDateFilter);
                     if (!passesDateFilter) {
                       continue;
                     }
@@ -364,7 +360,6 @@
       console.error("Error fetching protocol activity:", error);
     }
 
-    console.log("Returning", newFeedItems.length, "feed items");
     return sortFeedItemsByTimestamp(newFeedItems);
   }
 
@@ -389,11 +384,8 @@
                        timeSinceLastFetch > 5 * 60 * 1000; // Or every 5 minutes
     
     if (shouldFetch) {
-      console.log("Time to run getFeedData again");
       try {
         const newItems = await getFeedData(!showAllEvents);
-        console.log("after getFeedData newItems");
-        console.log(newItems);
         
         // Merge new items with existing cached items
         const mergedItems = allItems.length > 0 ? mergeItems(allItems, newItems) : newItems;

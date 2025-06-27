@@ -134,11 +134,8 @@
 
   // Handle recipient address input
   function handleAddressInput(event: Event) {
-    console.log("in handleAddressInput event ", event);
     const input = event.target as HTMLInputElement;
-    console.log("in handleAddressInput input ", input);
     recipientAddress = input.value.trim();
-    console.log("in handleAddressInput recipientAddress ", recipientAddress);
   }
 
   // Handle QR scanner button click
@@ -220,7 +217,6 @@
 
   // Handle confirmation confirm
   async function handleConfirmationConfirm() {
-    console.log("in handleConfirmationConfirm transferDetails ", transferDetails);
     if (!transferDetails) return;
     
     isValidating = true;
@@ -229,12 +225,9 @@
 
     try {
       const decimals = token.decimals || 8;
-      console.log("in handleConfirmationConfirm decimals ", decimals);
-      console.log("in handleConfirmationConfirm amount ", amount);
       const amountBigInt = BigInt(
         new BigNumber(amount).times(new BigNumber(10).pow(decimals)).toString()
       );
-      console.log("in handleConfirmationConfirm amountBigInt ", amountBigInt);
 
       //toastStore.info(`Sending ${amount} ${token.symbol}...`);
 
@@ -257,7 +250,6 @@
           fee: token.fee_fixed ? BigInt(token.fee_fixed) : tokenFee
         }
       );
-      console.log("in handleConfirmationConfirm result ", result);
 
       //@ts-ignore
       if (result?.Ok) {
@@ -308,10 +300,8 @@
 
   // Validate address
   $: {
-    console.log("in validate address recipientAddress ", recipientAddress);
     if (recipientAddress) {
       addressValidation = validateAddress(recipientAddress, token.symbol, token.name);
-      console.log("in validate address addressValidation ", addressValidation);
     } else {
       addressValidation = { isValid: false, errorMessage: "", addressType: null };
     }
