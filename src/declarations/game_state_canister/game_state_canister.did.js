@@ -912,6 +912,11 @@ export const idlFactory = ({ IDL }) => {
         [MainerAgentCanistersResult],
         ['query'],
       ),
+    'getMainerAgentCanistersForUserAdmin' : IDL.Func(
+        [IDL.Text],
+        [MainerAgentCanistersResult],
+        ['query'],
+      ),
     'getMainerCyclesUsedPerResponse' : IDL.Func([], [NatResult], []),
     'getMainerPromptInfo' : IDL.Func(
         [IDL.Text],
@@ -926,6 +931,11 @@ export const idlFactory = ({ IDL }) => {
     'getNumArchivedChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumClosedChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumCurrentChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
+    'getNumMainerAgentCanistersForUserAdmin' : IDL.Func(
+        [IDL.Text],
+        [NatResult],
+        ['query'],
+      ),
     'getNumOpenSubmissionsAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumOpenSubmissionsForOpenChallengesAdmin' : IDL.Func(
         [],

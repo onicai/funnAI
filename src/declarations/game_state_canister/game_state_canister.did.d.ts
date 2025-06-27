@@ -509,6 +509,10 @@ export interface GameStateCanister {
     [],
     MainerAgentCanistersResult
   >,
+  'getMainerAgentCanistersForUserAdmin' : ActorMethod<
+    [string],
+    MainerAgentCanistersResult
+  >,
   'getMainerCyclesUsedPerResponse' : ActorMethod<[], NatResult>,
   'getMainerPromptInfo' : ActorMethod<[string], MainerPromptInfoResult>,
   'getNextSubmissionToJudge' : ActorMethod<
@@ -518,6 +522,7 @@ export interface GameStateCanister {
   'getNumArchivedChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumClosedChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumCurrentChallengesAdmin' : ActorMethod<[], NatResult>,
+  'getNumMainerAgentCanistersForUserAdmin' : ActorMethod<[string], NatResult>,
   'getNumOpenSubmissionsAdmin' : ActorMethod<[], NatResult>,
   'getNumOpenSubmissionsForOpenChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumScoredChallengesAdmin' : ActorMethod<[], NatResult>,

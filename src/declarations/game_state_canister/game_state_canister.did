@@ -448,12 +448,15 @@ type GameStateCanister =
     (MainerAgentCanisterResult) query;
    getMainerAgentCanistersAdmin: () -> (MainerAgentCanistersResult) query;
    getMainerAgentCanistersForUser: () -> (MainerAgentCanistersResult) query;
+   getMainerAgentCanistersForUserAdmin: (text) ->
+    (MainerAgentCanistersResult) query;
    getMainerCyclesUsedPerResponse: () -> (NatResult);
    getMainerPromptInfo: (text) -> (MainerPromptInfoResult) query;
    getNextSubmissionToJudge: () -> (ChallengeResponseSubmissionResult);
    getNumArchivedChallengesAdmin: () -> (NatResult) query;
    getNumClosedChallengesAdmin: () -> (NatResult) query;
    getNumCurrentChallengesAdmin: () -> (NatResult) query;
+   getNumMainerAgentCanistersForUserAdmin: (text) -> (NatResult) query;
    getNumOpenSubmissionsAdmin: () -> (NatResult) query;
    getNumOpenSubmissionsForOpenChallengesAdmin: () -> (NatResult) query;
    getNumScoredChallengesAdmin: () -> (NatResult) query;
