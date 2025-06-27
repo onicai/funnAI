@@ -7,9 +7,7 @@ store.subscribe((value) => storeState = value);
 
 export const getSharedAgentPrice = async () => {
   try {
-    console.log("🔵 getSharedAgentPrice called");
     let response = await storeState.gameStateCanisterActor.getPriceForShareAgent();
-    console.log("🔵 getSharedAgentPrice response ", response);
     
     if ('Ok' in response) {
       return Number(response.Ok.price);
@@ -25,9 +23,7 @@ export const getSharedAgentPrice = async () => {
 
 export const getOwnAgentPrice = async () => {
   try {
-    console.log("🔵 getOwnAgentPrice called");
     let response = await storeState.gameStateCanisterActor.getPriceForOwnMainer();
-    console.log("🔵 getOwnAgentPrice response ", response);
     
     if ('Ok' in response) {
       return Number(response.Ok.price);
@@ -42,22 +38,16 @@ export const getOwnAgentPrice = async () => {
 };
 
 export const getWhitelistAgentPrice = async () => {
-  try {
-    console.log("🔵 getWhitelistAgentPrice called");
-    
+  try {    
     // Check if the method exists before calling it
     if (!storeState.gameStateCanisterActor.getWhitelistPriceForShareAgent) {
       console.warn("🟠 getWhitelistPriceForShareAgent method not available, using fallback price");
       return 5;
     }
-    
-    console.log("🔵 Calling getWhitelistPriceForShareAgent...");
     let response = await storeState.gameStateCanisterActor.getWhitelistPriceForShareAgent();
-    console.log("🔵 getWhitelistPriceForShareAgent response:", response);
     
     if ('Ok' in response) {
       const price = Number(response.Ok.price);
-      console.log("✅ Whitelist price obtained:", price);
       
       // If backend returns 0, use fallback value (backend not configured yet)
       if (price <= 0) {
@@ -78,7 +68,6 @@ export const getWhitelistAgentPrice = async () => {
 
 export const getIsProtocolActive = async () => {
   try {
-    console.log("🔵 getIsProtocolActive called");
     // Check if the method exists before calling it
     if (!storeState.gameStateCanisterActor.getPauseProtocolFlag) {
       console.warn("getPauseProtocolFlag method not available, defaulting to active");
@@ -86,7 +75,6 @@ export const getIsProtocolActive = async () => {
     }
     
     let response = await storeState.gameStateCanisterActor.getPauseProtocolFlag();
-    console.log("🔵 getIsProtocolActive response:", response);
     
     if ('Ok' in response) {
       let isPaused = response.Ok.flag;
@@ -103,7 +91,6 @@ export const getIsProtocolActive = async () => {
 
 export const getIsMainerCreationStopped = async (mainerType) => {
   try {
-    console.log("🔵 getIsMainerCreationStopped called");
     // Check if the method exists before calling it
     if (!storeState.gameStateCanisterActor.shouldCreatingMainersBeStopped) {
       console.warn("shouldCreatingMainersBeStopped method not available, defaulting to not stopped");
@@ -112,7 +99,6 @@ export const getIsMainerCreationStopped = async (mainerType) => {
     
     let input = { 'mainerType' : mainerType === 'Own' ? { 'Own': null } : { 'ShareAgent': null } }
     let response = await storeState.gameStateCanisterActor.shouldCreatingMainersBeStopped(input);
-    console.log("🔵 getIsMainerCreationStopped response:", response);
     
     // Handle both response types - the backend might return just a boolean or a Result type
     if (typeof response === 'boolean') {
@@ -132,7 +118,6 @@ export const getIsMainerCreationStopped = async (mainerType) => {
 };
 
 export const getPauseWhitelistMainerCreationFlag = async () => {
-  console.log("🔵 getPauseWhitelistMainerCreationFlag called");
   try {
     // Check if the method exists before calling it
     if (!storeState.gameStateCanisterActor.getPauseWhitelistMainerCreationFlag) {
@@ -141,7 +126,6 @@ export const getPauseWhitelistMainerCreationFlag = async () => {
     }
     
     let response = await storeState.gameStateCanisterActor.getPauseWhitelistMainerCreationFlag();
-    console.log("🔵 getPauseWhitelistMainerCreationFlag response:", response);
     
     if ('Ok' in response) {
       return response.Ok.flag;
@@ -156,7 +140,6 @@ export const getPauseWhitelistMainerCreationFlag = async () => {
 };
 
 export const getIsWhitelistPhaseActive = async (isRetry = false) => {
-  console.log("🔵 getIsWhitelistPhaseActive called");
   try {
     // Check if the method exists before calling it
     if (!storeState.gameStateCanisterActor.getIsWhitelistPhaseActive) {
@@ -165,7 +148,6 @@ export const getIsWhitelistPhaseActive = async (isRetry = false) => {
     };
     
     let response = await storeState.gameStateCanisterActor.getIsWhitelistPhaseActive();
-    console.log("🔵 getIsWhitelistPhaseActive response:", response);
     
     if ('Ok' in response) {
       return response.Ok.flag;

@@ -3,7 +3,6 @@ import {
 } from "../stores/store";
 
 const gameStateCanisterId = canisterIds.gameStateCanisterId;
-console.log("in token helpers gameStateCanisterId ", gameStateCanisterId);
 
 const availableTokens: FE.Token[] = [ // TODO
   { 

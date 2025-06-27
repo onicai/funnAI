@@ -35,8 +35,6 @@ export function configureStorage() {
       storeName: 'funnAI_main_store',
       size: 10485760 // 10MB
     });
-
-    console.log('[Storage] LocalForage configured successfully');
     return true;
   } catch (error) {
     console.error('[Storage] Error configuring localForage:', error);

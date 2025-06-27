@@ -50,9 +50,6 @@ export const canisterIds = {
   gameStateCanisterId
 };
 
-console.log("in store canisterIds ", canisterIds);
-console.log("in store gameStateCanisterId ", gameStateCanisterId);
-
 export const canisterIDLs = {
   backendIdlFactory,
   gameStateIdlFactory,
@@ -60,15 +57,6 @@ export const canisterIDLs = {
   icrc2: icrc2IDL,
   ICP: icpIDL,
 };
-
-// TODO: remove debug print statements
-console.log("funnai_backend");
-console.log(funnai_backend);
-console.log(backendCanisterId);
-
-console.log("game_state_canister");
-console.log(game_state_canister);
-console.log(gameStateCanisterId);
 
 //__________Local vs Mainnet Development____________
 /* export const HOST =
