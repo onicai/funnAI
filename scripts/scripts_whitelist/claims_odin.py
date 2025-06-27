@@ -35,6 +35,7 @@ def claims_odin(claims: list, wl_allocs: dict, total_wl_allocs: dict):
     ARJAAN_PRINCIPAL = "2fkbl-w6vfw-vjumq-teego-arg7t-hil5u-dyq7d-ted5t-33cuw-rked4-uqe"
     NUNO_PRINCIPAL = "wn7rp-bfj4y-lc4uy-pgt7p-3p7ev-qdf67-qnqhz-d23qu-jxvht-cc6uu-bqe"
     PATRICK_PRICIPAL = "qcrrl-k4uug-tgnhv-wj5st-l46cy-tyx7o-fpudp-6p73z-jhjlo-shqy5-7qe"
+    AIRA_NAME_PRINCIPAL = "phr5l-giue6-i7ng7-d2g22-piknz-eatvg-vdm62-3m35b-muwfk-ydxcn-sqe"  # Aira name contest winner principal
 
     for claim in claims:
         funnai_principal = claim.get("funnai_principal")
@@ -70,12 +71,12 @@ def claims_odin(claims: list, wl_allocs: dict, total_wl_allocs: dict):
                 break
                
         if not found_odin_holder and not found_odin_lp:
-            if odin_user_id != '':
+            if odin_user_id != '' and funnai_principal != AIRA_NAME_PRINCIPAL:
                 print(f"ERROR: Could not find an odin username in either odin_holders or odin_lp for {funnai_principal} with odin_user_id {odin_user_id}")
                 print(f"funnai_principal: {funnai_principal}, odin_user_id: {odin_user_id}")
                 print("SKIPPING -- INVESTIGATE THIS CLAIM MANUALLY")
                 print(f"-------------------------------------------------------")
-            continue  # No odin holder or lp found, skip this claim
+                continue  # No odin holder or lp found, skip this claim
 
 
         alloc_iconfucius = alloc_rule_iconfucius(iconfucius_share, cap=15)
@@ -84,6 +85,9 @@ def claims_odin(claims: list, wl_allocs: dict, total_wl_allocs: dict):
 
         if funnai_principal == ABHISHEK_PRINCIPAL:
             alloc_iconfucius = max(alloc_iconfucius, 4)  # Abhishek gets at least 4
+
+        if funnai_principal == AIRA_NAME_PRINCIPAL:
+            alloc_iconfucius += 1  # Aira name contest winner gets another one for the name contest
 
         print(f"Odin based WL allocations: {alloc_iconfucius} ({iconfucius_share:.2f}%), {alloc_iconfucius_lp} ({iconfucius_lp_share:.2f}%))")
 
