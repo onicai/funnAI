@@ -21,6 +21,27 @@ dfx canister call game_state_canister getRewardPerChallengeAdmin --network $NETW
 dfx canister call game_state_canister setRewardPerChallengeAdmin '100000000000' --network $NETWORK
 ```
 
+# GameState Settings for subnets
+
+Compare to subnet allocations in this spreadsheet:
+https://docs.google.com/spreadsheets/d/1KeyylEYVs3cQvYXOc9RS0q5eWd_vWIW1UVycfDEIkBk/edit?gid=0#gid=0
+
+```bash
+# From folder: funnAI
+NETWORK=prd
+# Verify the subnets are set correctly
+dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
+
+# Set them if not correct
+source scripts/canister_ids-$NETWORK.env
+SUBNETSACTRL=$SUBNET_0_1
+SUBNETSSCTRL=$SUBNET_0_1
+SUBNETSSLLM=$SUBNET_2_1
+# Set the SubnetIds in the GameState canister
+dfx canister --network $NETWORK call game_state_canister setSubnetsAdmin "(record {subnetShareAgentCtrl = \"$SUBNETSACTRL\"; subnetShareServiceCtrl = \"$SUBNETSSCTRL\"; subnetShareServiceLlm = \"$SUBNETSSLLM\" })"
+
+```
+
 # GameState Thresholds
 
 ```bash

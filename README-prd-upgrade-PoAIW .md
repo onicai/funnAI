@@ -68,7 +68,6 @@ scripts/get_mainers.sh --network $NETWORK
 # Then run these in 3 separate windows
 scripts/monitor_logs.sh --network $NETWORK --canister-types [all|protocol|mainers]
 scripts/monitor_gamestate_metrics.sh --network $NETWORK 
-scripts/monitor_gamestate_logs.sh --network $NETWORK 
 ```
 
 Then view the logs to ensure that:
@@ -96,6 +95,8 @@ Upgrading the GameState is typically easy. Just make sure everything is paused, 
 ```bash
 # from funnAI folder
 scripts/scripts-gamestate/deploy.sh --network $NETWORK --mode upgrade
+# Update the wasm-hash, using the Admin owned test mAIner ShareAgent
+dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="vg3fp-pyaaa-aaaaa-qavba-cai"; textNote="Reinstall of GameState"})' --network $NETWORK
 ```
 
 # Reinstall of GameState
