@@ -126,13 +126,13 @@
         "total": 3
     },
     "oyw6s-e7bvp-55ily-wli7r-st42q-57mnv-65pdx-p3u6k-k6plj-ewwzo-pae": {
-        "icpp_art": 0,
-        "charles": 0,
+        "icpp_art": 2,
+        "charles": 2,
         "odin": 0,
         "odin_lp": 0,
         "kongswap": 0,
         "kongswap_lp": 0,
-        "total": 0
+        "total": 4
     },
     "dno55-cf4cu-q2wwf-udihm-tq4ul-76yti-ywaee-khuyf-urcfy-r2vcz-hae": {
         "icpp_art": 10,
@@ -718,5 +718,23 @@
         "kongswap": 0,
         "kongswap_lp": 0,
         "total": 4
+    },
+    "4z7gg-mclwm-wwioa-tutma-e2qhd-gcgkn-dvqx6-kon7q-7qhyu-wpp5y-hqe": {
+        "icpp_art": 1,
+        "charles": 3,
+        "odin": 0,
+        "odin_lp": 0,
+        "kongswap": 0,
+        "kongswap_lp": 0,
+        "total": 4
+    },
+    "rq2ve-um6zk-lyxih-wxjax-q3mnh-cesbs-bxdru-dxblw-vsiuw-7val5-pqe": {
+        "icpp_art": 0,
+        "charles": 0,
+        "odin": 0,
+        "odin_lp": 0,
+        "kongswap": 0,
+        "kongswap_lp": 0,
+        "total": 0
     }
 }
