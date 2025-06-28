@@ -33,8 +33,7 @@ def main(network):
     if not mainers or len(mainers) == 0:
         print("No mainers found.")
         return
-    print(f"Found {len(mainers)-1} mainers on network '{network}' (Excluding ShareService)") # excluding the ShareService canister
-
+    
     # Open file and write header comment
     env_file_path = os.path.join(SCRIPT_DIR, f"canister_ids_mainers-{network}.env")
     print(f"Writing mainers to {env_file_path}")
@@ -43,6 +42,7 @@ def main(network):
         f.write(f"# DO NOT MANUALLY UPDATE THIS FILE, instead run: scripts/get_mainers.sh --network $NETWORK \n")
     
         count = 0
+        count_created = 0
         for mainer in mainers:
             address = mainer.get('address', '')
             canister_type_dict = mainer.get('canisterType', {}).get("MainerAgent", {})
@@ -60,8 +60,12 @@ def main(network):
             print(line.strip())
             f.write(line)
 
+            if address !="":
+                count_created += 1
             count += 1
-        
+    
+    print(f"Found {count} mainer user entries on network '{network}'") # excluding the ShareService canister
+    print(f"Found {count_created} created mainers on network '{network}'") # excluding the ShareService canister
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start timers.")
