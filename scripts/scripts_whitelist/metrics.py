@@ -11,8 +11,8 @@ def main (token: str):
     """
     Main function to check on WL wallet balances.
     """
-    # Read the wl_allocs.json from file
-    json_path = Path(__file__).parent / "wl_allocs.json"
+    # Read the ../../secret/whitelist/wl_allocs.json from file
+    json_path = Path(__file__).parent / "../../secret/whitelist/wl_allocs.json"
     with open(json_path, "r") as f:
         wl_allocs_json = json.load(f)
 

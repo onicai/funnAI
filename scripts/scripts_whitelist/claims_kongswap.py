@@ -28,7 +28,7 @@ def claims_kongswap(claims: list, wl_allocs: dict, total_wl_allocs: dict):
     # ------------------------------------------------------------------------------
     # Read the kongswap snapshot from file
     kongswap = {}
-    csv_path = Path(__file__).parent / "snapshots/kongswap.csv"
+    csv_path = Path(__file__).parent / "../../secret/whitelist/snapshots/kongswap.csv"
     with open(csv_path, "r", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:

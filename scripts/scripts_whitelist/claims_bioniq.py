@@ -146,7 +146,7 @@ def claims_bioniq(claims: list, wl_allocs: dict, total_wl_allocs: dict):
     # ------------------------------------------------------------------------------
     # Read & process (count) the bioniq NFT snapshots from file
     
-    json_path = Path(__file__).parent / "snapshots" / "icpp_art.json"
+    json_path = Path(__file__).parent / "../../secret/whitelist/snapshots" / "icpp_art.json"
     with open(json_path, "r") as f:
         icpp_art = json.load(f)
 
@@ -165,7 +165,7 @@ def claims_bioniq(claims: list, wl_allocs: dict, total_wl_allocs: dict):
         print(f"{icpp_art_owner}: {count} NFTs")
 
     # ------------------------------------------------------------------------------
-    json_path = Path(__file__).parent / "snapshots" / "charles.json"
+    json_path = Path(__file__).parent / "../../secret/whitelist/snapshots" / "charles.json"
     with open(json_path, "r") as f:
         charles = json.load(f)
 
@@ -187,7 +187,7 @@ def claims_bioniq(claims: list, wl_allocs: dict, total_wl_allocs: dict):
     # ------------------------------------------------------------------------------
     # Read the bioniq ckbtc > btc mapping from file
     bioniq_btc_address_map = {}
-    csv_path = Path(__file__).parent / "snapshots/bioniq_internal_btc_to_principal_map.csv"
+    csv_path = Path(__file__).parent / "../../secret/whitelist/snapshots/bioniq_internal_btc_to_principal_map.csv"
     with open(csv_path, "r", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:

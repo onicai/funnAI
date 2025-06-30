@@ -9,14 +9,14 @@ def claims_odin(claims: list, wl_allocs: dict, total_wl_allocs: dict):
 
     # ------------------------------------------------------------------------------
     # Read the iconfucius_odin_holders snapshot from file
-    json_path = Path(__file__).parent / "snapshots" / "iconfucius_odin_holders.json"
+    json_path = Path(__file__).parent / "../../secret/whitelist/snapshots" / "iconfucius_odin_holders.json"
     with open(json_path, "r") as f:
         iconfucius_odin_holders_json = json.load(f)
     iconfucius_odin_holders = iconfucius_odin_holders_json['data']
     total_iconfucius = 21000000 # Total ICONFUCIUS supply is 21M
 
     # Read the iconfucius_odin_lp snapshot from file
-    json_path = Path(__file__).parent / "snapshots" / "iconfucius_odin_lp.json"
+    json_path = Path(__file__).parent / "../../secret/whitelist/snapshots" / "iconfucius_odin_lp.json"
     with open(json_path, "r") as f:
         iconfucius_odin_lp_json = json.load(f)
     iconfucius_odin_lp = iconfucius_odin_lp_json['data']

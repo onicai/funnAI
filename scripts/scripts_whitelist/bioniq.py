@@ -73,7 +73,7 @@ for coll in collections:
     # Write the dictionary to a JSON file named <collection_name>.json
     EST = timezone(timedelta(hours=-5))
     timestamp = datetime.now(EST).strftime("%Y-%m-%d_%H-%M-%S")
-    output_filename = Path(__file__).parent / "snapshots" / f"{timestamp}_{collection_name.replace('-', '_')}.json"
+    output_filename = Path(__file__).parent / "../../secret/whitelist/snapshots" / f"{timestamp}_{collection_name.replace('-', '_')}.json"
     try:
         with open(output_filename, "w") as outfile:
             json.dump(data_dictionary, outfile, indent=4)

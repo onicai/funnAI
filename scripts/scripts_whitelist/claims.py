@@ -14,7 +14,7 @@ def main (category: str):
     # ------------------------------------------------------------------------------
     # Read the claim form responses from file
     claims = []
-    csv_path = Path(__file__).parent / "snapshots/claims.csv"
+    csv_path = Path(__file__).parent / "../../secret/whitelist/snapshots/claims.csv"
     with open(csv_path, "r", newline="") as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
@@ -97,12 +97,12 @@ def main (category: str):
         claims_bioniq(claims, wl_allocs, total_wl_allocs)
     
     # export wl_allocs to JSON file
-    json_path = Path(__file__).parent / "wl_allocs.json"
+    json_path = Path(__file__).parent / "../../secret/whitelist/wl_allocs.json"
     with open(json_path, "w") as jsonfile:
         json.dump(wl_allocs, jsonfile, indent=4)
     print(f"Exported wl_allocs to {json_path}")
     # export total_wl_allocs to JSON file
-    json_path = Path(__file__).parent / "total_wl_allocs.json"
+    json_path = Path(__file__).parent / "../../secret/whitelist/total_../../secret/whitelist/wl_allocs.json"
     with open(json_path, "w") as jsonfile:
         json.dump(total_wl_allocs, jsonfile, indent=4)
     print(f"Exported total_wl_allocs to {json_path}")
