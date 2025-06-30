@@ -214,6 +214,7 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : ScoredResponseReturn,
     'Err' : ApiError,
   });
+  const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
   const AuthRecord = IDL.Record({ 'auth' : IDL.Text });
   const AuthRecordResult = IDL.Variant({ 'Ok' : AuthRecord, 'Err' : ApiError });
   const MainerCreationInput = IDL.Record({
@@ -276,6 +277,22 @@ export const idlFactory = ({ IDL }) => {
   });
   const ChallengesResult = IDL.Variant({
     'Ok' : IDL.Vec(Challenge),
+    'Err' : ApiError,
+  });
+  const TimeInterval = IDL.Variant({ 'Daily' : IDL.Null });
+  const CyclesBurnRate = IDL.Record({
+    'cycles' : IDL.Nat,
+    'timeInterval' : TimeInterval,
+  });
+  const CyclesBurnRateDefault = IDL.Variant({
+    'Low' : IDL.Null,
+    'Mid' : IDL.Null,
+    'VeryHigh' : IDL.Null,
+    'High' : IDL.Null,
+    'Custom' : CyclesBurnRate,
+  });
+  const CyclesBurnRateResult = IDL.Variant({
+    'Ok' : CyclesBurnRate,
     'Err' : ApiError,
   });
   const CyclesFlow = IDL.Record({
@@ -360,6 +377,8 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : GameStateTresholds,
     'Err' : ApiError,
   });
+  const FlagRecord = IDL.Record({ 'flag' : IDL.Bool });
+  const FlagResult = IDL.Variant({ 'Ok' : FlagRecord, 'Err' : ApiError });
   const JudgePromptInfo = IDL.Record({
     'promptCacheFilename' : IDL.Text,
     'promptText' : IDL.Text,
@@ -370,12 +389,14 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : JudgePromptInfo,
     'Err' : ApiError,
   });
+  const CheckMainerLimit = IDL.Record({
+    'mainerType' : MainerAgentCanisterType,
+  });
   const CanisterRetrieveInput = IDL.Record({ 'address' : CanisterAddress });
   const MainerAgentCanistersResult = IDL.Variant({
     'Ok' : IDL.Vec(OfficialMainerAgentCanister),
     'Err' : ApiError,
   });
-  const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
   const MainerPromptInfo = IDL.Record({
     'promptCacheFilename' : IDL.Text,
     'promptText' : IDL.Text,
@@ -444,8 +465,6 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : IDL.Vec(ChallengeResponseSubmission),
     'Err' : ApiError,
   });
-  const FlagRecord = IDL.Record({ 'flag' : IDL.Bool });
-  const FlagResult = IDL.Variant({ 'Ok' : FlagRecord, 'Err' : ApiError });
   const PriceRecord = IDL.Record({ 'price' : IDL.Nat64 });
   const PriceResult = IDL.Variant({ 'Ok' : PriceRecord, 'Err' : ApiError });
   const CyclesBurntResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
@@ -517,6 +536,18 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : RedeemedTransactionBlock,
     'Err' : ApiError,
   });
+  const RewardPerChallenge = IDL.Record({
+    'amountForAllParticipants' : IDL.Nat,
+    'thirdPlaceAmount' : IDL.Nat,
+    'rewardType' : RewardType,
+    'totalAmount' : IDL.Nat,
+    'winnerAmount' : IDL.Nat,
+    'secondPlaceAmount' : IDL.Nat,
+  });
+  const RewardPerChallengeResult = IDL.Variant({
+    'Ok' : RewardPerChallenge,
+    'Err' : ApiError,
+  });
   const SubmissionRetrievalInput = IDL.Record({
     'challengeId' : IDL.Text,
     'submissionId' : IDL.Text,
@@ -585,7 +616,14 @@ export const idlFactory = ({ IDL }) => {
     'subnetShareServiceLlm' : IDL.Text,
   });
   const SubnetIdsResult = IDL.Variant({ 'Ok' : SubnetIds, 'Err' : ApiError });
+  const MainerctrlReinstallInput = IDL.Record({
+    'canisterAddress' : CanisterAddress,
+  });
   const TextResult = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : ApiError });
+  const SetCyclesBurnRateInput = IDL.Record({
+    'cyclesBurnRate' : CyclesBurnRate,
+    'cyclesBurnRateDefault' : CyclesBurnRateDefault,
+  });
   const CyclesFlowSettings = IDL.Record({
     'costCreateMcMainerLlm' : IDL.Opt(IDL.Nat),
     'cyclesCreateMainerMarginGs' : IDL.Opt(IDL.Nat),
@@ -596,7 +634,9 @@ export const idlFactory = ({ IDL }) => {
     'cyclesGenerateResponseOwnctrlOwnllmMEDIUM' : IDL.Opt(IDL.Nat),
     'protocolOperationFeesCut' : IDL.Opt(IDL.Nat),
     'dailyChallenges' : IDL.Opt(IDL.Nat),
+    'cyclesReinstallMainerllmGsMc' : IDL.Opt(IDL.Nat),
     'dailySubmissionsPerShareMEDIUM' : IDL.Opt(IDL.Nat),
+    'cyclesReinstallMainerllmMcMainerllm' : IDL.Opt(IDL.Nat),
     'cyclesBurntResponseGenerationShare' : IDL.Opt(IDL.Nat),
     'numShareServiceLlms' : IDL.Opt(IDL.Nat),
     'cyclesUpgradeMainerctrlGsMc' : IDL.Opt(IDL.Nat),
@@ -613,6 +653,7 @@ export const idlFactory = ({ IDL }) => {
     'dailySubmissionsPerOwnLOW' : IDL.Opt(IDL.Nat),
     'cyclesGenerateResponseSsctrlSsllm' : IDL.Opt(IDL.Nat),
     'costIdleBurnRateOwnctrl' : IDL.Opt(IDL.Nat),
+    'cyclesReinstallMainerctrlMcMainerctrl' : IDL.Opt(IDL.Nat),
     'dailySubmissionsPerOwnMEDIUM' : IDL.Opt(IDL.Nat),
     'costIdleBurnRateChllm' : IDL.Opt(IDL.Nat),
     'cyclesCreateMainerLlmTargetBalance' : IDL.Opt(IDL.Nat),
@@ -655,6 +696,7 @@ export const idlFactory = ({ IDL }) => {
     'costGenerateResponseSsllm' : IDL.Opt(IDL.Nat),
     'marginFailedSubmissionCut' : IDL.Opt(IDL.Nat),
     'numJudgeLlms' : IDL.Opt(IDL.Nat),
+    'cyclesReinstallMainerctrlGsMc' : IDL.Opt(IDL.Nat),
     'costUpgradeMcMainerCtrl' : IDL.Opt(IDL.Nat),
     'cyclesUpgradeMainerllmGsMc' : IDL.Opt(IDL.Nat),
     'costIdleBurnRateChctrl' : IDL.Opt(IDL.Nat),
@@ -668,21 +710,6 @@ export const idlFactory = ({ IDL }) => {
   const UpdateWasmHashInput = IDL.Record({
     'wasmHash' : IDL.Vec(IDL.Nat8),
     'textNote' : IDL.Text,
-  });
-  const RewardPerChallenge = IDL.Record({
-    'amountForAllParticipants' : IDL.Nat,
-    'thirdPlaceAmount' : IDL.Nat,
-    'rewardType' : RewardType,
-    'totalAmount' : IDL.Nat,
-    'winnerAmount' : IDL.Nat,
-    'secondPlaceAmount' : IDL.Nat,
-  });
-  const RewardPerChallengeResult = IDL.Variant({
-    'Ok' : RewardPerChallenge,
-    'Err' : ApiError,
-  });
-  const CheckMainerLimit = IDL.Record({
-    'mainerType' : MainerAgentCanisterType,
   });
   const StartUploadJudgePromptCacheRecord = IDL.Record({
     'judgePromptId' : IDL.Text,
@@ -810,6 +837,7 @@ export const idlFactory = ({ IDL }) => {
         [ScoredResponseResult],
         [],
       ),
+    'backupMainersAdmin' : IDL.Func([], [NatResult], []),
     'cleanUnlockedMainerStoragesAdmin' : IDL.Func([], [AuthRecordResult], []),
     'createUserMainerAgent' : IDL.Func(
         [MainerCreationInput],
@@ -842,19 +870,31 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'getArchivedChallengesAdmin' : IDL.Func([], [ChallengesResult], ['query']),
+    'getBufferMainerCreation' : IDL.Func([], [NatResult], ['query']),
     'getCanisterPrincipal' : IDL.Func([], [IDL.Text], ['query']),
     'getClosedChallengesAdmin' : IDL.Func([], [ChallengesResult], ['query']),
     'getCurrentChallenges' : IDL.Func([], [ChallengesResult], ['query']),
     'getCurrentChallengesAdmin' : IDL.Func([], [ChallengesResult], ['query']),
+    'getCyclesBurnRate' : IDL.Func(
+        [CyclesBurnRateDefault],
+        [CyclesBurnRateResult],
+        [],
+      ),
     'getCyclesFlowAdmin' : IDL.Func([], [CyclesFlowResult], []),
     'getGameStateThresholdsAdmin' : IDL.Func(
         [],
         [GameStateTresholdsResult],
         ['query'],
       ),
+    'getIsWhitelistPhaseActive' : IDL.Func([], [FlagResult], ['query']),
     'getJudgePromptInfo' : IDL.Func(
         [IDL.Text],
         [JudgePromptInfoResult],
+        ['query'],
+      ),
+    'getLimitForCreatingMainerAdmin' : IDL.Func(
+        [CheckMainerLimit],
+        [NatResult],
         ['query'],
       ),
     'getMainerAgentCanisterInfo' : IDL.Func(
@@ -872,6 +912,11 @@ export const idlFactory = ({ IDL }) => {
         [MainerAgentCanistersResult],
         ['query'],
       ),
+    'getMainerAgentCanistersForUserAdmin' : IDL.Func(
+        [IDL.Text],
+        [MainerAgentCanistersResult],
+        ['query'],
+      ),
     'getMainerCyclesUsedPerResponse' : IDL.Func([], [NatResult], []),
     'getMainerPromptInfo' : IDL.Func(
         [IDL.Text],
@@ -886,6 +931,11 @@ export const idlFactory = ({ IDL }) => {
     'getNumArchivedChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumClosedChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumCurrentChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
+    'getNumMainerAgentCanistersForUserAdmin' : IDL.Func(
+        [IDL.Text],
+        [NatResult],
+        ['query'],
+      ),
     'getNumOpenSubmissionsAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumOpenSubmissionsForOpenChallengesAdmin' : IDL.Func(
         [],
@@ -894,6 +944,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getNumScoredChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumSubmissionsAdmin' : IDL.Func([], [NatResult], ['query']),
+    'getNumberMainerAgentsAdmin' : IDL.Func(
+        [CheckMainerLimit],
+        [NatResult],
+        ['query'],
+      ),
     'getOfficialCanistersAdmin' : IDL.Func(
         [],
         [IDL.Vec(OfficialProtocolCanister)],
@@ -918,6 +973,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getPriceForOwnMainer' : IDL.Func([], [PriceResult], ['query']),
     'getPriceForShareAgent' : IDL.Func([], [PriceResult], ['query']),
+    'getProtocolCyclesBalanceBuffer' : IDL.Func([], [NatResult], ['query']),
     'getProtocolTotalCyclesBurnt' : IDL.Func(
         [],
         [CyclesBurntResult],
@@ -935,22 +991,13 @@ export const idlFactory = ({ IDL }) => {
         [ProtocolActivityResult],
         ['query'],
       ),
-    'getRecentProtocolActivity_mockup' : IDL.Func(
-        [],
-        [ProtocolActivityResult],
-        ['query'],
-      ),
     'getRedeemedTransactionBlockAdmin' : IDL.Func(
         [PaymentTransactionBlockId],
         [RedeemedTransactionBlockResult],
         [],
       ),
+    'getRewardPerChallengeAdmin' : IDL.Func([], [RewardPerChallengeResult], []),
     'getScoreForSubmission' : IDL.Func(
-        [SubmissionRetrievalInput],
-        [ScoredResponseRetrievalResult],
-        ['query'],
-      ),
-    'getScoreForSubmission_mockup' : IDL.Func(
         [SubmissionRetrievalInput],
         [ScoredResponseRetrievalResult],
         ['query'],
@@ -974,6 +1021,12 @@ export const idlFactory = ({ IDL }) => {
     'getWhitelistPriceForOwnMainer' : IDL.Func([], [PriceResult], ['query']),
     'getWhitelistPriceForShareAgent' : IDL.Func([], [PriceResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
+    'migrateArchivedChallengesAdmin' : IDL.Func([], [NatResult], []),
+    'reinstallMainerControllerAdmin' : IDL.Func(
+        [MainerctrlReinstallInput],
+        [MainerAgentCanisterResult],
+        [],
+      ),
     'removeRedeemedTransactionBlockAdmin' : IDL.Func(
         [PaymentTransactionBlockId],
         [TextResult],
@@ -986,6 +1039,13 @@ export const idlFactory = ({ IDL }) => {
       ),
     'resetCurrentChallengesAdmin' : IDL.Func([], [StatusCodeRecordResult], []),
     'resetCyclesFlowAdmin' : IDL.Func([], [StatusCodeRecordResult], []),
+    'setArchiveCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
+    'setBufferMainerCreation' : IDL.Func([IDL.Nat], [AuthRecordResult], []),
+    'setCyclesBurnRateAdmin' : IDL.Func(
+        [SetCyclesBurnRateInput],
+        [StatusCodeRecordResult],
+        [],
+      ),
     'setCyclesFlowAdmin' : IDL.Func(
         [CyclesFlowSettings],
         [StatusCodeRecordResult],
@@ -1025,6 +1085,11 @@ export const idlFactory = ({ IDL }) => {
     'setOfficialMainerAgentCanisterWasmHashAdmin' : IDL.Func(
         [UpdateWasmHashInput],
         [CanisterWasmHashRecordResult],
+        [],
+      ),
+    'setProtocolCyclesBalanceBuffer' : IDL.Func(
+        [IDL.Nat],
+        [AuthRecordResult],
         [],
       ),
     'setRewardPerChallengeAdmin' : IDL.Func(
@@ -1073,6 +1138,11 @@ export const idlFactory = ({ IDL }) => {
     'testTokenMintingAdmin' : IDL.Func([], [AuthRecordResult], []),
     'togglePauseProtocolFlagAdmin' : IDL.Func([], [AuthRecordResult], []),
     'togglePauseWhitelistMainerCreationFlagAdmin' : IDL.Func(
+        [],
+        [AuthRecordResult],
+        [],
+      ),
+    'toggleWhitelistPhaseActiveFlagAdmin' : IDL.Func(
         [],
         [AuthRecordResult],
         [],

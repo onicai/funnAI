@@ -8,7 +8,7 @@
   import BigNumber from "bignumber.js";
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
   import { fetchTokens, protocolConfig } from "../../helpers/token_helpers";
-  import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped, getWhitelistAgentPrice } from "../../helpers/gameState";
+  import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped, getWhitelistAgentPrice, getPauseWhitelistMainerCreationFlag } from "../../helpers/gameState";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
@@ -56,13 +56,16 @@
   let errorMessage: string = "";
   let tokenFee: bigint = BigInt(0); // Will be set once token is loaded
   let balance: bigint = BigInt(0);
-  let mainerPrice = 1000; // Will be loaded
+  let mainerPrice = 100; // Will be loaded
 
   let isProtocolActiveFlag = true; // Will be loaded
   $: isProtocolActive = isProtocolActiveFlag; // TODO: if protocol is not active, stop activities, especially mAIner creation
 
   let isMainerCreationStoppedFlag = false; // Will be loaded
   $: stopMainerCreation = isMainerCreationStoppedFlag; // TODO: if true, disable mAIner creation
+
+  let isPauseWhitelistMainerCreationFlag = false; // Will be loaded
+  $: isPauseWhitelistMainerCreation = isPauseWhitelistMainerCreationFlag;
   
   // Determine payment amount based on model type
   $: paymentAmount = mainerPrice;
@@ -104,7 +107,7 @@
         errorMessage = `The price for the mAIner didn't load correctly. Please try again.`;
       };
 
-      return price;      
+      return Number(price);      
     } catch (error) {
       console.error("Error getting mAIner price:", error);
       errorMessage = `There was an error loading the price for the mAIner. Please try again.`;
@@ -117,6 +120,19 @@
     errorMessage = "";
 
     try {
+      await loadProtocolFlags();
+      if (!isProtocolActive) {
+        throw new Error("Protocol is not active and actions are paused");
+      };
+
+      if (stopMainerCreation) {
+        throw new Error("mAIner creation is currently stopped");
+      };
+
+      if (isWhitelistPhaseActive && isPauseWhitelistMainerCreation) {
+        throw new Error("The whitelist sale is currently stopped");
+      };
+
       if (!$store.principal) {
         throw new Error("Authentication not initialized");
       }
@@ -154,13 +170,30 @@
     } finally {
       isValidating = false;
     }
-  }
+  };
+
+  async function loadProtocolFlags() {
+    try {
+      isProtocolActiveFlag = await getIsProtocolActive();
+      isMainerCreationStoppedFlag = await getIsMainerCreationStopped(modelType);
+      isPauseWhitelistMainerCreationFlag = await getPauseWhitelistMainerCreationFlag();
+    } catch (error) {
+      console.error("Error loading protocol flags:", error);
+      // Set safe defaults
+      isProtocolActiveFlag = true;
+      isMainerCreationStoppedFlag = true;
+      isPauseWhitelistMainerCreationFlag = true;
+      // Retry
+      setTimeout(async () => {
+        await loadProtocolFlags();
+      }, 2000);
+    };
+  };
 
   onMount(async () => {
     await loadTokenData();
     loadBalance();
-    isProtocolActiveFlag = await getIsProtocolActive();
-    isMainerCreationStoppedFlag = await getIsMainerCreationStopped(modelType);
+    await loadProtocolFlags();
     mainerPrice = await getMainerPrice();
   });
 </script>
@@ -267,10 +300,10 @@
           class:gap-2={!(!hasEnoughBalance && !isValidating)}
           class:bg-purple-600={hasEnoughBalance && !isValidating}
           class:hover:bg-purple-500={hasEnoughBalance && !isValidating}
-          class:bg-gray-400={!hasEnoughBalance || isValidating}
-          class:cursor-not-allowed={!hasEnoughBalance || isValidating}
-          class:dark:bg-gray-700={!hasEnoughBalance || isValidating}
-          disabled={!hasEnoughBalance || isValidating}
+          class:bg-gray-400={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
+          class:cursor-not-allowed={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
+          class:dark:bg-gray-700={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
+          disabled={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
         >
           {#if isValidating}
             <div class="flex items-center justify-center gap-2">
@@ -281,6 +314,14 @@
             <div class="flex flex-col items-center justify-center gap-1">
               <div class="text-center">Insufficient Balance</div>
               <a href="/#/wallet" class="underline text-xs sm:text-sm text-orange-800 dark:text-orange-200 hover:text-orange-900 dark:hover:text-orange-100">Please fund your wallet ↗</a>
+            </div>
+          {:else if !isProtocolActive}
+            <div class="flex flex-col items-center justify-center gap-1">
+              <div class="text-center">Protocol is currently paused. Please check back in a couple of minutes.</div>
+            </div>
+          {:else if stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
+            <div class="flex flex-col items-center justify-center gap-1">
+              <div class="text-center">mAIner creation is currently paused. Please check official announcements.</div>
             </div>
           {:else}
             <div class="flex items-center justify-center gap-2">

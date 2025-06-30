@@ -226,6 +226,17 @@ export type ChallengeWinnersResult = {
 export type ChallengesResult = { 'Ok' : Array<Challenge> } |
   { 'Err' : ApiError };
 export interface CheckMainerLimit { 'mainerType' : MainerAgentCanisterType }
+export interface CyclesBurnRate {
+  'cycles' : bigint,
+  'timeInterval' : TimeInterval,
+}
+export type CyclesBurnRateDefault = { 'Low' : null } |
+  { 'Mid' : null } |
+  { 'VeryHigh' : null } |
+  { 'High' : null } |
+  { 'Custom' : CyclesBurnRate };
+export type CyclesBurnRateResult = { 'Ok' : CyclesBurnRate } |
+  { 'Err' : ApiError };
 export type CyclesBurntResult = { 'Ok' : bigint } |
   { 'Err' : ApiError };
 export interface CyclesFlow {
@@ -311,7 +322,9 @@ export interface CyclesFlowSettings {
   'cyclesGenerateResponseOwnctrlOwnllmMEDIUM' : [] | [bigint],
   'protocolOperationFeesCut' : [] | [bigint],
   'dailyChallenges' : [] | [bigint],
+  'cyclesReinstallMainerllmGsMc' : [] | [bigint],
   'dailySubmissionsPerShareMEDIUM' : [] | [bigint],
+  'cyclesReinstallMainerllmMcMainerllm' : [] | [bigint],
   'cyclesBurntResponseGenerationShare' : [] | [bigint],
   'numShareServiceLlms' : [] | [bigint],
   'cyclesUpgradeMainerctrlGsMc' : [] | [bigint],
@@ -328,6 +341,7 @@ export interface CyclesFlowSettings {
   'dailySubmissionsPerOwnLOW' : [] | [bigint],
   'cyclesGenerateResponseSsctrlSsllm' : [] | [bigint],
   'costIdleBurnRateOwnctrl' : [] | [bigint],
+  'cyclesReinstallMainerctrlMcMainerctrl' : [] | [bigint],
   'dailySubmissionsPerOwnMEDIUM' : [] | [bigint],
   'costIdleBurnRateChllm' : [] | [bigint],
   'cyclesCreateMainerLlmTargetBalance' : [] | [bigint],
@@ -370,6 +384,7 @@ export interface CyclesFlowSettings {
   'costGenerateResponseSsllm' : [] | [bigint],
   'marginFailedSubmissionCut' : [] | [bigint],
   'numJudgeLlms' : [] | [bigint],
+  'cyclesReinstallMainerctrlGsMc' : [] | [bigint],
   'costUpgradeMcMainerCtrl' : [] | [bigint],
   'cyclesUpgradeMainerllmGsMc' : [] | [bigint],
   'costIdleBurnRateChctrl' : [] | [bigint],
@@ -444,6 +459,7 @@ export interface GameStateCanister {
     [ScoredResponseInput],
     ScoredResponseResult
   >,
+  'backupMainersAdmin' : ActorMethod<[], NatResult>,
   'cleanUnlockedMainerStoragesAdmin' : ActorMethod<[], AuthRecordResult>,
   'createUserMainerAgent' : ActorMethod<
     [MainerCreationInput],
@@ -470,13 +486,20 @@ export interface GameStateCanister {
     StatusCodeRecordResult
   >,
   'getArchivedChallengesAdmin' : ActorMethod<[], ChallengesResult>,
+  'getBufferMainerCreation' : ActorMethod<[], NatResult>,
   'getCanisterPrincipal' : ActorMethod<[], string>,
   'getClosedChallengesAdmin' : ActorMethod<[], ChallengesResult>,
   'getCurrentChallenges' : ActorMethod<[], ChallengesResult>,
   'getCurrentChallengesAdmin' : ActorMethod<[], ChallengesResult>,
+  'getCyclesBurnRate' : ActorMethod<
+    [CyclesBurnRateDefault],
+    CyclesBurnRateResult
+  >,
   'getCyclesFlowAdmin' : ActorMethod<[], CyclesFlowResult>,
   'getGameStateThresholdsAdmin' : ActorMethod<[], GameStateTresholdsResult>,
+  'getIsWhitelistPhaseActive' : ActorMethod<[], FlagResult>,
   'getJudgePromptInfo' : ActorMethod<[string], JudgePromptInfoResult>,
+  'getLimitForCreatingMainerAdmin' : ActorMethod<[CheckMainerLimit], NatResult>,
   'getMainerAgentCanisterInfo' : ActorMethod<
     [CanisterRetrieveInput],
     MainerAgentCanisterResult
@@ -484,6 +507,10 @@ export interface GameStateCanister {
   'getMainerAgentCanistersAdmin' : ActorMethod<[], MainerAgentCanistersResult>,
   'getMainerAgentCanistersForUser' : ActorMethod<
     [],
+    MainerAgentCanistersResult
+  >,
+  'getMainerAgentCanistersForUserAdmin' : ActorMethod<
+    [string],
     MainerAgentCanistersResult
   >,
   'getMainerCyclesUsedPerResponse' : ActorMethod<[], NatResult>,
@@ -495,10 +522,12 @@ export interface GameStateCanister {
   'getNumArchivedChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumClosedChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumCurrentChallengesAdmin' : ActorMethod<[], NatResult>,
+  'getNumMainerAgentCanistersForUserAdmin' : ActorMethod<[string], NatResult>,
   'getNumOpenSubmissionsAdmin' : ActorMethod<[], NatResult>,
   'getNumOpenSubmissionsForOpenChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumScoredChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumSubmissionsAdmin' : ActorMethod<[], NatResult>,
+  'getNumberMainerAgentsAdmin' : ActorMethod<[CheckMainerLimit], NatResult>,
   'getOfficialCanistersAdmin' : ActorMethod<
     [],
     Array<OfficialProtocolCanister>
@@ -516,21 +545,18 @@ export interface GameStateCanister {
   'getPauseWhitelistMainerCreationFlag' : ActorMethod<[], FlagResult>,
   'getPriceForOwnMainer' : ActorMethod<[], PriceResult>,
   'getPriceForShareAgent' : ActorMethod<[], PriceResult>,
+  'getProtocolCyclesBalanceBuffer' : ActorMethod<[], NatResult>,
   'getProtocolTotalCyclesBurnt' : ActorMethod<[], CyclesBurntResult>,
   'getRandomOpenChallenge' : ActorMethod<[], ChallengeResult>,
   'getRandomOpenChallengeTopic' : ActorMethod<[], ChallengeTopicResult>,
   'getRecentChallengeWinners' : ActorMethod<[], ChallengeWinnersResult>,
   'getRecentProtocolActivity' : ActorMethod<[], ProtocolActivityResult>,
-  'getRecentProtocolActivity_mockup' : ActorMethod<[], ProtocolActivityResult>,
   'getRedeemedTransactionBlockAdmin' : ActorMethod<
     [PaymentTransactionBlockId],
     RedeemedTransactionBlockResult
   >,
+  'getRewardPerChallengeAdmin' : ActorMethod<[], RewardPerChallengeResult>,
   'getScoreForSubmission' : ActorMethod<
-    [SubmissionRetrievalInput],
-    ScoredResponseRetrievalResult
-  >,
-  'getScoreForSubmission_mockup' : ActorMethod<
     [SubmissionRetrievalInput],
     ScoredResponseRetrievalResult
   >,
@@ -544,6 +570,11 @@ export interface GameStateCanister {
   'getWhitelistPriceForOwnMainer' : ActorMethod<[], PriceResult>,
   'getWhitelistPriceForShareAgent' : ActorMethod<[], PriceResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
+  'migrateArchivedChallengesAdmin' : ActorMethod<[], NatResult>,
+  'reinstallMainerControllerAdmin' : ActorMethod<
+    [MainerctrlReinstallInput],
+    MainerAgentCanisterResult
+  >,
   'removeRedeemedTransactionBlockAdmin' : ActorMethod<
     [PaymentTransactionBlockId],
     TextResult
@@ -554,6 +585,12 @@ export interface GameStateCanister {
   >,
   'resetCurrentChallengesAdmin' : ActorMethod<[], StatusCodeRecordResult>,
   'resetCyclesFlowAdmin' : ActorMethod<[], StatusCodeRecordResult>,
+  'setArchiveCanisterId' : ActorMethod<[string], AuthRecordResult>,
+  'setBufferMainerCreation' : ActorMethod<[bigint], AuthRecordResult>,
+  'setCyclesBurnRateAdmin' : ActorMethod<
+    [SetCyclesBurnRateInput],
+    StatusCodeRecordResult
+  >,
   'setCyclesFlowAdmin' : ActorMethod<
     [CyclesFlowSettings],
     StatusCodeRecordResult
@@ -581,6 +618,7 @@ export interface GameStateCanister {
     [UpdateWasmHashInput],
     CanisterWasmHashRecordResult
   >,
+  'setProtocolCyclesBalanceBuffer' : ActorMethod<[bigint], AuthRecordResult>,
   'setRewardPerChallengeAdmin' : ActorMethod<
     [bigint],
     RewardPerChallengeResult
@@ -622,6 +660,7 @@ export interface GameStateCanister {
     [],
     AuthRecordResult
   >,
+  'toggleWhitelistPhaseActiveFlagAdmin' : ActorMethod<[], AuthRecordResult>,
   'topUpCyclesForMainerAgent' : ActorMethod<
     [MainerAgentTopUpInput],
     MainerAgentCanisterResult
@@ -708,6 +747,9 @@ export interface MainerPromptInfo {
 }
 export type MainerPromptInfoResult = { 'Ok' : MainerPromptInfo } |
   { 'Err' : ApiError };
+export interface MainerctrlReinstallInput {
+  'canisterAddress' : CanisterAddress,
+}
 export interface MainerctrlUpgradeInput { 'canisterAddress' : CanisterAddress }
 export type NatResult = { 'Ok' : bigint } |
   { 'Err' : ApiError };
@@ -894,6 +936,10 @@ export type ScoredResponseRetrievalResult = { 'Ok' : ScoredResponse } |
   { 'Err' : ApiError };
 export interface ScoredResponseReturn { 'success' : boolean }
 export type SelectableMainerLLMs = { 'Qwen2_5_500M' : null };
+export interface SetCyclesBurnRateInput {
+  'cyclesBurnRate' : CyclesBurnRate,
+  'cyclesBurnRateDefault' : CyclesBurnRateDefault,
+}
 export type SetUpMainerLlmCanisterResult = {
     'Ok' : {
       'llmCanisterId' : string,
@@ -930,6 +976,7 @@ export type SubnetIdsResult = { 'Ok' : SubnetIds } |
   { 'Err' : ApiError };
 export type TextResult = { 'Ok' : string } |
   { 'Err' : ApiError };
+export type TimeInterval = { 'Daily' : null };
 export interface UpdateWasmHashInput {
   'wasmHash' : Uint8Array | number[],
   'textNote' : string,

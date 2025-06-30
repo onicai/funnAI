@@ -38,6 +38,14 @@ type UpdateChatObject =
    chatTitle: text;
    id: text;
  };
+type TopUpRecord = 
+ record {
+   amount: nat;
+   caller: text;
+   paymentTransactionBlockId: nat64;
+   timestamp: nat64;
+   toppedUpMainerId: text;
+ };
 type SignUpFormInput = 
  record {
    emailAddress: text;
@@ -49,11 +57,41 @@ type Message =
    content: text;
    sender: text;
  };
+type MaxMainerTopUpsResult = 
+ variant {
+   Err: ApiError;
+   Ok: vec TopUpRecord;
+ };
+type MaxMainerTopUpStorageResult = 
+ variant {
+   Err: ApiError;
+   Ok: MaxMainerTopUpStorageResponse;
+ };
+type MaxMainerTopUpStorageResponse = record {stored: bool;};
+type MaxMainerTopUpInput = 
+ record {
+   amount: nat;
+   paymentTransactionBlockId: nat64;
+   toppedUpMainerId: text;
+ };
+type LoginEventsResult = 
+ variant {
+   Err: ApiError;
+   Ok: vec LoginEvent;
+ };
+type LoginEvent = 
+ record {
+   "principal": text;
+   timestamp: nat64;
+ };
 type FunnAIBackend = 
  service {
+   addMaxMainerTopup: (MaxMainerTopUpInput) -> (MaxMainerTopUpStorageResult);
    create_chat: (vec Message) -> (ChatCreationResult);
    delete_chat: (text) -> (ChatResult);
    delete_email_subscriber: (text) -> (bool);
+   getLoginEventsAdmin: (text) -> (LoginEventsResult) query;
+   getMaxMainerTopupsAdmin: () -> (MaxMainerTopUpsResult) query;
    get_caller_chat_history: () -> (ChatsPreviewResult) query;
    get_caller_chat_settings: () -> (UserChatSettingsResult) query;
    get_caller_chats: () -> (ChatsResult) query;
@@ -63,7 +101,8 @@ type FunnAIBackend =
                                        text;
                                        EmailSubscriber;
                                      }) query;
-   greet: (text) -> (text);
+   get_user_info_admin: (text) -> (UserInfoResult) query;
+   logLogin: () -> (UpdateUserInfoResult);
    make_caller_account_premium: (PaymentInfoInput) -> (UpdateUserInfoResult);
    submit_signup_form: (SignUpFormInput) -> (text);
    update_caller_chat_settings: (UserChatSettings) ->

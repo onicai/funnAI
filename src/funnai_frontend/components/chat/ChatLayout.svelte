@@ -12,8 +12,6 @@
     import { syncLocalChanges } from "../../helpers/local_storage";
   
     onMount(async () => {
-      // Check login state
-      await store.checkExistingLoginAndConnect();
       if ($store.isAuthed) {
         syncLocalChanges();
       }

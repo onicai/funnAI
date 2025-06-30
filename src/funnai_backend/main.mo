@@ -15,11 +15,6 @@ import Types "./Types";
 shared actor class FunnAIBackend(custodian: Principal) = Self {
   stable var custodians = List.make<Principal>(custodian);
 
-// TODO: instead add functions to manage cycles balance and gather stats
-  public func greet(name : Text) : async Text {
-    return "Hello, " # name # "!";
-  };
-
   // https://forum.dfinity.org/t/is-there-any-address-0-equivalent-at-dfinity-motoko/5445/3
   let null_address : Principal = Principal.fromText("aaaaa-aa");
 
@@ -109,7 +104,8 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
   public shared({ caller }) func create_chat(messages : [Types.Message]) : async Types.ChatCreationResult {
-    // don't allow anonymous Principal
+    // disabled
+    return #Err(#Unauthorized);
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
@@ -186,7 +182,8 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
   public shared({ caller }) func update_chat_metadata(updateChatObject : Types.UpdateChatObject) : async Types.ChatIdResult {
-    // don't allow anonymous Principal
+    // disabled
+    return #Err(#Unauthorized);
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
@@ -217,7 +214,8 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
   public shared({ caller }) func update_chat_messages(chatId : Text, updatedMessages : [Types.Message]) : async Types.ChatIdResult {
-    // don't allow anonymous Principal
+    // disabled
+    return #Err(#Unauthorized);
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
@@ -248,7 +246,8 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
   public shared ({caller}) func delete_chat(chatId : Text) : async Types.ChatResult {
-    // don't allow anonymous Principal
+    // disabled
+    return #Err(#Unauthorized);
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
@@ -298,11 +297,37 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     };   
   };
 
-  public shared({ caller }) func update_caller_user_info(updatedInfoObject : Types.UserInfoInput) : async Types.UpdateUserInfoResult {
+  public shared query ({caller}) func get_user_info_admin(user : Text) : async Types.UserInfoResult {
+    if (Principal.isAnonymous(caller)) {
+      return #Err(#Unauthorized);
+		};
+    if (not Principal.isController(caller)) {
+      return #Err(#Unauthorized);
+    };
+
+    switch (getUserInfo(Principal.fromText(user))) {
+      case (null) {
+        // No settings stored yet
+        return #Err(#InvalidId);
+      };
+      case (?userInfo) { return #Ok(userInfo); };
+    };   
+  };
+
+  public shared ({ caller }) func update_caller_user_info(updatedInfoObject : Types.UserInfoInput) : async Types.UpdateUserInfoResult {
     // don't allow anonymous Principal
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
+
+    switch (updatedInfoObject.emailAddress) {
+      case (null) {};
+      case (?emailAddress) {
+        if (emailAddress.size() > 70) {
+          return #Err(#Unauthorized);
+        };
+      };
+    };
 
     switch (getUserInfo(caller)) {
       case (null) {
@@ -329,7 +354,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     };
   };
 
-  public shared({ caller }) func make_caller_account_premium(paymentInfoObject : Types.PaymentInfoInput) : async Types.UpdateUserInfoResult {
+  public shared ({ caller }) func make_caller_account_premium(paymentInfoObject : Types.PaymentInfoInput) : async Types.UpdateUserInfoResult {
     // don't allow anonymous Principal
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
@@ -356,6 +381,58 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
       };
     };
     return #Err(#Unauthorized);
+  };
+
+// Logins
+  stable var userToLoginsStorageStable : [(Principal, List.List<Types.LoginEvent>)] = [];
+  var userToLoginsStorage : HashMap.HashMap<Principal, List.List<Types.LoginEvent>> = HashMap.HashMap(0, Principal.equal, Principal.hash);
+
+  // Log a login event for the caller
+  public shared (msg) func logLogin() : async Types.UpdateUserInfoResult {
+    if (Principal.isAnonymous(msg.caller)) {
+      return #Err(#Unauthorized);
+		};
+
+    let user = msg.caller;
+    let timestamp = Nat64.fromNat(Int.abs(Time.now()));
+    let event : Types.LoginEvent = { timestamp = timestamp; principal = Principal.toText(user); };
+
+    // Get the current list of events for this user, or an empty list
+    let currentEvents = switch (userToLoginsStorage.get(user)) {
+      case null {
+        // First login, so create a user entry too
+        let userInfo : Types.UserInfo = {
+          emailAddress: ?Text = null;
+          isPremiumAccount : Bool = false;
+          createdAt : Nat64 = timestamp;
+        };
+        let result = putUserInfo(user, userInfo);
+        List.nil<Types.LoginEvent>()
+      };
+      case (?events) { events };
+    };
+
+    // Prepend the new event to the user's list
+    let updatedEvents = List.push(event, currentEvents);
+
+    // Update the HashMap
+    let _ = userToLoginsStorage.put(user, updatedEvents);
+    return #Ok(true);
+  };
+
+  // Retrieve all login events for a user
+  public query (msg) func getLoginEventsAdmin(user : Text) : async Types.LoginEventsResult {
+    if (Principal.isAnonymous(msg.caller)) {
+      return #Err(#Unauthorized);
+		};
+    if (not Principal.isController(msg.caller)) {
+      return #Err(#Unauthorized);
+    };
+
+    switch (userToLoginsStorage.get(Principal.fromText(user))) {
+      case null { #Ok([]) };
+      case (?events) { #Ok(List.toArray(events)) };
+    }
   };
 
 // Chat Settings
@@ -407,13 +484,80 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
   public shared({ caller }) func update_caller_chat_settings(updatedSettingsObject : Types.UserChatSettings) : async Types.UpdateUserChatSettingsResult {
-    // don't allow anonymous Principal
+    // disabled
+    return #Err(#Unauthorized);
     if (Principal.isAnonymous(caller)) {
       return #Err(#Unauthorized);
 		};
 
     let settingsUpdated = putUserChatSettings(caller, updatedSettingsObject);
     return #Ok(settingsUpdated);
+  };
+
+// Max mAIner topups
+  stable var maxMainerTopups : List.List<Types.TopUpRecord> = List.nil<Types.TopUpRecord>();
+
+  private func putMaxMainerTopup(topupEntry : Types.TopUpRecord) : Bool {
+      maxMainerTopups := List.push<Types.TopUpRecord>(topupEntry, maxMainerTopups);
+      return true;
+  };
+
+  private func getMaxMainerTopup(paymentTransactionBlockId : Nat64) : ?Types.TopUpRecord {
+      return List.find<Types.TopUpRecord>(maxMainerTopups, func(topupEntry: Types.TopUpRecord) : Bool { topupEntry.paymentTransactionBlockId == paymentTransactionBlockId } ); 
+  };
+
+  private func getMaxMainerTopups() : [Types.TopUpRecord] {
+      return List.toArray<Types.TopUpRecord>(maxMainerTopups);
+  };
+
+  private func removeMaxMainerTopup(paymentTransactionBlockId : Nat64) : Bool {
+      maxMainerTopups := List.filter(maxMainerTopups, func(topupEntry: Types.TopUpRecord) : Bool { topupEntry.paymentTransactionBlockId != paymentTransactionBlockId });
+      return true;
+  };
+
+  private func addMaxMainerTopups(entriesToAdd : List.List<Types.TopUpRecord>) : Bool {
+      maxMainerTopups := List.append<Types.TopUpRecord>(entriesToAdd, maxMainerTopups);
+      return true;
+  };
+
+  public shared (msg) func addMaxMainerTopup(maxTopUpInput : Types.MaxMainerTopUpInput) : async Types.MaxMainerTopUpStorageResult {
+      if (Principal.isAnonymous(msg.caller)) {
+          return #Err(#Unauthorized);
+      };
+
+      // ensure caller is user
+      switch (getUserInfo(msg.caller)) {
+        case (null) {
+          // Not a user
+          return #Err(#Unauthorized);
+        };
+        case (?userInfo) {
+          let newEntry : Types.TopUpRecord = {
+            timestamp : Nat64 = Nat64.fromNat(Int.abs(Time.now()));
+            caller : Text = Principal.toText(msg.caller);
+            paymentTransactionBlockId : Nat64 = maxTopUpInput.paymentTransactionBlockId;
+            toppedUpMainerId : Text = maxTopUpInput.toppedUpMainerId;
+            amount : Nat = maxTopUpInput.amount;
+          };
+          
+          let result = putMaxMainerTopup(newEntry);
+
+          return #Ok({stored = true;});          
+        };
+      };
+  };
+
+  public query (msg) func getMaxMainerTopupsAdmin() : async Types.MaxMainerTopUpsResult {
+      if (Principal.isAnonymous(msg.caller)) {
+          return #Err(#Unauthorized);
+      };
+      if (not Principal.isController(msg.caller)) {
+        return #Err(#Unauthorized);
+      };
+      
+      let result = getMaxMainerTopups();
+
+      return #Ok(result);
   };
 
 // Email Signups from Website
@@ -435,6 +579,9 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   // User can submit a form to sign up for email updates
     // For now, we only capture the email address provided by the user and on which page they submitted the form
   public shared ({caller}) func submit_signup_form(submittedSignUpForm : Types.SignUpFormInput) : async Text {
+    if (submittedSignUpForm.emailAddress.size() > 70) {
+      return "There was an error signing up. Please try again.";
+    };
     switch(getEmailSubscriber(submittedSignUpForm.emailAddress)) {
       case null {
         // New subscriber
@@ -490,6 +637,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     chatsStorageStable := Iter.toArray(chatsStorage.entries());
     emailSubscribersStorageStable := Iter.toArray(emailSubscribersStorage.entries());
     userInfoStorageStable := Iter.toArray(userInfoStorage.entries());
+    userToLoginsStorageStable := Iter.toArray(userToLoginsStorage.entries());
   };
 
   system func postupgrade() {
@@ -503,5 +651,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     emailSubscribersStorageStable := [];
     userInfoStorage := HashMap.fromIter(Iter.fromArray(userInfoStorageStable), userInfoStorageStable.size(), Principal.equal, Principal.hash);
     userInfoStorageStable := [];
+    userToLoginsStorage := HashMap.fromIter(Iter.fromArray(userToLoginsStorageStable), userToLoginsStorageStable.size(), Principal.equal, Principal.hash);
+    userToLoginsStorageStable := [];
   };
 };

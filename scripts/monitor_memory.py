@@ -13,8 +13,8 @@ from datetime import datetime, timezone
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
-def get_balance(canister_id, network):
-    """Fetch cycles balance using dfx for a given canister."""
+def get_memory(canister_id, network):
+    """Fetch memory using dfx for a given canister."""
     try:
         output = subprocess.check_output(
             ["dfx", "canister", "status", canister_id, "--network", network],
@@ -22,16 +22,16 @@ def get_balance(canister_id, network):
             text=True
         )
         
-        # Extract balance from the output
-        balance = None
+        # Extract memory from the output
+        memory = None
         for line in output.split('\n'):
-            if line.startswith('Balance:'):
+            if line.startswith('Memory Size:'):
                 balance_string = line.split(':')[1].strip().split()[0]  
-                balance = int(balance_string)
+                memory = int(balance_string)
                 break
-        return balance
+        return memory
     except subprocess.CalledProcessError:
-        print(f"ERROR: Unable to fetch balance for canister {canister_id} on network {network}")
+        print(f"ERROR: Unable to fetch memory for canister {canister_id} on network {network}")
         return []
 
 def main(network, canister_types):
@@ -39,60 +39,57 @@ def main(network, canister_types):
 
     # Log directory (also relative to script location)
     LOG_DIR = os.path.join(SCRIPT_DIR, f"logs-{network}")
-    BALANCE_LOG_FILE = os.path.join(LOG_DIR, "balance.log")
+    MEMORY_LOG_FILE = os.path.join(LOG_DIR, "memory.log")
     PREVIOUS_LOGS = defaultdict(set)
 
     ensure_log_dir(LOG_DIR)
 
     # Clear common log file at start
-    with open(BALANCE_LOG_FILE, "w"):
+    with open(MEMORY_LOG_FILE, "w"):
         pass
 
-    print(f"Monitoring balance of {len(CANISTERS)} canisters on '{network}' network...")
-    BALANCE_CHANGE_THRESHOLD = 1_000_000_000
+    print(f"Monitoring memory of {len(CANISTERS)} canisters on '{network}' network...")
+    MEMORY_CHANGE_THRESHOLD = 100_000_000
     
-    balances = {name: None for name in CANISTERS.keys()} 
-    initial_balances = {name: None for name in CANISTERS.keys()} 
+    values = {name: None for name in CANISTERS.keys()} 
+    initial_values = {name: None for name in CANISTERS.keys()} 
     max_name_length = max(len(name) for name in CANISTERS.keys())
     delay = 5 * 60  # 5 minutes
     first = True
-    total_cycles = 0
     while True:
         current_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
         for name, canister_id in CANISTERS.items():
-            balance = get_balance(canister_id, network)
-            total_cycles += balance if balance is not None else 0
+            memory = get_memory(canister_id, network)
 
-            if balance is None:
-                print(f"{CANISTER_COLORS[name]}[{name}]{RESET_COLOR}({canister_id}) ERROR: Unable to fetch balance")
+            if memory is None:
+                print(f"{CANISTER_COLORS[name]}[{name}]{RESET_COLOR}({canister_id}) ERROR: Unable to fetch memory")
                 continue
 
-            previous_balance = balances[name]
-            if previous_balance is not None:
-                if abs(balance - previous_balance) < BALANCE_CHANGE_THRESHOLD:
+            previous_value = values[name]
+            if previous_value is not None:
+                if abs(memory - previous_value) < MEMORY_CHANGE_THRESHOLD:
                     continue
 
-            if initial_balances[name] is None:
-                # First time we see this canister, log its initial balance
-                initial_balances[name] = balance
+            if initial_values[name] is None:
+                # First time we see this canister, log its initial memory
+                initial_values[name] = memory
 
-            # Ok, we have a significant change in balance and will log it
-            balances[name] = balance
-            with open(BALANCE_LOG_FILE, "a") as f:
-                line = f" {balance:>20_} "
-                if previous_balance is not None:
-                    change = balance - (previous_balance or 0)
-                    change_from_initial = balance - (initial_balances[name] or 0)
+            # Ok, we have a significant change in memory and will log it
+            values[name] = memory
+            with open(MEMORY_LOG_FILE, "a") as f:
+                line = f" {memory:>20_} "
+                if previous_value is not None:
+                    change = memory - (previous_value or 0)
+                    change_from_initial = memory - (initial_values[name] or 0)
                     line += f"(Δ: {change:>+20_} | total Δ: {change_from_initial:>+20_}) "
                 f.write(line + "\n")
                 print(f"{CANISTER_COLORS[name]}[{name:{max_name_length}}][{current_time}]: {line}{RESET_COLOR}")
         
         if first:
             first = False
-            print(f"\nInitial balance check completed for {len(CANISTERS)} canisters on '{network}' network.")
-            print(f"Will report changes in balance of {BALANCE_CHANGE_THRESHOLD:_} Cycles. Checking every {delay} seconds...")
+            print(f"\nInitial memory check completed for {len(CANISTERS)} canisters on '{network}' network.")
+            print(f"Will report changes in memory of {MEMORY_CHANGE_THRESHOLD:_} Bytes. Checking every {delay} seconds...")
 
-        print(f"\nTotal cycles across all canisters: {total_cycles:,}")
         time.sleep(delay)
 
 if __name__ == "__main__":

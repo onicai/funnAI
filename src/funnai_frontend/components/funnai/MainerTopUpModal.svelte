@@ -12,6 +12,7 @@
   import { createAnonymousActorHelper } from "../../helpers/utils/actorUtils";
   import { idlFactory as cmcIdlFactory } from "../../helpers/idls/cmc.idl.js";
   import { MIN_AMOUNT, MAX_AMOUNT, CELEBRATION_DURATION, CELEBRATION_ENABLED } from "../../helpers/config/topUpConfig";
+  import { getIsProtocolActive } from "../../helpers/gameState";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
@@ -78,6 +79,11 @@
     tokenFee = BigInt(token.fee_fixed);
   }
   
+  // Reactive statement to automatically calculate cycles when amount or conversion rate changes
+  $: if (conversionRate && amount && token) {
+    calculateCycles();
+  }
+  
   async function loadBalance() {
     try {
       if (!$store.principal || !token) return;
@@ -101,15 +107,12 @@
       try {
         // Create the CMC actor using the imported IDL factory
         const cmcActor = await createAnonymousActorHelper(cmcCanisterId, cmcIdlFactory);
-        console.log("loadConversionRate cmcActor: ", cmcActor);
         
         // Get conversion rate from CMC
         const response = await cmcActor.get_icp_xdr_conversion_rate();
-        console.log("loadConversionRate cmcActor response: ", response);
         
         if (response && response.data) {
           const xdrRate = Number(response.data.xdr_permyriad_per_icp);
-          console.log("loadConversionRate xdrRate: ", xdrRate);
           
           // 1 XDR = 1 trillion cycles, and the rate is in 10,000ths (permyriad)
           const CYCLES_PER_XDR = new BigNumber("1000000000000"); // 1 trillion cycles
@@ -212,6 +215,11 @@
     errorMessage = "";
 
     try {
+      const isProtocolActive = await getIsProtocolActive();
+      if (!isProtocolActive) {
+        throw new Error("Protocol is not active and actions are paused");
+      };
+
       if (!$store.principal) {
         throw new Error("Authentication not initialized");
       }
@@ -232,7 +240,6 @@
           memo: MEMO_PAYMENT_PROTOCOL
         }
       );
-      console.log("handleSubmit result: ", result);
 
       if (result && typeof result === 'object' && 'Ok' in result) {
         const txId = result.Ok?.toString();
@@ -248,6 +255,16 @@
           setTimeout(() => {
             onCelebration(amount, token?.symbol || 'ICP');
           }, 300);
+          try {
+            let maxTopUpInput = {
+              paymentTransactionBlockId: BigInt(txId),
+              toppedUpMainerId: canisterId,
+              amount: BigInt(amount),
+            };
+            await $store.backendActor.addMaxMainerTopup(maxTopUpInput);            
+          } catch (maxTopUpStorageError) {
+            console.error("Top-up storage error: ", maxTopUpStorageError);            
+          };
         } else {
           onSuccess(txId, canisterId);
           handleClose();

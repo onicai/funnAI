@@ -1,7 +1,7 @@
 <script lang="ts">
 import { onMount } from 'svelte';
 import { link } from 'svelte-spa-router';
-import { downloadedModels, theme, toggleTheme } from "../../stores/store";
+import { downloadedModels, theme, toggleTheme, store } from "../../stores/store";
 import { get } from 'svelte/store';
 import { location } from 'svelte-spa-router';
 import funnailogo from "../../assets/funnai_black.svg";
@@ -112,10 +112,10 @@ function handleThemeToggle() {
         <a use:link href="/wallet" class="block" on:click={closeSidebar}>
           <button class={`w-full px-4 py-3 text-left rounded-xl transition-all duration-200 flex items-center gap-3
             ${currentPath === '/wallet' ? 
-              'bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 text-purple-700 font-medium dark:bg-gradient-to-r dark:from-purple-900/30 dark:to-purple-800/30 dark:text-purple-300 dark:border-purple-700' : 
+              'bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 text-orange-700 font-medium dark:bg-gradient-to-r dark:from-orange-900/30 dark:to-orange-800/30 dark:text-orange-300 dark:border-orange-700' : 
               'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700 border border-transparent hover:border-gray-200 dark:hover:border-gray-600'}`}>
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
             </svg>
             <span class="font-medium">Wallet</span>
           </button>
@@ -156,7 +156,9 @@ function handleThemeToggle() {
        <!-- More from onicai -->
        <div class="py-2">
          <div class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3 px-3">More from onicai</div>
-         <a use:link href="/chat" class="block" on:click={closeSidebar}>
+         
+         <!-- onicai AI chat apps -->
+         <a use:link href="/chat" class="block mb-2" on:click={closeSidebar}>
            <button class={`w-full px-4 py-2 text-left bg-gray-200 dark:bg-gray-900 rounded-xl transition-all duration-200 flex items-center gap-3 text-sm
              ${currentPath === '/chat' ? 
                'bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 text-purple-700 font-medium dark:bg-gradient-to-r dark:from-purple-900/30 dark:to-purple-800/30 dark:text-purple-300 dark:border-purple-700' : 
@@ -165,6 +167,19 @@ function handleThemeToggle() {
                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
              </svg>
              <span>onicai AI chat apps</span>
+           </button>
+         </a>
+
+
+
+         <!-- Support Button -->
+         <a href="https://oc.app/community/mepna-eqaaa-aaaar-bclua-cai/channel/2881126157/?ref=mwte3-ciaaa-aaaaf-ad7aq-cai"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="block">
+           <button class="w-full px-4 py-2 text-left bg-gray-200 dark:bg-gray-900 rounded-xl transition-all duration-200 flex items-center gap-3 text-sm text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700 border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
+             <img src="https://oc.app/icon.png" alt="OpenChat" class="w-4 h-4 flex-shrink-0" />
+             <span>Support</span>
            </button>
          </a>
        </div>

@@ -1,11 +1,21 @@
 export const idlFactory = ({ IDL }) => {
-  const Message = IDL.Record({ 'content' : IDL.Text, 'sender' : IDL.Text });
+  const MaxMainerTopUpInput = IDL.Record({
+    'paymentTransactionBlockId' : IDL.Nat64,
+    'toppedUpMainerId' : IDL.Text,
+    'amount' : IDL.Nat,
+  });
+  const MaxMainerTopUpStorageResponse = IDL.Record({ 'stored' : IDL.Bool });
   const ApiError = IDL.Variant({
     'InvalidId' : IDL.Null,
     'ZeroAddress' : IDL.Null,
     'Unauthorized' : IDL.Null,
     'Other' : IDL.Text,
   });
+  const MaxMainerTopUpStorageResult = IDL.Variant({
+    'Ok' : MaxMainerTopUpStorageResponse,
+    'Err' : ApiError,
+  });
+  const Message = IDL.Record({ 'content' : IDL.Text, 'sender' : IDL.Text });
   const ChatCreationResult = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : ApiError });
   const Chat = IDL.Record({
     'id' : IDL.Text,
@@ -16,6 +26,25 @@ export const idlFactory = ({ IDL }) => {
     'firstMessagePreview' : IDL.Text,
   });
   const ChatResult = IDL.Variant({ 'Ok' : Chat, 'Err' : ApiError });
+  const LoginEvent = IDL.Record({
+    'principal' : IDL.Text,
+    'timestamp' : IDL.Nat64,
+  });
+  const LoginEventsResult = IDL.Variant({
+    'Ok' : IDL.Vec(LoginEvent),
+    'Err' : ApiError,
+  });
+  const TopUpRecord = IDL.Record({
+    'paymentTransactionBlockId' : IDL.Nat64,
+    'toppedUpMainerId' : IDL.Text,
+    'timestamp' : IDL.Nat64,
+    'caller' : IDL.Text,
+    'amount' : IDL.Nat,
+  });
+  const MaxMainerTopUpsResult = IDL.Variant({
+    'Ok' : IDL.Vec(TopUpRecord),
+    'Err' : ApiError,
+  });
   const ChatPreview = IDL.Record({
     'id' : IDL.Text,
     'creationTime' : IDL.Nat64,
@@ -49,11 +78,11 @@ export const idlFactory = ({ IDL }) => {
     'emailAddress' : IDL.Text,
     'pageSubmittedFrom' : IDL.Text,
   });
-  const PaymentInfoInput = IDL.Record({ 'block_index' : IDL.Nat64 });
   const UpdateUserInfoResult = IDL.Variant({
     'Ok' : IDL.Bool,
     'Err' : ApiError,
   });
+  const PaymentInfoInput = IDL.Record({ 'block_index' : IDL.Nat64 });
   const SignUpFormInput = IDL.Record({
     'emailAddress' : IDL.Text,
     'pageSubmittedFrom' : IDL.Text,
@@ -69,9 +98,24 @@ export const idlFactory = ({ IDL }) => {
     'chatTitle' : IDL.Text,
   });
   const FunnAIBackend = IDL.Service({
+    'addMaxMainerTopup' : IDL.Func(
+        [MaxMainerTopUpInput],
+        [MaxMainerTopUpStorageResult],
+        [],
+      ),
     'create_chat' : IDL.Func([IDL.Vec(Message)], [ChatCreationResult], []),
     'delete_chat' : IDL.Func([IDL.Text], [ChatResult], []),
     'delete_email_subscriber' : IDL.Func([IDL.Text], [IDL.Bool], []),
+    'getLoginEventsAdmin' : IDL.Func(
+        [IDL.Text],
+        [LoginEventsResult],
+        ['query'],
+      ),
+    'getMaxMainerTopupsAdmin' : IDL.Func(
+        [],
+        [MaxMainerTopUpsResult],
+        ['query'],
+      ),
     'get_caller_chat_history' : IDL.Func([], [ChatsPreviewResult], ['query']),
     'get_caller_chat_settings' : IDL.Func(
         [],
@@ -86,7 +130,8 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IDL.Tuple(IDL.Text, EmailSubscriber))],
         ['query'],
       ),
-    'greet' : IDL.Func([IDL.Text], [IDL.Text], []),
+    'get_user_info_admin' : IDL.Func([IDL.Text], [UserInfoResult], ['query']),
+    'logLogin' : IDL.Func([], [UpdateUserInfoResult], []),
     'make_caller_account_premium' : IDL.Func(
         [PaymentInfoInput],
         [UpdateUserInfoResult],

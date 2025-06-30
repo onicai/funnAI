@@ -74,8 +74,8 @@ scripts/deploy-all.sh --mode install --network $NETWORK
 # Set environment variables for the subnets.
 # Option 1: source the file for the environment & verify things are set
 source scripts/canister_ids-$NETWORK.env
-SUBNETSACTRL=$SUBNET_0
-SUBNETSSCTRL=$SUBNET_0
+SUBNETSACTRL=$SUBNET_0_1
+SUBNETSSCTRL=$SUBNET_0_1
 SUBNETSSLLM=$SUBNET_2_1
 # Option 2: set them manually
 SUBNETSACTRL=...
@@ -107,6 +107,8 @@ scripts/scripts-gamestate/deploy-mainers-ShareService-AddLLM-via-gamestate.sh --
 dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
 # Deploy a new ShareAgent via Admin command
 scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install --network $NETWORK
+# Update gamestate to the latest wasmhash. <canisterId> is the address of one of the upgraded ShareAgent canisters
+dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="New wasm deployed"})' --network $NETWORK
 
 # To increase limit of ShareAgent mAIners
 dfx canister --network prd call game_state_canister setLimitForCreatingMainerAdmin '(record {mainerType = variant { ShareAgent } ; newLimit = 450 : nat;} )'
@@ -131,35 +133,13 @@ scripts/list_controllers.sh --network $NETWORK
 # NEVER, EVER reinstall the GameState. Always upgrade...
 scripts/deploy-gamestate.sh --mode upgrade --network $NETWORK
 scripts/scripts-gamestate/register-all.sh --network $NETWORK
+# Update gamestate to the latest wasmhash. <canisterId> is the address of one of the upgraded ShareAgent canisters
+dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="New wasm deployed"})' --network $NETWORK
 # Be careful, but you might need to do these to apply new settings and values for stable memory:
 dfx canister call game_state_canister resetCyclesFlowAdmin --network $NETWORK
 
 # #########################################################################
-# Upgrading for new mAIner code
-#
-# Store the new mAIner did & wasm in mAinerCreator/files, then issue these commands to upgrade the system
-cd PoAIW
-scripts/deploy-mainer-creator.sh  --network $NETWORK --mode upgrade
-#
-# go back to funnAI folder
-cd ..
-#
-# Upgrade the #ShareService with the new mAIner code
-scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.sh --mode upgrade --network $NETWORK
-# Add a previous ShareService if need be, e.g.
-dfx canister call game_state_canister addOfficialCanister '(record { address = "ecpt4-ayaaa-aaaad-qhk4a-cai"; subnet = ""; canisterType = variant { MainerAgent = variant { ShareService } } })' --network $NETWORK
-# Verify with
-dfx canister call game_state_canister getOfficialCanistersAdmin --network $NETWORK
-#
-# Upgrade the #ShareAgent canisters with new mAIner code, by repeating this call for all of them
-# Get user's mAIners
-dfx canister call game_state_canister getNumberMainerAgentsAdmin --output json --network $NETWORK
-dfx canister call game_state_canister getMainerAgentCanistersAdmin --output json --network $NETWORK
-# TODO: write a script that automates these calls over all ShareAgent canisters
-scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode upgrade --canister <canisterId> --network $NETWORK
-#
-# Update gamestate to the latest wasmhash. <canisterId> is the address of one of the upgraded ShareAgent canisters
-dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="New wasm deployed"})' --network $NETWORK
+# Upgrading for new mAIner code -> See file README-prd-upgrade-PoAIW.md
 
 # #########################################################################
 # Admin functions to clean up redeemed payments in case the creation failed.
@@ -217,9 +197,13 @@ dfx canister call game_state_canister getRecentChallengeWinners --output json --
 dfx canister call game_state_canister getRecentProtocolActivity --output json --network $NETWORK
 
 # Deploy funnai backend (used mainly for chat):
+dfx generate funnai_backend
 dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_backend --network $NETWORK
 
 # Deploy funnai frontend:
+## ensure you have the latest from the PoAIW repo
+dfx generate game_state_canister
+dfx generate mainer_ctrlb_canister
 dfx deploy funnai_frontend --network $NETWORK
 
 # Deploy the token ledger canister:
@@ -247,8 +231,9 @@ dfx canister call game_state_canister resetCurrentChallengesAdmin --network $NET
 # test a single Challenge Generation by the Challenger
 scripts/scripts-testing/generate-a-challenge.sh --network $NETWORK
 
-# test a single Response Generation by your first mAIner of type #ShareAgent
-scripts/scripts-testing/generate-a-response-ShareAgent.sh --network $NETWORK
+# This has been deactivated
+## test a single Response Generation by your first mAIner of type #ShareAgent
+## scripts/scripts-testing/generate-a-response-ShareAgent.sh --network $NETWORK
 
 # test a single Response Generation by your first mAIner of type #Own
 # TODO UPDATE SCRIPT scripts/scripts-testing/generate-a-response-Own.sh --network $NETWORK
@@ -287,11 +272,26 @@ dfx canister call game_state_canister setCyclesFlowAdmin '( record {
 })'
 ```
 
-Adjust reward per challenge:
+# Adjust reward per challenge:
 
 ```bash
 # e.g. to 1000 FUNNAI
 dfx canister call game_state_canister setRewardPerChallengeAdmin '100000000000' --network $NETWORK
+```
+
+## Adjust cycles security buffer
+This determines the threshold of conversion to ICP. If the Game State's cycle balance is underneath the buffer, it converts incoming ICP payments to cycles. If the cycle balance is above the threshold it doesn't convert ICP to cycles but uses the cycles from its balance.
+```bash
+dfx canister call game_state_canister getProtocolCyclesBalanceBuffer --network $NETWORK
+# parameter is in trillion cycles, e.g. to 400 means 400T cycles
+dfx canister call game_state_canister setProtocolCyclesBalanceBuffer '400' --network $NETWORK
+```
+
+## Adjust mAIner creation buffer
+This determines the threshold of allowing more mAIners to be created and is a security measurement against concurrent creation requests from users (to avoid that they pay but then are blocked from the creation).
+```bash
+dfx canister call game_state_canister getBufferMainerCreation --network $NETWORK
+dfx canister call game_state_canister setBufferMainerCreation '10' --network $NETWORK
 ```
 
 # The GameState Thresholds
@@ -311,6 +311,16 @@ dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdScoredResponsesPerChallenge = 3 : nat;
     }
 )' --network $NETWORK
+```
+
+# Manually migrate archived challenges to the Archive canister
+```bash
+dfx canister call game_state_canister migrateArchivedChallengesAdmin --network $NETWORK
+```
+
+# Manually backup mAIners to the Archive canister
+```bash
+dfx canister call game_state_canister backupMainersAdmin --network $NETWORK
 ```
 
 # Start & Stop the Game

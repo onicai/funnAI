@@ -1,10 +1,5 @@
 #!/bin/bash
 
-#######################################################################
-# run from parent folder as:
-# scripts/log.sh --network [local|ic]
-#######################################################################
-
 # Default network type is local
 NETWORK_TYPE="local"
 
@@ -31,4 +26,4 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 
-python -m scripts.monitor_gamestate_logs --network $NETWORK_TYPE
+python -m scripts.register_ssllms --network $NETWORK_TYPE

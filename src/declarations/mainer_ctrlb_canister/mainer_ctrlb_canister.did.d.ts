@@ -226,6 +226,10 @@ export interface MainerAgentCtrlbCanister {
     [],
     ChallengeResponseSubmissionsResult
   >,
+  'getTimerActionRegularityInSecondsAdmin' : ActorMethod<
+    [],
+    MainerTimersResult
+  >,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
   'ready' : ActorMethod<[], StatusCodeRecordResult>,
   'resetChallengeQueueAdmin' : ActorMethod<[], StatusCodeRecordResult>,
@@ -237,8 +241,13 @@ export interface MainerAgentCtrlbCanister {
   >,
   'setRoundRobinLLMs' : ActorMethod<[bigint], StatusCodeRecordResult>,
   'setShareServiceCanisterId' : ActorMethod<[string], StatusCodeRecordResult>,
+  'setTimerAction2RegularityInSecondsAdmin' : ActorMethod<
+    [bigint],
+    StatusCodeRecordResult
+  >,
   'startTimerExecutionAdmin' : ActorMethod<[], AuthRecordResult>,
   'stopTimerExecutionAdmin' : ActorMethod<[], AuthRecordResult>,
+  'timeToNextAgentSettingsUpdate' : ActorMethod<[], NatResult>,
   'triggerChallengeResponseAdmin' : ActorMethod<[], AuthRecordResult>,
   'updateAgentSettings' : ActorMethod<
     [MainerAgentSettingsInput],
@@ -256,6 +265,14 @@ export interface MainerConfigurationInput {
   'cyclesForMainer' : bigint,
   'subnetCtrl' : string,
 }
+export interface MainerTimers {
+  'action2RegularityInSeconds' : bigint,
+  'action1RegularityInSeconds' : bigint,
+}
+export type MainerTimersResult = { 'Ok' : MainerTimers } |
+  { 'Err' : ApiError };
+export type NatResult = { 'Ok' : bigint } |
+  { 'Err' : ApiError };
 export interface OfficialMainerAgentCanister {
   'status' : CanisterStatus,
   'canisterType' : ProtocolCanisterType,

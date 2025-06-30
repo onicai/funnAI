@@ -72,6 +72,13 @@ module {
 
   public type UpdateUserInfoResult = Result<Bool, ApiError>;
 
+  public type LoginEvent = {
+    principal : Text;
+    timestamp : Nat64;
+  };
+
+  public type LoginEventsResult = Result<[LoginEvent], ApiError>;
+
   public type PaymentInfoInput = {
     block_index : Nat64;
   };
@@ -94,6 +101,28 @@ module {
     #Ok : S;
     #Err : E;
   };
+
+  // Max mAiner topups
+  public type TopUpRecord = {
+    timestamp : Nat64;
+    caller : Text;
+    paymentTransactionBlockId : Nat64;
+    toppedUpMainerId : Text;
+    amount : Nat;
+  };
+
+  public type MaxMainerTopUpInput = {
+    paymentTransactionBlockId : Nat64;
+    toppedUpMainerId : Text;
+    amount : Nat;
+  };
+
+  public type MaxMainerTopUpStorageResponse = {
+    stored : Bool;
+  };
+
+  public type MaxMainerTopUpStorageResult = Result<MaxMainerTopUpStorageResponse, ApiError>;
+  public type MaxMainerTopUpsResult = Result<[TopUpRecord], ApiError>;
 
   public type OwnerResult = Result<Principal, ApiError>;
   public type TxReceipt = Result<Nat, ApiError>;

@@ -65,7 +65,6 @@ export class WalletDataService {
    * This loads both tokens and balances if available
    */
   public static async initializeWallet(principalId: string): Promise<void> {
-    console.log("in initializeWallet principalId ", principalId);
     if (!principalId || principalId === "anonymous") {
       console.log('No principal ID or anonymous user');
       walletDataStore.update(state => ({
@@ -81,7 +80,6 @@ export class WalletDataService {
 
     // If the wallet has changed, reset the store first
     const currentState = get(walletDataStore);
-    console.log("in initializeWallet currentState ", currentState);
     if (currentState.currentWallet && currentState.currentWallet !== principalId) {
       console.log(`Wallet changed from ${currentState.currentWallet} to ${principalId}, resetting wallet data`);
       this.reset();
@@ -132,7 +130,6 @@ export class WalletDataService {
         } else {
           console.log('Token cache expired or empty, loading fresh tokens');
           tokens = await this.loadAllTokens();
-          console.log("in initializeWallet tokens ", tokens);
           // Update the token cache
           tokenCache = {
             tokens,
@@ -147,13 +144,10 @@ export class WalletDataService {
           lastUpdated: Date.now()
         }));
 
-        console.log("in initializeWallet tokens ", tokens);
-
         // Always attempt to fetch balances regardless of auth state
         if (tokens.length > 0) {
           try {
             const balances = await this.loadWalletBalances(principalId, tokens);
-            console.log("in initializeWallet balances ", balances);
             
             // Update store with balances
             walletDataStore.update(state => ({
