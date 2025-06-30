@@ -27,7 +27,7 @@ def main (token: str):
        total_icp_in_wallets += balance
        alloc['icp_balance'] = balance
        count += 1
-       print(f"{count:.2f}/{total:.2f} total_icp_wl_needed = {total_icp_wl_needed:.2f}, total_icp_in_wallets = {total_icp_in_wallets:.2f} ({(total_icp_in_wallets/total_icp_wl_needed*100 if total_icp_wl_needed > 0 else 0):.2f}%)")
+    #    print(f"{count:.2f}/{total:.2f} total_icp_wl_needed = {total_icp_wl_needed:.2f}, total_icp_in_wallets = {total_icp_in_wallets:.2f} ({(total_icp_in_wallets/total_icp_wl_needed*100 if total_icp_wl_needed > 0 else 0):.2f}%)")
        # throttle the requests to avoid rate limiting
        sleep(0.5)
         

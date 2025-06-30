@@ -25,4 +25,9 @@ done
 
 echo "Using token: $TOKEN"
 
-python -m scripts.scripts_whitelist.metrics --token $TOKEN
+while true; do
+    echo "=========================="
+    echo "Running metrics script for token: $TOKEN"
+    python -m scripts.scripts_whitelist.metrics --token $TOKEN
+    sleep 600
+done
