@@ -32,7 +32,7 @@ while [ $# -gt 0 ]; do
             ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--loop [delay]] [--for-user principal]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--loop [delay]] [--user principal]"
             exit 1
             ;;
     esac
@@ -44,11 +44,11 @@ if [ "$LOOP" = "true" ]; then
     echo "Running in loop mode with a delay of $LOOP_DELAY seconds."
     while true; do
         echo "Fetching mainers on network: $NETWORK_TYPE for user: $USER"
-        python -m scripts.get_mainers --network $NETWORK_TYPE --for-user $USER
+        python -m scripts.get_mainers --network $NETWORK_TYPE --user $USER
         sleep $LOOP_DELAY
     done
 fi
 
 echo "Fetching mainers on network: $NETWORK_TYPE for user: $USER"USER
-python -m scripts.get_mainers --network $NETWORK_TYPE --for-user $USER
+python -m scripts.get_mainers --network $NETWORK_TYPE --user $USER
 
