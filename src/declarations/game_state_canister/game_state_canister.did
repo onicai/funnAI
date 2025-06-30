@@ -418,6 +418,8 @@ type GameStateCanister =
    addScoredResponse: (ScoredResponseInput) -> (ScoredResponseResult);
    backupMainersAdmin: () -> (NatResult);
    cleanUnlockedMainerStoragesAdmin: () -> (AuthRecordResult);
+   completeMainerSetupForUserAdmin: (OfficialMainerAgentCanister) ->
+    (MainerAgentCanisterResult);
    createUserMainerAgent: (MainerCreationInput) ->
     (MainerAgentCanisterResult);
    deriveNewMainerAgentCanisterWasmHashAdmin: (DeriveWasmHashInput) ->

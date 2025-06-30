@@ -461,6 +461,10 @@ export interface GameStateCanister {
   >,
   'backupMainersAdmin' : ActorMethod<[], NatResult>,
   'cleanUnlockedMainerStoragesAdmin' : ActorMethod<[], AuthRecordResult>,
+  'completeMainerSetupForUserAdmin' : ActorMethod<
+    [OfficialMainerAgentCanister],
+    MainerAgentCanisterResult
+  >,
   'createUserMainerAgent' : ActorMethod<
     [MainerCreationInput],
     MainerAgentCanisterResult
