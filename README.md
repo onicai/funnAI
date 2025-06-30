@@ -33,6 +33,10 @@ scripts/stop_timers.sh --network $NETWORK --canister-types [all|protocol|mainers
 scripts/update_mainer_burnrates.sh --network $NETWORK --burnrate [Low|Mid|High|VeryHigh]
 scripts/topup.sh --network $NETWORK --canister-types [all|protocol|mainers] --tc <TCycles>
 
+# WHITELIST SCRIPTS
+pip install -r scripts/requirements.txt
+scripts/scripts_whitelist/whitelist_charles.sh
+
 # When running local
 # We are using dfx deps for:
 # - internet-identity
@@ -55,7 +59,7 @@ dfx deps deploy
 # Note: on WSL, you might first have to run
 sudo sysctl -w vm.max_map_count=2097152
 # from folder: funnAI
-scripts/deploy-all.sh --mode install --network $NETWORK 
+scripts/deploy-all.sh --mode install --network $NETWORK
 # When redeploying changes, you can run the above command with --mode upgrade
 #      to avoid reuploading the models and thus saving a lot of time
 
@@ -140,16 +144,16 @@ dfx canister call game_state_canister resetCyclesFlowAdmin --network $NETWORK
 # #########################################################################
 # Admin functions to clean up redeemed payments in case the creation failed.
 # This is used during testing, but can also be used in production in case the mAIner creation failed, but user payment was accepted
-dfx canister call game_state_canister getRedeemedTransactionBlockAdmin '(record {paymentTransactionBlockId = 12 : nat64} )' --network $NETWORK 
-dfx canister call game_state_canister removeRedeemedTransactionBlockAdmin '(record {paymentTransactionBlockId = 12 : nat64} )' --network $NETWORK 
+dfx canister call game_state_canister getRedeemedTransactionBlockAdmin '(record {paymentTransactionBlockId = 12 : nat64} )' --network $NETWORK
+dfx canister call game_state_canister removeRedeemedTransactionBlockAdmin '(record {paymentTransactionBlockId = 12 : nat64} )' --network $NETWORK
 
 # -----------------------------------------------
 # Timers:
 # (-) The timers for the mAIners are started automatically.
 # (-) The timers of the Challenger & Judge are NOT started automatically.
-# Start/Stop by canisterId 
+# Start/Stop by canisterId
 dfx canister --network $NETWORK call <canisterId> startTimerExecutionAdmin
-dfx canister --network $NETWORK call <canisterId> stopTimerExecutionAdmin 
+dfx canister --network $NETWORK call <canisterId> stopTimerExecutionAdmin
 # Start/Stop Challenger & Judge with script
 scripts/start-challenger.sh --network $NETWORK
 scripts/stop-challenger.sh --network $NETWORK
@@ -209,6 +213,7 @@ dfx deploy
 ```
 
 Use the local UI: http://cbopz-duaaa-aaaaa-qaaka-cai.localhost:4943/:
+
 - The feed will allways show the Protocol updates, namely Challenges & Winners
 - The feed will show mAIner related items (Submissions & Scores) for the logged in user (!)
   - You can login using NFID with your Google account.
@@ -297,7 +302,7 @@ The following endpoints allow to set & get the values:
 
 ```bash
 # From folder: funnAI
-dfx canister call game_state_canister getGameStateThresholdsAdmin --output json --network $NETWORK 
+dfx canister call game_state_canister getGameStateThresholdsAdmin --output json --network $NETWORK
 
 dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdArchiveClosedChallenges = 30 : nat;
@@ -342,29 +347,38 @@ funnai is built and hosted on the Internet Computer. To learn more about it, see
 If you want to run this project locally, you can use the following commands:
 
 ### 1. Install dependencies
+
 ```bash
 npm install
 ```
+
 ### 2. Install Vessel which is a dependency
+
 https://github.com/dfinity/vessel
 
 ### 3. Start a local replica
+
 ```bash
 npm run dev
 ```
+
 Note: this starts a local replica of the Internet Computer (IC) which includes the canisters state stored from previous sessions.
 If you want to start a clean local IC replica (i.e. all canister state is erased) run instead:
+
 ```bash
 npm run erase-replica
 ```
 
 ### 4. Deploy your canisters to the replica
+
 See instructions above.
 
 ## Deployment to the Internet Computer mainnet
+
 Deploy the code as canisters to the live IC where it's accessible via regular Web browsers.
 
 ### Development Stage
+
 ```bash
 dfx deploy --network development --argument "( principal\"$(dfx identity get-principal)\" )" funnai_backend
 
@@ -378,25 +392,32 @@ dfx deploy funnai_frontend --network development --wallet "$(dfx identity --netw
 For setting up stages, see [Notes on Stages](./notes/NotesOnStages.md)
 
 ### Production Deployment
+
 ```bash
 npm install
 
 dfx start --background
 ```
+
 Deploy to Mainnet (live IC):
 Ensure that all changes needed for Mainnet deployment have been made (e.g. define HOST in store.ts)
+
 ```bash
 dfx deploy --network ic --argument "( principal\"$(dfx identity get-principal)\" )" funnai_backend
 dfx deploy --network ic funnai_frontend
 ```
+
 In case there are authentication issues, you could try this command
 (Note that only authorized identities which are set up as canister controllers may deploy the production canisters)
+
 ```bash
 dfx deploy --network ic --wallet "$(dfx identity --network ic get-wallet)"
 ```
 
 ### Backup stage
+
 Potentially create if there's high demand on subnets and failing deployments
+
 ```bash
 dfx identity get-wallet --ic
 dfx identity --network backup set-wallet 3v5vy-2aaaa-aaaai-aapla-cai
@@ -405,11 +426,15 @@ dfx deploy --network backup funnai_frontend --subnet qdvhd-os4o2-zzrdw-xrcv4-glj
 ```
 
 # Credits
+
 Serving this app and hosting the data securely and in a decentralized way is made possible by the [Internet Computer](https://internetcomputer.org/)
 
 # Other
+
 ## Get and delete Email Subscribers
+
 The project has email subscription functionality included. The following commands are helpful for managing subscriptions.
+
 ```bash
 dfx canister call funnai_backend get_email_subscribers
 dfx canister call funnai_backend delete_email_subscriber 'j@g.com'
@@ -422,11 +447,13 @@ dfx canister call funnai_backend delete_email_subscriber 'j@g.com' --network ic
 ```
 
 ## Cycles for Production Canisters
+
 Due to the IC's reverse gas model, developers charge their canisters with cycles to pay for any used computational resources. The following can help with managing these cycles.
 
 Fund wallet with cycles (from ICP): https://medium.com/dfinity/internet-computer-basics-part-3-funding-a-cycles-wallet-a724efebd111
 
 Top up cycles:
+
 ```bash
 dfx identity --network=ic get-wallet
 dfx wallet --network ic balance

@@ -4,9 +4,6 @@ PoAIW
 # vscode
 .vscode/
 
-# deps 
-deps
-
 # Logs
 logs
 *.log
@@ -138,5 +135,4 @@ src/arcmindvectordb/target/**
 
 # scripts 
 canister_ids_mainers-*.env
-scripts/ajb-how-to-configure-new-shell.txt
-scripts/get_mainers-prd.csv
+secret/
