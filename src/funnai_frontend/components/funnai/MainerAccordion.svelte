@@ -1870,7 +1870,7 @@
                     'High': 'bg-red-100/80 text-red-800 border-red-300/50'
                   }}
                   <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm border ${burnRateColors[agent.cyclesBurnRateSetting] || 'bg-gray-100/80 text-gray-800 border-gray-300/50'}`}>
-                    {agent.cyclesBurnRateSetting}
+                    🔥 {agent.cyclesBurnRateSetting}
                   </span>
                 {/if}
                 
