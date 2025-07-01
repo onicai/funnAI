@@ -26,7 +26,7 @@
           <MainerAccordion />
         </div>
       </div>
-      <div class="card-style bg-white p-4 rounded-lg shadow mb-2 dark:bg-gray-800 dark:text-gray-200 flex flex-col overflow-hidden min-h-0">
+      <div class="card-style bg-white p-2 rounded-lg shadow mb-2 dark:bg-gray-800 dark:text-gray-200 flex flex-col overflow-hidden min-h-0">
         <!-- Toggle controls -->
         <div class="flex-shrink-0 mb-4 border-b border-gray-200 dark:border-gray-700 pb-4">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

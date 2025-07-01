@@ -1663,7 +1663,7 @@
                     </svg>
                   </div>
                   <div class="flex flex-col">
-                    <span class="text-xs font-medium text-emerald-700 dark:text-emerald-300">All Systems</span>
+                    <span class="text-xs font-medium text-emerald-700 dark:text-emerald-300">All systems</span>
                     <span class="text-xs text-emerald-600/70 dark:text-emerald-400/70">Operational</span>
                   </div>
                 </div>
