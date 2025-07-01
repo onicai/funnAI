@@ -1738,6 +1738,18 @@
                   {agent.status}
                 </span>
                 
+                <!-- Daily Burn Rate badge (only show if active) -->
+                {#if agent.status === 'active' && agent.cyclesBurnRateSetting}
+                  {@const burnRateColors = {
+                    'Low': 'bg-green-100/80 text-green-800 border-green-300/50',
+                    'Medium': 'bg-yellow-100/80 text-yellow-800 border-yellow-300/50', 
+                    'High': 'bg-red-100/80 text-red-800 border-red-300/50'
+                  }}
+                  <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm border ${burnRateColors[agent.cyclesBurnRateSetting] || 'bg-gray-100/80 text-gray-800 border-gray-300/50'}`}>
+                    {agent.cyclesBurnRateSetting}
+                  </span>
+                {/if}
+                
                 <!-- LLM setup status badge -->
                 {#if agent.mainerType === 'Own' && agent.llmSetupStatus === 'inProgress'}
                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100/80 text-yellow-800 border border-yellow-300/50 backdrop-blur-sm">
