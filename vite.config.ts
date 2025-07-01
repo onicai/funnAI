@@ -3,7 +3,7 @@ import { defineConfig } from "vite";
 import path from "path";
 import dfxJson from "./dfx.json";
 import fs from "fs";
-import { VitePWA } from "vite-plugin-pwa";
+// PWA plugin removed to solve caching issues
 
 const isDev = process.env["DFX_NETWORK"] === "local";
 // Get the network name, or `local` by default.
@@ -65,87 +65,19 @@ const canisterDefinitions = Object.entries(canisterIds).reduce(
   {},
 );
 
-// TODO: update everything to funnAI
-const pwaManifest = {
-  short_name: "funnAI",
-  name: "funnAI App",
-  description: "Join funnAI, the first Proof-of-AI-Work Protocol implementation to run autonomous AI agents on-chain that earn rewards.",
-  display: "standalone",
-  scope: "/",
-  start_url: "/",
-  background_color: "#b0c4de",
-  theme_color: "#b0c4de",
-  lang: "en",
-  dir: "ltr",
-  orientation: "any",
-  categories: ["productivity", "ai", "PoAIW"], 
-  icons: [
-    {
-      src: './funnai_192.webp',
-      sizes: '192x192',
-      type: 'image/webp',
-    },
-    {
-      src: './funnai_512.webp',
-      sizes: '512x512',
-      type: 'image/webp',
-      purpose: 'any maskable'
-    },
-    {
-      src: "./funnai_1024.webp", 
-      type: "image/webp",
-      sizes: "1024x1024"
-    },
-  ],
-  screenshots: [
-    {
-      src: "./meta.jpg",
-      type: "image/jpg",
-      sizes: "1600x840"
-    },
-  ],
-  shortcuts: [
-    {
-      name: "Start New Chat",
-      short_name: "New Chat",
-      description: "Start a new AI chat session",
-      url: "/",
-      icons: [{ src: "./chat/devinci.webp", sizes: "192x192" }]
-    }
-  ]
-};
-
-const pwaOptions = {
-  registerType: 'autoUpdate',
-  manifest: pwaManifest,
-  injectRegister: null,
-  // for own service worker (not auto-generated)
-  strategies: 'injectManifest',
-  srcDir: 'src/funnai_frontend',
-  filename: 'service-worker.ts',
-  outDir: './dist/',
-  injectManifest: {
-    //injectionPoint: undefined
-    rollupFormat: 'iife',
-    globPatterns: ['**/*.{js,css,html,ico,png,svg,json,gif}'],
-    maximumFileSizeToCacheInBytes: 50000000, // Increase or decrease based on your needs
-  },
-  devOptions: {
-    enabled: true
-  }
-};
+// PWA removed - no more aggressive caching
 
 // See guide on how to configure Vite at:
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    svelte(),
-    VitePWA(pwaOptions)
-  ],
+      plugins: [
+      svelte()
+    ],
   build: {
     target: "es2020",
     rollupOptions: {
       output: {
+        // Default Vite hashing for cache busting
         manualChunks: {
           // Vendor chunks for large libraries
           'webllm': ['@mlc-ai/web-llm'],
