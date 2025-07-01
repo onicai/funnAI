@@ -1078,9 +1078,9 @@
               <!-- Content -->
               <div class="flex-1 min-w-0">
                 <div class="flex items-center space-x-2 mb-2">
-                  <h3 class="text-sm font-bold text-orange-900 dark:text-orange-100">Network at Full Capacity</h3>
+                  <h3 class="text-sm font-bold text-orange-900 dark:text-orange-100">Network at full capacity</h3>
                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300 border border-orange-300 dark:border-orange-700">
-                    Temporarily Unavailable
+                    Temporarily unavailable
                   </span>
                 </div>
                 
