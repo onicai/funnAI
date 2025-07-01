@@ -1059,6 +1059,52 @@
         </button>
       </div>
 
+      <!-- Network Capacity Message Panel -->
+      {#if stopMainerCreation && !protocolFlagsLoading}
+        <div class="mt-3 relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-900/20 dark:via-amber-900/20 dark:to-yellow-900/20 border border-orange-200/60 dark:border-orange-700/60 rounded-xl shadow-sm">
+          <!-- Background decorative elements -->
+          <div class="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-orange-200/30 to-amber-200/30 dark:from-orange-600/10 dark:to-amber-600/10 rounded-full -translate-y-8 translate-x-8"></div>
+          <div class="absolute bottom-0 left-0 w-12 h-12 bg-gradient-to-tr from-yellow-200/30 to-orange-200/30 dark:from-yellow-600/10 dark:to-orange-600/10 rounded-full translate-y-6 -translate-x-6"></div>
+          
+          <div class="relative p-4">
+            <div class="flex items-start space-x-3">
+              <!-- Icon -->
+              <div class="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-orange-500 to-amber-600 dark:from-orange-600 dark:to-amber-700 rounded-lg shadow-lg flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 00-2 2v2m0 0V9a2 2 0 012-2h14a2 2 0 012 2v2M7 7V6a3 3 0 016 0v1"/>
+                </svg>
+              </div>
+              
+              <!-- Content -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center space-x-2 mb-2">
+                  <h3 class="text-sm font-bold text-orange-900 dark:text-orange-100">Network at Full Capacity</h3>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300 border border-orange-300 dark:border-orange-700">
+                    Temporarily Unavailable
+                  </span>
+                </div>
+                
+                <p class="text-sm text-orange-700 dark:text-orange-300 leading-relaxed mb-3">
+                  mAIner creation is temporarily disabled as our network is at full capacity. We're actively working to expand our infrastructure to support more mAIners.
+                </p>
+                
+                <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg p-3 border border-orange-200/40 dark:border-orange-700/40">
+                  <div class="flex items-center space-x-2 text-xs text-orange-600 dark:text-orange-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="font-medium">Please check back later when we expand our network capacity</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Bottom accent line -->
+          <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-orange-400 dark:via-orange-500 to-transparent"></div>
+        </div>
+      {/if}
+
     {:else}
       <div class="h-full flex">
         <div class="relative overflow-hidden bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500 dark:from-blue-600 dark:via-purple-600 dark:to-indigo-600 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform flex-1 flex flex-col">
