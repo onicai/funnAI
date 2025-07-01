@@ -1085,7 +1085,7 @@
                 </div>
                 
                 <p class="text-sm text-orange-700 dark:text-orange-300 leading-relaxed mb-3">
-                  mAIner creation is temporarily disabled as our network is at full capacity. We're actively working to expand our infrastructure to support more mAIners.
+                  mAIner creation is disabled as the current limit of mAIners is reached. We will announce once more mAIners become available.
                 </p>
                 
                 <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg p-3 border border-orange-200/40 dark:border-orange-700/40">
@@ -1093,7 +1093,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    <span class="font-medium">Please check back later when we expand our network capacity</span>
+                    <span class="font-medium">Please check our social channels for any announcements on this.</span>
                   </div>
                 </div>
               </div>
