@@ -74,6 +74,11 @@
   $: inactiveMainers = agents.filter(agent => agent.status === 'inactive').length;
   $: totalMainers = agents.length;
 
+  // Reactive counters for burn rate distribution
+  $: lowBurnRateMainers = agents.filter(agent => agent.cyclesBurnRateSetting === 'Low').length;
+  $: mediumBurnRateMainers = agents.filter(agent => agent.cyclesBurnRateSetting === 'Medium').length;
+  $: highBurnRateMainers = agents.filter(agent => agent.cyclesBurnRateSetting === 'High').length;
+
   // Reactive mAIner price based on model type and whitelist phase
   let currentMainerPrice = 10; // Will be loaded
   let currentWhitelistPrice = 5; // Will be loaded
@@ -1672,6 +1677,79 @@
             </div>
           </div>
         {/if}
+
+        <!-- Burn Rate Distribution Header -->
+        <div class="mt-3 mb-1 flex items-center space-x-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">Cycle burn rate distribution</span>
+        </div>
+
+        <!-- Low Burn Rate Card -->
+        <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg p-3 border border-green-200/40 dark:border-green-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
+          <div class="absolute top-0 right-0 w-10 h-10 bg-green-200/20 dark:bg-green-600/10 rounded-full -translate-y-5 translate-x-5"></div>
+          <div class="relative">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <div class="w-6 h-6 bg-green-100 dark:bg-green-900/40 rounded-md flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-xs font-medium text-green-700 dark:text-green-300">Low burn rate</span>
+                  <span class="text-xs text-green-600/70 dark:text-green-400/70">Conservative usage</span>
+                </div>
+              </div>
+              <span class="text-lg font-bold text-green-600 dark:text-green-400">{lowBurnRateMainers}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Medium Burn Rate Card -->
+        <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg p-3 border border-yellow-200/40 dark:border-yellow-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
+          <div class="absolute top-0 right-0 w-10 h-10 bg-yellow-200/20 dark:bg-yellow-600/10 rounded-full -translate-y-5 translate-x-5"></div>
+          <div class="relative">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <div class="w-6 h-6 bg-yellow-100 dark:bg-yellow-900/40 rounded-md flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-yellow-600 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-xs font-medium text-yellow-700 dark:text-yellow-300">Medium burn rate</span>
+                  <span class="text-xs text-yellow-600/70 dark:text-yellow-400/70">Balanced usage</span>
+                </div>
+              </div>
+              <span class="text-lg font-bold text-yellow-600 dark:text-yellow-400">{mediumBurnRateMainers}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- High Burn Rate Card -->
+        <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg p-3 border border-red-200/40 dark:border-red-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
+          <div class="absolute top-0 right-0 w-10 h-10 bg-red-200/20 dark:bg-red-600/10 rounded-full -translate-y-5 translate-x-5"></div>
+          <div class="relative">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <div class="w-6 h-6 bg-red-100 dark:bg-red-900/40 rounded-md flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-xs font-medium text-red-700 dark:text-red-300">High burn rate</span>
+                  <span class="text-xs text-red-600/70 dark:text-red-400/70">Performance mode</span>
+                </div>
+              </div>
+              <span class="text-lg font-bold text-red-600 dark:text-red-400">{highBurnRateMainers}</span>
+            </div>
+          </div>
+        </div>
+
+        
       </div>
     </div>
     
