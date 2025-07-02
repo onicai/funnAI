@@ -1093,7 +1093,11 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    <span class="font-medium">Please check our social channels for any announcements on this.</span>
+                    <span class="font-medium">Please check our social channels for any announcements: 
+                      <a href="https://x.com/onicaiHQ" target="_blank" rel="noopener noreferrer" class="text-orange-800 dark:text-orange-200 underline hover:text-orange-900 dark:hover:text-orange-100 transition-colors duration-200">@onicaiHQ</a> 
+                      or 
+                      <a href="https://oc.app/community/mepna-eqaaa-aaaar-bclua-cai/channel/2881126157/" target="_blank" rel="noopener noreferrer" class="text-orange-800 dark:text-orange-200 underline hover:text-orange-900 dark:hover:text-orange-100 transition-colors duration-200">OpenChat</a>
+                    </span>
                   </div>
                 </div>
               </div>
