@@ -305,10 +305,10 @@ The following endpoints allow to set & get the values:
 dfx canister call game_state_canister getGameStateThresholdsAdmin --output json --network $NETWORK
 
 dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
-        thresholdArchiveClosedChallenges = 30 : nat;
-        thresholdMaxOpenChallenges= 2 : nat;
-        thresholdMaxOpenSubmissions = 5 : nat;
-        thresholdScoredResponsesPerChallenge = 3 : nat;
+        thresholdArchiveClosedChallenges = 150 : nat;
+        thresholdMaxOpenChallenges= 6 : nat;
+        thresholdMaxOpenSubmissions = 140 : nat;
+        thresholdScoredResponsesPerChallenge = 20 : nat;
     }
 )' --network $NETWORK
 ```
