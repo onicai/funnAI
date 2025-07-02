@@ -75,7 +75,7 @@
 
   {#if !$store.isAuthed}
     <div class="flex items-center gap-3 sm:gap-3 overflow-x-auto">
-      <!-- Claim Whitelist Button -->
+      <!-- Claim Whitelist Button 
       <a href="https://docs.google.com/forms/d/e/1FAIpQLSfLF1Pfh31hzoqXF4u-t7NGZ7n19TC3SjiR6686W8l4025l0w/viewform?usp=sharing&ouid=118313353312773403627" target='_blank'
          class="flex-shrink-0 group relative overflow-hidden px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[44px] bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 dark:hover:from-blue-800/40 dark:hover:to-blue-700/40 border border-blue-200 hover:border-blue-300 dark:border-blue-700 dark:hover:border-blue-600 text-blue-700 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200 font-medium text-sm">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -83,7 +83,7 @@
         </svg>
         <span class="hidden xs:inline">Claim whitelist</span>
         <span class="xs:hidden">Whitelist</span>
-      </a>
+      </a>-->
 
       <!-- Connect Button -->
        <button type="button" 
@@ -97,7 +97,7 @@
     </div>
   {:else}
     <div class="flex items-center gap-3 sm:gap-3 overflow-x-auto">
-      <!-- Claim Whitelist Button -->
+      <!-- Claim Whitelist Button 
       <a href="https://docs.google.com/forms/d/e/1FAIpQLSfLF1Pfh31hzoqXF4u-t7NGZ7n19TC3SjiR6686W8l4025l0w/viewform?usp=sharing&ouid=118313353312773403627" target='_blank'
          class="flex-shrink-0 group relative overflow-hidden px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[44px] bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 dark:hover:from-blue-800/40 dark:hover:to-blue-700/40 border border-blue-200 hover:border-blue-300 dark:border-blue-700 dark:hover:border-blue-600 text-blue-700 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200 font-medium text-sm">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -106,6 +106,7 @@
         <span class="hidden xs:inline">Claim whitelist</span>
         <span class="xs:hidden">Whitelist</span>
       </a>
+      -->
 
       
 

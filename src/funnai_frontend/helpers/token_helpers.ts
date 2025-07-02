@@ -98,7 +98,7 @@ const availableTokens: FE.Token[] = [ // TODO
   },
   { 
     canister_id: "5kijx-siaaa-aaaar-qaqda-cai",
-    name: "ICONFUCIUS",
+    name: "ICONFUCIUS on the IC",
     symbol: "ICONFUCIUS",
     decimals: 8,
     address: "5kijx-siaaa-aaaar-qaqda-cai",
