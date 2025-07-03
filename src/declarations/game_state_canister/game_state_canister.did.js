@@ -839,6 +839,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'backupMainersAdmin' : IDL.Func([], [NatResult], []),
     'cleanUnlockedMainerStoragesAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'completeMainerSetupForUserAdmin' : IDL.Func(
+        [OfficialMainerAgentCanister],
+        [MainerAgentCanisterResult],
+        [],
+      ),
     'createUserMainerAgent' : IDL.Func(
         [MainerCreationInput],
         [MainerAgentCanisterResult],
