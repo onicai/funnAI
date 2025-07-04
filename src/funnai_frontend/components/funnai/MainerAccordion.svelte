@@ -1084,8 +1084,8 @@
                   </span>
                 </div>
                 
-                <p class="text-sm text-orange-700 dark:text-orange-300 leading-relaxed mb-3">
-                  mAIner creation is disabled as the current limit of mAIners is reached. We will announce when more mAIners become available.
+                <p class="text-lg text-orange-700 dark:text-orange-300 leading-relaxed mb-3">
+                  82 new mAIners will become available on Thursday July 10 at 8am PT
                 </p>
                 
                 <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg p-3 border border-orange-200/40 dark:border-orange-700/40">
