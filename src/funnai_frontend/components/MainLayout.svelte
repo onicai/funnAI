@@ -5,6 +5,7 @@
   import NavigationMainLayout from "./funnai/NavigationMainLayout.svelte";
   import SidebarMainLayout from "./funnai/SidebarMainLayout.svelte";
   import ChatLayout from "./chat/ChatLayout.svelte";
+  import Mainers from "../pages/Mainers.svelte";
   import Dashboard from "../pages/Dashboard.svelte";
   import Wallet from "../pages/Wallet.svelte";
   import Lottery from "../pages/Lottery.svelte";
@@ -41,7 +42,8 @@
   }
 
   const routes: Record<string, typeof SvelteComponent> = {
-    "/": Dashboard,
+    "/": Mainers,
+    "/dashboard": Dashboard,
     "/chat": ChatLayout,
     "/chat/*": ChatLayout,
     "/wallet": Wallet,
