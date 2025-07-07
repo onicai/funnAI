@@ -283,7 +283,10 @@ This is a more tricky item, but not that hard either, just be CAREFUL !
 - You can delete an LLM if you no longer need it or want to move to another subnet, using dfx
 - If you delete an LLM or change the configuration, you need to update `PoAIW/llms/Challenger/canister_ids.json` & `PoAIW/llms/Judge/canister_ids.json`
 - To deploy a new LLM:
-    - If you add a new LLM, ensure it is listed in `PoAIW/llms/Challenger/dfx.json` & `PoAIW/llms/Judge/dfx.json`
+    - Select a new subnet, if needed, and record it in our tracking spreadsheet:
+      https://docs.google.com/spreadsheets/d/1KeyylEYVs3cQvYXOc9RS0q5eWd_vWIW1UVycfDEIkBk/edit?gid=0#gid=0
+    - Add the subnet also in `scripts/canister_ids-prd.env`
+    - If you add a new LLM, ensure it is listed in `PoAIW/llms/Challenger/dfx.json` or `PoAIW/llms/Judge/dfx.json`
         ```json
         {
         "version": 1,
@@ -337,7 +340,7 @@ This is a more tricky item, but not that hard either, just be CAREFUL !
             ```
         - Run the deployment for a new LLM
             ```bash
-            # from folder: PoAIW/llms/Challenger
+            # from folder: PoAIW/llms/Challenger or PoAIW/llms/Judge
             NETWORK=prd
             ./scripts/2-deploy.sh --network $NETWORK --mode install
             ```
@@ -394,7 +397,10 @@ This is a more tricky item, but not that hard either, just be CAREFUL !
         - `PoAIW/llms/Judge/scripts/top-off.sh`
 
         ----------------------------------------------------
-        Scripts for the Challenger Controller:
+        Scripts for the Challenger or Judge Controller:
+        
+        - `PoAIW/src/Challenger/scripts/register-llms.sh`
+        - `PoAIW/src/Judge/scripts/register-llms.sh`
 
         ```bash
         if [ "$NETWORK_TYPE" = "prd" ]; then
@@ -403,9 +409,7 @@ This is a more tricky item, but not that hard either, just be CAREFUL !
         fi
         ```
 
-        - `PoAIW/src/Challenger/scripts/register-llms.sh`
 
-        - `PoAIW/src/Judge/scripts/register-llms.sh`
 
     - In case you're adding a NEW LLM, you must manually upload the model:
 
@@ -431,12 +435,23 @@ This is a more tricky item, but not that hard either, just be CAREFUL !
             for i in $(seq $llm_id_start $llm_id_end)
             ```
 
-    - Once you have deployed new LLMs and uploaded their models, you can do a regular upgrade of the Challenger system:
+    - IF PROTOCOL IS PAUSED
+    
+        Once you have deployed new LLMs and uploaded their models, you can do a regular upgrade of the Challenger or Judge system:
+
+        NOTE: Do this only if the protocol is paused. It upgrades the controller canister code...
         ```bash
-        # Make sure all patched scripts are restored befpre running the updates
-        # From folder: PoAIW
-        scripts/deploy-challenger.sh --network $NETWORK --mode upgrade
-        scripts/deploy-judge.sh --network $NETWORK --mode upgrade
+            # Make sure all patched scripts are restored befpre running the updates
+            # From folder: PoAIW
+            scripts/deploy-challenger.sh --network $NETWORK --mode upgrade
+            scripts/deploy-judge.sh --network $NETWORK --mode upgrade
+        ```
+
+    - IF PROTOCOL IS NOT PAUSED - ZERO DOWN TIME UPGRADE
+
+        If you just want to register the new LLM with the protocol, use these manual commands:
+        ```bash
+            # TODO ...
         ```
 
     - And re-register everything with the GameState

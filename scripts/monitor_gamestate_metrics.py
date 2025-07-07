@@ -30,33 +30,39 @@ def get_data(canister_id, network):
 
     try:
         # -----------------------------------------------------
-        result = subprocess.check_output(
-            ["dfx", "canister", "call", canister_id, "getScoredChallengesAdmin", "--output", "json", "--network", network],
-            stderr=subprocess.DEVNULL,
-            text=True
-        )
-        data = json.loads(result)
-        numJudgedResponses = 0
-        max_depth = 100
-        for challenge in data.get('Ok', []):
-            l1 = challenge["1"]
-            depth = 0
-            while len(l1) > 0 and depth < max_depth:
-                depth += 1
-                l1_0 = l1[0]
-                l1_0_0 = l1_0.get('0', {})
-                submissionStatus = l1_0_0.get('submissionStatus', {})
-                if submissionStatus == {'Judged': None}:
-                    numJudgedResponses += 1
-                else:
-                    print(f"Unexpected submissionStatus: {submissionStatus}")
-                l1 = l1_0.get('1', {})
+        skip_getScoredChallengesAdmin = True
+        if skip_getScoredChallengesAdmin:
+            if not hasattr(get_data, "skip_message_shown"):
+                print("Temporarily skipping getScoredChallengesAdmin, until we fixed the Error due to too large a response")
+                get_data.skip_message_shown = True
+        else:
+            result = subprocess.check_output(
+                ["dfx", "canister", "call", canister_id, "getScoredChallengesAdmin", "--output", "json", "--network", network],
+                stderr=subprocess.DEVNULL,
+                text=True
+            )
+            data = json.loads(result)
+            numJudgedResponses = 0
+            max_depth = 100
+            for challenge in data.get('Ok', []):
+                l1 = challenge["1"]
+                depth = 0
+                while len(l1) > 0 and depth < max_depth:
+                    depth += 1
+                    l1_0 = l1[0]
+                    l1_0_0 = l1_0.get('0', {})
+                    submissionStatus = l1_0_0.get('submissionStatus', {})
+                    if submissionStatus == {'Judged': None}:
+                        numJudgedResponses += 1
+                    else:
+                        print(f"Unexpected submissionStatus: {submissionStatus}")
+                    l1 = l1_0.get('1', {})
 
-                if depth > 50:
-                    print(f"Warning: depth = {depth} : exceeded 50 for challenge {challenge['0']}. Possible infinite loop detected.")
+                    if depth > 50:
+                        print(f"Warning: depth = {depth} : exceeded 50 for challenge {challenge['0']}. Possible infinite loop detected.")
 
-        if should_include("numJudgedResponses", numJudgedResponses):
-            output += f"- numJudgedResponses = {numJudgedResponses} \n"
+            if should_include("numJudgedResponses", numJudgedResponses):
+                output += f"- numJudgedResponses = {numJudgedResponses} \n"
 
         # -----------------------------------------------------
         methods = [
