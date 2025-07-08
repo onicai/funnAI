@@ -43,6 +43,8 @@ dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getPauseProtocolFlag
 dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE togglePauseProtocolFlagAdmin
 ```
 
+Wait until ShareService has nothing left in it's queue.
+
 # stop timers of protocol canisters
 
 ```bash
@@ -149,6 +151,10 @@ echo $NETWORK
 # from folder: PoAIW/src/Judge
 dfx deploy --network $NETWORK judge_ctrlb_canister --mode upgrade
 
+# Upgrade failed, so we did a reinstall
+# -> All other steps remain the same.
+dfx deploy --network $NETWORK judge_ctrlb_canister --mode reinstall
+
 # start the Judge canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_1_JUDGE
 dfx canister --network $NETWORK status $SUBNET_0_1_JUDGE     | grep Status
@@ -221,6 +227,24 @@ dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE togglePauseProtocolFl
 dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getPauseProtocolFlag
 ```
 
+# Cleanup the snapshots
+
+After a couple of hours, if everything looks good, remove the snapshots to save memory
+
+```bash
+# list & delete the snapshots
+dfx canister --network $NETWORK snapshot list   $SUBNET_0_1_GAMESTATE
+dfx canister --network $NETWORK snapshot delete $SUBNET_0_1_GAMESTATE     <snapshot-id>
+
+dfx canister --network $NETWORK snapshot list   $SUBNET_0_1_CHALLENGER    
+dfx canister --network $NETWORK snapshot delete $SUBNET_0_1_CHALLENGER    <snapshot-id>
+
+dfx canister --network $NETWORK snapshot list   $SUBNET_0_1_JUDGE         
+dfx canister --network $NETWORK snapshot delete $SUBNET_0_1_JUDGE         <snapshot-id> 
+
+dfx canister --network $NETWORK snapshot list   $SUBNET_0_1_SHARE_SERVICE 
+dfx canister --network $NETWORK snapshot delete $SUBNET_0_1_SHARE_SERVICE <snapshot-id>
+```
 
 # HOW TO ROLL BACK IN CASE OF ISSUES
 
