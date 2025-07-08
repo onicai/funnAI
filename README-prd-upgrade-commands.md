@@ -12,10 +12,10 @@ echo "Using network type: $NETWORK"
 source scripts/canister_ids-$NETWORK.env
 
 echo " "
-echo "GameState    canister ID      : $SUBNET_0_1_GAMESTATE"
+echo "SUBNET_0_1_GAMESTATE          : $SUBNET_0_1_GAMESTATE"
 
 echo " "
-echo "Challenger   canister ID      : $SUBNET_0_1_CHALLENGER"
+echo "SUBNET_0_1_CHALLENGER         : $SUBNET_0_1_CHALLENGER"
 echo "SUBNET_1_1_CHALLENGER_LLM_0   : $SUBNET_1_1_CHALLENGER_LLM_0"
 
 echo " "
@@ -80,13 +80,6 @@ dfx canister --network $NETWORK snapshot create $SUBNET_0_1_JUDGE
 dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE 
 ```
 
-Record the snapshot IDs:
-On testing:
-- GameState   : 00000000000000000000000001901dc90101
-- Challenger  : 00000000000000000000000001901dcb0101
-- Judge       : 00000000000000000000000001901dcc0101
-- ShareService: 00000000000000000000000001901dcd0101
-
 # upgrade the GameState
 
 ```bash
@@ -108,14 +101,16 @@ dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getPauseProtocolFla
 echo $MAINER_SHARE_AGENT_0000
 dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE deriveNewMainerAgentCanisterWasmHashAdmin "(record {address=\"$MAINER_SHARE_AGENT_0000\"; textNote=\"First protocol upgrade\"})"
 
-# Update the protocol thresholds
-dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
-        thresholdArchiveClosedChallenges = 150 : nat;
-        thresholdMaxOpenChallenges= 4 : nat;
+# Update the protocol thresholds, if needed.
+dfx canister --network $NETWORK call game_state_canister getGameStateThresholdsAdmin
+
+dfx canister --network $NETWORK call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdMaxOpenSubmissions = 140 : nat;
+        thresholdMaxOpenChallenges= 4 : nat;
+        thresholdArchiveClosedChallenges = 150 : nat;
         thresholdScoredResponsesPerChallenge = 27 : nat;
     }
-)' --network $NETWORK
+)'
 ```
 
 # upgrade the Challenger
@@ -138,7 +133,7 @@ scripts/register-llms.sh --network $NETWORK
 # Test the new endpoints to manage the deployed LLMs
 # Get the LLMs currently in use > Remove > check > Add > check
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    get_llm_canisters
-echo $SUBNET_1_1_CHALLENGER_LLM_0
+echo "SUBNET_1_1_CHALLENGER_LLM_0 : $SUBNET_1_1_CHALLENGER_LLM_0"
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    remove_llm_canister "(record {canister_id = \"$SUBNET_1_1_CHALLENGER_LLM_0\"})"
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    get_llm_canisters
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    add_llm_canister    "(record {canister_id = \"$SUBNET_1_1_CHALLENGER_LLM_0\"})"
@@ -165,15 +160,16 @@ scripts/register-llms.sh --network $NETWORK
 # Test the new endpoints to manage the deployed LLMs
 # Get the LLMs currently in use > Remove > check > Add > check
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters
+echo "SUBNET_1_1_JUDGE_LLM_0: $SUBNET_1_1_JUDGE_LLM_0"
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    remove_llm_canister "(record {canister_id = \"$SUBNET_1_1_JUDGE_LLM_0\"})"
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    add_llm_canister    "(record {canister_id = \"$SUBNET_1_1_JUDGE_LLM_0\"})"
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters
 
 # These are registered, but remove them for now. We will do the expansion one by one on Wednesday.
-echo $SUBNET_1_6_JUDGE_LLM_13
-echo $SUBNET_1_6_JUDGE_LLM_14
-echo $SUBNET_1_6_JUDGE_LLM_15
+echo "SUBNET_1_6_JUDGE_LLM_13: $SUBNET_1_6_JUDGE_LLM_13"
+echo "SUBNET_1_6_JUDGE_LLM_14: $SUBNET_1_6_JUDGE_LLM_14"
+echo "SUBNET_1_6_JUDGE_LLM_15: $SUBNET_1_6_JUDGE_LLM_15"
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    remove_llm_canister "(record {canister_id = \"$SUBNET_1_6_JUDGE_LLM_13\"})"
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    remove_llm_canister "(record {canister_id = \"$SUBNET_1_6_JUDGE_LLM_14\"})"
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    remove_llm_canister "(record {canister_id = \"$SUBNET_1_6_JUDGE_LLM_15\"})"
@@ -190,15 +186,15 @@ echo $NETWORK
 dfx deploy --network $NETWORK mainer_service_canister --mode upgrade
 
 # start the ShareService canister back up
-echo $SUBNET_0_1_SHARE_SERVICE
+echo "SUBNET_0_1_SHARE_SERVICE: $SUBNET_0_1_SHARE_SERVICE"
 dfx canister --network $NETWORK start  $SUBNET_0_1_SHARE_SERVICE
 dfx canister --network $NETWORK status $SUBNET_0_1_SHARE_SERVICE     | grep Status
 dfx canister --network $NETWORK call   $SUBNET_0_1_SHARE_SERVICE health
 
 # Test the new endpoints to manage the deployed LLMs
 # Get the LLMs currently in use > Remove > check > Add > check
+echo "SUBNET_2_1_SHARE_SERVICE_LLM_0: $SUBNET_2_1_SHARE_SERVICE_LLM_0"
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    get_llm_canisters
-echo $SUBNET_2_1_SHARE_SERVICE_LLM_0
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    remove_llm_canister "(record {canister_id = \"$SUBNET_2_1_SHARE_SERVICE_LLM_0\"})"
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    get_llm_canisters
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    add_llm_canister    "(record {canister_id = \"$SUBNET_2_1_SHARE_SERVICE_LLM_0\"})"
@@ -208,6 +204,7 @@ dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    get_llm_canist
 # start timers of protocol canisters
 
 ```bash
+# From folder: funnAI
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    startTimerExecutionAdmin
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         startTimerExecutionAdmin
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE startTimerExecutionAdmin
@@ -232,17 +229,18 @@ Use the snapshots to roll back everything
 ```bash
 # pause > stop timers > stop canisters , as described above
 
-# list the snapshots
+# list & load the snapshots
 dfx canister --network $NETWORK snapshot list $SUBNET_0_1_GAMESTATE
-dfx canister --network $NETWORK snapshot list $SUBNET_0_1_CHALLENGER    
-dfx canister --network $NETWORK snapshot list $SUBNET_0_1_JUDGE         
-dfx canister --network $NETWORK snapshot list $SUBNET_0_1_SHARE_SERVICE 
+dfx canister --network $NETWORK snapshot load $SUBNET_0_1_GAMESTATE     <snapshot-id>
 
-# load the desired snapshot
-dfx canister --network $NETWORK snapshot list $SUBNET_0_1_GAMESTATE     <snapshot-id>
-dfx canister --network $NETWORK snapshot list $SUBNET_0_1_CHALLENGER    <snapshot-id>
-dfx canister --network $NETWORK snapshot list $SUBNET_0_1_JUDGE         <snapshot-id> 
-dfx canister --network $NETWORK snapshot list $SUBNET_0_1_SHARE_SERVICE <snapshot-id>
+dfx canister --network $NETWORK snapshot list $SUBNET_0_1_CHALLENGER    
+dfx canister --network $NETWORK snapshot load $SUBNET_0_1_CHALLENGER    <snapshot-id>
+
+dfx canister --network $NETWORK snapshot list $SUBNET_0_1_JUDGE         
+dfx canister --network $NETWORK snapshot load $SUBNET_0_1_JUDGE         <snapshot-id> 
+
+dfx canister --network $NETWORK snapshot list $SUBNET_0_1_SHARE_SERVICE 
+dfx canister --network $NETWORK snapshot load $SUBNET_0_1_SHARE_SERVICE <snapshot-id>
 
 # start canisters > start timers > unpause, as described above
 ```
