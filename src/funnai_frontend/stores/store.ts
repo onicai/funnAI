@@ -323,7 +323,7 @@ export const createStore = ({
         shouldOpenFirstMainerAfterCreation: true
       }));
       
-      // Add a progress message indicating restoration (will be defined later)
+      // Add a progress message indicating UI restoration (not actual backend resumption)
       setTimeout(() => {
         if (globalState.isCreatingMainer) {
           const now = new Date();
@@ -332,7 +332,7 @@ export const createStore = ({
           update((state) => {
             const newProgress = [
               ...state.mainerCreationProgress,
-              { message: "Restoring creation session...", timestamp, complete: false }
+              { message: "Previous creation session detected - UI restored but creation process was interrupted", timestamp, complete: false }
             ];
             
             // Update localStorage with new progress
@@ -357,7 +357,7 @@ export const createStore = ({
           update((state) => {
             const newProgress = [
               ...state.mainerCreationProgress,
-              { message: "Creation session timeout - completing...", timestamp, complete: true }
+              { message: "Session cleanup - creation was interrupted and needs to be restarted", timestamp, complete: true }
             ];
             
             return {

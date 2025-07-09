@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, afterUpdate } from 'svelte';
+  import { onMount, afterUpdate, onDestroy } from 'svelte';
   import CyclesDisplayAgent from './CyclesDisplayAgent.svelte';
   import DailyBurnRatePanel from './DailyBurnRatePanel.svelte';
   import { store } from "../../stores/store";
@@ -920,6 +920,32 @@
     const date = new Date(ms);
     return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   }
+
+  // Browser-level warning to prevent accidental navigation/refresh during creation
+  function handleBeforeUnload(event: BeforeUnloadEvent) {
+    if (isCreatingMainer) {
+      const message = "mAIner creation is in progress. Leaving now will stop the creation process and you'll need to start over. Are you sure you want to leave?";
+      event.preventDefault();
+      event.returnValue = message;
+      return message;
+    }
+  }
+
+  // Add/remove beforeunload listener based on creation state
+  $: if (typeof window !== 'undefined') {
+    if (isCreatingMainer) {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+    } else {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    }
+  }
+
+  // Cleanup on component destroy
+  onDestroy(() => {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    }
+  });
 </script>
 
 <!-- Loading state for protocol flags -->
@@ -1068,7 +1094,7 @@
           class:cursor-not-allowed={isCreatingMainer || !isProtocolActive || stopMainerCreation}
           use:tooltip={{ 
             text: isCreatingMainer 
-              ? "Please wait for the current mAIner creation to complete before starting a new one"
+              ? "⚠️ mAIner creation in progress! Please wait for it to complete. DO NOT refresh or navigate away - this will stop the creation and you'll need to start over."
               : stopMainerCreation 
                 ? "mAIner creation is temporarily disabled due to network capacity"
                 : !isProtocolActive 
@@ -1079,8 +1105,8 @@
           }}
         >
           {#if isCreatingMainer}
-            {#if mainerCreationProgress.length > 0 && mainerCreationProgress[0].message.includes("Restoring")}
-              Restoring Session...
+            {#if mainerCreationProgress.length > 0 && mainerCreationProgress[0].message.includes("Previous creation")}
+              Session on hold
             {:else}
               Creating mAIner...
             {/if}
@@ -1577,9 +1603,45 @@
   </div>
 {/if}
 
+<!-- Warning Banner - Don't refresh/navigate during creation -->
+{#if isCreatingMainer}
+  <div class="mt-4 relative overflow-hidden bg-gradient-to-r from-red-500 via-orange-500 to-red-500 dark:from-red-600 dark:via-orange-600 dark:to-red-600 rounded-xl shadow-lg border-2 border-red-400/50 dark:border-red-500/50 animate-pulse">
+    <!-- Background decoration -->
+    <div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent"></div>
+    <div class="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full -translate-y-8 translate-x-8"></div>
+    <div class="absolute bottom-0 left-0 w-12 h-12 bg-white/5 rounded-full translate-y-6 -translate-x-6"></div>
+    
+    <div class="relative p-3 sm:p-4">
+      <div class="flex items-start space-x-3">
+        <!-- Warning icon -->
+        <div class="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-white/20 backdrop-blur-sm rounded-xl shadow-sm flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 text-white animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+          </svg>
+        </div>
+        
+        <!-- Warning content -->
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-col space-y-2">
+                         <h3 class="text-sm sm:text-base font-bold text-white drop-shadow-sm">⚠️ IMPORTANT: Do NOT refresh or navigate away!</h3>
+             <div class="text-white/90 text-xs sm:text-sm leading-relaxed">
+               <p class="font-semibold mb-1">Your mAIner is being created right now.</p>
+               <p>🚫 <span class="font-medium">DO NOT refresh this page or navigate away</span> - this will stop the creation process and you'll need to start over.</p>
+               <p class="mt-1">✅ Please keep this tab open and wait for the process to complete (~1 minute).</p>
+             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Bottom accent line with pulse animation -->
+    <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-pulse"></div>
+  </div>
+{/if}
+
 <!-- Terminal-style progress component (shows for both regular and whitelist creation) -->
 {#if isCreatingMainer}
-  <div class="mt-4 bg-gray-900 text-green-400 font-mono text-xs sm:text-sm rounded-lg p-2 sm:p-3 border border-gray-700 overflow-hidden">
+  <div class="mt-3 bg-gray-900 text-green-400 font-mono text-xs sm:text-sm rounded-lg p-2 sm:p-3 border border-gray-700 overflow-hidden">
     <div class="flex items-center justify-between mb-2 border-b border-gray-700 pb-2">
       <div class="text-gray-300 text-xs">mAIner Creation Progress</div>
       <div class="flex items-center">
