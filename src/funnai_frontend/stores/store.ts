@@ -268,6 +268,9 @@ export const createStore = ({
 
   // Add helper functions for mAIner creation state persistence
   const storeMainerCreationState = (isCreating: boolean, sessionId: string | null, progress: any[] = []) => {
+    console.log("in storeMainerCreationState isCreating ", isCreating);
+    console.log("in storeMainerCreationState sessionId ", sessionId);
+    console.log("in storeMainerCreationState progress ", progress);
     try {
       const creationState = {
         isCreating,
@@ -283,16 +286,24 @@ export const createStore = ({
   };
 
   const getStoredMainerCreationState = () => {
+    console.log("in getStoredMainerCreationState");
     try {
       const storedState = localStorage.getItem(STORAGE_KEYS.MAINER_CREATION_STATE);
+      console.log("in getStoredMainerCreationState storedState ", storedState);
       if (storedState) {
         const parsed = JSON.parse(storedState);
+        console.log("in getStoredMainerCreationState parsed ", parsed);
         // Check if the stored state is for the current user
         const currentPrincipal = globalState.principal?.toString() || null;
+        console.log("in getStoredMainerCreationState currentPrincipal ", currentPrincipal);
+        console.log("in getStoredMainerCreationState parsed.principalId ", parsed.principalId);
+        console.log("in getStoredMainerCreationState parsed.principalId === currentPrincipal ", parsed.principalId === currentPrincipal);
         if (parsed.principalId === currentPrincipal) {
-          // Check if state is not too old (max 1 hour)
-          const maxAge = 60 * 60 * 1000; // 1 hour in milliseconds
+          // Check if state is not too old (max 6 min)
+          const maxAge = 6 * 60 * 1000; // 6 min in milliseconds
+          console.log("in getStoredMainerCreationState maxAge ", maxAge);
           if (Date.now() - parsed.timestamp < maxAge) {
+            console.log("in getStoredMainerCreationState return parsed ");
             return parsed;
           }
         }
@@ -304,6 +315,7 @@ export const createStore = ({
   };
 
   const clearStoredMainerCreationState = () => {
+    console.log("in clearStoredMainerCreationState ");
     try {
       localStorage.removeItem(STORAGE_KEYS.MAINER_CREATION_STATE);
     } catch (error) {
@@ -312,7 +324,10 @@ export const createStore = ({
   };
 
   const restoreMainerCreationState = () => {
+    console.log("in restoreMainerCreationState ");
     const storedState = getStoredMainerCreationState();
+    console.log("in restoreMainerCreationState storedState ", storedState);
+    console.log("in restoreMainerCreationState storedState.isCreating ", storedState.isCreating);
     if (storedState && storedState.isCreating) {
       console.log("Restoring mAIner creation state from localStorage");
       update((state) => ({
@@ -325,6 +340,7 @@ export const createStore = ({
       
       // Add a progress message indicating UI restoration (not actual backend resumption)
       setTimeout(() => {
+        console.log("in restoreMainerCreationState globalState.isCreatingMainer ", globalState.isCreatingMainer);
         if (globalState.isCreatingMainer) {
           const now = new Date();
           const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
@@ -334,6 +350,8 @@ export const createStore = ({
               ...state.mainerCreationProgress,
               { message: "Previous creation session detected - UI restored but creation process was interrupted", timestamp, complete: false }
             ];
+            console.log("in restoreMainerCreationState newProgress ", newProgress);
+            console.log("in restoreMainerCreationState state.isCreatingMainer ", state.isCreatingMainer);
             
             // Update localStorage with new progress
             if (state.isCreatingMainer) {
@@ -347,9 +365,10 @@ export const createStore = ({
           });
         }
       }, 100);
-      
+      console.log("in restoreMainerCreationState before 2nd timer ");
       // Set a timeout to automatically complete creation if it's been too long
       setTimeout(() => {
+        console.log("in restoreMainerCreationState 2nd timer globalState.isCreatingMainer ", globalState.isCreatingMainer);
         if (globalState.isCreatingMainer) {
           const now = new Date();
           const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
@@ -359,6 +378,7 @@ export const createStore = ({
               ...state.mainerCreationProgress,
               { message: "Session cleanup - creation was interrupted and needs to be restarted", timestamp, complete: true }
             ];
+            console.log("in restoreMainerCreationState 2nd timer newProgress ", newProgress);
             
             return {
               ...state,
@@ -372,7 +392,7 @@ export const createStore = ({
           // Clear the stored creation state
           clearStoredMainerCreationState();
         }
-      }, 5 * 60 * 1000); // 5 minutes timeout
+      }, 2 * 60 * 1000); // 2 minutes timeout
     }
   };
 
@@ -1102,6 +1122,7 @@ export const createStore = ({
 
   // mAIner creation progress management functions
   const startMainerCreation = () => {
+    console.log("in startMainerCreation ");
     const sessionId = `creation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     update((state) => ({
@@ -1117,6 +1138,7 @@ export const createStore = ({
   };
 
   const addMainerCreationProgress = (message: string, isComplete = false) => {
+    console.log("in addMainerCreationProgress ");
     const now = new Date();
     const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
     
@@ -1139,6 +1161,7 @@ export const createStore = ({
   };
 
   const completeMainerCreation = () => {
+    console.log("in completeMainerCreation ");
     update((state) => ({
       ...state,
       isCreatingMainer: false,

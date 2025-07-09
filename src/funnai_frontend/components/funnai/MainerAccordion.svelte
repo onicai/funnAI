@@ -156,6 +156,7 @@
   };
 
   function createAgent() {
+    console.log("in createAgent isCreatingMainer ", isCreatingMainer);
     // Safety check: prevent starting new creation if one is already in progress
     if (isCreatingMainer) {
       console.warn("mAIner creation already in progress, ignoring button click");
@@ -430,6 +431,7 @@
   }
   
   async function handleSendComplete(txId?: string) {
+    console.log("in handleSendComplete txId ", txId);
     mainerPaymentModalOpen = false;
     
     // Store the selected unlocked mAIner before starting creation to prevent null reference
@@ -646,6 +648,7 @@
   };
 
   async function handleFullMainerCreation(txId?: string) {
+    console.log("in handleFullMainerCreation txId ", txId);
     // See the Game State canister interface here: src/declarations/game_state_canister/game_state_canister.did.d.ts
     type SelectableMainerLLMs = { 'Qwen2_5_500M' : null };
     let selectableMainerLLM = { 'Qwen2_5_500M' : null }; // default
