@@ -143,6 +143,12 @@ const nanosecondsPerHour = BigInt(3600000000000);
 const SESSION_REFRESH_THRESHOLD = BigInt(24 * 60 * 60 * 1000 * 1000 * 1000); // 24 hours in nanoseconds
 const SESSION_CHECK_INTERVAL = 30 * 60 * 1000; // Check every 30 minutes in milliseconds
 
+// Add localStorage keys for mAIner creation state persistence
+const STORAGE_KEYS = {
+  MAINER_CREATION_STATE: 'mainerCreationState',
+  MAINER_CREATION_SESSION: 'mainerCreationSession'
+};
+
 type State = {
   isAuthed: "nfid" | "internetidentity" | null;
   backendActor: typeof funnai_backend;
@@ -160,6 +166,8 @@ type State = {
   isCreatingMainer: boolean;
   mainerCreationProgress: {message: string, timestamp: string, complete: boolean}[];
   shouldOpenFirstMainerAfterCreation: boolean;
+  // Add creation session ID to track unique creation sessions
+  mainerCreationSessionId: string | null;
 };
 
 let defaultBackendCanisterId = backendCanisterId;
@@ -187,6 +195,7 @@ const defaultState: State = {
   isCreatingMainer: false,
   mainerCreationProgress: [],
   shouldOpenFirstMainerAfterCreation: false,
+  mainerCreationSessionId: null,
 };
 
 // Add theme support
@@ -256,6 +265,116 @@ export const createStore = ({
   setTimeout(() => {
     subscribe((value) => globalState = value);
   }, 0);
+
+  // Add helper functions for mAIner creation state persistence
+  const storeMainerCreationState = (isCreating: boolean, sessionId: string | null, progress: any[] = []) => {
+    try {
+      const creationState = {
+        isCreating,
+        sessionId,
+        progress,
+        timestamp: Date.now(),
+        principalId: globalState.principal?.toString() || null
+      };
+      localStorage.setItem(STORAGE_KEYS.MAINER_CREATION_STATE, JSON.stringify(creationState));
+    } catch (error) {
+      console.error("Error storing mAIner creation state:", error);
+    }
+  };
+
+  const getStoredMainerCreationState = () => {
+    try {
+      const storedState = localStorage.getItem(STORAGE_KEYS.MAINER_CREATION_STATE);
+      if (storedState) {
+        const parsed = JSON.parse(storedState);
+        // Check if the stored state is for the current user
+        const currentPrincipal = globalState.principal?.toString() || null;
+        if (parsed.principalId === currentPrincipal) {
+          // Check if state is not too old (max 1 hour)
+          const maxAge = 60 * 60 * 1000; // 1 hour in milliseconds
+          if (Date.now() - parsed.timestamp < maxAge) {
+            return parsed;
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error retrieving stored mAIner creation state:", error);
+    }
+    return null;
+  };
+
+  const clearStoredMainerCreationState = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.MAINER_CREATION_STATE);
+    } catch (error) {
+      console.error("Error clearing stored mAIner creation state:", error);
+    }
+  };
+
+  const restoreMainerCreationState = () => {
+    const storedState = getStoredMainerCreationState();
+    if (storedState && storedState.isCreating) {
+      console.log("Restoring mAIner creation state from localStorage");
+      update((state) => ({
+        ...state,
+        isCreatingMainer: true,
+        mainerCreationSessionId: storedState.sessionId,
+        mainerCreationProgress: storedState.progress || [],
+        shouldOpenFirstMainerAfterCreation: true
+      }));
+      
+      // Add a progress message indicating restoration (will be defined later)
+      setTimeout(() => {
+        if (globalState.isCreatingMainer) {
+          const now = new Date();
+          const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+          
+          update((state) => {
+            const newProgress = [
+              ...state.mainerCreationProgress,
+              { message: "Restoring creation session...", timestamp, complete: false }
+            ];
+            
+            // Update localStorage with new progress
+            if (state.isCreatingMainer) {
+              storeMainerCreationState(true, state.mainerCreationSessionId, newProgress);
+            }
+            
+            return {
+              ...state,
+              mainerCreationProgress: newProgress
+            };
+          });
+        }
+      }, 100);
+      
+      // Set a timeout to automatically complete creation if it's been too long
+      setTimeout(() => {
+        if (globalState.isCreatingMainer) {
+          const now = new Date();
+          const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+          
+          update((state) => {
+            const newProgress = [
+              ...state.mainerCreationProgress,
+              { message: "Creation session timeout - completing...", timestamp, complete: true }
+            ];
+            
+            return {
+              ...state,
+              mainerCreationProgress: newProgress,
+              isCreatingMainer: false,
+              shouldOpenFirstMainerAfterCreation: false,
+              mainerCreationSessionId: null
+            };
+          });
+          
+          // Clear the stored creation state
+          clearStoredMainerCreationState();
+        }
+      }, 5 * 60 * 1000); // 5 minutes timeout
+    }
+  };
 
   const initUserSettings = async (backendActor) => {
     // Log user's login
@@ -633,6 +752,9 @@ export const createStore = ({
     // Start automatic session refresh timer
     startSessionRefreshTimer();
 
+    // Restore mAIner creation state if it exists
+    restoreMainerCreationState();
+
     console.info("nfid is authed");
   };
 
@@ -707,6 +829,9 @@ export const createStore = ({
 
     // Start automatic session refresh timer
     startSessionRefreshTimer();
+
+    // Restore mAIner creation state if it exists
+    restoreMainerCreationState();
 
     console.info("internetidentity is authed");
   };
@@ -977,25 +1102,40 @@ export const createStore = ({
 
   // mAIner creation progress management functions
   const startMainerCreation = () => {
+    const sessionId = `creation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     update((state) => ({
       ...state,
       isCreatingMainer: true,
       mainerCreationProgress: [],
-      shouldOpenFirstMainerAfterCreation: true
+      shouldOpenFirstMainerAfterCreation: true,
+      mainerCreationSessionId: sessionId
     }));
+    
+    // Store the creation state in localStorage
+    storeMainerCreationState(true, sessionId, []);
   };
 
   const addMainerCreationProgress = (message: string, isComplete = false) => {
     const now = new Date();
     const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
     
-    update((state) => ({
-      ...state,
-      mainerCreationProgress: [
+    update((state) => {
+      const newProgress = [
         ...state.mainerCreationProgress,
         { message, timestamp, complete: isComplete }
-      ]
-    }));
+      ];
+      
+      // Update localStorage with new progress
+      if (state.isCreatingMainer) {
+        storeMainerCreationState(true, state.mainerCreationSessionId, newProgress);
+      }
+      
+      return {
+        ...state,
+        mainerCreationProgress: newProgress
+      };
+    });
   };
 
   const completeMainerCreation = () => {
@@ -1003,8 +1143,12 @@ export const createStore = ({
       ...state,
       isCreatingMainer: false,
       mainerCreationProgress: [],
-      shouldOpenFirstMainerAfterCreation: false
+      shouldOpenFirstMainerAfterCreation: false,
+      mainerCreationSessionId: null
     }));
+    
+    // Clear the stored creation state
+    clearStoredMainerCreationState();
   };
 
   const resetMainerCreationAfterOpen = () => {

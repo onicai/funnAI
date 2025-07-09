@@ -156,11 +156,23 @@
   };
 
   function createAgent() {
+    // Safety check: prevent starting new creation if one is already in progress
+    if (isCreatingMainer) {
+      console.warn("mAIner creation already in progress, ignoring button click");
+      return;
+    }
+    
     // Open the MainerPaymentModal to handle the payment
     mainerPaymentModalOpen = true;
   };
 
   function createWhitelistAgent(unlockedMainer) {
+    // Safety check: prevent starting new creation if one is already in progress
+    if (isCreatingMainer) {
+      console.warn("mAIner creation already in progress, ignoring whitelist creation button click");
+      return;
+    }
+    
     // Set the selected unlocked mAIner for whitelist creation
     selectedUnlockedMainer = unlockedMainer;
     
@@ -1054,8 +1066,27 @@
           class="bg-purple-600 dark:bg-purple-700 hover:bg-purple-700 dark:hover:bg-purple-800 text-white px-4 py-2 rounded-xl transition-colors mb-2 w-full sm:w-auto sm:mr-2 text-sm sm:text-base"
           class:opacity-50={isCreatingMainer || !isProtocolActive || stopMainerCreation}
           class:cursor-not-allowed={isCreatingMainer || !isProtocolActive || stopMainerCreation}
+          use:tooltip={{ 
+            text: isCreatingMainer 
+              ? "Please wait for the current mAIner creation to complete before starting a new one"
+              : stopMainerCreation 
+                ? "mAIner creation is temporarily disabled due to network capacity"
+                : !isProtocolActive 
+                  ? "Protocol is currently inactive"
+                  : "",
+            direction: 'top',
+            textSize: 'xs'
+          }}
         >
-          Create mAIner Agent
+          {#if isCreatingMainer}
+            {#if mainerCreationProgress.length > 0 && mainerCreationProgress[0].message.includes("Restoring")}
+              Restoring Session...
+            {:else}
+              Creating mAIner...
+            {/if}
+          {:else}
+            Create mAIner Agent
+          {/if}
         </button>
       </div>
 
