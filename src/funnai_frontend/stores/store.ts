@@ -327,7 +327,6 @@ export const createStore = ({
     console.log("in restoreMainerCreationState ");
     const storedState = getStoredMainerCreationState();
     console.log("in restoreMainerCreationState storedState ", storedState);
-    console.log("in restoreMainerCreationState storedState.isCreating ", storedState.isCreating);
     if (storedState && storedState.isCreating) {
       console.log("Restoring mAIner creation state from localStorage");
       update((state) => ({
