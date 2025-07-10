@@ -49,6 +49,6 @@ if [ "$LOOP" = "true" ]; then
     done
 fi
 
-echo "Fetching mainers on network: $NETWORK_TYPE for user: $USER"USER
+echo "Fetching mainers on network: $NETWORK_TYPE for user: $USER"
 python -m scripts.get_mainers --network $NETWORK_TYPE --user $USER
 

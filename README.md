@@ -26,19 +26,24 @@ scripts/monitor_gamestate_metrics.sh --network $NETWORK
 scripts/monitor_gamestate_logs.sh --network $NETWORK 
 scripts/monitor_memory.sh --network $NETWORK --canister-types [all|protocol|mainers]
 scripts/monitor_balance.sh --network $NETWORK --canister-types [all|protocol|mainers]
-scripts/list_controllers.sh --network $NETWORK --canister-types [all|protocol|mainers]
-scripts/add_controllers.sh --network $NETWORK --canister-types [all|protocol|mainers]
-scripts/start_timers.sh --network $NETWORK --canister-types [all|protocol|mainers]
-scripts/stop_timers.sh --network $NETWORK --canister-types [all|protocol|mainers]
-# Carefull with these ones -> FOR TESTING ONLY
-scripts/update_mainer_burnrates.sh --network $NETWORK --burnrate [Low|Mid|High|VeryHigh]
-scripts/topup.sh --network $NETWORK --canister-types [all|protocol|mainers] --tc <TCycles>
 
-# Admin Maintenance scripts
-# See PoAIW/src/ArchivedChallenges/README.md how to migrate Archived challenges
-# Then, after each migration, run this script to cleanup the prompt cache files from the LLMs
-scripts/cleanup_llm_promptcache.sh --network $NETWORK --llm-type judge
-scripts/cleanup_llm_promptcache.sh --network $NETWORK --llm-type share_service
+
+# ----------------------------------------------------------------
+# TODO - evaluate these scripts if up to date & usefull
+# scripts/list_controllers.sh --network $NETWORK --canister-types [all|protocol|mainers]
+# scripts/add_controllers.sh --network $NETWORK --canister-types [all|protocol|mainers]
+# scripts/start_timers.sh --network $NETWORK --canister-types [all|protocol|mainers]
+# scripts/stop_timers.sh --network $NETWORK --canister-types [all|protocol|mainers]
+# # Carefull with these ones -> FOR TESTING ONLY
+# scripts/update_mainer_burnrates.sh --network $NETWORK --burnrate [Low|Mid|High|VeryHigh]
+# scripts/topup.sh --network $NETWORK --canister-types [all|protocol|mainers] --tc <TCycles>
+
+# # Admin Maintenance scripts
+# # See PoAIW/src/ArchivedChallenges/README.md how to migrate Archived challenges
+# # Then, after each migration, run this script to cleanup the prompt cache files from the LLMs
+# scripts/cleanup_llm_promptcache.sh --network $NETWORK --llm-type judge
+# scripts/cleanup_llm_promptcache.sh --network $NETWORK --llm-type share_service
+# ----------------------------------------------------------------
 
 # When running local
 # We are using dfx deps for:
@@ -72,77 +77,61 @@ scripts/deploy-all.sh --mode install --network $NETWORK
 # IMPORTANT: Record the canister ids in scripts/canister_ids-<network>.env
 #            for canister monitoring, management & logging purposes
 #
+# Follow instructions of README-prd-upgrade-commands.md
+#
+# TODO: We no longer deploy ShareService via GameState
+#       These scripts & descriptions are no longer used
+# # Deploy a mAIner of type #ShareService, since this is a protocol canister
+# # Set environment variables for the subnets.
+# # Option 1: source the file for the environment & verify things are set
+# source scripts/canister_ids-$NETWORK.env
+# SUBNETSACTRL=$SUBNET_0_1
+# SUBNETSSCTRL=$SUBNET_0_1
+# SUBNETSSLLM=$SUBNET_2_1
+# # Option 2: set them manually
+# SUBNETSACTRL=...
+# SUBNETSSCTRL=...
+# SUBNETSSLLM=...
+# # Set the SubnetIds in the GameState canister
+# dfx canister --network $NETWORK call game_state_canister setSubnetsAdmin "(record {subnetShareAgentCtrl = \"$SUBNETSACTRL\"; subnetShareServiceCtrl = \"$SUBNETSSCTRL\"; subnetShareServiceLlm = \"$SUBNETSSLLM\" })"
+# # Verify the subnets are set correctly
+# dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
+# # Now install the ShareService Controller
+# scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.sh --mode install --network $NETWORK
 
-# Deploy a mAIner of type #ShareService, since this is a protocol canister
-# Set environment variables for the subnets.
-# Option 1: source the file for the environment & verify things are set
-source scripts/canister_ids-$NETWORK.env
-SUBNETSACTRL=$SUBNET_0_1
-SUBNETSSCTRL=$SUBNET_0_1
-SUBNETSSLLM=$SUBNET_2_1
-# Option 2: set them manually
-SUBNETSACTRL=...
-SUBNETSSCTRL=...
-SUBNETSSLLM=...
-# Set the SubnetIds in the GameState canister
-dfx canister --network $NETWORK call game_state_canister setSubnetsAdmin "(record {subnetShareAgentCtrl = \"$SUBNETSACTRL\"; subnetShareServiceCtrl = \"$SUBNETSSCTRL\"; subnetShareServiceLlm = \"$SUBNETSSLLM\" })"
-# Verify the subnets are set correctly
-dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
-# Now install the ShareService Controller
-scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.sh --mode install --network $NETWORK
+# # Install the first LLM to the correct subnet
+# # Verify the subnets are set correctly
+# dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
+# # If Ok, install the first Ssllm
+# scripts/scripts-gamestate/deploy-mainers-ShareService-FirstLLM-via-gamestate.sh --mode install --network $NETWORK
 
-# Install the first LLM to the correct subnet
-# Verify the subnets are set correctly
-dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
-# If Ok, install the first Ssllm
-scripts/scripts-gamestate/deploy-mainers-ShareService-FirstLLM-via-gamestate.sh --mode install --network $NETWORK
-
-# Install the next LLMs to the correct subnet
-# Set the SubnetIds in the GameState canister as explained above
-# Verify the subnets are set correctly
-dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
-# Now install the Ssllm to the correct subnet
-scripts/scripts-gamestate/deploy-mainers-ShareService-AddLLM-via-gamestate.sh --mode install --network $NETWORK
+# # Install the next LLMs to the correct subnet
+# # Set the SubnetIds in the GameState canister as explained above
+# # Verify the subnets are set correctly
+# dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
+# # Now install the Ssllm to the correct subnet
+# scripts/scripts-gamestate/deploy-mainers-ShareService-AddLLM-via-gamestate.sh --mode install --network $NETWORK
 
 # -----------------------------------------
 # Deploy mAIners of type #ShareAgent
-# Verify that 'subnetShareAgentCtrl' is set correctly in GameState
-dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
-# Deploy a new ShareAgent via Admin command
-scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install --network $NETWORK
-# Update gamestate to the latest wasmhash. <canisterId> is the address of one of the upgraded ShareAgent canisters
-dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="New wasm deployed"})' --network $NETWORK
+#
+# TODO: This is still possible, but there are other options now.
+#       Evaluate if we need to clean this up
+#
+# # Verify that 'subnetShareAgentCtrl' is set correctly in GameState
+# dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
+# # Deploy a new ShareAgent via Admin command
+# scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install --network $NETWORK
+# # Update gamestate to the latest wasmhash. <canisterId> is the address of one of the upgraded ShareAgent canisters
+# dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="New wasm deployed"})' --network $NETWORK
 
-# To increase limit of ShareAgent mAIners
-dfx canister --network prd call game_state_canister setLimitForCreatingMainerAdmin '(record {mainerType = variant { ShareAgent } ; newLimit = 450 : nat;} )'
+# # To increase limit of ShareAgent mAIners
+# dfx canister --network prd call game_state_canister setLimitForCreatingMainerAdmin '(record {mainerType = variant { ShareAgent } ; newLimit = 450 : nat;} )'
 
 # -----------------------------------------
 # Deploy mAIners of type #Own
 # TODO - fix the script
 # scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install --network $NETWORK
-
-# #########################################################################
-# Adding controllers
-# If you maintain a file 'scripts/canister_ids-$NETWORK.env' , you can add
-# the pre-defined controllers (patrick & arjaan) to all canisters at once.
-#
-# If you need others, just update the script 'scripts/add_controllers.py'
-#
-scripts/add_controllers.sh --network $NETWORK
-scripts/list_controllers.sh --network $NETWORK
-
-# #########################################################################
-# Upgrading for new GameState code
-# NEVER, EVER reinstall the GameState. Always upgrade...
-scripts/deploy-gamestate.sh --mode upgrade --network $NETWORK
-scripts/scripts-gamestate/register-all.sh --network $NETWORK
-# Update gamestate to the latest wasmhash. <canisterId> is the address of one of the upgraded ShareAgent canisters
-dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="New wasm deployed"})' --network $NETWORK
-# Be careful, but you might need to do these to apply new settings and values for stable memory:
-dfx canister call game_state_canister resetCyclesFlowAdmin --network $NETWORK
-
-# #########################################################################
-# Upgrading for new mAIner code -> See file README-prd-upgrade-PoAIW.md
 
 # #########################################################################
 # Admin functions to clean up redeemed payments in case the creation failed.
