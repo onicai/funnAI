@@ -283,6 +283,7 @@ export const createStore = ({
   };
 
   const getStoredMainerCreationState = () => {
+    console.log("Looking for previous mAIner creation state");
     try {
       const storedState = localStorage.getItem(STORAGE_KEYS.MAINER_CREATION_STATE);
       if (storedState) {
