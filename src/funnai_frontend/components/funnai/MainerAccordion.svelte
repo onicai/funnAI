@@ -1031,7 +1031,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mb-1">
                       <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">mAIner Agent</h4>
                       <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 w-fit mt-1 sm:mt-0">
-                        Available to deploy
+                        Not available
                       </span>
                     </div>
                     <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">
@@ -1142,7 +1142,7 @@
                 </div>
                 
                 <p class="text-lg text-orange-700 dark:text-orange-300 leading-relaxed mb-3">
-                  82 new mAIners will become available on Thursday July 10 at 8am PT
+                  Sold out! All mAIners have been claimed.
                 </p>
                 
                 <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg p-3 border border-orange-200/40 dark:border-orange-700/40">
