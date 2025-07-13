@@ -1743,22 +1743,20 @@
                 <span class="text-xs sm:text-sm font-bold text-gray-800">#{totalMainers - index}</span>
               </div>
               
-              <!-- Status indicator dot 
+              <!-- Status indicator dot -->
               <div class="absolute -bottom-1 -left-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-white shadow-lg flex items-center justify-center">
                 <div class={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${agent.status === 'active' ? 'bg-green-400' : 'bg-red-400'} animate-pulse`}></div>
-              </div>
-              -->
-              
-              <!-- Agent name integrated with avatar -->
-              <div class="mt-1 px-2 py-0.5 bg-white/80 backdrop-blur-sm rounded-md shadow-sm border border-white/40 max-w-[80px] sm:max-w-[100px]">
-                <span class="text-xs font-bold text-gray-800 truncate block text-center">
-                  {agent.name.replace('mAIner ', '')}
-                </span>
               </div>
             </div>
             
             <!-- mAIner info -->
             <div class="flex flex-col items-start min-w-0 flex-1">
+              <!-- Agent name  -->
+              <div class="mb-2 px-2 py-0.5 bg-white/80 backdrop-blur-sm rounded-md shadow-sm border border-white/40 max-w-[80px] sm:max-w-[100px]">
+                <span class="text-xs font-bold text-gray-800 truncate block text-center">
+                  {agent.name.replace('mAIner ', '')}
+                </span>
+              </div>
               <div class="flex flex-wrap items-center gap-1 sm:gap-2 mb-1">
                 <!-- Status badge -->
                 <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm border ${agent.status === 'active' 

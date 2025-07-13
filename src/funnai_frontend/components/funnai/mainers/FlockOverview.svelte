@@ -170,7 +170,7 @@
               </div>
               <div class="flex flex-col">
                 <span class="text-xs font-medium text-green-700 dark:text-green-300 sm:hidden">Low</span>
-                <span class="text-xs font-medium text-green-700 dark:text-green-300 hidden sm:inline">Low burn rate</span>
+                <span class="text-xs font-medium text-green-700 dark:text-green-300 hidden sm:inline">Low burn</span>
                 <span class="text-xs text-green-600/70 dark:text-green-400/70 hidden sm:block">Conservative usage</span>
               </div>
             </div>
@@ -194,7 +194,7 @@
               </div>
               <div class="flex flex-col">
                 <span class="text-xs font-medium text-yellow-700 dark:text-yellow-300 sm:hidden">Medium</span>
-                <span class="text-xs font-medium text-yellow-700 dark:text-yellow-300 hidden sm:inline">Medium burn rate</span>
+                <span class="text-xs font-medium text-yellow-700 dark:text-yellow-300 hidden sm:inline">Medium burn</span>
                 <span class="text-xs text-yellow-600/70 dark:text-yellow-400/70 hidden sm:block">Balanced usage</span>
               </div>
             </div>
@@ -218,7 +218,7 @@
               </div>
               <div class="flex flex-col">
                 <span class="text-xs font-medium text-red-700 dark:text-red-300 sm:hidden">High</span>
-                <span class="text-xs font-medium text-red-700 dark:text-red-300 hidden sm:inline">High burn rate</span>
+                <span class="text-xs font-medium text-red-700 dark:text-red-300 hidden sm:inline">High burn</span>
                 <span class="text-xs text-red-600/70 dark:text-red-400/70 hidden sm:block">Performance mode</span>
               </div>
             </div>

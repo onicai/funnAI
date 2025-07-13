@@ -9,7 +9,7 @@
   import TokenDistribution from "../components/dashboard/TokenDistribution.svelte";
 
   // Sample data 
-  $: totalMainers = 520; // This could come from store
+  $: totalMainers = 634; // This could come from store
   $: activeMainers = 462;
   $: totalRewards = 1250.50;
   $: totalCycles = 21246900000000;
@@ -39,9 +39,9 @@
           </div>
         </div>
         <div class="mt-2">
-          <p class="text-xs text-green-600 dark:text-green-400">
+          <!-- <p class="text-xs text-green-600 dark:text-green-400">
             {activeMainers} active
-          </p>
+          </p> -->
         </div>
       </div>
 
@@ -111,11 +111,13 @@
       <!-- Top Row: User mAIner Stats and Protocol Metrics -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="grid grid-cols-1 gap-6">
-            <TokenDistribution />
-            <MainerLeaderboard variant="user" maxItems={8} />
+          <ProtocolMetrics compact={false} />
+        </div>
+        <div class="grid grid-cols-1 gap-6">
+          <TokenDistribution />
+          <MainerLeaderboard variant="user" maxItems={8} />
         </div>
         
-        <ProtocolMetrics compact={false} />
       </div>
     </div>
   </div>
