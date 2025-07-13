@@ -264,7 +264,7 @@ dfx canister --network $NETWORK snapshot load $SUBNET_0_1_JUDGE         <snapsho
 
 --------------------------------------------------------
 
-# Update Challenger, ShareService & Judge LLMs
+# Update LLMs
 
 LLM updates or new additions can be done without pausing the protocol.
 
@@ -404,31 +404,10 @@ In these folders, the following files are used by dfx:
             NUM_LLMS_ROUND_ROBIN=...
         fi
         ```
-        
-## Upgrade an LLM
 
-An upgrade of the llama_cpp_canister code is simple. Just issue these commands:
+## LLMs - Upgrade, cleanup, configure & test
 
-```bash
-    NETWORK=prd
-
-    # remove the LLM from the protocol
-    LLM="<canister-id>"
-    # for Challenger
-    dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    remove_llm_canister "(record {canister_id = \"$LLM\"})"
-    # for ShareService
-    dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE remove_llm_canister "(record {canister_id = \"$LLM\"})"
-    # for Judge
-    dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         remove_llm_canister "(record {canister_id = \"$LLM\"})"
-
-    # then upgrade
-    # from folder: PoAIW/llms/xxx
-    dfx deploy   --network $NETWORK llm_<#> --mode upgrade
-```
-
-## Configure & test the LLM
-
-Issue these commands, while the LLM is still removed from the protocol:
+LLMs are upgraded & cleaned while they are offline.
 
 ```bash
     # set proper environment variables
@@ -447,15 +426,44 @@ Issue these commands, while the LLM is still removed from the protocol:
     # set the variables for the LLM you want to update
     llm=llm_<#>
     LLM="<canister-id>"
+
     # For Example:
     llm=llm_11
     LLM=$SUBNET_2_4_SHARE_SERVICE_LLM_11
-
+    echo "llm = $llm"
+    echo "LLM = $LLM"
+    #
+    # or:
+    llm=llm_15
+    LLM=$SUBNET_1_6_JUDGE_LLM_15
     echo "llm = $llm"
     echo "LLM = $LLM"
 
+    # Follow the logs
+    dfx canister --network $NETWORK logs $LLM --follow
+
+    # Remove the LLM from the protocol
+    # for Challenger
+    dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    remove_llm_canister "(record {canister_id = \"$LLM\"})"
+    # for ShareService
+    dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE remove_llm_canister "(record {canister_id = \"$LLM\"})"
+    # for Judge
+    dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         remove_llm_canister "(record {canister_id = \"$LLM\"})"
+
+    # then upgrade
     # from folder: PoAIW/llms/xxx
-    dfx canister --network $NETWORK logs $llm --follow
+    dfx canister --network $NETWORK status $llm | grep "Memory Size"
+    dfx canister --network $NETWORK stop $llm
+    dfx canister --network $NETWORK snapshot create $llm
+    dfx deploy   --network $NETWORK $llm --mode upgrade
+    dfx canister --network $NETWORK start $llm
+
+    # Cleanup the prompt cache files
+    # from folder: funnAI
+    scripts/cleanup_llm_promptcache.sh --network $NETWORK --canister-id $LLM
+
+    # Configure the LLM
+    # from folder: PoAIW/llms/xxx
     dfx canister --network $NETWORK call $llm health
     dfx canister --network $NETWORK call $llm load_model '(record { args = vec {"--model"; "models/model.gguf"} })'
     dfx canister --network $NETWORK call $llm set_max_tokens '(record { max_tokens_query = 13 : nat64; max_tokens_update = 13 : nat64 })'
@@ -463,56 +471,7 @@ Issue these commands, while the LLM is still removed from the protocol:
     dfx canister --network $NETWORK call $llm log_pause
     dfx canister --network $NETWORK call $llm chats_pause
 
-    # Status check: 
-    # Controllers: cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe (Patrick)
-    #              chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae (Arjaan)
-    #              jh35u-eqaaa-aaaag-abf3a-cai    (Wallet)
-    #              qmgdh-3aaaa-aaaaa-qanfq-cai    (Judge Controller)
-    #              2daxo-giaaa-aaaap-anvca-cai    (cycleops)
-    # Balance > 3T
-    dfx canister --network $NETWORK status $llm
-    dfx wallet   --network $NETWORK send   $LLM 2_000_000_000_000
-
-    # Test operations manually
-    dfx canister --network $NETWORK call $llm new_chat '(record {
-        args = vec {
-            "--prompt-cache"; "prompt.cache";
-            "--cache-type-k"; "q8_0";
-        }
-        })'
-
-    # Repeat until `prompt_remaining` is empty (3 calls)
-    dfx canister --network $NETWORK call $llm run_update '(record {
-        args = vec {
-            "--prompt-cache"; "prompt.cache"; "--prompt-cache-all";
-            "--cache-type-k"; "q8_0";
-            "--repeat-penalty"; "1.1";
-            "--temp"; "0.6";
-            "-sp";
-            "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n";
-            "-n"; "1"
-        }
-        })'
-
-    # Repeat twice (just cut it off before eog is reached)
-    dfx canister --network $NETWORK call $llm run_update '(record {
-        args = vec {
-            "--prompt-cache"; "prompt.cache"; "--prompt-cache-all";
-            "--cache-type-k"; "q8_0";
-            "--repeat-penalty"; "1.1";
-            "--temp"; "0.6";
-            "-sp";
-            "-p"; "";
-            "-n"; "512"
-        }
-        })'
-
-    # Explore file system
-    dfx canister --network $NETWORK call $llm recursive_dir_content '(record {dir = ".canister_cache"})'
-    dfx canister --network $NETWORK call $llm filesystem_remove     '(record {filename = ".canister_cache/chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae/sessions/prompt.cache"})'
-    dfx canister --network $NETWORK call $llm recursive_dir_content '(record {dir = ".canister_cache"})'
-
-    # Repeat prompt.cache creation, now cleanup with remove_prompt_cache function
+    # Test operations manually (Copy/Paste all commands at once...)
     dfx canister --network $NETWORK call $llm new_chat '(record {
         args = vec {
             "--prompt-cache"; "prompt.cache";
@@ -530,13 +489,18 @@ Issue these commands, while the LLM is still removed from the protocol:
             "-n"; "1"
         }
         })'
-    dfx canister --network $NETWORK call $llm recursive_dir_content '(record {dir = ".canister_cache"})'
+    dfx canister --network $NETWORK call $llm recursive_dir_content_query  '(record {dir = ".canister_cache"; max_entries = 0 : nat64})' --output json
     dfx canister --network $NETWORK call $llm remove_prompt_cache '(record {
         args = vec {
             "--prompt-cache"; "prompt.cache"
         }
         })'
-    dfx canister --network $NETWORK call $llm recursive_dir_content '(record {dir = ".canister_cache"})'
+    dfx canister --network $NETWORK call $llm recursive_dir_content_update  '(record {dir = ".canister_cache"; max_entries = 0 : nat64})' --output json
+    dfx canister --network $NETWORK call $llm filesystem_remove '(record {filename = ".canister_cache/chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae/sessions"})'
+    dfx canister --network $NETWORK call $llm filesystem_remove '(record {filename = ".canister_cache/chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"})'
+    dfx canister --network $NETWORK call $llm filesystem_remove '(record {filename = ".canister_cache"})'
+    dfx canister --network $NETWORK call $llm recursive_dir_content_query  '(record {dir = ".canister_cache"; max_entries = 0 : nat64})' --output json
+
 ```
 
 ## Add LLM to the protocol
@@ -547,6 +511,7 @@ Issue these commands, while the LLM is still removed from the protocol:
     # Add it to the Challenger ctrlb canister
     dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    get_llm_canisters --output json
     dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    add_llm_canister "(record {canister_id = \"$LLM\"})"
+    dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    get_llm_canisters --output json
 
     # update GameState cycle cost calculations
     dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numChallengerLlms
@@ -572,11 +537,22 @@ Issue these commands, while the LLM is still removed from the protocol:
 ```bash
     LLM="<canister-id>"
     # Add it to the Judge ctrlb canister
-    dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --output json
     dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    add_llm_canister "(record {canister_id = \"$LLM\"})"
+    dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --output json
 
     # update GameState cycle cost calculations
     dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numJudgeLlms
     NUM_LLMS_DEPLOYED=...
     dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numJudgeLlms = opt ($NUM_LLMS_DEPLOYED : nat);})" 
+```
+
+## Delete the snapshot
+
+```bash
+    LLM="<canister-id>"
+    # list & delete the snapshot
+    dfx canister --network $NETWORK snapshot list   $LLM
+    dfx canister --network $NETWORK snapshot delete $LLM     <snapshot-id>
+    # verify memory
+    dfx canister --network $NETWORK status $llm | grep "Memory Size"
 ```
