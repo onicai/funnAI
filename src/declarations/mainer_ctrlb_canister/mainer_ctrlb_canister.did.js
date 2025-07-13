@@ -260,6 +260,15 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : MainerTimers,
     'Err' : ApiError,
   });
+  const LlmCanistersRecord = IDL.Record({
+    'roundRobinUseAll' : IDL.Bool,
+    'roundRobinLLMs' : IDL.Nat,
+    'llmCanisterIds' : IDL.Vec(CanisterAddress),
+  });
+  const LlmCanistersRecordResult = IDL.Variant({
+    'Ok' : LlmCanistersRecord,
+    'Err' : ApiError,
+  });
   const AuthRecord = IDL.Record({ 'auth' : IDL.Text });
   const AuthRecordResult = IDL.Variant({ 'Ok' : AuthRecord, 'Err' : ApiError });
   const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
@@ -338,9 +347,16 @@ export const idlFactory = ({ IDL }) => {
         [MainerTimersResult],
         ['query'],
       ),
+    'get_llm_canisters' : IDL.Func([], [LlmCanistersRecordResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
     'ready' : IDL.Func([], [StatusCodeRecordResult], []),
+    'remove_llm_canister' : IDL.Func(
+        [CanisterIDRecord],
+        [StatusCodeRecordResult],
+        [],
+      ),
     'resetChallengeQueueAdmin' : IDL.Func([], [StatusCodeRecordResult], []),
+    'resetRoundRobinLLMs' : IDL.Func([], [StatusCodeRecordResult], []),
     'reset_llm_canisters' : IDL.Func([], [StatusCodeRecordResult], []),
     'setGameStateCanisterId' : IDL.Func(
         [IDL.Text],

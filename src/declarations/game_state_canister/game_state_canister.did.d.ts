@@ -473,6 +473,7 @@ export interface GameStateCanister {
     [DeriveWasmHashInput],
     CanisterWasmHashRecordResult
   >,
+  'disburseIcpToTreasuryAdmin' : ActorMethod<[], AuthRecordResult>,
   'downloadJudgePromptCacheBytesChunk' : ActorMethod<
     [DownloadJudgePromptCacheBytesChunkInput],
     DownloadJudgePromptCacheBytesChunkRecordResult
@@ -500,6 +501,7 @@ export interface GameStateCanister {
     CyclesBurnRateResult
   >,
   'getCyclesFlowAdmin' : ActorMethod<[], CyclesFlowResult>,
+  'getDisburseFundsToTreasuryFlag' : ActorMethod<[], FlagResult>,
   'getGameStateThresholdsAdmin' : ActorMethod<[], GameStateTresholdsResult>,
   'getIsWhitelistPhaseActive' : ActorMethod<[], FlagResult>,
   'getJudgePromptInfo' : ActorMethod<[string], JudgePromptInfoResult>,
@@ -519,6 +521,7 @@ export interface GameStateCanister {
   >,
   'getMainerCyclesUsedPerResponse' : ActorMethod<[], NatResult>,
   'getMainerPromptInfo' : ActorMethod<[string], MainerPromptInfoResult>,
+  'getMinimumIcpBalance' : ActorMethod<[], NatResult>,
   'getNextSubmissionToJudge' : ActorMethod<
     [],
     ChallengeResponseSubmissionResult
@@ -559,6 +562,10 @@ export interface GameStateCanister {
     [PaymentTransactionBlockId],
     RedeemedTransactionBlockResult
   >,
+  'getRedeemedTransactionBlocksAdmin' : ActorMethod<
+    [],
+    RedeemedTransactionBlocksResult
+  >,
   'getRewardPerChallengeAdmin' : ActorMethod<[], RewardPerChallengeResult>,
   'getScoreForSubmission' : ActorMethod<
     [SubmissionRetrievalInput],
@@ -571,6 +578,7 @@ export interface GameStateCanister {
   >,
   'getSubmissionsAdmin' : ActorMethod<[], ChallengeResponseSubmissionsResult>,
   'getSubnetsAdmin' : ActorMethod<[], SubnetIdsResult>,
+  'getTreasuryCanisterId' : ActorMethod<[], string>,
   'getWhitelistPriceForOwnMainer' : ActorMethod<[], PriceResult>,
   'getWhitelistPriceForShareAgent' : ActorMethod<[], PriceResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
@@ -618,6 +626,7 @@ export interface GameStateCanister {
     [MainerLimitInput],
     AuthRecordResult
   >,
+  'setMinimumIcpBalance' : ActorMethod<[bigint], AuthRecordResult>,
   'setOfficialMainerAgentCanisterWasmHashAdmin' : ActorMethod<
     [UpdateWasmHashInput],
     CanisterWasmHashRecordResult
@@ -629,6 +638,7 @@ export interface GameStateCanister {
   >,
   'setSubnetsAdmin' : ActorMethod<[SubnetIds], StatusCodeRecordResult>,
   'setTokenLedgerCanisterId' : ActorMethod<[string], AuthRecordResult>,
+  'setTreasuryCanisterId' : ActorMethod<[string], AuthRecordResult>,
   'setUpMainerLlmCanister' : ActorMethod<
     [OfficialMainerAgentCanister],
     SetUpMainerLlmCanisterResult
@@ -659,6 +669,7 @@ export interface GameStateCanister {
   >,
   'testMainerCodeIntegrityAdmin' : ActorMethod<[], AuthRecordResult>,
   'testTokenMintingAdmin' : ActorMethod<[], AuthRecordResult>,
+  'toggleDisburseFundsToTreasuryFlagAdmin' : ActorMethod<[], AuthRecordResult>,
   'togglePauseProtocolFlagAdmin' : ActorMethod<[], AuthRecordResult>,
   'togglePauseWhitelistMainerCreationFlagAdmin' : ActorMethod<
     [],
@@ -826,6 +837,10 @@ export interface RedeemedTransactionBlock {
 }
 export type RedeemedTransactionBlockResult = {
     'Ok' : RedeemedTransactionBlock
+  } |
+  { 'Err' : ApiError };
+export type RedeemedTransactionBlocksResult = {
+    'Ok' : Array<RedeemedTransactionBlock>
   } |
   { 'Err' : ApiError };
 export interface RewardPerChallenge {

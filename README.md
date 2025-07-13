@@ -19,11 +19,12 @@ NETWORK=testing  # [local|ic|development|testing|demo|prd]
 # - mainers : 'scripts/canister_ids_mainers-<network>.env'
 pip install -r scripts/requirements.txt
 # Update the file 'scripts/canister_ids_mainers-<network>.env'
-scripts/get_mainers.sh --network $NETWORK
+scripts/get_mainers.sh --network $NETWORK --user <principal>
 # Then run these
 scripts/monitor_logs.sh --network $NETWORK --canister-types [all|protocol|mainers]
 scripts/monitor_gamestate_metrics.sh --network $NETWORK 
 scripts/monitor_gamestate_logs.sh --network $NETWORK 
+scripts/monitor_memory.sh --network $NETWORK --canister-types [all|protocol|mainers]
 scripts/monitor_balance.sh --network $NETWORK --canister-types [all|protocol|mainers]
 scripts/list_controllers.sh --network $NETWORK --canister-types [all|protocol|mainers]
 scripts/add_controllers.sh --network $NETWORK --canister-types [all|protocol|mainers]
@@ -33,9 +34,11 @@ scripts/stop_timers.sh --network $NETWORK --canister-types [all|protocol|mainers
 scripts/update_mainer_burnrates.sh --network $NETWORK --burnrate [Low|Mid|High|VeryHigh]
 scripts/topup.sh --network $NETWORK --canister-types [all|protocol|mainers] --tc <TCycles>
 
-# WHITELIST SCRIPTS
-pip install -r scripts/requirements.txt
-scripts/scripts_whitelist/whitelist_charles.sh
+# Admin Maintenance scripts
+# See PoAIW/src/ArchivedChallenges/README.md how to migrate Archived challenges
+# Then, after each migration, run this script to cleanup the prompt cache files from the LLMs
+scripts/cleanup_llm_promptcache.sh --network $NETWORK --llm-type judge
+scripts/cleanup_llm_promptcache.sh --network $NETWORK --llm-type share_service
 
 # When running local
 # We are using dfx deps for:
@@ -306,9 +309,9 @@ dfx canister call game_state_canister getGameStateThresholdsAdmin --output json 
 
 dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdArchiveClosedChallenges = 150 : nat;
-        thresholdMaxOpenChallenges= 6 : nat;
+        thresholdMaxOpenChallenges= 5 : nat;
         thresholdMaxOpenSubmissions = 140 : nat;
-        thresholdScoredResponsesPerChallenge = 24 : nat;
+        thresholdScoredResponsesPerChallenge = 33 : nat;
     }
 )' --network $NETWORK
 ```
