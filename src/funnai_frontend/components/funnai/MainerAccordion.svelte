@@ -992,7 +992,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
                 </svg>
             </span>
-            <h3 class="font-medium leading-tight mb-3 dark:text-gray-300">AI Agent Type</h3>
+            <h3 class="font-medium leading-tight mb-3 dark:text-gray-300">AI Agent type</h3>
             
             <!-- Modern Agent Type Selector -->
             <div class="space-y-3 mb-2">
@@ -1082,7 +1082,7 @@
                   <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>
                 {/if}
             </span>
-            <h3 class="font-medium leading-tight mb-1 dark:text-gray-300">Pay & Spin up</h3>
+            <h3 class="font-medium leading-tight dark:text-gray-300">Create Agent</h3>
         </li>
       </ol>
 
@@ -1729,8 +1729,8 @@
         <div class="relative flex items-center py-3 sm:py-4 px-4 sm:px-6">
           <!-- Left section: Avatar and Info -->
           <div class="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
-            <!-- Unique avatar with visual identity -->
-            <div class="relative flex-shrink-0">
+            <!-- Unique avatar with visual identity and name -->
+            <div class="relative flex-shrink-0 flex flex-col items-center">
               <!-- Avatar container with glow effect -->
               <div class="w-12 h-12 sm:w-16 sm:h-16 {identity.colors.accent} backdrop-blur-sm rounded-xl shadow-lg flex items-center justify-center border-2 border-white/20 group-hover:scale-105 transition-transform duration-300">
                 <div class="w-6 h-6 sm:w-8 sm:h-8 {identity.colors.icon}">
@@ -1738,29 +1738,28 @@
                 </div>
               </div>
               
-                             <!-- mAIner number badge -->
-               <div class="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center border-2 border-white/50">
-                 <span class="text-xs sm:text-sm font-bold text-gray-800">#{totalMainers - index}</span>
-               </div>
+              <!-- mAIner number badge -->
+              <div class="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center border-2 border-white/50">
+                <span class="text-xs sm:text-sm font-bold text-gray-800">#{totalMainers - index}</span>
+              </div>
               
-              <!-- Status indicator dot -->
+              <!-- Status indicator dot 
               <div class="absolute -bottom-1 -left-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-white shadow-lg flex items-center justify-center">
                 <div class={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${agent.status === 'active' ? 'bg-green-400' : 'bg-red-400'} animate-pulse`}></div>
+              </div>
+              -->
+              
+              <!-- Agent name integrated with avatar -->
+              <div class="mt-1 px-2 py-0.5 bg-white/80 backdrop-blur-sm rounded-md shadow-sm border border-white/40 max-w-[80px] sm:max-w-[100px]">
+                <span class="text-xs font-bold text-gray-800 truncate block text-center">
+                  {agent.name.replace('mAIner ', '')}
+                </span>
               </div>
             </div>
             
             <!-- mAIner info -->
             <div class="flex flex-col items-start min-w-0 flex-1">
-                             <div class="flex items-center space-x-2 mb-1">
-                 <h3 class="font-bold text-base sm:text-lg {identity.colors.text} truncate">
-                   {agent.name}
-                 </h3>
-                <!-- <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-white/20 {identity.colors.text} backdrop-blur-sm">
-                  {agent.mainerType}
-                </span> -->
-              </div>
-              
-              <div class="flex flex-wrap items-center gap-1 sm:gap-2">
+              <div class="flex flex-wrap items-center gap-1 sm:gap-2 mb-1">
                 <!-- Status badge -->
                 <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm border ${agent.status === 'active' 
                   ? 'bg-green-100/80 text-green-800 border-green-300/50' 
@@ -1810,12 +1809,12 @@
                 {/if}
               </div>
               
-              <!-- Canister ID preview -->
-              <div class="text-xs {identity.colors.text} opacity-75 truncate max-w-full mt-1 font-mono">
-                ID: {agent.id.slice(0, 8)}...{agent.id.slice(-6)}
+              <!-- Cycles Balance preview -->
+              <div class="text-sm {identity.colors.text} opacity-80 truncate max-w-full mt-1">
+                {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 2, false)} TCYCLES
               </div>
               {#if agent.createdAt}
-                <div class="text-xs {identity.colors.text} opacity-60 mt-0.5">
+                <div class="text-xs {identity.colors.text} opacity-60">
                   Created: {formatDate(agent.createdAt)}
                 </div>
               {/if}
