@@ -10,7 +10,7 @@
   import { WalletDataService } from "../../helpers/WalletDataService";
   import BigNumber from "bignumber.js";
 
-  export let title: string = "Token distribution";
+  export let title: string = "Token economics";
 
   let loading = true;
   let error = "";
