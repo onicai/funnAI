@@ -7,7 +7,6 @@
 
 # Default network type is local
 NETWORK_TYPE="local"
-LLM_TYPE="all"
 
 # Parse command line arguments for network type
 while [ $# -gt 0 ]; do
@@ -22,25 +21,20 @@ while [ $# -gt 0 ]; do
             fi
             shift
             ;;
-        --llm-type)
+        --canister-id)
             shift
-            if [ "$1" = "all" ] || [ "$1" = "judge" ] || [ "$1" = "share_service" ]; then
-                LLM_TYPE=$1
-            else
-                echo "Invalid --llm-type: $1. Use 'all' or 'challenger' or 'judge' or 'share_service'."
-                exit 1
-            fi
+            CANISTER_ID=$1
             shift
             ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--llm-type [all|judge|share_service]]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--llm-type [challenger|judge|share_service]] --canister-id <canister_id>"
             exit 1
             ;;
     esac
 done
 
 echo "Using network type: $NETWORK_TYPE"
-echo "Using cache type: $LLM_TYPE"
+echo "Using CANISTER_ID: $CANISTER_ID"
 
-python -m scripts.cleanup_llm_promptcache --network $NETWORK_TYPE --llm-type $LLM_TYPE
+python -m scripts.cleanup_llm_promptcache --network $NETWORK_TYPE --canister-id $CANISTER_ID
