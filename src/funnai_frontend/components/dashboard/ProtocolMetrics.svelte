@@ -4,7 +4,7 @@
   import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
   import Countdown from "../_widgets/Countdown.svelte";
 
-  export let title: string = "Protocol Metrics";
+  export let title: string = "Protocol metrics";
   export let compact: boolean = false;
 
   let loading = true;

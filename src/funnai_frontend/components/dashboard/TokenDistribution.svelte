@@ -3,8 +3,10 @@
   import { store } from "../../stores/store";
   import { formatFunnaiAmount, formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
   import { fetchTokens } from "../../helpers/token_helpers";
+  import { walletDataStore } from "../../helpers/WalletDataService";
+  import { formatBalance } from "../../helpers/utils/numberFormatUtils";
 
-  export let title: string = "Token Distribution";
+  export let title: string = "Token distribution";
 
   let loading = true;
   let error = "";
@@ -19,19 +21,28 @@
   let marketCap = "1177191.2";
 
   // User data
-  let userBalance = 122;
+  let userBalance = 0;
+  let funnaiToken: FE.Token | null = null;
+
+  // Subscribe to wallet data store
+  let walletData;
+  walletDataStore.subscribe((value) => walletData = value);
 
   $: isAuthenticated = $store.isAuthed;
+
+  // FUNNAI token canister ID from token_helpers.ts
+  const FUNNAI_CANISTER_ID = "vpyot-zqaaa-aaaaa-qavaq-cai";
 
   async function loadTokenData() {
     try {
       // Get FUNNAI token info
       const tokensResult = await fetchTokens({});
-      const funnaiToken = tokensResult.tokens.find(token => token.symbol === "FUNNAI");
+      const foundFunnaiToken = tokensResult.tokens.find(token => token.symbol === "FUNNAI");
       
-      if (funnaiToken) {
-        totalSupply = funnaiToken.metrics?.total_supply || "2,616,204";
-        const apiPrice = funnaiToken.metrics?.price;
+      if (foundFunnaiToken) {
+        funnaiToken = foundFunnaiToken;
+        totalSupply = foundFunnaiToken.metrics?.total_supply || "2,616,204";
+        const apiPrice = foundFunnaiToken.metrics?.price;
         tokenPrice = apiPrice && parseFloat(apiPrice) > 0 ? parseFloat(apiPrice) : 0.45;
         
         // Calculate market cap
@@ -47,9 +58,7 @@
 
       // Get user balance if authenticated
       if (isAuthenticated && $store.principal) {
-        // This would require calling the FUNNAI token canister
-        // For now, we'll use placeholder data
-        userBalance = 125; // Realistic small token amount
+        updateUserBalance();
       }
 
       // For protocol balance and distribution data, we would need to:
@@ -63,11 +72,28 @@
       protocolBalance = (totalSupplyNum * 0.20).toLocaleString();
       burnedTokens = (totalSupplyNum * 0.05).toLocaleString();
 
-
-
     } catch (err) {
       console.error("Error loading token data:", err);
       error = "Failed to load token distribution data";
+    }
+  }
+
+  function updateUserBalance() {
+    if (!isAuthenticated || !$store.principal || !walletData) {
+      userBalance = 0;
+      return;
+    }
+
+    // Get FUNNAI balance from wallet data
+    const funnaiBalance = walletData.balances[FUNNAI_CANISTER_ID];
+    
+    if (funnaiBalance && funnaiBalance.in_tokens) {
+      // Convert bigint balance to number using formatBalance and the token's decimals
+      const decimals = funnaiToken?.decimals || 8;
+      const formattedBalance = formatBalance(funnaiBalance.in_tokens.toString(), decimals);
+      userBalance = parseFloat(formattedBalance.replace(/,/g, ''));
+    } else {
+      userBalance = 0;
     }
   }
 
@@ -103,7 +129,10 @@
     updateTokenData();
   }
 
-
+  // React to wallet data changes to update user balance
+  $: if (walletData && walletData.balances) {
+    updateUserBalance();
+  }
 </script>
 
 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -116,7 +145,7 @@
         <div class="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
       {/if}
       <span class="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
-        FUNNAI
+        $FUNNAI
       </span>
     </div>
   </div>
@@ -150,7 +179,7 @@
     <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6">
       <div class="flex items-center justify-between">
         <div class="flex-1">
-          <div class="text-sm text-gray-600 dark:text-gray-400">Your Balance</div>
+          <div class="text-sm text-gray-600 dark:text-gray-400">Your balance</div>
           <div class="text-xl font-bold text-gray-900 dark:text-white">
             {userBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 8 })} FUNNAI
           </div>
