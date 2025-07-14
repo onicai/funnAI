@@ -175,6 +175,13 @@ export type CyclesBurnRateDefault = { 'Low' : null } |
 export interface IssueFlagsRecord { 'lowCycleBalance' : boolean }
 export type IssueFlagsRetrievalResult = { 'Ok' : IssueFlagsRecord } |
   { 'Err' : ApiError };
+export interface LlmCanistersRecord {
+  'roundRobinUseAll' : boolean,
+  'roundRobinLLMs' : bigint,
+  'llmCanisterIds' : Array<CanisterAddress>,
+}
+export type LlmCanistersRecordResult = { 'Ok' : LlmCanistersRecord } |
+  { 'Err' : ApiError };
 export type LlmSetupStatus = { 'CodeInstallInProgress' : null } |
   { 'CanisterCreated' : null } |
   { 'ConfigurationInProgress' : null } |
@@ -230,9 +237,15 @@ export interface MainerAgentCtrlbCanister {
     [],
     MainerTimersResult
   >,
+  'get_llm_canisters' : ActorMethod<[], LlmCanistersRecordResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
   'ready' : ActorMethod<[], StatusCodeRecordResult>,
+  'remove_llm_canister' : ActorMethod<
+    [CanisterIDRecord],
+    StatusCodeRecordResult
+  >,
   'resetChallengeQueueAdmin' : ActorMethod<[], StatusCodeRecordResult>,
+  'resetRoundRobinLLMs' : ActorMethod<[], StatusCodeRecordResult>,
   'reset_llm_canisters' : ActorMethod<[], StatusCodeRecordResult>,
   'setGameStateCanisterId' : ActorMethod<[string], StatusCodeRecordResult>,
   'setMainerCanisterType' : ActorMethod<

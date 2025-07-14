@@ -91,9 +91,12 @@ type MainerAgentCtrlbCanister =
    getSubmittedResponsesAdmin: () ->
     (ChallengeResponseSubmissionsResult) query;
    getTimerActionRegularityInSecondsAdmin: () -> (MainerTimersResult) query;
+   get_llm_canisters: () -> (LlmCanistersRecordResult) query;
    health: () -> (StatusCodeRecordResult) query;
    ready: () -> (StatusCodeRecordResult);
+   remove_llm_canister: (CanisterIDRecord) -> (StatusCodeRecordResult);
    resetChallengeQueueAdmin: () -> (StatusCodeRecordResult);
+   resetRoundRobinLLMs: () -> (StatusCodeRecordResult);
    reset_llm_canisters: () -> (StatusCodeRecordResult);
    setGameStateCanisterId: (text) -> (StatusCodeRecordResult);
    setMainerCanisterType: (MainerAgentCanisterType) ->
@@ -133,6 +136,17 @@ type LlmSetupStatus =
    CodeInstallInProgress;
    ConfigurationInProgress;
    ModelUploadProgress: nat8;
+ };
+type LlmCanistersRecordResult = 
+ variant {
+   Err: ApiError;
+   Ok: LlmCanistersRecord;
+ };
+type LlmCanistersRecord = 
+ record {
+   llmCanisterIds: vec CanisterAddress;
+   roundRobinLLMs: nat;
+   roundRobinUseAll: bool;
  };
 type IssueFlagsRetrievalResult = 
  variant {
