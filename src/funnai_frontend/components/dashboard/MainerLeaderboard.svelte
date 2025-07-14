@@ -3,7 +3,7 @@
   import { store } from "../../stores/store";
   import { formatFunnaiAmount, formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
 
-  export let title: string = "mAIner Leaderboard";
+  export let title: string = "My mAIners leaderboard";
   export let maxItems: number = 10;
   export let variant: "user" | "global" = "user";
 
@@ -96,7 +96,7 @@
       }
 
       const mainerId = canisterInfo.address;
-      const mainerName = `mAIner ${mainerId?.slice(0, 5) || 'Unknown'}`;
+              const mainerName = `${mainerId?.slice(0, 5) || 'Unknown'}`;
 
       let totalSubmissions = 0;
       let recentSubmissions = 0;
@@ -381,19 +381,5 @@
         </tbody>
       </table>
     </div>
-
-    {#if leaderboardData.length > 0}
-      <div class="mt-4 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-3">
-        <p class="mb-1">
-          <strong>Ranking:</strong> Sorted by winnings, then average score, then total submissions
-        </p>
-        <p class="mb-1">
-          <strong>Winnings:</strong> Total FUNNAI tokens earned from challenge placements
-        </p>
-        <p>
-          <strong>Recent:</strong> Submissions from last few challenges • <strong>Avg/Best Score:</strong> From recent scored submissions
-        </p>
-      </div>
-    {/if}
   {/if}
 </div> 

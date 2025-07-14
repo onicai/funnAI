@@ -303,7 +303,7 @@
       <div class="text-sm text-gray-600 dark:text-gray-400">Price</div>
       {#if priceChange24h && priceChange24h !== "0"}
         <div class="text-xs {getPriceChangeColor(priceChange24h)} mt-1">
-          {formatPriceChange(priceChange24h)}
+          {formatPriceChange(priceChange24h)} (24h)
         </div>
       {/if}
     </div>
