@@ -171,7 +171,7 @@
         <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
           {formatLargeNumber(totalCyclesBurned)}
         </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Total Cycles Burned</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400">Total cycles burned</div>
         <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">All mAIners</div>
       </div>
       
@@ -194,7 +194,7 @@
 
     <!-- Reward Structure Section -->
     <div class="flex items-center my-6">
-      <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mr-4">Reward Structure</span>
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mr-4">Reward structure</span>
       <div class="flex-1 h-px bg-gradient-to-r from-gray-300 to-transparent dark:from-gray-600 dark:to-transparent"></div>
     </div>
 
@@ -205,6 +205,20 @@
         </div>
         <div class="text-sm text-gray-600 dark:text-gray-400">FUNNAI</div>
         <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Reward per challenge</div>
+      </div>
+      <div class="text-center p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg">
+        <div class="text-2xl font-bold text-pink-600 dark:text-pink-400">
+          10
+        </div>
+        <div class="text-sm text-gray-600 dark:text-gray-400">Minutes</div>
+        <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Challenge per interval</div>
+      </div>
+      <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+        <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">
+          45%
+        </div>
+        <div class="text-sm text-gray-600 dark:text-gray-400">All participants</div>
+        <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Shared equally</div>
       </div>
 
       <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
@@ -226,23 +240,19 @@
         </div>
         <div class="text-sm text-gray-600 dark:text-gray-400">3rd place</div>
       </div>
-      <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-        <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">
-          45%
-        </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">All participants</div>
-        <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Shared equally</div>
-      </div>
+      
     </div>
 
     <!-- Next Reward Decrease Section -->
     <div class="flex items-center my-6">
-      <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mr-4">Next Reward Decrease</span>
+      <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mr-4">Next reward decrease</span>
       <div class="flex-1 h-px bg-gradient-to-r from-gray-300 to-transparent dark:from-gray-600 dark:to-transparent"></div>
     </div>
       
     <div class="text-center p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
       <div class="flex flex-col items-center space-y-2">
+        <div class="text-sm text-gray-500 dark:text-gray-500 mt-1">Sep 28th, 2025</div>
+      
         <div class="text-xl font-bold text-red-600 dark:text-red-400 mt-4">
           <Countdown 
             targetDate="2025-09-28" 
@@ -250,8 +260,8 @@
             className="text-red-600 dark:text-red-400"
           />
         </div>
-        <div class="text-lg text-gray-600 dark:text-gray-400">Until rewards decrease</div>
-        <div class="text-sm text-gray-500 dark:text-gray-500 mt-1">Sep 28th, 2025</div>
+        <div class="text-lg text-gray-600 dark:text-gray-500">until rewards decrease</div>
+
       </div>
     </div>
   {/if}

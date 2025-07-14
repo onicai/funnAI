@@ -83,7 +83,7 @@
             <span class="text-base sm:text-lg font-bold text-gray-600 dark:text-gray-400 lg:order-1 lg:text-xl lg:mb-1">{inactiveMainers}</span>
             
             <div class="flex items-center space-x-1.5 sm:space-x-2 lg:order-2">
-              <div class="w-5 h-5 sm:w-6 sm:h-6 bg-gray-100 dark:bg-gray-800/60 rounded-md flex items-center justify-center">
+              <div class="w-5 h-5 sm:w-6 sm:h-6 bg-gray-100 dark:bg-gray-600/60 rounded-md flex items-center justify-center">
                 <div class="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gray-400 rounded-full"></div>
               </div>
               <div class="flex flex-col">
