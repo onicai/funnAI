@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import { store } from "../../stores/store";
   import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
+  import Countdown from "../_widgets/Countdown.svelte";
 
   export let title: string = "Protocol Metrics";
   export let compact: boolean = false;
@@ -165,7 +166,7 @@
     </div>
   {:else}
     <!-- Full view -->
-    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 gap-4 mb-6">
       <div class="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
         <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
           {formatLargeNumber(totalCyclesBurned)}
@@ -174,7 +175,7 @@
         <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">All mAIners</div>
       </div>
       
-      <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+      <!-- <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
         <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">
           {totalChallenges}
         </div>
@@ -188,7 +189,7 @@
         </div>
         <div class="text-sm text-gray-600 dark:text-gray-400">Total submissions</div>
         <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">All time</div>
-      </div>
+      </div> -->
     </div>
 
     <!-- Reward Structure Section -->
@@ -241,10 +242,17 @@
     </div>
       
     <div class="text-center p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
-      <div class="text-xl font-bold text-red-600 dark:text-red-400">
-        Sep 28th, 2025
+      <div class="flex flex-col items-center space-y-2">
+        <div class="text-xl font-bold text-red-600 dark:text-red-400 mt-4">
+          <Countdown 
+            targetDate="2025-09-28" 
+            format="detailed"
+            className="text-red-600 dark:text-red-400"
+          />
+        </div>
+        <div class="text-lg text-gray-600 dark:text-gray-400">Until rewards decrease</div>
+        <div class="text-sm text-gray-500 dark:text-gray-500 mt-1">Sep 28th, 2025</div>
       </div>
-      <div class="text-sm text-gray-600 dark:text-gray-400">Rewards decrease</div>
     </div>
   {/if}
 </div> 
