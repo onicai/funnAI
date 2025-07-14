@@ -5,6 +5,9 @@
   import { fetchTokens } from "../../helpers/token_helpers";
   import { walletDataStore } from "../../helpers/WalletDataService";
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
+  import ICPSwapService, { type ICPSwapTokenData } from "../../helpers/icpswapService";
+  import { IcrcService } from "../../helpers/IcrcService";
+  import BigNumber from "bignumber.js";
 
   export let title: string = "Token distribution";
 
@@ -13,16 +16,20 @@
   let updateInterval: NodeJS.Timer;
 
   // Token metrics
-  let totalSupply = "2,616,204";
+  let totalSupply = "210,992"; // Default fallback value (same as Dashboard.svelte)
   let circulatingSupply = "0";
   let protocolBalance = "0";
   let burnedTokens = "0";
   let tokenPrice = 0.45;
   let marketCap = "1177191.2";
+  let priceChange24h = "0";
+  let isLoadingSupply = false;
+  let supplyError = "";
 
   // User data
   let userBalance = 0;
   let funnaiToken: FE.Token | null = null;
+  let icpswapData: ICPSwapTokenData | null = null;
 
   // Subscribe to wallet data store
   let walletData;
@@ -33,41 +40,105 @@
   // FUNNAI token canister ID from token_helpers.ts
   const FUNNAI_CANISTER_ID = "vpyot-zqaaa-aaaaa-qavaq-cai";
 
+  // Format total supply properly (convert from smallest units to whole tokens)
+  function formatTotalSupply(rawAmount: bigint, decimals: number): string {
+    try {
+      // Use BigNumber for precise calculations
+      const rawBN = new BigNumber(rawAmount.toString());
+      const divisor = new BigNumber(10).pow(decimals);
+      const tokenAmount = rawBN.dividedBy(divisor);
+      
+      // Round down to whole tokens and format with thousands separators
+      return tokenAmount.integerValue(BigNumber.ROUND_DOWN).toFormat(0);
+    } catch (error) {
+      console.error("Error formatting total supply:", error);
+      return "0";
+    }
+  }
+
+  async function loadICPSwapData() {
+    try {
+      console.log("Fetching FUNNAI data from ICPSwap...");
+      const data = await ICPSwapService.fetchTokenData(FUNNAI_CANISTER_ID);
+      
+      if (data) {
+        icpswapData = data;
+        
+        // Update token metrics with ICPSwap data
+        if (data.priceUSD > 0) {
+          tokenPrice = data.priceUSD;
+        }
+        
+        // Don't use ICPSwap totalSupply - we get real supply from canister
+        
+                 // Always calculate market cap using current supply × price
+         // Don't use ICPSwap's TVL as it's different from market cap
+         
+         priceChange24h = data.priceChange24h;
+        
+                 console.log("ICPSwap data loaded successfully:", {
+           price: data.priceUSD,
+           priceChange24h: data.priceChange24h
+         });
+      } else {
+        console.warn("No data received from ICPSwap, using fallback values");
+      }
+    } catch (err) {
+      console.error("Error loading ICPSwap data:", err);
+      // Continue with fallback values - don't throw error
+    }
+  }
+
   async function loadTokenData() {
     try {
-      // Get FUNNAI token info
+      // Get FUNNAI token info from local source first
       const tokensResult = await fetchTokens({});
       const foundFunnaiToken = tokensResult.tokens.find(token => token.symbol === "FUNNAI");
       
       if (foundFunnaiToken) {
         funnaiToken = foundFunnaiToken;
-        totalSupply = foundFunnaiToken.metrics?.total_supply || "2,616,204";
-        const apiPrice = foundFunnaiToken.metrics?.price;
-        tokenPrice = apiPrice && parseFloat(apiPrice) > 0 ? parseFloat(apiPrice) : 0.45;
         
-        // Calculate market cap
-        const totalSupplyNum = parseFloat(totalSupply.replace(/,/g, ''));
-        marketCap = (totalSupplyNum * tokenPrice).toFixed(2);
-      } else {
-        // Fallback values when token data is not available
-        totalSupply = "2,616,204";
-        tokenPrice = 0.45;
-        const totalSupplyNum = parseFloat(totalSupply.replace(/,/g, ''));
-        marketCap = (totalSupplyNum * tokenPrice).toFixed(2);
+        // Fetch real total supply from canister (same as Dashboard.svelte)
+        try {
+          isLoadingSupply = true;
+          supplyError = "";
+          
+          const totalSupplyBigInt = await IcrcService.getIcrc1TotalSupply(foundFunnaiToken);
+          totalSupply = formatTotalSupply(totalSupplyBigInt, foundFunnaiToken.decimals);
+          
+        } catch (supplyErr) {
+          console.error("Error loading total supply:", supplyErr);
+          supplyError = supplyErr.message || "Failed to load supply";
+          // Keep the fallback value "210,992"
+        } finally {
+          isLoadingSupply = false;
+        }
+        
+        // Get price from local data as fallback
+        const apiPrice = foundFunnaiToken.metrics?.price;
+        if (apiPrice && parseFloat(apiPrice) > 0) {
+          tokenPrice = parseFloat(apiPrice);
+        }
       }
+
+      // Try to fetch real-time data from ICPSwap
+      await loadICPSwapData();
+
+      // If we still don't have good price data, use fallback
+      if (tokenPrice <= 0) {
+        tokenPrice = 0.45;
+      }
+
+      // Always calculate market cap using real total supply × current price
+      const totalSupplyNum = parseFloat(totalSupply.replace(/,/g, ''));
+      marketCap = (totalSupplyNum * tokenPrice).toFixed(2);
 
       // Get user balance if authenticated
       if (isAuthenticated && $store.principal) {
         updateUserBalance();
       }
 
-      // For protocol balance and distribution data, we would need to:
-      // 1. Query the FUNNAI token canister for balances
-      // 2. Get protocol rewards distributed
-      // 3. Calculate circulating vs locked supply
-      
       // Calculate realistic distribution values
-      const totalSupplyNum = parseFloat(totalSupply.replace(/,/g, ''));
       circulatingSupply = (totalSupplyNum * 0.75).toLocaleString();
       protocolBalance = (totalSupplyNum * 0.20).toLocaleString();
       burnedTokens = (totalSupplyNum * 0.05).toLocaleString();
@@ -75,6 +146,12 @@
     } catch (err) {
       console.error("Error loading token data:", err);
       error = "Failed to load token distribution data";
+      
+      // Set fallback values on error
+      totalSupply = "210,992";
+      tokenPrice = 0.45;
+      const totalSupplyNum = parseFloat(totalSupply.replace(/,/g, ''));
+      marketCap = (totalSupplyNum * tokenPrice).toFixed(2);
     }
   }
 
@@ -111,11 +188,25 @@
     }
   }
 
+  function formatPriceChange(change: string): string {
+    const num = parseFloat(change);
+    if (isNaN(num)) return "0.00%";
+    return `${num > 0 ? '+' : ''}${num.toFixed(2)}%`;
+  }
+
+  function getPriceChangeColor(change: string): string {
+    const num = parseFloat(change);
+    if (isNaN(num)) return "text-gray-600 dark:text-gray-400";
+    if (num > 0) return "text-green-600 dark:text-green-400";
+    if (num < 0) return "text-red-600 dark:text-red-400";
+    return "text-gray-600 dark:text-gray-400";
+  }
+
   onMount(async () => {
     await updateTokenData();
     
-    // Update token data every 60 seconds
-    updateInterval = setInterval(updateTokenData, 60000);
+    // Update token data every 2 minutes (ICPSwap data is cached for 1 minute)
+    updateInterval = setInterval(updateTokenData, 120000);
   });
 
   onDestroy(() => {
@@ -147,6 +238,11 @@
       <span class="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
         $FUNNAI
       </span>
+      {#if icpswapData}
+        <span class="text-xs text-green-600 dark:text-green-400 px-2 py-1 bg-green-50 dark:bg-green-900/20 rounded">
+          Live
+        </span>
+      {/if}
     </div>
   </div>
 
@@ -164,6 +260,11 @@
         ${tokenPrice.toFixed(4)}
       </div>
       <div class="text-sm text-gray-600 dark:text-gray-400">Price</div>
+      {#if priceChange24h && priceChange24h !== "0"}
+        <div class="text-xs {getPriceChangeColor(priceChange24h)} mt-1">
+          {formatPriceChange(priceChange24h)}
+        </div>
+      {/if}
     </div>
     
     <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
@@ -192,5 +293,13 @@
     </div>
   {/if}
 
+  <!-- Data Source Info -->
+  <div class="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
+    {#if icpswapData}
+      Data from ICPSwap • Last updated: {new Date(icpswapData.lastUpdated).toLocaleTimeString()}
+    {:else}
+      Using fallback data • Consider checking your connection
+    {/if}
+  </div>
 
 </div> 
