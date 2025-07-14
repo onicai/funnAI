@@ -7,6 +7,7 @@
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
   import ICPSwapService, { type ICPSwapTokenData } from "../../helpers/icpswapService";
   import { IcrcService } from "../../helpers/IcrcService";
+  import { WalletDataService } from "../../helpers/WalletDataService";
   import BigNumber from "bignumber.js";
 
   export let title: string = "Token distribution";
@@ -30,6 +31,7 @@
   let userBalance = 0;
   let funnaiToken: FE.Token | null = null;
   let icpswapData: ICPSwapTokenData | null = null;
+  let isLoadingUserBalance = false;
 
   // Subscribe to wallet data store
   let walletData;
@@ -156,8 +158,21 @@
   }
 
   function updateUserBalance() {
-    if (!isAuthenticated || !$store.principal || !walletData) {
+    if (!isAuthenticated || !$store.principal) {
       userBalance = 0;
+      isLoadingUserBalance = false;
+      return;
+    }
+
+    // If wallet data is loading, mark user balance as loading
+    if (walletData && walletData.isLoading) {
+      isLoadingUserBalance = true;
+      return;
+    }
+
+    // If no wallet data available yet, don't update balance (keep previous state)
+    if (!walletData || !walletData.balances) {
+      isLoadingUserBalance = true;
       return;
     }
 
@@ -172,6 +187,29 @@
     } else {
       userBalance = 0;
     }
+    
+    isLoadingUserBalance = false;
+  }
+
+  async function ensureWalletDataInitialized() {
+    // If user is authenticated but wallet data isn't initialized or is for a different wallet
+    if (isAuthenticated && $store.principal) {
+      const principalString = $store.principal.toString();
+      
+      // Check if wallet data needs initialization
+      if (!walletData || 
+          !walletData.currentWallet || 
+          walletData.currentWallet !== principalString ||
+          (walletData.tokens.length === 0 && !walletData.isLoading)) {
+        
+        console.log("TokenDistribution: Initializing wallet data for", principalString);
+        try {
+          await WalletDataService.initializeWallet(principalString);
+        } catch (err) {
+          console.error("TokenDistribution: Error initializing wallet data:", err);
+        }
+      }
+    }
   }
 
   async function updateTokenData() {
@@ -179,6 +217,9 @@
     error = "";
 
     try {
+      // Ensure wallet data is initialized if user is authenticated
+      await ensureWalletDataInitialized();
+      
       await loadTokenData();
     } catch (err) {
       console.error("Error updating token data:", err);
@@ -221,7 +262,7 @@
   }
 
   // React to wallet data changes to update user balance
-  $: if (walletData && walletData.balances) {
+  $: if (walletData) {
     updateUserBalance();
   }
 </script>
@@ -232,7 +273,7 @@
       {title}
     </h3>
     <div class="flex items-center gap-2">
-      {#if loading}
+      {#if loading || (isAuthenticated && isLoadingUserBalance)}
         <div class="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
       {/if}
       <span class="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
@@ -281,12 +322,25 @@
       <div class="flex items-center justify-between">
         <div class="flex-1">
           <div class="text-sm text-gray-600 dark:text-gray-400">Your balance</div>
-          <div class="text-xl font-bold text-gray-900 dark:text-white">
-            {userBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 8 })} FUNNAI
-          </div>
-          <div class="text-lg font-semibold text-green-600 dark:text-green-400 mt-1">
-            ${(userBalance * tokenPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-          </div>
+          {#if isLoadingUserBalance}
+            <div class="text-xl font-bold text-gray-900 dark:text-white">
+              <div class="animate-pulse flex items-center">
+                <div class="h-6 bg-gray-300 dark:bg-gray-600 rounded w-32"></div>
+              </div>
+            </div>
+            <div class="text-lg font-semibold text-gray-600 dark:text-gray-400 mt-1">
+              <div class="animate-pulse flex items-center">
+                <div class="h-5 bg-gray-300 dark:bg-gray-600 rounded w-24"></div>
+              </div>
+            </div>
+          {:else}
+            <div class="text-xl font-bold text-gray-900 dark:text-white">
+              {userBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 8 })} FUNNAI
+            </div>
+            <div class="text-lg font-semibold text-green-600 dark:text-green-400 mt-1">
+              ${(userBalance * tokenPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+            </div>
+          {/if}
         </div>
 
       </div>
