@@ -19,11 +19,12 @@
     id: string;
     name: string;
     rank: number;
-    totalRewards: string;
-    firstPlaces: number;
-    secondPlaces: number;
-    thirdPlaces: number;
     totalSubmissions: number;
+    recentSubmissions: number;
+    averageScore: number;
+    bestScore: number;
+    participations: number;
+    winnings: string;
     cyclesBurned: number;
     icpSpent: number;
     isUserMainer: boolean;
@@ -45,6 +46,47 @@
 
     const entries: LeaderboardEntry[] = [];
 
+    // First, get recent protocol activity to identify participated challenges and winners
+    let recentActivityResult;
+    let participatedChallenges: Set<string> = new Set();
+    let winnersByMainer: Map<string, { total: string; count: number }> = new Map();
+
+    try {
+      recentActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity();
+      if ("Ok" in recentActivityResult) {
+        const { winners } = recentActivityResult.Ok;
+
+        // Process winners to calculate rewards by mAIner
+        for (const winnerDeclaration of winners) {
+          const allPlacements = [
+            { entry: winnerDeclaration.winner, multiplier: 1 },
+            { entry: winnerDeclaration.secondPlace, multiplier: 0.5 },
+            { entry: winnerDeclaration.thirdPlace, multiplier: 0.25 }
+          ].filter(p => p.entry);
+
+          for (const { entry, multiplier } of allPlacements) {
+            if (entry) {
+              const mainerId = entry.submittedBy.toString();
+              const reward = BigInt(entry.reward.amount);
+              const existingData = winnersByMainer.get(mainerId);
+              if (existingData) {
+                existingData.total = (BigInt(existingData.total) + reward).toString();
+                existingData.count += 1;
+              } else {
+                winnersByMainer.set(mainerId, {
+                  total: reward.toString(),
+                  count: 1
+                });
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Error loading recent protocol activity:", err);
+    }
+
+    // Process each mAIner
     for (const [index, agent] of agentCanisterActors.entries()) {
       if (!agent) continue;
 
@@ -56,71 +98,97 @@
       const mainerId = canisterInfo.address;
       const mainerName = `mAIner ${mainerId?.slice(0, 5) || 'Unknown'}`;
 
-      let totalRewards = "0";
-      let firstPlaces = 0;
-      let secondPlaces = 0;
-      let thirdPlaces = 0;
       let totalSubmissions = 0;
+      let recentSubmissions = 0;
+      let scores: number[] = [];
+      let participations = 0;
 
       try {
-        // Get recent submissions for this mAIner
-        const submissionsResult = await agent.getRecentSubmittedResponsesAdmin();
-        if ("Ok" in submissionsResult) {
-          totalSubmissions = submissionsResult.Ok.length;
-        }
+        // Get all submissions for accurate total count
+        try {
+          const allSubmissionsResult = await agent.getSubmittedResponsesAdmin();
+          if ("Ok" in allSubmissionsResult) {
+            totalSubmissions = allSubmissionsResult.Ok.length;
+            
+            // Get scores for recent submissions to calculate averages
+            const submissions = allSubmissionsResult.Ok.slice(-10); // Last 10 for performance
+            for (const submission of submissions) {
+              participatedChallenges.add(submission.challengeId);
+              
+              try {
+                const scoreResult = await $store.gameStateCanisterActor.getScoreForSubmission({
+                  challengeId: submission.challengeId,
+                  submissionId: submission.submissionId,
+                });
 
-        // Get placement data from recent protocol activity
-        const recentActivityResult = await $store.gameStateCanisterActor.getRecentProtocolActivity();
-        if ("Ok" in recentActivityResult) {
-          const { winners } = recentActivityResult.Ok;
-
-          for (const winnerDeclaration of winners) {
-            // Check each placement position
-            if (winnerDeclaration.winner && winnerDeclaration.winner.submittedBy.toString() === mainerId) {
-              firstPlaces++;
-              totalRewards = (BigInt(totalRewards) + BigInt(winnerDeclaration.winner.reward.amount)).toString();
-            }
-            if (winnerDeclaration.secondPlace && winnerDeclaration.secondPlace.submittedBy.toString() === mainerId) {
-              secondPlaces++;
-              totalRewards = (BigInt(totalRewards) + BigInt(winnerDeclaration.secondPlace.reward.amount)).toString();
-            }
-            if (winnerDeclaration.thirdPlace && winnerDeclaration.thirdPlace.submittedBy.toString() === mainerId) {
-              thirdPlaces++;
-              totalRewards = (BigInt(totalRewards) + BigInt(winnerDeclaration.thirdPlace.reward.amount)).toString();
+                if ("Ok" in scoreResult) {
+                  scores.push(Number(scoreResult.Ok.score));
+                }
+              } catch (scoreError) {
+                console.warn(`Error getting score for submission ${submission.submissionId}:`, scoreError);
+              }
             }
           }
+        } catch (err) {
+          console.warn(`Error getting all submissions for ${mainerName}:`, err);
         }
+
+        // Get recent submissions count
+        try {
+          const recentSubmissionsResult = await agent.getRecentSubmittedResponsesAdmin();
+          if ("Ok" in recentSubmissionsResult) {
+            recentSubmissions = recentSubmissionsResult.Ok.length;
+          }
+        } catch (err) {
+          console.warn(`Error getting recent submissions for ${mainerName}:`, err);
+        }
+
+        // Calculate participation count from participated challenges
+        participations = participatedChallenges.size;
+
       } catch (err) {
         console.warn(`Error loading data for mAIner ${mainerName}:`, err);
       }
+
+      // Calculate statistics
+      const averageScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+      const bestScore = scores.length > 0 ? Math.max(...scores) : 0;
+      
+      // Get winnings for this mAIner
+      const winnerData = winnersByMainer.get(mainerId);
+      const winnings = winnerData ? winnerData.total : "0";
 
       entries.push({
         id: mainerId || `mainer-${index}`,
         name: mainerName,
         rank: 0, // Will be calculated after sorting
-        totalRewards,
-        firstPlaces,
-        secondPlaces,
-        thirdPlaces,
         totalSubmissions,
+        recentSubmissions,
+        averageScore: Math.round(averageScore * 100) / 100, // Round to 2 decimal places
+        bestScore,
+        participations,
+        winnings,
         cyclesBurned: canisterInfo.burnedCycles || 0,
         icpSpent: convertCyclesToIcp(canisterInfo.burnedCycles || 0),
         isUserMainer: true,
       });
     }
 
-    // Sort by total rewards (descending) and assign ranks
+    // Sort by a combination of factors: winnings first, then average score, then total submissions
     entries.sort((a, b) => {
-      const rewardsA = BigInt(a.totalRewards);
-      const rewardsB = BigInt(b.totalRewards);
-      if (rewardsA !== rewardsB) {
-        return rewardsA > rewardsB ? -1 : 1;
+      const winningsA = BigInt(a.winnings);
+      const winningsB = BigInt(b.winnings);
+      
+      if (winningsA !== winningsB) {
+        return winningsA > winningsB ? -1 : 1;
       }
-      // If rewards are equal, sort by first places
-      if (a.firstPlaces !== b.firstPlaces) {
-        return b.firstPlaces - a.firstPlaces;
+      
+      // If winnings are equal, sort by average score
+      if (a.averageScore !== b.averageScore) {
+        return b.averageScore - a.averageScore;
       }
-      // If first places are equal, sort by total submissions
+      
+      // If average scores are equal, sort by total submissions
       return b.totalSubmissions - a.totalSubmissions;
     });
 
@@ -249,22 +317,19 @@
               mAIner
             </th>
             <th class="text-right py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-              Total Rewards
+              Winnings
             </th>
             <th class="text-center py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-              Participations
+              Avg Score
             </th>
             <th class="text-center py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-              1st
+              Best Score
             </th>
             <th class="text-center py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-              2nd
+              Submissions
             </th>
             <th class="text-center py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-              3rd
-            </th>
-            <th class="text-right py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
-              ICP Spent
+              Recent
             </th>
           </tr>
         </thead>
@@ -288,7 +353,17 @@
               </td>
               <td class="py-3 px-2 text-right">
                 <div class="text-sm font-semibold text-green-600 dark:text-green-400">
-                  {formatFunnaiAmount(entry.totalRewards)} FUNNAI
+                  {formatFunnaiAmount(entry.winnings)} FUNNAI
+                </div>
+              </td>
+              <td class="py-3 px-2 text-center">
+                <div class="text-sm text-gray-900 dark:text-white">
+                  {entry.averageScore > 0 ? entry.averageScore.toFixed(1) : "—"}
+                </div>
+              </td>
+              <td class="py-3 px-2 text-center">
+                <div class="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                  {entry.bestScore > 0 ? entry.bestScore : "—"}
                 </div>
               </td>
               <td class="py-3 px-2 text-center">
@@ -297,23 +372,8 @@
                 </div>
               </td>
               <td class="py-3 px-2 text-center">
-                <div class="text-sm text-yellow-600 dark:text-yellow-400 font-medium">
-                  {entry.firstPlaces}
-                </div>
-              </td>
-              <td class="py-3 px-2 text-center">
-                <div class="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                  {entry.secondPlaces}
-                </div>
-              </td>
-              <td class="py-3 px-2 text-center">
-                <div class="text-sm text-orange-600 dark:text-orange-400 font-medium">
-                  {entry.thirdPlaces}
-                </div>
-              </td>
-              <td class="py-3 px-2 text-right">
-                <div class="text-sm text-blue-600 dark:text-blue-400">
-                  {entry.icpSpent.toFixed(3)} ICP
+                <div class="text-sm text-orange-600 dark:text-orange-400">
+                  {entry.recentSubmissions}
                 </div>
               </td>
             </tr>
@@ -321,5 +381,19 @@
         </tbody>
       </table>
     </div>
+
+    {#if leaderboardData.length > 0}
+      <div class="mt-4 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-3">
+        <p class="mb-1">
+          <strong>Ranking:</strong> Sorted by winnings, then average score, then total submissions
+        </p>
+        <p class="mb-1">
+          <strong>Winnings:</strong> Total FUNNAI tokens earned from challenge placements
+        </p>
+        <p>
+          <strong>Recent:</strong> Submissions from last few challenges • <strong>Avg/Best Score:</strong> From recent scored submissions
+        </p>
+      </div>
+    {/if}
   {/if}
 </div> 
