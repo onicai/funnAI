@@ -1754,7 +1754,7 @@
               <!-- Agent name  -->
               <div class="mb-2 px-2 py-0.5 bg-white/80 backdrop-blur-sm rounded-md shadow-sm border border-white/40 max-w-[80px] sm:max-w-[100px]">
                 <span class="text-xs font-bold text-gray-800 truncate block text-center">
-                  {agent.name.replace('mAIner ', '')}
+                  🦜 {agent.name.replace('mAIner ', '')}
                 </span>
               </div>
               <div class="flex flex-wrap items-center gap-1 sm:gap-2 mb-1">
@@ -1808,7 +1808,7 @@
               </div>
               
               <!-- Cycles Balance preview -->
-              <div class="text-sm {identity.colors.text} opacity-80 truncate max-w-full mt-1">
+              <div class="text-sm {identity.colors.text} opacity-90 truncate max-w-full mt-1">
                 {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 2, false)} TCYCLES
               </div>
               {#if agent.createdAt}

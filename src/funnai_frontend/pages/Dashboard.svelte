@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { store, theme } from "../stores/store";
   import { link } from 'svelte-spa-router';
   import Footer from "../components/funnai/Footer.svelte";
@@ -7,12 +8,73 @@
   import MainerLeaderboard from "../components/dashboard/MainerLeaderboard.svelte";
   import ProtocolMetrics from "../components/dashboard/ProtocolMetrics.svelte";
   import TokenDistribution from "../components/dashboard/TokenDistribution.svelte";
+  
+  // Import services for fetching token data
+  import { IcrcService } from "../helpers/IcrcService";
+  import { fetchTokens } from "../helpers/token_helpers";
+  import { formatBalance, formatLargeNumber } from "../helpers/utils/numberFormatUtils";
+  import BigNumber from "bignumber.js";
 
   // Sample data 
   $: totalMainers = 634; // This could come from store
   $: activeMainers = 462;
   $: totalRewards = 1250.50;
   $: totalCycles = 21246900000000;
+  
+  // FUNNAI total supply state
+  let totalSupply = "210,992"; // Default fallback value
+  let isLoadingSupply = true;
+  let supplyError = "";
+  
+  // Format total supply properly (convert from smallest units to whole tokens)
+  function formatTotalSupply(rawAmount: bigint, decimals: number): string {
+    try {
+      // Use BigNumber for precise calculations
+      const rawBN = new BigNumber(rawAmount.toString());
+      const divisor = new BigNumber(10).pow(decimals);
+      const tokenAmount = rawBN.dividedBy(divisor);
+      
+      // Round down to whole tokens and format with thousands separators
+      return tokenAmount.integerValue(BigNumber.ROUND_DOWN).toFormat(0);
+    } catch (error) {
+      console.error("Error formatting total supply:", error);
+      return "0";
+    }
+  }
+  
+  // Load FUNNAI total supply from canister
+  async function loadTotalSupply() {
+    try {
+      isLoadingSupply = true;
+      supplyError = "";
+      
+      // Get FUNNAI token from token helpers
+      const tokensResult = await fetchTokens({});
+      const funnaiToken = tokensResult.tokens.find(token => token.symbol === "FUNNAI");
+      
+      if (!funnaiToken) {
+        throw new Error("FUNNAI token not found");
+      }
+      
+      // Fetch total supply from canister
+      const totalSupplyBigInt = await IcrcService.getIcrc1TotalSupply(funnaiToken);
+      
+      // Format the total supply properly
+      totalSupply = formatTotalSupply(totalSupplyBigInt, funnaiToken.decimals);
+      
+    } catch (error) {
+      console.error("Error loading total supply:", error);
+      supplyError = error.message || "Failed to load supply";
+      // Keep the fallback value
+    } finally {
+      isLoadingSupply = false;
+    }
+  }
+  
+  // Load total supply on mount
+  onMount(() => {
+    loadTotalSupply();
+  });
 </script>
 
 <div class="flex flex-col h-full min-h-[calc(100vh-60px)] dark:bg-gray-900">
@@ -45,17 +107,33 @@
         </div>
       </div>
 
-      <!-- Wallet Status Card -->
+      <!-- Current Supply Card -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Current supply</p>
-            <p class="text-lg font-semibold text-gray-900 dark:text-white">
-              210992 
-              <span class="text-xs text-green-600 dark:text-green-400">
-                FUNNAI
-              </span>
-            </p>
+            <div class="flex items-center space-x-2">
+              {#if isLoadingSupply}
+                <div class="animate-pulse flex items-center space-x-2">
+                  <div class="h-6 bg-gray-300 dark:bg-gray-600 rounded w-16"></div>
+                  <span class="text-xs text-green-600 dark:text-green-400">FUNNAI</span>
+                </div>
+              {:else if supplyError}
+                <p class="text-lg font-semibold text-red-600 dark:text-red-400" title={supplyError}>
+                  Error
+                  <span class="text-xs text-green-600 dark:text-green-400 ml-1">
+                    $FUNNAI
+                  </span>
+                </p>
+              {:else}
+                <p class="text-lg font-semibold text-gray-900 dark:text-white">
+                  {totalSupply}
+                  <span class="text-xs text-green-600 dark:text-green-400 ml-1">
+                    $FUNNAI
+                  </span>
+                </p>
+              {/if}
+            </div>
           </div>
           <div class="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-full">
             <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -63,6 +141,17 @@
             </svg>
           </div>
         </div>
+        {#if !isLoadingSupply && !supplyError}
+          <div class="mt-2 h-4">
+            <button 
+              on:click={loadTotalSupply} 
+              class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              title="Refresh supply from canister"
+            >
+              Refresh
+            </button>
+          </div>
+        {/if}
       </div>
 
       <!-- Total Rewards Card -->
@@ -72,7 +161,7 @@
             <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Max supply</p>
             <p class="text-lg font-semibold text-gray-900 dark:text-white">21M
               <span class="text-xs text-green-600 dark:text-green-400">
-                FUNNAI
+                $FUNNAI
               </span>
             </p>
           </div>
