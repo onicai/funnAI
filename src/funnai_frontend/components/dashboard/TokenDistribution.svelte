@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import { store } from "../../stores/store";
   import { formatFunnaiAmount, formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
-  import { fetchTokens } from "../../helpers/token_helpers";
+  import { fetchTokens, FUNNAI_CANISTER_ID } from "../../helpers/token_helpers";
   import { walletDataStore } from "../../helpers/WalletDataService";
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
   import ICPSwapService, { type ICPSwapTokenData } from "../../helpers/icpswapService";
@@ -17,15 +17,16 @@
   let updateInterval: NodeJS.Timer;
 
   // Token metrics
-  let totalSupply = "210,992"; // Default fallback value (same as Dashboard.svelte)
-  let circulatingSupply = "0";
-  let protocolBalance = "0";
-  let burnedTokens = "0";
-  let tokenPrice = 0.45;
-  let marketCap = "1177191.2";
-  let priceChange24h = "0";
+  let totalSupply = null; // No fallback value
+  let circulatingSupply = null;
+  let protocolBalance = null;
+  let burnedTokens = null;
+  let tokenPrice = null;
+  let marketCap = null;
+  let priceChange24h = null;
   let isLoadingSupply = false;
   let supplyError = "";
+  let dataLoadedSuccessfully = false;
 
   // User data
   let userBalance = 0;
@@ -38,9 +39,6 @@
   walletDataStore.subscribe((value) => walletData = value);
 
   $: isAuthenticated = $store.isAuthed;
-
-  // FUNNAI token canister ID from token_helpers.ts
-  const FUNNAI_CANISTER_ID = "vpyot-zqaaa-aaaaa-qavaq-cai";
 
   // Format total supply properly (convert from smallest units to whole tokens)
   function formatTotalSupply(rawAmount: bigint, decimals: number): string {
@@ -93,6 +91,8 @@
 
   async function loadTokenData() {
     try {
+      dataLoadedSuccessfully = false;
+      
       // Get FUNNAI token info from local source first
       const tokensResult = await fetchTokens({});
       const foundFunnaiToken = tokensResult.tokens.find(token => token.symbol === "FUNNAI");
@@ -100,7 +100,7 @@
       if (foundFunnaiToken) {
         funnaiToken = foundFunnaiToken;
         
-        // Fetch real total supply from canister (same as Dashboard.svelte)
+        // Fetch real total supply from canister
         try {
           isLoadingSupply = true;
           supplyError = "";
@@ -111,7 +111,8 @@
         } catch (supplyErr) {
           console.error("Error loading total supply:", supplyErr);
           supplyError = supplyErr.message || "Failed to load supply";
-          // Keep the fallback value "210,992"
+          totalSupply = null; // Don't use fallback
+          throw supplyErr; // Re-throw to prevent using fallback calculations
         } finally {
           isLoadingSupply = false;
         }
@@ -121,17 +122,19 @@
         if (apiPrice && parseFloat(apiPrice) > 0) {
           tokenPrice = parseFloat(apiPrice);
         }
+      } else {
+        throw new Error("FUNNAI token not found in local data");
       }
 
       // Try to fetch real-time data from ICPSwap
       await loadICPSwapData();
 
-      // If we still don't have good price data, use fallback
-      if (tokenPrice <= 0) {
-        tokenPrice = 0.45;
+      // Only proceed with calculations if we have valid data
+      if (!totalSupply || tokenPrice === null || tokenPrice <= 0) {
+        throw new Error("Insufficient data to calculate token metrics");
       }
 
-      // Always calculate market cap using real total supply × current price
+      // Calculate market cap using real total supply × current price
       const totalSupplyNum = parseFloat(totalSupply.replace(/,/g, ''));
       marketCap = (totalSupplyNum * tokenPrice).toFixed(2);
 
@@ -140,20 +143,26 @@
         updateUserBalance();
       }
 
-      // Calculate realistic distribution values
+      // Calculate realistic distribution values only with valid data
       circulatingSupply = (totalSupplyNum * 0.75).toLocaleString();
       protocolBalance = (totalSupplyNum * 0.20).toLocaleString();
       burnedTokens = (totalSupplyNum * 0.05).toLocaleString();
+      
+      dataLoadedSuccessfully = true;
 
     } catch (err) {
       console.error("Error loading token data:", err);
       error = "Failed to load token distribution data";
       
-      // Set fallback values on error
-      totalSupply = "210,992";
-      tokenPrice = 0.45;
-      const totalSupplyNum = parseFloat(totalSupply.replace(/,/g, ''));
-      marketCap = (totalSupplyNum * tokenPrice).toFixed(2);
+      // Clear all values instead of using fallbacks
+      totalSupply = null;
+      tokenPrice = null;
+      marketCap = null;
+      circulatingSupply = null;
+      protocolBalance = null;
+      burnedTokens = null;
+      priceChange24h = null;
+      dataLoadedSuccessfully = false;
     }
   }
 
@@ -298,10 +307,18 @@
     
     <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
       <div class="text-lg font-bold text-purple-600 dark:text-purple-400">
-        ${tokenPrice.toFixed(4)}
+        {#if loading}
+          <div class="animate-pulse flex justify-center">
+            <div class="h-6 bg-purple-300 dark:bg-purple-600 rounded w-20"></div>
+          </div>
+        {:else if tokenPrice !== null}
+          ${tokenPrice.toFixed(4)}
+        {:else}
+          <span class="text-gray-500 dark:text-gray-400">N/A</span>
+        {/if}
       </div>
       <div class="text-sm text-gray-600 dark:text-gray-400">Price</div>
-      {#if priceChange24h && priceChange24h !== "0"}
+      {#if priceChange24h && priceChange24h !== "0" && !loading}
         <div class="text-xs {getPriceChangeColor(priceChange24h)} mt-1">
           {formatPriceChange(priceChange24h)} (24h)
         </div>
@@ -310,7 +327,15 @@
     
     <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
       <div class="text-lg font-bold text-orange-600 dark:text-orange-400">
-        ${formatLargeNumber(parseFloat(marketCap))}
+        {#if loading}
+          <div class="animate-pulse flex justify-center">
+            <div class="h-6 bg-orange-300 dark:bg-orange-600 rounded w-24"></div>
+          </div>
+        {:else if marketCap !== null}
+          ${formatLargeNumber(parseFloat(marketCap))}
+        {:else}
+          <span class="text-gray-500 dark:text-gray-400">N/A</span>
+        {/if}
       </div>
       <div class="text-sm text-gray-600 dark:text-gray-400">Market Cap</div>
     </div>
@@ -333,12 +358,19 @@
                 <div class="h-5 bg-gray-300 dark:bg-gray-600 rounded w-24"></div>
               </div>
             </div>
-          {:else}
+          {:else if tokenPrice !== null}
             <div class="text-xl font-bold text-gray-900 dark:text-white">
               {userBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 8 })} FUNNAI
             </div>
             <div class="text-lg font-semibold text-green-600 dark:text-green-400 mt-1">
               ${(userBalance * tokenPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+            </div>
+          {:else}
+            <div class="text-xl font-bold text-gray-900 dark:text-white">
+              {userBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 8 })} FUNNAI
+            </div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              USD value unavailable
             </div>
           {/if}
         </div>
@@ -349,11 +381,14 @@
 
   <!-- Data Source Info -->
   <div class="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
-    {#if icpswapData}
+    {#if loading}
+      Loading token data...
+    {:else if !dataLoadedSuccessfully}
+      Data unavailable • Please check your connection and try again
+    {:else if icpswapData}
       Data from ICPSwap • Last updated: {new Date(icpswapData.lastUpdated).toLocaleTimeString()}
     {:else}
-      Using fallback data • Consider checking your connection
+      Using local data • Limited real-time information
     {/if}
   </div>
-
 </div> 
