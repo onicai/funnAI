@@ -21,14 +21,14 @@
 <div class="flex flex-col h-full min-h-[calc(100vh-60px)] dark:bg-gray-900">
   <div class="container mx-auto px-2 md:px-8 py-2 md:py-8 flex-grow dark:bg-gray-900">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full min-h-0">
-      <div class="card-style bg-white p-2 rounded-lg shadow mb-2 dark:bg-gray-800 dark:text-gray-200 flex flex-col overflow-hidden min-h-0">
+      <div class="bg-white p-0 rounded-lg shadow mb-2 dark:bg-gray-900 dark:text-gray-200 flex flex-col overflow-hidden min-h-0">
         <div class="flex-grow overflow-hidden">
           <MainerAccordion />
         </div>
       </div>
-      <div class="card-style bg-white p-2 rounded-lg shadow mb-2 dark:bg-gray-800 dark:text-gray-200 flex flex-col overflow-hidden min-h-0">
+      <div class="bg-white p-0 rounded-lg shadow mb-2 dark:bg-gray-900 dark:text-gray-200 flex flex-col overflow-hidden min-h-0">
         <!-- Toggle controls -->
-        <div class="flex-shrink-0 mb-4 border-b border-gray-200 dark:border-gray-700 pb-4">
+        <div class="flex-shrink-0 mb-4 dark:bg-gray-800 p-4">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Activity Feed</h2>
             <div class="flex items-center justify-center sm:justify-end">

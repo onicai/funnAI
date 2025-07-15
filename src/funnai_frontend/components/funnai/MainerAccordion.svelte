@@ -982,7 +982,7 @@
     </span>
   </button>
   <div id="content-create" class="accordion-content bg-white dark:bg-gray-900">
-    <div class="pb-5 text-sm text-gray-700 dark:text-gray-300 space-y-4 p-4">
+    <div class="text-sm text-gray-700 dark:text-gray-300 space-y-4 p-5 dark:bg-gray-800">
       
     {#if isAuthenticated}
       <ol class="relative mx-2 text-gray-500 dark:text-gray-400 border-s border-gray-200 dark:border-gray-700">                  
@@ -1835,7 +1835,7 @@
         <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent {agent.status === 'active' ? 'animate-pulse' : ''}"></div>
       </button>
       <div id="content-{sanitizedId}" class="accordion-content">
-        <div class="pb-3 sm:pb-5 text-xs sm:text-sm text-gray-700 dark:text-gray-300 p-3 sm:p-4 bg-gray-5 dark:bg-gray-900">
+        <div class="pb-3 sm:pb-5 text-xs sm:text-sm text-gray-700 dark:text-gray-300 p-3 sm:p-4 bg-gray-50 dark:bg-gray-800">
           <!-- Enhanced Canister Information Section -->
           <div class="flex flex-col space-y-2 mb-2">
             <div class="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 border border-blue-200/60 dark:border-blue-700/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">

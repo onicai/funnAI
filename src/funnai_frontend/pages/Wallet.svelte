@@ -123,7 +123,7 @@
         
         <div class="flex flex-col justify-center">
             <WalletStatus />
-            <div class="w-full bg-white dark:bg-gray-800 card-style p-6 rounded-lg shadow mt-5">
+            <div class="w-full bg-white dark:bg-gray-800 p-6 rounded-lg shadow mt-5">
                 <h2 class="text-xl font-semibold mb-4 dark:text-white">Your Assets</h2>
                 {#if $store.isAuthed}
                     <!-- <WalletTable {transactions} /> -->

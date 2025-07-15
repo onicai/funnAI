@@ -508,7 +508,7 @@
   });
 </script>
 
-<div class="h-full dark:bg-gray-900 dark:text-white flex flex-col" style="overflow-y: auto; overflow-x: visible;">
+<div class="h-full dark:bg-gray-800 dark:text-white flex flex-col" style="overflow-y: auto; overflow-x: visible;">
 
   {#if updating && $store.isAuthed}
     <div class="flex justify-center py-2">
