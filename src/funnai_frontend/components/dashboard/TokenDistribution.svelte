@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { store } from "../../stores/store";
-  import { formatFunnaiAmount, formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
+  import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
   import { fetchTokens, FUNNAI_CANISTER_ID } from "../../helpers/token_helpers";
   import { walletDataStore } from "../../helpers/WalletDataService";
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
@@ -17,15 +17,9 @@
   let updateInterval: NodeJS.Timer;
 
   // Token metrics
-  let totalSupply = null; // No fallback value
-  let circulatingSupply = null;
-  let protocolBalance = null;
-  let burnedTokens = null;
   let tokenPrice = null;
   let marketCap = null;
   let priceChange24h = null;
-  let isLoadingSupply = false;
-  let supplyError = "";
   let dataLoadedSuccessfully = false;
 
   // User data
@@ -92,6 +86,7 @@
   async function loadTokenData() {
     try {
       dataLoadedSuccessfully = false;
+      let totalSupplyForMarketCap = null;
       
       // Get FUNNAI token info from local source first
       const tokensResult = await fetchTokens({});
@@ -100,21 +95,14 @@
       if (foundFunnaiToken) {
         funnaiToken = foundFunnaiToken;
         
-        // Fetch real total supply from canister
+        // Fetch real total supply from canister for market cap calculation
         try {
-          isLoadingSupply = true;
-          supplyError = "";
-          
           const totalSupplyBigInt = await IcrcService.getIcrc1TotalSupply(foundFunnaiToken);
-          totalSupply = formatTotalSupply(totalSupplyBigInt, foundFunnaiToken.decimals);
+          totalSupplyForMarketCap = formatTotalSupply(totalSupplyBigInt, foundFunnaiToken.decimals);
           
         } catch (supplyErr) {
           console.error("Error loading total supply:", supplyErr);
-          supplyError = supplyErr.message || "Failed to load supply";
-          totalSupply = null; // Don't use fallback
           throw supplyErr; // Re-throw to prevent using fallback calculations
-        } finally {
-          isLoadingSupply = false;
         }
         
         // Get price from local data as fallback
@@ -130,23 +118,18 @@
       await loadICPSwapData();
 
       // Only proceed with calculations if we have valid data
-      if (!totalSupply || tokenPrice === null || tokenPrice <= 0) {
+      if (!totalSupplyForMarketCap || tokenPrice === null || tokenPrice <= 0) {
         throw new Error("Insufficient data to calculate token metrics");
       }
 
       // Calculate market cap using real total supply × current price
-      const totalSupplyNum = parseFloat(totalSupply.replace(/,/g, ''));
+      const totalSupplyNum = parseFloat(totalSupplyForMarketCap.replace(/,/g, ''));
       marketCap = (totalSupplyNum * tokenPrice).toFixed(2);
 
       // Get user balance if authenticated
       if (isAuthenticated && $store.principal) {
         updateUserBalance();
       }
-
-      // Calculate realistic distribution values only with valid data
-      circulatingSupply = (totalSupplyNum * 0.75).toLocaleString();
-      protocolBalance = (totalSupplyNum * 0.20).toLocaleString();
-      burnedTokens = (totalSupplyNum * 0.05).toLocaleString();
       
       dataLoadedSuccessfully = true;
 
@@ -155,12 +138,8 @@
       error = "Failed to load token distribution data";
       
       // Clear all values instead of using fallbacks
-      totalSupply = null;
       tokenPrice = null;
       marketCap = null;
-      circulatingSupply = null;
-      protocolBalance = null;
-      burnedTokens = null;
       priceChange24h = null;
       dataLoadedSuccessfully = false;
     }
