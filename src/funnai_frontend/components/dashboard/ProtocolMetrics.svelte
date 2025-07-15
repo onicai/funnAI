@@ -172,7 +172,7 @@
           {formatLargeNumber(totalCyclesBurned)}
         </div>
         <div class="text-sm text-gray-600 dark:text-gray-400">Total cycles burned</div>
-        <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">All mAIners</div>
+        <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">By funnAI</div>
       </div>
       
       <!-- <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">

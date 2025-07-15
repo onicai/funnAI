@@ -55,63 +55,39 @@ class ICPSwapService {
 
       console.log(`Fetching fresh ICPSwap data for ${tokenId}`);
 
-      // Try different possible API endpoints - prioritize the working one first
-      const endpoints = [
-        `/info/token/${tokenId}`, // This one works!
-        `/token/data?canisterId=${tokenId}`,
-        `/token/data?id=${tokenId}`,
-        `/token/data?token=${tokenId}`,
-        `/token/${tokenId}/data`,
-        `/tokens/${tokenId}`,
-        `/v1/token/data?canisterId=${tokenId}`,
-        `/api/token/data?canisterId=${tokenId}`
-      ];
+      // Use the only working endpoint
+      const endpoint = `/info/token/${tokenId}`;
+      const url = `${this.BASE_URL}${endpoint}`;
+      
+      console.log(`Fetching from ICPSwap: ${url}`);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        signal: this.createTimeoutSignal(10000) // 10 second timeout
+      });
 
-      let tokenData: ICPSwapTokenData | null = null;
+      console.log(`Response status:`, response.status);
 
-      // Try each endpoint until one works
-      for (const endpoint of endpoints) {
-        try {
-          const url = `${this.BASE_URL}${endpoint}`;
-          console.log(`Trying ICPSwap endpoint: ${url}`);
-          
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-            },
-            // Add timeout
-            signal: this.createTimeoutSignal(10000) // 10 second timeout
-          });
-
-          console.log(`Response status for ${endpoint}:`, response.status);
-
-          if (response.ok) {
-            const data = await response.json();
-            console.log(`Response data for ${endpoint}:`, data);
-            
-            // Check if we got valid data (not a 404 message)
-            if (data && data.code !== 404 && data.message !== "Token not found") {
-              tokenData = this.parseTokenData(data);
-              if (tokenData) {
-                console.log(`Successfully parsed data from ${endpoint}`);
-                break; // Found valid data, stop trying other endpoints
-              }
-            }
-          }
-        } catch (endpointError) {
-          console.log(`Endpoint ${endpoint} failed:`, endpointError);
-          continue; // Try next endpoint
-        }
+      if (!response.ok) {
+        console.warn(`ICPSwap API returned status ${response.status}`);
+        return null;
       }
 
-      // If no API endpoint worked, try alternative approaches
-      if (!tokenData) {
-        console.log("All API endpoints failed, trying alternative methods...");
-        tokenData = await this.fetchAlternativeTokenData(tokenId);
+      const data = await response.json();
+      console.log(`Response data:`, data);
+      
+      // Check if we got valid data (not a 404 message)
+      if (!data || data.code === 404 || data.message === "Token not found") {
+        console.warn("Token not found or invalid response from ICPSwap");
+        return null;
       }
 
+      const tokenData = this.parseTokenData(data);
+      
       if (tokenData) {
         // Cache the successful result
         this.cache.set(tokenId, {
@@ -122,7 +98,7 @@ class ICPSwapService {
         return tokenData;
       }
 
-      console.warn("No valid token data could be retrieved from ICPSwap");
+      console.warn("Could not parse valid token data from ICPSwap response");
       return null;
 
     } catch (error) {
@@ -195,99 +171,6 @@ class ICPSwapService {
       return parsed;
     } catch (error) {
       console.error('Error parsing ICPSwap token data:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Alternative method to fetch token data using different approaches
-   * @param tokenId The canister ID of the token
-   * @returns Promise with token data or null
-   */
-  private static async fetchAlternativeTokenData(tokenId: string): Promise<ICPSwapTokenData | null> {
-    try {
-      console.log("Trying alternative data fetching methods...");
-      
-      // Try different ICPSwap subdomains or paths
-      const alternativeUrls = [
-        `https://info.icpswap.com/api/token/${tokenId}`,
-        `https://icpswap.com/api/token/data?canisterId=${tokenId}`,
-        `https://api.icpswap.com/public/token/${tokenId}`,
-        `https://api.icpswap.com/v2/token/data?id=${tokenId}`
-      ];
-
-      for (const url of alternativeUrls) {
-        try {
-          console.log(`Trying alternative URL: ${url}`);
-          const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-            },
-            signal: this.createTimeoutSignal(10000)
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data && data.code !== 404) {
-              const tokenData = this.parseTokenData(data);
-              if (tokenData) {
-                console.log(`Successfully got data from alternative URL: ${url}`);
-                return tokenData;
-              }
-            }
-          }
-        } catch (error) {
-          console.log(`Alternative URL ${url} failed:`, error);
-          continue;
-        }
-      }
-
-      // Try fetching from ICPSwap's public info page endpoint
-      console.log("Trying to fetch from ICPSwap info page...");
-      const infoResponse = await fetch(`https://app.icpswap.com/info-tokens/details/${tokenId}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'User-Agent': 'Mozilla/5.0 (compatible; TokenDataFetcher/1.0)'
-        },
-        signal: this.createTimeoutSignal(10000)
-      });
-
-      if (infoResponse.ok) {
-        const html = await infoResponse.text();
-        console.log("Got HTML response from info page");
-        
-        // Try to extract JSON data from the page if it contains structured data
-        const jsonMatch = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>(.*?)<\/script>/s);
-        if (jsonMatch) {
-          try {
-            const jsonData = JSON.parse(jsonMatch[1]);
-            return this.parseTokenData(jsonData);
-          } catch (e) {
-            console.log('No JSON-LD data found in page');
-          }
-        }
-
-        // Try to extract data from window.__INITIAL_STATE__ or similar
-        const stateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*({.*?});/s) ||
-                          html.match(/window\.__DATA__\s*=\s*({.*?});/s) ||
-                          html.match(/"tokenData"\s*:\s*({.*?})/s);
-        
-        if (stateMatch) {
-          try {
-            const stateData = JSON.parse(stateMatch[1]);
-            return this.parseTokenData(stateData);
-          } catch (e) {
-            console.log('Could not parse state data from page');
-          }
-        }
-      }
-
-      return null;
-    } catch (error) {
-      console.error('Error fetching alternative token data:', error);
       return null;
     }
   }
