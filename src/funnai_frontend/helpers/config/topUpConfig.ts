@@ -8,7 +8,7 @@ export const TOP_UP_CONFIG = {
   MAX_AMOUNT: 100, // must be a natural number
   
   // Duration for celebration display in milliseconds
-  CELEBRATION_DURATION: 5500,
+  CELEBRATION_DURATION: 120000, // 60 seconds
   
   // Enable/disable celebration feature
   CELEBRATION_ENABLED: true
