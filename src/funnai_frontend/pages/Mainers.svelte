@@ -27,8 +27,11 @@
         </div>
       </div>
       <div class="bg-white p-0 rounded-lg shadow mb-2 dark:bg-gray-900 dark:text-gray-200 flex flex-col overflow-hidden min-h-0">
+        <div class="flex-shrink-0 mb-4">
+          <CyclesDisplay cycles={21246900000000} {showAllEvents} />
+        </div>
         <!-- Toggle controls -->
-        <div class="flex-shrink-0 mb-4 dark:bg-gray-800 p-4">
+        <div class="flex-shrink-0 mb-0 dark:bg-gray-800 p-4">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Activity Feed</h2>
             <div class="flex items-center justify-center sm:justify-end">
@@ -81,9 +84,7 @@
             </p>
           </div>
         </div>
-        <div class="flex-shrink-0 mb-4">
-          <CyclesDisplay cycles={21246900000000} {showAllEvents} />
-        </div>
+        
         <div class="flex-grow overflow-hidden min-h-0">
           <MainerFeed {showAllEvents} />
         </div>
