@@ -384,7 +384,7 @@
             {/if}
             {#if totalSupply && userBalance > 0}
               <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {getUserSupplyPercentage()}% of total supply
+                {getUserSupplyPercentage()}% of current supply
               </div>
             {/if}
           {/if}
