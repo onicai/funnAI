@@ -21,6 +21,7 @@
   let marketCap = null;
   let priceChange24h = null;
   let dataLoadedSuccessfully = false;
+  let totalSupply = null; // Store total supply for whale calculation
 
   // User data
   let userBalance = 0;
@@ -28,11 +29,34 @@
   let icpswapData: ICPSwapTokenData | null = null;
   let isLoadingUserBalance = false;
 
+  // Whale configuration
+  const WHALE_THRESHOLD_PERCENT = 0.5; // 0.5% of total supply
+
   // Subscribe to wallet data store
   let walletData;
   walletDataStore.subscribe((value) => walletData = value);
 
   $: isAuthenticated = $store.isAuthed;
+
+  // Check if user is a whale (holds significant percentage of total supply)
+  function isWhale(): boolean {
+    if (!totalSupply || !userBalance || userBalance === 0) return false;
+    
+    const totalSupplyNum = parseFloat(totalSupply.replace(/,/g, ''));
+    const userPercentage = (userBalance / totalSupplyNum) * 100;
+    
+    return userPercentage >= WHALE_THRESHOLD_PERCENT;
+  }
+
+  // Get user's percentage of total supply
+  function getUserSupplyPercentage(): string {
+    if (!totalSupply || !userBalance || userBalance === 0) return "0";
+    
+    const totalSupplyNum = parseFloat(totalSupply.replace(/,/g, ''));
+    const userPercentage = (userBalance / totalSupplyNum) * 100;
+    
+    return userPercentage.toFixed(3);
+  }
 
   // Format total supply properly (convert from smallest units to whole tokens)
   function formatTotalSupply(rawAmount: bigint, decimals: number): string {
@@ -86,7 +110,6 @@
   async function loadTokenData() {
     try {
       dataLoadedSuccessfully = false;
-      let totalSupplyForMarketCap = null;
       
       // Get FUNNAI token info from local source first
       const tokensResult = await fetchTokens({});
@@ -98,7 +121,7 @@
         // Fetch real total supply from canister for market cap calculation
         try {
           const totalSupplyBigInt = await IcrcService.getIcrc1TotalSupply(foundFunnaiToken);
-          totalSupplyForMarketCap = formatTotalSupply(totalSupplyBigInt, foundFunnaiToken.decimals);
+          totalSupply = formatTotalSupply(totalSupplyBigInt, foundFunnaiToken.decimals);
           
         } catch (supplyErr) {
           console.error("Error loading total supply:", supplyErr);
@@ -118,12 +141,12 @@
       await loadICPSwapData();
 
       // Only proceed with calculations if we have valid data
-      if (!totalSupplyForMarketCap || tokenPrice === null || tokenPrice <= 0) {
+      if (!totalSupply || tokenPrice === null || tokenPrice <= 0) {
         throw new Error("Insufficient data to calculate token metrics");
       }
 
       // Calculate market cap using real total supply × current price
-      const totalSupplyNum = parseFloat(totalSupplyForMarketCap.replace(/,/g, ''));
+      const totalSupplyNum = parseFloat(totalSupply.replace(/,/g, ''));
       marketCap = (totalSupplyNum * tokenPrice).toFixed(2);
 
       // Get user balance if authenticated
@@ -138,6 +161,7 @@
       error = "Failed to load token distribution data";
       
       // Clear all values instead of using fallbacks
+      totalSupply = null;
       tokenPrice = null;
       marketCap = null;
       priceChange24h = null;
@@ -282,43 +306,48 @@
   {/if}
 
   <!-- Token Metrics -->
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-    
-    <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-      <div class="text-lg font-bold text-purple-600 dark:text-purple-400">
-        {#if loading}
+  {#if loading}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+        <div class="text-lg font-bold text-purple-600 dark:text-purple-400">
           <div class="animate-pulse flex justify-center">
             <div class="h-6 bg-purple-300 dark:bg-purple-600 rounded w-20"></div>
           </div>
-        {:else if tokenPrice !== null}
-          ${tokenPrice.toFixed(4)}
-        {:else}
-          <span class="text-gray-500 dark:text-gray-400">N/A</span>
-        {/if}
-      </div>
-      <div class="text-sm text-gray-600 dark:text-gray-400">Price</div>
-      {#if priceChange24h && priceChange24h !== "0" && !loading}
-        <div class="text-xs {getPriceChangeColor(priceChange24h)} mt-1">
-          {formatPriceChange(priceChange24h)} (24h)
         </div>
-      {/if}
-    </div>
-    
-    <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-      <div class="text-lg font-bold text-orange-600 dark:text-orange-400">
-        {#if loading}
+        <div class="text-sm text-gray-600 dark:text-gray-400">Price</div>
+      </div>
+      
+      <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+        <div class="text-lg font-bold text-orange-600 dark:text-orange-400">
           <div class="animate-pulse flex justify-center">
             <div class="h-6 bg-orange-300 dark:bg-orange-600 rounded w-24"></div>
           </div>
-        {:else if marketCap !== null}
-          ${formatLargeNumber(parseFloat(marketCap))}
-        {:else}
-          <span class="text-gray-500 dark:text-gray-400">N/A</span>
+        </div>
+        <div class="text-sm text-gray-600 dark:text-gray-400">Market Cap</div>
+      </div>
+    </div>
+  {:else if dataLoadedSuccessfully && tokenPrice !== null && marketCap !== null}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+        <div class="text-lg font-bold text-purple-600 dark:text-purple-400">
+          ${tokenPrice.toFixed(4)}
+        </div>
+        <div class="text-sm text-gray-600 dark:text-gray-400">Price</div>
+        {#if priceChange24h && priceChange24h !== "0"}
+          <div class="text-xs {getPriceChangeColor(priceChange24h)} mt-1">
+            {formatPriceChange(priceChange24h)} (24h)
+          </div>
         {/if}
       </div>
-      <div class="text-sm text-gray-600 dark:text-gray-400">Market Cap</div>
+      
+      <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+        <div class="text-lg font-bold text-orange-600 dark:text-orange-400">
+          ${formatLargeNumber(parseFloat(marketCap))}
+        </div>
+        <div class="text-sm text-gray-600 dark:text-gray-400">Market Cap</div>
+      </div>
     </div>
-  </div>
+  {/if}
 
   <!-- User Balance (if authenticated) -->
   {#if isAuthenticated}
@@ -337,20 +366,27 @@
                 <div class="h-5 bg-gray-300 dark:bg-gray-600 rounded w-24"></div>
               </div>
             </div>
-          {:else if tokenPrice !== null}
-            <div class="text-xl font-bold text-gray-900 dark:text-white">
-              {userBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 8 })} FUNNAI
-            </div>
-            <div class="text-lg font-semibold text-green-600 dark:text-green-400 mt-1">
-              ${(userBalance * tokenPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-            </div>
           {:else}
-            <div class="text-xl font-bold text-gray-900 dark:text-white">
+            <div class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               {userBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 8 })} FUNNAI
+              {#if isWhale()}
+                <span class="text-2xl" title="Whale Alert! You hold {getUserSupplyPercentage()}% of total supply">🐋</span>
+              {/if}
             </div>
-            <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              USD value unavailable
-            </div>
+            {#if dataLoadedSuccessfully && tokenPrice !== null}
+              <div class="text-lg font-semibold text-green-600 dark:text-green-400 mt-1">
+                ${(userBalance * tokenPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+              </div>
+            {:else}
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                USD value unavailable
+              </div>
+            {/if}
+            {#if totalSupply && userBalance > 0}
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {getUserSupplyPercentage()}% of total supply
+              </div>
+            {/if}
           {/if}
         </div>
 
