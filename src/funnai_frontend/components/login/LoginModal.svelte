@@ -54,16 +54,16 @@
   
       
       <!-- Main modal card -->
-      <div class="relative bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 rounded-2xl shadow-2xl border-2 border-amber-600/30 backdrop-blur-sm overflow-hidden">
+      <div class="relative bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-100 dark:from-slate-900 dark:via-gray-900 dark:to-slate-800 rounded-2xl shadow-2xl border-2 border-amber-400/50 dark:border-amber-600/30 backdrop-blur-sm overflow-hidden">
         
         <!-- Treasure chest glow effect -->
-        <div class="absolute inset-0 bg-gradient-to-t from-amber-900/20 via-transparent to-blue-900/10 pointer-events-none"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-amber-200/20 via-transparent to-blue-300/10 dark:from-amber-900/20 dark:via-transparent dark:to-blue-900/10 pointer-events-none"></div>
         
         <!-- Modal header with pirate styling -->
         <div class="flex items-center justify-between p-6 pb-2 rounded-t relative">
-          <div class="absolute top-2 left-2 text-amber-400/60 text-sm">⚔️</div>
+          <div class="absolute top-2 left-2 text-amber-600/70 dark:text-amber-400/60 text-sm">⚔️</div>
           
-          <button type="button" on:click={() => {toggleModal()}} class="close-modal-button absolute top-4 right-4 bg-red-800/80 hover:bg-red-700 inline-flex justify-center items-center text-amber-200 rounded-full focus:ring-2 focus:ring-red-400 p-2 transition-all duration-300 hover:scale-110 border border-red-600/50 shadow-lg" data-modal-toggle="crypto-modal">
+          <button type="button" on:click={() => {toggleModal()}} class="close-modal-button absolute top-4 right-4 bg-red-600/80 hover:bg-red-500 dark:bg-red-800/80 dark:hover:bg-red-700 inline-flex justify-center items-center text-white dark:text-amber-200 rounded-full focus:ring-2 focus:ring-red-400 p-2 transition-all duration-300 hover:scale-110 border border-red-500/50 dark:border-red-600/50 shadow-lg" data-modal-toggle="crypto-modal">
             <svg class="w-4 h-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 14">
               <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/>
             </svg>
@@ -86,16 +86,16 @@
           
           <!-- Pirate-themed heading -->
           <div class="text-center mb-6">
-            <h3 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-100 to-amber-300 mb-2 font-serif tracking-wide">
+            <h3 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-800 via-amber-700 to-amber-900 dark:from-amber-200 dark:via-amber-100 dark:to-amber-300 mb-2 font-serif tracking-wide">
               Ahoy, Matey! 
             </h3>
             <div class="flex items-center justify-center gap-2 mb-3">
-              <div class="w-8 h-0.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
-              <span class="text-amber-400">⚓</span>
-              <div class="w-8 h-0.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
+              <div class="w-8 h-0.5 bg-gradient-to-r from-transparent via-amber-600 dark:via-amber-500 to-transparent"></div>
+              <span class="text-amber-600 dark:text-amber-400">⚓</span>
+              <div class="w-8 h-0.5 bg-gradient-to-r from-transparent via-amber-600 dark:via-amber-500 to-transparent"></div>
             </div>
-            <p class="text-amber-200/90 text-sm leading-relaxed font-medium">
-              Set sail into the <span class="text-amber-300 font-semibold">funnAI seas</span>! Connect your wallet to join our crew and discover treasures beyond imagination.
+            <p class="text-amber-800/90 dark:text-amber-200/90 text-sm leading-relaxed font-medium">
+              Set sail into the <span class="text-amber-700 dark:text-amber-300 font-semibold">funnAI seas</span>! Connect your wallet to join our crew and discover treasures beyond imagination.
             </p>
           </div>
           
@@ -107,14 +107,14 @@
           
           <!-- Decorative elements -->
           <div class="flex justify-center items-center mt-6 gap-4 opacity-60">
-            <span class="text-amber-400/70 text-xs">🗝️</span>
-            <div class="text-amber-300/50 text-xs font-medium tracking-wider">SECURE • DECENTRALIZED • PRIVATE</div>
-            <span class="text-amber-400/70 text-xs">🗝️</span>
+            <span class="text-amber-600/70 dark:text-amber-400/70 text-xs">🗝️</span>
+            <div class="text-amber-700/60 dark:text-amber-300/50 text-xs font-medium tracking-wider">SECURE • DECENTRALIZED • PRIVATE</div>
+            <span class="text-amber-600/70 dark:text-amber-400/70 text-xs">🗝️</span>
           </div>
         </div>
         
         <!-- Bottom decorative border -->
-        <div class="h-1 bg-gradient-to-r from-amber-800 via-amber-600 to-amber-800"></div>
+        <div class="h-1 bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 dark:from-amber-800 dark:via-amber-600 dark:to-amber-800"></div>
       </div>
     </div>
   </div>
@@ -124,17 +124,30 @@
   /* Pirate Modal Backdrop */
   .pirate-modal-backdrop {
     display: flex;
-    background: radial-gradient(circle at center, rgba(15, 23, 42, 0.7) 0%, rgba(30, 41, 59, 0.8) 50%, rgba(15, 23, 42, 0.7) 100%);
+    background: radial-gradient(circle at center, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.15) 50%, rgba(251, 191, 36, 0.1) 100%);
     backdrop-filter: blur(2px);
+  }
+
+  /* Dark mode backdrop */
+  :global(.dark) .pirate-modal-backdrop {
+    background: radial-gradient(circle at center, rgba(15, 23, 42, 0.7) 0%, rgba(30, 41, 59, 0.8) 50%, rgba(15, 23, 42, 0.7) 100%);
   }
 
   /* Animated Ocean Waves Background */
   .ocean-waves {
     background: 
+      radial-gradient(circle at 20% 80%, rgba(251, 191, 36, 0.12) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(245, 158, 11, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(217, 119, 6, 0.06) 0%, transparent 50%);
+    animation: waves 8s ease-in-out infinite;
+  }
+
+  /* Dark mode ocean waves */
+  :global(.dark) .ocean-waves {
+    background: 
       radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
       radial-gradient(circle at 80% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
       radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
-    animation: waves 8s ease-in-out infinite;
   }
 
   @keyframes waves {
@@ -152,9 +165,15 @@
   .floating-coin {
     position: absolute;
     font-size: 1.5rem;
-    opacity: 0.4;
+    opacity: 0.6;
     pointer-events: none;
     animation: float 6s ease-in-out infinite;
+    filter: drop-shadow(0 0 8px rgba(217, 119, 6, 0.4));
+  }
+
+  /* Dark mode floating coins */
+  :global(.dark) .floating-coin {
+    opacity: 0.4;
     filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.3));
   }
 
@@ -222,9 +241,16 @@
   /* Fog/Mist Overlay */
   .fog-overlay {
     background: 
+      radial-gradient(ellipse at top, rgba(251, 191, 36, 0.15) 0%, transparent 70%),
+      radial-gradient(ellipse at bottom, rgba(245, 158, 11, 0.20) 0%, transparent 70%);
+    animation: fog-drift 10s ease-in-out infinite;
+  }
+
+  /* Dark mode fog overlay */
+  :global(.dark) .fog-overlay {
+    background: 
       radial-gradient(ellipse at top, rgba(30, 41, 59, 0.15) 0%, transparent 70%),
       radial-gradient(ellipse at bottom, rgba(15, 23, 42, 0.2) 0%, transparent 70%);
-    animation: fog-drift 10s ease-in-out infinite;
   }
 
   @keyframes fog-drift {
@@ -296,6 +322,11 @@
   }
 
   .close-modal-button:hover {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+  }
+
+  /* Dark mode close button hover */
+  :global(.dark) .close-modal-button:hover {
     box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
   }
 
