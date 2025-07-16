@@ -95,7 +95,7 @@
               <div class="w-8 h-0.5 bg-gradient-to-r from-transparent via-amber-600 dark:via-amber-500 to-transparent"></div>
             </div>
             <p class="text-amber-800/90 dark:text-amber-200/90 text-sm leading-relaxed font-medium">
-              Set sail into the <span class="text-amber-700 dark:text-amber-300 font-semibold">funnAI seas</span>! Connect your wallet to join our crew and discover treasures beyond imagination.
+              Set sail into the <span class="text-amber-700 dark:text-amber-300 font-semibold">funnAI seas</span>! Connect your wallet to join our crew.
             </p>
           </div>
           
