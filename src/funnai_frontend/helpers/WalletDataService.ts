@@ -3,6 +3,8 @@ import { fetchTokens } from "./token_helpers";
 import { Principal } from "@dfinity/principal";
 import { IcrcService } from "./IcrcService";
 import { formatBalance } from "./utils/numberFormatUtils";
+import { funnaiBalanceStore } from "../stores/store";
+import { FUNNAI_CANISTER_ID } from "./token_helpers";
 
 // Define types
 export interface TokenBalance {
@@ -51,6 +53,40 @@ const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 // Cache expiration time in milliseconds (1 hour)
 const TOKEN_CACHE_EXPIRY = 60 * 1000;
+
+// Helper function to update FUNNAI balance store
+function updateFunnaiBalanceStore(principalId: string, balances: Record<string, TokenBalance>, tokens: FE.Token[]): void {
+  try {
+    // 1) Try to get balance using the known canister ID constant
+    let funnaiBalance = balances[FUNNAI_CANISTER_ID];
+
+    // 2) Fallback: find any token whose symbol or name is "FUNNAI" and use its balance
+    if (!funnaiBalance) {
+      const funnaiToken = tokens?.find(
+        (t) => t.symbol?.toUpperCase() === "FUNNAI" || t.name?.toUpperCase() === "FUNNAI"
+      );
+      if (funnaiToken) {
+        funnaiBalance = balances[funnaiToken.canister_id as string];
+      }
+    }
+
+    if (funnaiBalance && funnaiBalance.in_tokens) {
+      // Convert bigint balance to number using formatBalance
+      const decimals = 8; // FUNNAI token decimals
+      const formattedBalance = formatBalance(funnaiBalance.in_tokens.toString(), decimals);
+      const balance = parseFloat(formattedBalance.replace(/,/g, ""));
+      
+      // Update the FUNNAI balance store
+      funnaiBalanceStore.setBalance(balance, principalId);
+      console.log(`Updated FUNNAI balance store: ${balance} for ${principalId}`);
+    } else {
+      // No FUNNAI balance found, set to 0
+      funnaiBalanceStore.setBalance(0, principalId);
+    }
+  } catch (error) {
+    console.warn("Error updating FUNNAI balance store:", error);
+  }
+}
 
 /**
  * WalletDataService - Centralized service for managing wallet token data
@@ -155,6 +191,9 @@ export class WalletDataService {
               balances,
               lastUpdated: Date.now()
             }));
+            
+            // Update FUNNAI balance store
+            updateFunnaiBalanceStore(principalId, balances, tokens);
           } catch (balanceError) {
             console.warn("Error loading balances, but continuing with tokens:", balanceError);
             
@@ -244,6 +283,9 @@ export class WalletDataService {
           lastUpdated: Date.now(),
           isLoading: false
         }));
+        
+        // Update FUNNAI balance store
+        updateFunnaiBalanceStore(principalId, balances, tokens);
         
         console.log(`Successfully refreshed balances for ${principalId}`);
       } else {

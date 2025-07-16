@@ -1182,3 +1182,81 @@ export const store = createStore({
   whitelist: [backendCanisterId, gameStateCanisterId],
   host: HOST,
 });
+
+// Add FUNNAI balance store
+interface FunnaiBalanceState {
+  balance: number;
+  principalId: string | null;
+  lastUpdated: number | null;
+}
+
+const defaultFunnaiBalance: FunnaiBalanceState = {
+  balance: 0,
+  principalId: null,
+  lastUpdated: null
+};
+
+// Create FUNNAI balance store with localStorage persistence
+function createFunnaiBalanceStore() {
+  const { subscribe, set, update } = writable<FunnaiBalanceState>(defaultFunnaiBalance);
+
+  // Load from localStorage on initialization
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('funnai_balance_store');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Check if data is not too old (max 10 minutes)
+        if (parsed.lastUpdated && Date.now() - parsed.lastUpdated < 10 * 60 * 1000) {
+          set(parsed);
+        }
+      }
+    } catch (error) {
+      console.warn('Error loading FUNNAI balance from localStorage:', error);
+    }
+  }
+
+  return {
+    subscribe,
+    setBalance: (balance: number, principalId: string) => {
+      const newState = {
+        balance,
+        principalId,
+        lastUpdated: Date.now()
+      };
+      set(newState);
+      
+      // Save to localStorage
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.setItem('funnai_balance_store', JSON.stringify(newState));
+        } catch (error) {
+          console.warn('Error saving FUNNAI balance to localStorage:', error);
+        }
+      }
+    },
+    clear: () => {
+      set(defaultFunnaiBalance);
+      if (typeof localStorage !== 'undefined') {
+        try {
+          localStorage.removeItem('funnai_balance_store');
+        } catch (error) {
+          console.warn('Error clearing FUNNAI balance from localStorage:', error);
+        }
+      }
+    },
+    getBalanceForUser: (principalId: string) => {
+      let currentState: FunnaiBalanceState;
+      subscribe(state => currentState = state)();
+      
+      if (currentState.principalId === principalId && 
+          currentState.lastUpdated && 
+          Date.now() - currentState.lastUpdated < 10 * 60 * 1000) {
+        return currentState.balance;
+      }
+      return null;
+    }
+  };
+}
+
+export const funnaiBalanceStore = createFunnaiBalanceStore();
