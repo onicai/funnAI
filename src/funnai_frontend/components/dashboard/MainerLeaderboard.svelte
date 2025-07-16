@@ -1,19 +1,27 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { store } from "../../stores/store";
-  import { formatFunnaiAmount, formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
+  import { formatFunnaiAmount, formatLargeNumber, formatBalance } from "../../helpers/utils/numberFormatUtils";
+  import { FUNNAI_CANISTER_ID } from "../../helpers/token_helpers";
+  import { walletDataStore } from "../../helpers/WalletDataService";
 
   export let title: string = "My mAIners leaderboard";
   export let maxItems: number = 10;
   export let variant: "user" | "global" = "user";
 
-  // Conversion rate: approximately 1 ICP = 1 trillion cycles
-  const CYCLES_PER_ICP = 1_000_000_000_000;
+
 
   let loading = true;
   let error = "";
   let updateInterval: NodeJS.Timer;
   let leaderboardData: LeaderboardEntry[] = [];
+  
+  // Minimum FUNNAI tokens required to access leaderboard
+  const MIN_FUNNAI_REQUIRED = 100;
+  
+  // Wallet data subscription
+  let walletData;
+  walletDataStore.subscribe((value) => walletData = value);
 
   interface LeaderboardEntry {
     id: string;
@@ -26,20 +34,37 @@
     participations: number;
     winnings: string;
     cyclesBurned: number;
-    icpSpent: number;
     isUserMainer: boolean;
   }
 
-  function convertCyclesToIcp(cycles: number): number {
-    return cycles / CYCLES_PER_ICP;
+  function getUserFunnaiBalance(): number {
+    if (!walletData || !walletData.balances) {
+      return 0;
+    }
+    
+    const funnaiBalance = walletData.balances[FUNNAI_CANISTER_ID];
+    
+    if (funnaiBalance && funnaiBalance.in_tokens) {
+      // Convert bigint balance to number using formatBalance
+      const decimals = 8; // FUNNAI token decimals
+      const formattedBalance = formatBalance(funnaiBalance.in_tokens.toString(), decimals);
+      return parseFloat(formattedBalance.replace(/,/g, ''));
+    }
+    
+    return 0;
   }
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
   $: isAuthenticated = $store.isAuthed;
+  
+  // Check if user has enough FUNNAI tokens
+  $: userFunnaiBalance = getUserFunnaiBalance();
+  $: hasEnoughFunnai = userFunnaiBalance >= MIN_FUNNAI_REQUIRED;
+  $: canAccessLeaderboard = isAuthenticated && hasEnoughFunnai;
 
   async function loadUserMainerLeaderboard() {
-    if (!isAuthenticated || !agentCanisterActors || !agentCanistersInfo) {
+    if (!canAccessLeaderboard || !agentCanisterActors || !agentCanistersInfo) {
       leaderboardData = [];
       return;
     }
@@ -169,7 +194,6 @@
         participations,
         winnings,
         cyclesBurned: canisterInfo.burnedCycles || 0,
-        icpSpent: convertCyclesToIcp(canisterInfo.burnedCycles || 0),
         isUserMainer: true,
       });
     }
@@ -240,8 +264,8 @@
     }
   });
 
-  // React to authentication changes
-  $: if (isAuthenticated !== undefined) {
+  // React to authentication and balance changes
+  $: if (isAuthenticated !== undefined || userFunnaiBalance !== undefined) {
     updateLeaderboard();
   }
 
@@ -292,7 +316,24 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
       </div>
-      <p class="text-sm text-gray-500 dark:text-gray-400">Connect your wallet to see your mAIner leaderboard</p>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Connect your wallet to see your mAIner leaderboard</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500">
+        Requires at least {MIN_FUNNAI_REQUIRED} FUNNAI tokens
+      </p>
+    </div>
+  {:else if isAuthenticated && !hasEnoughFunnai && variant === "user"}
+    <div class="text-center py-8">
+      <div class="text-orange-400 mb-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+        </svg>
+      </div>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+        You need at least {MIN_FUNNAI_REQUIRED} FUNNAI tokens to access the mAIner leaderboard
+      </p>
+      <p class="text-xs text-gray-400 dark:text-gray-500">
+        Your balance: {userFunnaiBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} FUNNAI
+      </p>
     </div>
   {:else if leaderboardData.length === 0 && !loading}
     <div class="text-center py-8">
