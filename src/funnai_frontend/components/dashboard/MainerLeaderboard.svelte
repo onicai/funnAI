@@ -3,18 +3,17 @@
   import { store } from "../../stores/store";
   import { formatFunnaiAmount, formatLargeNumber, formatBalance } from "../../helpers/utils/numberFormatUtils";
   import { FUNNAI_CANISTER_ID } from "../../helpers/token_helpers";
-  import { walletDataStore } from "../../helpers/WalletDataService";
+  import { walletDataStore, WalletDataService } from "../../helpers/WalletDataService";
 
   export let title: string = "My mAIners leaderboard";
   export let maxItems: number = 10;
   export let variant: "user" | "global" = "user";
 
-
-
   let loading = true;
   let error = "";
   let updateInterval: NodeJS.Timer;
   let leaderboardData: LeaderboardEntry[] = [];
+  let walletInitialized = false;
   
   // Minimum FUNNAI tokens required to access leaderboard
   const MIN_FUNNAI_REQUIRED = 100;
@@ -37,8 +36,29 @@
     isUserMainer: boolean;
   }
 
+  async function initializeWalletIfNeeded(): Promise<void> {
+    if (walletInitialized || !$store.principal || $store.principal.toString() === "anonymous") {
+      return;
+    }
+
+    try {
+      const principalId = $store.principal.toString();
+      console.log("Initializing wallet for mAIner leaderboard:", principalId);
+      await WalletDataService.initializeWallet(principalId);
+      walletInitialized = true;
+    } catch (err) {
+      console.warn("Error initializing wallet for leaderboard:", err);
+    }
+  }
+
   function getUserFunnaiBalance(): number {
-    if (!walletData || !walletData.balances) {
+    // If wallet data is still loading, return 0 (user will see loading state)
+    if (!walletData || walletData.isLoading) {
+      return 0;
+    }
+    
+    // If no balances or wallet not initialized, return 0
+    if (!walletData.balances) {
       return 0;
     }
     
@@ -61,7 +81,9 @@
   // Check if user has enough FUNNAI tokens
   $: userFunnaiBalance = getUserFunnaiBalance();
   $: hasEnoughFunnai = userFunnaiBalance >= MIN_FUNNAI_REQUIRED;
+  $: isWalletLoading = walletData && walletData.isLoading;
   $: canAccessLeaderboard = isAuthenticated && hasEnoughFunnai;
+  $: shouldShowLoadingForWallet = isAuthenticated && (isWalletLoading || !walletInitialized);
 
   async function loadUserMainerLeaderboard() {
     if (!canAccessLeaderboard || !agentCanisterActors || !agentCanistersInfo) {
@@ -252,20 +274,47 @@
   }
 
   onMount(async () => {
+    // Initialize wallet if user is already authenticated
+    if (isAuthenticated) {
+      await initializeWalletIfNeeded();
+    }
     await updateLeaderboard();
     
     // Update leaderboard every 60 seconds
-    updateInterval = setInterval(updateLeaderboard, 60000);
+    updateInterval = setInterval(async () => {
+      // Ensure wallet is initialized before each update
+      if (isAuthenticated) {
+        await initializeWalletIfNeeded();
+      }
+      await updateLeaderboard();
+    }, 60000);
   });
 
   onDestroy(() => {
     if (updateInterval) {
       clearInterval(updateInterval);
     }
+    // Reset initialization flag on component destruction
+    walletInitialized = false;
   });
 
   // React to authentication and balance changes
-  $: if (isAuthenticated !== undefined || userFunnaiBalance !== undefined) {
+  $: if (isAuthenticated !== undefined) {
+    if (isAuthenticated) {
+      // Reset wallet initialization flag when authentication state changes
+      walletInitialized = false;
+      initializeWalletIfNeeded().then(() => {
+        updateLeaderboard();
+      });
+    } else {
+      // Clear wallet data when user logs out
+      walletInitialized = false;
+      updateLeaderboard();
+    }
+  }
+  
+  // React to wallet data changes (balances loading)
+  $: if (walletData && userFunnaiBalance !== undefined) {
     updateLeaderboard();
   }
 
@@ -321,7 +370,19 @@
         Requires at least {MIN_FUNNAI_REQUIRED} FUNNAI tokens
       </p>
     </div>
-  {:else if isAuthenticated && !hasEnoughFunnai && variant === "user"}
+  {:else if isAuthenticated && shouldShowLoadingForWallet && variant === "user"}
+    <div class="text-center py-8">
+      <div class="text-blue-400 mb-2">
+        <div class="animate-spin h-8 w-8 mx-auto border-4 border-blue-500 rounded-full border-t-transparent"></div>
+      </div>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+        Loading wallet data...
+      </p>
+      <p class="text-xs text-gray-400 dark:text-gray-500">
+        Checking FUNNAI balance for leaderboard access
+      </p>
+    </div>
+  {:else if isAuthenticated && !hasEnoughFunnai && !shouldShowLoadingForWallet && variant === "user"}
     <div class="text-center py-8">
       <div class="text-orange-400 mb-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
