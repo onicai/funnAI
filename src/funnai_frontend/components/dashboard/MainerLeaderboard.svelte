@@ -46,6 +46,7 @@
       console.log("Initializing wallet for mAIner leaderboard:", principalId);
       await WalletDataService.initializeWallet(principalId);
       walletInitialized = true;
+      loadedFunnaiBalance = getUserFunnaiBalance();
     } catch (err) {
       console.warn("Error initializing wallet for leaderboard:", err);
     }
@@ -79,7 +80,8 @@
   $: isAuthenticated = $store.isAuthed;
   
   // Check if user has enough FUNNAI tokens
-  $: userFunnaiBalance = getUserFunnaiBalance();
+  let loadedFunnaiBalance = getUserFunnaiBalance();
+  $: userFunnaiBalance = loadedFunnaiBalance;
   $: hasEnoughFunnai = userFunnaiBalance >= MIN_FUNNAI_REQUIRED;
   $: isWalletLoading = walletData && walletData.isLoading;
   $: canAccessLeaderboard = isAuthenticated && hasEnoughFunnai;
