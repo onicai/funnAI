@@ -4,6 +4,9 @@ import {
 
 const gameStateCanisterId = canisterIds.gameStateCanisterId;
 
+// Export FUNNAI canister ID for use in other components
+export const FUNNAI_CANISTER_ID = "vpyot-zqaaa-aaaaa-qavaq-cai";
+
 const availableTokens: FE.Token[] = [ // TODO
   { 
     /* canister_id: this.toString(data.canister_id),
@@ -28,14 +31,14 @@ const availableTokens: FE.Token[] = [ // TODO
     chain: this.toString(data.chain || 'IC'),
     total_24h_volume: this.toString(data.total_24h_volume || '0') */
 
-    canister_id: "vpyot-zqaaa-aaaaa-qavaq-cai",
+    canister_id: FUNNAI_CANISTER_ID,
     name: "FUNNAI",
     symbol: "FUNNAI",
     decimals: 8,
-    address: "vpyot-zqaaa-aaaaa-qavaq-cai",
+    address: FUNNAI_CANISTER_ID,
     fee: 0.00000001,
     fee_fixed: "1",
-    token: "vpyot-zqaaa-aaaaa-qavaq-cai",
+    token: FUNNAI_CANISTER_ID,
     icrc1: true,
     icrc2: true,
     icrc3: true,

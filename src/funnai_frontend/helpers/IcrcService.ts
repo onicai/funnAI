@@ -376,6 +376,20 @@ export class IcrcService {
     }
   }
 
+  public static async getIcrc1TotalSupply(token: FE.Token): Promise<bigint> {
+    try {
+      const actor = await createAnonymousActorHelper(
+        token.canister_id,
+        canisterIDLs.icrc1,
+      );
+      const totalSupply = await actor.icrc1_total_supply();
+      return BigInt(totalSupply);
+    } catch (error) {
+      console.error(`Error getting total supply for ${token.symbol}:`, error);
+      return BigInt(0); // Fallback to 0
+    }
+  }
+
   public static async transfer(
     token: FE.Token,
     to: string | Principal,

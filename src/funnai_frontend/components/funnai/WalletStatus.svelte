@@ -72,7 +72,7 @@
   }
 </script>
 
-<div class="w-full bg-white dark:bg-gray-800 card-style p-6 rounded-lg">
+<div class="w-full bg-white dark:bg-gray-800 p-6 rounded-lg">
   <div class="flex items-center justify-between mb-6">
     <h2 class="text-xl font-semibold dark:text-white flex items-center gap-2">
       <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
