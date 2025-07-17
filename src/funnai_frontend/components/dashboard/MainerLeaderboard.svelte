@@ -420,9 +420,9 @@
             <th class="text-left py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
               mAIner
             </th>
-            <th class="text-right py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+            <!-- <th class="text-right py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
               Winnings
-            </th>
+            </th> -->
             <th class="text-center py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
               Avg Score
             </th>
@@ -455,11 +455,11 @@
                   {entry.name}
                 </div>
               </td>
-              <td class="py-3 px-2 text-right">
+              <!-- <td class="py-3 px-2 text-right">
                 <div class="text-sm font-semibold text-green-600 dark:text-green-400">
                   {formatFunnaiAmount(entry.winnings)} FUNNAI
                 </div>
-              </td>
+              </td> -->
               <td class="py-3 px-2 text-center">
                 <div class="text-sm text-gray-900 dark:text-white">
                   {entry.averageScore > 0 ? entry.averageScore.toFixed(1) : "—"}
