@@ -91,7 +91,7 @@
                data-modal-target="crypto-modal" 
                data-modal-toggle="crypto-modal" 
                class="flex-shrink-0 group relative overflow-hidden px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[44px] bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 dark:hover:from-purple-800/40 dark:hover:to-purple-700/40 border border-purple-200 hover:border-purple-300 dark:border-purple-700 dark:hover:border-purple-600 text-purple-700 hover:text-purple-800 dark:text-purple-300 dark:hover:text-purple-200 font-medium text-sm">
-         <span class="text-sm flex-shrink-0">🦜</span>
+         
          <span class="hidden xs:inline">Connect</span>
        </button>
     </div>
@@ -117,6 +117,15 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
         </svg>
         <span class="hidden xs:inline">mAIners</span>
+      </a>
+
+      <!-- Dashboard Button -->
+      <a use:link href="/dashboard" 
+         class="flex-shrink-0 group relative overflow-hidden px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[44px] bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 dark:hover:from-blue-800/40 dark:hover:to-blue-700/40 border border-blue-200 hover:border-blue-300 dark:border-blue-700 dark:hover:border-blue-600 text-blue-700 hover:text-blue-800 dark:text-blue-300 dark:hover:text-blue-200 font-medium text-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+        </svg>
+        <span class="hidden xs:inline">Dashboard</span>
       </a>
 
       <!-- Wallet Button -->

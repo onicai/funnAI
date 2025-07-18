@@ -508,7 +508,7 @@
   });
 </script>
 
-<div class="h-full dark:bg-gray-900 dark:text-white flex flex-col" style="overflow-y: auto; overflow-x: visible;">
+<div class="h-full dark:bg-gray-800 dark:text-white flex flex-col" style="overflow-y: auto; overflow-x: visible;">
 
   {#if updating && $store.isAuthed}
     <div class="flex justify-center py-2">
@@ -547,7 +547,7 @@
             </p>
           {:else}
             <p class="text-xs mt-4 text-gray-400 dark:text-gray-500">
-              {showAllEvents ? 'No recent activity in the protocol.' : 'No activity yet from your mAIners.'}
+              {showAllEvents ? 'No recent activity in the protocol.' : 'Loading activity from your mAIners.'}
             </p>
           {/if}
         </div>
@@ -565,7 +565,7 @@
       {#if feedItems.length === 0 && loading}
         <li class="text-center py-4">
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            {showAllEvents ? 'No recent activity in the protocol.' : 'No activity yet from your mAIners.'}
+            {showAllEvents ? 'No recent activity in the protocol.' : 'Loading activity from your mAIners.'}
           </p>
         </li>
       {:else}

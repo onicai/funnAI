@@ -109,6 +109,18 @@ function handleThemeToggle() {
           </button>
         </a>
 
+        <a use:link href="/dashboard" class="block" on:click={closeSidebar}>
+          <button class={`w-full px-4 py-3 text-left rounded-xl transition-all duration-200 flex items-center gap-3
+            ${currentPath === '/dashboard' ? 
+              'bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 text-blue-700 font-medium dark:bg-gradient-to-r dark:from-blue-900/30 dark:to-blue-800/30 dark:text-blue-300 dark:border-blue-700' : 
+              'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700 border border-transparent hover:border-gray-200 dark:hover:border-gray-600'}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+            </svg>
+            <span class="font-medium">Dashboard</span>
+          </button>
+        </a>
+
         <a use:link href="/wallet" class="block" on:click={closeSidebar}>
           <button class={`w-full px-4 py-3 text-left rounded-xl transition-all duration-200 flex items-center gap-3
             ${currentPath === '/wallet' ? 
