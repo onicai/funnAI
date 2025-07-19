@@ -12,6 +12,7 @@
 
   let confettiContainer: HTMLDivElement;
   let mounted = false;
+  let confettiInterval: ReturnType<typeof setInterval> | null = null;
 
   // Confetti animation variables
   let confettiPieces: Array<{
@@ -31,11 +32,18 @@
     '#F7DC6F', '#BB8FCE', '#85C1E9', '#F8C471', '#82E0AA'
   ];
 
-  function createConfetti() {
-    confettiPieces = [];
-    for (let i = 0; i < 100; i++) {
-      confettiPieces.push({
-        id: i,
+  function createConfetti(isInitial = false) {
+    if (isInitial) {
+      confettiPieces = [];
+    }
+    
+    const newPieces = [];
+    const pieceCount = isInitial ? 100 : 60; // Initial burst is bigger
+    const baseId = confettiPieces.length;
+    
+    for (let i = 0; i < pieceCount; i++) {
+      newPieces.push({
+        id: baseId + i,
         x: Math.random() * window.innerWidth,
         y: -20,
         rotation: Math.random() * 360,
@@ -48,6 +56,8 @@
         rotationSpeed: (Math.random() - 0.5) * 6
       });
     }
+    
+    confettiPieces = [...confettiPieces, ...newPieces];
   }
 
   function animateConfetti() {
@@ -72,14 +82,34 @@
   function startCelebration() {
     if (!mounted) return;
     
-    createConfetti();
+    // Initial confetti burst
+    createConfetti(true);
     animateConfetti();
+    
+    // Set up recurring confetti bursts every 8-10 seconds
+    confettiInterval = setInterval(() => {
+      if (isVisible) {
+        createConfetti(false);
+        // Restart animation if it stopped
+        if (confettiPieces.length > 0) {
+          animateConfetti();
+        }
+      }
+    }, 9000); // 9 seconds
     
     // Auto-hide after configured duration
     setTimeout(() => {
-      isVisible = false;
-      dispatch('close');
+      stopCelebration();
     }, CELEBRATION_DURATION);
+  }
+
+  function stopCelebration() {
+    if (confettiInterval) {
+      clearInterval(confettiInterval);
+      confettiInterval = null;
+    }
+    isVisible = false;
+    dispatch('close');
   }
 
   $: if (isVisible && mounted) {
@@ -96,8 +126,8 @@
   <div 
     class="fixed inset-0 z-[200000] bg-black/20 backdrop-blur-sm flex items-center justify-center"
     transition:fade={{ duration: 300 }}
-    on:click={() => { isVisible = false; dispatch('close'); }}
-    on:keydown={(e) => { if (e.key === 'Escape') { isVisible = false; dispatch('close'); } }}
+    on:click={stopCelebration}
+    on:keydown={(e) => { if (e.key === 'Escape') { stopCelebration(); } }}
     role="button"
     tabindex="0"
   >
