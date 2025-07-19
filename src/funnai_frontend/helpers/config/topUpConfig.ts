@@ -8,7 +8,7 @@ export const TOP_UP_CONFIG = {
   MAX_AMOUNT: 42, // must be a natural number (i.e. no decimals), e.g. 1, 42, 100, 187432
   
   // Duration for celebration display in milliseconds
-  CELEBRATION_DURATION: 120000, // 60 seconds
+  CELEBRATION_DURATION: 120000, // 120 seconds
   
   // Enable/disable celebration feature
   CELEBRATION_ENABLED: true
