@@ -26,9 +26,13 @@
 
   console.log("in MainerTopUpModal protocolAddress ", protocolAddress);
   
-  // ICP token configuration - load from token_helpers
-  let token: any = null;
+  // Token configurations - now supporting both ICP and FUNNAI
+  let availableTokens: any[] = [];
+  let selectedTokenSymbol: 'ICP' | 'FUNNAI' = 'ICP';
   let isTokenLoading: boolean = true;
+  
+  // Get currently selected token
+  $: selectedToken = availableTokens.find(t => t.symbol === selectedTokenSymbol);
   
   // Load token data from token_helpers
   async function loadTokenData() {
@@ -36,21 +40,32 @@
     try {
       const result = await fetchTokens({});
       const icpToken = result.tokens.find(t => t.symbol === "ICP");
-      if (icpToken) {
-        token = icpToken;
+      const funnaiToken = result.tokens.find(t => t.symbol === "FUNNAI");
+      
+      if (icpToken && funnaiToken) {
+        availableTokens = [icpToken, funnaiToken];
       } else {
-        throw new Error("ICP token not found in token_helpers");
+        throw new Error("Required tokens (ICP/FUNNAI) not found in token_helpers");
       }
     } catch (error) {
       console.error("Error loading token data:", error);
       // Fallback to default values if token data can't be loaded
-      token = {
-        name: "Internet Computer",
-        symbol: "ICP",
-        decimals: 8,
-        fee_fixed: "10000", // 0.0001 ICP fee
-        canister_id: "ryjl3-tyaaa-aaaaa-aaaba-cai" // ICP Ledger canister ID
-      };
+      availableTokens = [
+        {
+          name: "Internet Computer",
+          symbol: "ICP",
+          decimals: 8,
+          fee_fixed: "10000", // 0.0001 ICP fee
+          canister_id: "ryjl3-tyaaa-aaaaa-aaaba-cai" // ICP Ledger canister ID
+        },
+        {
+          name: "FUNNAI",
+          symbol: "FUNNAI", 
+          decimals: 8,
+          fee_fixed: "1", // 0.00000001 FUNNAI fee
+          canister_id: "vpyot-zqaaa-aaaaa-qavaq-cai" // FUNNAI canister ID
+        }
+      ];
     } finally {
       isTokenLoading = false;
     }
@@ -71,25 +86,35 @@
   $: isBelowMinimum = amount && !isNaN(Number(amount)) && Number(amount) > 0 && Number(amount) < MIN_AMOUNT;
   $: isMaxAmount = amount && !isNaN(Number(amount)) && Number(amount) === MAX_AMOUNT;
   $: isAboveMaximum = amount && !isNaN(Number(amount)) && Number(amount) > MAX_AMOUNT;
-  $: amountBigInt = isValidAmount && token
-    ? BigInt(new BigNumber(amount).times(new BigNumber(10).pow(token.decimals)).toString())
+  $: amountBigInt = isValidAmount && selectedToken
+    ? BigInt(new BigNumber(amount).times(new BigNumber(10).pow(selectedToken.decimals)).toString())
     : BigInt(0);
   $: hasEnoughBalance = isValidAmount && balance >= (amountBigInt + tokenFee);
-  $: if (token) {
-    tokenFee = BigInt(token.fee_fixed);
+  $: if (selectedToken) {
+    tokenFee = BigInt(selectedToken.fee_fixed);
   }
   
-  // Reactive statement to automatically calculate cycles when amount or conversion rate changes
-  $: if (conversionRate && amount && token) {
+  // Reactive statement to automatically calculate cycles when amount, conversion rate, or token changes
+  $: if (conversionRate && amount && selectedToken) {
     calculateCycles();
+  }
+  
+  // Load balance when selected token changes
+  $: if (selectedToken && $store.principal) {
+    loadBalance();
+  }
+  
+  // Load conversion rate when selected token changes
+  $: if (selectedToken) {
+    loadConversionRate();
   }
   
   async function loadBalance() {
     try {
-      if (!$store.principal || !token) return;
+      if (!$store.principal || !selectedToken) return;
       
       balance = await IcrcService.getIcrc1Balance(
-        token,
+        selectedToken,
         $store.principal
       ) as bigint;
     } catch (error) {
@@ -97,45 +122,55 @@
     }
   }
 
-  // Function to get ICP to Cycles conversion rate from CMC
+  // Function to get conversion rate (ICP from CMC, FUNNAI fixed rate)
   async function loadConversionRate() {
     isLoadingConversionRate = true;
     try {
-      // Access the CMC canister and get the conversion rate
-      const cmcCanisterId = "rkp4c-7iaaa-aaaaa-aaaca-cai";
-      
-      try {
-        // Create the CMC actor using the imported IDL factory
-        const cmcActor = await createAnonymousActorHelper(cmcCanisterId, cmcIdlFactory);
+      if (selectedTokenSymbol === 'FUNNAI') {
+        // Fixed conversion rate: 1 FUNNAI = 1 trillion cycles
+        conversionRate = new BigNumber("1000000000000"); // 1T cycles per FUNNAI
+        console.log("FUNNAI conversion rate loaded:", conversionRate.toString());
+      } else {
+        // ICP conversion rate from CMC
+        const cmcCanisterId = "rkp4c-7iaaa-aaaaa-aaaca-cai";
         
-        // Get conversion rate from CMC
-        const response = await cmcActor.get_icp_xdr_conversion_rate();
-        
-        if (response && response.data) {
-          const xdrRate = Number(response.data.xdr_permyriad_per_icp);
+        try {
+          // Create the CMC actor using the imported IDL factory
+          const cmcActor = await createAnonymousActorHelper(cmcCanisterId, cmcIdlFactory);
           
-          // 1 XDR = 1 trillion cycles, and the rate is in 10,000ths (permyriad)
-          const CYCLES_PER_XDR = new BigNumber("1000000000000"); // 1 trillion cycles
+          // Get conversion rate from CMC
+          const response = await cmcActor.get_icp_xdr_conversion_rate();
           
-          // Calculate: (xdr_permyriad_per_icp * CYCLES_PER_XDR) / 10000
-          conversionRate = new BigNumber(xdrRate)
-            .times(CYCLES_PER_XDR)
-            .div(10000);
+          if (response && response.data) {
+            const xdrRate = Number(response.data.xdr_permyriad_per_icp);
             
-          console.log("Conversion rate loaded:", conversionRate.toString());
-        } else {
-          throw new Error("Failed to get conversion rate data");
+            // 1 XDR = 1 trillion cycles, and the rate is in 10,000ths (permyriad)
+            const CYCLES_PER_XDR = new BigNumber("1000000000000"); // 1 trillion cycles
+            
+            // Calculate: (xdr_permyriad_per_icp * CYCLES_PER_XDR) / 10000
+            conversionRate = new BigNumber(xdrRate)
+              .times(CYCLES_PER_XDR)
+              .div(10000);
+              
+            console.log("ICP conversion rate loaded:", conversionRate.toString());
+          } else {
+            throw new Error("Failed to get conversion rate data");
+          }
+        } catch (actorError) {
+          console.error("Error creating CMC actor:", actorError);
+          throw new Error("Failed to create CMC actor");
         }
-      } catch (actorError) {
-        console.error("Error creating CMC actor:", actorError);
-        throw new Error("Failed to create CMC actor");
       }
     } catch (error) {
       console.error("Error loading conversion rate:", error);
-      errorMessage = "Using estimated conversion rate (10T cycles per ICP)";
       
-      // Use fallback conversion rate (approximation as of last known rate)
-      conversionRate = new BigNumber("10000000000000"); // ~10T cycles per ICP (fallback)
+      if (selectedTokenSymbol === 'FUNNAI') {
+        errorMessage = "Using estimated conversion rate (1T cycles per FUNNAI)";
+        conversionRate = new BigNumber("1000000000000"); // 1T cycles per FUNNAI (fallback)
+      } else {
+        errorMessage = "Using estimated conversion rate (10T cycles per ICP)";
+        conversionRate = new BigNumber("10000000000000"); // ~10T cycles per ICP (fallback)
+      }
     } finally {
       isLoadingConversionRate = false;
     }
@@ -156,7 +191,7 @@
         return;
       }
       
-      // Prevent more than 8 decimal places (ICP limit)
+      // Prevent more than 8 decimal places (token limit)
       const parts = value.split('.');
       if (parts.length > 1 && parts[1].length > 8) {
         parts[1] = parts[1].substring(0, 8);
@@ -170,35 +205,44 @@
     calculateCycles();
   }
   
-  // Calculate cycles from ICP amount with proper conversion
+  // Calculate cycles from token amount with proper conversion
   function calculateCycles() {
-    if (!conversionRate || !amount || isNaN(Number(amount)) || Number(amount) <= 0 || !token) {
+    if (!conversionRate || !amount || isNaN(Number(amount)) || Number(amount) <= 0 || !selectedToken) {
       cyclesAmount = "0";
       return;
     }
     
     try {
-      const E8S_PER_ICP = new BigNumber(`1${"0".repeat(token.decimals)}`); // 10^decimals units per ICP
+      const E8S_PER_TOKEN = new BigNumber(`1${"0".repeat(selectedToken.decimals)}`); // 10^decimals units per token
       
-      // Convert amount to e8s format
+      // Convert amount to smallest unit format (e8s for both ICP and FUNNAI)
       const [integral, fractional = ""] = amount.split(".");
-      const e8sAmount = new BigNumber(integral).times(E8S_PER_ICP)
-        .plus(new BigNumber(fractional.padEnd(token.decimals, '0').substring(0, token.decimals)));
+      const smallestUnitAmount = new BigNumber(integral).times(E8S_PER_TOKEN)
+        .plus(new BigNumber(fractional.padEnd(selectedToken.decimals, '0').substring(0, selectedToken.decimals)));
       
-      // Calculate e8s to cycles ratio
-      const e8sToCycleRatio = conversionRate.div(E8S_PER_ICP);
+      // Calculate smallest unit to cycles ratio
+      const smallestUnitToCycleRatio = conversionRate.div(E8S_PER_TOKEN);
       
       // Calculate cycles
-      const cycles = e8sAmount.times(e8sToCycleRatio);
+      const cycles = smallestUnitAmount.times(smallestUnitToCycleRatio);
       
       // Use formatLargeNumber to format trillions
       cyclesAmount = formatLargeNumber(cycles.toNumber() / 1_000_000_000_000, 4, false);
       
-      console.log(`${amount} ICP equals ${cyclesAmount} Trillion (${cycles.toString()}) cycles`);
+      console.log(`${amount} ${selectedToken.symbol} equals ${cyclesAmount} Trillion (${cycles.toString()}) cycles`);
     } catch (error) {
       console.error("Error calculating cycles:", error);
       cyclesAmount = "0";
     }
+  }
+
+  // Handle token selection change
+  function handleTokenChange(tokenSymbol: 'ICP' | 'FUNNAI') {
+    selectedTokenSymbol = tokenSymbol;
+    // Reset amount when switching tokens to avoid confusion
+    amount = "";
+    cyclesAmount = "0";
+    errorMessage = "";
   }
 
   // Handle modal close function explicitly
@@ -207,10 +251,8 @@
     onClose();
   }
 
-
-
   async function handleSubmit() {
-    if (isValidating || !hasEnoughBalance || !token) return;
+    if (isValidating || !hasEnoughBalance || !selectedToken) return;
     isValidating = true;
     errorMessage = "";
 
@@ -228,10 +270,10 @@
         throw new Error("Canister ID is required");
       }
       
-      // Transfer ICP to the Protocol's account for top-up
+      // Transfer tokens to the Protocol's account for top-up
       // The backend will handle the actual cycles minting and top-up process
       const result = await IcrcService.transfer(
-        token,
+        selectedToken,
         protocolAddress,  // Use protocol address from token_helpers
         amountBigInt,
         {
@@ -253,7 +295,7 @@
           
           // Small delay to ensure modal is closed before showing celebration
           setTimeout(() => {
-            onCelebration(amount, token?.symbol || 'ICP');
+            onCelebration(amount, selectedToken?.symbol || selectedTokenSymbol);
           }, 300);
           try {
             let maxTopUpInput = {
@@ -294,7 +336,7 @@
 <Modal
   {isOpen}
   onClose={handleClose}
-  title="Top up mAIner with ICP"
+  title="Top up mAIner with Crypto"
   width="min(480px, calc(100vw - 2rem))"
   variant="transparent"
   height="auto"
@@ -309,44 +351,51 @@
         <span class="w-6 h-6 border-2 border-gray-400/30 border-t-gray-400 dark:border-gray-400/30 dark:border-t-gray-400 rounded-full animate-spin"></span>
       </div>
     {:else}
-      <!-- Token Info Banner -->
-      <div class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100">
-        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
-          <div class="sm:hidden">
-            <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
-          </div>
-          <div class="hidden sm:block">
-            <TokenImages tokens={[token]} size={38} showSymbolFallback={true} />
-          </div>
-        </div>
-        <div class="flex flex-col min-w-0 flex-1">
-          <div class="text-gray-900 font-medium dark:text-gray-100 text-sm sm:text-base truncate">{token.name}</div>
-          <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Balance: {formatBalance(balance.toString(), token.decimals)} {token.symbol}</div>
+      <!-- Token Selector -->
+      <div class="flex flex-col gap-2">
+        <label class="block text-xs text-gray-600 mb-1 dark:text-gray-400">Select Payment Token</label>
+        <div class="flex gap-2">
+          {#each availableTokens as token}
+                         <button
+               type="button"
+               class="flex-1 flex items-center gap-2 p-3 rounded-lg border transition-colors {selectedToken?.symbol === token.symbol ? 'bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-900 dark:bg-opacity-20 dark:border-purple-600 dark:border-opacity-30 dark:text-purple-300' : 'bg-gray-50 border-gray-300 text-gray-700 dark:bg-gray-800 dark:bg-opacity-50 dark:border-gray-600 dark:border-opacity-30 dark:text-gray-300'}"
+               on:click={() => handleTokenChange(token.symbol)}
+             >
+              <div class="w-8 h-8 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-700 dark:border-gray-600">
+                <TokenImages tokens={[token]} size={30} showSymbolFallback={true} />
+              </div>
+              <div class="flex flex-col min-w-0 flex-1 text-left">
+                <div class="font-medium text-sm truncate">{token.symbol}</div>
+                <div class="text-xs opacity-70 truncate">{token.name}</div>
+              </div>
+              {#if selectedToken?.symbol === token.symbol}
+                <Check size={16} class="text-purple-600 dark:text-purple-400 flex-shrink-0" />
+              {/if}
+            </button>
+          {/each}
         </div>
       </div>
 
-      <!-- Top-up Info -->
-      <div class="flex flex-col gap-2 sm:gap-3">
-        <!-- Recipient Address 
-        <div>
-          <label class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">Recipient</label>
-          <div class="relative">
-            <input
-              type="text"
-              class="w-full py-2 px-3 bg-white border border-gray-300 rounded-md text-sm text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
-              value={protocolAddress}
-              disabled
-            />
-            <div class="absolute inset-y-0 right-0 flex items-center">
-              <div class="p-1.5 text-green-500">
-                <Check size={16} />
-              </div>
+      <!-- Selected Token Info Banner -->
+      {#if selectedToken}
+        <div class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100">
+          <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
+            <div class="sm:hidden">
+              <TokenImages tokens={[selectedToken]} size={32} showSymbolFallback={true} />
+            </div>
+            <div class="hidden sm:block">
+              <TokenImages tokens={[selectedToken]} size={38} showSymbolFallback={true} />
             </div>
           </div>
-          <div class="mt-1 text-xs text-green-600 dark:text-green-500">FunnAI Protocol Address</div>
+          <div class="flex flex-col min-w-0 flex-1">
+            <div class="text-gray-900 font-medium dark:text-gray-100 text-sm sm:text-base truncate">{selectedToken.name}</div>
+            <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Balance: {formatBalance(balance.toString(), selectedToken.decimals)} {selectedToken.symbol}</div>
+          </div>
         </div>
-        -->
-        
+      {/if}
+
+      <!-- Top-up Info -->
+      <div class="flex flex-col gap-2 sm:gap-3">
         <!-- Canister ID -->
         <div>
           <label class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">mAIner canister</label>
@@ -364,13 +413,13 @@
         <!-- Amount -->
         <div>
           <div class="flex justify-between items-center mb-1.5">
-            <label for="amount-input" class="block text-xs text-gray-600 dark:text-gray-400">ICP Amount</label>
+            <label for="amount-input" class="block text-xs text-gray-600 dark:text-gray-400">{selectedToken?.symbol || 'Token'} Amount</label>
             <button
               type="button"
               class="text-xs text-purple-600 hover:text-purple-800 dark:text-purple-500 dark:hover:text-purple-400 font-medium"
               on:click={() => amount = String(MAX_AMOUNT)}
             >
-              Top up Max ({MAX_AMOUNT} {token?.symbol || 'ICP'})
+              Top up Max ({MAX_AMOUNT} {selectedToken?.symbol || 'Token'})
             </button>
           </div>
           <div class="relative">
@@ -384,12 +433,12 @@
               class:border-purple-500={isMaxAmount && hasEnoughBalance}
               class:border-gray-300={!isValidAmount && !isBelowMinimum && !isAboveMaximum}
               class:dark:border-gray-600={!isValidAmount && !isBelowMinimum && !isAboveMaximum}
-              placeholder="Enter ICP amount to top up"
+              placeholder="Enter {selectedToken?.symbol || 'token'} amount to top up"
               bind:value={amount}
               on:input={handleAmountInput}
             />
             <div class="absolute inset-y-0 right-0 flex items-center">
-              <span class="pr-2 sm:pr-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">{token.symbol}</span>
+              <span class="pr-2 sm:pr-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">{selectedToken?.symbol || 'Token'}</span>
             </div>
           </div>
           <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
@@ -397,12 +446,12 @@
           </div>
           {#if isBelowMinimum}
             <div class="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
-              Minimum amount: {MIN_AMOUNT} {token.symbol}
+              Minimum amount: {MIN_AMOUNT} {selectedToken?.symbol || 'Token'}
             </div>
           {/if}
           {#if isAboveMaximum}
             <div class="mt-1 text-xs text-red-600 dark:text-red-400">
-              Maximum amount: {MAX_AMOUNT} {token.symbol}
+              Maximum amount: {MAX_AMOUNT} {selectedToken?.symbol || 'Token'}
             </div>
           {/if}
           {#if isMaxAmount && hasEnoughBalance}
@@ -418,6 +467,9 @@
             <Info size={12} class="sm:hidden flex-shrink-0" />
             <Info size={14} class="hidden sm:block flex-shrink-0" />
             <span class="font-medium">Cycles Conversion</span>
+            {#if selectedTokenSymbol === 'FUNNAI'}
+              <span class="text-xs opacity-70">(1 FUNNAI = 1T Cycles)</span>
+            {/if}
             {#if isLoadingConversionRate}
               <span class="w-3 h-3 ml-2 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin dark:border-blue-400/30 dark:border-t-blue-400 flex-shrink-0"></span>
             {/if}
@@ -425,7 +477,7 @@
           
           {#if !isLoadingConversionRate}
             <div class="flex justify-between items-center gap-2">
-              <span class="truncate">{amount || '0'} ICP</span>
+              <span class="truncate">{amount || '0'} {selectedToken?.symbol || 'Token'}</span>
               <span class="font-medium text-right flex-shrink-0">≈ {cyclesAmount} Trillion Cycles</span>
             </div>
           {:else}
@@ -445,12 +497,12 @@
           type="button"
           on:click={handleSubmit}
           class="mt-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-md text-white font-medium flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
-          class:bg-purple-600={hasEnoughBalance && !isValidating}
-          class:hover:bg-purple-500={hasEnoughBalance && !isValidating}
-          class:bg-gray-400={!hasEnoughBalance || isValidating}
-          class:cursor-not-allowed={!hasEnoughBalance || isValidating}
-          class:dark:bg-gray-700={!hasEnoughBalance || isValidating}
-          disabled={!hasEnoughBalance || isValidating}
+          class:bg-purple-600={hasEnoughBalance && !isValidating && selectedToken}
+          class:hover:bg-purple-500={hasEnoughBalance && !isValidating && selectedToken}
+          class:bg-gray-400={!hasEnoughBalance || isValidating || !selectedToken}
+          class:cursor-not-allowed={!hasEnoughBalance || isValidating || !selectedToken}
+          class:dark:bg-gray-700={!hasEnoughBalance || isValidating || !selectedToken}
+          disabled={!hasEnoughBalance || isValidating || !selectedToken}
         >
           {#if isValidating}
             <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
@@ -458,7 +510,7 @@
           {:else}
             <ArrowUp size={14} class="sm:hidden" />
             <ArrowUp size={16} class="hidden sm:block" />
-            Top up {amount || '0'} {token.symbol}
+            Top up {amount || '0'} {selectedToken?.symbol || 'Token'}
           {/if}
         </button>
       </div>
@@ -488,4 +540,4 @@
       margin: 0.5rem;
     }
   }
-</style> 
+</style>
