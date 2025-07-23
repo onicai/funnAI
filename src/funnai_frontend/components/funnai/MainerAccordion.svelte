@@ -1751,12 +1751,6 @@
             
             <!-- mAIner info -->
             <div class="flex flex-col items-start min-w-0 flex-1">
-              <!-- Agent name  -->
-              <div class="mb-2 px-2 py-0.5 bg-white/80 backdrop-blur-sm rounded-md shadow-sm border border-white/40 max-w-[80px] sm:max-w-[100px]">
-                <span class="text-xs font-bold text-gray-800 truncate block text-center">
-                  🦜 {agent.name.replace('mAIner ', '')}
-                </span>
-              </div>
               <div class="flex flex-wrap items-center gap-1 sm:gap-2 mb-1">
                 <!-- Status badge -->
                 <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm border ${agent.status === 'active' 
@@ -1821,7 +1815,13 @@
           
           <!-- Right section: Expand indicator -->
           <div class="flex-shrink-0 ml-4">
-            <div class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30 shadow-sm group-hover:bg-white/30 transition-all duration-300">
+            <!-- Agent name  -->
+            <div class="mb-2 px-2 py-0.5 bg-white/80 backdrop-blur-sm rounded-md shadow-sm border border-white/40 max-w-[80px] sm:max-w-[100px]">
+              <span class="text-xs font-bold text-gray-800 truncate block text-center">
+                🦜 {agent.name.replace('mAIner ', '')}
+              </span>
+            </div>
+            <div class="w-full h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30 shadow-sm group-hover:bg-white/30 transition-all duration-300">
               <span id="icon-{sanitizedId}" class="{identity.colors.text} transition-transform duration-300 group-hover:scale-110" style="transform: rotate(180deg)">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 sm:w-5 sm:h-5">
                   <path fill-rule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
