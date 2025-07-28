@@ -1,15 +1,17 @@
 // Session Manager Helper
-// Provides utilities for managing user authentication sessions
+// Provides utilities for managing user authentication sessions with enhanced debugging
 
 export interface SessionInfo {
   loginType: string;
   expiry: bigint;
   timestamp: number;
+  version?: string;
 }
 
 export class SessionManager {
   private static readonly SESSION_WARNING_THRESHOLD = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
   private static readonly EXTENDED_SESSION_KEY = 'extendedSessionPreference';
+  private static readonly DEBUG_MODE = true; // Enable debugging for session issues
 
   /**
    * Check if the user prefers extended sessions
@@ -87,6 +89,91 @@ export class SessionManager {
   }
 
   /**
+   * Get detailed session status for debugging
+   */
+  static getSessionStatus(): {
+    hasSession: boolean;
+    loginType?: string;
+    timeRemaining?: string;
+    expiryDate?: string;
+    isExpiringSoon?: boolean;
+    lastActivity?: string;
+    debugInfo?: any;
+  } {
+    try {
+      const sessionInfoStr = localStorage.getItem('sessionInfo');
+      const lastActivity = localStorage.getItem('lastActivity');
+      
+      if (!sessionInfoStr) {
+        return {
+          hasSession: false,
+          debugInfo: {
+            sessionStorage: null,
+            lastActivity: lastActivity ? new Date(parseInt(lastActivity)).toLocaleString() : null
+          }
+        };
+      }
+
+      const sessionInfo = JSON.parse(sessionInfoStr);
+      const expiry = BigInt(sessionInfo.expiry);
+      const now = BigInt(Date.now()) * BigInt(1000000);
+      
+      return {
+        hasSession: true,
+        loginType: sessionInfo.loginType,
+        timeRemaining: SessionManager.getTimeUntilExpiry(expiry),
+        expiryDate: SessionManager.formatExpiryDate(expiry),
+        isExpiringSoon: SessionManager.isSessionExpiringSoon(expiry),
+        lastActivity: lastActivity ? new Date(parseInt(lastActivity)).toLocaleString() : 'Unknown',
+        debugInfo: {
+          sessionTimestamp: new Date(sessionInfo.timestamp).toLocaleString(),
+          currentTime: new Date().toLocaleString(),
+          timeLeftNs: (expiry - now).toString(),
+          version: sessionInfo.version || '1.0'
+        }
+      };
+    } catch (error) {
+      return {
+        hasSession: false,
+        debugInfo: {
+          error: error.message,
+          storageContent: localStorage.getItem('sessionInfo')
+        }
+      };
+    }
+  }
+
+  /**
+   * Log session status to console (for debugging)
+   */
+  static logSessionStatus(): void {
+    if (!SessionManager.DEBUG_MODE) return;
+    
+    const status = SessionManager.getSessionStatus();
+    console.group('🔐 Session Status');
+    console.log('Has Session:', status.hasSession);
+    
+    if (status.hasSession) {
+      console.log('Login Type:', status.loginType);
+      console.log('Time Remaining:', status.timeRemaining);
+      console.log('Expires:', status.expiryDate);
+      console.log('Expiring Soon:', status.isExpiringSoon);
+      console.log('Last Activity:', status.lastActivity);
+      
+      if (status.debugInfo) {
+        console.log('Debug Info:', status.debugInfo);
+      }
+    } else {
+      console.log('No active session found');
+      if (status.debugInfo) {
+        console.log('Debug Info:', status.debugInfo);
+      }
+    }
+    
+    console.groupEnd();
+  }
+
+  /**
    * Clean up expired session data
    */
   static cleanupExpiredSessions(): void {
@@ -99,12 +186,42 @@ export class SessionManager {
         
         if (expiry <= now) {
           localStorage.removeItem('sessionInfo');
+          localStorage.removeItem('sessionInfoBackup');
           localStorage.removeItem('isAuthed');
-          console.log('Cleaned up expired session data');
+          localStorage.removeItem('lastActivity');
+          console.log('🧹 Cleaned up expired session data');
         }
       }
     } catch (error) {
       console.error('Error cleaning up session data:', error);
     }
+  }
+
+  /**
+   * Monitor session health and log warnings
+   */
+  static monitorSessionHealth(): void {
+    if (!SessionManager.DEBUG_MODE) return;
+    
+    setInterval(() => {
+      const status = SessionManager.getSessionStatus();
+      
+      if (status.hasSession && status.isExpiringSoon) {
+        console.warn('⚠️ Session expiring soon:', status.timeRemaining);
+      }
+    }, 5 * 60 * 1000); // Check every 5 minutes
+  }
+
+  /**
+   * Initialize session monitoring
+   */
+  static initialize(): void {
+    if (SessionManager.DEBUG_MODE) {
+      console.log('🔐 SessionManager initialized with debugging enabled');
+      SessionManager.logSessionStatus();
+      SessionManager.monitorSessionHealth();
+    }
+    
+    SessionManager.cleanupExpiredSessions();
   }
 } 
