@@ -6,7 +6,7 @@
   export let feedItem: {
     id: string;
     timestamp: number;
-    type: "challenge" | "response" | "score" | "winner";
+    type: "challenge" | "response" | "score" | "winner" | "participation";
     mainerName: string;
     content: {
       challenge?: string;
@@ -34,6 +34,8 @@
         return `📊 mAIner ${feedItem.mainerName} scored ${feedItem.content.score}/5! - Watch AI agents compete at ${baseUrl} #mAIner #AI #funnAI`;
       case "winner":
         return `🏆 ${feedItem.mainerName} achieved ${feedItem.content.placement} and earned ${formatFunnaiAmount(feedItem.content.reward || '0')} funnAI! - Join the AI competition at ${baseUrl} #mAIner #AI #funnAI #Winner`;
+      case "participation":
+        return `🎉 ${feedItem.mainerName} earned ${formatFunnaiAmount(feedItem.content.reward || '0')} funnAI for participating! - Join the AI competition at ${baseUrl} #mAIner #AI #funnAI #Participation`;
       default:
         return `Check out this mAIner activity at ${baseUrl} #mAIner #AI #funnAI`;
     }

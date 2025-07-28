@@ -15,7 +15,7 @@
   interface FeedItem {
     id: string;
     timestamp: number;
-    type: "challenge" | "response" | "score" | "winner";
+    type: "challenge" | "response" | "score" | "winner" | "participation";
     mainerName: string;
     content: {
       challenge?: string;
@@ -71,9 +71,9 @@
         // Filter cached items to only include those from last 3 days and ensure no winner events in "All events"
         let filteredItems = filterItemsByDate(items);
         
-        // Additional filter: remove winner events from "All events" cache
+        // Additional filter: remove winner and participation events from "All events" cache
         if (showAllEvents) {
-          filteredItems = filteredItems.filter(item => item.type !== 'winner');
+          filteredItems = filteredItems.filter(item => item.type !== 'winner' && item.type !== 'participation');
         }
         
         return filteredItems;
@@ -91,9 +91,9 @@
       // Only save items from last 3 days to keep storage lean
       let recentItems = filterItemsByDate(items);
       
-      // Additional filter: remove winner events from "All events" cache
+      // Additional filter: remove winner and participation events from "All events" cache
       if (showAllEvents) {
-        recentItems = recentItems.filter(item => item.type !== 'winner');
+        recentItems = recentItems.filter(item => item.type !== 'winner' && item.type !== 'participation');
       }
       
       localStorage.setItem(feedKey, JSON.stringify(recentItems));
@@ -121,9 +121,9 @@
     const uniqueNewItems = newItems.filter(item => !existingIds.has(item.id));
     let merged = [...existingItems, ...uniqueNewItems];
     
-    // Additional safety filter: remove winner events from "All events" mode
+    // Additional safety filter: remove winner and participation events from "All events" mode
     if (showAllEvents) {
-      merged = merged.filter(item => item.type !== 'winner');
+      merged = merged.filter(item => item.type !== 'winner' && item.type !== 'participation');
     }
     
     // Sort by timestamp (items are already filtered by date in getFeedData)
@@ -166,6 +166,8 @@
         return "before:bg-orange-500";
       case "winner":
         return "before:bg-gradient-to-r before:from-yellow-400 before:to-yellow-600 before:shadow-lg before:shadow-yellow-500/50";
+      case "participation":
+        return "before:bg-green-500";
       default:
         return "before:bg-gray-500";
     }
@@ -285,6 +287,57 @@
                     reward: entry.reward.amount.toString(),
                   },
                 });
+              }
+            });
+          });
+
+          // Add participation rewards (only for "My mAIners" and only last 3 days)
+          winners.forEach((winnerDeclaration) => {
+            const winnerTimestamp = Number(winnerDeclaration.finalizedTimestamp);
+            const passesDateFilter = isWithinDateRange(winnerTimestamp, 3);
+            
+            if (!passesDateFilter) {
+              return;
+            }
+
+            // Helper function to process participants list (it's a linked list structure)
+            function processParticipantsList(participantsList: any): any[] {
+              const participants: any[] = [];
+              let current = participantsList;
+              
+              while (current && current.length > 0 && current[0] && current[0].length >= 2) {
+                const participant = current[0][0]; // First element is the participant
+                participants.push(participant);
+                current = current[0][1]; // Second element is the next list node
+              }
+              
+              return participants;
+            }
+
+            // Process all participants from the linked list
+            const allParticipants = processParticipantsList(winnerDeclaration.participants);
+            
+            allParticipants.forEach((participant) => {
+              // Check if this is a participation reward (not winner/second/third place)
+              if (participant.result && "Participated" in participant.result) {
+                const mainerIndex = agentCanistersInfo.findIndex(
+                  (agent) => agent.address === participant.submittedBy.toString(),
+                );
+                
+                // Only show if it's the user's mAIner
+                if (mainerIndex !== -1) {
+                  const mainerName = `mAIner ${participant.submittedBy.toString().slice(0, 5)}`;
+
+                  newFeedItems.push({
+                    id: `${participant.submissionId}-participation`,
+                    timestamp: winnerTimestamp,
+                    type: "participation",
+                    mainerName,
+                    content: {
+                      reward: participant.reward.amount.toString(),
+                    },
+                  });
+                }
               }
             });
           });
@@ -535,6 +588,7 @@
             {/if}
             {#if !showAllEvents}
             <li>• 🏆 Your mAIners' victories and placements</li>
+            <li>• 🎯 Participation rewards earned</li>
             {/if}
             {#if !$store.isAuthed}
             <li>• 💭 Responses from mAIners</li>
@@ -569,7 +623,7 @@
           </p>
         </li>
       {:else}
-        {#each feedItems.filter(item => !showAllEvents || item.type !== 'winner') as item (item.id)}
+        {#each feedItems.filter(item => !showAllEvents || (item.type !== 'winner' && item.type !== 'participation')) as item (item.id)}
           <li 
             role="article" 
             class="relative px-6 
@@ -616,6 +670,10 @@
                     and earned <span class="font-bold text-lg text-green-600 dark:text-green-400">{formatFunnaiAmount(item.content.reward || '0')} FUNNAI</span>
                   </p>
                 </div>
+              {:else if item.type === 'participation'}
+                <p class="text-slate-600 dark:text-slate-300 pr-6">
+                  🎯 Earned participation reward: <span class="font-semibold text-blue-600 dark:text-blue-400">{formatFunnaiAmount(item.content.reward || '0')} FUNNAI</span>
+                </p>
               {/if}
             </div>
           </li>
