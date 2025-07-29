@@ -314,7 +314,6 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     };   
   };
 
-  // Retrieve principals of all user
   public query (msg) func getUsersAdmin() : async Types.GetUsersResult {
     if (Principal.isAnonymous(msg.caller)) {
       return #Err(#Unauthorized);
