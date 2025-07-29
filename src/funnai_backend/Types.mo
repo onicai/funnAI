@@ -78,6 +78,7 @@ module {
   };
 
   public type LoginEventsResult = Result<[LoginEvent], ApiError>;
+  public type GetUsersResult = Result<[Text], ApiError>;
 
   public type PaymentInfoInput = {
     block_index : Nat64;
