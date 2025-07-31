@@ -1,8 +1,13 @@
+import json
+import subprocess
+from pathlib import Path
 from ic.client import Client
 from ic.agent import Agent
 from ic.identity import Identity
 from ic.common.ledger import Ledger
 from ic.principal import Principal
+
+from .ic_py_canister import get_canister, run_dfx_command
 
 import hashlib
 import binascii
@@ -36,3 +41,27 @@ def get_icp_balance(principal_str: str) -> float:
 
     # 5. Convert to ICP (float)
     return e8s / 1e8
+
+def get_icp_transactions(principal_str: str, max_results: int = 1000) -> dict:
+    """
+    Returns all the ICP transactions for the given principal string.
+    """
+    icp_index_canister_id = "qhbym-qaaaa-aaaaa-aaafq-cai" 
+
+    # Run the dfx canister call command
+    cmd = [
+        "dfx", "canister", "call", 
+        "--network", "ic",
+        "--output", "json",
+        icp_index_canister_id,
+        "get_account_transactions",
+        f'(record{{account=record {{owner = principal "{principal_str}"}}; max_results={max_results}:nat}})'
+    ]
+    
+    print(f"Running command: {' '.join(cmd)}")
+    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    
+    # Parse the JSON response
+    response_json = json.loads(result.stdout)
+
+    return response_json.get('Ok', {})
