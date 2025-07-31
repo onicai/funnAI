@@ -278,7 +278,8 @@
                 const mainerName = `mAIner ${entry.submittedBy.toString().slice(0, 5)}`;
 
                 newFeedItems.push({
-                  id: `${entry.submissionId}-winner`,
+                  // Use challenge ID + submission ID + position to ensure unique IDs and prevent duplicates
+                  id: `${winnerDeclaration.challengeId}-${entry.submissionId}-${position.replace(/\s+/g, '')}-winner`,
                   timestamp: winnerTimestamp,
                   type: "winner",
                   mainerName,
@@ -329,7 +330,8 @@
                   const mainerName = `mAIner ${participant.submittedBy.toString().slice(0, 5)}`;
 
                   newFeedItems.push({
-                    id: `${participant.submissionId}-participation`,
+                    // Use challenge ID + submission ID to ensure unique IDs and prevent duplicates
+                    id: `${winnerDeclaration.challengeId}-${participant.submissionId}-participation`,
                     timestamp: winnerTimestamp,
                     type: "participation",
                     mainerName,
@@ -367,7 +369,8 @@
                     
                     // Add response
                     newFeedItems.push({
-                      id: submission.submissionId,
+                      // Use challenge ID + submission ID to ensure unique IDs and prevent duplicates
+                      id: `${submission.challengeId}-${submission.submissionId}-response`,
                       timestamp: submissionTimestamp,
                       type: "response",
                       mainerName,
@@ -387,7 +390,8 @@
                         
                         if (scorePassesDateFilter) {
                           newFeedItems.push({
-                            id: `${submission.submissionId}-score`,
+                            // Use challenge ID + submission ID to ensure unique IDs and prevent duplicates
+                            id: `${submission.challengeId}-${submission.submissionId}-score`,
                             timestamp: judgedTimestamp,
                             type: "score",
                             mainerName,
