@@ -136,3 +136,6 @@ src/arcmindvectordb/target/**
 # scripts 
 canister_ids_mainers-*.env
 secret/
+
+# whitelist analysis output (contains sensitive user data)
+funnai_accounts/
