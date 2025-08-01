@@ -10,7 +10,7 @@ import pprint
 from pathlib import Path
 from typing import Dict, Any, List, Tuple
 from datetime import datetime
-from .icp import get_icp_balance, get_icp_transactions, calculate_historical_balance, analyze_balance_history
+from .icp import get_icp_balance, get_icp_transactions, calculate_historical_balance
 from .funnai import get_funnai_principals
 
 
@@ -62,24 +62,9 @@ def main():
             print(f"  Calculating historical balance...")
             balance_history = calculate_historical_balance(principal, icp_transactions)
             
-            # Analyze the balance history
-            print(f"  Analyzing balance history...")
-            analysis = analyze_balance_history(balance_history)
-            
-            # Track tier statistics
-            tier = analysis.get('whitelist_tier', 'excluded')
-            if tier in tier_counts:
-                tier_counts[tier] += 1
-            
-            # Print summary for this account
-            max_balance = analysis.get('max_balance', 0)
-            score = analysis.get('whitelist_score', 0)
-            print(f"  ✅ Max Balance: {max_balance:.8f} ICP | Score: {score:.1f}/100 | Tier: {tier}")
-            
             # Save detailed results to JSON
             output_data = {
                 "principal": principal,
-                "analysis": analysis,
                 "balance_history": balance_history,
                 "raw_transaction_data": icp_transactions,
                 "timestamp": datetime.now().isoformat()
@@ -131,32 +116,8 @@ def main():
     print(f"  Failed analyses: {failed_analyses}")
     print(f"  Success rate: {successful_analyses/total_accounts*100:.1f}%")
     
-    print(f"\n🏆 WHITELIST TIER DISTRIBUTION:")
-    for tier, count in tier_counts.items():
-        percentage = count/successful_analyses*100 if successful_analyses > 0 else 0
-        print(f"  {tier}: {count} accounts ({percentage:.1f}%)")
-    
     print(f"\n📁 Results saved to: {output_dir}")
     print(f"   Individual analysis files: {successful_analyses + failed_analyses} JSON files")
     
-    # Create summary file
-    summary_data = {
-        "analysis_summary": {
-            "total_accounts": total_accounts,
-            "successful_analyses": successful_analyses,
-            "failed_analyses": failed_analyses,
-            "success_rate": successful_analyses/total_accounts*100 if total_accounts > 0 else 0,
-            "tier_distribution": tier_counts,
-            "analysis_timestamp": datetime.now().isoformat()
-        }
-    }
-    
-    summary_file = output_dir / "analysis_summary.json"
-    with open(summary_file, 'w') as f:
-        json.dump(summary_data, f, indent=2)
-    
-    print(f"📋 Summary report: {summary_file}")
-    print("=" * 80)
-
 if __name__ == "__main__":
     main()
