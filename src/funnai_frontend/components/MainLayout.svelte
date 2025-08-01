@@ -10,6 +10,7 @@
   import Wallet from "../pages/Wallet.svelte";
   import Lottery from "../pages/Lottery.svelte";
   import Brand from "../pages/Brand.svelte";
+  import AppStore from "../pages/AppStore.svelte";
   import { onMount } from 'svelte';
 
   // Initialize theme from localStorage on mount
@@ -49,6 +50,7 @@
     "/wallet": Wallet,
     "/lottery": Lottery,
     "/brand": Brand,
+    "/store": AppStore,
   };
 </script>
 
