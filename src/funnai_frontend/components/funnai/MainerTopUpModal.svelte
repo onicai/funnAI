@@ -80,16 +80,45 @@
   let cyclesAmount: string = "0";
   let conversionRate: BigNumber | null = null;
   
+  // Dynamic limits based on token type and conversion rate
+  $: dynamicLimits = (() => {
+    if (selectedTokenSymbol === 'FUNNAI' && conversionRate && !conversionRate.isZero()) {
+      // FUNNAI limits: max 1T cycles, min 0.4T cycles
+      const maxCycles = new BigNumber("1000000000000"); // 1T cycles
+      const minCycles = new BigNumber("400000000000"); // 0.4T cycles
+      const E8S_PER_FUNNAI = new BigNumber("100000000"); // 10^8 units per FUNNAI
+      
+      // Calculate FUNNAI amounts that correspond to cycle limits
+      const maxFunnaiAmount = maxCycles.div(conversionRate).times(E8S_PER_FUNNAI).div(E8S_PER_FUNNAI);
+      const minFunnaiAmount = minCycles.div(conversionRate).times(E8S_PER_FUNNAI).div(E8S_PER_FUNNAI);
+      
+      return {
+        min: Number(minFunnaiAmount.toFixed(8)),
+        max: Number(maxFunnaiAmount.toFixed(8))
+      };
+    } else {
+      // ICP limits from config
+      return {
+        min: MIN_AMOUNT,
+        max: MAX_AMOUNT
+      };
+    }
+  })();
+
+  $: currentMinAmount = dynamicLimits.min;
+  $: currentMaxAmount = dynamicLimits.max;
 
   
-  $: isValidAmount = amount && !isNaN(Number(amount)) && Number(amount) >= MIN_AMOUNT && Number(amount) <= MAX_AMOUNT;
-  $: isBelowMinimum = amount && !isNaN(Number(amount)) && Number(amount) > 0 && Number(amount) < MIN_AMOUNT;
-  $: isMaxAmount = amount && !isNaN(Number(amount)) && Number(amount) === MAX_AMOUNT;
-  $: isAboveMaximum = amount && !isNaN(Number(amount)) && Number(amount) > MAX_AMOUNT;
+  $: isValidAmount = amount && !isNaN(Number(amount)) && Number(amount) >= currentMinAmount && Number(amount) <= currentMaxAmount;
+  $: isBelowMinimum = amount && !isNaN(Number(amount)) && Number(amount) > 0 && Number(amount) < currentMinAmount;
+  $: isMaxAmount = amount && !isNaN(Number(amount)) && Number(amount) === currentMaxAmount;
+  $: isAboveMaximum = amount && !isNaN(Number(amount)) && Number(amount) > currentMaxAmount;
   $: amountBigInt = isValidAmount && selectedToken
     ? BigInt(new BigNumber(amount).times(new BigNumber(10).pow(selectedToken.decimals)).toString())
     : BigInt(0);
   $: hasEnoughBalance = isValidAmount && balance >= (amountBigInt + tokenFee);
+  $: isFunnaiUnavailable = selectedTokenSymbol === 'FUNNAI' && (!conversionRate || conversionRate.isZero());
+  $: canSubmit = hasEnoughBalance && !isValidating && selectedToken && !isFunnaiUnavailable;
   $: if (selectedToken) {
     tokenFee = BigInt(selectedToken.fee_fixed);
   }
@@ -122,14 +151,42 @@
     }
   }
 
-  // Function to get conversion rate (ICP from CMC, FUNNAI fixed rate)
+  // Function to get conversion rate (ICP from CMC, FUNNAI from game state canister)
   async function loadConversionRate() {
     isLoadingConversionRate = true;
+    errorMessage = ""; // Clear any previous error messages
+    
     try {
       if (selectedTokenSymbol === 'FUNNAI') {
-        // Fixed conversion rate: 1 FUNNAI = 1 trillion cycles
-        conversionRate = new BigNumber("1000000000000"); // 1T cycles per FUNNAI
-        console.log("FUNNAI conversion rate loaded:", conversionRate.toString());
+        // Get FUNNAI conversion rate from game state canister
+        if (!$store.gameStateCanisterActor) {
+          throw new Error("Game state canister not available");
+        }
+        
+        try {
+          const funnaiPriceResult = await $store.gameStateCanisterActor.getFunnaiCyclesPrice();
+          
+          if (funnaiPriceResult && 'Ok' in funnaiPriceResult) {
+            const cyclesPerFunnai = funnaiPriceResult.Ok;
+            conversionRate = new BigNumber(cyclesPerFunnai.toString());
+            
+            if (conversionRate.isZero()) {
+              throw new Error("FUNNAI top-ups are currently not available (rate is 0)");
+            }
+            
+            console.log("FUNNAI conversion rate loaded from backend:", conversionRate.toString(), "cycles per FUNNAI");
+          } else {
+            const errorMsg = funnaiPriceResult && 'Err' in funnaiPriceResult 
+              ? (typeof funnaiPriceResult.Err === 'object' 
+                  ? Object.keys(funnaiPriceResult.Err)[0] 
+                  : String(funnaiPriceResult.Err))
+              : "Failed to get FUNNAI conversion rate";
+            throw new Error(errorMsg);
+          }
+        } catch (actorError) {
+          console.error("Error getting FUNNAI conversion rate:", actorError);
+          throw new Error("Failed to get FUNNAI conversion rate from backend");
+        }
       } else {
         // ICP conversion rate from CMC
         const cmcCanisterId = "rkp4c-7iaaa-aaaaa-aaaca-cai";
@@ -165,8 +222,13 @@
       console.error("Error loading conversion rate:", error);
       
       if (selectedTokenSymbol === 'FUNNAI') {
-        errorMessage = "Using estimated conversion rate (1T cycles per FUNNAI)";
-        conversionRate = new BigNumber("1000000000000"); // 1T cycles per FUNNAI (fallback)
+        if (error.message.includes("currently not available")) {
+          errorMessage = "FUNNAI top-ups are currently not available";
+          conversionRate = new BigNumber("0");
+        } else {
+          errorMessage = "Failed to get FUNNAI conversion rate from backend";
+          conversionRate = new BigNumber("1000000000000"); // 1T cycles per FUNNAI (fallback)
+        }
       } else {
         errorMessage = "Using estimated conversion rate (10T cycles per ICP)";
         conversionRate = new BigNumber("10000000000000"); // ~10T cycles per ICP (fallback)
@@ -205,9 +267,15 @@
     calculateCycles();
   }
   
-  // Calculate cycles from token amount with proper conversion
+  // Calculate cycles from token amount with proper conversion and validation
   function calculateCycles() {
     if (!conversionRate || !amount || isNaN(Number(amount)) || Number(amount) <= 0 || !selectedToken) {
+      cyclesAmount = "0";
+      return;
+    }
+    
+    // Special handling for FUNNAI when rate is 0 (not available)
+    if (selectedTokenSymbol === 'FUNNAI' && conversionRate.isZero()) {
       cyclesAmount = "0";
       return;
     }
@@ -225,6 +293,9 @@
       
       // Calculate cycles
       const cycles = smallestUnitAmount.times(smallestUnitToCycleRatio);
+      
+      // Validate cycles amount doesn't exceed limits
+      const cyclesTrillion = cycles.div(new BigNumber("1000000000000"));
       
       // Use formatLargeNumber to format trillions
       cyclesAmount = formatLargeNumber(cycles.toNumber() / 1_000_000_000_000, 4, false);
@@ -257,6 +328,7 @@
     errorMessage = "";
 
     try {
+      // Security checks
       const isProtocolActive = await getIsProtocolActive();
       if (!isProtocolActive) {
         throw new Error("Protocol is not active and actions are paused");
@@ -268,6 +340,40 @@
       
       if (!canisterId) {
         throw new Error("Canister ID is required");
+      }
+
+      // Additional FUNNAI-specific security checks
+      if (selectedTokenSymbol === 'FUNNAI') {
+        if (!conversionRate || conversionRate.isZero()) {
+          throw new Error("FUNNAI top-ups are currently not available");
+        }
+        
+        // Verify the game state canister is available for FUNNAI operations
+        if (!$store.gameStateCanisterActor) {
+          throw new Error("Game state canister not available for FUNNAI top-ups");
+        }
+        
+        // Double-check conversion rate before proceeding
+        try {
+          const currentPriceResult = await $store.gameStateCanisterActor.getFunnaiCyclesPrice();
+          if (!currentPriceResult || !('Ok' in currentPriceResult) || new BigNumber(currentPriceResult.Ok.toString()).isZero()) {
+            throw new Error("FUNNAI top-ups are currently disabled");
+          }
+        } catch (priceCheckError) {
+          console.error("Error checking FUNNAI price:", priceCheckError);
+          throw new Error("Unable to verify FUNNAI conversion rate");
+        }
+      }
+
+      // Validate amount ranges
+      if (!isValidAmount) {
+        if (isBelowMinimum) {
+          throw new Error(`Amount below minimum (${currentMinAmount} ${selectedToken.symbol})`);
+        }
+        if (isAboveMaximum) {
+          throw new Error(`Amount above maximum (${currentMaxAmount} ${selectedToken.symbol})`);
+        }
+        throw new Error("Invalid amount");
       }
       
       // Transfer tokens to the Protocol's account for top-up
@@ -287,29 +393,98 @@
         const txId = result.Ok?.toString();
         console.log("handleSubmit txId: ", txId);
         
-        // Check if this was a maximum amount top-up to trigger celebration
-        if (isMaxAmount && CELEBRATION_ENABLED) {
-          // First close the modal, then trigger celebration
-          onSuccess(txId, canisterId);
-          handleClose();
-          
-          // Small delay to ensure modal is closed before showing celebration
-          setTimeout(() => {
-            onCelebration(amount, selectedToken?.symbol || selectedTokenSymbol);
-          }, 300);
-          try {
-            let maxTopUpInput = {
-              paymentTransactionBlockId: BigInt(txId),
-              toppedUpMainerId: canisterId,
-              amount: BigInt(amount),
-            };
-            await $store.backendActor.addMaxMainerTopup(maxTopUpInput);            
-          } catch (maxTopUpStorageError) {
-            console.error("Top-up storage error: ", maxTopUpStorageError);            
+        // Call the appropriate backend endpoint to complete the top-up
+        try {
+          // Find the mAIner agent information from the store
+          const mainerAgent = $store.userMainerAgentCanistersInfo.find(agent => agent.address === canisterId);
+          if (!mainerAgent) {
+            throw new Error("mAIner agent not found in user data");
+          }
+
+          // Helper function to clean enriched data (extract only original backend fields)
+          function getOriginalCanisterInfo(enrichedCanisterInfo) {
+            const {
+              // Remove UI-specific fields that we added
+              uiStatus,
+              cycleBalance,
+              burnedCycles,
+              cyclesBurnRate,
+              cyclesBurnRateSetting,
+              llmCanisters,
+              llmSetupStatus,
+              hasError,
+              // Keep only original backend fields
+              ...originalInfo
+            } = enrichedCanisterInfo;
+            return originalInfo;
+          }
+
+          // Clean the enriched data to get only original backend fields
+          const cleanMainerAgent = getOriginalCanisterInfo(mainerAgent);
+
+          let topUpInput = {
+            paymentTransactionBlockId: BigInt(txId),
+            mainerAgent: cleanMainerAgent,
           };
-        } else {
+
+          let backendResult;
+          if (selectedTokenSymbol === 'FUNNAI') {
+            // For FUNNAI, use the new FUNNAI-specific endpoint
+            if (!$store.gameStateCanisterActor) {
+              throw new Error("Game state canister not available");
+            }
+            backendResult = await $store.gameStateCanisterActor.topUpCyclesForMainerAgentWithFunnai(topUpInput);
+          } else {
+            // For ICP, use the existing endpoint
+            if (!$store.gameStateCanisterActor) {
+              throw new Error("Game state canister not available");
+            }
+            backendResult = await $store.gameStateCanisterActor.topUpCyclesForMainerAgent(topUpInput);
+          }
+
+          // Check if backend call was successful
+          if (backendResult && 'Ok' in backendResult) {
+            console.log(`${selectedTokenSymbol} top-up completed successfully:`, backendResult.Ok);
+            
+            // Check if this was a maximum amount top-up to trigger celebration
+            if (isMaxAmount && CELEBRATION_ENABLED) {
+              // First close the modal, then trigger celebration
+              onSuccess(txId, canisterId);
+              handleClose();
+              
+              // Small delay to ensure modal is closed before showing celebration
+              setTimeout(() => {
+                onCelebration(amount, selectedToken?.symbol || selectedTokenSymbol);
+              }, 300);
+              try {
+                let maxTopUpInput = {
+                  paymentTransactionBlockId: BigInt(txId),
+                  toppedUpMainerId: canisterId,
+                  amount: BigInt(amount),
+                };
+                await $store.backendActor.addMaxMainerTopup(maxTopUpInput);            
+              } catch (maxTopUpStorageError) {
+                console.error("Top-up storage error: ", maxTopUpStorageError);            
+              };
+            } else {
+              onSuccess(txId, canisterId);
+              handleClose();
+            }
+          } else {
+            const backendErrorMsg = backendResult && 'Err' in backendResult 
+              ? typeof backendResult.Err === 'object' 
+                ? Object.keys(backendResult.Err)[0]
+                : String(backendResult.Err)
+              : "Unknown backend error";
+            throw new Error(`Backend top-up failed: ${backendErrorMsg}`);
+          }
+        } catch (backendError) {
+          console.error("Backend top-up error:", backendError);
+          // Even though the backend call failed, the tokens were transferred
+          // Show a warning but still consider it partially successful
+          errorMessage = `Token transfer succeeded but backend processing failed: ${backendError.message}. Please contact support.`;
+          // Still call onSuccess to allow the user to see the transaction
           onSuccess(txId, canisterId);
-          handleClose();
         }
       } else if (result && typeof result === 'object' && 'Err' in result) {
         const errMsg = typeof result.Err === 'object' 
@@ -417,9 +592,9 @@
             <button
               type="button"
               class="text-xs text-purple-600 hover:text-purple-800 dark:text-purple-500 dark:hover:text-purple-400 font-medium"
-              on:click={() => amount = String(MAX_AMOUNT)}
+              on:click={() => amount = String(currentMaxAmount)}
             >
-              Top up Max ({MAX_AMOUNT} {selectedToken?.symbol || 'Token'})
+              Top up Max ({currentMaxAmount} {selectedToken?.symbol || 'Token'})
             </button>
           </div>
           <div class="relative">
@@ -446,12 +621,18 @@
           </div>
           {#if isBelowMinimum}
             <div class="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
-              Minimum amount: {MIN_AMOUNT} {selectedToken?.symbol || 'Token'}
+              Minimum amount: {currentMinAmount} {selectedToken?.symbol || 'Token'}
+              {#if selectedTokenSymbol === 'FUNNAI'}
+                <span class="opacity-70">(≈ 0.4T cycles)</span>
+              {/if}
             </div>
           {/if}
           {#if isAboveMaximum}
             <div class="mt-1 text-xs text-red-600 dark:text-red-400">
-              Maximum amount: {MAX_AMOUNT} {selectedToken?.symbol || 'Token'}
+              Maximum amount: {currentMaxAmount} {selectedToken?.symbol || 'Token'}
+              {#if selectedTokenSymbol === 'FUNNAI'}
+                <span class="opacity-70">(≈ 1T cycles)</span>
+              {/if}
             </div>
           {/if}
           {#if isMaxAmount && hasEnoughBalance}
@@ -492,17 +673,24 @@
           </div>
         {/if}
 
+        <!-- FUNNAI unavailable message -->
+        {#if isFunnaiUnavailable}
+          <div class="mt-1 p-2 rounded bg-yellow-50 border border-yellow-200 text-yellow-700 text-xs sm:text-sm dark:bg-yellow-900/30 dark:border-yellow-900/50 dark:text-yellow-400">
+            FUNNAI top-ups are currently not available. Please try again later or use ICP.
+          </div>
+        {/if}
+
         <!-- Send Button -->
         <button
           type="button"
           on:click={handleSubmit}
           class="mt-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-md text-white font-medium flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
-          class:bg-purple-600={hasEnoughBalance && !isValidating && selectedToken}
-          class:hover:bg-purple-500={hasEnoughBalance && !isValidating && selectedToken}
-          class:bg-gray-400={!hasEnoughBalance || isValidating || !selectedToken}
-          class:cursor-not-allowed={!hasEnoughBalance || isValidating || !selectedToken}
-          class:dark:bg-gray-700={!hasEnoughBalance || isValidating || !selectedToken}
-          disabled={!hasEnoughBalance || isValidating || !selectedToken}
+          class:bg-purple-600={canSubmit}
+          class:hover:bg-purple-500={canSubmit}
+          class:bg-gray-400={!canSubmit}
+          class:cursor-not-allowed={!canSubmit}
+          class:dark:bg-gray-700={!canSubmit}
+          disabled={!canSubmit}
         >
           {#if isValidating}
             <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
