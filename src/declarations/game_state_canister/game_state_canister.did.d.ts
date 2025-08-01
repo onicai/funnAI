@@ -496,12 +496,15 @@ export interface GameStateCanister {
   'getClosedChallengesAdmin' : ActorMethod<[], ChallengesResult>,
   'getCurrentChallenges' : ActorMethod<[], ChallengesResult>,
   'getCurrentChallengesAdmin' : ActorMethod<[], ChallengesResult>,
+  'getCyclesBalanceThresholdFunnaiTopups' : ActorMethod<[], NatResult>,
   'getCyclesBurnRate' : ActorMethod<
     [CyclesBurnRateDefault],
     CyclesBurnRateResult
   >,
   'getCyclesFlowAdmin' : ActorMethod<[], CyclesFlowResult>,
   'getDisburseFundsToTreasuryFlag' : ActorMethod<[], FlagResult>,
+  'getFunnaiCyclesPrice' : ActorMethod<[], NatResult>,
+  'getFunnaiCyclesPriceAdmin' : ActorMethod<[], NatResult>,
   'getGameStateThresholdsAdmin' : ActorMethod<[], GameStateTresholdsResult>,
   'getIsWhitelistPhaseActive' : ActorMethod<[], FlagResult>,
   'getJudgePromptInfo' : ActorMethod<[string], JudgePromptInfoResult>,
@@ -558,6 +561,14 @@ export interface GameStateCanister {
   'getRandomOpenChallengeTopic' : ActorMethod<[], ChallengeTopicResult>,
   'getRecentChallengeWinners' : ActorMethod<[], ChallengeWinnersResult>,
   'getRecentProtocolActivity' : ActorMethod<[], ProtocolActivityResult>,
+  'getRedeemedFunnaiTransactionBlockAdmin' : ActorMethod<
+    [PaymentTransactionBlockId],
+    RedeemedTransactionBlockResult
+  >,
+  'getRedeemedFunnaiTransactionBlocksAdmin' : ActorMethod<
+    [],
+    RedeemedTransactionBlocksResult
+  >,
   'getRedeemedTransactionBlockAdmin' : ActorMethod<
     [PaymentTransactionBlockId],
     RedeemedTransactionBlockResult
@@ -587,6 +598,10 @@ export interface GameStateCanister {
     [MainerctrlReinstallInput],
     MainerAgentCanisterResult
   >,
+  'removeRedeemedFunnaiTransactionBlockAdmin' : ActorMethod<
+    [PaymentTransactionBlockId],
+    TextResult
+  >,
   'removeRedeemedTransactionBlockAdmin' : ActorMethod<
     [PaymentTransactionBlockId],
     TextResult
@@ -599,6 +614,10 @@ export interface GameStateCanister {
   'resetCyclesFlowAdmin' : ActorMethod<[], StatusCodeRecordResult>,
   'setArchiveCanisterId' : ActorMethod<[string], AuthRecordResult>,
   'setBufferMainerCreation' : ActorMethod<[bigint], AuthRecordResult>,
+  'setCyclesBalanceThresholdFunnaiTopups' : ActorMethod<
+    [bigint],
+    AuthRecordResult
+  >,
   'setCyclesBurnRateAdmin' : ActorMethod<
     [SetCyclesBurnRateInput],
     StatusCodeRecordResult
@@ -607,6 +626,7 @@ export interface GameStateCanister {
     [CyclesFlowSettings],
     StatusCodeRecordResult
   >,
+  'setFunnaiCyclesPrice' : ActorMethod<[bigint], AuthRecordResult>,
   'setGameStateThresholdsAdmin' : ActorMethod<
     [GameStateTresholds],
     StatusCodeRecordResult
@@ -667,6 +687,7 @@ export interface GameStateCanister {
     [ChallengeResponseSubmissionInput],
     ChallengeResponseSubmissionMetadataResult
   >,
+  'testDisbursementToTreasuryAdmin' : ActorMethod<[], AuthRecordResult>,
   'testMainerCodeIntegrityAdmin' : ActorMethod<[], AuthRecordResult>,
   'testTokenMintingAdmin' : ActorMethod<[], AuthRecordResult>,
   'toggleDisburseFundsToTreasuryFlagAdmin' : ActorMethod<[], AuthRecordResult>,
@@ -677,6 +698,10 @@ export interface GameStateCanister {
   >,
   'toggleWhitelistPhaseActiveFlagAdmin' : ActorMethod<[], AuthRecordResult>,
   'topUpCyclesForMainerAgent' : ActorMethod<
+    [MainerAgentTopUpInput],
+    MainerAgentCanisterResult
+  >,
+  'topUpCyclesForMainerAgentWithFunnai' : ActorMethod<
     [MainerAgentTopUpInput],
     MainerAgentCanisterResult
   >,

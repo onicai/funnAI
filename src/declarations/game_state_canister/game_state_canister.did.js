@@ -885,6 +885,11 @@ export const idlFactory = ({ IDL }) => {
     'getClosedChallengesAdmin' : IDL.Func([], [ChallengesResult], ['query']),
     'getCurrentChallenges' : IDL.Func([], [ChallengesResult], ['query']),
     'getCurrentChallengesAdmin' : IDL.Func([], [ChallengesResult], ['query']),
+    'getCyclesBalanceThresholdFunnaiTopups' : IDL.Func(
+        [],
+        [NatResult],
+        ['query'],
+      ),
     'getCyclesBurnRate' : IDL.Func(
         [CyclesBurnRateDefault],
         [CyclesBurnRateResult],
@@ -892,6 +897,8 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getCyclesFlowAdmin' : IDL.Func([], [CyclesFlowResult], []),
     'getDisburseFundsToTreasuryFlag' : IDL.Func([], [FlagResult], ['query']),
+    'getFunnaiCyclesPrice' : IDL.Func([], [NatResult], ['query']),
+    'getFunnaiCyclesPriceAdmin' : IDL.Func([], [NatResult], ['query']),
     'getGameStateThresholdsAdmin' : IDL.Func(
         [],
         [GameStateTresholdsResult],
@@ -1003,6 +1010,16 @@ export const idlFactory = ({ IDL }) => {
         [ProtocolActivityResult],
         ['query'],
       ),
+    'getRedeemedFunnaiTransactionBlockAdmin' : IDL.Func(
+        [PaymentTransactionBlockId],
+        [RedeemedTransactionBlockResult],
+        [],
+      ),
+    'getRedeemedFunnaiTransactionBlocksAdmin' : IDL.Func(
+        [],
+        [RedeemedTransactionBlocksResult],
+        [],
+      ),
     'getRedeemedTransactionBlockAdmin' : IDL.Func(
         [PaymentTransactionBlockId],
         [RedeemedTransactionBlockResult],
@@ -1045,6 +1062,11 @@ export const idlFactory = ({ IDL }) => {
         [MainerAgentCanisterResult],
         [],
       ),
+    'removeRedeemedFunnaiTransactionBlockAdmin' : IDL.Func(
+        [PaymentTransactionBlockId],
+        [TextResult],
+        [],
+      ),
     'removeRedeemedTransactionBlockAdmin' : IDL.Func(
         [PaymentTransactionBlockId],
         [TextResult],
@@ -1059,6 +1081,11 @@ export const idlFactory = ({ IDL }) => {
     'resetCyclesFlowAdmin' : IDL.Func([], [StatusCodeRecordResult], []),
     'setArchiveCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
     'setBufferMainerCreation' : IDL.Func([IDL.Nat], [AuthRecordResult], []),
+    'setCyclesBalanceThresholdFunnaiTopups' : IDL.Func(
+        [IDL.Nat],
+        [AuthRecordResult],
+        [],
+      ),
     'setCyclesBurnRateAdmin' : IDL.Func(
         [SetCyclesBurnRateInput],
         [StatusCodeRecordResult],
@@ -1069,6 +1096,7 @@ export const idlFactory = ({ IDL }) => {
         [StatusCodeRecordResult],
         [],
       ),
+    'setFunnaiCyclesPrice' : IDL.Func([IDL.Nat], [AuthRecordResult], []),
     'setGameStateThresholdsAdmin' : IDL.Func(
         [GameStateTresholds],
         [StatusCodeRecordResult],
@@ -1154,6 +1182,7 @@ export const idlFactory = ({ IDL }) => {
         [ChallengeResponseSubmissionMetadataResult],
         [],
       ),
+    'testDisbursementToTreasuryAdmin' : IDL.Func([], [AuthRecordResult], []),
     'testMainerCodeIntegrityAdmin' : IDL.Func([], [AuthRecordResult], []),
     'testTokenMintingAdmin' : IDL.Func([], [AuthRecordResult], []),
     'toggleDisburseFundsToTreasuryFlagAdmin' : IDL.Func(
@@ -1173,6 +1202,11 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'topUpCyclesForMainerAgent' : IDL.Func(
+        [MainerAgentTopUpInput],
+        [MainerAgentCanisterResult],
+        [],
+      ),
+    'topUpCyclesForMainerAgentWithFunnai' : IDL.Func(
         [MainerAgentTopUpInput],
         [MainerAgentCanisterResult],
         [],
