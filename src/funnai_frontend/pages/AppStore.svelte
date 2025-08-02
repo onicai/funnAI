@@ -3,10 +3,11 @@
   import { theme } from "../stores/store";
   import { ExternalLink, Star, MessageSquare } from "lucide-svelte";
   import { link } from 'svelte-spa-router';
+  import { onMount } from 'svelte';
   import Footer from "../components/funnai/Footer.svelte";
   
-  // App store data - embedded for reliability
-  let storeData = {
+  // App store data - embedded as fallback
+  let defaultStoreData = {
     apps: [
       {
         name: "deVinci AI Chat",
@@ -131,8 +132,46 @@
     ]
   };
   
-  let isLoading = false;
+  // Current store data (will be populated from remote source)
+  let storeData = defaultStoreData;
+  let isLoading = true;
   let error = null;
+
+  // Remote data source
+  const REMOTE_STORE_URL = 'https://raw.githubusercontent.com/onicai/awesome-funnAI-caffeineAI/main/store-apps.json';
+
+  async function loadStoreData() {
+    try {
+      isLoading = true;
+      error = null;
+      
+      const response = await fetch(REMOTE_STORE_URL);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.status} ${response.statusText}`);
+      }
+      
+      const remoteData = await response.json();
+      
+      // Validate the data structure
+      if (remoteData && remoteData.apps && Array.isArray(remoteData.apps)) {
+        storeData = remoteData;
+        console.log('Successfully loaded store data from remote source');
+      } else {
+        throw new Error('Invalid data structure received from remote source');
+      }
+    } catch (err) {
+      console.warn('Failed to load remote store data, using fallback:', err);
+      error = `Failed to load latest apps: ${err.message}`;
+      storeData = defaultStoreData;
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  onMount(() => {
+    loadStoreData();
+  });
   
   // Filtering and search
   let searchTerm = '';
@@ -162,9 +201,24 @@
   <div class="flex-1 p-6 pb-24">
     <!-- Header -->
     <div class="mb-8">
-      <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-        funnAI App Store
-      </h1>
+      <div class="flex items-center justify-between mb-2">
+        <h1 class="text-4xl font-bold text-gray-900 dark:text-white">
+          funnAI App Store
+        </h1>
+        <button
+          on:click={loadStoreData}
+          disabled={isLoading}
+          class="flex items-center gap-2 px-4 py-2 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Refresh apps from remote source"
+        >
+          <svg class="w-4 h-4 {isLoading ? 'animate-spin' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          <span class="text-sm font-medium">
+            {isLoading ? 'Loading...' : 'Refresh'}
+          </span>
+        </button>
+      </div>
       <p class="text-lg text-gray-600 dark:text-gray-400">
         Discover amazing funnAI decentralized applications
       </p>
@@ -179,7 +233,27 @@
     {:else if error}
       <!-- Error State -->
       <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center">
-        <p class="text-red-600 dark:text-red-400">Error loading apps: {error}</p>
+        <div class="w-12 h-12 mx-auto mb-4 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+          <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          Failed to load latest apps
+        </h3>
+        <p class="text-red-600 dark:text-red-400 mb-4">
+          {error}
+        </p>
+        <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">
+          Showing cached apps instead. You can try refreshing to get the latest updates.
+        </p>
+        <button
+          on:click={loadStoreData}
+          disabled={isLoading}
+          class="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 disabled:cursor-not-allowed"
+        >
+          {isLoading ? 'Retrying...' : 'Try Again'}
+        </button>
       </div>
     {:else}
       <!-- Submit Your App Banner -->
@@ -302,9 +376,20 @@
       <!-- All Apps Section -->
       <div>
         <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-            All Apps
-          </h2>
+          <div class="flex items-center gap-3">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+              All Apps
+            </h2>
+            {#if error}
+              <span class="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-xs px-2 py-1 rounded-full">
+                Cached
+              </span>
+            {:else}
+              <span class="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs px-2 py-1 rounded-full">
+                Live
+              </span>
+            {/if}
+          </div>
           <span class="text-gray-500 dark:text-gray-400">
             {filteredApps.length} app{filteredApps.length !== 1 ? 's' : ''}
           </span>
