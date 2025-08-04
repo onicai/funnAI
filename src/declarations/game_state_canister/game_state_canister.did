@@ -464,6 +464,8 @@ type GameStateCanister =
     (MainerAgentCanistersResult) query;
    getMainerCyclesUsedPerResponse: () -> (NatResult);
    getMainerPromptInfo: (text) -> (MainerPromptInfoResult) query;
+   getMaxFunnaiTopupCyclesAmount: () -> (NatResult) query;
+   getMaxFunnaiTopupCyclesAmountAdmin: () -> (NatResult) query;
    getMinimumIcpBalance: () -> (NatResult) query;
    getNextSubmissionToJudge: () -> (ChallengeResponseSubmissionResult);
    getNumArchivedChallengesAdmin: () -> (NatResult) query;
@@ -534,6 +536,7 @@ type GameStateCanister =
    setIcpForWhitelistShareAgentAdmin: (nat64) -> (StatusCodeRecordResult);
    setInitialChallengeTopics: () -> (StatusCodeRecordResult);
    setLimitForCreatingMainerAdmin: (MainerLimitInput) -> (AuthRecordResult);
+   setMaxFunnaiTopupCyclesAmount: (nat) -> (AuthRecordResult);
    setMinimumIcpBalance: (nat) -> (AuthRecordResult);
    setOfficialMainerAgentCanisterWasmHashAdmin: (UpdateWasmHashInput) ->
     (CanisterWasmHashRecordResult);
