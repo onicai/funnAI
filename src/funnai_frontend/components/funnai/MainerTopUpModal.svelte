@@ -28,7 +28,7 @@
   
   // Token configurations - now supporting both ICP and FUNNAI
   let availableTokens: any[] = [];
-  let selectedTokenSymbol: 'ICP' | 'FUNNAI' = 'ICP';
+  let selectedTokenSymbol: 'ICP' | 'FUNNAIdev' = 'ICP';
   let isTokenLoading: boolean = true;
   
   // Get currently selected token
@@ -82,7 +82,7 @@
   
   // Dynamic limits based on token type and conversion rate
   $: dynamicLimits = (() => {
-    if (selectedTokenSymbol === 'FUNNAI' && conversionRate && !conversionRate.isZero()) {
+    if (selectedTokenSymbol === 'FUNNAIdev' && conversionRate && !conversionRate.isZero()) {
       // FUNNAI limits: max 1T cycles, min 0.4T cycles
       const maxCycles = new BigNumber("1000000000000"); // 1T cycles
       const minCycles = new BigNumber("400000000000"); // 0.4T cycles
@@ -117,7 +117,7 @@
     ? BigInt(new BigNumber(amount).times(new BigNumber(10).pow(selectedToken.decimals)).toString())
     : BigInt(0);
   $: hasEnoughBalance = isValidAmount && balance >= (amountBigInt + tokenFee);
-  $: isFunnaiUnavailable = selectedTokenSymbol === 'FUNNAI' && (!conversionRate || conversionRate.isZero());
+  $: isFunnaiUnavailable = selectedTokenSymbol === 'FUNNAIdev' && (!conversionRate || conversionRate.isZero());
   $: canSubmit = hasEnoughBalance && !isValidating && selectedToken && !isFunnaiUnavailable;
   $: if (selectedToken) {
     tokenFee = BigInt(selectedToken.fee_fixed);
@@ -157,7 +157,7 @@
     errorMessage = ""; // Clear any previous error messages
     
     try {
-      if (selectedTokenSymbol === 'FUNNAI') {
+      if (selectedTokenSymbol === 'FUNNAIdev') {
         // Get FUNNAI conversion rate from game state canister
         if (!$store.gameStateCanisterActor) {
           throw new Error("Game state canister not available");
@@ -221,7 +221,7 @@
     } catch (error) {
       console.error("Error loading conversion rate:", error);
       
-      if (selectedTokenSymbol === 'FUNNAI') {
+      if (selectedTokenSymbol === 'FUNNAIdev') {
         if (error.message.includes("currently not available")) {
           errorMessage = "FUNNAI top-ups are currently not available";
           conversionRate = new BigNumber("0");
@@ -275,7 +275,7 @@
     }
     
     // Special handling for FUNNAI when rate is 0 (not available)
-    if (selectedTokenSymbol === 'FUNNAI' && conversionRate.isZero()) {
+    if (selectedTokenSymbol === 'FUNNAIdev' && conversionRate.isZero()) {
       cyclesAmount = "0";
       return;
     }
@@ -308,7 +308,7 @@
   }
 
   // Handle token selection change
-  function handleTokenChange(tokenSymbol: 'ICP' | 'FUNNAI') {
+  function handleTokenChange(tokenSymbol: 'ICP' | 'FUNNAIdev') {
     selectedTokenSymbol = tokenSymbol;
     // Reset amount when switching tokens to avoid confusion
     amount = "";
@@ -343,7 +343,7 @@
       }
 
       // Additional FUNNAI-specific security checks
-      if (selectedTokenSymbol === 'FUNNAI') {
+      if (selectedTokenSymbol === 'FUNNAIdev') {
         if (!conversionRate || conversionRate.isZero()) {
           throw new Error("FUNNAI top-ups are currently not available");
         }
@@ -428,7 +428,7 @@
           };
 
           let backendResult;
-          if (selectedTokenSymbol === 'FUNNAI') {
+          if (selectedTokenSymbol === 'FUNNAIdev') {
             // For FUNNAI, use the new FUNNAI-specific endpoint
             if (!$store.gameStateCanisterActor) {
               throw new Error("Game state canister not available");
@@ -622,7 +622,7 @@
           {#if isBelowMinimum}
             <div class="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
               Minimum amount: {currentMinAmount} {selectedToken?.symbol || 'Token'}
-              {#if selectedTokenSymbol === 'FUNNAI'}
+              {#if selectedTokenSymbol === 'FUNNAIdev'}
                 <span class="opacity-70">(≈ 0.4T cycles)</span>
               {/if}
             </div>
@@ -630,7 +630,7 @@
           {#if isAboveMaximum}
             <div class="mt-1 text-xs text-red-600 dark:text-red-400">
               Maximum amount: {currentMaxAmount} {selectedToken?.symbol || 'Token'}
-              {#if selectedTokenSymbol === 'FUNNAI'}
+              {#if selectedTokenSymbol === 'FUNNAIdev'}
                 <span class="opacity-70">(≈ 1T cycles)</span>
               {/if}
             </div>
@@ -648,7 +648,7 @@
             <Info size={12} class="sm:hidden flex-shrink-0" />
             <Info size={14} class="hidden sm:block flex-shrink-0" />
             <span class="font-medium">Cycles Conversion</span>
-            {#if selectedTokenSymbol === 'FUNNAI'}
+            {#if selectedTokenSymbol === 'FUNNAIdev'}
               <span class="text-xs opacity-70">(1 FUNNAI = 1T Cycles)</span>
             {/if}
             {#if isLoadingConversionRate}
