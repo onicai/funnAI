@@ -18,7 +18,7 @@ while [ $# -gt 0 ]; do
             ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --burnrate [Low|Mid|High|VeryHigh]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd]"
             exit 1
             ;;
     esac

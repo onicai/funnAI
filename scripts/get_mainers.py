@@ -4,14 +4,30 @@ import subprocess
 import time
 import argparse
 import os
+import sys
 from collections import defaultdict
 from dotenv import dotenv_values
 import json
+import pandas as pd
 
-from .monitor_common import get_canisters, ensure_log_dir
+from .monitor_common import get_canisters, ensure_log_dir, get_balance
+from .ledgers.icp import get_usd_per_computed_xdr_from_cmc, icp_xdr_summary, get_cycle_burn_rate_from_ic_api
 
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+
+# The current value of 1 trillion cycles in USD, as computed by the CMC canister
+CMC_USD_PER_COMPUTED_XDR = get_usd_per_computed_xdr_from_cmc()
+
+# The cycle burn rate from the IC API, in cycles/second
+IC_API_CYCLE_BURN_RATE = get_cycle_burn_rate_from_ic_api()
+IC_API_TCYCLE_BURN_RATE_PER_DAY = IC_API_CYCLE_BURN_RATE * 60 * 60 * 24 / 1_000_000_000_000  # Tcycles/day
+
+# Keep these values in sync with the backend (Game State: mAIner Burn Rates)
+DAILY_BURN_RATE_LOW = 1
+DAILY_BURN_RATE_MEDIUM = 2
+DAILY_BURN_RATE_HIGH = 4
+DAILY_BURN_RATE_VERY_HIGH = 6
 
 def get_mainers(network):
     """Get mainers from gamestate using dfx."""
@@ -34,7 +50,10 @@ def main(network, user):
         print("No mainers found.")
         return
     
-    # Open file and write header comment
+    # Print the summary of ICP to XDR conversion
+    icp_xdr_summary()
+    
+    # Open .env file and write header comment
     if user == "all" or user is None:
         env_file_path = os.path.join(SCRIPT_DIR, f"canister_ids_mainers-{network}.env")
     else:
@@ -43,95 +62,188 @@ def main(network, user):
             print(f"No mainers found for user '{user}' on network '{network}'")
             return
         env_file_path = os.path.join(SCRIPT_DIR, f"canister_ids_mainers-{network}-{user}.env")
-
     print(f"Writing mainers to {env_file_path}")
+
+    # get total cycle balance
+    total_cycles = 0
+    total_paused_low = 0
+    total_paused_medium = 0
+    total_paused_high = 0
+    total_paused_very_high = 0
+    total_active_low = 0
+    total_active_medium = 0
+    total_active_high = 0
+    total_active_very_high = 0
+    total_paused = 0
+    total_active = 0
+    mainers_created = 0
+
     with open(env_file_path, 'w') as f:
         f.write(f"# {len(mainers)-1} mAIners - data from game_state_canister on network {network}\n")
         f.write(f"# DO NOT MANUALLY UPDATE THIS FILE, instead run: scripts/get_mainers.sh --network $NETWORK \n")
     
-        count = 0
-        count_created = 0
-        for mainer in mainers:
-            address = mainer.get('address', '')
-            canister_type_dict = mainer.get('canisterType', {}).get("MainerAgent", {})
-            canister_type = list(canister_type_dict.keys())[0] if canister_type_dict else ''
+        try:
+            for mainer in mainers:
+                address = mainer.get('address', '')
+                canister_type_dict = mainer.get('canisterType', {}).get("MainerAgent", {})
+                canister_type = list(canister_type_dict.keys())[0] if canister_type_dict else ''
 
-            if canister_type == "ShareService":
-                print(f"Skipping ShareService canister, because this is part of the protocol canisters: {address}")
-                continue
+                if canister_type == "ShareService":
+                    print(f"Skipping ShareService canister, because this is part of the protocol canisters: {address}")
+                    continue
 
-            if canister_type != "ShareAgent":
-                print(f"Skipping canister, because the canister_type is unknown : {canister_type}")
-                continue
+                if canister_type != "ShareAgent":
+                    print(f"Skipping canister, because the canister_type is unknown : {canister_type}")
+                    continue
 
-            line = f"MAINER_SHARE_AGENT_{count:04d}={address}\n"
-            # print(line.strip())
-            f.write(line)
+                if address !="":
+                    mainers_created += 1
 
-            if address !="":
-                count_created += 1
-            count += 1
+                    line = f"MAINER_SHARE_AGENT_{mainers_created:04d}={address}\n"
+                    f.write(line)
+
+                    if user == "all" or user is None:
+                        # check if the canister is paused or active
+                        active = False
+                        cmd = ["dfx", "canister", "call", address, "getIssueFlagsAdmin", "--network", network, "--output", "json"]
+                        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
+                        data = json.loads(output)
+                        low_cycle_balance = data.get('Ok', {}).get('lowCycleBalance', None)
+                        if low_cycle_balance is None:
+                            print(f"ERROR 1: Unable to get issue flags for canister {address} on network {network}")
+                            print(f"  {' '.join(cmd)}")
+                            print(output)
+                            continue
+                        elif low_cycle_balance == False:
+                            active = True
+                            total_active += 1
+                        elif low_cycle_balance == True:
+                            total_paused += 1        
+
+                        # This used 'dfx status', which is slow...
+                        # balance = get_balance(address, network)
+                        # total_cycles += balance if balance is not None else 0
+
+                        # get cycleBalance & cyclesBurnRate from getMainerStatisticsAdmin endpoint
+                        cmd = ["dfx", "canister", "call", address, "getMainerStatisticsAdmin", "--network", network, "--output", "json"]
+                        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
+                        data = json.loads(output)
+
+                        cycle_balance = int(data.get('Ok', {}).get('cycleBalance', 0))
+                        if cycle_balance > 0:
+                            total_cycles += cycle_balance
+                        else:
+                            print(f"ERROR: Unable to get cycleBalance for canister {address} on network {network}")
+                            print(f"  {' '.join(cmd)}")
+                            print(output)
+                            continue
+
+                        cycles_burn_rate = data.get('Ok', {}).get('cyclesBurnRate', {}).get('cycles', None)
+                        if cycles_burn_rate is not None:
+                            # These ranges need to be kept up to date with the backend (Game State: mAIner Burn Rates)
+                            if cycles_burn_rate == "1_000_000_000_000":
+                                if active:
+                                    total_active_low += 1
+                                else:
+                                    total_paused_low += 1
+                            elif cycles_burn_rate == "2_000_000_000_000":
+                                if active:
+                                    total_active_medium += 1
+                                else:
+                                    total_paused_medium += 1
+                            elif cycles_burn_rate == "4_000_000_000_000":
+                                if active:
+                                    total_active_high += 1
+                                else:
+                                    total_paused_high += 1
+                            elif cycles_burn_rate == "6_000_000_000_000":
+                                if active:
+                                    total_active_very_high += 1
+                                else:
+                                    total_paused_very_high += 1
+                            else:
+                                print(f"ERROR: Unknown cyclesBurnRate {cycles_burn_rate} for canister {address} on network {network}")
+                                print(f"  {' '.join(cmd)}")
+                                print(output)
+                                continue
+                        else:
+                            print(f"ERROR: Unable to get cyclesBurnRate for canister {address} on network {network}")
+                            print(f"  {' '.join(cmd)}")
+                            print(output)
+                            continue
+
+                        # print progress every 25 mainers
+                        if mainers_created % 25 == 0:
+                            print(f"Processed {mainers_created} mainers:")
+                            
+        except subprocess.CalledProcessError as e:
+            print(f"ERROR occured when calling the subprocess command.")
+            print("Command:", e.cmd)
+            print("Return code:", e.returncode)
+            print("Output:\n", e.output)
+            sys.exit(1)
+
+    total_cycles = total_cycles // 1_000_000_000_000 # Convert to trillion cycles
+    total_cycles_usd = total_cycles * CMC_USD_PER_COMPUTED_XDR  # Convert to USD
+
+    daily_burn_rate = total_active_low * DAILY_BURN_RATE_LOW+ total_active_medium * DAILY_BURN_RATE_MEDIUM + total_active_high * DAILY_BURN_RATE_HIGH + total_active_very_high * DAILY_BURN_RATE_VERY_HIGH
+    daily_burn_rate_usd = daily_burn_rate * CMC_USD_PER_COMPUTED_XDR  # Convert to USD
     
-    print(f"Found {count} mainer user entries on network '{network}'") # excluding the ShareService canister
-    print(f"Found {count_created} created mainers on network '{network}'") # excluding the ShareService canister
+    funnai_index = 0.9 * daily_burn_rate / IC_API_TCYCLE_BURN_RATE_PER_DAY if IC_API_TCYCLE_BURN_RATE_PER_DAY > 0 else 0
+
+    print(f"FUNNAI Index                            : {funnai_index:.2f}")
+    print(f"Total daily burn rate                   : {daily_burn_rate} trillion cycles /day (${daily_burn_rate_usd:.2f} USD/day)")
+    print(f"Total mainers created                   : {mainers_created}")
+    print(f"Total cycles across all mainers         : {total_cycles} trillion cycles")
+    print(f"Total paused mainers                    : {total_paused}")
+    print(f"Total active mainers                    : {total_active}")
+    print(f"Total active low burn rate mainers      : {total_active_low}")
+    print(f"Total active medium burn rate mainers   : {total_active_medium}")
+    print(f"Total active high burn rate mainers     : {total_active_high}")
+    print(f"Total active very high burn rate mainers: {total_active_very_high}")
+    print(f"Total paused low burn rate mainers      : {total_paused_low}")
+    print(f"Total paused medium burn rate mainers   : {total_paused_medium}")
+    print(f"Total paused high burn rate mainers     : {total_paused_high}")
+    print(f"Total paused very high burn rate mainers: {total_paused_very_high}")
 
     if user == "all" or user is None:
         # Write counts to a timestamped CSV file only if there's a change
         timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         csv_file_path = os.path.join(SCRIPT_DIR, f"get_mainers-{network}.csv")
             
-        print(f"Checking for changes before appending to {csv_file_path}")
-
-        # Read the last two lines of the file if they exist
-        last_line = None
-        second_last_line = None
-        last_count = None
-        last_count_created = None
-        second_last_count = None
-        second_last_count_created = None
-
         if os.path.exists(csv_file_path) and os.stat(csv_file_path).st_size > 0:
-            with open(csv_file_path, 'r') as csv_file:
-                lines = csv_file.readlines()
-                if lines:
-                    last_line = lines[-1].strip()
-                    parts = last_line.split(',')
-                    if len(parts) == 4:
-                        last_count = int(parts[2])
-                        last_count_created = int(parts[3])
-                    if len(lines) > 1:
-                        second_last_line = lines[-2].strip()
-                        parts = second_last_line.split(',')
-                        if len(parts) == 4:
-                            second_last_count = int(parts[2])
-                            second_last_count_created = int(parts[3])
+            # Read the contents of the CSV file and store it in a pandas dataframe. It has a header line
+            df = pd.read_csv(csv_file_path)
 
-        # Prepare the new line
-        new_line = f"{timestamp},{network},{count},{count_created}"
+        if not df.empty:
+            # Adding new data as a new row
+            new_row = {
+                'timestamp': timestamp, 
+                'network': network, 
+                'mainers_created': mainers_created, 
+                'total_cycles': total_cycles,
+                'total_paused': total_paused,
+                'total_active': total_active,
+                'total_active_low': total_active_low,
+                'total_active_medium': total_active_medium,
+                'total_active_high': total_active_high,
+                'total_active_very_high': total_active_very_high,
+                'total_paused_low': total_paused_low,
+                'total_paused_medium': total_paused_medium,
+                'total_paused_high': total_paused_high,
+                'total_paused_very_high': total_paused_very_high
+            }
+            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
 
-        # Determine action based on changes
-        if last_count != count or last_count_created != count_created:
-            print(f"Appending counts to {csv_file_path}")
-            with open(csv_file_path, 'a') as csv_file:
-                if os.stat(csv_file_path).st_size == 0:  # Check if file is empty
-                    csv_file.write("timestamp,network,wl_mainers_allocated,wl_mainers_created\n")
-                csv_file.write(new_line + "\n")
-        else:
-            if second_last_count != count or second_last_count_created != count_created:
-                print(f"Appending counts to {csv_file_path}")
-                with open(csv_file_path, 'a') as csv_file:
-                    if os.stat(csv_file_path).st_size == 0:  # Check if file is empty
-                        csv_file.write("timestamp,network,wl_mainers_allocated,wl_mainers_created\n")
-                    csv_file.write(new_line + "\n")
-            else:
-                print(f"Replacing last line in {csv_file_path}")
-                with open(csv_file_path, 'w') as csv_file:
-                    if os.stat(csv_file_path).st_size == 0:  # Check if file is empty
-                        csv_file.write("timestamp,network,wl_mainers_allocated,wl_mainers_created\n")
-                    else:
-                        csv_file.write(lines[0])  # Write the header line
-                    csv_file.writelines(lines[1:-1])  # Write all lines except the last one
-                    csv_file.write(new_line + "\n")
+            # Patch to calculate estimate of total cycles
+            # add a new column: total_cycles
+            # df['total_cycles'] = df['mainers_created'].apply(lambda x: x * 15 if x <= 217 else x * 30)
+
+            # write the df back to the csv file
+            print(f"Writing mainer metrics to {csv_file_path}")
+            df.to_csv(csv_file_path, index=False)
+
+        
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Start timers.")

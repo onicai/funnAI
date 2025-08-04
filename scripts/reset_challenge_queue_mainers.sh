@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Default network type is local
 NETWORK_TYPE="local"
 
 # Parse command line arguments for network type
@@ -15,20 +16,22 @@ while [ $# -gt 0 ]; do
             fi
             shift
             ;;
-        --canister-id)
-            shift
-            CANISTER_ID=$1
-            shift
-            ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--llm-type [challenger|judge|share_service]] --canister-id <canister_id>"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --burnrate [Low|Mid|High|VeryHigh]"
             exit 1
             ;;
     esac
 done
 
 echo "Using network type: $NETWORK_TYPE"
-echo "Using CANISTER_ID: $CANISTER_ID"
 
-python -m scripts.cleanup_llm_promptcache --network $NETWORK_TYPE --canister-id $CANISTER_ID
+echo " "
+read -p "Are you sure you want to reset the challengeQueue for all the mAIners? (y/n) " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "reset cancelled."
+    exit 1
+fi
+
+python -m scripts.reset_challenge_queue_mainers --network $NETWORK_TYPE

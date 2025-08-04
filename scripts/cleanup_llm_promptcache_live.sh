@@ -1,5 +1,11 @@
 #!/bin/bash
 
+#######################################################################
+# run from parent folder as:
+# scripts/log.sh --network [local|ic]
+#######################################################################
+
+# Default network type is local
 NETWORK_TYPE="local"
 
 # Parse command line arguments for network type
@@ -30,5 +36,6 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 echo "Using CANISTER_ID: $CANISTER_ID"
+echo "Running in offline mode: $OFFLINE"
 
-python -m scripts.cleanup_llm_promptcache --network $NETWORK_TYPE --canister-id $CANISTER_ID
+python -m scripts.cleanup_llm_promptcache_live --network $NETWORK_TYPE --canister-id $CANISTER_ID

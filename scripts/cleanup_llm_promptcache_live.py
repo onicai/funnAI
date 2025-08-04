@@ -33,61 +33,67 @@ def cleanup_llm_promptcache(gamestate_canister_id, challenger_canister_id, judge
         print(f"Unknown llm type for canister {canister_name}. Skipping cleanup.")
         return
 
-    print("----------------------------------------------------")
-    # confirm that the canister is offline
-    try:
-        result = subprocess.check_output(
-            ["dfx", "canister", "call", ctrlb_canister_id, "get_llm_canisters", "--output", "json", "--network", network],
-            stderr=subprocess.DEVNULL,
-            text=True
-        )
-        data = json.loads(result)
-        LLMs = data.get('Ok', {}).get('llmCanisterIds', [])
-        # print(f"Found {len(LLMs)} entries in LLM canister {canister_name} ({canister_id}) on network {network}.")
-        # make sure the canister_id is NOT in the list of LLMs
-        if canister_id in LLMs:
-            print(f"Canister {canister_name} ({canister_id}) is ONLINE on network {network}.")
-            print(f"Please remove the LLM canister from the '{llm_type}' controller {ctrlb_canister_id} before running this script.")
-            return
-        
-        print(f"We confirmed that the LLM canister {canister_name} ({canister_id}) is OFFLINE on network {network}.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error checking if canister {canister_name} ({canister_id}) is indeed OFFLINE on network {network}: {e}")
-        return
-    
-    
-    print(f"(offline mode) Deleting all .canister_cache entries in LLM canister {canister_name} ({canister_id}) on network {network}...")
-
+    print("----------------------------------------------------")            
     entries = get_prompt_cache_entries(canister_name, canister_id, network)
     if not entries:
         print(f"No entries found in .canister_cache for LLM canister {canister_name} ({canister_id}) on network {network}. Nothing to clean up.")
         return
     
-    for i, ftype in enumerate(["file", "directory"]):
-        print(f"Loop {i}: deleting .canister_cache '{ftype}' paths in the LLM canister.")
-        try:
-            count = 0
-            for entry in reversed(entries):
-                filename = entry.get('filename')
-                filetype = entry.get('filetype')
-                if filetype == ftype:
-                    count += 1
-                    print(f"({count}/{len(entries)}) Deleting {filename} ")
-                    subprocess.run(
-                        ["dfx", "canister", "call", canister_id, "filesystem_remove", 
-                        f"(record {{filename = \"{filename}\"; }})", 
-                        "--network", network],
-                        check=True,
-                        text=True
-                    )
-                    # delay to avoid rate limiting
-                    time.sleep(0.1)
-            print(f"Deleted {count} .canister_cache '{ftype}' paths in LLM canister {canister_name} ({canister_id}) on network {network}.")
-        except subprocess.CalledProcessError as e:
-            print(f"Error deleting .canister_cache '{ftype}' paths in LLM canister {canister_name} ({canister_id}) on network {network}: {e}")
-            return      
+    ftype = "file"
+    age_minutes_threshold = 120  # Only delete files older than this threshold
+    print(f"Deleting .canister_cache '{ftype}' paths older than {age_minutes_threshold} minutes, while LLM is still online.")
+    try:
+        count = 0
+        for entry in reversed(entries):
+            count += 1
+            filename = entry.get('filename')
+            filetype = entry.get('filetype')
+            if filetype != ftype:
+                print(f"({count}/{len(entries)}) Skipping {filename} of type {filetype}, as it is not a '{ftype}' file.")
+                continue
 
-        print(f"Cleanup of prompt cache for {llm_type} canister {canister_name} ({canister_id}) on network {network} completed successfully.")
+            # get age of the file
+            # print(f"({count}/{len(entries)}) Checking age of {filename}...")
+            cmd = ["dfx", "canister", "--network", network, "call", canister_id, "get_creation_timestamp_ns", 
+                f"(record {{filename = \"{filename}\"; }})", "--output", "json"]
+            # print(f"  {' '.join(cmd)}")
+            result = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
+            # print(result)
+            data = json.loads(result)
+            if 'Err' in data:
+                print(f"  Error getting creation timestamp for {filename}: {data['Err']}")
+                continue
+            age_seconds = int(data['Ok'].get('age_seconds', 0))
+            age_minutes = age_seconds / 60
+
+            if age_minutes < age_minutes_threshold:
+                print(f"({count}/{len(entries)}) Skipping {filename} of age {age_minutes} minutes, as it is too recent.")
+                continue
+
+            age_days = age_minutes // (60 * 24)
+            age_hours = (age_minutes % (60 * 24)) // 60
+            print(f"({count}/{len(entries)}) Deleting {filename} of age {age_minutes} minutes ({age_days} days and {age_hours} hours).")
+            print("====PATCH-PATCH-PATCH=====SKIPPING ACTUAL DELETE===DRY-RUN=====")
+            time.sleep(0.1)
+            continue
+            subprocess.run(
+                ["dfx", "canister", "call", canister_id, "filesystem_remove", 
+                f"(record {{filename = \"{filename}\"; }})", 
+                "--network", network],
+                check=True,
+                text=True
+            )
+            # delay to avoid rate limiting
+            time.sleep(0.1)
+        print(f"Deleted {count} .canister_cache '{ftype}' paths in LLM canister {canister_name} ({canister_id}) on network {network}.")
+    except subprocess.CalledProcessError as e:
+        print(f"ERROR occured when calling the subprocess command.")
+        print("Command:", e.cmd)
+        print("Return code:", e.returncode)
+        print("Output:\n", e.output)
+        return      
+
+    print(f"Cleanup of prompt cache for {llm_type} canister {canister_name} ({canister_id}) on network {network} completed successfully.")
 
 def main(network, canister_id):
     (CANISTERS, CANISTER_COLORS, RESET_COLOR) = get_canisters(network, "protocol")
