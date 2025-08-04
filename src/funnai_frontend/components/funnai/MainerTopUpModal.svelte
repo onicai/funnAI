@@ -28,7 +28,7 @@
   
   // Token configurations - now supporting both ICP and FUNNAI
   let availableTokens: any[] = [];
-  let selectedTokenSymbol: 'ICP' | 'FUNNAI' = 'ICP';
+  let selectedTokenSymbol: 'ICP' | 'FUNNAI' = 'FUNNAI';
   let isTokenLoading: boolean = true;
   
   // Get currently selected token
