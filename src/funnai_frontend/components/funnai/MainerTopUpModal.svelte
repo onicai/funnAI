@@ -11,7 +11,7 @@
   import { fetchTokens, protocolConfig } from "../../helpers/token_helpers";
   import { createAnonymousActorHelper } from "../../helpers/utils/actorUtils";
   import { idlFactory as cmcIdlFactory } from "../../helpers/idls/cmc.idl.js";
-  import { MIN_AMOUNT, MAX_AMOUNT, CELEBRATION_DURATION, CELEBRATION_ENABLED } from "../../helpers/config/topUpConfig";
+  import { MIN_AMOUNT, MAX_AMOUNT, FUNNAI_MIN_AMOUNT, FUNNAI_MAX_AMOUNT, CELEBRATION_DURATION, CELEBRATION_ENABLED } from "../../helpers/config/topUpConfig";
   import { getIsProtocolActive } from "../../helpers/gameState";
 
   export let isOpen: boolean = false;
@@ -28,7 +28,7 @@
   
   // Token configurations - now supporting both ICP and FUNNAI
   let availableTokens: any[] = [];
-  let selectedTokenSymbol: 'ICP' | 'FUNNAIdemo' = 'ICP';
+  let selectedTokenSymbol: 'ICP' | 'FUNNAI' = 'FUNNAI';
   let isTokenLoading: boolean = true;
   
   // Get currently selected token
@@ -80,21 +80,13 @@
   let cyclesAmount: string = "0";
   let conversionRate: BigNumber | null = null;
   
-  // Dynamic limits based on token type and conversion rate
+  // Dynamic limits based on token type
   $: dynamicLimits = (() => {
-    if (selectedTokenSymbol === 'FUNNAIdemo' && conversionRate && !conversionRate.isZero()) {
-      // FUNNAI limits: max 1T cycles, min 0.4T cycles
-      const maxCycles = new BigNumber("1000000000000"); // 1T cycles
-      const minCycles = new BigNumber("400000000000"); // 0.4T cycles
-      const E8S_PER_FUNNAI = new BigNumber("100000000"); // 10^8 units per FUNNAI
-      
-      // Calculate FUNNAI amounts that correspond to cycle limits
-      const maxFunnaiAmount = maxCycles.div(conversionRate).times(E8S_PER_FUNNAI).div(E8S_PER_FUNNAI);
-      const minFunnaiAmount = minCycles.div(conversionRate).times(E8S_PER_FUNNAI).div(E8S_PER_FUNNAI);
-      
+    if (selectedTokenSymbol === 'FUNNAI') {
+      // FUNNAI limits from config
       return {
-        min: Number(minFunnaiAmount.toFixed(8)),
-        max: Number(maxFunnaiAmount.toFixed(8))
+        min: FUNNAI_MIN_AMOUNT,
+        max: FUNNAI_MAX_AMOUNT
       };
     } else {
       // ICP limits from config
@@ -635,17 +627,11 @@
           {#if isBelowMinimum}
             <div class="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
               Minimum amount: {currentMinAmount} {selectedToken?.symbol || 'Token'}
-              {#if selectedTokenSymbol === 'FUNNAIdemo'}
-                <span class="opacity-70">(≈ 0.4T cycles)</span>
-              {/if}
             </div>
           {/if}
           {#if isAboveMaximum}
             <div class="mt-1 text-xs text-red-600 dark:text-red-400">
               Maximum amount: {currentMaxAmount} {selectedToken?.symbol || 'Token'}
-              {#if selectedTokenSymbol === 'FUNNAIdemo'}
-                <span class="opacity-70">(≈ 1T cycles)</span>
-              {/if}
             </div>
           {/if}
           {#if isMaxAmount && hasEnoughBalance}
@@ -661,9 +647,6 @@
             <Info size={12} class="sm:hidden flex-shrink-0" />
             <Info size={14} class="hidden sm:block flex-shrink-0" />
             <span class="font-medium">Cycles Conversion</span>
-            {#if selectedTokenSymbol === 'FUNNAIdemo'}
-              <span class="text-xs opacity-70">(1 FUNNAI = 1T Cycles)</span>
-            {/if}
             {#if isLoadingConversionRate}
               <span class="w-3 h-3 ml-2 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin dark:border-blue-400/30 dark:border-t-blue-400 flex-shrink-0"></span>
             {/if}

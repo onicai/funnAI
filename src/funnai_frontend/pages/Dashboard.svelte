@@ -16,7 +16,7 @@
   import BigNumber from "bignumber.js";
 
   // Sample data 
-  $: totalMainers = 634; // This could come from store
+  $: totalMainers = 636; // This could come from store
   $: activeMainers = 462;
   $: totalRewards = 1250.50;
   $: totalCycles = 21246900000000;
