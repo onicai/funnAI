@@ -524,6 +524,8 @@ export interface GameStateCanister {
   >,
   'getMainerCyclesUsedPerResponse' : ActorMethod<[], NatResult>,
   'getMainerPromptInfo' : ActorMethod<[string], MainerPromptInfoResult>,
+  'getMaxFunnaiTopupCyclesAmount' : ActorMethod<[], NatResult>,
+  'getMaxFunnaiTopupCyclesAmountAdmin' : ActorMethod<[], NatResult>,
   'getMinimumIcpBalance' : ActorMethod<[], NatResult>,
   'getNextSubmissionToJudge' : ActorMethod<
     [],
@@ -646,6 +648,7 @@ export interface GameStateCanister {
     [MainerLimitInput],
     AuthRecordResult
   >,
+  'setMaxFunnaiTopupCyclesAmount' : ActorMethod<[bigint], AuthRecordResult>,
   'setMinimumIcpBalance' : ActorMethod<[bigint], AuthRecordResult>,
   'setOfficialMainerAgentCanisterWasmHashAdmin' : ActorMethod<
     [UpdateWasmHashInput],

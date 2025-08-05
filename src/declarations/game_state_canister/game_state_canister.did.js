@@ -941,6 +941,8 @@ export const idlFactory = ({ IDL }) => {
         [MainerPromptInfoResult],
         ['query'],
       ),
+    'getMaxFunnaiTopupCyclesAmount' : IDL.Func([], [NatResult], ['query']),
+    'getMaxFunnaiTopupCyclesAmountAdmin' : IDL.Func([], [NatResult], ['query']),
     'getMinimumIcpBalance' : IDL.Func([], [NatResult], ['query']),
     'getNextSubmissionToJudge' : IDL.Func(
         [],
@@ -1125,6 +1127,11 @@ export const idlFactory = ({ IDL }) => {
     'setInitialChallengeTopics' : IDL.Func([], [StatusCodeRecordResult], []),
     'setLimitForCreatingMainerAdmin' : IDL.Func(
         [MainerLimitInput],
+        [AuthRecordResult],
+        [],
+      ),
+    'setMaxFunnaiTopupCyclesAmount' : IDL.Func(
+        [IDL.Nat],
         [AuthRecordResult],
         [],
       ),

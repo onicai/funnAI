@@ -40,7 +40,7 @@
     try {
       const result = await fetchTokens({});
       const icpToken = result.tokens.find(t => t.symbol === "ICP");
-      const funnaiToken = result.tokens.find(t => t.symbol === "FUNNAI");
+      const funnaiToken = result.tokens.find(t => t.symbol === "FUNNAIdemo");
       
       if (icpToken && funnaiToken) {
         availableTokens = [icpToken, funnaiToken];
@@ -109,7 +109,7 @@
     ? BigInt(new BigNumber(amount).times(new BigNumber(10).pow(selectedToken.decimals)).toString())
     : BigInt(0);
   $: hasEnoughBalance = isValidAmount && balance >= (amountBigInt + tokenFee);
-  $: isFunnaiUnavailable = selectedTokenSymbol === 'FUNNAI' && (!conversionRate || conversionRate.isZero());
+  $: isFunnaiUnavailable = selectedTokenSymbol === 'FUNNAIdemo' && (!conversionRate || conversionRate.isZero());
   $: canSubmit = hasEnoughBalance && !isValidating && selectedToken && !isFunnaiUnavailable;
   $: if (selectedToken) {
     tokenFee = BigInt(selectedToken.fee_fixed);
@@ -149,7 +149,7 @@
     errorMessage = ""; // Clear any previous error messages
     
     try {
-      if (selectedTokenSymbol === 'FUNNAI') {
+      if (selectedTokenSymbol === 'FUNNAIdemo') {
         // Get FUNNAI conversion rate from game state canister
         if (!$store.gameStateCanisterActor) {
           throw new Error("Game state canister not available");
@@ -213,7 +213,7 @@
     } catch (error) {
       console.error("Error loading conversion rate:", error);
       
-      if (selectedTokenSymbol === 'FUNNAI') {
+      if (selectedTokenSymbol === 'FUNNAIdemo') {
         if (error.message.includes("currently not available")) {
           errorMessage = "FUNNAI top-ups are currently not available";
           conversionRate = new BigNumber("0");
@@ -267,7 +267,7 @@
     }
     
     // Special handling for FUNNAI when rate is 0 (not available)
-    if (selectedTokenSymbol === 'FUNNAI' && conversionRate.isZero()) {
+    if (selectedTokenSymbol === 'FUNNAIdemo' && conversionRate.isZero()) {
       cyclesAmount = "0";
       return;
     }
@@ -300,7 +300,7 @@
   }
 
   // Handle token selection change
-  function handleTokenChange(tokenSymbol: 'ICP' | 'FUNNAI') {
+  function handleTokenChange(tokenSymbol: 'ICP' | 'FUNNAIdemo') {
     selectedTokenSymbol = tokenSymbol;
     // Reset amount when switching tokens to avoid confusion
     amount = "";
@@ -335,7 +335,7 @@
       }
 
       // Additional FUNNAI-specific security checks
-      if (selectedTokenSymbol === 'FUNNAI') {
+      if (selectedTokenSymbol === 'FUNNAIdemo') {
         if (!conversionRate || conversionRate.isZero()) {
           throw new Error("FUNNAI top-ups are currently not available");
         }
@@ -354,7 +354,9 @@
         } catch (priceCheckError) {
           console.error("Error checking FUNNAI price:", priceCheckError);
           throw new Error("Unable to verify FUNNAI conversion rate");
-        }
+        };
+
+        tokenFee = BigInt(0); // for burn transactions, set to 0
       }
 
       // Validate amount ranges
@@ -367,6 +369,10 @@
         }
         throw new Error("Invalid amount");
       }
+
+      console.log("debug selectedToken before transfer ", selectedToken);
+      console.log("debug protocolAddress before transfer ", protocolAddress);
+      console.log("debug tokenFee before transfer ", tokenFee);
       
       // Transfer tokens to the Protocol's account for top-up
       // The backend will handle the actual cycles minting and top-up process
@@ -419,20 +425,27 @@
             mainerAgent: cleanMainerAgent,
           };
 
+          console.log("debug topUpInput ", topUpInput);
+          console.log("debug selectedTokenSymbol ", selectedTokenSymbol);
+
           let backendResult;
-          if (selectedTokenSymbol === 'FUNNAI') {
+          if (selectedTokenSymbol === 'FUNNAIdemo') {
             // For FUNNAI, use the new FUNNAI-specific endpoint
             if (!$store.gameStateCanisterActor) {
               throw new Error("Game state canister not available");
             }
+            console.log("debug before topUpCyclesForMainerAgentWithFunnai ");
             backendResult = await $store.gameStateCanisterActor.topUpCyclesForMainerAgentWithFunnai(topUpInput);
           } else {
             // For ICP, use the existing endpoint
             if (!$store.gameStateCanisterActor) {
               throw new Error("Game state canister not available");
             }
+            console.log("debug before topUpCyclesForMainerAgent ");
             backendResult = await $store.gameStateCanisterActor.topUpCyclesForMainerAgent(topUpInput);
           }
+
+          console.log("debug backendResult ", backendResult);
 
           // Check if backend call was successful
           if (backendResult && 'Ok' in backendResult) {

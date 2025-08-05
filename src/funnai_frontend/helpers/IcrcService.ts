@@ -401,6 +401,10 @@ export class IcrcService {
       createdAtTime?: bigint;
     } = {},
   ) {
+    console.log("debug in IcrcService transfer token ", token);
+    console.log("debug in IcrcService transfer to ", to);
+    console.log("debug in IcrcService transfer amount ", amount);
+    console.log("debug in IcrcService transfer opts ", opts);
     try {
       // If it's an ICP transfer to an account ID
       if (
@@ -408,6 +412,7 @@ export class IcrcService {
         typeof to === "string" &&
         to.length === 64
       ) {
+        console.log("debug in IcrcService transfer is ICP transfer ", token.symbol);
         const wallet = storeState.isAuthed;
         if (wallet === "oisy") {
           return { Err: "Oisy subaccount transfer is temporarily disabled." };
@@ -433,11 +438,27 @@ export class IcrcService {
         return await ledgerActor.transfer(transfer_args);
       }
 
+      console.log("debug in IcrcService transfer is other transfer ", token.symbol);
+      console.log("debug in IcrcService transfer is other transfer token.canister_id ", token.canister_id);
+
       // For all other cases (ICRC1 transfers to principals)
       const actor = await store.getActor(token.canister_id, canisterIDLs.icrc1, {
         anon: false,
         requiresSigning: true,
       });
+
+      console.log("debug in IcrcService transfer is other transfer opts?.fee ", opts?.fee);
+      console.log("debug in IcrcService transfer is other transfer opts.fee ", opts.fee);
+
+      let fee = BigInt(token.fee_fixed);
+
+      console.log("debug in IcrcService transfer is other transfer opts?.fee === 0n ", opts?.fee === 0n);
+
+      if (opts?.fee === 0n) {
+        fee = opts.fee;
+      };
+
+      console.log("debug in IcrcService transfer is other transfer fee ", [fee]);
 
       return await actor.icrc1_transfer({
         to: {
@@ -445,7 +466,7 @@ export class IcrcService {
           subaccount: [],
         },
         amount,
-        fee: [BigInt(token.fee_fixed)],
+        fee: [fee],
         memo: opts.memo ? [opts.memo] : [],
         from_subaccount: opts.fromSubaccount ? [opts.fromSubaccount] : [],
         created_at_time: opts.createdAtTime ? [opts.createdAtTime] : [],
