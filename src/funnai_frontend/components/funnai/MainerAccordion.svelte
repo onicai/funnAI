@@ -363,7 +363,8 @@
   };
   
   // Handle top-up completion
-  async function handleTopUpComplete(txId: string, canisterId: string) {
+  async function handleTopUpComplete(txId: string, canisterId: string, backendPromise: Promise<any>) {
+    // Modal is already closed by MainerTopUpModal
     mainerTopUpModalOpen = false;
 
     // Add this agent to the loading set
@@ -380,8 +381,19 @@
       return; // TODO - Implementation: decide if the top up should just be credited to the user's first agent then instead (as otherwise the payment is lost)
     };
 
-    // Backend top-up call is already handled in MainerTopUpModal.svelte
-    // This function now only handles UI refresh and cleanup
+    // Wait for the backend promise to complete
+    try {
+      const backendResult = await backendPromise;
+      console.log("Backend top-up completed:", backendResult);
+      
+      if (backendResult && 'Ok' in backendResult) {
+        console.log("Top-up completed successfully");
+      } else if (backendResult && 'Err' in backendResult) {
+        console.error("Backend top-up error:", backendResult.Err);
+      }
+    } catch (backendError) {
+      console.error("Backend promise failed:", backendError);
+    }
 
     // Refresh the list of agents to show updated balances
     try {

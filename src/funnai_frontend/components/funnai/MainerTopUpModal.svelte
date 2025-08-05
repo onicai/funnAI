@@ -16,7 +16,7 @@
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
-  export let onSuccess: (txId: string, canisterId: string) => void = () => {};
+  export let onSuccess: (txId: string, canisterId: string, backendPromise: Promise<any>) => void = () => {};
   export let onCelebration: (amount: string, token: string) => void = () => {};
   export let canisterId: string = "";
   export let canisterName: string = "";
@@ -443,105 +443,85 @@
         const txId = result.Ok?.toString();
         console.log("handleSubmit txId: ", txId);
         
-        // Call the appropriate backend endpoint to complete the top-up
-        try {
-          // Find the mAIner agent information from the store
-          const mainerAgent = $store.userMainerAgentCanistersInfo.find(agent => agent.address === canisterId);
-          if (!mainerAgent) {
-            throw new Error("mAIner agent not found in user data");
+        // Create the backend promise but don't await it here
+        const mainerAgent = $store.userMainerAgentCanistersInfo.find(agent => agent.address === canisterId);
+        if (!mainerAgent) {
+          throw new Error("mAIner agent not found in user data");
+        }
+
+        // Helper function to clean enriched data (extract only original backend fields)
+        function getOriginalCanisterInfo(enrichedCanisterInfo) {
+          const {
+            // Remove UI-specific fields that we added
+            uiStatus,
+            cycleBalance,
+            burnedCycles,
+            cyclesBurnRate,
+            cyclesBurnRateSetting,
+            llmCanisters,
+            llmSetupStatus,
+            hasError,
+            // Keep only original backend fields
+            ...originalInfo
+          } = enrichedCanisterInfo;
+          return originalInfo;
+        }
+
+        // Clean the enriched data to get only original backend fields
+        const cleanMainerAgent = getOriginalCanisterInfo(mainerAgent);
+
+        let topUpInput = {
+          paymentTransactionBlockId: BigInt(txId),
+          mainerAgent: cleanMainerAgent,
+        };
+
+        console.log("debug topUpInput ", topUpInput);
+        console.log("debug selectedTokenSymbol ", selectedTokenSymbol);
+
+        // Create the backend promise based on token type
+        let backendPromise: Promise<any>;
+        if (selectedTokenSymbol === 'FUNNAI') {
+          // For FUNNAI, use the new FUNNAI-specific endpoint
+          if (!$store.gameStateCanisterActor) {
+            throw new Error("Game state canister not available");
           }
-
-          // Helper function to clean enriched data (extract only original backend fields)
-          function getOriginalCanisterInfo(enrichedCanisterInfo) {
-            const {
-              // Remove UI-specific fields that we added
-              uiStatus,
-              cycleBalance,
-              burnedCycles,
-              cyclesBurnRate,
-              cyclesBurnRateSetting,
-              llmCanisters,
-              llmSetupStatus,
-              hasError,
-              // Keep only original backend fields
-              ...originalInfo
-            } = enrichedCanisterInfo;
-            return originalInfo;
+          console.log("debug before topUpCyclesForMainerAgentWithFunnai ");
+          backendPromise = $store.gameStateCanisterActor.topUpCyclesForMainerAgentWithFunnai(topUpInput);
+        } else {
+          // For ICP, use the existing endpoint
+          if (!$store.gameStateCanisterActor) {
+            throw new Error("Game state canister not available");
           }
+          console.log("debug before topUpCyclesForMainerAgent ");
+          backendPromise = $store.gameStateCanisterActor.topUpCyclesForMainerAgent(topUpInput);
+        }
 
-          // Clean the enriched data to get only original backend fields
-          const cleanMainerAgent = getOriginalCanisterInfo(mainerAgent);
-
-          let topUpInput = {
-            paymentTransactionBlockId: BigInt(txId),
-            mainerAgent: cleanMainerAgent,
-          };
-
-          console.log("debug topUpInput ", topUpInput);
-          console.log("debug selectedTokenSymbol ", selectedTokenSymbol);
-
-          let backendResult;
-          if (selectedTokenSymbol === 'FUNNAI') {
-            // For FUNNAI, use the new FUNNAI-specific endpoint
-            if (!$store.gameStateCanisterActor) {
-              throw new Error("Game state canister not available");
-            }
-            console.log("debug before topUpCyclesForMainerAgentWithFunnai ");
-            backendResult = await $store.gameStateCanisterActor.topUpCyclesForMainerAgentWithFunnai(topUpInput);
-          } else {
-            // For ICP, use the existing endpoint
-            if (!$store.gameStateCanisterActor) {
-              throw new Error("Game state canister not available");
-            }
-            console.log("debug before topUpCyclesForMainerAgent ");
-            backendResult = await $store.gameStateCanisterActor.topUpCyclesForMainerAgent(topUpInput);
+        // Handle celebration for max amounts
+        const shouldCelebrate = isMaxAmount && CELEBRATION_ENABLED;
+        
+        // Close modal immediately and pass promise to parent
+        onSuccess(txId, canisterId, backendPromise);
+        handleClose();
+        
+        // Trigger celebration if needed (after modal closes)
+        if (shouldCelebrate) {
+          setTimeout(() => {
+            onCelebration(amount, selectedToken?.symbol || selectedTokenSymbol);
+          }, 300);
+          
+          // Handle max top-up storage in background
+          try {
+            let maxTopUpInput = {
+              paymentTransactionBlockId: BigInt(txId),
+              toppedUpMainerId: canisterId,
+              amount: BigInt(amount),
+            };
+            $store.backendActor.addMaxMainerTopup(maxTopUpInput).catch(maxTopUpStorageError => {
+              console.error("Top-up storage error: ", maxTopUpStorageError);            
+            });
+          } catch (error) {
+            console.error("Error setting up max top-up storage: ", error);
           }
-
-          console.log("debug backendResult ", backendResult);
-
-          // Check if backend call was successful
-          if (backendResult && 'Ok' in backendResult) {
-            console.log(`${selectedTokenSymbol} top-up completed successfully:`, backendResult.Ok);
-            
-            // Check if this was a maximum amount top-up to trigger celebration
-            if (isMaxAmount && CELEBRATION_ENABLED) {
-              // First close the modal, then trigger celebration
-              onSuccess(txId, canisterId);
-              handleClose();
-              
-              // Small delay to ensure modal is closed before showing celebration
-              setTimeout(() => {
-                onCelebration(amount, selectedToken?.symbol || selectedTokenSymbol);
-              }, 300);
-              try {
-                let maxTopUpInput = {
-                  paymentTransactionBlockId: BigInt(txId),
-                  toppedUpMainerId: canisterId,
-                  amount: BigInt(amount),
-                };
-                await $store.backendActor.addMaxMainerTopup(maxTopUpInput);            
-              } catch (maxTopUpStorageError) {
-                console.error("Top-up storage error: ", maxTopUpStorageError);            
-              };
-            } else {
-              onSuccess(txId, canisterId);
-              handleClose();
-            }
-          } else {
-            const backendErrorMsg = backendResult && 'Err' in backendResult 
-              ? typeof backendResult.Err === 'object' 
-                ? Object.keys(backendResult.Err)[0]
-                : String(backendResult.Err)
-              : "Unknown backend error";
-            throw new Error(`Backend top-up failed: ${backendErrorMsg}`);
-          }
-        } catch (backendError) {
-          console.error("Backend top-up error:", backendError);
-          // Even though the backend call failed, the tokens were transferred
-          // Show a warning but still consider it partially successful
-          errorMessage = `Token transfer succeeded but backend processing failed: ${backendError.message}. Please contact support.`;
-          // Still call onSuccess to allow the user to see the transaction
-          onSuccess(txId, canisterId);
         }
       } else if (result && typeof result === 'object' && 'Err' in result) {
         const errMsg = typeof result.Err === 'object' 
