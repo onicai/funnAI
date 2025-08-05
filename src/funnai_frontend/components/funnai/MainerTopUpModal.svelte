@@ -11,7 +11,7 @@
   import { fetchTokens, protocolConfig } from "../../helpers/token_helpers";
   import { createAnonymousActorHelper } from "../../helpers/utils/actorUtils";
   import { idlFactory as cmcIdlFactory } from "../../helpers/idls/cmc.idl.js";
-  import { MIN_AMOUNT, MAX_AMOUNT, FUNNAI_MIN_AMOUNT, FUNNAI_MAX_AMOUNT, CELEBRATION_DURATION, CELEBRATION_ENABLED } from "../../helpers/config/topUpConfig";
+  import { MIN_AMOUNT, MAX_AMOUNT, CELEBRATION_DURATION, CELEBRATION_ENABLED } from "../../helpers/config/topUpConfig";
   import { getIsProtocolActive } from "../../helpers/gameState";
 
   export let isOpen: boolean = false;
@@ -80,13 +80,25 @@
   let cyclesAmount: string = "0";
   let conversionRate: BigNumber | null = null;
   
-  // Dynamic limits based on token type
+  // FUNNAI limits - loaded dynamically from backend
+  let funnaiMaxAmount: number = 0;
+  let isLoadingFunnaiLimits: boolean = false;
+  
+  // FUNNAI constants
+  const FUNNAI_MIN_CYCLES = new BigNumber("400000000000"); // 0.4T cycles (hardcoded)
+  
+  // Dynamic limits based on token type and conversion rate
   $: dynamicLimits = (() => {
-    if (selectedTokenSymbol === 'FUNNAI') {
-      // FUNNAI limits from config
+    if (selectedTokenSymbol === 'FUNNAI' && conversionRate && !conversionRate.isZero()) {
+      // FUNNAI limits: backend max, hardcoded min (0.4T cycles)
+      const E8S_PER_FUNNAI = new BigNumber("100000000000"); // 10^8 units per FUNNAI
+      
+      // Calculate FUNNAI amount for minimum (0.4T cycles)
+      const minFunnaiAmount = FUNNAI_MIN_CYCLES.div(conversionRate);
+      
       return {
-        min: FUNNAI_MIN_AMOUNT,
-        max: FUNNAI_MAX_AMOUNT
+        min: Number(minFunnaiAmount.toFixed(8)),
+        max: funnaiMaxAmount || 0 // Use backend value or 0 if not loaded
       };
     } else {
       // ICP limits from config
@@ -101,10 +113,10 @@
   $: currentMaxAmount = dynamicLimits.max;
 
   
-  $: isValidAmount = amount && !isNaN(Number(amount)) && Number(amount) >= currentMinAmount && Number(amount) <= currentMaxAmount;
+  $: isValidAmount = amount && !isNaN(Number(amount)) && Number(amount) >= currentMinAmount && (currentMaxAmount === 0 || Number(amount) <= currentMaxAmount);
   $: isBelowMinimum = amount && !isNaN(Number(amount)) && Number(amount) > 0 && Number(amount) < currentMinAmount;
-  $: isMaxAmount = amount && !isNaN(Number(amount)) && Number(amount) === currentMaxAmount;
-  $: isAboveMaximum = amount && !isNaN(Number(amount)) && Number(amount) > currentMaxAmount;
+  $: isMaxAmount = amount && !isNaN(Number(amount)) && currentMaxAmount > 0 && Number(amount) === currentMaxAmount;
+  $: isAboveMaximum = amount && !isNaN(Number(amount)) && currentMaxAmount > 0 && Number(amount) > currentMaxAmount;
   $: amountBigInt = isValidAmount && selectedToken
     ? BigInt(new BigNumber(amount).times(new BigNumber(10).pow(selectedToken.decimals)).toString())
     : BigInt(0);
@@ -130,6 +142,11 @@
     loadConversionRate();
   }
   
+  // Load FUNNAI limits when FUNNAI is selected and conversion rate is available
+  $: if (selectedTokenSymbol === 'FUNNAI' && conversionRate && !conversionRate.isZero()) {
+    loadFunnaiLimits();
+  }
+  
   async function loadBalance() {
     try {
       if (!$store.principal || !selectedToken) return;
@@ -140,6 +157,41 @@
       ) as bigint;
     } catch (error) {
       console.error("Error loading balance:", error);
+    }
+  }
+
+  // Function to load FUNNAI limits from backend
+  async function loadFunnaiLimits() {
+    isLoadingFunnaiLimits = true;
+    
+    try {
+      if (!$store.gameStateCanisterActor) {
+        throw new Error("Game state canister not available");
+      }
+      
+      const maxAmountResult = await $store.gameStateCanisterActor.getMaxFunnaiTopupCyclesAmount();
+      
+      if (maxAmountResult && 'Ok' in maxAmountResult) {
+        const maxCycles = new BigNumber(maxAmountResult.Ok.toString());
+        
+        // Convert max cycles to FUNNAI amount using conversion rate
+        if (conversionRate && !conversionRate.isZero()) {
+          funnaiMaxAmount = Number(maxCycles.div(conversionRate).toFixed(8));
+          console.log("FUNNAI max amount loaded from backend:", funnaiMaxAmount, "FUNNAI");
+        }
+      } else {
+        const errorMsg = maxAmountResult && 'Err' in maxAmountResult 
+          ? (typeof maxAmountResult.Err === 'object' 
+              ? Object.keys(maxAmountResult.Err)[0] 
+              : String(maxAmountResult.Err))
+          : "Failed to get FUNNAI max amount";
+        throw new Error(errorMsg);
+      }
+    } catch (error) {
+      console.error("Error loading FUNNAI limits:", error);
+      funnaiMaxAmount = 0; // Set to 0 on error to disable max amount
+    } finally {
+      isLoadingFunnaiLimits = false;
     }
   }
 
@@ -594,13 +646,17 @@
         <div>
           <div class="flex justify-between items-center mb-1.5">
             <label for="amount-input" class="block text-xs text-gray-600 dark:text-gray-400">{selectedToken?.symbol || 'Token'} Amount</label>
-            <button
-              type="button"
-              class="text-xs text-purple-600 hover:text-purple-800 dark:text-purple-500 dark:hover:text-purple-400 font-medium"
-              on:click={() => amount = String(currentMaxAmount)}
-            >
-              Top up Max ({currentMaxAmount} {selectedToken?.symbol || 'Token'})
-            </button>
+            {#if currentMaxAmount > 0}
+              <button
+                type="button"
+                class="text-xs text-purple-600 hover:text-purple-800 dark:text-purple-500 dark:hover:text-purple-400 font-medium"
+                on:click={() => amount = String(currentMaxAmount)}
+              >
+                Top up Max ({currentMaxAmount} {selectedToken?.symbol || 'Token'})
+              </button>
+            {:else if selectedTokenSymbol === 'FUNNAI' && isLoadingFunnaiLimits}
+              <span class="text-xs text-gray-500">Loading max amount...</span>
+            {/if}
           </div>
           <div class="relative">
             <input
