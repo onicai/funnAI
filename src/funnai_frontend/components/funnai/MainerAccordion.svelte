@@ -380,24 +380,8 @@
       return; // TODO - Implementation: decide if the top up should just be credited to the user's first agent then instead (as otherwise the payment is lost)
     };
 
-    // Clean the enriched data to get only original backend fields
-    let cleanMainerAgent = getOriginalCanisterInfo(mainerAgent);
-
-    let mainerAgentTopUpInput = {
-      paymentTransactionBlockId: BigInt(txId),
-      mainerAgent: cleanMainerAgent,
-    };
-    try {
-      let topUpUserMainerAgentResponse = await $store.gameStateCanisterActor.topUpCyclesForMainerAgent(mainerAgentTopUpInput);
-      
-      if ('Ok' in topUpUserMainerAgentResponse) {
-        // top up was successful
-      } else if ('Err' in topUpUserMainerAgentResponse) {
-        console.error("Error in topUpCyclesForMainerAgent:", topUpUserMainerAgentResponse.Err);
-      };
-    } catch (topUpError) {
-      console.error("Failed to top up mAIner:", topUpError);
-    };
+    // Backend top-up call is already handled in MainerTopUpModal.svelte
+    // This function now only handles UI refresh and cleanup
 
     // Refresh the list of agents to show updated balances
     try {
