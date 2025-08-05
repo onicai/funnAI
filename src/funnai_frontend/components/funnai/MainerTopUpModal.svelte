@@ -28,7 +28,7 @@
   
   // Token configurations - now supporting both ICP and FUNNAI
   let availableTokens: any[] = [];
-  let selectedTokenSymbol: 'ICP' | 'FUNNAIdemo' = 'FUNNAIdemo';
+  let selectedTokenSymbol: 'ICP' | 'FUNNAI' = 'FUNNAI';
   let isTokenLoading: boolean = true;
   
   // Get currently selected token
@@ -40,7 +40,7 @@
     try {
       const result = await fetchTokens({});
       const icpToken = result.tokens.find(t => t.symbol === "ICP");
-      const funnaiToken = result.tokens.find(t => t.symbol === "FUNNAIdemo");
+      const funnaiToken = result.tokens.find(t => t.symbol === "FUNNAI");
       
       if (icpToken && funnaiToken) {
         availableTokens = [icpToken, funnaiToken];
@@ -82,7 +82,7 @@
   
   // Dynamic limits based on token type
   $: dynamicLimits = (() => {
-    if (selectedTokenSymbol === 'FUNNAIdemo') {
+    if (selectedTokenSymbol === 'FUNNAI') {
       // FUNNAI limits from config
       return {
         min: FUNNAI_MIN_AMOUNT,
@@ -109,7 +109,7 @@
     ? BigInt(new BigNumber(amount).times(new BigNumber(10).pow(selectedToken.decimals)).toString())
     : BigInt(0);
   $: hasEnoughBalance = isValidAmount && balance >= (amountBigInt + tokenFee);
-  $: isFunnaiUnavailable = selectedTokenSymbol === 'FUNNAIdemo' && (!conversionRate || conversionRate.isZero());
+  $: isFunnaiUnavailable = selectedTokenSymbol === 'FUNNAI' && (!conversionRate || conversionRate.isZero());
   $: canSubmit = hasEnoughBalance && !isValidating && selectedToken && !isFunnaiUnavailable;
   $: if (selectedToken) {
     tokenFee = BigInt(selectedToken.fee_fixed);
@@ -149,7 +149,7 @@
     errorMessage = ""; // Clear any previous error messages
     
     try {
-      if (selectedTokenSymbol === 'FUNNAIdemo') {
+      if (selectedTokenSymbol === 'FUNNAI') {
         // Get FUNNAI conversion rate from game state canister
         if (!$store.gameStateCanisterActor) {
           throw new Error("Game state canister not available");
@@ -213,7 +213,7 @@
     } catch (error) {
       console.error("Error loading conversion rate:", error);
       
-      if (selectedTokenSymbol === 'FUNNAIdemo') {
+      if (selectedTokenSymbol === 'FUNNAI') {
         if (error.message.includes("currently not available")) {
           errorMessage = "FUNNAI top-ups are currently not available";
           conversionRate = new BigNumber("0");
@@ -267,7 +267,7 @@
     }
     
     // Special handling for FUNNAI when rate is 0 (not available)
-    if (selectedTokenSymbol === 'FUNNAIdemo' && conversionRate.isZero()) {
+    if (selectedTokenSymbol === 'FUNNAI' && conversionRate.isZero()) {
       cyclesAmount = "0";
       return;
     }
@@ -300,7 +300,7 @@
   }
 
   // Handle token selection change
-  function handleTokenChange(tokenSymbol: 'ICP' | 'FUNNAIdemo') {
+  function handleTokenChange(tokenSymbol: 'ICP' | 'FUNNAI') {
     selectedTokenSymbol = tokenSymbol;
     // Reset amount when switching tokens to avoid confusion
     amount = "";
@@ -335,7 +335,7 @@
       }
 
       // Additional FUNNAI-specific security checks
-      if (selectedTokenSymbol === 'FUNNAIdemo') {
+      if (selectedTokenSymbol === 'FUNNAI') {
         if (!conversionRate || conversionRate.isZero()) {
           throw new Error("FUNNAI top-ups are currently not available");
         }
@@ -429,7 +429,7 @@
           console.log("debug selectedTokenSymbol ", selectedTokenSymbol);
 
           let backendResult;
-          if (selectedTokenSymbol === 'FUNNAIdemo') {
+          if (selectedTokenSymbol === 'FUNNAI') {
             // For FUNNAI, use the new FUNNAI-specific endpoint
             if (!$store.gameStateCanisterActor) {
               throw new Error("Game state canister not available");
