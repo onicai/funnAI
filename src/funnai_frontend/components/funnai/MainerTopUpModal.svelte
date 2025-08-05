@@ -28,7 +28,7 @@
   
   // Token configurations - now supporting both ICP and FUNNAI
   let availableTokens: any[] = [];
-  let selectedTokenSymbol: 'ICP' | 'FUNNAI' = 'FUNNAI';
+  let selectedTokenSymbol: 'ICP' | 'FUNNAIdemo' = 'FUNNAIdemo';
   let isTokenLoading: boolean = true;
   
   // Get currently selected token
@@ -82,7 +82,7 @@
   
   // Dynamic limits based on token type
   $: dynamicLimits = (() => {
-    if (selectedTokenSymbol === 'FUNNAI') {
+    if (selectedTokenSymbol === 'FUNNAIdemo') {
       // FUNNAI limits from config
       return {
         min: FUNNAI_MIN_AMOUNT,
