@@ -433,20 +433,27 @@
             mainerAgent: cleanMainerAgent,
           };
 
+          console.log("debug topUpInput ", topUpInput);
+          console.log("debug selectedTokenSymbol ", selectedTokenSymbol);
+
           let backendResult;
           if (selectedTokenSymbol === 'FUNNAIdemo') {
             // For FUNNAI, use the new FUNNAI-specific endpoint
             if (!$store.gameStateCanisterActor) {
               throw new Error("Game state canister not available");
             }
+            console.log("debug before topUpCyclesForMainerAgentWithFunnai ");
             backendResult = await $store.gameStateCanisterActor.topUpCyclesForMainerAgentWithFunnai(topUpInput);
           } else {
             // For ICP, use the existing endpoint
             if (!$store.gameStateCanisterActor) {
               throw new Error("Game state canister not available");
             }
+            console.log("debug before topUpCyclesForMainerAgent ");
             backendResult = await $store.gameStateCanisterActor.topUpCyclesForMainerAgent(topUpInput);
           }
+
+          console.log("debug backendResult ", backendResult);
 
           // Check if backend call was successful
           if (backendResult && 'Ok' in backendResult) {
