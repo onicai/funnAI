@@ -6,15 +6,13 @@ from typing import Dict, List, Tuple
 
 def analyze_whitelist_criteria():
     """
-    Analyze all funnai accounts against whitelist criteria.
+    Analyze all funnai accounts to find accounts with no mainers and more than 10 ICP balance.
     
-    Criteria (mutually exclusive - accounts assigned to highest qualifying tier):
-    - 0a: 0 mAIners + 10-19.99 ICP max balance
-    - 0b: 0 mAIners + 20+ ICP max balance
-    - 1b: 1 mAIner + 20-39.99 ICP max balance  
-    - 1c: 1 mAIner + 40+ ICP max balance
+    Target criteria:
+    - 0 mAIners (mainer_analysis.mainer_count == 0)
+    - More than 10 ICP maximum balance (max balance_icp from balance_history > 10)
     """
-    print("=== Whitelist 2 Stealth - Criteria Analysis ===")
+    print("=== Finding Accounts with 0 Mainers and >10 ICP Balance ===")
     
     # Path to the analysis files directory
     analysis_dir = Path("funnai_accounts")
@@ -27,21 +25,16 @@ def analyze_whitelist_criteria():
     analysis_files = list(analysis_dir.glob("whitelist_analysis_*.json"))
     print(f"Found {len(analysis_files)} analysis files to process")
     
-    # Initialize counters
-    criteria_counts = {
-        "0a": {"count": 0, "accounts": []},  # 0 mAIners + 10+ ICP
-        "0b": {"count": 0, "accounts": []},  # 0 mAIners + 20+ ICP
-        "1b": {"count": 0, "accounts": []},  # 1 mAIner + 20+ ICP
-        "1c": {"count": 0, "accounts": []},  # 1 mAIner + 40+ ICP
-    }
+    # Initialize results storage
+    qualifying_accounts = []
     
-    # Track statistics
+    # Initialize counters for statistics
     stats = {
         "total_accounts": 0,
-        "accounts_with_mainers": 0,
-        "accounts_with_icp_history": 0,
-        "mainer_distribution": defaultdict(int),
-        "max_balance_distribution": defaultdict(int)
+        "accounts_with_no_mainers": 0,
+        "accounts_with_10plus_icp": 0,
+        "qualifying_accounts": 0,
+        "current_balance_over_10": 0
     }
     
     processed_count = 0
@@ -53,65 +46,68 @@ def analyze_whitelist_criteria():
                 data = json.load(f)
             
             principal = data.get('principal', '')
-            analysis = data.get('analysis', {})
+            balance_history = data.get('balance_history', [])
             mainer_analysis = data.get('mainer_analysis', {})
             
             # Extract key metrics
             mainer_count = mainer_analysis.get('mainer_count', 0)
-            max_balance = analysis.get('max_balance', 0.0)
+            
+            # Find maximum balance from balance_history and related dates
+            max_balance_icp = 0.0
+            max_balance_icp_date = None
+            first_balance_icp_over_10_date = None
+            current_icp_balance = 0.0
+            
+            if balance_history:
+                # Sort balance history by timestamp to process chronologically
+                sorted_history = sorted(balance_history, key=lambda x: x.get('timestamp', ''))
+                
+                # Find maximum balance and its date
+                max_entry = max(balance_history, key=lambda x: x.get('balance_icp', 0.0))
+                max_balance_icp = max_entry.get('balance_icp', 0.0)
+                max_balance_icp_date = max_entry.get('timestamp', None)
+                
+                # Get current balance (most recent entry)
+                if sorted_history:
+                    current_icp_balance = sorted_history[-1].get('balance_icp', 0.0)
+                
+                # Find first time balance exceeded 10 ICP
+                for entry in sorted_history:
+                    balance = entry.get('balance_icp', 0.0)
+                    if balance > 10.0:
+                        first_balance_icp_over_10_date = entry.get('timestamp', None)
+                        break
             
             # Update statistics
             stats["total_accounts"] += 1
-            if mainer_count > 0:
-                stats["accounts_with_mainers"] += 1
-            if max_balance > 0:
-                stats["accounts_with_icp_history"] += 1
             
-            stats["mainer_distribution"][mainer_count] += 1
-            
-            # Categorize max balance for distribution analysis
-            if max_balance >= 100:
-                balance_category = "100+"
-            elif max_balance >= 50:
-                balance_category = "50-99"
-            elif max_balance >= 20:
-                balance_category = "20-49"
-            elif max_balance >= 10:
-                balance_category = "10-19"
-            elif max_balance >= 5:
-                balance_category = "5-9"
-            elif max_balance > 0:
-                balance_category = "0-4"
-            else:
-                balance_category = "0"
-            stats["max_balance_distribution"][balance_category] += 1
-            
-            # Create account summary for detailed analysis
-            account_info = {
-                "principal": principal[:8] + "...",
-                "full_principal": principal,
-                "mainer_count": mainer_count,
-                "max_balance": max_balance,
-                "current_balance": analysis.get('current_balance', 0.0),
-                "total_transactions": analysis.get('total_transactions', 0)
-            }
-            
-            # Check whitelist criteria - assign to HIGHEST qualifying criteria only
             if mainer_count == 0:
-                if max_balance >= 20.0:  # Check higher threshold first
-                    criteria_counts["0b"]["count"] += 1
-                    criteria_counts["0b"]["accounts"].append(account_info)
-                elif max_balance >= 10.0:  # Only if doesn't qualify for 0b
-                    criteria_counts["0a"]["count"] += 1
-                    criteria_counts["0a"]["accounts"].append(account_info)
+                stats["accounts_with_no_mainers"] += 1
             
-            elif mainer_count == 1:
-                if max_balance >= 40.0:  # Check higher threshold first
-                    criteria_counts["1c"]["count"] += 1
-                    criteria_counts["1c"]["accounts"].append(account_info)
-                elif max_balance >= 20.0:  # Only if doesn't qualify for 1c
-                    criteria_counts["1b"]["count"] += 1
-                    criteria_counts["1b"]["accounts"].append(account_info)
+            if max_balance_icp > 10.0:
+                stats["accounts_with_10plus_icp"] += 1
+            
+            # Check if account meets our criteria
+            if mainer_count == 0 and max_balance_icp > 10.0:
+                stats["qualifying_accounts"] += 1
+                
+                # Check if current balance is still over 10 ICP
+                if current_icp_balance > 10.0:
+                    stats["current_balance_over_10"] += 1
+                
+                # Create account summary
+                account_info = {
+                    "principal": principal,
+                    "principal_short": principal[:8] + "..." if len(principal) > 8 else principal,
+                    "mainer_count": mainer_count,
+                    "max_balance_icp": max_balance_icp,
+                    "max_balance_icp_date": max_balance_icp_date,
+                    "first_balance_icp_over_10_date": first_balance_icp_over_10_date,
+                    "current_icp_balance": current_icp_balance,
+                    "balance_history_entries": len(balance_history)
+                }
+                
+                qualifying_accounts.append(account_info)
             
             processed_count += 1
             
@@ -125,92 +121,62 @@ def analyze_whitelist_criteria():
     
     # Print results
     print("\n" + "="*80)
-    print("🎉 WHITELIST CRITERIA ANALYSIS COMPLETE!")
+    print("🎉 ANALYSIS COMPLETE!")
     print("="*80)
     
     print("\n📊 OVERALL STATISTICS:")
     print(f"  Total accounts processed: {stats['total_accounts']}")
-    print(f"  Accounts with mAIners: {stats['accounts_with_mainers']}")
-    print(f"  Accounts with ICP history: {stats['accounts_with_icp_history']}")
+    print(f"  Accounts with 0 mAIners: {stats['accounts_with_no_mainers']}")
+    print(f"  Accounts with >10 ICP balance: {stats['accounts_with_10plus_icp']}")
+    print(f"  Accounts meeting BOTH criteria: {stats['qualifying_accounts']}")
+    print(f"  Qualifying accounts with current balance >10 ICP: {stats['current_balance_over_10']}")
+    print(f"  Qualifying accounts with current balance ≤10 ICP: {stats['qualifying_accounts'] - stats['current_balance_over_10']}")
     
-    print("\n🔢 MAINER DISTRIBUTION:")
-    for mainer_count in sorted(stats["mainer_distribution"].keys()):
-        count = stats["mainer_distribution"][mainer_count]
-        percentage = (count / stats["total_accounts"]) * 100
-        print(f"  {mainer_count} mAIners: {count} accounts ({percentage:.1f}%)")
-    
-    print("\n💰 MAX BALANCE DISTRIBUTION:")
-    balance_order = ["0", "0-4", "5-9", "10-19", "20-49", "50-99", "100+"]
-    for balance_cat in balance_order:
-        if balance_cat in stats["max_balance_distribution"]:
-            count = stats["max_balance_distribution"][balance_cat]
-            percentage = (count / stats["total_accounts"]) * 100
-            print(f"  {balance_cat} ICP: {count} accounts ({percentage:.1f}%)")
-    
-    print("\n🎯 WHITELIST CRITERIA RESULTS:")
+    print("\n🎯 QUALIFYING ACCOUNTS (0 mAIners + >10 ICP):")
     print("=" * 50)
     
-    total_eligible = 0
-    for criteria_id in ["0a", "0b", "1b", "1c"]:
-        count = criteria_counts[criteria_id]["count"]
-        total_eligible += count
-        
-        # Decode criteria
-        mainers = criteria_id[0]
-        if criteria_id == "0a":
-            icp_threshold = "10-19.99"
-        elif criteria_id == "0b":
-            icp_threshold = "20+"
-        elif criteria_id == "1b":
-            icp_threshold = "20-39.99"
-        else:  # 1c
-            icp_threshold = "40+"
-        
-        print(f"  {criteria_id}: {mainers} mAIners + {icp_threshold} ICP = {count} accounts")
-    
-    # Check overlap between criteria groups
-    print(f"\n🔍 CRITERIA GROUP OVERLAP ANALYSIS:")
-    print("=" * 50)
-    
-    # Compare accounts across criteria
-    accounts_0a = set(acc["full_principal"] for acc in criteria_counts["0a"]["accounts"])
-    accounts_0b = set(acc["full_principal"] for acc in criteria_counts["0b"]["accounts"])
-    accounts_1b = set(acc["full_principal"] for acc in criteria_counts["1b"]["accounts"])
-    accounts_1c = set(acc["full_principal"] for acc in criteria_counts["1c"]["accounts"])
-    
-    overlap_0a_0b = accounts_0a.intersection(accounts_0b)
-    overlap_1b_1c = accounts_1b.intersection(accounts_1c)
-    overlap_0b_1b = accounts_0b.intersection(accounts_1b)
-    
-    print(f"  0a (0 mAIners + 10-19.99 ICP): {len(accounts_0a)} accounts")
-    print(f"  0b (0 mAIners + 20+ ICP): {len(accounts_0b)} accounts")
-    print(f"  1b (1 mAIner + 20-39.99 ICP): {len(accounts_1b)} accounts")
-    print(f"  1c (1 mAIner + 40+ ICP): {len(accounts_1c)} accounts")
-    print(f"  ")
-    print(f"  Overlap 0a ∩ 0b: {len(overlap_0a_0b)} accounts (should be 0 - mutually exclusive)")
-    print(f"  Overlap 1b ∩ 1c: {len(overlap_1b_1c)} accounts (should be 0 - mutually exclusive)")
-    print(f"  Overlap 0b ∩ 1b: {len(overlap_0b_1b)} accounts (should be 0 - different mAIner counts)")
-    
-    # Verify mutual exclusivity
-    if len(overlap_0a_0b) == 0:
-        print(f"  ✅ 0a and 0b are MUTUALLY EXCLUSIVE (no overlapping accounts)")
+    if not qualifying_accounts:
+        print("  No accounts found matching the criteria.")
     else:
-        print(f"  ❌ 0a and 0b have {len(overlap_0a_0b)} overlapping accounts - ERROR!")
+        # Sort by first time balance exceeded 10 ICP (earliest first)
+        qualifying_accounts.sort(key=lambda x: x['first_balance_icp_over_10_date'] or '9999-12-31')
         
-    if len(overlap_1b_1c) == 0:
-        print(f"  ✅ 1b and 1c are MUTUALLY EXCLUSIVE (no overlapping accounts)")
-    else:
-        print(f"  ❌ 1b and 1c have {len(overlap_1b_1c)} overlapping accounts - ERROR!")
-
-    print(f"\n📋 SUMMARY FOR WHITELIST DECISION:")
-    print(f"  Target whitelist spots: 50-100")
-    print(f"  Criteria 0a (0 mAIners + 10-19.99 ICP): {criteria_counts['0a']['count']} accounts")
-    print(f"  Criteria 0b (0 mAIners + 20+ ICP): {criteria_counts['0b']['count']} accounts")
-    print(f"  Criteria 1b (1 mAIner + 20-39.99 ICP): {criteria_counts['1b']['count']} accounts")
-    print(f"  Criteria 1c (1 mAIner + 40+ ICP): {criteria_counts['1c']['count']} accounts")
-    print(f"  Combined 0b + 1b: {criteria_counts['0b']['count'] + criteria_counts['1b']['count']} accounts")
-    print(f"  Combined 0b + 1c: {criteria_counts['0b']['count'] + criteria_counts['1c']['count']} accounts")
-    print(f"  Combined all (0a + 0b + 1b + 1c): {criteria_counts['0a']['count'] + criteria_counts['0b']['count'] + criteria_counts['1b']['count'] + criteria_counts['1c']['count']} accounts")
+        print(f"  Found {len(qualifying_accounts)} qualifying accounts:")
+        print()
+        
+        # Print column headers
+        print(f"  {'#':>3} | {'Principal ID':<65} | {'Max Balance':>12} | {'Current Balance':>15} | {'First >10 Date':<12}")
+        print(f"  {'-'*3}-+-{'-'*65}-+-{'-'*12}-+-{'-'*15}-+-{'-'*12}")
+        
+        for i, account in enumerate(qualifying_accounts, 1):
+            current_status = "✅" if account['current_icp_balance'] > 10.0 else "❌"
+            print(f"  {i:3d} | {account['principal']:<65} | "
+                  f"{account['max_balance_icp']:>8.4f} ICP | "
+                  f"{account['current_icp_balance']:>8.4f} ICP {current_status} | "
+                  f"{account['first_balance_icp_over_10_date'][:10] if account['first_balance_icp_over_10_date'] else 'N/A':<12}")
+        
+        print(f"\n📋 SUMMARY:")
+        print(f"  • Total qualifying accounts: {len(qualifying_accounts)}")
+        print(f"  • Accounts with current balance >10 ICP: {stats['current_balance_over_10']}")
+        print(f"  • Accounts with current balance ≤10 ICP: {len(qualifying_accounts) - stats['current_balance_over_10']}")
+        print(f"  • Highest max balance: {max(acc['max_balance_icp'] for acc in qualifying_accounts):.4f} ICP")
+        print(f"  • Lowest max balance: {min(acc['max_balance_icp'] for acc in qualifying_accounts):.4f} ICP")
+        print(f"  • Average max balance: {sum(acc['max_balance_icp'] for acc in qualifying_accounts) / len(qualifying_accounts):.4f} ICP")
+        print(f"  • Average current balance: {sum(acc['current_icp_balance'] for acc in qualifying_accounts) / len(qualifying_accounts):.4f} ICP")
+        
+        # Export to file
+        output_file = "qualifying_accounts_0_mainers_10plus_icp.json"
+        with open(output_file, 'w') as f:
+            json.dump({
+                "criteria": "0 mAIners and >10 ICP maximum balance",
+                "timestamp": "2025-08-05",
+                "total_qualifying": len(qualifying_accounts),
+                "accounts": qualifying_accounts
+            }, f, indent=2)
+        
+        print(f"\n💾 Results exported to: {output_file}")
+    
+    return qualifying_accounts
 
 if __name__ == "__main__":
     analyze_whitelist_criteria()
