@@ -560,6 +560,67 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
       return #Ok(result);
   };
 
+  // Max topups archive
+  stable var archivedMaxMainerTopups : List.List<Types.TopUpRecord> = List.nil<Types.TopUpRecord>();
+
+  private func getArchivedMaxMainerTopups() : [Types.TopUpRecord] {
+      return List.toArray<Types.TopUpRecord>(archivedMaxMainerTopups);
+  };
+
+  private func addArchivedMaxMainerTopups(topupsToAdd : List.List<Types.TopUpRecord>) : Bool {
+      archivedMaxMainerTopups := List.append<Types.TopUpRecord>(topupsToAdd, archivedMaxMainerTopups);
+      return true;
+  };
+
+  private func archiveMaxMainerTopups() : Bool {
+    switch (addArchivedMaxMainerTopups(maxMainerTopups)) {
+      case (false) {
+        return false;
+      };
+      case (true) {
+        // then reset max topups
+        maxMainerTopups := List.nil<Types.TopUpRecord>();
+        return true;
+      };
+    };
+  };
+
+  public shared query (msg) func getArchivedMaxMainerTopupsAdmin() : async Types.MaxMainerTopUpsResult {
+    if (Principal.isAnonymous(msg.caller)) {
+      return #Err(#Unauthorized);
+    };
+    if (not Principal.isController(msg.caller)) {
+      return #Err(#Unauthorized);
+    };
+
+    let archivedTopupsArray : [Types.TopUpRecord] = getArchivedMaxMainerTopups();
+
+    return #Ok(archivedTopupsArray);
+  };
+
+  public shared query (msg) func getNumArchivedMaxMainerTopupsAdmin() : async Types.NatResult {
+    if (Principal.isAnonymous(msg.caller)) {
+      return #Err(#Unauthorized);
+    };
+    if (not Principal.isController(msg.caller)) {
+      return #Err(#Unauthorized);
+    };
+
+    let archivedTopupsArray : [Types.TopUpRecord] = getArchivedMaxMainerTopups();
+
+    return #Ok(archivedTopupsArray.size());
+  };
+
+  public shared (msg) func archiveMaxMainerTopupsAdmin() : async Types.BoolResult {
+    if (Principal.isAnonymous(msg.caller)) {
+      return #Err(#Unauthorized);
+    };
+    if (not Principal.isController(msg.caller)) {
+      return #Err(#Unauthorized);
+    };
+    return #Ok(archiveMaxMainerTopups());
+  };
+
 // Email Signups from Website
   stable var emailSubscribersStorageStable : [(Text, Types.EmailSubscriber)] = [];
   var emailSubscribersStorage : HashMap.HashMap<Text, Types.EmailSubscriber> = HashMap.HashMap(0, Text.equal, Text.hash);

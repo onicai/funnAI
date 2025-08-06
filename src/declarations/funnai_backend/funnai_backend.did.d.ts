@@ -6,6 +6,8 @@ export type ApiError = { 'InvalidId' : null } |
   { 'ZeroAddress' : null } |
   { 'Unauthorized' : null } |
   { 'Other' : string };
+export type BoolResult = { 'Ok' : boolean } |
+  { 'Err' : ApiError };
 export interface Chat {
   'id' : string,
   'messages' : Array<Message>,
@@ -40,11 +42,14 @@ export interface FunnAIBackend {
     [MaxMainerTopUpInput],
     MaxMainerTopUpStorageResult
   >,
+  'archiveMaxMainerTopupsAdmin' : ActorMethod<[], BoolResult>,
   'create_chat' : ActorMethod<[Array<Message>], ChatCreationResult>,
   'delete_chat' : ActorMethod<[string], ChatResult>,
   'delete_email_subscriber' : ActorMethod<[string], boolean>,
+  'getArchivedMaxMainerTopupsAdmin' : ActorMethod<[], MaxMainerTopUpsResult>,
   'getLoginEventsAdmin' : ActorMethod<[string], LoginEventsResult>,
   'getMaxMainerTopupsAdmin' : ActorMethod<[], MaxMainerTopUpsResult>,
+  'getNumArchivedMaxMainerTopupsAdmin' : ActorMethod<[], NatResult>,
   'get_caller_chat_history' : ActorMethod<[], ChatsPreviewResult>,
   'get_caller_chat_settings' : ActorMethod<[], UserChatSettingsResult>,
   'get_caller_chats' : ActorMethod<[], ChatsResult>,
@@ -85,6 +90,8 @@ export type MaxMainerTopUpStorageResult = {
 export type MaxMainerTopUpsResult = { 'Ok' : Array<TopUpRecord> } |
   { 'Err' : ApiError };
 export interface Message { 'content' : string, 'sender' : string }
+export type NatResult = { 'Ok' : bigint } |
+  { 'Err' : ApiError };
 export interface PaymentInfoInput { 'block_index' : bigint }
 export interface SignUpFormInput {
   'emailAddress' : string,

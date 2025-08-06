@@ -15,6 +15,7 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : MaxMainerTopUpStorageResponse,
     'Err' : ApiError,
   });
+  const BoolResult = IDL.Variant({ 'Ok' : IDL.Bool, 'Err' : ApiError });
   const Message = IDL.Record({ 'content' : IDL.Text, 'sender' : IDL.Text });
   const ChatCreationResult = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : ApiError });
   const Chat = IDL.Record({
@@ -26,14 +27,6 @@ export const idlFactory = ({ IDL }) => {
     'firstMessagePreview' : IDL.Text,
   });
   const ChatResult = IDL.Variant({ 'Ok' : Chat, 'Err' : ApiError });
-  const LoginEvent = IDL.Record({
-    'principal' : IDL.Text,
-    'timestamp' : IDL.Nat64,
-  });
-  const LoginEventsResult = IDL.Variant({
-    'Ok' : IDL.Vec(LoginEvent),
-    'Err' : ApiError,
-  });
   const TopUpRecord = IDL.Record({
     'paymentTransactionBlockId' : IDL.Nat64,
     'toppedUpMainerId' : IDL.Text,
@@ -45,6 +38,15 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : IDL.Vec(TopUpRecord),
     'Err' : ApiError,
   });
+  const LoginEvent = IDL.Record({
+    'principal' : IDL.Text,
+    'timestamp' : IDL.Nat64,
+  });
+  const LoginEventsResult = IDL.Variant({
+    'Ok' : IDL.Vec(LoginEvent),
+    'Err' : ApiError,
+  });
+  const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
   const ChatPreview = IDL.Record({
     'id' : IDL.Text,
     'creationTime' : IDL.Nat64,
@@ -103,9 +105,15 @@ export const idlFactory = ({ IDL }) => {
         [MaxMainerTopUpStorageResult],
         [],
       ),
+    'archiveMaxMainerTopupsAdmin' : IDL.Func([], [BoolResult], []),
     'create_chat' : IDL.Func([IDL.Vec(Message)], [ChatCreationResult], []),
     'delete_chat' : IDL.Func([IDL.Text], [ChatResult], []),
     'delete_email_subscriber' : IDL.Func([IDL.Text], [IDL.Bool], []),
+    'getArchivedMaxMainerTopupsAdmin' : IDL.Func(
+        [],
+        [MaxMainerTopUpsResult],
+        ['query'],
+      ),
     'getLoginEventsAdmin' : IDL.Func(
         [IDL.Text],
         [LoginEventsResult],
@@ -116,6 +124,7 @@ export const idlFactory = ({ IDL }) => {
         [MaxMainerTopUpsResult],
         ['query'],
       ),
+    'getNumArchivedMaxMainerTopupsAdmin' : IDL.Func([], [NatResult], ['query']),
     'get_caller_chat_history' : IDL.Func([], [ChatsPreviewResult], ['query']),
     'get_caller_chat_settings' : IDL.Func(
         [],
