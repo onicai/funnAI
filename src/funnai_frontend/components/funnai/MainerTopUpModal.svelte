@@ -501,20 +501,20 @@
           backendPromise = $store.gameStateCanisterActor.topUpCyclesForMainerAgent(topUpInput);
         }
 
-        // Handle celebration for max amounts
-        const shouldCelebrate = isMaxAmount && CELEBRATION_ENABLED;
+        // Handle celebration for max amounts (only for ICP, not FUNNAI)
+        const shouldCelebrate = isMaxAmount && CELEBRATION_ENABLED && selectedTokenSymbol !== 'FUNNAI';
         
         // Close modal immediately and pass promise to parent
         onSuccess(txId, canisterId, backendPromise);
         handleClose();
         
-        // Trigger celebration if needed (after modal closes)
+        // Trigger celebration if needed (after modal closes) - only for ICP
         if (shouldCelebrate) {
           setTimeout(() => {
             onCelebration(amount, selectedToken?.symbol || selectedTokenSymbol);
           }, 300);
           
-          // Handle max top-up storage in background
+          // Handle max top-up storage in background - only for ICP
           try {
             let maxTopUpInput = {
               paymentTransactionBlockId: BigInt(txId),
@@ -675,7 +675,7 @@
               Maximum amount: {currentMaxAmount} {selectedToken?.symbol || 'Token'}
             </div>
           {/if}
-          {#if isMaxAmount && hasEnoughBalance}
+          {#if isMaxAmount && hasEnoughBalance && selectedTokenSymbol !== 'FUNNAI'}
             <div class="mt-1 text-xs text-purple-600 dark:text-purple-400 font-medium animate-pulse">
               🎉 Maximum amount! Get ready for something special! 🎉
             </div>
