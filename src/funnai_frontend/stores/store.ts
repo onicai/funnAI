@@ -135,24 +135,18 @@ const AUTH_PATH = "/authenticate/?applicationName="+APPLICATION_NAME+"&applicati
 
 export const MEMO_PAYMENT_PROTOCOL : number[] = [173];
 
-// Enhanced session management constants
 const days = BigInt(30);
 const hours = BigInt(24);
 const nanosecondsPerHour = BigInt(3600000000000);
 
-// Add session refresh configuration with more aggressive settings to prevent timeout
-const SESSION_REFRESH_THRESHOLD = BigInt(23 * 60 * 60 * 1000 * 1000 * 1000); // 23 hours in nanoseconds (reduced from 24h)
-const SESSION_CHECK_INTERVAL = 15 * 60 * 1000; // Check every 15 minutes in milliseconds (reduced from 30 min)
-const SESSION_EXTEND_THRESHOLD = BigInt(7 * 24 * 60 * 60 * 1000 * 1000 * 1000); // 7 days in nanoseconds - extend session when less than 7 days left
+// Add session refresh configuration
+const SESSION_REFRESH_THRESHOLD = BigInt(24 * 60 * 60 * 1000 * 1000 * 1000); // 24 hours in nanoseconds
+const SESSION_CHECK_INTERVAL = 30 * 60 * 1000; // Check every 30 minutes in milliseconds
 
-// Enhanced session persistence with multiple fallbacks
+// Add localStorage keys for mAIner creation state persistence
 const STORAGE_KEYS = {
   MAINER_CREATION_STATE: 'mainerCreationState',
-  MAINER_CREATION_SESSION: 'mainerCreationSession',
-  SESSION_INFO: 'sessionInfo',
-  SESSION_BACKUP: 'sessionInfoBackup', // Backup session info
-  AUTH_STATE: 'isAuthed',
-  LAST_ACTIVITY: 'lastActivity' // Track user activity
+  MAINER_CREATION_SESSION: 'mainerCreationSession'
 };
 
 type State = {
@@ -685,14 +679,7 @@ export const createStore = ({
 
   const nfidConnect = async () => {
     try {
-      authClient = await AuthClient.create({
-        // Enhanced AuthClient configuration for better session persistence
-        idleOptions: {
-          disableIdle: true, // Disable idle timeout
-          disableDefaultIdleCallback: true
-        }
-      });
-      
+      authClient = await AuthClient.create();
       if (await authClient.isAuthenticated()) {
         const identity = await authClient.getIdentity();
         await initNfid(identity);
@@ -703,10 +690,7 @@ export const createStore = ({
             await initNfid(identity);
           },
           identityProvider: "https://nfid.one" + AUTH_PATH,
-          // Use maximum possible session duration
-          maxTimeToLive: days * hours * nanosecondsPerHour, // 30 days
-          // Add additional parameters to ensure session persistence
-          derivationOrigin: window.location.origin,
+          maxTimeToLive: days * hours * nanosecondsPerHour,
           windowOpenerFeatures:
             `left=${window.screen.width / 2 - 525 / 2}, `+
             `top=${window.screen.height / 2 - 705 / 2},` +
@@ -775,14 +759,7 @@ export const createStore = ({
   };
 
   const internetIdentityConnect = async () => {
-    authClient = await AuthClient.create({
-      // Enhanced AuthClient configuration for better session persistence
-      idleOptions: {
-        disableIdle: true, // Disable idle timeout
-        disableDefaultIdleCallback: true
-      }
-    });
-    
+    authClient = await AuthClient.create();
     if (await authClient.isAuthenticated()) {
       const identity = await authClient.getIdentity();
       initInternetIdentity(identity);
@@ -796,10 +773,8 @@ export const createStore = ({
           process.env.DFX_NETWORK === "local"
             ? `http://${process.env.INTERNET_IDENTITY_CANISTER_ID}.localhost:4943/#authorize`
             : "https://identity.ic0.app/#authorize",
-        // Use maximum possible session duration
-        maxTimeToLive: days * hours * nanosecondsPerHour, // 30 days
-        // Add additional parameters to ensure session persistence
-        derivationOrigin: window.location.origin,
+        // Maximum authorization expiration is 30 days
+        maxTimeToLive: days * hours * nanosecondsPerHour,
         windowOpenerFeatures:
           `left=${window.screen.width / 2 - 525 / 2}, ` +
           `top=${window.screen.height / 2 - 705 / 2},` +
@@ -891,85 +866,52 @@ export const createStore = ({
   };
 
   const checkExistingLoginAndConnect = async () => {
-    console.log("Checking existing login state...");
+    // Check login state if user is already logged in
+    const sessionInfo = getStoredSessionInfo();
     
-    try {
-      // Check login state if user is already logged in
-      const sessionInfo = getStoredSessionInfo();
+    if (sessionInfo) {
+      const authClient = await AuthClient.create();
+      const isAuthenticated = await authClient.isAuthenticated();
       
-      if (sessionInfo) {
-        console.log(`Found stored session for ${sessionInfo.loginType}`);
+      if (isAuthenticated) {
+        // Check if session is still valid
+        const now = BigInt(Date.now()) * BigInt(1000000); // Convert to nanoseconds
         
-        const authClient = await AuthClient.create({
-          idleOptions: {
-            disableIdle: true,
-            disableDefaultIdleCallback: true
-          }
-        });
-        
-        const isAuthenticated = await authClient.isAuthenticated();
-        
-        if (isAuthenticated) {
-          // Check if session is still valid
-          const now = BigInt(Date.now()) * BigInt(1000000); // Convert to nanoseconds
+        if (sessionInfo.expiry > now) {
+          console.info(`${sessionInfo.loginType} connection detected and session is valid`);
           
-          if (sessionInfo.expiry > now) {
-            const daysRemaining = Number((sessionInfo.expiry - now) / (BigInt(24) * BigInt(3600) * BigInt(1000000000)));
-            console.log(`Session is valid with ${daysRemaining.toFixed(2)} days remaining`);
-            
-            // Update the session expiry in state
-            update((state) => ({ ...state, sessionExpiry: sessionInfo.expiry }));
-            
-            if (sessionInfo.loginType === "nfid") {
-              await nfidConnect();
-            } else if (sessionInfo.loginType === "internetidentity") {
-              await internetIdentityConnect();
-            }
-            
-            console.log("Successfully restored user session");
-            return;
-          } else {
-            console.log("Stored session has expired, clearing session info");
-            clearSessionInfo();
-            await authClient.logout();
+          // Update the session expiry in state
+          update((state) => ({ ...state, sessionExpiry: sessionInfo.expiry }));
+          
+          if (sessionInfo.loginType === "nfid") {
+            await nfidConnect();
+          } else if (sessionInfo.loginType === "internetidentity") {
+            await internetIdentityConnect();
           }
         } else {
-          console.log("AuthClient shows user is not authenticated, clearing session info");
+          console.info("Stored session has expired, clearing session info");
           clearSessionInfo();
+          await authClient.logout();
         }
       } else {
-        console.log("No stored session found");
-        
-        // Fallback to old method for backward compatibility
-        const isAuthed = localStorage.getItem('isAuthed');
-        if (isAuthed) {
-          console.log(`Found legacy auth state: ${isAuthed}`);
-          
-          const authClient = await AuthClient.create({
-            idleOptions: {
-              disableIdle: true,
-              disableDefaultIdleCallback: true
-            }
-          });
-          
-          if (await authClient.isAuthenticated()) {
-            if (isAuthed === "nfid") {
-              console.log("NFID connection detected (legacy)");
-              await nfidConnect();
-            } else if (isAuthed === "internetidentity") {
-              console.log("Internet Identity connection detected (legacy)");
-              await internetIdentityConnect();
-            }
-          } else {
-            // Clean up legacy auth state if not authenticated
-            localStorage.removeItem('isAuthed');
+        console.info("AuthClient shows user is not authenticated, clearing session info");
+        clearSessionInfo();
+      }
+    } else {
+      // Fallback to old method for backward compatibility
+      const isAuthed = localStorage.getItem('isAuthed');
+      if (isAuthed) {
+        const authClient = await AuthClient.create();
+        if (await authClient.isAuthenticated()) {
+          if (isAuthed === "nfid") {
+            console.info("NFID connection detected (legacy)");
+            await nfidConnect();
+          } else if (isAuthed === "internetidentity") {
+            console.info("Internet Identity connection detected (legacy)");
+            await internetIdentityConnect();
           }
         }
       }
-    } catch (error) {
-      console.error("Error checking existing login:", error);
-      // Clear potentially corrupted session data
-      clearSessionInfo();
     }
   };
 
@@ -1066,65 +1008,29 @@ export const createStore = ({
     const sessionInfo = {
       loginType,
       expiry: expiry.toString(),
-      timestamp: Date.now(),
-      version: "2.0" // Version for migration compatibility
+      timestamp: Date.now()
     };
-    
-    // Store in multiple locations for redundancy
-    localStorage.setItem(STORAGE_KEYS.SESSION_INFO, JSON.stringify(sessionInfo));
-    localStorage.setItem(STORAGE_KEYS.SESSION_BACKUP, JSON.stringify(sessionInfo));
-    localStorage.setItem(STORAGE_KEYS.AUTH_STATE, loginType);
-    localStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY, Date.now().toString());
-    
-    console.log(`Session stored with expiry: ${new Date(Number(expiry / BigInt(1000000))).toISOString()}`);
+    localStorage.setItem('sessionInfo', JSON.stringify(sessionInfo));
+    localStorage.setItem('isAuthed', loginType);
   };
 
   const getStoredSessionInfo = () => {
     try {
-      // Try primary storage first, then backup
-      let sessionInfoStr = localStorage.getItem(STORAGE_KEYS.SESSION_INFO);
-      if (!sessionInfoStr) {
-        sessionInfoStr = localStorage.getItem(STORAGE_KEYS.SESSION_BACKUP);
-      }
-      
+      const sessionInfoStr = localStorage.getItem('sessionInfo');
       if (sessionInfoStr) {
         const sessionInfo = JSON.parse(sessionInfoStr);
-        const result = {
+        return {
           ...sessionInfo,
           expiry: BigInt(sessionInfo.expiry)
         };
-        
-        // Update last activity
-        localStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY, Date.now().toString());
-        
-        return result;
       }
     } catch (error) {
       console.error("Error parsing stored session info:", error);
-      // Try to recover from backup
-      try {
-        const backupStr = localStorage.getItem(STORAGE_KEYS.SESSION_BACKUP);
-        if (backupStr) {
-          const sessionInfo = JSON.parse(backupStr);
-          return {
-            ...sessionInfo,
-            expiry: BigInt(sessionInfo.expiry)
-          };
-        }
-      } catch (backupError) {
-        console.error("Failed to recover from backup session info:", backupError);
-      }
     }
     return null;
   };
 
   const clearSessionInfo = () => {
-    // Clear all session-related storage
-    localStorage.removeItem(STORAGE_KEYS.SESSION_INFO);
-    localStorage.removeItem(STORAGE_KEYS.SESSION_BACKUP);
-    localStorage.removeItem(STORAGE_KEYS.AUTH_STATE);
-    localStorage.removeItem(STORAGE_KEYS.LAST_ACTIVITY);
-    // Keep legacy keys for backward compatibility
     localStorage.removeItem('sessionInfo');
     localStorage.removeItem('isAuthed');
   };
@@ -1132,9 +1038,7 @@ export const createStore = ({
   const shouldRefreshSession = (expiry: bigint): boolean => {
     const now = BigInt(Date.now()) * BigInt(1000000); // Convert to nanoseconds
     const timeUntilExpiry = expiry - now;
-    
-    // Refresh if within threshold OR if less than 7 days remaining (as a safety net)
-    return (timeUntilExpiry <= SESSION_REFRESH_THRESHOLD || timeUntilExpiry <= SESSION_EXTEND_THRESHOLD) && timeUntilExpiry > 0n;
+    return timeUntilExpiry <= SESSION_REFRESH_THRESHOLD && timeUntilExpiry > 0n;
   };
 
   const refreshUserSession = async () => {
@@ -1151,16 +1055,9 @@ export const createStore = ({
         return false;
       }
 
-      const now = BigInt(Date.now()) * BigInt(1000000);
-      const timeUntilExpiry = sessionInfo.expiry - now;
-      
-      // Log session status for debugging
-      const daysRemaining = Number(timeUntilExpiry / (BigInt(24) * BigInt(3600) * BigInt(1000000000)));
-      console.log(`Session check: ${daysRemaining.toFixed(2)} days remaining`);
-
       // Check if we need to refresh
       if (shouldRefreshSession(sessionInfo.expiry)) {
-        console.log("Refreshing user session to extend duration...");
+        console.log("Refreshing user session...");
         
         // Re-initialize the connection to extend the session
         if (sessionInfo.loginType === "nfid") {
@@ -1168,8 +1065,6 @@ export const createStore = ({
         } else if (sessionInfo.loginType === "internetidentity") {
           await internetIdentityConnect();
         }
-        
-        console.log("Session refreshed successfully");
         return true;
       }
 
@@ -1186,52 +1081,22 @@ export const createStore = ({
       clearInterval(globalState.sessionRefreshTimer);
     }
 
-    console.log(`Starting session refresh timer - checking every ${SESSION_CHECK_INTERVAL / 1000 / 60} minutes`);
-
-    // Start new timer with enhanced logic
+    // Start new timer
     const timerId = setInterval(async () => {
-      try {
-        const success = await refreshUserSession();
-        if (!success) {
-          console.warn("Session refresh failed, stopping timer");
-          clearInterval(timerId);
-          update((state) => ({ ...state, sessionRefreshTimer: null }));
-        }
-      } catch (error) {
-        console.error("Error in session refresh timer:", error);
-        // Don't stop the timer on error, retry next time
+      const success = await refreshUserSession();
+      if (!success) {
+        clearInterval(timerId);
+        update((state) => ({ ...state, sessionRefreshTimer: null }));
       }
     }, SESSION_CHECK_INTERVAL);
 
     update((state) => ({ ...state, sessionRefreshTimer: timerId }));
-    
-    // Also add visibility change listener to refresh on tab focus
-    const handleVisibilityChange = async () => {
-      if (!document.hidden) {
-        // Tab became visible, check session
-        console.log("Tab became visible, checking session status");
-        await refreshUserSession();
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Add user activity tracking
-    const trackActivity = () => {
-      localStorage.setItem(STORAGE_KEYS.LAST_ACTIVITY, Date.now().toString());
-    };
-    
-    // Track various user activities
-    ['click', 'keydown', 'scroll', 'mousemove'].forEach(event => {
-      document.addEventListener(event, trackActivity, { passive: true });
-    });
   };
 
   const stopSessionRefreshTimer = () => {
     if (globalState.sessionRefreshTimer) {
       clearInterval(globalState.sessionRefreshTimer);
       update((state) => ({ ...state, sessionRefreshTimer: null }));
-      console.log("Session refresh timer stopped");
     }
   };
 

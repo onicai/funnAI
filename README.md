@@ -1,39 +1,5 @@
 # funnAI
 
-## Session Management
-
-This application has been configured to keep users logged in for **30 days** without automatic logout (unless the user explicitly logs out).
-
-### Session Management Features
-
-- **30-Day Session Duration**: Users stay logged in for the full 30-day period
-- **Enhanced Session Persistence**: Multiple storage mechanisms ensure session data isn't lost
-- **Automatic Session Refresh**: Sessions are automatically refreshed every 15 minutes
-- **Activity Tracking**: User activity is tracked to maintain session freshness
-- **Robust Error Handling**: Comprehensive fallback mechanisms for session recovery
-
-### Debugging Session Issues
-
-If you're experiencing unexpected logouts, you can debug the session status in the browser console:
-
-```javascript
-// Check current session status
-SessionManager.getSessionStatus()
-
-// Log detailed session information
-SessionManager.logSessionStatus()
-```
-
-### Technical Implementation
-
-- **AuthClient Configuration**: Idle timeouts are disabled to prevent premature logout
-- **Session Refresh Threshold**: Sessions refresh when less than 23 hours remain
-- **Check Interval**: Session validity is checked every 15 minutes
-- **Visibility Tracking**: Session refresh occurs when the tab becomes visible
-- **Activity Monitoring**: Mouse, keyboard, and scroll events maintain session freshness
-
----
-
 # Setup instructions
 
 First follow all instructions of PoAIW/README.md

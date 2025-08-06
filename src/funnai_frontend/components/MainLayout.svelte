@@ -2,7 +2,6 @@
   import type { SvelteComponent } from 'svelte';
   import Router from "svelte-spa-router";
   import { store, theme } from "../stores/store";
-  import { SessionManager } from "../helpers/sessionManager";
   import NavigationMainLayout from "./funnai/NavigationMainLayout.svelte";
   import SidebarMainLayout from "./funnai/SidebarMainLayout.svelte";
   import ChatLayout from "./chat/ChatLayout.svelte";
@@ -20,10 +19,6 @@
     const savedTheme = localStorage.getItem("theme") || "dark";
     theme.set(savedTheme);
     applyTheme(savedTheme);
-    
-    // Initialize session monitoring
-    SessionManager.initialize();
-    
     try {
       // Check login state
       void store.checkExistingLoginAndConnect();      
