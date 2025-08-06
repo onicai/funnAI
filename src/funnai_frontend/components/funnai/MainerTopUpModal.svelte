@@ -428,14 +428,17 @@
       }
 
       console.log("debug selectedToken before transfer ", selectedToken);
-      console.log("debug protocolAddress before transfer ", protocolAddress);
       console.log("debug tokenFee before transfer ", tokenFee);
+      console.log("debug protocolAddress before update ", protocolAddress);
+      let hardcodedTestingProtocolAddress = "r5m5y-diaaa-aaaaa-qanaa-cai"; // Debug
+      console.log("debug hardcodedTestingProtocolAddress before transfer ", hardcodedTestingProtocolAddress);
       
       // Transfer tokens to the Protocol's account for top-up
       // The backend will handle the actual cycles minting and top-up process
       const result = await IcrcService.transfer(
         selectedToken,
-        protocolAddress,  // Use protocol address from token_helpers
+        //protocolAddress,  // Use protocol address from token_helpers
+        hardcodedTestingProtocolAddress, // Debug
         amountBigInt,
         {
           fee: tokenFee,
