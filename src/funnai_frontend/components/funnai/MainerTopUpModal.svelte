@@ -121,7 +121,7 @@
     ? BigInt(new BigNumber(amount).times(new BigNumber(10).pow(selectedToken.decimals)).toString())
     : BigInt(0);
   $: hasEnoughBalance = isValidAmount && balance >= (amountBigInt + tokenFee);
-  $: isFunnaiUnavailable = selectedTokenSymbol === 'FUNNAI' && (!conversionRate || conversionRate.isZero());
+  $: isFunnaiUnavailable = selectedTokenSymbol === 'FUNNAI' && (!conversionRate || conversionRate.isZero() || currentMaxAmount === 0);
   $: canSubmit = hasEnoughBalance && !isValidating && selectedToken && !isFunnaiUnavailable;
   $: if (selectedToken) {
     tokenFee = BigInt(selectedToken.fee_fixed);
@@ -390,6 +390,11 @@
       if (selectedTokenSymbol === 'FUNNAI') {
         if (!conversionRate || conversionRate.isZero()) {
           throw new Error("FUNNAI top-ups are currently not available");
+        }
+        
+        // Security check: Prevent FUNNAI top-ups if max amount is 0 (backend disabled)
+        if (currentMaxAmount === 0) {
+          throw new Error("FUNNAI top-ups are currently disabled by the backend");
         }
         
         // Verify the game state canister is available for FUNNAI operations
@@ -708,7 +713,11 @@
         <!-- FUNNAI unavailable message -->
         {#if isFunnaiUnavailable}
           <div class="mt-1 p-2 rounded bg-yellow-50 border border-yellow-200 text-yellow-700 text-xs sm:text-sm dark:bg-yellow-900/30 dark:border-yellow-900/50 dark:text-yellow-400">
-            FUNNAI top-ups are currently not available. Please try again later or use ICP.
+            {#if selectedTokenSymbol === 'FUNNAI' && currentMaxAmount === 0}
+              FUNNAI top-ups are currently disabled by the backend. Please try again later or use ICP.
+            {:else}
+              FUNNAI top-ups are currently not available. Please try again later or use ICP.
+            {/if}
           </div>
         {/if}
 
