@@ -27,7 +27,6 @@ import {
 
 import { ICRC2_IDL as icrc2IDL } from "../helpers/idls/icrc2.idl.js";
 import { idlFactory as icpIDL } from "../helpers/idls/icp.idl.js";
-import { SessionManager } from "../helpers/sessionManager";
 
 // TODO: move this into a utils file
 const getCyclesBurnRateLabel = (cyclesBurnRate) => {
@@ -140,9 +139,9 @@ const days = BigInt(30);
 const hours = BigInt(24);
 const nanosecondsPerHour = BigInt(3600000000000);
 
-// Add session refresh configuration - very conservative approach to prevent early logouts
-const SESSION_REFRESH_THRESHOLD = BigInt(3 * 24 * 60 * 60 * 1000 * 1000 * 1000); // 3 days in nanoseconds (only refresh when 3 days left)
-const SESSION_CHECK_INTERVAL = 12 * 60 * 60 * 1000; // Check every 12 hours in milliseconds
+// Add session refresh configuration
+const SESSION_REFRESH_THRESHOLD = BigInt(24 * 60 * 60 * 1000 * 1000 * 1000); // 24 hours in nanoseconds
+const SESSION_CHECK_INTERVAL = 30 * 60 * 1000; // Check every 30 minutes in milliseconds
 
 // Add localStorage keys for mAIner creation state persistence
 const STORAGE_KEYS = {
@@ -867,9 +866,6 @@ export const createStore = ({
   };
 
   const checkExistingLoginAndConnect = async () => {
-    // Clean up any expired sessions first
-    SessionManager.cleanupExpiredSessions();
-    
     // Check login state if user is already logged in
     const sessionInfo = getStoredSessionInfo();
     
@@ -882,8 +878,7 @@ export const createStore = ({
         const now = BigInt(Date.now()) * BigInt(1000000); // Convert to nanoseconds
         
         if (sessionInfo.expiry > now) {
-          const daysLeft = Number((sessionInfo.expiry - now) / BigInt(24 * 60 * 60 * 1000 * 1000 * 1000));
-          console.info(`${sessionInfo.loginType} connection detected and session is valid (${daysLeft.toFixed(1)} days remaining)`);
+          console.info(`${sessionInfo.loginType} connection detected and session is valid`);
           
           // Update the session expiry in state
           update((state) => ({ ...state, sessionExpiry: sessionInfo.expiry }));
@@ -1059,48 +1054,18 @@ export const createStore = ({
         await disconnect();
         return false;
       }
-      
-      // Log session status for debugging
-      const now = BigInt(Date.now()) * BigInt(1000000);
-      const timeLeft = sessionInfo.expiry - now;
-      const daysLeft = Number(timeLeft / BigInt(24 * 60 * 60 * 1000 * 1000 * 1000));
-      console.log(`Session check: ${daysLeft.toFixed(1)} days remaining`);
 
-      // Check if we need to refresh (only when 3 days are left)
+      // Check if we need to refresh
       if (shouldRefreshSession(sessionInfo.expiry)) {
-        console.log("Session approaching expiry, attempting to extend...");
+        console.log("Refreshing user session...");
         
-        try {
-          // Instead of full re-login, try to get a fresh identity which extends the session
-          const identity = await authClient.getIdentity();
-          
-          // Update the stored session info with new expiry
-          const newExpiry = BigInt(Date.now()) * BigInt(1000000) + days * hours * nanosecondsPerHour;
-          const updatedSessionInfo = {
-            ...sessionInfo,
-            expiry: newExpiry,
-            timestamp: Date.now()
-          };
-          
-          localStorage.setItem('sessionInfo', JSON.stringify({
-            loginType: updatedSessionInfo.loginType,
-            expiry: updatedSessionInfo.expiry.toString(),
-            timestamp: updatedSessionInfo.timestamp
-          }));
-          
-          console.log("Session successfully extended");
-          return true;
-        } catch (refreshError) {
-          console.warn("Failed to extend session, will attempt full re-login:", refreshError);
-          
-          // Fallback: attempt full re-login
-          if (sessionInfo.loginType === "nfid") {
-            await nfidConnect();
-          } else if (sessionInfo.loginType === "internetidentity") {
-            await internetIdentityConnect();
-          }
-          return true;
+        // Re-initialize the connection to extend the session
+        if (sessionInfo.loginType === "nfid") {
+          await nfidConnect();
+        } else if (sessionInfo.loginType === "internetidentity") {
+          await internetIdentityConnect();
         }
+        return true;
       }
 
       return true;
