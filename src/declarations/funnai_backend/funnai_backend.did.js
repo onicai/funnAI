@@ -47,6 +47,10 @@ export const idlFactory = ({ IDL }) => {
     'Err' : ApiError,
   });
   const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
+  const GetUsersResult = IDL.Variant({
+    'Ok' : IDL.Vec(IDL.Text),
+    'Err' : ApiError,
+  });
   const ChatPreview = IDL.Record({
     'id' : IDL.Text,
     'creationTime' : IDL.Nat64,
@@ -125,6 +129,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getNumArchivedMaxMainerTopupsAdmin' : IDL.Func([], [NatResult], ['query']),
+    'getUsersAdmin' : IDL.Func([], [GetUsersResult], ['query']),
     'get_caller_chat_history' : IDL.Func([], [ChatsPreviewResult], ['query']),
     'get_caller_chat_settings' : IDL.Func(
         [],

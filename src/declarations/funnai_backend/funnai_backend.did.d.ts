@@ -50,6 +50,7 @@ export interface FunnAIBackend {
   'getLoginEventsAdmin' : ActorMethod<[string], LoginEventsResult>,
   'getMaxMainerTopupsAdmin' : ActorMethod<[], MaxMainerTopUpsResult>,
   'getNumArchivedMaxMainerTopupsAdmin' : ActorMethod<[], NatResult>,
+  'getUsersAdmin' : ActorMethod<[], GetUsersResult>,
   'get_caller_chat_history' : ActorMethod<[], ChatsPreviewResult>,
   'get_caller_chat_settings' : ActorMethod<[], UserChatSettingsResult>,
   'get_caller_chats' : ActorMethod<[], ChatsResult>,
@@ -74,6 +75,8 @@ export interface FunnAIBackend {
   'update_chat_messages' : ActorMethod<[string, Array<Message>], ChatIdResult>,
   'update_chat_metadata' : ActorMethod<[UpdateChatObject], ChatIdResult>,
 }
+export type GetUsersResult = { 'Ok' : Array<string> } |
+  { 'Err' : ApiError };
 export interface LoginEvent { 'principal' : string, 'timestamp' : bigint }
 export type LoginEventsResult = { 'Ok' : Array<LoginEvent> } |
   { 'Err' : ApiError };
