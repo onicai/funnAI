@@ -314,6 +314,24 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
     };   
   };
 
+  public query (msg) func getUsersAdmin() : async Types.GetUsersResult {
+    if (Principal.isAnonymous(msg.caller)) {
+      return #Err(#Unauthorized);
+		};
+    if (not Principal.isController(msg.caller)) {
+      return #Err(#Unauthorized);
+    };
+
+    let users = Iter.toArray(userInfoStorage.keys());
+    let userTexts = Array.map<Principal, Text>(
+      users,
+      func (p: Principal) : Text { Principal.toText(p) }
+    );
+
+    return #Ok(userTexts);
+  };
+
+
   public shared ({ caller }) func update_caller_user_info(updatedInfoObject : Types.UserInfoInput) : async Types.UpdateUserInfoResult {
     // don't allow anonymous Principal
     if (Principal.isAnonymous(caller)) {
