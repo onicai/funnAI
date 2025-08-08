@@ -425,11 +425,7 @@
           throw new Error(`Amount above maximum (${currentMaxAmount} ${selectedToken.symbol})`);
         }
         throw new Error("Invalid amount");
-      }
-
-      console.log("debug selectedToken before transfer ", selectedToken);
-      console.log("debug protocolAddress before transfer ", protocolAddress);
-      console.log("debug tokenFee before transfer ", tokenFee);
+      };
       
       // Transfer tokens to the Protocol's account for top-up
       // The backend will handle the actual cycles minting and top-up process
@@ -480,24 +476,19 @@
           mainerAgent: cleanMainerAgent,
         };
 
-        console.log("debug topUpInput ", topUpInput);
-        console.log("debug selectedTokenSymbol ", selectedTokenSymbol);
-
         // Create the backend promise based on token type
         let backendPromise: Promise<any>;
         if (selectedTokenSymbol === 'FUNNAI') {
           // For FUNNAI, use the new FUNNAI-specific endpoint
           if (!$store.gameStateCanisterActor) {
             throw new Error("Game state canister not available");
-          }
-          console.log("debug before topUpCyclesForMainerAgentWithFunnai ");
+          };
           backendPromise = $store.gameStateCanisterActor.topUpCyclesForMainerAgentWithFunnai(topUpInput);
         } else {
           // For ICP, use the existing endpoint
           if (!$store.gameStateCanisterActor) {
             throw new Error("Game state canister not available");
-          }
-          console.log("debug before topUpCyclesForMainerAgent ");
+          };
           backendPromise = $store.gameStateCanisterActor.topUpCyclesForMainerAgent(topUpInput);
         }
 
