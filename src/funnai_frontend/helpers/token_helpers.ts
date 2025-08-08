@@ -53,7 +53,7 @@ const availableTokens: FE.Token[] = [ // TODO
     chain: 'IC',
     total_24h_volume: '0'
   },
-  {
+  /* {
     canister_id: "4uuff-dyaaa-aaaaj-qnoeq-cai",
     name: "FUNNAIdev",
     symbol: "FUNNAIdev",
@@ -98,7 +98,7 @@ const availableTokens: FE.Token[] = [ // TODO
     token_id: 8,
     chain: 'IC',
     total_24h_volume: '0'
-  },
+  }, */
   { 
     canister_id: "ryjl3-tyaaa-aaaaa-aaaba-cai",
     name: "ICP",
