@@ -4,6 +4,8 @@ import subprocess
 import time
 from pathlib import Path
 
+SCRIPT_DIR = Path(__file__).parent
+
 def get_mainers_for_principal(principal, mainers_data):
     """Count how many mAIners a principal owns."""
     count = 0
@@ -71,7 +73,7 @@ def main():
         return
     
     # Path to the analysis files directory
-    analysis_dir = Path("funnai_accounts")
+    analysis_dir = SCRIPT_DIR / Path("funnai_accounts")
     
     if not analysis_dir.exists():
         print(f"ERROR: Analysis directory {analysis_dir} not found!")

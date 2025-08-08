@@ -249,7 +249,7 @@ def analyze_large_outgoing_transfers():
         print(f"\n❌ No accounts found with outgoing transfers >= 42 ICP")
     
     # Save detailed results
-    output_file = Path("funnai_accounts/large_transfer_analysis.json")
+    output_file = SCRIPT_DIR / Path("funnai_accounts/large_transfer_analysis.json")
     output_data = {
         "analysis_timestamp": "2025-08-04",
         "criteria": "outgoing_transfer >= 42 ICP",
@@ -313,7 +313,7 @@ def analyze_large_outgoing_transfers():
         )
         max_topups_data["total_number_of_wl_accounts"] = len(max_topups_data["accounts"])
         
-        max_topups_file = Path("funnai_accounts/max_topups.json")
+        max_topups_file = SCRIPT_DIR / Path("funnai_accounts/max_topups.json")
         with open(max_topups_file, 'w') as f:
             json.dump(max_topups_data, f, indent=2)
         
