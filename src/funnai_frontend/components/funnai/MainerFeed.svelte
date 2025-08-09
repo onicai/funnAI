@@ -6,6 +6,7 @@
   import { store } from "../../stores/store";
   import { formatFunnaiAmount } from "../../helpers/utils/numberFormatUtils";
   import ShareFeedItem from "./ShareFeedItem.svelte";
+  import { FeedStorageService } from "../../helpers/feedStorageService";
 
   export let showAllEvents: boolean = true; // Will be overridden by parent based on auth status
 
@@ -27,107 +28,17 @@
   }
 
   let feedItems: FeedItem[] = [];
-  let allItems: FeedItem[] = [];
   let loading = true;
   let interval: NodeJS.Timer;
-  let currentIndex = 0;
   let updating = false;
   let updateCounter = 0;
-  let lastFetchTimestamp = 0;
 
-  // Storage keys for persistence - separate caches for different modes
-  const FEED_STORAGE_KEY_MY_MAINERS = 'mainer_feed_items_my_mainers';
-  const FEED_STORAGE_KEY_ALL_EVENTS = 'mainer_feed_items_all_events';
-  const LAST_FETCH_KEY_MY_MAINERS = 'mainer_feed_last_fetch_my_mainers';
-  const LAST_FETCH_KEY_ALL_EVENTS = 'mainer_feed_last_fetch_all_events';
-
-  // Smart date filtering - simplified to only last 3 days
+    // Smart date filtering - simplified to only last 3 days (kept for backward compatibility)
   function isWithinDateRange(timestamp: number, days: number = 3): boolean {
     const now = Date.now();
     const itemTime = timestamp / 1000000; // Convert from nanoseconds to milliseconds
     const daysDiff = (now - itemTime) / (24 * 60 * 60 * 1000);
     return daysDiff <= days && daysDiff >= 0; // Also ensure not future dates
-  }
-
-  function filterItemsByDate(items: FeedItem[], days: number = 3): FeedItem[] {
-    return items.filter(item => isWithinDateRange(item.timestamp, days));
-  }
-
-  // Get the appropriate storage keys based on current mode
-  function getStorageKeys() {
-    return {
-      feedKey: showAllEvents ? FEED_STORAGE_KEY_ALL_EVENTS : FEED_STORAGE_KEY_MY_MAINERS,
-      fetchKey: showAllEvents ? LAST_FETCH_KEY_ALL_EVENTS : LAST_FETCH_KEY_MY_MAINERS
-    };
-  }
-
-  // Load cached feed items from localStorage
-  function loadCachedFeedItems(): FeedItem[] {
-    try {
-      const { feedKey } = getStorageKeys();
-      const cached = localStorage.getItem(feedKey);
-      if (cached) {
-        const items = JSON.parse(cached) as FeedItem[];
-        // Filter cached items to only include those from last 3 days and ensure no winner events in "All events"
-        let filteredItems = filterItemsByDate(items);
-        
-        // Additional filter: remove winner and participation events from "All events" cache
-        if (showAllEvents) {
-          filteredItems = filteredItems.filter(item => item.type !== 'winner' && item.type !== 'participation');
-        }
-        
-        return filteredItems;
-      }
-    } catch (error) {
-      console.error('Error loading cached feed items:', error);
-    }
-    return [];
-  }
-
-  // Save feed items to localStorage
-  function saveFeedItemsToCache(items: FeedItem[]) {
-    try {
-      const { feedKey, fetchKey } = getStorageKeys();
-      // Only save items from last 3 days to keep storage lean
-      let recentItems = filterItemsByDate(items);
-      
-      // Additional filter: remove winner and participation events from "All events" cache
-      if (showAllEvents) {
-        recentItems = recentItems.filter(item => item.type !== 'winner' && item.type !== 'participation');
-      }
-      
-      localStorage.setItem(feedKey, JSON.stringify(recentItems));
-      localStorage.setItem(fetchKey, Date.now().toString());
-    } catch (error) {
-      console.error('Error saving feed items to cache:', error);
-    }
-  }
-
-  // Get the last fetch timestamp
-  function getLastFetchTimestamp(): number {
-    try {
-      const { fetchKey } = getStorageKeys();
-      const cached = localStorage.getItem(fetchKey);
-      return cached ? parseInt(cached) : 0;
-    } catch (error) {
-      console.error('Error loading last fetch timestamp:', error);
-      return 0;
-    }
-  }
-
-  // Merge new items with existing ones, avoiding duplicates
-  function mergeItems(existingItems: FeedItem[], newItems: FeedItem[]): FeedItem[] {
-    const existingIds = new Set(existingItems.map(item => item.id));
-    const uniqueNewItems = newItems.filter(item => !existingIds.has(item.id));
-    let merged = [...existingItems, ...uniqueNewItems];
-    
-    // Additional safety filter: remove winner and participation events from "All events" mode
-    if (showAllEvents) {
-      merged = merged.filter(item => item.type !== 'winner' && item.type !== 'participation');
-    }
-    
-    // Sort by timestamp (items are already filtered by date in getFeedData)
-    return sortFeedItemsByTimestamp(merged);
   }
 
   // Convert timestamp to readable date and time format
@@ -424,38 +335,34 @@
     updating = true;
     
     // Load cached items first for instant display
-    if (!forceUpdate && allItems.length === 0) {
-      const cachedItems = loadCachedFeedItems();
+    if (!forceUpdate && feedItems.length === 0) {
+      const cachedItems = FeedStorageService.getFeedItems(showAllEvents);
       if (cachedItems.length > 0) {
-        allItems = cachedItems;
-        feedItems = [...allItems];
+        feedItems = cachedItems;
         loading = false;
       }
     }
     
     // Check if we should fetch new data
-    const lastFetch = getLastFetchTimestamp();
-    const timeSinceLastFetch = Date.now() - lastFetch;
     const shouldFetch = forceUpdate || 
                        updateCounter % 6 === 0 || // Every 6th time (e.g. 6 * 10sec = 1min)
-                       timeSinceLastFetch > 5 * 60 * 1000; // Or every 5 minutes
+                       !FeedStorageService.isCacheFresh(showAllEvents); // Or if cache is stale
     
     if (shouldFetch) {
       try {
         const newItems = await getFeedData(!showAllEvents);
         
-        // Merge new items with existing cached items
-        const mergedItems = allItems.length > 0 ? mergeItems(allItems, newItems) : newItems;
-        allItems = mergedItems;
-        feedItems = [...allItems];
+        // Save new items to cache (the service handles merging and deduplication)
+        FeedStorageService.saveFeedData(newItems, showAllEvents);
         
-        // Save to cache
-        saveFeedItemsToCache(allItems);
-        
-        currentIndex = allItems.length; // Mark all items as displayed
+        // Get the deduplicated items from cache
+        feedItems = FeedStorageService.getFeedItems(showAllEvents);
       } catch (error) {
         console.error("Error updating feed:", error);
         // If fetch fails, keep showing cached items
+        if (feedItems.length === 0) {
+          feedItems = FeedStorageService.getFeedItems(showAllEvents);
+        }
       }
     }
     
@@ -466,42 +373,29 @@
 
   // Handle toggle changes
   $: if (showAllEvents !== undefined) {
-    currentIndex = 0;
     feedItems = [];
-    allItems = [];
-    // Clear cache when switching modes since data structure changes
-    try {
-      localStorage.removeItem(FEED_STORAGE_KEY_MY_MAINERS);
-      localStorage.removeItem(FEED_STORAGE_KEY_ALL_EVENTS);
-      localStorage.removeItem(LAST_FETCH_KEY_MY_MAINERS);
-      localStorage.removeItem(LAST_FETCH_KEY_ALL_EVENTS);
-    } catch (error) {
-      console.error('Error clearing cache:', error);
-    }
+    loading = true;
     updateFeed(true);
   }
 
   // Reset state when authentication status changes
   $: if (!$store.isAuthed) {
     feedItems = [];
-    allItems = [];
-    currentIndex = 0;
     loading = false;
     updating = false;
     // Clear cache when user logs out
-    try {
-      localStorage.removeItem(FEED_STORAGE_KEY_MY_MAINERS);
-      localStorage.removeItem(FEED_STORAGE_KEY_ALL_EVENTS);
-      localStorage.removeItem(LAST_FETCH_KEY_MY_MAINERS);
-      localStorage.removeItem(LAST_FETCH_KEY_ALL_EVENTS);
-    } catch (error) {
-      console.error('Error clearing cache:', error);
-    }
+    FeedStorageService.clearCache();
   }
 
   $: {
     console.log("MainerFeed reactive agentCanisterActors", agentCanisterActors);
     console.log("MainerFeed reactive agentCanistersInfo", agentCanistersInfo);
+
+    // Debug: Log cache statistics
+    if (typeof window !== 'undefined') {
+      const cacheStats = FeedStorageService.getCacheStats();
+      console.log("Feed cache stats:", cacheStats);
+    }
 
     // Only update feed if authenticated
     if ($store.isAuthed) {
@@ -511,52 +405,24 @@
     }
   }
 
-  // Cleanup old cached items
-  function cleanupOldCachedItems() {
-    try {
-      const { feedKey } = getStorageKeys();
-      const cached = localStorage.getItem(feedKey);
-      if (cached) {
-        const items = JSON.parse(cached) as FeedItem[];
-        const recentItems = filterItemsByDate(items);
-        if (recentItems.length !== items.length) {
-          // Some items were old, save the filtered list
-          saveFeedItemsToCache(recentItems);
-        }
-      }
-    } catch (error) {
-      console.error('Error cleaning up cached items:', error);
-    }
-  }
+
 
   onMount(async () => {
-    // Clean up ALL old cached items on mount (including old format)
-    try {
-      // Remove old format caches
-      localStorage.removeItem('mainer_feed_items');
-      localStorage.removeItem('mainer_feed_last_fetch');
-      
-      // Clean up current format caches
-      cleanupOldCachedItems();
-    } catch (error) {
-      console.error('Error cleaning up cached items:', error);
-    }
+    // Clean up old cached items on mount
+    FeedStorageService.performCleanup();
     
     // Load cached items immediately for better UX
-    const cachedItems = loadCachedFeedItems();
-    if (cachedItems.length > 0 && $store.isAuthed) {
-      allItems = cachedItems;
-      feedItems = [...allItems];
-      loading = false;
+    if ($store.isAuthed) {
+      const cachedItems = FeedStorageService.getFeedItems(showAllEvents);
+      if (cachedItems.length > 0) {
+        feedItems = cachedItems;
+        loading = false;
+      }
     }
     
     await updateFeed();
     interval = setInterval(() => {
       updateFeed();
-      // Clean up old cached items periodically (every 10 calls = ~100 seconds)
-      if (updateCounter % 10 === 0) {
-        cleanupOldCachedItems();
-      }
     }, 10000); // Update every 10 seconds
 
     return () => {
@@ -570,6 +436,15 @@
   {#if updating && $store.isAuthed}
     <div class="flex justify-center py-2">
       <div class="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent dark:border-blue-400"></div>
+    </div>
+  {/if}
+  
+  <!-- Cache status indicator -->
+  {#if $store.isAuthed && feedItems.length > 0 && !FeedStorageService.isCacheFresh(showAllEvents)}
+    <div class="flex justify-center py-1">
+      <div class="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded">
+        📦 Showing cached data
+      </div>
     </div>
   {/if}
   <!-- Info Panel - show when not authenticated or when authenticated but no content -->
