@@ -178,8 +178,8 @@
       </div>
 
       <!-- System Status Card -->
-      <!-- Available options: "excellent" | "degraded" | "offline" -->
-      <SystemStatus protocolStatus="offline" />
+      <!-- Available options: "excellent" | "degraded" | "paused" -->
+      <SystemStatus protocolStatus="paused" />
     </div>
 
     <!-- Dashboard Components Grid -->

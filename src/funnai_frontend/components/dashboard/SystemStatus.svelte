@@ -2,7 +2,7 @@
 
   
   // System status types
-  type StatusLevel = 'excellent' | 'degraded' | 'offline';
+  type StatusLevel = 'excellent' | 'degraded' | 'paused';
 
   // Props for controlling global protocol status from parent component
   export let protocolStatus: StatusLevel = 'excellent';
@@ -21,7 +21,7 @@
       iconColor: 'text-yellow-600 dark:text-yellow-400',
       dotColor: 'bg-yellow-500'
     },
-    offline: {
+    paused: {
       bgColor: 'bg-red-100 dark:bg-red-900/30',
       textColor: 'text-red-600 dark:text-red-400',
       iconColor: 'text-red-600 dark:text-red-400',
@@ -36,7 +36,7 @@
     switch (status) {
       case 'excellent': return 'Systems operational';
       case 'degraded': return 'Performance degraded';
-      case 'offline': return 'Service unavailable';
+      case 'paused': return 'Service paused';
       default: return 'Status Unknown';
     }
   }
@@ -46,7 +46,7 @@
     switch (status) {
       case 'excellent': return 'All services running smoothly.';
       case 'degraded': return 'Some performance issues detected.';
-      case 'offline': return 'Critical services down.';
+      case 'paused': return 'Critical services down.';
       default: return 'Status unavailable.';
     }
   }
