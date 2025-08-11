@@ -45,23 +45,28 @@ def get_mainers(network):
         print(f"ERROR: Unable to get mAiners from game_state_canister on network {network}")
 
 def main(network, user):
+    print("----------------------------------------------")
     mainers = get_mainers(network)
     if not mainers or len(mainers) == 0:
-        print("No mainers found.")
+        print(f"No mainers found for the specified network {network}.")
         return
-    
-    # Print the summary of ICP to XDR conversion
-    icp_xdr_summary()
     
     # Open .env file and write header comment
     if user == "all" or user is None:
         env_file_path = os.path.join(SCRIPT_DIR, f"canister_ids_mainers-{network}.env")
     else:
-        mainers = [mainer for mainer in mainers if mainer.get('ownedBy', '') == user]
+        mainers = [mainer for mainer in mainers if (mainer.get('address','') != '' and mainer.get('ownedBy', '') == user)]
         if not mainers:
             print(f"No mainers found for user '{user}' on network '{network}'")
             return
+        print(f"Found {len(mainers)} mainers for user '{user}' on network '{network}'")
         env_file_path = os.path.join(SCRIPT_DIR, f"canister_ids_mainers-{network}-{user}.env")
+    
+    print("----------------------------------------------")
+    # Print the summary of ICP to XDR conversion
+    icp_xdr_summary()
+
+    print("----------------------------------------------")
     print(f"Writing mainers to {env_file_path}")
 
     # get total cycle balance
