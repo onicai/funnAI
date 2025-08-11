@@ -152,6 +152,11 @@ scripts/stop-challenger.sh --network $NETWORK
 scripts/start-judge.sh --network $NETWORK
 scripts/stop-judge.sh --network $NETWORK
 
+# Important
+# The IS_GENERATING_CHALLENGE flag is not reset during a stop/start of the canister
+# Make sure to call:
+dfx canister --network $NETWORK call <challenger_id> resetIsGeneratingChallengeFlag
+
 # Once the timers are running, you can use these commands to check on the data captured by the gamestate:
 # Run from folder: funnAI
 
