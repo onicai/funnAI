@@ -46,7 +46,7 @@
     switch (status) {
       case 'excellent': return 'All services running smoothly.';
       case 'degraded': return 'Some performance issues detected.';
-      case 'paused': return 'Critical services down.';
+      case 'paused': return 'Protocol paused for upgrades.';
       default: return 'Status unavailable.';
     }
   }
