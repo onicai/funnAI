@@ -108,8 +108,8 @@ dfx canister --network $NETWORK call game_state_canister getGameStateThresholdsA
 
 dfx canister --network $NETWORK call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdMaxOpenSubmissions = 140 : nat;
-        thresholdMaxOpenChallenges= 4 : nat;
-        thresholdArchiveClosedChallenges = 150 : nat;
+        thresholdMaxOpenChallenges= 5 : nat;
+        thresholdArchiveClosedChallenges = 140 : nat;
         thresholdScoredResponsesPerChallenge = 27 : nat;
     }
 )'
