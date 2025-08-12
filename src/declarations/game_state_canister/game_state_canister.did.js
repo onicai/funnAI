@@ -841,7 +841,9 @@ export const idlFactory = ({ IDL }) => {
         [ScoredResponseResult],
         [],
       ),
+    'archiveSubmissionsAdmin' : IDL.Func([], [NatResult], []),
     'backupMainersAdmin' : IDL.Func([], [NatResult], []),
+    'cleanSubmissionsAdmin' : IDL.Func([], [AuthRecordResult], []),
     'cleanUnlockedMainerStoragesAdmin' : IDL.Func([], [AuthRecordResult], []),
     'completeMainerSetupForUserAdmin' : IDL.Func(
         [OfficialMainerAgentCanister],
@@ -904,6 +906,7 @@ export const idlFactory = ({ IDL }) => {
         [GameStateTresholdsResult],
         ['query'],
       ),
+    'getIsMigratingChallengesFlagAdmin' : IDL.Func([], [FlagResult], ['query']),
     'getIsWhitelistPhaseActive' : IDL.Func([], [FlagResult], ['query']),
     'getJudgePromptInfo' : IDL.Func(
         [IDL.Text],
@@ -950,6 +953,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'getNumArchivedChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
+    'getNumArchivedSubmissionsAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumClosedChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumCurrentChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumMainerAgentCanistersForUserAdmin' : IDL.Func(
@@ -965,6 +969,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getNumScoredChallengesAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumSubmissionsAdmin' : IDL.Func([], [NatResult], ['query']),
+    'getNumSubmissionsToMigrateAdmin' : IDL.Func([], [NatResult], ['query']),
     'getNumberMainerAgentsAdmin' : IDL.Func(
         [CheckMainerLimit],
         [NatResult],
@@ -1001,7 +1006,13 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getRandomOpenChallenge' : IDL.Func([], [ChallengeResult], []),
+    'getRandomOpenChallengeAdmin' : IDL.Func([], [ChallengeResult], []),
     'getRandomOpenChallengeTopic' : IDL.Func([], [ChallengeTopicResult], []),
+    'getRandomOpenChallengeTopicAdmin' : IDL.Func(
+        [],
+        [ChallengeTopicResult],
+        [],
+      ),
     'getRecentChallengeWinners' : IDL.Func(
         [],
         [ChallengeWinnersResult],
@@ -1033,6 +1044,8 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'getRewardPerChallengeAdmin' : IDL.Func([], [RewardPerChallengeResult], []),
+    'getRoundRobinChallengeIndexAdmin' : IDL.Func([], [NatResult], ['query']),
+    'getRoundRobinTopicIndexAdmin' : IDL.Func([], [NatResult], ['query']),
     'getScoreForSubmission' : IDL.Func(
         [SubmissionRetrievalInput],
         [ScoredResponseRetrievalResult],
@@ -1059,6 +1072,17 @@ export const idlFactory = ({ IDL }) => {
     'getWhitelistPriceForShareAgent' : IDL.Func([], [PriceResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
     'migrateArchivedChallengesAdmin' : IDL.Func([], [NatResult], []),
+    'migrateScoredResponsesForChallengeAdmin' : IDL.Func(
+        [IDL.Text],
+        [AuthRecordResult],
+        [],
+      ),
+    'migrateSubmissionsAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'migrateWinnerDeclarationsAdmin' : IDL.Func(
+        [IDL.Vec(IDL.Text)],
+        [AuthRecordResult],
+        [],
+      ),
     'reinstallMainerControllerAdmin' : IDL.Func(
         [MainerctrlReinstallInput],
         [MainerAgentCanisterResult],
@@ -1081,6 +1105,21 @@ export const idlFactory = ({ IDL }) => {
       ),
     'resetCurrentChallengesAdmin' : IDL.Func([], [StatusCodeRecordResult], []),
     'resetCyclesFlowAdmin' : IDL.Func([], [StatusCodeRecordResult], []),
+    'resetIsMigratingChallengesFlagAdmin' : IDL.Func(
+        [],
+        [AuthRecordResult],
+        [],
+      ),
+    'resetRoundRobinChallengeIndexAdmin' : IDL.Func(
+        [],
+        [StatusCodeRecordResult],
+        [],
+      ),
+    'resetRoundRobinTopicIndexAdmin' : IDL.Func(
+        [],
+        [StatusCodeRecordResult],
+        [],
+      ),
     'setArchiveCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
     'setBufferMainerCreation' : IDL.Func([IDL.Nat], [AuthRecordResult], []),
     'setCyclesBalanceThresholdFunnaiTopups' : IDL.Func(
@@ -1136,6 +1175,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'setMinimumIcpBalance' : IDL.Func([IDL.Nat], [AuthRecordResult], []),
+    'setNumSubmissionsToMigrateAdmin' : IDL.Func([IDL.Nat], [NatResult], []),
     'setOfficialMainerAgentCanisterWasmHashAdmin' : IDL.Func(
         [UpdateWasmHashInput],
         [CanisterWasmHashRecordResult],
