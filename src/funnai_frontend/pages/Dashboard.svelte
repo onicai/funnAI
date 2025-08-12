@@ -179,7 +179,7 @@
 
       <!-- System Status Card -->
       <!-- Available options: "excellent" | "degraded" | "paused" -->
-      <SystemStatus protocolStatus="paused" />
+      <SystemStatus protocolStatus="excellent" />
     </div>
 
     <!-- Dashboard Components Grid -->
