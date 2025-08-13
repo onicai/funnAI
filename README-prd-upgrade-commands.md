@@ -125,6 +125,10 @@ echo $NETWORK
 dfx deploy --network $NETWORK challenger_ctrlb_canister --mode upgrade
 
 # start the Challenger canister back up
+# Important
+# The IS_GENERATING_CHALLENGE flag is not reset during a stop/start of the canister
+# Make sure to call resetIsGeneratingChallengeFlag after start
+#
 dfx canister --network $NETWORK start  $SUBNET_0_1_CHALLENGER
 dfx canister --network $NETWORK call   $SUBNET_0_1_CHALLENGER resetIsGeneratingChallengeFlag
 dfx canister --network $NETWORK status $SUBNET_0_1_CHALLENGER     | grep Status
