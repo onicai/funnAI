@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Find every transaction that spends from `source_addr` to `dest_addr`
 using the mempool.space API.

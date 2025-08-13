@@ -8,6 +8,7 @@
   import MainerLeaderboard from "../components/dashboard/MainerLeaderboard.svelte";
   import ProtocolMetrics from "../components/dashboard/ProtocolMetrics.svelte";
   import TokenDistribution from "../components/dashboard/TokenDistribution.svelte";
+  import SystemStatus from "../components/dashboard/SystemStatus.svelte";
   
   // Import services for fetching token data
   import { IcrcService } from "../helpers/IcrcService";
@@ -16,10 +17,12 @@
   import BigNumber from "bignumber.js";
 
   // Sample data 
-  $: totalMainers = 634; // This could come from store
+  $: totalMainers = 636; // This could come from store
   $: activeMainers = 462;
   $: totalRewards = 1250.50;
   $: totalCycles = 21246900000000;
+  
+
   
   // FUNNAI total supply state
   let totalSupply = "210,992"; // Default fallback value
@@ -175,22 +178,8 @@
       </div>
 
       <!-- System Status Card -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">System Status</p>
-            <p class="text-lg font-semibold text-green-600 dark:text-green-400">Operational</p>
-          </div>
-          <div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        </div>
-        <div class="mt-2">
-          <p class="text-xs text-green-600 dark:text-green-400">All services running</p>
-        </div>
-      </div>
+      <!-- Available options: "excellent" | "degraded" | "paused" -->
+      <SystemStatus protocolStatus="excellent" />
     </div>
 
     <!-- Dashboard Components Grid -->

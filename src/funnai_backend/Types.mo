@@ -124,6 +124,8 @@ module {
 
   public type MaxMainerTopUpStorageResult = Result<MaxMainerTopUpStorageResponse, ApiError>;
   public type MaxMainerTopUpsResult = Result<[TopUpRecord], ApiError>;
+  public type NatResult = Result<Nat, ApiError>;
+  public type BoolResult = Result<Bool, ApiError>;
 
   public type OwnerResult = Result<Principal, ApiError>;
   public type TxReceipt = Result<Nat, ApiError>;

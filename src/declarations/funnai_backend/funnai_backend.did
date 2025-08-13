@@ -52,6 +52,11 @@ type SignUpFormInput =
    pageSubmittedFrom: text;
  };
 type PaymentInfoInput = record {block_index: nat64;};
+type NatResult = 
+ variant {
+   Err: ApiError;
+   Ok: nat;
+ };
 type Message = 
  record {
    content: text;
@@ -84,14 +89,23 @@ type LoginEvent =
    "principal": text;
    timestamp: nat64;
  };
+type GetUsersResult = 
+ variant {
+   Err: ApiError;
+   Ok: vec text;
+ };
 type FunnAIBackend = 
  service {
    addMaxMainerTopup: (MaxMainerTopUpInput) -> (MaxMainerTopUpStorageResult);
+   archiveMaxMainerTopupsAdmin: () -> (BoolResult);
    create_chat: (vec Message) -> (ChatCreationResult);
    delete_chat: (text) -> (ChatResult);
    delete_email_subscriber: (text) -> (bool);
+   getArchivedMaxMainerTopupsAdmin: () -> (MaxMainerTopUpsResult) query;
    getLoginEventsAdmin: (text) -> (LoginEventsResult) query;
    getMaxMainerTopupsAdmin: () -> (MaxMainerTopUpsResult) query;
+   getNumArchivedMaxMainerTopupsAdmin: () -> (NatResult) query;
+   getUsersAdmin: () -> (GetUsersResult) query;
    get_caller_chat_history: () -> (ChatsPreviewResult) query;
    get_caller_chat_settings: () -> (UserChatSettingsResult) query;
    get_caller_chats: () -> (ChatsResult) query;
@@ -157,6 +171,11 @@ type Chat =
    id: text;
    messages: vec Message;
    owner: principal;
+ };
+type BoolResult = 
+ variant {
+   Err: ApiError;
+   Ok: bool;
  };
 type ApiError = 
  variant {

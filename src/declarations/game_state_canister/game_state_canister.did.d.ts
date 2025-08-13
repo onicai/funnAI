@@ -459,7 +459,9 @@ export interface GameStateCanister {
     [ScoredResponseInput],
     ScoredResponseResult
   >,
+  'archiveSubmissionsAdmin' : ActorMethod<[], NatResult>,
   'backupMainersAdmin' : ActorMethod<[], NatResult>,
+  'cleanSubmissionsAdmin' : ActorMethod<[], AuthRecordResult>,
   'cleanUnlockedMainerStoragesAdmin' : ActorMethod<[], AuthRecordResult>,
   'completeMainerSetupForUserAdmin' : ActorMethod<
     [OfficialMainerAgentCanister],
@@ -496,13 +498,17 @@ export interface GameStateCanister {
   'getClosedChallengesAdmin' : ActorMethod<[], ChallengesResult>,
   'getCurrentChallenges' : ActorMethod<[], ChallengesResult>,
   'getCurrentChallengesAdmin' : ActorMethod<[], ChallengesResult>,
+  'getCyclesBalanceThresholdFunnaiTopups' : ActorMethod<[], NatResult>,
   'getCyclesBurnRate' : ActorMethod<
     [CyclesBurnRateDefault],
     CyclesBurnRateResult
   >,
   'getCyclesFlowAdmin' : ActorMethod<[], CyclesFlowResult>,
   'getDisburseFundsToTreasuryFlag' : ActorMethod<[], FlagResult>,
+  'getFunnaiCyclesPrice' : ActorMethod<[], NatResult>,
+  'getFunnaiCyclesPriceAdmin' : ActorMethod<[], NatResult>,
   'getGameStateThresholdsAdmin' : ActorMethod<[], GameStateTresholdsResult>,
+  'getIsMigratingChallengesFlagAdmin' : ActorMethod<[], FlagResult>,
   'getIsWhitelistPhaseActive' : ActorMethod<[], FlagResult>,
   'getJudgePromptInfo' : ActorMethod<[string], JudgePromptInfoResult>,
   'getLimitForCreatingMainerAdmin' : ActorMethod<[CheckMainerLimit], NatResult>,
@@ -521,12 +527,15 @@ export interface GameStateCanister {
   >,
   'getMainerCyclesUsedPerResponse' : ActorMethod<[], NatResult>,
   'getMainerPromptInfo' : ActorMethod<[string], MainerPromptInfoResult>,
+  'getMaxFunnaiTopupCyclesAmount' : ActorMethod<[], NatResult>,
+  'getMaxFunnaiTopupCyclesAmountAdmin' : ActorMethod<[], NatResult>,
   'getMinimumIcpBalance' : ActorMethod<[], NatResult>,
   'getNextSubmissionToJudge' : ActorMethod<
     [],
     ChallengeResponseSubmissionResult
   >,
   'getNumArchivedChallengesAdmin' : ActorMethod<[], NatResult>,
+  'getNumArchivedSubmissionsAdmin' : ActorMethod<[], NatResult>,
   'getNumClosedChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumCurrentChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumMainerAgentCanistersForUserAdmin' : ActorMethod<[string], NatResult>,
@@ -534,6 +543,7 @@ export interface GameStateCanister {
   'getNumOpenSubmissionsForOpenChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumScoredChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumSubmissionsAdmin' : ActorMethod<[], NatResult>,
+  'getNumSubmissionsToMigrateAdmin' : ActorMethod<[], NatResult>,
   'getNumberMainerAgentsAdmin' : ActorMethod<[CheckMainerLimit], NatResult>,
   'getOfficialCanistersAdmin' : ActorMethod<
     [],
@@ -555,9 +565,19 @@ export interface GameStateCanister {
   'getProtocolCyclesBalanceBuffer' : ActorMethod<[], NatResult>,
   'getProtocolTotalCyclesBurnt' : ActorMethod<[], CyclesBurntResult>,
   'getRandomOpenChallenge' : ActorMethod<[], ChallengeResult>,
+  'getRandomOpenChallengeAdmin' : ActorMethod<[], ChallengeResult>,
   'getRandomOpenChallengeTopic' : ActorMethod<[], ChallengeTopicResult>,
+  'getRandomOpenChallengeTopicAdmin' : ActorMethod<[], ChallengeTopicResult>,
   'getRecentChallengeWinners' : ActorMethod<[], ChallengeWinnersResult>,
   'getRecentProtocolActivity' : ActorMethod<[], ProtocolActivityResult>,
+  'getRedeemedFunnaiTransactionBlockAdmin' : ActorMethod<
+    [PaymentTransactionBlockId],
+    RedeemedTransactionBlockResult
+  >,
+  'getRedeemedFunnaiTransactionBlocksAdmin' : ActorMethod<
+    [],
+    RedeemedTransactionBlocksResult
+  >,
   'getRedeemedTransactionBlockAdmin' : ActorMethod<
     [PaymentTransactionBlockId],
     RedeemedTransactionBlockResult
@@ -567,6 +587,8 @@ export interface GameStateCanister {
     RedeemedTransactionBlocksResult
   >,
   'getRewardPerChallengeAdmin' : ActorMethod<[], RewardPerChallengeResult>,
+  'getRoundRobinChallengeIndexAdmin' : ActorMethod<[], NatResult>,
+  'getRoundRobinTopicIndexAdmin' : ActorMethod<[], NatResult>,
   'getScoreForSubmission' : ActorMethod<
     [SubmissionRetrievalInput],
     ScoredResponseRetrievalResult
@@ -583,9 +605,22 @@ export interface GameStateCanister {
   'getWhitelistPriceForShareAgent' : ActorMethod<[], PriceResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
   'migrateArchivedChallengesAdmin' : ActorMethod<[], NatResult>,
+  'migrateScoredResponsesForChallengeAdmin' : ActorMethod<
+    [string],
+    AuthRecordResult
+  >,
+  'migrateSubmissionsAdmin' : ActorMethod<[], AuthRecordResult>,
+  'migrateWinnerDeclarationsAdmin' : ActorMethod<
+    [Array<string>],
+    AuthRecordResult
+  >,
   'reinstallMainerControllerAdmin' : ActorMethod<
     [MainerctrlReinstallInput],
     MainerAgentCanisterResult
+  >,
+  'removeRedeemedFunnaiTransactionBlockAdmin' : ActorMethod<
+    [PaymentTransactionBlockId],
+    TextResult
   >,
   'removeRedeemedTransactionBlockAdmin' : ActorMethod<
     [PaymentTransactionBlockId],
@@ -597,8 +632,18 @@ export interface GameStateCanister {
   >,
   'resetCurrentChallengesAdmin' : ActorMethod<[], StatusCodeRecordResult>,
   'resetCyclesFlowAdmin' : ActorMethod<[], StatusCodeRecordResult>,
+  'resetIsMigratingChallengesFlagAdmin' : ActorMethod<[], AuthRecordResult>,
+  'resetRoundRobinChallengeIndexAdmin' : ActorMethod<
+    [],
+    StatusCodeRecordResult
+  >,
+  'resetRoundRobinTopicIndexAdmin' : ActorMethod<[], StatusCodeRecordResult>,
   'setArchiveCanisterId' : ActorMethod<[string], AuthRecordResult>,
   'setBufferMainerCreation' : ActorMethod<[bigint], AuthRecordResult>,
+  'setCyclesBalanceThresholdFunnaiTopups' : ActorMethod<
+    [bigint],
+    AuthRecordResult
+  >,
   'setCyclesBurnRateAdmin' : ActorMethod<
     [SetCyclesBurnRateInput],
     StatusCodeRecordResult
@@ -607,6 +652,7 @@ export interface GameStateCanister {
     [CyclesFlowSettings],
     StatusCodeRecordResult
   >,
+  'setFunnaiCyclesPrice' : ActorMethod<[bigint], AuthRecordResult>,
   'setGameStateThresholdsAdmin' : ActorMethod<
     [GameStateTresholds],
     StatusCodeRecordResult
@@ -626,7 +672,9 @@ export interface GameStateCanister {
     [MainerLimitInput],
     AuthRecordResult
   >,
+  'setMaxFunnaiTopupCyclesAmount' : ActorMethod<[bigint], AuthRecordResult>,
   'setMinimumIcpBalance' : ActorMethod<[bigint], AuthRecordResult>,
+  'setNumSubmissionsToMigrateAdmin' : ActorMethod<[bigint], NatResult>,
   'setOfficialMainerAgentCanisterWasmHashAdmin' : ActorMethod<
     [UpdateWasmHashInput],
     CanisterWasmHashRecordResult
@@ -667,6 +715,7 @@ export interface GameStateCanister {
     [ChallengeResponseSubmissionInput],
     ChallengeResponseSubmissionMetadataResult
   >,
+  'testDisbursementToTreasuryAdmin' : ActorMethod<[], AuthRecordResult>,
   'testMainerCodeIntegrityAdmin' : ActorMethod<[], AuthRecordResult>,
   'testTokenMintingAdmin' : ActorMethod<[], AuthRecordResult>,
   'toggleDisburseFundsToTreasuryFlagAdmin' : ActorMethod<[], AuthRecordResult>,
@@ -677,6 +726,10 @@ export interface GameStateCanister {
   >,
   'toggleWhitelistPhaseActiveFlagAdmin' : ActorMethod<[], AuthRecordResult>,
   'topUpCyclesForMainerAgent' : ActorMethod<
+    [MainerAgentTopUpInput],
+    MainerAgentCanisterResult
+  >,
+  'topUpCyclesForMainerAgentWithFunnai' : ActorMethod<
     [MainerAgentTopUpInput],
     MainerAgentCanisterResult
   >,

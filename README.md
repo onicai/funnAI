@@ -152,6 +152,11 @@ scripts/stop-challenger.sh --network $NETWORK
 scripts/start-judge.sh --network $NETWORK
 scripts/stop-judge.sh --network $NETWORK
 
+# Important
+# The IS_GENERATING_CHALLENGE flag is not reset during a stop/start of the canister
+# Make sure to call:
+dfx canister --network $NETWORK call <challenger_id> resetIsGeneratingChallengeFlag
+
 # Once the timers are running, you can use these commands to check on the data captured by the gamestate:
 # Run from folder: funnAI
 
@@ -297,7 +302,7 @@ The following endpoints allow to set & get the values:
 dfx canister call game_state_canister getGameStateThresholdsAdmin --output json --network $NETWORK
 
 dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
-        thresholdArchiveClosedChallenges = 150 : nat;
+        thresholdArchiveClosedChallenges = 140 : nat;
         thresholdMaxOpenChallenges= 5 : nat;
         thresholdMaxOpenSubmissions = 140 : nat;
         thresholdScoredResponsesPerChallenge = 33 : nat;

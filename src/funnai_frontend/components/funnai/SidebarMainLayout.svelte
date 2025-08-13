@@ -133,6 +133,18 @@ function handleThemeToggle() {
           </button>
         </a>
 
+        <a use:link href="/store" class="block" on:click={closeSidebar}>
+          <button class={`w-full px-4 py-3 text-left rounded-xl transition-all duration-200 flex items-center gap-3
+            ${currentPath === '/store' ? 
+              'bg-gradient-to-r from-emerald-50 to-emerald-100 border border-emerald-200 text-emerald-700 font-medium dark:bg-gradient-to-r dark:from-emerald-900/30 dark:to-emerald-800/30 dark:text-emerald-300 dark:border-emerald-700' : 
+              'text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700 border border-transparent hover:border-gray-200 dark:hover:border-gray-600'}`}>
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+            <span class="font-medium">App Store</span>
+          </button>
+        </a>
+
         
       </div>
     </div>
