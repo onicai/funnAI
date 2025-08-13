@@ -439,13 +439,19 @@ export class IcrcService {
         requiresSigning: true,
       });
 
+      let fee = BigInt(token.fee_fixed);
+
+      if (opts?.fee === 0n) {
+        fee = opts.fee;
+      };
+
       return await actor.icrc1_transfer({
         to: {
           owner: typeof to === "string" ? Principal.fromText(to) : to,
           subaccount: [],
         },
         amount,
-        fee: [BigInt(token.fee_fixed)],
+        fee: [fee],
         memo: opts.memo ? [opts.memo] : [],
         from_subaccount: opts.fromSubaccount ? [opts.fromSubaccount] : [],
         created_at_time: opts.createdAtTime ? [opts.createdAtTime] : [],

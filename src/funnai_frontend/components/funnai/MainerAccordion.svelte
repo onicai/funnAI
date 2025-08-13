@@ -363,7 +363,8 @@
   };
   
   // Handle top-up completion
-  async function handleTopUpComplete(txId: string, canisterId: string) {
+  async function handleTopUpComplete(txId: string, canisterId: string, backendPromise: Promise<any>) {
+    // Modal is already closed by MainerTopUpModal
     mainerTopUpModalOpen = false;
 
     // Add this agent to the loading set
@@ -380,24 +381,19 @@
       return; // TODO - Implementation: decide if the top up should just be credited to the user's first agent then instead (as otherwise the payment is lost)
     };
 
-    // Clean the enriched data to get only original backend fields
-    let cleanMainerAgent = getOriginalCanisterInfo(mainerAgent);
-
-    let mainerAgentTopUpInput = {
-      paymentTransactionBlockId: BigInt(txId),
-      mainerAgent: cleanMainerAgent,
-    };
+    // Wait for the backend promise to complete
     try {
-      let topUpUserMainerAgentResponse = await $store.gameStateCanisterActor.topUpCyclesForMainerAgent(mainerAgentTopUpInput);
+      const backendResult = await backendPromise;
+      console.log("Backend top-up completed:", backendResult);
       
-      if ('Ok' in topUpUserMainerAgentResponse) {
-        // top up was successful
-      } else if ('Err' in topUpUserMainerAgentResponse) {
-        console.error("Error in topUpCyclesForMainerAgent:", topUpUserMainerAgentResponse.Err);
-      };
-    } catch (topUpError) {
-      console.error("Failed to top up mAIner:", topUpError);
-    };
+      if (backendResult && 'Ok' in backendResult) {
+        console.log("Top-up completed successfully");
+      } else if (backendResult && 'Err' in backendResult) {
+        console.error("Backend top-up error:", backendResult.Err);
+      }
+    } catch (backendError) {
+      console.error("Backend promise failed:", backendError);
+    }
 
     // Refresh the list of agents to show updated balances
     try {
@@ -1751,12 +1747,6 @@
             
             <!-- mAIner info -->
             <div class="flex flex-col items-start min-w-0 flex-1">
-              <!-- Agent name  -->
-              <div class="mb-2 px-2 py-0.5 bg-white/80 backdrop-blur-sm rounded-md shadow-sm border border-white/40 max-w-[80px] sm:max-w-[100px]">
-                <span class="text-xs font-bold text-gray-800 truncate block text-center">
-                  🦜 {agent.name.replace('mAIner ', '')}
-                </span>
-              </div>
               <div class="flex flex-wrap items-center gap-1 sm:gap-2 mb-1">
                 <!-- Status badge -->
                 <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm border ${agent.status === 'active' 
@@ -1821,7 +1811,13 @@
           
           <!-- Right section: Expand indicator -->
           <div class="flex-shrink-0 ml-4">
-            <div class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30 shadow-sm group-hover:bg-white/30 transition-all duration-300">
+            <!-- Agent name  -->
+            <div class="mb-2 px-2 py-0.5 bg-white/80 backdrop-blur-sm rounded-md shadow-sm border border-white/40 max-w-[80px] sm:max-w-[100px]">
+              <span class="text-xs font-bold text-gray-800 truncate block text-center">
+                🦜 {agent.name.replace('mAIner ', '')}
+              </span>
+            </div>
+            <div class="w-full h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30 shadow-sm group-hover:bg-white/30 transition-all duration-300">
               <span id="icon-{sanitizedId}" class="{identity.colors.text} transition-transform duration-300 group-hover:scale-110" style="transform: rotate(180deg)">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 sm:w-5 sm:h-5">
                   <path fill-rule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />

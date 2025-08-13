@@ -19,16 +19,16 @@ echo "SUBNET_0_1_CHALLENGER         : $SUBNET_0_1_CHALLENGER"
 echo "SUBNET_1_1_CHALLENGER_LLM_0   : $SUBNET_1_1_CHALLENGER_LLM_0"
 
 echo " "
-echo "Judge        canister ID      : $SUBNET_0_1_JUDGE"
+echo "SUBNET_0_1_JUDGE              : $SUBNET_0_1_JUDGE"
 echo "SUBNET_1_1_JUDGE_LLM_0        : $SUBNET_1_1_JUDGE_LLM_0"
 
 echo " "
-echo "ShareService canister ID      : $SUBNET_0_1_SHARE_SERVICE"
+echo "SUBNET_0_1_SHARE_SERVICE      : $SUBNET_0_1_SHARE_SERVICE"
 echo "SUBNET_2_1_SHARE_SERVICE_LLM_0: $SUBNET_2_1_SHARE_SERVICE_LLM_0"
 
 echo " "
 source scripts/canister_ids_mainers-$NETWORK.env
-echo "MAINER_SHARE_AGENT_0000       : $MAINER_SHARE_AGENT_0000"
+echo "MAINER_SHARE_AGENT_0001       : $MAINER_SHARE_AGENT_0001"
 ```
 
 # pause protocol
@@ -100,16 +100,16 @@ dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE health
 dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getPauseProtocolFlag
 
 # Update the wasm-hash, using the Admin owned test mAIner ShareAgent
-echo $MAINER_SHARE_AGENT_0000
-dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE deriveNewMainerAgentCanisterWasmHashAdmin "(record {address=\"$MAINER_SHARE_AGENT_0000\"; textNote=\"First protocol upgrade\"})"
+echo $MAINER_SHARE_AGENT_0001
+dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE deriveNewMainerAgentCanisterWasmHashAdmin "(record {address=\"$MAINER_SHARE_AGENT_0001\"; textNote=\"First protocol upgrade\"})"
 
 # Update the protocol thresholds, if needed.
 dfx canister --network $NETWORK call game_state_canister getGameStateThresholdsAdmin
 
 dfx canister --network $NETWORK call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdMaxOpenSubmissions = 140 : nat;
-        thresholdMaxOpenChallenges= 4 : nat;
-        thresholdArchiveClosedChallenges = 150 : nat;
+        thresholdMaxOpenChallenges= 5 : nat;
+        thresholdArchiveClosedChallenges = 140 : nat;
         thresholdScoredResponsesPerChallenge = 27 : nat;
     }
 )'
@@ -125,9 +125,15 @@ echo $NETWORK
 dfx deploy --network $NETWORK challenger_ctrlb_canister --mode upgrade
 
 # start the Challenger canister back up
+# Important
+# The IS_GENERATING_CHALLENGE flag is not reset during a stop/start of the canister
+# Make sure to call resetIsGeneratingChallengeFlag after start
+#
 dfx canister --network $NETWORK start  $SUBNET_0_1_CHALLENGER
+dfx canister --network $NETWORK call   $SUBNET_0_1_CHALLENGER resetIsGeneratingChallengeFlag
 dfx canister --network $NETWORK status $SUBNET_0_1_CHALLENGER     | grep Status
 dfx canister --network $NETWORK call   $SUBNET_0_1_CHALLENGER health
+dfx canister --network $NETWORK call   $SUBNET_0_1_CHALLENGER getIsGeneratingChallengeFlag
 
 # fill the LLM data storage - No longer needed. Is in stable storage
 # -> Run it in case a reinstall is needed
@@ -207,6 +213,10 @@ dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    startTimerExecutionAdmin
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE startTimerExecutionAdmin
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         startTimerExecutionAdmin
+
+# If you changed the Challenger timer interval, note it is a stble var.
+# You will need to call setTimerActionRegularityInSecondsAdmin, as in:
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER setTimerActionRegularityInSecondsAdmin '(420)'
 ```
 
 # un-pause protocol

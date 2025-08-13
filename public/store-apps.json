@@ -1,0 +1,24 @@
+{
+  "apps": [
+    {
+      "name": "funnAI 1",
+      "url": "https://funnalyzer-f97.caffeine.xyz/",
+      "description": "Advanced AI chat interface with multiple models, code execution, and document analysis capabilities.",
+      "thumbnail": "https://example.com/images/example.png",
+      "logo": "https://example.com/images/example.jpg",
+      "creator_openchat": "@onicaiHQ",
+      "creator_x": "@onicaiHQ",
+      "featured": true
+    },
+    {
+      "name": "funnai 2",
+      "url": "https://funnai-challenges-ybu.caffeine.xyz/",
+      "description": "Decentralized AI miner management platform for training and running AI models on the Internet Computer.",
+      "thumbnail": "https://example.com/images/example.jpg",
+      "logo": "https://example.com/images/example.wepb",
+      "creator_openchat": "@onicaiHQ",
+      "creator_x": "@onicaiHQ",
+      "featured": true
+    }
+  ]
+}

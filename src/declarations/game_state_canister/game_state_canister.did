@@ -421,7 +421,9 @@ type GameStateCanister =
     (MainerAgentCanisterResult);
    addOfficialCanister: (CanisterInput) -> (StatusCodeRecordResult);
    addScoredResponse: (ScoredResponseInput) -> (ScoredResponseResult);
+   archiveSubmissionsAdmin: () -> (NatResult);
    backupMainersAdmin: () -> (NatResult);
+   cleanSubmissionsAdmin: () -> (AuthRecordResult);
    cleanUnlockedMainerStoragesAdmin: () -> (AuthRecordResult);
    completeMainerSetupForUserAdmin: (OfficialMainerAgentCanister) ->
     (MainerAgentCanisterResult);
@@ -446,10 +448,14 @@ type GameStateCanister =
    getClosedChallengesAdmin: () -> (ChallengesResult) query;
    getCurrentChallenges: () -> (ChallengesResult) query;
    getCurrentChallengesAdmin: () -> (ChallengesResult) query;
+   getCyclesBalanceThresholdFunnaiTopups: () -> (NatResult) query;
    getCyclesBurnRate: (CyclesBurnRateDefault) -> (CyclesBurnRateResult);
    getCyclesFlowAdmin: () -> (CyclesFlowResult);
    getDisburseFundsToTreasuryFlag: () -> (FlagResult) query;
+   getFunnaiCyclesPrice: () -> (NatResult) query;
+   getFunnaiCyclesPriceAdmin: () -> (NatResult) query;
    getGameStateThresholdsAdmin: () -> (GameStateTresholdsResult) query;
+   getIsMigratingChallengesFlagAdmin: () -> (FlagResult) query;
    getIsWhitelistPhaseActive: () -> (FlagResult) query;
    getJudgePromptInfo: (text) -> (JudgePromptInfoResult) query;
    getLimitForCreatingMainerAdmin: (CheckMainerLimit) -> (NatResult) query;
@@ -461,9 +467,12 @@ type GameStateCanister =
     (MainerAgentCanistersResult) query;
    getMainerCyclesUsedPerResponse: () -> (NatResult);
    getMainerPromptInfo: (text) -> (MainerPromptInfoResult) query;
+   getMaxFunnaiTopupCyclesAmount: () -> (NatResult) query;
+   getMaxFunnaiTopupCyclesAmountAdmin: () -> (NatResult) query;
    getMinimumIcpBalance: () -> (NatResult) query;
    getNextSubmissionToJudge: () -> (ChallengeResponseSubmissionResult);
    getNumArchivedChallengesAdmin: () -> (NatResult) query;
+   getNumArchivedSubmissionsAdmin: () -> (NatResult) query;
    getNumClosedChallengesAdmin: () -> (NatResult) query;
    getNumCurrentChallengesAdmin: () -> (NatResult) query;
    getNumMainerAgentCanistersForUserAdmin: (text) -> (NatResult) query;
@@ -471,6 +480,7 @@ type GameStateCanister =
    getNumOpenSubmissionsForOpenChallengesAdmin: () -> (NatResult) query;
    getNumScoredChallengesAdmin: () -> (NatResult) query;
    getNumSubmissionsAdmin: () -> (NatResult) query;
+   getNumSubmissionsToMigrateAdmin: () -> (NatResult) query;
    getNumberMainerAgentsAdmin: (CheckMainerLimit) -> (NatResult) query;
    getOfficialCanistersAdmin: () -> (vec OfficialProtocolCanister) query;
    getOfficialChallengerCanisters: () -> (AuthRecordResult);
@@ -484,13 +494,21 @@ type GameStateCanister =
    getProtocolCyclesBalanceBuffer: () -> (NatResult) query;
    getProtocolTotalCyclesBurnt: () -> (CyclesBurntResult) query;
    getRandomOpenChallenge: () -> (ChallengeResult);
+   getRandomOpenChallengeAdmin: () -> (ChallengeResult);
    getRandomOpenChallengeTopic: () -> (ChallengeTopicResult);
+   getRandomOpenChallengeTopicAdmin: () -> (ChallengeTopicResult);
    getRecentChallengeWinners: () -> (ChallengeWinnersResult) query;
    getRecentProtocolActivity: () -> (ProtocolActivityResult) query;
+   getRedeemedFunnaiTransactionBlockAdmin: (PaymentTransactionBlockId) ->
+    (RedeemedTransactionBlockResult);
+   getRedeemedFunnaiTransactionBlocksAdmin: () ->
+    (RedeemedTransactionBlocksResult);
    getRedeemedTransactionBlockAdmin: (PaymentTransactionBlockId) ->
     (RedeemedTransactionBlockResult);
    getRedeemedTransactionBlocksAdmin: () -> (RedeemedTransactionBlocksResult);
    getRewardPerChallengeAdmin: () -> (RewardPerChallengeResult);
+   getRoundRobinChallengeIndexAdmin: () -> (NatResult) query;
+   getRoundRobinTopicIndexAdmin: () -> (NatResult) query;
    getScoreForSubmission: (SubmissionRetrievalInput) ->
     (ScoredResponseRetrievalResult) query;
    getScoredChallengesAdmin: () -> (ScoredChallengesResult) query;
@@ -502,19 +520,29 @@ type GameStateCanister =
    getWhitelistPriceForShareAgent: () -> (PriceResult) query;
    health: () -> (StatusCodeRecordResult) query;
    migrateArchivedChallengesAdmin: () -> (NatResult);
+   migrateScoredResponsesForChallengeAdmin: (text) -> (AuthRecordResult);
+   migrateSubmissionsAdmin: () -> (AuthRecordResult);
+   migrateWinnerDeclarationsAdmin: (vec text) -> (AuthRecordResult);
    reinstallMainerControllerAdmin: (MainerctrlReinstallInput) ->
     (MainerAgentCanisterResult);
+   removeRedeemedFunnaiTransactionBlockAdmin: (PaymentTransactionBlockId) ->
+    (TextResult);
    removeRedeemedTransactionBlockAdmin: (PaymentTransactionBlockId) ->
     (TextResult);
    removeSharedServiceCanisterAdmin: (record {canisterId: text;}) ->
     (StatusCodeRecordResult);
    resetCurrentChallengesAdmin: () -> (StatusCodeRecordResult);
    resetCyclesFlowAdmin: () -> (StatusCodeRecordResult);
+   resetIsMigratingChallengesFlagAdmin: () -> (AuthRecordResult);
+   resetRoundRobinChallengeIndexAdmin: () -> (StatusCodeRecordResult);
+   resetRoundRobinTopicIndexAdmin: () -> (StatusCodeRecordResult);
    setArchiveCanisterId: (text) -> (AuthRecordResult);
    setBufferMainerCreation: (nat) -> (AuthRecordResult);
+   setCyclesBalanceThresholdFunnaiTopups: (nat) -> (AuthRecordResult);
    setCyclesBurnRateAdmin: (SetCyclesBurnRateInput) ->
     (StatusCodeRecordResult);
    setCyclesFlowAdmin: (CyclesFlowSettings) -> (StatusCodeRecordResult);
+   setFunnaiCyclesPrice: (nat) -> (AuthRecordResult);
    setGameStateThresholdsAdmin: (GameStateTresholds) ->
     (StatusCodeRecordResult);
    setIcpForOwnMainerAdmin: (nat64) -> (StatusCodeRecordResult);
@@ -523,7 +551,9 @@ type GameStateCanister =
    setIcpForWhitelistShareAgentAdmin: (nat64) -> (StatusCodeRecordResult);
    setInitialChallengeTopics: () -> (StatusCodeRecordResult);
    setLimitForCreatingMainerAdmin: (MainerLimitInput) -> (AuthRecordResult);
+   setMaxFunnaiTopupCyclesAmount: (nat) -> (AuthRecordResult);
    setMinimumIcpBalance: (nat) -> (AuthRecordResult);
+   setNumSubmissionsToMigrateAdmin: (nat) -> (NatResult);
    setOfficialMainerAgentCanisterWasmHashAdmin: (UpdateWasmHashInput) ->
     (CanisterWasmHashRecordResult);
    setProtocolCyclesBalanceBuffer: (nat) -> (AuthRecordResult);
@@ -544,6 +574,7 @@ type GameStateCanister =
     (StartUploadMainerPromptCacheRecordResult);
    submitChallengeResponse: (ChallengeResponseSubmissionInput) ->
     (ChallengeResponseSubmissionMetadataResult);
+   testDisbursementToTreasuryAdmin: () -> (AuthRecordResult);
    testMainerCodeIntegrityAdmin: () -> (AuthRecordResult);
    testTokenMintingAdmin: () -> (AuthRecordResult);
    toggleDisburseFundsToTreasuryFlagAdmin: () -> (AuthRecordResult);
@@ -551,6 +582,8 @@ type GameStateCanister =
    togglePauseWhitelistMainerCreationFlagAdmin: () -> (AuthRecordResult);
    toggleWhitelistPhaseActiveFlagAdmin: () -> (AuthRecordResult);
    topUpCyclesForMainerAgent: (MainerAgentTopUpInput) ->
+    (MainerAgentCanisterResult);
+   topUpCyclesForMainerAgentWithFunnai: (MainerAgentTopUpInput) ->
     (MainerAgentCanisterResult);
    unlockUserMainerAgent: (MainerCreationInput) ->
     (MainerAgentCanisterResult);
