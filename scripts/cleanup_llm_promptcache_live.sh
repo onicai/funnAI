@@ -7,6 +7,7 @@
 
 # Default network type is local
 NETWORK_TYPE="local"
+CANISTER_ID=""
 
 # Parse command line arguments for network type
 while [ $# -gt 0 ]; do
@@ -28,14 +29,20 @@ while [ $# -gt 0 ]; do
             ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--llm-type [challenger|judge|share_service]] --canister-id <canister_id>"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --canister-id <canister_id>"
             exit 1
             ;;
     esac
 done
 
+# Exit if CANISTER_ID is not set
+if [ -z "$CANISTER_ID" ]; then
+    echo "CANISTER_ID is not set. Exiting."
+    echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --canister-id <canister_id>"
+    exit 1
+fi
+
 echo "Using network type: $NETWORK_TYPE"
 echo "Using CANISTER_ID: $CANISTER_ID"
-echo "Running in offline mode: $OFFLINE"
 
 python -m scripts.cleanup_llm_promptcache_live --network $NETWORK_TYPE --canister-id $CANISTER_ID
