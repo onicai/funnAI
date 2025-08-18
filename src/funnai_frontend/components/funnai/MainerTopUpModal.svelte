@@ -85,7 +85,7 @@
   let isLoadingFunnaiLimits: boolean = false;
   
   // FUNNAI constants
-  const FUNNAI_MIN_CYCLES = new BigNumber("400000000000"); // 0.4T cycles (hardcoded)
+  const FUNNAI_MIN_CYCLES = new BigNumber("1000000000000"); // 1T cycles (hardcoded)
   
   // Dynamic limits based on token type and conversion rate
   $: dynamicLimits = (() => {
