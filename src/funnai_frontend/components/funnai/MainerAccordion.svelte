@@ -1301,7 +1301,7 @@
                 <p class="font-medium mb-2">🎉 Exclusive whitelist pricing now available!</p>
                 <p>Create your mAIner from the unlocked options below for just <span class="font-bold text-white">{currentWhitelistPrice || 5} ICP</span> instead of the regular price of <span class="line-through opacity-75">{currentMainerPrice || 10} ICP</span>.</p>
                 {#if unlockedMainers.length > 0}
-                  <p class="text-xs text-white/80 mt-2">💡 <span class="font-medium">Note:</span> More unlocked mAIners may become available as others are created. Check back periodically during the whitelist phase.</p>
+                  <p class="text-xs text-white/80 mt-2">💡 <span class="font-medium">Note:</span> This is a limited whitelist expansion sale. Thank you for qualifying and happy mAIning!</p>
                 {/if}
               </div>
             </div>
@@ -1442,14 +1442,14 @@
             <div class="space-y-3 sm:space-y-4">
               <div class="flex flex-col items-center text-center space-y-2">
                 <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white backdrop-blur-sm">
-                  Whitelist Member
+                  funnAI Member
                 </div>
                 <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-sm">Welcome, early supporter! 🎉</h3>
               </div>
               
               <div class="text-white/90 text-sm sm:text-base leading-relaxed max-w-md mx-auto space-y-2">
-                <p class="font-semibold text-base sm:text-lg">✨ You're part of the exclusive whitelist community!</p>
-                <p>You successfully claimed your whitelist mAIner(s). Manage your existing mAIners below or check for additional whitelist opportunities.</p>
+                <p class="font-semibold text-base sm:text-lg">✨ You're part of the genesis community!</p>
+                <p>You have successfully created your mAIner(s). Manage your existing mAIners below or check for additional whitelist opportunities.</p>
               </div>
               
               <!-- Status indicator -->
@@ -1458,7 +1458,7 @@
                   <svg class="w-5 h-5 mr-2 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                   </svg>
-                  <span class="text-white font-semibold">Whitelist Access Activated</span>
+                  <span class="text-white font-semibold">mAIners Activated</span>
                 </div>
               </div>
               
@@ -1466,7 +1466,7 @@
               <div class="text-xs text-white/80 bg-white/15 backdrop-blur-sm rounded-xl px-3 py-2 border border-white/20 shadow-sm">
                 <div class="flex items-center justify-center space-x-2">
                   <span class="text-sm">🏆</span>
-                  <span class="font-medium">You're part of the exclusive whitelist community with {totalMainers} mAIner{totalMainers === 1 ? '' : 's'}</span>
+                  <span class="font-medium">You're part of the exclusive genesis funnAI community with {totalMainers} mAIner{totalMainers === 1 ? '' : 's'}</span>
                 </div>
               </div>
             </div>
@@ -1498,7 +1498,7 @@
           <!-- Description temp change: All whitelist mAIners have been successfully claimed by early supporters. -->
           <div class="space-y-3 mb-6">
             <p class="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-md mx-auto">
-              Claim your whitelist spots and become an early mAIner.
+              The whitelist expansion sale is here.
             </p>
             
             <!-- Public sale announcement temp change: Public Sale Opens June 29 -->
@@ -1510,7 +1510,7 @@
                 <span class="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Whitelist Sale Opens</span>
               </div>
               <div class="text-2xl sm:text-3xl font-bold text-emerald-700 dark:text-emerald-300 mb-1">
-                June 28
+                August 24
               </div>
               <p class="text-xs text-emerald-600 dark:text-emerald-400">
                 Mark your calendar!
@@ -1521,7 +1521,7 @@
           <!-- Call to action -->
           <div class="space-y-3">
             <p class="text-sm text-slate-500 dark:text-slate-400">
-              🚀 <span class="font-medium">Coming soon:</span> Create your own mAIner and start AI mining!
+              🚀 <span class="font-medium">Coming soon:</span> More public sales to create your own mAIner and start AI mining!
             </p>
             
             <!-- Notification signup hint -->
@@ -1530,7 +1530,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
                 </svg>
 
-              <span class="text-xs font-medium text-blue-700 dark:text-blue-300">Stay tuned for launch updates</span>
+              <span class="text-xs font-medium text-blue-700 dark:text-blue-300">Stay tuned for updates</span>
             </div>
           </div>
           
@@ -1570,13 +1570,13 @@
           <div class="space-y-3 sm:space-y-4">
             <div class="flex flex-col items-center text-center space-y-2">
               <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 text-white backdrop-blur-sm">
-                Limited time
+                Limited expansion sale
               </div>
               <h3 class="text-lg sm:text-xl lg:text-2xl font-bold text-white drop-shadow-sm">Whitelist phase active</h3>
             </div>
             
             <div class="text-white/90 text-sm sm:text-base leading-relaxed max-w-md mx-auto space-y-2">
-              <p class="font-semibold text-base sm:text-lg">🎉 Exclusive access available!</p>
+              <p class="font-semibold text-base sm:text-lg">🎉 Exclusive access for whitelist members!</p>
               <p>Connect your wallet to see available whitelist mAIners and take advantage of special pricing.</p>
             </div>
             
@@ -1598,7 +1598,7 @@
             <div class="text-xs text-white/80 bg-white/15 backdrop-blur-sm rounded-xl px-3 py-2 border border-white/20 shadow-sm">
               <div class="flex items-center justify-center space-x-2">
                 <span class="text-sm">💡</span>
-                <span class="font-medium">Get early access to mAIners with exclusive whitelist pricing</span>
+                <span class="font-medium">Get access to mAIners with exclusive whitelist pricing</span>
               </div>
             </div>
           </div>
