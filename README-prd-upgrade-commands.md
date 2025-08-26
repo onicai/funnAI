@@ -107,9 +107,9 @@ dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE deriveNewMainerAgen
 dfx canister --network $NETWORK call game_state_canister getGameStateThresholdsAdmin
 
 dfx canister --network $NETWORK call game_state_canister setGameStateThresholdsAdmin '( record {
-        thresholdMaxOpenSubmissions = 140 : nat;
-        thresholdMaxOpenChallenges= 5 : nat;
         thresholdArchiveClosedChallenges = 140 : nat;
+        thresholdMaxOpenChallenges = 6 : nat;
+        thresholdMaxOpenSubmissions = 140 : nat;
         thresholdScoredResponsesPerChallenge = 27 : nat;
     }
 )'
