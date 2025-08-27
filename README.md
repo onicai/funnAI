@@ -305,7 +305,7 @@ dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdArchiveClosedChallenges = 140 : nat;
         thresholdMaxOpenChallenges = 6 : nat;
         thresholdMaxOpenSubmissions = 140 : nat;
-        thresholdScoredResponsesPerChallenge = 27 : nat;
+        thresholdScoredResponsesPerChallenge = 30 : nat;
     }
 )' --network $NETWORK
 ```
@@ -322,7 +322,7 @@ dfx canister call game_state_canister getNumArchivedSubmissionsAdmin --network $
 dfx canister call game_state_canister archiveSubmissionsAdmin --network $NETWORK
 dfx canister call game_state_canister cleanSubmissionsAdmin --network $NETWORK
 dfx canister call game_state_canister getNumSubmissionsToMigrateAdmin --network $NETWORK
-dfx canister call game_state_canister setNumSubmissionsToMigrateAdmin '100' --network $NETWORK
+dfx canister call game_state_canister setNumSubmissionsToMigrateAdmin '100' --network $NETWORK # 3000 is the max (due to message size limit)
 dfx canister call game_state_canister migrateSubmissionsAdmin --network $NETWORK
 # Winner declarations
 dfx canister call game_state_canister migrateWinnerDeclarationsAdmin 'vec { "challengeIdsToMigrate"; "" }' --network $NETWORK
