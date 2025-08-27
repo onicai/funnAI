@@ -103,6 +103,9 @@ dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getPauseProtocolFla
 echo $MAINER_SHARE_AGENT_0001
 dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE deriveNewMainerAgentCanisterWasmHashAdmin "(record {address=\"$MAINER_SHARE_AGENT_0001\"; textNote=\"First protocol upgrade\"})"
 
+# If needed, initialize the openSubmissionsQueue 
+dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE initializeOpenSubmissionsQueueFromStorage
+
 # Update the protocol thresholds, if needed.
 dfx canister --network $NETWORK call game_state_canister getGameStateThresholdsAdmin
 
