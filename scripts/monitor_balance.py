@@ -7,32 +7,11 @@ import os
 from collections import defaultdict
 from dotenv import dotenv_values
 
-from .monitor_common import get_canisters, ensure_log_dir
+from .monitor_common import get_canisters, ensure_log_dir, get_balance
 from datetime import datetime, timezone
 
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
-
-def get_balance(canister_id, network):
-    """Fetch cycles balance using dfx for a given canister."""
-    try:
-        output = subprocess.check_output(
-            ["dfx", "canister", "status", canister_id, "--network", network],
-            stderr=subprocess.DEVNULL,
-            text=True
-        )
-        
-        # Extract balance from the output
-        balance = None
-        for line in output.split('\n'):
-            if line.startswith('Balance:'):
-                balance_string = line.split(':')[1].strip().split()[0]  
-                balance = int(balance_string)
-                break
-        return balance
-    except subprocess.CalledProcessError:
-        print(f"ERROR: Unable to fetch balance for canister {canister_id} on network {network}")
-        return []
 
 def main(network, canister_types):
     (CANISTERS, CANISTER_COLORS, RESET_COLOR) = get_canisters(network, canister_types)

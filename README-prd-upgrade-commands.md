@@ -103,6 +103,9 @@ dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getPauseProtocolFla
 echo $MAINER_SHARE_AGENT_0001
 dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE deriveNewMainerAgentCanisterWasmHashAdmin "(record {address=\"$MAINER_SHARE_AGENT_0001\"; textNote=\"First protocol upgrade\"})"
 
+# If needed, initialize the openSubmissionsQueue 
+dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE initializeOpenSubmissionsQueueFromStorage
+
 # Update the protocol thresholds, if needed.
 dfx canister --network $NETWORK call game_state_canister getGameStateThresholdsAdmin
 
@@ -198,7 +201,7 @@ dfx canister --network $NETWORK call   $SUBNET_0_1_JUDGE health
 
 # Test the new endpoints to manage the deployed LLMs
 # Get the LLMs currently in use > Remove > check > Add > check
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --output json
 echo "SUBNET_1_1_JUDGE_LLM_0: $SUBNET_1_1_JUDGE_LLM_0"
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    remove_llm_canister "(record {canister_id = \"$SUBNET_1_1_JUDGE_LLM_0\"})"
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters
@@ -274,9 +277,9 @@ dfx canister --network $NETWORK snapshot load $SUBNET_0_1_JUDGE         <snapsho
 
 --------------------------------------------------------
 
-# Update LLMs
+# Clean or Update LLMs
 
-LLM updates or new additions can be done without pausing the protocol.
+Cleaning, updating or adding LLMs can be done without pausing the protocol.
 
 We create, update & manage the LLMs from these folders:
 - `PoAIW/llms/Challenger`
@@ -415,9 +418,34 @@ In these folders, the following files are used by dfx:
         fi
         ```
 
-## LLMs - Upgrade, cleanup, configure & test
+## Upgrade an existing LLM, including offline cleaning
 
-LLMs are upgraded & cleaned while they are offline.
+```bash
+    # Takes the LLM offline, upgrades it, tests it, and puts it back online
+    # Script will pause to ask for confirmation a couple of times
+    scripts/upgrade_llms.sh --network $NETWORK [--canister-id <canister-id>]
+```
+
+## Cleaning an existing LLMs
+
+### While the LLM is still online
+
+```bash
+    sscripts/cleanup_llm_promptcache_live.sh --network $NETWORK [--canister-id <canister-id>]
+```
+
+### While the LLM is offline
+
+This script is used by `scripts/upgrade_llms.sh` which takes the LLM offline first:
+
+```bash
+    sscripts/cleanup_llm_promptcache.sh --network $NETWORK [--canister-id <canister-id>]
+```
+
+
+---
+
+If you want to do it all manually, follow these steps:
 
 ```bash
     # set proper environment variables
@@ -556,9 +584,13 @@ LLMs are upgraded & cleaned while they are offline.
     dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numJudgeLlms = opt ($NUM_LLMS_DEPLOYED : nat);})" 
 ```
 
-## Delete the snapshot
+## Delete snapshots
 
 ```bash
+    # We have a script to delete ALL snapshots for either ALL canisters or a specified canister-id
+    scripts/delete_snapshots.sh --network $NETWORK [--canister-id <canister-id>]
+
+    # You can do it manually with:
     LLM="<canister-id>"
     # list & delete the snapshot
     dfx canister --network $NETWORK snapshot list   $LLM

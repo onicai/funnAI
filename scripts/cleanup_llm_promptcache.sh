@@ -1,11 +1,5 @@
 #!/bin/bash
 
-#######################################################################
-# run from parent folder as:
-# scripts/log.sh --network [local|ic]
-#######################################################################
-
-# Default network type is local
 NETWORK_TYPE="local"
 
 # Parse command line arguments for network type
