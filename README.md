@@ -303,16 +303,33 @@ dfx canister call game_state_canister getGameStateThresholdsAdmin --output json 
 
 dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdArchiveClosedChallenges = 140 : nat;
-        thresholdMaxOpenChallenges= 5 : nat;
+        thresholdMaxOpenChallenges = 6 : nat;
         thresholdMaxOpenSubmissions = 140 : nat;
-        thresholdScoredResponsesPerChallenge = 33 : nat;
+        thresholdScoredResponsesPerChallenge = 30 : nat;
     }
 )' --network $NETWORK
 ```
 
-# Manually migrate archived challenges to the Archive canister
+# Manually migrate data to the Archive canister
 ```bash
+# Archived challenges
 dfx canister call game_state_canister migrateArchivedChallengesAdmin --network $NETWORK
+# Submissions
+dfx canister call game_state_canister getNumSubmissionsAdmin --output json --network $NETWORK
+dfx canister call game_state_canister getNumOpenSubmissionsAdmin --output json --network $NETWORK
+dfx canister call game_state_canister getNumOpenSubmissionsForOpenChallengesAdmin --output json --network $NETWORK
+dfx canister call game_state_canister getNumArchivedSubmissionsAdmin --network $NETWORK
+dfx canister call game_state_canister archiveSubmissionsAdmin --network $NETWORK
+dfx canister call game_state_canister cleanSubmissionsAdmin --network $NETWORK
+dfx canister call game_state_canister getNumSubmissionsToMigrateAdmin --network $NETWORK
+dfx canister call game_state_canister setNumSubmissionsToMigrateAdmin '100' --network $NETWORK # 3000 is the max (due to message size limit)
+dfx canister call game_state_canister migrateSubmissionsAdmin --network $NETWORK
+# Winner declarations
+dfx canister call game_state_canister migrateWinnerDeclarationsAdmin 'vec { "challengeIdsToMigrate"; "" }' --network $NETWORK
+# Scored responses
+dfx canister call game_state_canister getScoredChallengesAdmin --output json --network $NETWORK
+dfx canister call game_state_canister getNumScoredChallengesAdmin --output json --network $NETWORK
+dfx canister call game_state_canister migrateScoredResponsesForChallengeAdmin '"challengeIdToMigrate"' --output json --network $NETWORK
 ```
 
 # Manually backup mAIners to the Archive canister
