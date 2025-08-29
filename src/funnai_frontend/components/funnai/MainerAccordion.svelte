@@ -1510,7 +1510,7 @@
                 <span class="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Whitelist Sale Opens</span>
               </div>
               <div class="text-2xl sm:text-3xl font-bold text-emerald-700 dark:text-emerald-300 mb-1">
-                August 24
+                September 01
               </div>
               <p class="text-xs text-emerald-600 dark:text-emerald-400">
                 Mark your calendar!
