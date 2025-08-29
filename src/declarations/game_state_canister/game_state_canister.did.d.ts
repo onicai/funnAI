@@ -558,6 +558,7 @@ export interface GameStateCanister {
     [],
     ChallengeResponseSubmissionsResult
   >,
+  'getOpenSubmissionsQueueSizeAdmin' : ActorMethod<[], NatResult>,
   'getPauseProtocolFlag' : ActorMethod<[], FlagResult>,
   'getPauseWhitelistMainerCreationFlag' : ActorMethod<[], FlagResult>,
   'getPriceForOwnMainer' : ActorMethod<[], PriceResult>,
@@ -604,6 +605,7 @@ export interface GameStateCanister {
   'getWhitelistPriceForOwnMainer' : ActorMethod<[], PriceResult>,
   'getWhitelistPriceForShareAgent' : ActorMethod<[], PriceResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
+  'initializeOpenSubmissionsQueueAdmin' : ActorMethod<[], AuthRecordResult>,
   'migrateArchivedChallengesAdmin' : ActorMethod<[], NatResult>,
   'migrateScoredResponsesForChallengeAdmin' : ActorMethod<
     [string],
