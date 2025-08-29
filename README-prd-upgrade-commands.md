@@ -101,10 +101,11 @@ dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getPauseProtocolFla
 
 # Update the wasm-hash, using the Admin owned test mAIner ShareAgent
 echo $MAINER_SHARE_AGENT_0001
-dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE deriveNewMainerAgentCanisterWasmHashAdmin "(record {address=\"$MAINER_SHARE_AGENT_0001\"; textNote=\"First protocol upgrade\"})"
+dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE deriveNewMainerAgentCanisterWasmHashAdmin "(record {address=\"$MAINER_SHARE_AGENT_0001\"; textNote=\"Protocol upgrade\"})"
 
-# If needed, initialize the openSubmissionsQueue 
-dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE initializeOpenSubmissionsQueueFromStorage
+# If needed, initialize the openSubmissionsQueue. 
+# Tyically not needed. Was created during introduction of new openSubmissionsQueue
+dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE initializeOpenSubmissionsQueueAdmin
 
 # Update the protocol thresholds, if needed.
 dfx canister --network $NETWORK call game_state_canister getGameStateThresholdsAdmin
@@ -187,7 +188,7 @@ echo $NETWORK
 dfx deploy --network $NETWORK judge_ctrlb_canister --mode upgrade
 
 # Upgrade failed, so we did a reinstall
-# -> All other steps remain the same.
+# -> WHEN REINSTALLING, THE LMMs need to be registered again! See step below
 dfx deploy --network $NETWORK judge_ctrlb_canister --mode reinstall
 
 # start the Judge canister back up
@@ -195,8 +196,7 @@ dfx canister --network $NETWORK start  $SUBNET_0_1_JUDGE
 dfx canister --network $NETWORK status $SUBNET_0_1_JUDGE     | grep Status
 dfx canister --network $NETWORK call   $SUBNET_0_1_JUDGE health
 
-# fill the LLM data storage - No longer needed. Is in stable storage
-# -> Run it in case a reinstall is needed
+# WHEN REINSTALLED, re-register the LLMs
 # scripts/register-llms.sh --network $NETWORK
 
 # Test the new endpoints to manage the deployed LLMs
