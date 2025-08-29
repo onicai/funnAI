@@ -20,6 +20,7 @@ def reset_challenge_queue(canister_id, network):
     """Reset challenge queue for mAIner."""
     global mainersWithQueueCounter
     global resetcounter
+
     try:
         print(f"Getting challengeQueue for the mAIner {canister_id} on network {network}...")
         result = subprocess.check_output(
@@ -40,6 +41,7 @@ def reset_challenge_queue(canister_id, network):
                     check=True,
                     text=True
                 )
+
                 resetcounter += 1
             elif len(challenge_queue) > 1:
                 print(f"  {canister_id} has {len(challenge_queue)} challenges in the queue.")
@@ -73,4 +75,5 @@ if __name__ == "__main__":
         help="Specify the network to use (default: local)",
     )
     args = parser.parse_args()
+
     main(args.network)
