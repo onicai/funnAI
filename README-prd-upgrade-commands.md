@@ -10,6 +10,7 @@ echo " "
 echo "Using network type: $NETWORK"
 
 source scripts/canister_ids-$NETWORK.env
+source scripts/canister_ids_mainers-$NETWORK.env
 
 echo " "
 echo "SUBNET_0_1_GAMESTATE          : $SUBNET_0_1_GAMESTATE"
@@ -31,6 +32,21 @@ source scripts/canister_ids_mainers-$NETWORK.env
 echo "MAINER_SHARE_AGENT_0001       : $MAINER_SHARE_AGENT_0001"
 ```
 
+# stop timers of protocol canisters
+
+In this order:
+
+```bash
+# Verify correct network !
+echo $NETWORK
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    stopTimerExecutionAdmin
+# wait a couple of minutes..
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE stopTimerExecutionAdmin
+# wait a couple of minutes..
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         stopTimerExecutionAdmin
+# wait a couple of minutes.. -> pause is next step
+```
+
 # pause protocol
 
 ```bash
@@ -44,16 +60,6 @@ dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE togglePauseProtocolFl
 ```
 
 Wait until ShareService has nothing left in it's queue.
-
-# stop timers of protocol canisters
-
-```bash
-# Verify correct network !
-echo $NETWORK
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    stopTimerExecutionAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         stopTimerExecutionAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE stopTimerExecutionAdmin
-```
 
 # stop protocol canisters
 
@@ -164,14 +170,11 @@ dfx canister --network $NETWORK call   $SUBNET_0_1_CHALLENGER getIsGeneratingCha
 # -> Run it in case a reinstall is needed
 # scripts/register-llms.sh --network $NETWORK
 
-# Test the new endpoints to manage the deployed LLMs
-# Get the LLMs currently in use > Remove > check > Add > check
+# Verify registered LLMs
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    get_llm_canisters
-echo "SUBNET_1_1_CHALLENGER_LLM_0 : $SUBNET_1_1_CHALLENGER_LLM_0"
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    remove_llm_canister "(record {canister_id = \"$SUBNET_1_1_CHALLENGER_LLM_0\"})"
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    get_llm_canisters
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    add_llm_canister    "(record {canister_id = \"$SUBNET_1_1_CHALLENGER_LLM_0\"})"
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    get_llm_canisters
+
+# Verify timer setting
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getTimerActionRegularityInSecondsAdmin
 ```
 
 # upgrade the ShareService
@@ -189,14 +192,11 @@ dfx canister --network $NETWORK start  $SUBNET_0_1_SHARE_SERVICE
 dfx canister --network $NETWORK status $SUBNET_0_1_SHARE_SERVICE     | grep Status
 dfx canister --network $NETWORK call   $SUBNET_0_1_SHARE_SERVICE health
 
-# Test the new endpoints to manage the deployed LLMs
-# Get the LLMs currently in use > Remove > check > Add > check
-echo "SUBNET_2_1_SHARE_SERVICE_LLM_0: $SUBNET_2_1_SHARE_SERVICE_LLM_0"
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    get_llm_canisters
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    remove_llm_canister "(record {canister_id = \"$SUBNET_2_1_SHARE_SERVICE_LLM_0\"})"
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    get_llm_canisters
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    add_llm_canister    "(record {canister_id = \"$SUBNET_2_1_SHARE_SERVICE_LLM_0\"})"
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    get_llm_canisters
+# Verify registered LLMs
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE get_llm_canisters
+
+# Verify timer setting
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getTimerActionRegularityInSecondsAdmin
 ```
 
 # upgrade the Judge
@@ -217,8 +217,13 @@ dfx canister --network $NETWORK start  $SUBNET_0_1_JUDGE
 dfx canister --network $NETWORK status $SUBNET_0_1_JUDGE     | grep Status
 dfx canister --network $NETWORK call   $SUBNET_0_1_JUDGE health
 
-# WHEN REINSTALLED, re-register the LLMs
-# scripts/register-llms.sh --network $NETWORK
+# THE JUDGE CURRENTLY MUST BE REINSTALLED, so issue these commands:
+# re-register the LLMs, from PoAIW/src/Judge folder
+scripts/register-llms.sh --network $NETWORK
+
+# set the timer
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE getTimerActionRegularityInSecondsAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE setTimerActionRegularityInSecondsAdmin '(15)'
 
 # reset the isProcessingSubmissions flag
 dfx canister --network $NETWORK call   $SUBNET_0_1_JUDGE resetIsProcessingSubmissionsAdmin
@@ -233,19 +238,6 @@ dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    add_llm_canister    "(
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters
 ```
 
-# start timers of protocol canisters
-
-```bash
-# From folder: funnAI
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    startTimerExecutionAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE startTimerExecutionAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         startTimerExecutionAdmin
-
-# If you changed the Challenger timer interval, note it is a stble var.
-# You will need to call setTimerActionRegularityInSecondsAdmin, as in:
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER setTimerActionRegularityInSecondsAdmin '(420)'
-```
-
 # un-pause protocol
 ```bash
 # From folder: funnAI
@@ -255,6 +247,21 @@ dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE togglePauseProtocolFl
 
 # verify
 dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getPauseProtocolFlag
+```
+
+# start timers of protocol canisters
+
+In this order:
+
+```bash
+# From folder: funnAI
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         startTimerExecutionAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE startTimerExecutionAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    startTimerExecutionAdmin
+
+# If you changed the Challenger timer interval, note it is a stble var.
+# You will need to call setTimerActionRegularityInSecondsAdmin, as in:
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER setTimerActionRegularityInSecondsAdmin '(420)'
 ```
 
 # Cleanup the snapshots
