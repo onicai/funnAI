@@ -448,8 +448,12 @@ export const idlFactory = ({ IDL }) => {
     'cyclesGenerateScoreJuctrlJullm' : IDL.Nat,
     'cyclesGenerateResponseSsctrlGs' : IDL.Nat,
   });
-  const ChallengeResponseSubmissionResult = IDL.Variant({
-    'Ok' : ChallengeResponseSubmission,
+  const ChallengeResponseSubmissionWithQueueStatus = IDL.Record({
+    'remainingInQueue' : IDL.Nat,
+    'submission' : ChallengeResponseSubmission,
+  });
+  const ChallengeResponseSubmissionWithQueueStatusResult = IDL.Variant({
+    'Ok' : ChallengeResponseSubmissionWithQueueStatus,
     'Err' : ApiError,
   });
   const OfficialProtocolCanister = IDL.Record({
@@ -843,6 +847,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'archiveSubmissionsAdmin' : IDL.Func([], [NatResult], []),
     'backupMainersAdmin' : IDL.Func([], [NatResult], []),
+    'cleanOpenSubmissionsQueueAdmin' : IDL.Func([], [NatResult], []),
     'cleanSubmissionsAdmin' : IDL.Func([], [AuthRecordResult], []),
     'cleanUnlockedMainerStoragesAdmin' : IDL.Func([], [AuthRecordResult], []),
     'completeMainerSetupForUserAdmin' : IDL.Func(
@@ -949,7 +954,7 @@ export const idlFactory = ({ IDL }) => {
     'getMinimumIcpBalance' : IDL.Func([], [NatResult], ['query']),
     'getNextSubmissionToJudge' : IDL.Func(
         [],
-        [ChallengeResponseSubmissionResult],
+        [ChallengeResponseSubmissionWithQueueStatusResult],
         [],
       ),
     'getNumArchivedChallengesAdmin' : IDL.Func([], [NatResult], ['query']),

@@ -168,10 +168,6 @@ export type ChallengeResponseSubmissionMetadataResult = {
     'Ok' : ChallengeResponseSubmissionMetadata
   } |
   { 'Err' : ApiError };
-export type ChallengeResponseSubmissionResult = {
-    'Ok' : ChallengeResponseSubmission
-  } |
-  { 'Err' : ApiError };
 export type ChallengeResponseSubmissionStatus = { 'Judged' : null } |
   { 'FailedSubmission' : null } |
   { 'Processed' : null } |
@@ -179,6 +175,14 @@ export type ChallengeResponseSubmissionStatus = { 'Judged' : null } |
   { 'Received' : null } |
   { 'Other' : string } |
   { 'Submitted' : null };
+export interface ChallengeResponseSubmissionWithQueueStatus {
+  'remainingInQueue' : bigint,
+  'submission' : ChallengeResponseSubmission,
+}
+export type ChallengeResponseSubmissionWithQueueStatusResult = {
+    'Ok' : ChallengeResponseSubmissionWithQueueStatus
+  } |
+  { 'Err' : ApiError };
 export type ChallengeResponseSubmissionsResult = {
     'Ok' : Array<ChallengeResponseSubmission>
   } |
@@ -461,6 +465,7 @@ export interface GameStateCanister {
   >,
   'archiveSubmissionsAdmin' : ActorMethod<[], NatResult>,
   'backupMainersAdmin' : ActorMethod<[], NatResult>,
+  'cleanOpenSubmissionsQueueAdmin' : ActorMethod<[], NatResult>,
   'cleanSubmissionsAdmin' : ActorMethod<[], AuthRecordResult>,
   'cleanUnlockedMainerStoragesAdmin' : ActorMethod<[], AuthRecordResult>,
   'completeMainerSetupForUserAdmin' : ActorMethod<
@@ -532,7 +537,7 @@ export interface GameStateCanister {
   'getMinimumIcpBalance' : ActorMethod<[], NatResult>,
   'getNextSubmissionToJudge' : ActorMethod<
     [],
-    ChallengeResponseSubmissionResult
+    ChallengeResponseSubmissionWithQueueStatusResult
   >,
   'getNumArchivedChallengesAdmin' : ActorMethod<[], NatResult>,
   'getNumArchivedSubmissionsAdmin' : ActorMethod<[], NatResult>,
