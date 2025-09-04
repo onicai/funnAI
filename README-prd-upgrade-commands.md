@@ -104,8 +104,17 @@ echo $MAINER_SHARE_AGENT_0001
 dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE deriveNewMainerAgentCanisterWasmHashAdmin "(record {address=\"$MAINER_SHARE_AGENT_0001\"; textNote=\"Protocol upgrade\"})"
 
 # If needed, initialize the openSubmissionsQueue. 
-# Tyically not needed. Was created during introduction of new openSubmissionsQueue
+# -> Tyically not needed. Was created during introduction of new openSubmissionsQueue
+# -> Needed if getNumOpenSubmissionsAdmin > 0 , while getNumOpenSubmissionsForOpenChallengesAdmin = 0
 dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE initializeOpenSubmissionsQueueAdmin
+
+dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getNumOpenSubmissionsAdmin
+dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getOpenSubmissionsAdmin
+
+dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getNumOpenSubmissionsForOpenChallengesAdmin
+dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getOpenSubmissionsForOpenChallengesAdmin
+
+dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getOpenSubmissionsQueueSizeAdmin
 
 # Update the protocol thresholds, if needed.
 dfx canister --network $NETWORK call game_state_canister getGameStateThresholdsAdmin
@@ -125,7 +134,7 @@ dfx canister --network $NETWORK call game_state_canister setGameStateThresholdsA
 # - dailySubmissionsAllOwn = (TODO for PowerMainer)
 ```bash
 # verify current settings
-dfx canister --network $NETWORK call game_state_canister getCyclesFlowAdmin
+dfx canister --network $NETWORK call game_state_canister getCyclesFlowAdmin | grep dailySubmissionsAllShare
 
 # set the values, which will trigger a recalculation
 dfx canister --network $NETWORK call game_state_canister setCyclesFlowAdmin '( record { dailySubmissionsAllShare = opt (4752 : nat);})'
@@ -661,3 +670,17 @@ dfx canister --network $NETWORK snapshot list   $MAINER
 dfx canister --network $NETWORK snapshot delete $MAINER <snapshot-id>
 ```
 
+# Troubleshooting
+
+## Judge calls to GameState fail with #Err(Unauthorized)
+
+This happens if you reinstall the judge in the `testing` or `demo` network.
+The default GAME_STATE_CANISTER_ID is for the `prd` network. 
+
+Verify the log file, what canister id is used.
+
+If wrong, set it to the correct value with:
+
+```bash
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE setGameStateCanisterId "(\"$SUBNET_0_1_GAMESTATE\")"
+```
