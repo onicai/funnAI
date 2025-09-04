@@ -264,6 +264,27 @@ dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    startTimerExecuti
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER setTimerActionRegularityInSecondsAdmin '(420)'
 ```
 
+# Add a `release-#` tag to PoAIW git repo
+
+Once deployed and confirmed it is OK, apply a tag:
+
+```bash
+# From folder: PoAIW
+
+# get all the current tags, with their commit sha & description
+git fetch --tags
+git tag -l --format='%(refname:short) -> %(if)%(*objectname)%(then)%(*objectname:short)%(else)%(objectname:short)%(end) %(contents:subject)'
+
+# add the tag, as in this example
+RELEASE_TAG=release-1    # increment
+RELEASE_SHA=6751193      # get with `git log --oneline -5`
+RELEASE_MESSAGE="Release 1: Submission Queue Performance Optimizations"
+git tag -a $RELEASE_TAG $RELEASE_SHA -m "$RELEASE_MESSAGE"
+
+# push it to github
+git push origin $RELEASE_TAG
+```
+
 # Cleanup the snapshots
 
 After a couple of hours, if everything looks good, remove the snapshots to save memory
