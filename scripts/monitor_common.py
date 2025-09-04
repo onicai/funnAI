@@ -1,14 +1,56 @@
 #!/usr/bin/env python3
 
 import subprocess
-import time
+import sys
 import argparse
 import os
+import json
 from collections import defaultdict
 from dotenv import dotenv_values
 
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+
+def get_balance(canister_id, network):
+    """Fetch cycles balance using dfx for a given canister."""
+    try:
+        cmd = ["dfx", "canister", "status", canister_id, "--network", network]
+        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
+        
+        # Extract balance from the output
+        balance = None
+        for line in output.split('\n'):
+            if line.startswith('Balance:'):
+                balance_string = line.split(':')[1].strip().split()[0]  
+                balance = int(balance_string)
+                break
+        
+        if balance is None:
+            print(f"ERROR: Unable to find balance for canister {canister_id} on network {network}")
+            print(f"  {' '.join(cmd)}")
+            print(output)
+
+        return balance
+    except subprocess.CalledProcessError as e:
+        print(f"ERROR occured when calling the subprocess command.")
+        print("Command:", e.cmd)
+        print("Return code:", e.returncode)
+        print("Output:\n", e.output)
+        return None
+
+def run_this_cmd(cmd, cwd, confirm=False):
+    print(f"  {' '.join(cmd)} \n  -> from directory: {cwd}")
+    if not confirm:
+        subprocess.run(cmd, check=True,text=True, cwd=cwd)
+    else:
+        confirm = input(f"  Do you want to run this command? (y/n/quit): ").strip().lower()
+        if confirm in ['y', 'yes']:
+            subprocess.run(cmd, check=True,text=True, cwd=cwd)
+        elif confirm in ['q', 'quit']:
+            print("Upgrade cancelled.")
+            sys.exit(0)
+        else:
+            print("  Command skipped.")
 
 def ensure_log_dir(log_dir):
     """Ensure the logs directory exists."""
@@ -70,6 +112,25 @@ def get_canisters(network, canister_types):
 
     return (CANISTERS, CANISTER_COLORS, RESET_COLOR)
 
+def get_prompt_cache_entries(canister_name, canister_id, network):
+    print(" ")
+    print(f"Getting the content of the .canister_cache folder in the LLM canister {canister_name} ({canister_id}) on network {network}...")
+    try:
+        result = subprocess.check_output(
+            ["dfx", "canister", "call", canister_id, "recursive_dir_content_update", 
+            '(record {dir = ".canister_cache"; max_entries = 0 : nat64})', 
+            "--output", "json", "--network", network],
+            stderr=subprocess.DEVNULL,
+            text=True
+        )
+        data = json.loads(result)
+        entries = data.get('Ok', [])
+        print(f"Found {len(entries)} entries in LLM canister {canister_name} ({canister_id}) on network {network}.")
+        return entries
+    except subprocess.CalledProcessError as e:
+        print(f"Error getting content of .canister_cache in LLM canister {canister_name} ({canister_id}) on network {network}: {e}")
+        return []
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Monitor DFINITY canister logs.")
     parser.add_argument(

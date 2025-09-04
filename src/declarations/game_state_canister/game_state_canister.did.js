@@ -991,6 +991,7 @@ export const idlFactory = ({ IDL }) => {
         [ChallengeResponseSubmissionsResult],
         ['query'],
       ),
+    'getOpenSubmissionsQueueSizeAdmin' : IDL.Func([], [NatResult], ['query']),
     'getPauseProtocolFlag' : IDL.Func([], [FlagResult], ['query']),
     'getPauseWhitelistMainerCreationFlag' : IDL.Func(
         [],
@@ -1071,6 +1072,11 @@ export const idlFactory = ({ IDL }) => {
     'getWhitelistPriceForOwnMainer' : IDL.Func([], [PriceResult], ['query']),
     'getWhitelistPriceForShareAgent' : IDL.Func([], [PriceResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
+    'initializeOpenSubmissionsQueueAdmin' : IDL.Func(
+        [],
+        [AuthRecordResult],
+        [],
+      ),
     'migrateArchivedChallengesAdmin' : IDL.Func([], [NatResult], []),
     'migrateScoredResponsesForChallengeAdmin' : IDL.Func(
         [IDL.Text],

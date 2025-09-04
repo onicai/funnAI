@@ -487,6 +487,7 @@ type GameStateCanister =
    getOpenSubmissionsAdmin: () -> (ChallengeResponseSubmissionsResult) query;
    getOpenSubmissionsForOpenChallengesAdmin: () ->
     (ChallengeResponseSubmissionsResult) query;
+   getOpenSubmissionsQueueSizeAdmin: () -> (NatResult) query;
    getPauseProtocolFlag: () -> (FlagResult) query;
    getPauseWhitelistMainerCreationFlag: () -> (FlagResult) query;
    getPriceForOwnMainer: () -> (PriceResult) query;
@@ -519,6 +520,7 @@ type GameStateCanister =
    getWhitelistPriceForOwnMainer: () -> (PriceResult) query;
    getWhitelistPriceForShareAgent: () -> (PriceResult) query;
    health: () -> (StatusCodeRecordResult) query;
+   initializeOpenSubmissionsQueueAdmin: () -> (AuthRecordResult);
    migrateArchivedChallengesAdmin: () -> (NatResult);
    migrateScoredResponsesForChallengeAdmin: (text) -> (AuthRecordResult);
    migrateSubmissionsAdmin: () -> (AuthRecordResult);
