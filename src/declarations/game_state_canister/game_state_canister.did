@@ -423,6 +423,7 @@ type GameStateCanister =
    addScoredResponse: (ScoredResponseInput) -> (ScoredResponseResult);
    archiveSubmissionsAdmin: () -> (NatResult);
    backupMainersAdmin: () -> (NatResult);
+   cleanOpenSubmissionsQueueAdmin: () -> (NatResult);
    cleanSubmissionsAdmin: () -> (AuthRecordResult);
    cleanUnlockedMainerStoragesAdmin: () -> (AuthRecordResult);
    completeMainerSetupForUserAdmin: (OfficialMainerAgentCanister) ->
@@ -470,7 +471,8 @@ type GameStateCanister =
    getMaxFunnaiTopupCyclesAmount: () -> (NatResult) query;
    getMaxFunnaiTopupCyclesAmountAdmin: () -> (NatResult) query;
    getMinimumIcpBalance: () -> (NatResult) query;
-   getNextSubmissionToJudge: () -> (ChallengeResponseSubmissionResult);
+   getNextSubmissionToJudge: () ->
+    (ChallengeResponseSubmissionWithQueueStatusResult);
    getNumArchivedChallengesAdmin: () -> (NatResult) query;
    getNumArchivedSubmissionsAdmin: () -> (NatResult) query;
    getNumClosedChallengesAdmin: () -> (NatResult) query;
@@ -902,6 +904,16 @@ type ChallengeResponseSubmissionsResult =
    Err: ApiError;
    Ok: vec ChallengeResponseSubmission;
  };
+type ChallengeResponseSubmissionWithQueueStatusResult = 
+ variant {
+   Err: ApiError;
+   Ok: ChallengeResponseSubmissionWithQueueStatus;
+ };
+type ChallengeResponseSubmissionWithQueueStatus = 
+ record {
+   remainingInQueue: nat;
+   submission: ChallengeResponseSubmission;
+ };
 type ChallengeResponseSubmissionStatus = 
  variant {
    FailedSubmission;
@@ -911,11 +923,6 @@ type ChallengeResponseSubmissionStatus =
    Processed;
    Received;
    Submitted;
- };
-type ChallengeResponseSubmissionResult = 
- variant {
-   Err: ApiError;
-   Ok: ChallengeResponseSubmission;
  };
 type ChallengeResponseSubmissionMetadataResult = 
  variant {
