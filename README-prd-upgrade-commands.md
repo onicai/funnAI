@@ -117,6 +117,18 @@ dfx canister --network $NETWORK call game_state_canister setGameStateThresholdsA
         thresholdScoredResponsesPerChallenge = 33 : nat;
     }
 )'
+
+# Update the CyclesFlow variables if needed: 
+# - dailySubmissionsAllShare = 6 * 24 = 144  (6 per hour)
+# - dailySubmissionsAllShare = dailyChallenges * thresholdScoredResponsesPerChallenge
+#                            = 144 * 33 = 4,752
+# - dailySubmissionsAllOwn = (TODO for PowerMainer)
+```bash
+# verify current settings
+dfx canister --network $NETWORK call game_state_canister getCyclesFlowAdmin
+
+# set the values, which will trigger a recalculation
+dfx canister --network $NETWORK call game_state_canister setCyclesFlowAdmin '( record { dailySubmissionsAllShare = opt (4752 : nat);})'
 ```
 
 # upgrade the Challenger
@@ -199,6 +211,9 @@ dfx canister --network $NETWORK call   $SUBNET_0_1_JUDGE health
 # WHEN REINSTALLED, re-register the LLMs
 # scripts/register-llms.sh --network $NETWORK
 
+# reset the isProcessingSubmissions flag
+dfx canister --network $NETWORK call   $SUBNET_0_1_JUDGE resetIsProcessingSubmissionsAdmin
+
 # Test the new endpoints to manage the deployed LLMs
 # Get the LLMs currently in use > Remove > check > Add > check
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --output json
@@ -252,7 +267,7 @@ dfx canister --network $NETWORK snapshot list   $SUBNET_0_1_JUDGE
 dfx canister --network $NETWORK snapshot delete $SUBNET_0_1_JUDGE         <snapshot-id> 
 ```
 
-# HOW TO ROLL BACK IN CASE OF ISSUES
+# Load a snapshot to ROLL BACK
 
 Use the snapshots to roll back everything
 
@@ -277,9 +292,9 @@ dfx canister --network $NETWORK snapshot load $SUBNET_0_1_JUDGE         <snapsho
 
 --------------------------------------------------------
 
-# Clean or Update LLMs
+# Deploy or Upgrade LLMs
 
-Cleaning, updating or adding LLMs can be done without pausing the protocol.
+Deploying or upgrading LLMs is done without pausing the protocol.
 
 We create, update & manage the LLMs from these folders:
 - `PoAIW/llms/Challenger`
@@ -418,6 +433,49 @@ In these folders, the following files are used by dfx:
         fi
         ```
 
+## Add new LLM to the protocol
+
+### For Challenger
+```bash
+    LLM="<canister-id>"
+    # Add it to the Challenger ctrlb canister
+    dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    get_llm_canisters --output json
+    dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    add_llm_canister "(record {canister_id = \"$LLM\"})"
+    dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    get_llm_canisters --output json
+
+    # update GameState cycle cost calculations
+    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numChallengerLlms
+    NUM_LLMS_DEPLOYED=....
+    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numChallengerLlms = opt ($NUM_LLMS_DEPLOYED : nat);})" 
+```
+
+### For ShareService
+```bash
+    LLM="<canister-id>"
+    # Add it to the ShareService ctrlb canister
+    dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    get_llm_canisters --output json
+    dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    add_llm_canister "(record {canister_id = \"$LLM\"})"
+    dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    get_llm_canisters --output json
+
+    # update GameState cycle cost calculations
+    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numShareServiceLlms
+    NUM_LLMS_DEPLOYED=....
+    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numShareServiceLlms = opt ($NUM_LLMS_DEPLOYED : nat);})" 
+```
+
+### For Judge
+```bash
+    LLM="<canister-id>"
+    # Add it to the Judge ctrlb canister
+    dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    add_llm_canister "(record {canister_id = \"$LLM\"})"
+    dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --output json
+
+    # update GameState cycle cost calculations
+    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numJudgeLlms
+    NUM_LLMS_DEPLOYED=...
+    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numJudgeLlms = opt ($NUM_LLMS_DEPLOYED : nat);})" 
+```
+
 ## Upgrade an existing LLM, including offline cleaning
 
 ```bash
@@ -426,15 +484,23 @@ In these folders, the following files are used by dfx:
     scripts/upgrade_llms.sh --network $NETWORK [--canister-id <canister-id>]
 ```
 
-## Cleaning an existing LLMs
+# Cleaning LLMs (prompt cache files)
 
-### While the LLM is still online
+## Using a daily task
+
+The cleaning of the LLMs is now done automatically via a periodic task.
+
+## Manually, while the LLM is still online
+
+This approach is deprecated.
 
 ```bash
     sscripts/cleanup_llm_promptcache_live.sh --network $NETWORK [--canister-id <canister-id>]
 ```
 
-### While the LLM is offline
+## Manually, while the LLM is offline
+
+This approach is deprecated.
 
 This script is used by `scripts/upgrade_llms.sh` which takes the LLM offline first:
 
@@ -541,53 +607,11 @@ If you want to do it all manually, follow these steps:
 
 ```
 
-## Add LLM to the protocol
 
-### For Challenger
-```bash
-    LLM="<canister-id>"
-    # Add it to the Challenger ctrlb canister
-    dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    get_llm_canisters --output json
-    dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    add_llm_canister "(record {canister_id = \"$LLM\"})"
-    dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    get_llm_canisters --output json
-
-    # update GameState cycle cost calculations
-    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numChallengerLlms
-    NUM_LLMS_DEPLOYED=....
-    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numChallengerLlms = opt ($NUM_LLMS_DEPLOYED : nat);})" 
-```
-
-### For ShareService
-```bash
-    LLM="<canister-id>"
-    # Add it to the ShareService ctrlb canister
-    dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    get_llm_canisters --output json
-    dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    add_llm_canister "(record {canister_id = \"$LLM\"})"
-    dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    get_llm_canisters --output json
-
-    # update GameState cycle cost calculations
-    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numShareServiceLlms
-    NUM_LLMS_DEPLOYED=....
-    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numShareServiceLlms = opt ($NUM_LLMS_DEPLOYED : nat);})" 
-```
-
-### For Judge
-```bash
-    LLM="<canister-id>"
-    # Add it to the Judge ctrlb canister
-    dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    add_llm_canister "(record {canister_id = \"$LLM\"})"
-    dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --output json
-
-    # update GameState cycle cost calculations
-    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numJudgeLlms
-    NUM_LLMS_DEPLOYED=...
-    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numJudgeLlms = opt ($NUM_LLMS_DEPLOYED : nat);})" 
-```
-
-## Delete snapshots
+# Delete snapshots
 
 ```bash
-    # We have a script to delete ALL snapshots for either ALL canisters or a specified canister-id
+    # We have a script to delete ALL snapshots for either ALL protocol canisters or a specified canister-id
     scripts/delete_snapshots.sh --network $NETWORK [--canister-id <canister-id>]
 
     # You can do it manually with:
@@ -598,3 +622,42 @@ If you want to do it all manually, follow these steps:
     # verify memory
     dfx canister --network $NETWORK status $llm | grep "Memory Size"
 ```
+
+# Upgrade a mAIner
+
+An individual mAIner agent can be upgraded with the following commands:
+
+```bash
+NETWORK=prd
+source scripts/canister_ids-$NETWORK.env
+MAINER="<canister-id>"
+
+echo NETWORK = $NETWORK
+echo SUBNET_0_1_MAINER_CREATOR = $SUBNET_0_1_MAINER_CREATOR
+echo MAINER  = $MAINER
+
+# first check the logs, and make sure the mAIner is not doing anything
+dfx canister --network $NETWORK logs $MAINER --follow
+
+# monitor the mAInerCreator
+dfx canister --network $NETWORK logs $SUBNET_0_1_MAINER_CREATOR --follow
+
+# stop the mAIner > snapshot it > start it > upgrade
+# mAIner must be running during upgrade for the configuration steps
+dfx canister --network $NETWORK stop $MAINER
+dfx canister --network $NETWORK snapshot create $MAINER
+dfx canister --network $NETWORK start $MAINER
+dfx canister --network $NETWORK call game_state_canister upgradeMainerControllerAdmin "(record {canisterAddress = \"$MAINER\" })"
+
+# verify everything looks good (timer should have been restarted)
+dfx canister --network $NETWORK logs $MAINER
+
+# if it does not look good, restore the snapshot
+dfx canister --network $NETWORK snapshot list $MAINER
+dfx canister --network $NETWORK snapshot load $MAINER <snapshot-id>
+
+# if all good, delete the snapshot
+dfx canister --network $NETWORK snapshot list   $MAINER
+dfx canister --network $NETWORK snapshot delete $MAINER <snapshot-id>
+```
+
