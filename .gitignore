@@ -139,3 +139,6 @@ secret/
 
 # whitelist analysis output (contains sensitive user data)
 funnai_accounts/
+
+# claude code
+CLAUDE.md

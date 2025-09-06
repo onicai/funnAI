@@ -44,23 +44,34 @@ def get_mainers(network):
     except subprocess.CalledProcessError:
         print(f"ERROR: Unable to get mAiners from game_state_canister on network {network}")
 
+def get_mainers_for_user(network, user):
+    """Get mainers for a specific user from gamestate."""
+    mainers = get_mainers(network)
+    if not mainers:
+        return []
+    
+    return [mainer for mainer in mainers if (mainer.get('address','') != '' and mainer.get('ownedBy', '') == user)]
+
 def main(network, user):
     print("----------------------------------------------")
-    mainers = get_mainers(network)
-    if not mainers or len(mainers) == 0:
-        print(f"No mainers found for the specified network {network}.")
-        return
     
-    # Open .env file and write header comment
+    # Get mainers based on user parameter
     if user == "all" or user is None:
+        mainers = get_mainers(network)
         env_file_path = os.path.join(SCRIPT_DIR, f"canister_ids_mainers-{network}.env")
     else:
-        mainers = [mainer for mainer in mainers if (mainer.get('address','') != '' and mainer.get('ownedBy', '') == user)]
+        mainers = get_mainers_for_user(network, user)
         if not mainers:
             print(f"No mainers found for user '{user}' on network '{network}'")
             return
         print(f"Found {len(mainers)} mainers for user '{user}' on network '{network}'")
+        for mainer in mainers:
+            print(f"  - {mainer.get('address', 'N/A')}")
         env_file_path = os.path.join(SCRIPT_DIR, f"canister_ids_mainers-{network}-{user}.env")
+    
+    if not mainers or len(mainers) == 0:
+        print(f"No mainers found for the specified network {network}.")
+        return
     
     print("----------------------------------------------")
     # Print the summary of ICP to XDR conversion
