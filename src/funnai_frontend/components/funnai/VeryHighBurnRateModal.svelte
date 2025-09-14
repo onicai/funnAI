@@ -62,8 +62,8 @@
   let balance: bigint = BigInt(0);
   let tokenFee: bigint = BigInt(1); // FUNNAI fee
   
-  // Check if user has enough FUNNAI balance
-  $: hasEnoughBalance = funnaiToken && balance >= (BURN_AMOUNT_BIGINT + tokenFee);
+  // Check if user has enough FUNNAI balance (no fee required for burning)
+  $: hasEnoughBalance = funnaiToken && balance >= BURN_AMOUNT_BIGINT;
   $: canSubmit = hasEnoughBalance && !isValidating && funnaiToken;
   
   // Load balance when FUNNAI token is available
@@ -120,9 +120,7 @@
         throw new Error("Game state canister not available for FUNNAI operations");
       }
 
-      // Use the proper FUNNAI token fee instead of 0
-      const burnTokenFee = tokenFee; // Use the actual FUNNAI fee
-      
+      // For burning tokens, omit the fee parameter entirely - the ledger handles this automatically
       // Transfer FUNNAI tokens to the Protocol's account (same logic as top-up)
       // The backend will handle this as a burn for enabling Very High burn rate
       const result = await IcrcService.transfer(
@@ -130,7 +128,7 @@
         protocolAddress,  // Use protocol address from token_helpers
         BURN_AMOUNT_BIGINT,
         {
-          fee: burnTokenFee,
+          // No fee parameter for burning operations
           // Include the memo for transactions to the Protocol
           memo: MEMO_PAYMENT_PROTOCOL
         }
@@ -172,13 +170,25 @@
           mainerAgent: cleanMainerAgent,
         };
 
-        // Create the backend promise for FUNNAI burn to enable Very High burn rate
-        // We'll use the FUNNAI top-up endpoint as it handles FUNNAI burning
+        // Create the backend promise to update the mAIner agent settings to Very High burn rate
         let backendPromise: Promise<any>;
-        if (!$store.gameStateCanisterActor) {
-          throw new Error("Game state canister not available");
-        };
-        backendPromise = $store.gameStateCanisterActor.topUpCyclesForMainerAgentWithFunnai(burnInput);
+        
+        // Get the mAIner actor to call updateAgentSettings directly
+        const actorIndex = $store.userMainerAgentCanistersInfo.findIndex(agent => agent.address === canisterId);
+        if (actorIndex < 0) {
+          throw new Error("mAIner agent actor not found");
+        }
+        
+        const agentActor = $store.userMainerCanisterActors[actorIndex];
+        if (!agentActor) {
+          throw new Error("mAIner agent actor not available");
+        }
+        
+        // Prepare the burn rate setting for Very High
+        const burnRateSetting = { cyclesBurnRate: { VeryHigh: null } };
+        
+        // Create the backend promise to update agent settings
+        backendPromise = agentActor.updateAgentSettings(burnRateSetting);
 
         // Close modal immediately and pass promise to parent
         onSuccess(txId, canisterId, backendPromise);
@@ -232,12 +242,14 @@
           <div class="flex-1">
             <h3 class="text-lg font-bold text-red-900 dark:text-red-100 mb-2">Unlock Maximum Performance</h3>
             <p class="text-sm text-red-800 dark:text-red-200 mb-3">
-              Activate the <span class="font-bold">Very High</span> burn rate for ultimate AI performance. This requires burning <span class="font-bold">1 FUNNAI</span> token as a commitment to high-intensity usage.
+              Activate <span class="font-bold">Very High</span> burn rate (≈6T cycles/day) by burning <span class="font-bold">{BURN_AMOUNT} FUNNAI</span> token.
             </p>
-            <div class="bg-red-100 dark:bg-red-800/30 rounded-md p-2">
-              <p class="text-xs text-red-700 dark:text-red-300 font-medium">
-                ⚡ Very High: ~15-20T cycles/day - Maximum AI response speed and capability
-              </p>
+            <div class="flex justify-between items-center bg-red-100 dark:bg-red-800/30 rounded-md p-2">
+              <span class="text-xs text-red-700 dark:text-red-300 font-medium pr-1">🔥</span>
+              <span class="text-xs text-red-600/80 dark:text-red-300/80">
+                <span class="text-xs text-red-700 dark:text-red-300 font-medium">Permanent Burn</span><br/>
+                Burns {BURN_AMOUNT} FUNNAI token to unlock Very High performance tier.
+              </span>
             </div>
           </div>
         </div>
@@ -294,32 +306,14 @@
             </div>
           </div>
           <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-            Temporary testing amount - reduced from 100 to 1 FUNNAI
-          </div>
-        </div>
-        
-        <!-- Burn Info Display -->
-        <div class="p-2 sm:p-3 rounded-lg bg-orange-50 border border-orange-200 text-orange-800 text-xs sm:text-sm flex flex-col gap-2 dark:bg-orange-900/20 dark:border-orange-800/30 dark:text-orange-200">
-          <div class="flex items-center gap-1">
-            <Flame size={12} class="sm:hidden flex-shrink-0" />
-            <Flame size={14} class="hidden sm:block flex-shrink-0" />
-            <span class="font-medium">Burn Transaction</span>
-          </div>
-          
-          <div class="flex justify-between items-center gap-2">
-            <span class="truncate">Burning: {BURN_AMOUNT} FUNNAI</span>
-            <span class="font-medium text-right flex-shrink-0">🔥 Permanent Burn</span>
-          </div>
-          
-          <div class="text-orange-600/80 dark:text-orange-300/80 text-xs">
-            Testing mode: Burns only 1 FUNNAI token to unlock Very High performance tier.
+            Required amount to unlock Very High burn rate
           </div>
         </div>
 
         <!-- Balance Check -->
         {#if !hasEnoughBalance && funnaiToken}
           <div class="mt-1 p-2 rounded bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-400">
-            Insufficient FUNNAI balance. You need {formatBalance((BURN_AMOUNT_BIGINT + tokenFee).toString(), funnaiToken.decimals)} FUNNAI (including fees) but only have {formatBalance(balance.toString(), funnaiToken.decimals)} FUNNAI.
+            Insufficient FUNNAI balance. You need {formatBalance(BURN_AMOUNT_BIGINT.toString(), funnaiToken.decimals)} FUNNAI (fees handled automatically for burning) but only have {formatBalance(balance.toString(), funnaiToken.decimals)} FUNNAI.
           </div>
         {/if}
 

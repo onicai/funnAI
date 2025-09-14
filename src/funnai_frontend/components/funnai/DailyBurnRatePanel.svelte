@@ -312,17 +312,35 @@
   async function handleVeryHighSuccess(txId: string, canisterId: string, backendPromise: Promise<any>) {
     console.log('Very High burn rate activation initiated:', txId);
     
+    // Add this agent to the updating set to show loading state
+    agentsBeingUpdated.add(agent.id);
+    agentsBeingUpdated = agentsBeingUpdated; // Trigger reactivity
+    
     try {
-      // Wait for the backend to process the FUNNAI burn
+      // Wait for the backend to process the updateAgentSettings call
       await backendPromise;
       
-      // Now activate the Very High burn rate setting
-      await updateAgentBurnRate('VeryHigh', agent);
+      // Store the update time for fallback tracking
+      const storageKey = `lastBurnRateUpdate_${agent.id}`;
+      localStorage.setItem(storageKey, Date.now().toString());
+      
+      // Re-check eligibility to get accurate backend timing
+      await checkUpdateEligibility();
+      
+      // Update the local agent state to show VeryHigh immediately
+      agent.cyclesBurnRateSetting = 'VeryHigh';
+      
+      // Notify parent to refresh the agents list
+      dispatch('burnRateUpdated');
       
       console.log('Very High burn rate successfully activated for agent:', canisterId);
     } catch (error) {
       console.error('Error activating Very High burn rate:', error);
       // You might want to show an error message to the user here
+    } finally {
+      // Remove from updating set after processing
+      agentsBeingUpdated.delete(agent.id);
+      agentsBeingUpdated = agentsBeingUpdated; // Trigger reactivity
     }
   }
 </script>
