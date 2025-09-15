@@ -20,6 +20,10 @@
       "main": "PoAIW/src/GameState/src/Main.mo",
       "type": "motoko"
     },
+    "api_canister": {
+      "main": "PoAIW/src/Api/src/Main.mo",
+      "type": "motoko"
+    },
     "mainer_ctrlb_canister": {
       "main": "PoAIW/src/mAIner/src/Main.mo",
       "type": "motoko"
