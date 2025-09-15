@@ -1,34 +1,16 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { Bar } from 'svelte-chartjs';
-  import {
-    Chart as ChartJS,
-    Title,
-    Tooltip,
-    Legend,
-    BarElement,
-    LinearScale,
-    CategoryScale
-  } from 'chart.js';
   import { theme } from '../../stores/store';
   import { DailyMetricsService, type DailyMetricsData, type TimeFilter } from '../../helpers/DailyMetricsService';
   import { getBaseChartOptions, createDataset, formatDateLabel, formatChartNumber } from '../../helpers/chartUtils';
 
-  // Register Chart.js components
-  ChartJS.register(
-    Title,
-    Tooltip,
-    Legend,
-    BarElement,
-    LinearScale,
-    CategoryScale
-  );
-
   export let timeFilter: TimeFilter = "15days";
   export let title: string = "System Performance Metrics";
   export let height: string = "350px";
+  export let preloadedData: DailyMetricsData[] = [];
+  export let loading: boolean = true;
 
-  let loading = true;
   let error = "";
   let chartData = {
     labels: [],

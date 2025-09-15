@@ -11,17 +11,28 @@
 
   export let title: string = "Daily Metrics Dashboard";
 
-  let selectedTimeFilter: TimeFilter = "1month";
+  let selectedTimeFilter: TimeFilter = "7days";
   let latestMetrics: DailyMetricsData | null = null;
+  let timeSeriesMetrics: DailyMetricsData[] = [];
   let loading = true;
   let error = "";
 
-  async function loadLatestMetrics() {
+  async function loadAllMetrics() {
+    loading = true;
+    error = "";
+    
     try {
-      latestMetrics = await DailyMetricsService.getLatestMetrics();
+      // Load both latest metrics and time series data in parallel
+      const [latest, timeSeries] = await Promise.all([
+        DailyMetricsService.getLatestMetrics(),
+        DailyMetricsService.fetchDailyMetricsByFilter(selectedTimeFilter)
+      ]);
+      
+      latestMetrics = latest;
+      timeSeriesMetrics = timeSeries;
     } catch (err) {
-      console.error("Error loading latest metrics:", err);
-      error = "Failed to load latest metrics";
+      console.error("Error loading metrics:", err);
+      error = "Failed to load metrics data";
     } finally {
       loading = false;
     }
@@ -29,16 +40,16 @@
 
   function handleFilterChange(filter: TimeFilter) {
     selectedTimeFilter = filter;
+    loadAllMetrics(); // Reload data when filter changes
   }
 
   function handleRefreshAll() {
     DailyMetricsService.clearCache();
-    loadLatestMetrics();
-    // The individual charts will refresh themselves
+    loadAllMetrics();
   }
 
   onMount(() => {
-    loadLatestMetrics();
+    loadAllMetrics();
   });
 </script>
 
@@ -113,13 +124,17 @@
         timeFilter={selectedTimeFilter}
         title="mAIner Activity Over Time"
         height="400px"
+        preloadedData={timeSeriesMetrics}
+        {loading}
       />
     </div>
 
     <!-- Tier Distribution Chart -->
     <TierDistributionChart 
-      title="Current Tier Distribution"
+      title="mAIner Tier Distribution"
       height="350px"
+      preloadedLatestMetrics={latestMetrics}
+      {loading}
     />
 
     <!-- System Metrics Chart -->
@@ -127,6 +142,8 @@
       timeFilter={selectedTimeFilter}
       title="System Performance Metrics"
       height="350px"
+      preloadedData={timeSeriesMetrics}
+      {loading}
     />
   </div>
 

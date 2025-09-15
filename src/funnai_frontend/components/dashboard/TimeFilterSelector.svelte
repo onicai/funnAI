@@ -5,6 +5,7 @@
   export let onFilterChange: (filter: TimeFilter) => void = () => {};
 
   const filters: { value: TimeFilter; label: string; description: string }[] = [
+    { value: "7days", label: "7 Days", description: "Last 7 days" },
     { value: "15days", label: "15 Days", description: "Last 15 days" },
     { value: "1month", label: "1 Month", description: "Last 30 days" },
     { value: "all", label: "All Time", description: "All available data" }

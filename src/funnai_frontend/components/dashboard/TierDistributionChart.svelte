@@ -1,32 +1,16 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { Doughnut } from 'svelte-chartjs';
-  import {
-    Chart as ChartJS,
-    Title,
-    Tooltip,
-    Legend,
-    ArcElement,
-    CategoryScale
-  } from 'chart.js';
   import { theme } from '../../stores/store';
   import { DailyMetricsService, type DailyMetricsData } from '../../helpers/DailyMetricsService';
-  import { getBaseChartOptions, generatePieColors, formatChartNumber } from '../../helpers/chartUtils';
-
-  // Register Chart.js components
-  ChartJS.register(
-    Title,
-    Tooltip,
-    Legend,
-    ArcElement,
-    CategoryScale
-  );
+  import { getBaseChartOptions, generatePieColors, formatChartNumber, getChartTheme } from '../../helpers/chartUtils';
 
   export let title: string = "mAIner Tier Distribution";
   export let height: string = "300px";
   export let showLatestOnly: boolean = true;
+  export let preloadedLatestMetrics: DailyMetricsData | null = null;
+  export let loading: boolean = true;
 
-  let loading = true;
   let error = "";
   let chartData = {
     labels: [],
@@ -38,6 +22,7 @@
 
   // Theme reactivity
   $: isDark = $theme === 'dark';
+  $: chartTheme = getChartTheme();
   $: chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -45,7 +30,7 @@
       legend: {
         position: 'right' as const,
         labels: {
-          color: isDark ? '#f9fafb' : '#111827',
+          color: chartTheme.textColor,
           usePointStyle: true,
           padding: 20,
           font: {
@@ -54,6 +39,7 @@
           generateLabels: function(chart) {
             const data = chart.data;
             if (data.labels?.length && data.datasets?.length) {
+              const currentTheme = getChartTheme();
               return data.labels.map((label, i) => {
                 const dataset = data.datasets[0];
                 const value = dataset.data[i];
@@ -62,6 +48,7 @@
                   text: `${label}: ${percentage}%`,
                   fillStyle: dataset.backgroundColor[i],
                   strokeStyle: dataset.backgroundColor[i],
+                  fontColor: currentTheme.textColor,
                   lineWidth: 0,
                   pointStyle: 'circle',
                   hidden: false,
@@ -75,9 +62,9 @@
       },
       tooltip: {
         backgroundColor: isDark ? '#374151' : '#ffffff',
-        titleColor: isDark ? '#f9fafb' : '#111827',
-        bodyColor: isDark ? '#f9fafb' : '#111827',
-        borderColor: isDark ? '#4b5563' : '#d1d5db',
+        titleColor: chartTheme.textColor,
+        bodyColor: chartTheme.textColor,
+        borderColor: chartTheme.borderColor,
         borderWidth: 1,
         cornerRadius: 8,
         callbacks: {
@@ -95,71 +82,93 @@
     radius: '90%'
   };
 
-  async function loadChartData() {
-    loading = true;
+  function processChartData(metrics: DailyMetricsData) {
     error = "";
 
     try {
-      if (showLatestOnly) {
-        latestMetrics = await DailyMetricsService.getLatestMetrics();
-        
-        if (!latestMetrics) {
-          error = "No metrics data available";
-          return;
-        }
-
-        const tierData = latestMetrics.derived_metrics.tier_distribution;
-        
-        // Prepare data for the chart
-        const labels = ['Low Tier', 'Medium Tier', 'High Tier', 'Very High Tier'];
-        const data = [
-          tierData.low,
-          tierData.medium,
-          tierData.high,
-          tierData.very_high
-        ];
-
-        // Filter out zero values
-        const filteredLabels = [];
-        const filteredData = [];
-        const colors = generatePieColors(4);
-        const filteredColors = [];
-
-        for (let i = 0; i < data.length; i++) {
-          if (data[i] > 0) {
-            filteredLabels.push(labels[i]);
-            filteredData.push(data[i]);
-            filteredColors.push(colors[i]);
-          }
-        }
-
-        chartData = {
-          labels: filteredLabels,
-          datasets: [
-            {
-              data: filteredData,
-              backgroundColor: filteredColors,
-              borderColor: filteredColors.map(color => color + '80'),
-              borderWidth: 2,
-              hoverOffset: 4
-            }
-          ]
-        };
+      if (!metrics) {
+        error = "No metrics data available";
+        return;
       }
 
+      latestMetrics = metrics;
+      const tierData = metrics.derived_metrics.tier_distribution;
+      
+      // Prepare data for the chart
+      const labels = ['Low Tier', 'Medium Tier', 'High Tier', 'Very High Tier'];
+      const data = [
+        tierData.low,
+        tierData.medium,
+        tierData.high,
+        tierData.very_high
+      ];
+
+      // Filter out zero values
+      const filteredLabels = [];
+      const filteredData = [];
+      const colors = generatePieColors(4);
+      const filteredColors = [];
+
+      for (let i = 0; i < data.length; i++) {
+        if (data[i] > 0) {
+          filteredLabels.push(labels[i]);
+          filteredData.push(data[i]);
+          filteredColors.push(colors[i]);
+        }
+      }
+
+      chartData = {
+        labels: filteredLabels,
+        datasets: [
+          {
+            data: filteredData,
+            backgroundColor: filteredColors,
+            borderColor: filteredColors.map(color => color + '80'),
+            borderWidth: 2,
+            hoverOffset: 4
+          }
+        ]
+      };
+
     } catch (err) {
-      console.error("Error loading tier distribution chart data:", err);
-      error = "Failed to load chart data";
-    } finally {
-      loading = false;
+      console.error("Error processing tier distribution chart data:", err);
+      error = "Failed to process chart data";
     }
   }
 
-  onMount(() => {
+  // Fallback function for when no preloaded data is available
+  async function loadChartData() {
+    try {
+      const metrics = await DailyMetricsService.getLatestMetrics();
+      if (metrics) {
+        processChartData(metrics);
+      }
+    } catch (err) {
+      console.error("Error loading tier distribution chart data:", err);
+      error = "Failed to load chart data";
+    }
+  }
+
+  // Process preloaded data or load data when it changes
+  $: if (preloadedLatestMetrics) {
+    processChartData(preloadedLatestMetrics);
+  } else if (!loading) {
+    // Only load data if not already loading and no preloaded data
     loadChartData();
+  }
+
+  onMount(() => {
+    // If we have preloaded data, use it; otherwise load data
+    if (preloadedLatestMetrics) {
+      processChartData(preloadedLatestMetrics);
+    } else {
+      loadChartData();
+    }
     
-    // Update every 5 minutes
-    updateInterval = setInterval(loadChartData, 5 * 60 * 1000);
+    // Update every 5 minutes (only if no preloaded data)
+    if (!preloadedLatestMetrics) {
+      updateInterval = setInterval(loadChartData, 5 * 60 * 1000);
+    }
   });
 
   onDestroy(() => {

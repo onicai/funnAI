@@ -1,38 +1,16 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { Line } from 'svelte-chartjs';
-  import {
-    Chart as ChartJS,
-    Title,
-    Tooltip,
-    Legend,
-    LineElement,
-    LinearScale,
-    PointElement,
-    CategoryScale,
-    Filler
-  } from 'chart.js';
   import { theme } from '../../stores/store';
   import { DailyMetricsService, type DailyMetricsData, type TimeFilter } from '../../helpers/DailyMetricsService';
   import { getBaseChartOptions, createDataset, formatDateLabel, formatChartNumber } from '../../helpers/chartUtils';
 
-  // Register Chart.js components
-  ChartJS.register(
-    Title,
-    Tooltip,
-    Legend,
-    LineElement,
-    LinearScale,
-    PointElement,
-    CategoryScale,
-    Filler
-  );
-
-  export let timeFilter: TimeFilter = "1month";
+  export let timeFilter: TimeFilter = "7days";
   export let title: string = "mAIner Activity Over Time";
   export let height: string = "300px";
+  export let preloadedData: DailyMetricsData[] = [];
+  export let loading: boolean = true;
 
-  let loading = true;
   let error = "";
   let chartData = {
     labels: [],
@@ -57,9 +35,7 @@
             const label = context.dataset.label || '';
             const value = context.parsed.y;
             
-            if (label.includes('Percentage')) {
-              return `${label}: ${formatChartNumber(value, 'percentage')}`;
-            } else if (label.includes('Cycles')) {
+            if (label.includes('Cycles')) {
               return `${label}: ${formatChartNumber(value, 'cycles')}`;
             } else {
               return `${label}: ${formatChartNumber(value)}`;
@@ -83,29 +59,26 @@
     }
   };
 
-  async function loadChartData() {
-    loading = true;
+  function processChartData(metrics: DailyMetricsData[]) {
     error = "";
 
     try {
-      const metrics = await DailyMetricsService.fetchDailyMetricsByFilter(timeFilter);
-      
       if (metrics.length === 0) {
         error = "No data available for the selected time period";
         return;
       }
 
       // Sort by date to ensure proper chronological order
-      metrics.sort((a, b) => new Date(a.metadata.date).getTime() - new Date(b.metadata.date).getTime());
+      const sortedMetrics = [...metrics].sort((a, b) => 
+        new Date(a.metadata.date).getTime() - new Date(b.metadata.date).getTime()
+      );
 
-      const labels = metrics.map(m => formatDateLabel(m.metadata.date, 'short'));
+      const labels = sortedMetrics.map(m => formatDateLabel(m.metadata.date, 'short'));
       
       // Prepare data for different metrics
-      const totalMainersData = metrics.map(m => m.mainers.totals.created);
-      const activeMainersData = metrics.map(m => m.mainers.totals.active);
-      const pausedMainersData = metrics.map(m => m.mainers.totals.paused);
-      const activePercentageData = metrics.map(m => m.derived_metrics.active_percentage);
-      const totalCyclesData = metrics.map(m => m.mainers.totals.total_cycles);
+      const totalMainersData = sortedMetrics.map(m => m.mainers.totals.created);
+      const activeMainersData = sortedMetrics.map(m => m.mainers.totals.active);
+      const pausedMainersData = sortedMetrics.map(m => m.mainers.totals.paused);
 
       chartData = {
         labels,
@@ -113,28 +86,46 @@
           createDataset("Total mAIners", totalMainersData, "#8b5cf6", "line"),
           createDataset("Active mAIners", activeMainersData, "#10b981", "line"),
           createDataset("Paused mAIners", pausedMainersData, "#f59e0b", "line"),
-          createDataset("Active Percentage", activePercentageData, "#06b6d4", "line"),
         ]
       };
 
     } catch (err) {
-      console.error("Error loading mAIner metrics chart data:", err);
-      error = "Failed to load chart data";
-    } finally {
-      loading = false;
+      console.error("Error processing mAIner metrics chart data:", err);
+      error = "Failed to process chart data";
     }
   }
 
-  // Refresh data when time filter changes
-  $: if (timeFilter) {
+  // Fallback function for when no preloaded data is available
+  async function loadChartData() {
+    try {
+      const metrics = await DailyMetricsService.fetchDailyMetricsByFilter(timeFilter);
+      processChartData(metrics);
+    } catch (err) {
+      console.error("Error loading mAIner metrics chart data:", err);
+      error = "Failed to load chart data";
+    }
+  }
+
+  // Process preloaded data or load data when it changes
+  $: if (preloadedData && preloadedData.length > 0) {
+    processChartData(preloadedData);
+  } else if (!loading) {
+    // Only load data if not already loading and no preloaded data
     loadChartData();
   }
 
   onMount(() => {
-    loadChartData();
+    // If we have preloaded data, use it; otherwise load data
+    if (preloadedData && preloadedData.length > 0) {
+      processChartData(preloadedData);
+    } else {
+      loadChartData();
+    }
     
-    // Update every 5 minutes
-    updateInterval = setInterval(loadChartData, 5 * 60 * 1000);
+    // Update every 5 minutes (only if no preloaded data)
+    if (!preloadedData || preloadedData.length === 0) {
+      updateInterval = setInterval(loadChartData, 5 * 60 * 1000);
+    }
   });
 
   onDestroy(() => {

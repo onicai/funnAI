@@ -56,12 +56,12 @@ export interface DailyMetricsQuery {
   limit?: number;
 }
 
-export type TimeFilter = "1month" | "15days" | "all";
+export type TimeFilter = "7days" | "15days" | "1month" | "all";
 
 export class DailyMetricsService {
   private static cache = new Map<string, DailyMetricsData[]>();
   private static cacheTimestamps = new Map<string, number>();
-  private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  private static readonly CACHE_DURATION = 4 * 60 * 60 * 1000; // 4 hours - data updates daily
 
   /**
    * Get date range for time filter
@@ -71,11 +71,11 @@ export class DailyMetricsService {
     const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
     
     switch (filter) {
-      case "1month": {
-        const oneMonthAgo = new Date(today);
-        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+      case "7days": {
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         return {
-          start_date: oneMonthAgo.toISOString().split('T')[0],
+          start_date: sevenDaysAgo.toISOString().split('T')[0],
           end_date: todayStr
         };
       }
@@ -84,6 +84,14 @@ export class DailyMetricsService {
         fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
         return {
           start_date: fifteenDaysAgo.toISOString().split('T')[0],
+          end_date: todayStr
+        };
+      }
+      case "1month": {
+        const oneMonthAgo = new Date(today);
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+        return {
+          start_date: oneMonthAgo.toISOString().split('T')[0],
           end_date: todayStr
         };
       }
@@ -130,8 +138,8 @@ export class DailyMetricsService {
 
     try {
       const storeValue = get(store);
-      if (!storeValue.gameStateCanisterActor) {
-        throw new Error("Game state canister actor not available");
+      if (!storeValue.apiCanisterActor) {
+        throw new Error("API canister actor not available");
       }
 
       console.log("Fetching daily metrics with query:", query);
@@ -143,10 +151,11 @@ export class DailyMetricsService {
         limit: query.limit ? [query.limit] : []
       };
 
-      const result = await storeValue.gameStateCanisterActor.getDailyMetrics([queryParam]);
+      const result = await storeValue.apiCanisterActor.getDailyMetrics([queryParam]);
       
       if ("Ok" in result) {
-        const metrics = Array.isArray(result.Ok) ? result.Ok : [result.Ok];
+        const response = result.Ok;
+        const metrics = response.daily_metrics;
         
         // Transform the data to match our interface
         const transformedMetrics: DailyMetricsData[] = metrics.map((metric: any) => ({
