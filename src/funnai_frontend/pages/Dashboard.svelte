@@ -9,6 +9,7 @@
   import ProtocolMetrics from "../components/dashboard/ProtocolMetrics.svelte";
   import TokenDistribution from "../components/dashboard/TokenDistribution.svelte";
   import SystemStatus from "../components/dashboard/SystemStatus.svelte";
+  import MetricsDashboard from "../components/dashboard/MetricsDashboard.svelte";
   
   // Import services for fetching token data
   import { IcrcService } from "../helpers/IcrcService";
@@ -180,6 +181,11 @@
       <!-- System Status Card -->
       <!-- Available options: "excellent" | "degraded" | "paused" -->
       <SystemStatus protocolStatus="excellent" />
+    </div>
+
+    <!-- Metrics Dashboard -->
+    <div class="mb-8">
+      <MetricsDashboard title="Daily Metrics Dashboard" />
     </div>
 
     <!-- Dashboard Components Grid -->
