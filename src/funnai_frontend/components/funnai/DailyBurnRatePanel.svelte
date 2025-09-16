@@ -491,7 +491,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.251.757l2.551 7.843h8.244a.75.75 0 01.441 1.356l-6.673 4.845 2.551 7.844a.75.75 0 01-1.154.956L12 18.756l-6.211 4.845a.75.75 0 01-1.154-.956l2.551-7.844L.513 9.956A.75.75 0 01.954 8.6h8.244L11.749.757a.75.75 0 01.502 0z"/>
             </svg>
             <span>High</span>
-            <span class="text-xs opacity-75 hidden sm:block">High power</span>
+            <span class="text-xs opacity-75 hidden sm:block">Power mode</span>
           </div>
           {#if agent.cyclesBurnRateSetting === 'High'}
             <div class="absolute top-1 right-1 w-2 h-2 bg-white rounded-full shadow-sm"></div>
