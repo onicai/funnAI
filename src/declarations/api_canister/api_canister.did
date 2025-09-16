@@ -1,3 +1,8 @@
+type UpdateDailyMetricAdminInput = 
+ record {
+   date: text;
+   input: DailyMetricUpdateInput;
+ };
 type SystemMetrics = 
  record {
    daily_burn_rate: DailyBurnRate;
@@ -174,7 +179,7 @@ type ApiCanister =
    getNumDailyMetrics: () -> (NatResult) query;
    health: () -> (StatusCodeRecordResult) query;
    setMasterCanisterId: (newMasterCanisterId: text) -> (AuthRecordResult);
-   updateDailyMetricAdmin: (date: text, input: DailyMetricUpdateInput) ->
+   updateDailyMetricAdmin: (params: UpdateDailyMetricAdminInput) ->
     (DailyMetricResult);
    whoami: () -> (principal) query;
  };

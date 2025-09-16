@@ -125,6 +125,10 @@ export const idlFactory = ({ IDL }) => {
     'funnai_index' : IDL.Opt(IDL.Float64),
     'total_mainers_created' : IDL.Opt(IDL.Nat),
   });
+  const UpdateDailyMetricAdminInput = IDL.Record({
+    'date' : IDL.Text,
+    'input' : DailyMetricUpdateInput,
+  });
   const ApiCanister = IDL.Service({
     'amiController' : IDL.Func([], [AuthRecordResult], ['query']),
     'bulkCreateDailyMetricsAdmin' : IDL.Func(
@@ -159,7 +163,7 @@ export const idlFactory = ({ IDL }) => {
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
     'setMasterCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
     'updateDailyMetricAdmin' : IDL.Func(
-        [IDL.Text, DailyMetricUpdateInput],
+        [UpdateDailyMetricAdminInput],
         [DailyMetricResult],
         [],
       ),

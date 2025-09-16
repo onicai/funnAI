@@ -22,7 +22,7 @@ export interface ApiCanister {
   'health' : ActorMethod<[], StatusCodeRecordResult>,
   'setMasterCanisterId' : ActorMethod<[string], AuthRecordResult>,
   'updateDailyMetricAdmin' : ActorMethod<
-    [string, DailyMetricUpdateInput],
+    [UpdateDailyMetricAdminInput],
     DailyMetricResult
   >,
   'whoami' : ActorMethod<[], Principal>,
@@ -145,6 +145,10 @@ export type StatusCodeRecordResult = { 'Ok' : StatusCodeRecord } |
 export interface SystemMetrics {
   'funnai_index' : number,
   'daily_burn_rate' : DailyBurnRate,
+}
+export interface UpdateDailyMetricAdminInput {
+  'date' : string,
+  'input' : DailyMetricUpdateInput,
 }
 export interface _SERVICE extends ApiCanister {}
 export declare const idlFactory: IDL.InterfaceFactory;
