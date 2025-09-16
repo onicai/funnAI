@@ -158,30 +158,30 @@
       </h3>
       
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div class="space-y-2">
-          <div class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Cycles</div>
-          <div class="text-lg font-semibold text-gray-900 dark:text-white">
+        <div class="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-4">
+          <div class="text-sm font-medium text-cyan-600 dark:text-cyan-400">Total Cycles</div>
+          <div class="text-xl font-bold text-cyan-900 dark:text-cyan-300">
             {formatChartNumber(latestMetrics.mainers.totals.total_cycles, 'cycles')}
           </div>
         </div>
         
-        <div class="space-y-2">
-          <div class="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Cycles per mAIner</div>
-          <div class="text-lg font-semibold text-gray-900 dark:text-white">
+        <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4">
+          <div class="text-sm font-medium text-indigo-600 dark:text-indigo-400">Avg Cycles per mAIner</div>
+          <div class="text-xl font-bold text-indigo-900 dark:text-indigo-300">
             {formatChartNumber(latestMetrics.derived_metrics.avg_cycles_per_mainer)}
           </div>
         </div>
         
-        <div class="space-y-2">
-          <div class="text-sm font-medium text-gray-600 dark:text-gray-400">Burn Rate per Active</div>
-          <div class="text-lg font-semibold text-gray-900 dark:text-white">
+        <div class="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-4">
+          <div class="text-sm font-medium text-teal-600 dark:text-teal-400">Burn Rate per Active</div>
+          <div class="text-xl font-bold text-teal-900 dark:text-teal-300">
             {formatChartNumber(latestMetrics.derived_metrics.burn_rate_per_active_mainer)}
           </div>
         </div>
         
-        <div class="space-y-2">
-          <div class="text-sm font-medium text-gray-600 dark:text-gray-400">Paused Percentage</div>
-          <div class="text-lg font-semibold text-red-600 dark:text-red-400">
+        <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+          <div class="text-sm font-medium text-red-600 dark:text-red-400">Paused Percentage</div>
+          <div class="text-xl font-bold text-red-900 dark:text-red-300">
             {formatChartNumber(latestMetrics.derived_metrics.paused_percentage, 'percentage')}
           </div>
         </div>

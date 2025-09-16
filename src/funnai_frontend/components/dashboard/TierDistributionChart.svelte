@@ -95,7 +95,7 @@
       const tierData = metrics.derived_metrics.tier_distribution;
       
       // Prepare data for the chart
-      const labels = ['Low Tier', 'Medium Tier', 'High Tier', 'Very High Tier'];
+      const labels = ['Low Burn Rate', 'Medium Burn Rate', 'High Burn Rate', 'Very High Burn Rate'];
       const data = [
         tierData.low,
         tierData.medium,
