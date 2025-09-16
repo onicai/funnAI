@@ -329,6 +329,8 @@
       
       // Update the local agent state to show VeryHigh immediately
       agent.cyclesBurnRateSetting = 'VeryHigh';
+      // Trigger reactivity by reassigning the agent object
+      agent = { ...agent };
       
       // Notify parent to refresh the agents list
       dispatch('burnRateUpdated');
