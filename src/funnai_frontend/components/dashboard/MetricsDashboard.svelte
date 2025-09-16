@@ -63,20 +63,6 @@
           Real-time insights into mAIner performance and system metrics
         </p>
       </div>
-      
-      <div class="flex items-center gap-4">
-        <TimeFilterSelector 
-          selectedFilter={selectedTimeFilter} 
-          onFilterChange={handleFilterChange}
-        />
-        <button 
-          on:click={handleRefreshAll}
-          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
-          disabled={loading}
-        >
-          {loading ? "Loading..." : "Refresh All"}
-        </button>
-      </div>
     </div>
 
     <!-- Quick Stats Row -->
@@ -114,6 +100,32 @@
         </div>
       </div>
     {/if}
+  </div>
+
+  <!-- Charts Controls -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Historical Charts</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          View trends and patterns over time
+        </p>
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <TimeFilterSelector 
+          selectedFilter={selectedTimeFilter} 
+          onFilterChange={handleFilterChange}
+        />
+        <button 
+          on:click={handleRefreshAll}
+          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+          disabled={loading}
+        >
+          {loading ? "Loading..." : "Refresh All"}
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Charts Grid -->
