@@ -79,6 +79,7 @@
   $: lowBurnRateMainers = agents.filter(agent => agent.cyclesBurnRateSetting === 'Low').length;
   $: mediumBurnRateMainers = agents.filter(agent => agent.cyclesBurnRateSetting === 'Medium').length;
   $: highBurnRateMainers = agents.filter(agent => agent.cyclesBurnRateSetting === 'High').length;
+  $: veryHighBurnRateMainers = agents.filter(agent => agent.cyclesBurnRateSetting === 'VeryHigh').length;
 
   // Reactive mAIner price based on model type and whitelist phase
   let currentMainerPrice = 10; // Will be loaded
@@ -1704,6 +1705,7 @@
     {lowBurnRateMainers}
     {mediumBurnRateMainers}
     {highBurnRateMainers}
+    {veryHighBurnRateMainers}
   />
 {/if}
 
