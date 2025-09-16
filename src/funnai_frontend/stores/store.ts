@@ -39,7 +39,7 @@ const getCyclesBurnRateLabel = (cyclesBurnRate) => {
   } else if (cycles === 4_000_000_000_000n) {
     return "High";
   } else if (cycles === 6_000_000_000_000n) {
-    return "Very High";
+    return "VeryHigh";
   } else {
     return "Medium";
   }
