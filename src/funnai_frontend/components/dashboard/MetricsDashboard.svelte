@@ -14,6 +14,7 @@
   let selectedTimeFilter: TimeFilter = "7days";
   let latestMetrics: DailyMetricsData | null = null;
   let timeSeriesMetrics: DailyMetricsData[] = [];
+  let displayMetrics: DailyMetricsData | null = null; // Metrics to display based on time filter
   let loading = true;
   let error = "";
 
@@ -30,6 +31,18 @@
       
       latestMetrics = latest;
       timeSeriesMetrics = timeSeries;
+      
+      // Set display metrics based on time filter
+      if (selectedTimeFilter === "all" && timeSeries.length > 0) {
+        // For "all" time, show the latest available data
+        displayMetrics = timeSeries[timeSeries.length - 1];
+      } else if (timeSeries.length > 0) {
+        // For specific time filters, show the latest data within that range
+        displayMetrics = timeSeries[timeSeries.length - 1];
+      } else {
+        // Fallback to latest metrics if no time series data
+        displayMetrics = latest;
+      }
     } catch (err) {
       console.error("Error loading metrics:", err);
       error = "Failed to load metrics data";
@@ -66,21 +79,21 @@
     </div>
 
     <!-- Quick Stats Row -->
-    {#if latestMetrics && !loading}
+    {#if displayMetrics && !loading}
       <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
           <div class="text-sm font-medium text-blue-600 dark:text-blue-400">Total mAIners</div>
           <div class="text-2xl font-bold text-blue-900 dark:text-blue-300">
-            {formatChartNumber(latestMetrics.mainers.totals.created)}
+            {formatChartNumber(displayMetrics.mainers.totals.created)}
           </div>
         </div>
         <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
           <div class="text-sm font-medium text-green-600 dark:text-green-400">Active mAIners</div>
           <div class="text-2xl font-bold text-green-900 dark:text-green-300">
-            {formatChartNumber(latestMetrics.mainers.totals.active)}
+            {formatChartNumber(displayMetrics.mainers.totals.active)}
           </div>
           <div class="text-xs text-green-600 dark:text-green-400">
-            {formatChartNumber(latestMetrics.derived_metrics.active_percentage, 'percentage')} active
+            {formatChartNumber(displayMetrics.derived_metrics.active_percentage, 'percentage')} active
           </div>
         </div>
         <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
@@ -99,16 +112,16 @@
             </div>
           </div>
           <div class="text-2xl font-bold text-purple-900 dark:text-purple-300">
-            {latestMetrics.system_metrics.funnai_index.toFixed(3)}
+            {displayMetrics.system_metrics.funnai_index.toFixed(3)}
           </div>
         </div>
         <div class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
           <div class="text-sm font-medium text-orange-600 dark:text-orange-400">Daily Burn Rate</div>
           <div class="text-xl font-bold text-orange-900 dark:text-orange-300">
-            {formatChartNumber(latestMetrics.system_metrics.daily_burn_rate.usd, 'currency')}
+            {formatChartNumber(displayMetrics.system_metrics.daily_burn_rate.usd, 'currency')}
           </div>
           <div class="text-xs text-orange-600 dark:text-orange-400">
-            {formatChartNumber(latestMetrics.system_metrics.daily_burn_rate.cycles * 1e12, 'cycles')} cycles
+            {formatChartNumber(displayMetrics.system_metrics.daily_burn_rate.cycles * 1e12, 'cycles')} cycles
           </div>
         </div>
       </div>
@@ -173,41 +186,34 @@
   </div>
 
   <!-- Additional Metrics Row -->
-  {#if latestMetrics && !loading}
+  {#if displayMetrics && !loading}
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
         Additional Metrics
         <span class="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
-          (as of {new Date(latestMetrics.metadata.date).toLocaleDateString()})
+          (as of {new Date(displayMetrics.metadata.date).toLocaleDateString()})
         </span>
       </h3>
       
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div class="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-4">
-          <div class="text-sm font-medium text-cyan-600 dark:text-cyan-400">Total Cycles</div>
+          <div class="text-sm font-medium text-cyan-600 dark:text-cyan-400">Total TCycles</div>
           <div class="text-xl font-bold text-cyan-900 dark:text-cyan-300">
-            {formatChartNumber(latestMetrics.mainers.totals.total_cycles, 'cycles')}
+            {formatChartNumber(displayMetrics.mainers.totals.total_cycles, 'cycles')}
           </div>
         </div>
         
         <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4">
           <div class="text-sm font-medium text-indigo-600 dark:text-indigo-400">Avg Cycles per mAIner</div>
           <div class="text-xl font-bold text-indigo-900 dark:text-indigo-300">
-            {formatChartNumber(latestMetrics.derived_metrics.avg_cycles_per_mainer)}
+            {formatChartNumber(displayMetrics.derived_metrics.avg_cycles_per_mainer)}
           </div>
         </div>
         
         <div class="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-4">
           <div class="text-sm font-medium text-teal-600 dark:text-teal-400">Burn Rate per Active</div>
           <div class="text-xl font-bold text-teal-900 dark:text-teal-300">
-            {formatChartNumber(latestMetrics.derived_metrics.burn_rate_per_active_mainer)}
-          </div>
-        </div>
-        
-        <div class="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
-          <div class="text-sm font-medium text-red-600 dark:text-red-400">Paused Percentage</div>
-          <div class="text-xl font-bold text-red-900 dark:text-red-300">
-            {formatChartNumber(latestMetrics.derived_metrics.paused_percentage, 'percentage')}
+            {formatChartNumber(displayMetrics.derived_metrics.burn_rate_per_active_mainer)}
           </div>
         </div>
       </div>

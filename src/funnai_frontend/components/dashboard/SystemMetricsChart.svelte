@@ -114,7 +114,7 @@
             yAxisID: 'y'
           },
           {
-            ...createDataset("Daily Burn Rate (Cycles)", dailyBurnRateCyclesData, "#f59e0b", "bar"),
+            ...createDataset("Daily Burn Rate (TCycles)", dailyBurnRateCyclesData, "#f59e0b", "bar"),
             yAxisID: 'y'
           },
           {
