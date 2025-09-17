@@ -178,10 +178,7 @@
       <SystemStatus protocolStatus="excellent" />
     </div>
 
-    <!-- Metrics Dashboard -->
-    <div class="mb-8">
-      <MetricsDashboard title="Daily Metrics Dashboard" />
-    </div>
+    
 
     <!-- Dashboard Components Grid -->
     <div class="space-y-8">
@@ -196,6 +193,11 @@
         </div>
         
       </div>
+    </div>
+
+    <!-- Metrics Dashboard -->
+    <div class="my-8">
+      <MetricsDashboard title="Daily Metrics Dashboard" />
     </div>
   </div>
 
