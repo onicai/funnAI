@@ -28,6 +28,7 @@ type NatResult =
  };
 type MainersTierBreakdown = 
  record {
+   custom: nat;
    high: nat;
    low: nat;
    medium: nat;
@@ -55,6 +56,7 @@ type DerivedMetrics =
    paused_percentage: float64;
    tier_distribution:
     record {
+      custom: float64;
       high: float64;
       low: float64;
       medium: float64;
@@ -79,6 +81,7 @@ type DailyMetricsQuery =
  };
 type DailyMetricUpdateInput = 
  record {
+   active_custom_burn_rate_mainers: opt nat;
    active_high_burn_rate_mainers: opt nat;
    active_low_burn_rate_mainers: opt nat;
    active_medium_burn_rate_mainers: opt nat;
@@ -86,6 +89,7 @@ type DailyMetricUpdateInput =
    daily_burn_rate_cycles: opt nat;
    daily_burn_rate_usd: opt float64;
    funnai_index: opt float64;
+   paused_custom_burn_rate_mainers: opt nat;
    paused_high_burn_rate_mainers: opt nat;
    paused_low_burn_rate_mainers: opt nat;
    paused_medium_burn_rate_mainers: opt nat;
@@ -108,6 +112,7 @@ type DailyMetricMetadata =
  };
 type DailyMetricInput = 
  record {
+   active_custom_burn_rate_mainers: nat;
    active_high_burn_rate_mainers: nat;
    active_low_burn_rate_mainers: nat;
    active_medium_burn_rate_mainers: nat;
@@ -116,6 +121,7 @@ type DailyMetricInput =
    daily_burn_rate_usd: float64;
    date: text;
    funnai_index: float64;
+   paused_custom_burn_rate_mainers: nat;
    paused_high_burn_rate_mainers: nat;
    paused_low_burn_rate_mainers: nat;
    paused_medium_burn_rate_mainers: nat;
