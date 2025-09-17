@@ -105,7 +105,6 @@
       const dailyBurnRateUSDData = metrics.map(m => m.system_metrics.daily_burn_rate.usd);
       const dailyBurnRateCyclesData = metrics.map(m => m.system_metrics.daily_burn_rate.cycles);
       const funnaiIndexData = metrics.map(m => m.system_metrics.funnai_index);
-      const avgCyclesPerMainerData = metrics.map(m => m.derived_metrics.avg_cycles_per_mainer);
 
       chartData = {
         labels,
@@ -125,10 +124,6 @@
             borderWidth: 3,
             tension: 0.4,
             fill: false
-          },
-          {
-            ...createDataset("Avg Cycles/mAIner", avgCyclesPerMainerData, "#06b6d4", "bar"),
-            yAxisID: 'y'
           }
         ]
       };
@@ -218,7 +213,7 @@
       <div class="flex flex-wrap gap-4 text-xs text-gray-600 dark:text-gray-400">
         <div class="flex items-center gap-2">
           <div class="w-3 h-3 bg-gray-400 dark:bg-gray-500 rounded"></div>
-          <span>Left axis: USD, Cycles, Avg Cycles/mAIner</span>
+          <span>Left axis: USD, Cycles</span>
         </div>
         <div class="flex items-center gap-2">
           <div class="w-3 h-3 bg-purple-500 rounded"></div>
