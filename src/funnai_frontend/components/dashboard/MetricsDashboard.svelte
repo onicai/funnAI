@@ -108,7 +108,7 @@
             {formatChartNumber(latestMetrics.system_metrics.daily_burn_rate.usd, 'currency')}
           </div>
           <div class="text-xs text-orange-600 dark:text-orange-400">
-            {formatChartNumber(latestMetrics.system_metrics.daily_burn_rate.cycles, 'cycles')} cycles
+            {formatChartNumber(latestMetrics.system_metrics.daily_burn_rate.cycles * 1e12, 'cycles')} cycles
           </div>
         </div>
       </div>
