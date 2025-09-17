@@ -6,10 +6,10 @@ export interface ApiCanister {
   'amiController' : ActorMethod<[], AuthRecordResult>,
   'bulkCreateDailyMetricsAdmin' : ActorMethod<
     [Array<DailyMetricInput>],
-    BulkCreateResult
+    NatResult
   >,
   'createDailyMetricAdmin' : ActorMethod<[DailyMetricInput], DailyMetricResult>,
-  'deleteDailyMetricAdmin' : ActorMethod<[string], DailyMetricOperationResult>,
+  'deleteDailyMetricAdmin' : ActorMethod<[string], NatResult>,
   'getDailyMetricByDate' : ActorMethod<[string], DailyMetricResult>,
   'getDailyMetrics' : ActorMethod<
     [[] | [DailyMetricsQuery]],
@@ -20,9 +20,10 @@ export interface ApiCanister {
   'getMasterCanisterId' : ActorMethod<[], AuthRecordResult>,
   'getNumDailyMetrics' : ActorMethod<[], NatResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
+  'resetDailyMetricsAdmin' : ActorMethod<[], NatResult>,
   'setMasterCanisterId' : ActorMethod<[string], AuthRecordResult>,
   'updateDailyMetricAdmin' : ActorMethod<
-    [string, DailyMetricUpdateInput],
+    [UpdateDailyMetricAdminInput],
     DailyMetricResult
   >,
   'whoami' : ActorMethod<[], Principal>,
@@ -36,8 +37,6 @@ export type ApiError = { 'FailedOperation' : null } |
   { 'InsuffientCycles' : bigint };
 export interface AuthRecord { 'auth' : string }
 export type AuthRecordResult = { 'Ok' : AuthRecord } |
-  { 'Err' : ApiError };
-export type BulkCreateResult = { 'Ok' : bigint } |
   { 'Err' : ApiError };
 export interface DailyBurnRate { 'usd' : number, 'cycles' : bigint }
 export interface DailyMetric {
@@ -69,8 +68,6 @@ export interface DailyMetricMetadata {
   'date' : string,
   'created_at' : string,
 }
-export type DailyMetricOperationResult = { 'Ok' : boolean } |
-  { 'Err' : ApiError };
 export type DailyMetricResult = { 'Ok' : DailyMetric } |
   { 'Err' : ApiError };
 export interface DailyMetricUpdateInput {
@@ -145,6 +142,10 @@ export type StatusCodeRecordResult = { 'Ok' : StatusCodeRecord } |
 export interface SystemMetrics {
   'funnai_index' : number,
   'daily_burn_rate' : DailyBurnRate,
+}
+export interface UpdateDailyMetricAdminInput {
+  'date' : string,
+  'input' : DailyMetricUpdateInput,
 }
 export interface _SERVICE extends ApiCanister {}
 export declare const idlFactory: IDL.InterfaceFactory;

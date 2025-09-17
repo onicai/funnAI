@@ -29,7 +29,7 @@ export const idlFactory = ({ IDL }) => {
     'funnai_index' : IDL.Float64,
     'total_mainers_created' : IDL.Nat,
   });
-  const BulkCreateResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
+  const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
   const DerivedMetrics = IDL.Record({
     'avg_cycles_per_mainer' : IDL.Float64,
     'paused_percentage' : IDL.Float64,
@@ -80,10 +80,6 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : DailyMetric,
     'Err' : ApiError,
   });
-  const DailyMetricOperationResult = IDL.Variant({
-    'Ok' : IDL.Bool,
-    'Err' : ApiError,
-  });
   const DailyMetricsQuery = IDL.Record({
     'end_date' : IDL.Opt(IDL.Text),
     'limit' : IDL.Opt(IDL.Nat),
@@ -102,7 +98,6 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : DailyMetricsResponse,
     'Err' : ApiError,
   });
-  const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
   const StatusCodeRecord = IDL.Record({ 'status_code' : StatusCode });
   const StatusCodeRecordResult = IDL.Variant({
     'Ok' : StatusCodeRecord,
@@ -125,11 +120,15 @@ export const idlFactory = ({ IDL }) => {
     'funnai_index' : IDL.Opt(IDL.Float64),
     'total_mainers_created' : IDL.Opt(IDL.Nat),
   });
+  const UpdateDailyMetricAdminInput = IDL.Record({
+    'date' : IDL.Text,
+    'input' : DailyMetricUpdateInput,
+  });
   const ApiCanister = IDL.Service({
     'amiController' : IDL.Func([], [AuthRecordResult], ['query']),
     'bulkCreateDailyMetricsAdmin' : IDL.Func(
         [IDL.Vec(DailyMetricInput)],
-        [BulkCreateResult],
+        [NatResult],
         [],
       ),
     'createDailyMetricAdmin' : IDL.Func(
@@ -137,11 +136,7 @@ export const idlFactory = ({ IDL }) => {
         [DailyMetricResult],
         [],
       ),
-    'deleteDailyMetricAdmin' : IDL.Func(
-        [IDL.Text],
-        [DailyMetricOperationResult],
-        [],
-      ),
+    'deleteDailyMetricAdmin' : IDL.Func([IDL.Text], [NatResult], []),
     'getDailyMetricByDate' : IDL.Func(
         [IDL.Text],
         [DailyMetricResult],
@@ -157,9 +152,10 @@ export const idlFactory = ({ IDL }) => {
     'getMasterCanisterId' : IDL.Func([], [AuthRecordResult], ['query']),
     'getNumDailyMetrics' : IDL.Func([], [NatResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
+    'resetDailyMetricsAdmin' : IDL.Func([], [NatResult], []),
     'setMasterCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
     'updateDailyMetricAdmin' : IDL.Func(
-        [IDL.Text, DailyMetricUpdateInput],
+        [UpdateDailyMetricAdminInput],
         [DailyMetricResult],
         [],
       ),
