@@ -84,7 +84,20 @@
           </div>
         </div>
         <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
-          <div class="text-sm font-medium text-purple-600 dark:text-purple-400">FunnAI Index</div>
+          <div class="text-sm font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1">
+            FunnAI Index
+            <div class="group relative">
+              <svg class="w-4 h-4 text-purple-500 dark:text-purple-400 cursor-help" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+              </svg>
+              <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 w-48">
+                <div class="text-center">
+                  <div class="font-medium mb-1">FunnAI cycles burned as % of total IC protocol daily burn</div>
+                </div>
+                <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+              </div>
+            </div>
+          </div>
           <div class="text-2xl font-bold text-purple-900 dark:text-purple-300">
             {latestMetrics.system_metrics.funnai_index.toFixed(3)}
           </div>
