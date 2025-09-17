@@ -1834,6 +1834,171 @@
       </button>
       <div id="content-{sanitizedId}" class="accordion-content">
         <div class="pb-3 sm:pb-5 text-xs sm:text-sm text-gray-700 dark:text-gray-300 p-3 sm:p-4 bg-gray-50 dark:bg-gray-800">
+          <div class="flex flex-col space-y-2 mb-2">
+            <!-- Enhanced Cycles Management Panel -->
+            <div class="relative overflow-hidden bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-cyan-900/20 border border-emerald-200/60 dark:border-emerald-700/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
+              <!-- Background decorative elements -->
+              <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-200/30 to-teal-200/30 dark:from-emerald-600/10 dark:to-teal-600/10 rounded-full -translate-y-10 translate-x-10"></div>
+              <div class="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-cyan-200/30 to-emerald-200/30 dark:from-cyan-600/10 dark:to-emerald-600/10 rounded-full translate-y-8 -translate-x-8"></div>
+              
+              <div class="relative p-4 sm:p-5">
+                <!-- Header Section -->
+                <div class="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0 mb-4">
+                  <div class="flex items-center space-x-3">
+                    <!-- Icon with gradient background -->
+                    <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                      </svg>
+                    </div>
+                    
+                    <!-- Title and subtitle -->
+                    <div class="flex flex-col">
+                      <h2 class="text-sm sm:text-base font-bold text-emerald-900 dark:text-emerald-100">Cycles Management</h2>
+                      <p class="text-xs text-emerald-700 dark:text-emerald-300">Cycle-power your mAIner</p>
+                    </div>
+                  </div>
+                  
+                  <!-- Primary Top-up Button -->
+                  <button 
+                    type="button" 
+                    class="group relative inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-emerald-400/50 dark:border-emerald-500/50 w-full md:w-auto"
+                    class:opacity-50={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                    class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                    class:transform-none={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                    class:hover:scale-100={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                    disabled={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                    on:click={() => openTopUpModal(agent)}
+                  >
+                    {#if agentsBeingToppedUp.has(agent.id)}
+                      <div class="flex items-center space-x-2">
+                        <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                        <span>Processing...</span>
+                      </div>
+                    {:else}
+                      <div class="flex items-center space-x-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                        <span>Top-up Cycles</span>
+                      </div>
+                    {/if}
+                    <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-100 to-emerald-100 dark:from-teal-600/20 dark:to-emerald-600/20 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                  </button>
+                </div>
+
+                <!-- Balance Display Section -->
+                <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-emerald-200/40 dark:border-emerald-700/40 shadow-sm">
+                  <div class="flex flex-col space-y-3">
+                    <!-- Balance Header -->
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center space-x-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                        <span class="text-sm font-medium text-emerald-900 dark:text-emerald-100">Current Balance</span>
+                      </div>
+                      
+                      <!-- Status indicator based on balance level -->
+                      {#if agent.cycleBalance > 5_000_000_000_000}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700">
+                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                          </svg>
+                          Healthy
+                        </span>
+                      {:else if agent.cycleBalance > 1_000_000_000_000}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">
+                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                          </svg>
+                          Low
+                        </span>
+                      {:else}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700">
+                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                          </svg>
+                          Critical
+                        </span>
+                      {/if}
+                    </div>
+
+                    <!-- Balance Value Display -->
+                    <div class="flex items-center justify-between">
+                      {#if agentsBeingToppedUp.has(agent.id) || agentsBeingRefreshed.has(agent.id)}
+                        <div class="flex items-center space-x-3">
+                          <span class="w-5 h-5 border-2 border-emerald-400/30 border-t-emerald-600 rounded-full animate-spin"></span>
+                          <div class="flex flex-col">
+                            <span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                              {agentsBeingToppedUp.has(agent.id) ? 'Updating balance...' : 'Refreshing balance...'}
+                            </span>
+                            <span class="text-xs text-emerald-600 dark:text-emerald-400 opacity-75">Please wait</span>
+                          </div>
+                        </div>
+                      {:else}
+                        <div class="flex flex-col">
+                          <div class="flex items-baseline space-x-2">
+                            <span class="text-2xl sm:text-3xl font-bold text-emerald-900 dark:text-emerald-100">
+                              {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)}
+                            </span>
+                            <span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">T cycles</span>
+                          </div>
+                          <span class="text-xs text-emerald-600 dark:text-emerald-400 opacity-75">
+                            ≈ {formatLargeNumber(agent.cycleBalance, 2, true)} total cycles
+                          </span>
+                        </div>
+                      {/if}
+
+                      <!-- Refresh Button -->
+                      <button 
+                        type="button" 
+                        class="group inline-flex items-center justify-center w-9 h-9 text-emerald-600 dark:text-emerald-400 bg-emerald-100/50 dark:bg-emerald-800/30 hover:bg-emerald-200/70 dark:hover:bg-emerald-700/40 rounded-lg border border-emerald-300/50 dark:border-emerald-600/50 transition-all duration-200 hover:scale-105 hover:shadow-md"
+                        class:opacity-50={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
+                        class:cursor-not-allowed={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
+                        class:hover:scale-100={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
+                        disabled={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
+                        on:click={() => refreshAgentBalance(agent)}
+                        use:tooltip={{ 
+                          text: "Refresh cycles balance",
+                          direction: 'top',
+                          textSize: 'xs'
+                        }}
+                      >
+                        {#if agentsBeingRefreshed.has(agent.id)}
+                          <span class="w-4 h-4 border-2 border-emerald-400/30 border-t-emerald-600 rounded-full animate-spin"></span>
+                        {:else}
+                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                        {/if}
+                      </button>
+                    </div>
+
+                    <!-- Balance Info Footer -->
+                    {#if !agentsBeingToppedUp.has(agent.id) && !agentsBeingRefreshed.has(agent.id)}
+                      <div class="pt-2 border-t border-emerald-200/50 dark:border-emerald-700/50">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs space-y-1 sm:space-y-0">
+                          <span class="text-emerald-600 dark:text-emerald-400 opacity-75">
+                            💡 Cycles power your mAIner's computational tasks
+                          </span>
+                          {#if agent.cycleBalance <= 1_000_000_000_000}
+                            <span class="text-red-600 dark:text-red-400 font-medium">
+                              ⚠️ Top-up recommended
+                            </span>
+                          {/if}
+                        </div>
+                      </div>
+                    {/if}
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Bottom accent line -->
+              <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 dark:via-emerald-500 to-transparent"></div>
+            </div>
+          </div>
+          
           <!-- Enhanced Canister Information Section -->
           <div class="flex flex-col space-y-2 mb-2">
             <div class="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 border border-blue-200/60 dark:border-blue-700/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
@@ -2017,170 +2182,7 @@
                 {/if}
           </div>
           
-          <div class="flex flex-col space-y-2 mb-2">
-            <!-- Enhanced Cycles Management Panel -->
-            <div class="relative overflow-hidden bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-cyan-900/20 border border-emerald-200/60 dark:border-emerald-700/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
-              <!-- Background decorative elements -->
-              <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-200/30 to-teal-200/30 dark:from-emerald-600/10 dark:to-teal-600/10 rounded-full -translate-y-10 translate-x-10"></div>
-              <div class="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-cyan-200/30 to-emerald-200/30 dark:from-cyan-600/10 dark:to-emerald-600/10 rounded-full translate-y-8 -translate-x-8"></div>
-              
-              <div class="relative p-4 sm:p-5">
-                <!-- Header Section -->
-                <div class="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0 mb-4">
-                  <div class="flex items-center space-x-3">
-                    <!-- Icon with gradient background -->
-                    <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                      </svg>
-                    </div>
-                    
-                    <!-- Title and subtitle -->
-                    <div class="flex flex-col">
-                      <h2 class="text-sm sm:text-base font-bold text-emerald-900 dark:text-emerald-100">Cycles Management</h2>
-                      <p class="text-xs text-emerald-700 dark:text-emerald-300">Power your mAIner with computational cycles</p>
-                    </div>
-                  </div>
-                  
-                  <!-- Primary Top-up Button -->
-                  <button 
-                    type="button" 
-                    class="group relative inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-emerald-400/50 dark:border-emerald-500/50 w-full md:w-auto"
-                    class:opacity-50={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                    class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                    class:transform-none={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                    class:hover:scale-100={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                    disabled={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                    on:click={() => openTopUpModal(agent)}
-                  >
-                    {#if agentsBeingToppedUp.has(agent.id)}
-                      <div class="flex items-center space-x-2">
-                        <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                        <span>Processing...</span>
-                      </div>
-                    {:else}
-                      <div class="flex items-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                        </svg>
-                        <span>Top-up Cycles</span>
-                      </div>
-                    {/if}
-                    <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-100 to-emerald-100 dark:from-teal-600/20 dark:to-emerald-600/20 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                  </button>
-                </div>
-
-                <!-- Balance Display Section -->
-                <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-emerald-200/40 dark:border-emerald-700/40 shadow-sm">
-                  <div class="flex flex-col space-y-3">
-                    <!-- Balance Header -->
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                        </svg>
-                        <span class="text-sm font-medium text-emerald-900 dark:text-emerald-100">Current Balance</span>
-                      </div>
-                      
-                      <!-- Status indicator based on balance level -->
-                      {#if agent.cycleBalance > 5_000_000_000_000}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700">
-                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                          </svg>
-                          Healthy
-                        </span>
-                      {:else if agent.cycleBalance > 1_000_000_000_000}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">
-                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                          </svg>
-                          Low
-                        </span>
-                      {:else}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700">
-                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                          </svg>
-                          Critical
-                        </span>
-                      {/if}
-                    </div>
-
-                    <!-- Balance Value Display -->
-                    <div class="flex items-center justify-between">
-                      {#if agentsBeingToppedUp.has(agent.id) || agentsBeingRefreshed.has(agent.id)}
-                        <div class="flex items-center space-x-3">
-                          <span class="w-5 h-5 border-2 border-emerald-400/30 border-t-emerald-600 rounded-full animate-spin"></span>
-                          <div class="flex flex-col">
-                            <span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                              {agentsBeingToppedUp.has(agent.id) ? 'Updating balance...' : 'Refreshing balance...'}
-                            </span>
-                            <span class="text-xs text-emerald-600 dark:text-emerald-400 opacity-75">Please wait</span>
-                          </div>
-                        </div>
-                      {:else}
-                        <div class="flex flex-col">
-                          <div class="flex items-baseline space-x-2">
-                            <span class="text-2xl sm:text-3xl font-bold text-emerald-900 dark:text-emerald-100">
-                              {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)}
-                            </span>
-                            <span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">T cycles</span>
-                          </div>
-                          <span class="text-xs text-emerald-600 dark:text-emerald-400 opacity-75">
-                            ≈ {formatLargeNumber(agent.cycleBalance, 2, true)} total cycles
-                          </span>
-                        </div>
-                      {/if}
-
-                      <!-- Refresh Button -->
-                      <button 
-                        type="button" 
-                        class="group inline-flex items-center justify-center w-9 h-9 text-emerald-600 dark:text-emerald-400 bg-emerald-100/50 dark:bg-emerald-800/30 hover:bg-emerald-200/70 dark:hover:bg-emerald-700/40 rounded-lg border border-emerald-300/50 dark:border-emerald-600/50 transition-all duration-200 hover:scale-105 hover:shadow-md"
-                        class:opacity-50={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
-                        class:cursor-not-allowed={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
-                        class:hover:scale-100={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
-                        disabled={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
-                        on:click={() => refreshAgentBalance(agent)}
-                        use:tooltip={{ 
-                          text: "Refresh cycles balance",
-                          direction: 'top',
-                          textSize: 'xs'
-                        }}
-                      >
-                        {#if agentsBeingRefreshed.has(agent.id)}
-                          <span class="w-4 h-4 border-2 border-emerald-400/30 border-t-emerald-600 rounded-full animate-spin"></span>
-                        {:else}
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                        {/if}
-                      </button>
-                    </div>
-
-                    <!-- Balance Info Footer -->
-                    {#if !agentsBeingToppedUp.has(agent.id) && !agentsBeingRefreshed.has(agent.id)}
-                      <div class="pt-2 border-t border-emerald-200/50 dark:border-emerald-700/50">
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs space-y-1 sm:space-y-0">
-                          <span class="text-emerald-600 dark:text-emerald-400 opacity-75">
-                            💡 Cycles power your mAIner's computational tasks
-                          </span>
-                          {#if agent.cycleBalance <= 1_000_000_000_000}
-                            <span class="text-red-600 dark:text-red-400 font-medium">
-                              ⚠️ Top-up recommended
-                            </span>
-                          {/if}
-                        </div>
-                      </div>
-                    {/if}
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Bottom accent line -->
-              <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 dark:via-emerald-500 to-transparent"></div>
-            </div>
-          </div>
+          
 
           <div class="flex flex-col space-y-2 mb-2">
             <!-- Daily Burn Rate Panel Component -->
