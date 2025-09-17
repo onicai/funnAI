@@ -100,11 +100,6 @@ type DailyMetricResult =
    Err: ApiError;
    Ok: DailyMetric;
  };
-type DailyMetricOperationResult = 
- variant {
-   Err: ApiError;
-   Ok: bool;
- };
 type DailyMetricMetadata = 
  record {
    created_at: text;
@@ -142,11 +137,6 @@ type DailyBurnRate =
    cycles: nat;
    usd: float64;
  };
-type BulkCreateResult = 
- variant {
-   Err: ApiError;
-   Ok: nat;
- };
 type AuthRecordResult = 
  variant {
    Err: ApiError;
@@ -166,10 +156,9 @@ type ApiError =
 type ApiCanister = 
  service {
    amiController: () -> (AuthRecordResult) query;
-   bulkCreateDailyMetricsAdmin: (inputs: vec DailyMetricInput) ->
-    (BulkCreateResult);
+   bulkCreateDailyMetricsAdmin: (inputs: vec DailyMetricInput) -> (NatResult);
    createDailyMetricAdmin: (input: DailyMetricInput) -> (DailyMetricResult);
-   deleteDailyMetricAdmin: (date: text) -> (DailyMetricOperationResult);
+   deleteDailyMetricAdmin: (date: text) -> (NatResult);
    getDailyMetricByDate: (date: text) -> (DailyMetricResult) query;
    getDailyMetrics: (dailyMetricsQuery: opt DailyMetricsQuery) ->
     (DailyMetricsResult) query;
@@ -178,6 +167,7 @@ type ApiCanister =
    getMasterCanisterId: () -> (AuthRecordResult) query;
    getNumDailyMetrics: () -> (NatResult) query;
    health: () -> (StatusCodeRecordResult) query;
+   resetDailyMetricsAdmin: () -> (NatResult);
    setMasterCanisterId: (newMasterCanisterId: text) -> (AuthRecordResult);
    updateDailyMetricAdmin: (params: UpdateDailyMetricAdminInput) ->
     (DailyMetricResult);
