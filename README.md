@@ -401,7 +401,12 @@ dfx deploy --network development funnai_frontend
 or
 
 dfx deploy funnai_frontend --network development --wallet "$(dfx identity --network development get-wallet)"
+
+demo
+
+dfx deploy funnai_frontend --network demo --wallet "$(dfx identity --network demo get-wallet)"
 ```
+
 
 For setting up stages, see [Notes on Stages](./notes/NotesOnStages.md)
 
