@@ -3,6 +3,7 @@
   import CyclesDisplayAgent from './CyclesDisplayAgent.svelte';
   import DailyBurnRatePanel from './DailyBurnRatePanel.svelte';
   import FlockOverview from './mainers/FlockOverview.svelte';
+  import CanisterInfo from './CanisterInfo.svelte';
   import { store } from "../../stores/store";
   import LoginModal from '../login/LoginModal.svelte';
   import MainerPaymentModal from './MainerPaymentModal.svelte';
@@ -1998,191 +1999,6 @@
               <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 dark:via-emerald-500 to-transparent"></div>
             </div>
           </div>
-          
-          <!-- Enhanced Canister Information Section -->
-          <div class="flex flex-col space-y-2 mb-2">
-            <div class="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 border border-blue-200/60 dark:border-blue-700/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
-              <!-- Background decorative elements -->
-              <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 dark:from-blue-600/10 dark:to-indigo-600/10 rounded-full -translate-y-10 translate-x-10"></div>
-              <div class="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-purple-200/30 to-blue-200/30 dark:from-purple-600/10 dark:to-blue-600/10 rounded-full translate-y-8 -translate-x-8"></div>
-              
-              <div class="relative p-4 sm:p-5">
-                <!-- Header Section -->
-                <div class="flex items-center space-x-3 mb-4">
-                  <!-- Enhanced icon with gradient background -->
-                  <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-xl shadow-lg flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
-                    </svg>
-                  </div>
-                  
-                  <!-- Title and subtitle -->
-                  <div class="flex flex-col">
-                    <h2 class="text-sm sm:text-base font-bold text-blue-900 dark:text-blue-100">Canister Information</h2>
-                    <p class="text-xs text-blue-700 dark:text-blue-300">Internet Computer infrastructure details</p>
-                  </div>
-                </div>
-
-                <!-- Controller ID Section -->
-                <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-blue-200/40 dark:border-blue-700/40 shadow-sm">
-                  <div class="flex flex-col space-y-3">
-                    <!-- Controller ID Header -->
-                    <div class="flex items-center space-x-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                      </svg>
-                      <span class="text-sm font-medium text-blue-900 dark:text-blue-100">Controller ID</span>
-                    </div>
-                    
-                    <!-- Enhanced Controller ID Link -->
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                      <div class="flex-1 min-w-0">
-                        <div class="font-mono text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-3 py-2 rounded-lg border border-blue-200/50 dark:border-blue-700/50">
-                          <span class="break-all">{agent.id}</span>
-                        </div>
-                      </div>
-                      
-                      <a 
-                        href="https://dashboard.internetcomputer.org/canister/{agent.id}" 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        class="group relative inline-flex items-center justify-center px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-blue-400/50 dark:border-blue-500/50 w-full sm:w-auto"
-                      >
-                        <div class="flex items-center space-x-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                          </svg>
-                          <span>View on Dashboard</span>
-                        </div>
-                        <div class="absolute inset-0 rounded-lg bg-gradient-to-r from-indigo-100 to-blue-100 dark:from-indigo-600/20 dark:to-blue-600/20 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                      </a>
-                    </div>
-                    
-                    <!-- Additional info -->
-                    <div class="pt-2 border-t border-blue-200/50 dark:border-blue-700/50">
-                      <div class="flex items-center space-x-2 text-xs text-blue-600/80 dark:text-blue-400/80">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                        <span>Canister runs on Internet Computer Protocol</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Bottom accent line -->
-              <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-400 dark:via-blue-500 to-transparent"></div>
-            </div>
-            
-                
-                <!-- For Own type mAIners, show LLM information or setup status -->
-                {#if agent.mainerType === 'Own'}
-                  <div class="relative overflow-hidden bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 dark:from-purple-900/20 dark:via-indigo-900/20 dark:to-blue-900/20 border border-purple-200/60 dark:border-purple-700/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 mt-2">
-                    <!-- Background decorative elements -->
-                    <div class="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-200/30 to-indigo-200/30 dark:from-purple-600/10 dark:to-indigo-600/10 rounded-full -translate-y-8 translate-x-8"></div>
-                    <div class="absolute bottom-0 left-0 w-12 h-12 bg-gradient-to-tr from-indigo-200/30 to-purple-200/30 dark:from-indigo-600/10 dark:to-purple-600/10 rounded-full translate-y-6 -translate-x-6"></div>
-                    
-                    <div class="relative p-4 sm:p-5">
-                      <!-- Header Section for LLM -->
-                      <div class="flex items-center space-x-3 mb-4">
-                        <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 dark:from-purple-600 dark:to-indigo-700 rounded-xl shadow-lg flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                          </svg>
-                        </div>
-                        <div class="flex flex-col">
-                          <h3 class="text-sm sm:text-base font-bold text-purple-900 dark:text-purple-100">LLM Environment</h3>
-                          <p class="text-xs text-purple-700 dark:text-purple-300">Private AI language model infrastructure</p>
-                        </div>
-                      </div>
-
-                      <!-- Show LLM setup status if in progress -->
-                      {#if agent.llmSetupStatus === 'inProgress'}
-                        <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-yellow-200/60 dark:border-yellow-700/60 shadow-sm mb-4">
-                          <div class="flex items-start space-x-3">
-                            <svg class="animate-spin h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <div class="flex-1">
-                              <p class="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-1">
-                                LLM Setup in Progress
-                              </p>
-                              <p class="text-xs text-yellow-700 dark:text-yellow-400 leading-relaxed">
-                                Setting up your private AI environment. This may take several minutes and will continue in the background. You can use shared LLMs in the meantime.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      {/if}
-                      
-                      <!-- LLM Canisters Section -->
-                      <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-purple-200/40 dark:border-purple-700/40 shadow-sm">
-                        <div class="flex items-center space-x-2 mb-3">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 00-2 2v2m0 0V9a2 2 0 012-2h14a2 2 0 012 2v2M7 7V6a3 3 0 016 0v1"/>
-                          </svg>
-                          <span class="text-sm font-medium text-purple-900 dark:text-purple-100">Attached LLMs</span>
-                        </div>
-                        
-                        {#if agent.llmCanisters && agent.llmCanisters.length > 0}
-                          <div class="space-y-3">
-                            {#each agent.llmCanisters as llmCanister, i}
-                              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 bg-purple-50/50 dark:bg-purple-900/20 rounded-lg border border-purple-200/30 dark:border-purple-700/30">
-                                <div class="flex items-center space-x-2">
-                                  <div class="w-6 h-6 bg-purple-100 dark:bg-purple-800/40 rounded-md flex items-center justify-center">
-                                    <span class="text-xs font-bold text-purple-600 dark:text-purple-400">{i+1}</span>
-                                  </div>
-                                  <div class="font-mono text-xs text-purple-700 dark:text-purple-300 bg-purple-100/50 dark:bg-purple-900/30 px-2 py-1 rounded border border-purple-200/50 dark:border-purple-700/50">
-                                    <span class="break-all">{llmCanister}</span>
-                                  </div>
-                                </div>
-                                <a 
-                                  href="https://dashboard.internetcomputer.org/canister/{llmCanister}" 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  class="group inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-100/60 dark:bg-purple-800/30 hover:bg-purple-200/70 dark:hover:bg-purple-700/40 rounded-md border border-purple-300/50 dark:border-purple-600/50 transition-all duration-200 hover:scale-105 hover:shadow-sm w-full sm:w-auto"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 mr-1.5 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                                  </svg>
-                                  View LLM
-                                </a>
-                              </div>
-                            {/each}
-                          </div>
-                        {:else}
-                          <div class="text-center py-4">
-                            {#if agent.llmSetupStatus === 'inProgress'}
-                              <div class="flex items-center justify-center space-x-3 text-yellow-600 dark:text-yellow-400">
-                                <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span class="text-sm font-medium">Setting up LLM environment...</span>
-                              </div>
-                            {:else}
-                              <div class="text-gray-500 dark:text-gray-400">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mx-auto mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
-                                </svg>
-                                <p class="text-sm font-medium mb-1">No LLMs attached yet</p>
-                                <p class="text-xs">Your private AI environment is being prepared</p>
-                              </div>
-                            {/if}
-                          </div>
-                        {/if}
-                      </div>
-                    </div>
-                    
-                    <!-- Bottom accent line -->
-                    <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-purple-400 dark:via-purple-500 to-transparent"></div>
-                  </div>
-                {/if}
-          </div>
-          
-          
 
           <div class="flex flex-col space-y-2 mb-2">
             <!-- Daily Burn Rate Panel Component -->
@@ -2194,6 +2010,10 @@
             />
           </div>
 
+          <!-- Canister Info Component -->
+          <div class="flex flex-col space-y-2 mb-2">
+            <CanisterInfo {agent} />
+          </div>
 
           <div class="flex flex-col space-y-2 mb-2">
             <CyclesDisplayAgent cycles={agent.burnedCycles} label="Burned Cycles" />
