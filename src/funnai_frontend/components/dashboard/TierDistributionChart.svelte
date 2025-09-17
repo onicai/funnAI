@@ -103,17 +103,24 @@
         tierData.very_high
       ];
 
+      // Define colors matching the Daily Burn Rate component
+      const burnRateColors = [
+        '#10b981', // Low - green-500 (emerald)
+        '#f59e0b', // Medium - amber-500 (yellow/orange)
+        '#ef4444', // High - red-500
+        '#dc2626'  // Very High - red-600 (darker red)
+      ];
+
       // Filter out zero values
       const filteredLabels = [];
       const filteredData = [];
-      const colors = generatePieColors(4);
       const filteredColors = [];
 
       for (let i = 0; i < data.length; i++) {
         if (data[i] > 0) {
           filteredLabels.push(labels[i]);
           filteredData.push(data[i]);
-          filteredColors.push(colors[i]);
+          filteredColors.push(burnRateColors[i]);
         }
       }
 
