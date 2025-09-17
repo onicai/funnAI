@@ -17,6 +17,7 @@ export const idlFactory = ({ IDL }) => {
     'paused_very_high_burn_rate_mainers' : IDL.Nat,
     'paused_medium_burn_rate_mainers' : IDL.Nat,
     'total_cycles_all_mainers' : IDL.Nat,
+    'paused_custom_burn_rate_mainers' : IDL.Nat,
     'active_very_high_burn_rate_mainers' : IDL.Nat,
     'active_high_burn_rate_mainers' : IDL.Nat,
     'active_low_burn_rate_mainers' : IDL.Nat,
@@ -25,6 +26,7 @@ export const idlFactory = ({ IDL }) => {
     'paused_high_burn_rate_mainers' : IDL.Nat,
     'total_active_mainers' : IDL.Nat,
     'active_medium_burn_rate_mainers' : IDL.Nat,
+    'active_custom_burn_rate_mainers' : IDL.Nat,
     'daily_burn_rate_cycles' : IDL.Nat,
     'funnai_index' : IDL.Float64,
     'total_mainers_created' : IDL.Nat,
@@ -35,6 +37,7 @@ export const idlFactory = ({ IDL }) => {
     'paused_percentage' : IDL.Float64,
     'tier_distribution' : IDL.Record({
       'low' : IDL.Float64,
+      'custom' : IDL.Float64,
       'high' : IDL.Float64,
       'very_high' : IDL.Float64,
       'medium' : IDL.Float64,
@@ -44,6 +47,7 @@ export const idlFactory = ({ IDL }) => {
   });
   const MainersTierBreakdown = IDL.Record({
     'low' : IDL.Nat,
+    'custom' : IDL.Nat,
     'high' : IDL.Nat,
     'very_high' : IDL.Nat,
     'medium' : IDL.Nat,
@@ -108,6 +112,7 @@ export const idlFactory = ({ IDL }) => {
     'paused_very_high_burn_rate_mainers' : IDL.Opt(IDL.Nat),
     'paused_medium_burn_rate_mainers' : IDL.Opt(IDL.Nat),
     'total_cycles_all_mainers' : IDL.Opt(IDL.Nat),
+    'paused_custom_burn_rate_mainers' : IDL.Opt(IDL.Nat),
     'active_very_high_burn_rate_mainers' : IDL.Opt(IDL.Nat),
     'active_high_burn_rate_mainers' : IDL.Opt(IDL.Nat),
     'active_low_burn_rate_mainers' : IDL.Opt(IDL.Nat),
@@ -116,6 +121,7 @@ export const idlFactory = ({ IDL }) => {
     'paused_high_burn_rate_mainers' : IDL.Opt(IDL.Nat),
     'total_active_mainers' : IDL.Opt(IDL.Nat),
     'active_medium_burn_rate_mainers' : IDL.Opt(IDL.Nat),
+    'active_custom_burn_rate_mainers' : IDL.Opt(IDL.Nat),
     'daily_burn_rate_cycles' : IDL.Opt(IDL.Nat),
     'funnai_index' : IDL.Opt(IDL.Float64),
     'total_mainers_created' : IDL.Opt(IDL.Nat),

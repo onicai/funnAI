@@ -51,6 +51,7 @@ export interface DailyMetricInput {
   'paused_very_high_burn_rate_mainers' : bigint,
   'paused_medium_burn_rate_mainers' : bigint,
   'total_cycles_all_mainers' : bigint,
+  'paused_custom_burn_rate_mainers' : bigint,
   'active_very_high_burn_rate_mainers' : bigint,
   'active_high_burn_rate_mainers' : bigint,
   'active_low_burn_rate_mainers' : bigint,
@@ -59,6 +60,7 @@ export interface DailyMetricInput {
   'paused_high_burn_rate_mainers' : bigint,
   'total_active_mainers' : bigint,
   'active_medium_burn_rate_mainers' : bigint,
+  'active_custom_burn_rate_mainers' : bigint,
   'daily_burn_rate_cycles' : bigint,
   'funnai_index' : number,
   'total_mainers_created' : bigint,
@@ -75,6 +77,7 @@ export interface DailyMetricUpdateInput {
   'paused_very_high_burn_rate_mainers' : [] | [bigint],
   'paused_medium_burn_rate_mainers' : [] | [bigint],
   'total_cycles_all_mainers' : [] | [bigint],
+  'paused_custom_burn_rate_mainers' : [] | [bigint],
   'active_very_high_burn_rate_mainers' : [] | [bigint],
   'active_high_burn_rate_mainers' : [] | [bigint],
   'active_low_burn_rate_mainers' : [] | [bigint],
@@ -83,6 +86,7 @@ export interface DailyMetricUpdateInput {
   'paused_high_burn_rate_mainers' : [] | [bigint],
   'total_active_mainers' : [] | [bigint],
   'active_medium_burn_rate_mainers' : [] | [bigint],
+  'active_custom_burn_rate_mainers' : [] | [bigint],
   'daily_burn_rate_cycles' : [] | [bigint],
   'funnai_index' : [] | [number],
   'total_mainers_created' : [] | [bigint],
@@ -103,6 +107,7 @@ export interface DerivedMetrics {
   'paused_percentage' : number,
   'tier_distribution' : {
     'low' : number,
+    'custom' : number,
     'high' : number,
     'very_high' : number,
     'medium' : number,
@@ -124,6 +129,7 @@ export interface MainersMetrics {
 }
 export interface MainersTierBreakdown {
   'low' : bigint,
+  'custom' : bigint,
   'high' : bigint,
   'very_high' : bigint,
   'medium' : bigint,
