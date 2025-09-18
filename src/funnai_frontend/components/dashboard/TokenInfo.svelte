@@ -10,17 +10,12 @@
 
   const tokenIndex = {
     title: "Token Index",
-    canisterId: "coming soon...",
-    status: "pending"
+    canisterId: "mziuv-biaaa-aaaaa-qccrq-cai",
+    status: "active"
   };
 
   // Copy to clipboard functionality
   async function copyToClipboard(text: string, canisterType: string) {
-    if (text === "coming soon...") {
-      showToast("Index canister not available yet", "warning");
-      return;
-    }
-
     try {
       await navigator.clipboard.writeText(text);
       showToast(`${canisterType} canister ID copied to clipboard!`, "success");
@@ -136,8 +131,8 @@
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
         <div class="flex items-center justify-between mb-3">
           <div class="flex items-center space-x-2">
-            <div class="p-1.5 bg-yellow-100 dark:bg-yellow-900/30 rounded">
-              <svg class="w-4 h-4 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="p-1.5 bg-green-100 dark:bg-green-900/30 rounded">
+              <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
@@ -148,8 +143,8 @@
             </div>
           </div>
           <div class="flex items-center space-x-1">
-            <div class="w-1.5 h-1.5 rounded-full bg-yellow-500"></div>
-            <span class="text-xs text-yellow-600 dark:text-yellow-400 font-medium">Pending</span>
+            <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+            <span class="text-xs text-green-600 dark:text-green-400 font-medium">Active</span>
           </div>
         </div>
 
@@ -157,15 +152,14 @@
         <div class="mb-3">
           <div class="flex items-center space-x-2">
             <div class="flex-1 bg-white dark:bg-gray-800 rounded px-2 py-1.5 border border-gray-300 dark:border-gray-600">
-              <code class="text-xs font-mono text-gray-500 dark:text-gray-400 italic">
+              <code class="text-xs font-mono text-gray-900 dark:text-gray-100 break-all">
                 {tokenIndex.canisterId}
               </code>
             </div>
             <button
               on:click={() => copyToClipboard(tokenIndex.canisterId, "Index")}
-              class="p-1.5 bg-gray-400 hover:bg-gray-500 text-white rounded transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 dark:focus:ring-offset-gray-800"
+              class="p-1.5 bg-green-600 hover:bg-green-700 text-white rounded transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 dark:focus:ring-offset-gray-800"
               title="Copy canister ID"
-              disabled={tokenIndex.canisterId === "coming soon..."}
             >
               <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -174,15 +168,14 @@
           </div>
         </div>
 
-        <!-- Coming Soon Message -->
-        <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded p-2">
+        <!-- Index Details -->
+        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded p-2">
           <div class="flex items-center space-x-2">
-            <svg class="h-3 w-3 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+            <svg class="h-3 w-3 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
             </svg>
             <div>
-              <span class="text-xs font-medium text-yellow-800 dark:text-yellow-200">Under Development</span>
-              <p class="text-xs text-yellow-700 dark:text-yellow-300 mt-0.5">Index canister coming soon</p>
+              <p class="text-xs text-green-700 dark:text-green-300 mt-0.5">Index canister is active and ready</p>
             </div>
           </div>
         </div>
