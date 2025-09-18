@@ -207,14 +207,14 @@
         <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4">
           <div class="text-sm font-medium text-indigo-600 dark:text-indigo-400">Avg Cycles per mAIner</div>
           <div class="text-xl font-bold text-indigo-900 dark:text-indigo-300">
-            {formatChartNumber(displayMetrics.derived_metrics.avg_cycles_per_mainer)}
+            {formatChartNumber(displayMetrics.derived_metrics.avg_cycles_per_mainer * 1e12, 'cycles')}
           </div>
         </div>
         
         <div class="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-4">
           <div class="text-sm font-medium text-teal-600 dark:text-teal-400">Burn Rate per Active</div>
           <div class="text-xl font-bold text-teal-900 dark:text-teal-300">
-            {formatChartNumber(displayMetrics.derived_metrics.burn_rate_per_active_mainer)}
+            {formatChartNumber(displayMetrics.derived_metrics.burn_rate_per_active_mainer * 1e12, 'cycles')}
           </div>
         </div>
       </div>

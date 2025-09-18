@@ -10,6 +10,7 @@
   import TokenDistribution from "../components/dashboard/TokenDistribution.svelte";
   import SystemStatus from "../components/dashboard/SystemStatus.svelte";
   import MetricsDashboard from "../components/dashboard/MetricsDashboard.svelte";
+  import TokenInfo from "../components/dashboard/TokenInfo.svelte";
   
   // Import services for fetching token data
   import { IcrcService } from "../helpers/IcrcService";
@@ -90,20 +91,7 @@
     </div>
 
     <!-- Quick Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-      <!-- mAIners Card -->
-      <!-- <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Global mAIners</p>
-            <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">{totalMainers}</p>
-          </div> 
-          <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full">
-            🦜
-          </div>
-        </div>
-      </div>-->
-
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
       <!-- Current Supply Card -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
         <div class="flex items-center justify-between">
@@ -181,7 +169,12 @@
     
 
     <!-- Dashboard Components Grid -->
-    <div class="space-y-8">
+    <div class="space-y-6">
+      <!-- Token Information Section -->
+      <div class="grid grid-cols-1">
+        <TokenInfo />
+      </div>
+
       <!-- Top Row: User mAIner Stats and Protocol Metrics -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="grid grid-cols-1 gap-6">
@@ -196,7 +189,7 @@
     </div>
 
     <!-- Metrics Dashboard -->
-    <div class="my-8">
+    <div class="my-6">
       <MetricsDashboard title="Daily Metrics Dashboard" />
     </div>
   </div>
