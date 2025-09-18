@@ -197,9 +197,10 @@
       
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div class="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-4">
-          <div class="text-sm font-medium text-cyan-600 dark:text-cyan-400">Total TCycles</div>
+          <div class="text-sm font-medium text-cyan-600 dark:text-cyan-400">Total Cycles</div>
           <div class="text-xl font-bold text-cyan-900 dark:text-cyan-300">
-            {formatChartNumber(displayMetrics.mainers.totals.total_cycles, 'cycles')}
+            {formatChartNumber(displayMetrics.mainers.totals.total_cycles * 1e12, 'cycles')}
+
           </div>
         </div>
         
