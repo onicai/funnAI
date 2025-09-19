@@ -181,7 +181,7 @@
 
           <!-- Transaction History Section -->
           <div class="grid grid-cols-1 mt-6">
-            <TransactionHistory maxResults={20} />
+            <TransactionHistory />
           </div>
 
         </div>

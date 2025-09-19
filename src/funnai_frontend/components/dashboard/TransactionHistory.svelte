@@ -4,14 +4,25 @@
   import { TransactionService, type ProcessedTransaction } from '../../helpers/TransactionService';
   
   export let title: string = "My $FUNNAI Ledger";
-  export let maxResults: number = 20;
   export let refreshInterval: number = 30000; // 30 seconds
+  export let showPagination: boolean = true;
+  export let compact: boolean = false;
   
   let transactions: ProcessedTransaction[] = [];
   let loading = true;
   let error = "";
   let userPrincipal: string | null = null;
   let refreshTimer: NodeJS.Timeout | null = null;
+  let expandedTransaction: string | null = null;
+  
+  // Pagination state
+  let currentPage = 1;
+  let totalPages = 1;
+  let hasMore = true;
+  let loadingMore = false;
+  let jumpToPage = "";
+  const transactionsPerPage = 20;
+  const maxVisiblePages = 7; // Show up to 7 page numbers
 
   // Subscribe to store to get user principal
   const unsubscribe = store.subscribe((state) => {
@@ -21,17 +32,19 @@
       userPrincipal = newPrincipal;
       if (userPrincipal && userPrincipal !== "anonymous") {
         console.log("TransactionHistory: Loading transactions for principal:", userPrincipal);
-        loadTransactions();
+        currentPage = 1;
+        loadTransactions(1);
       } else {
         console.log("TransactionHistory: No valid principal, clearing transactions");
         transactions = [];
         loading = false;
         error = "";
+        currentPage = 1;
       }
     }
   });
 
-  async function loadTransactions() {
+  async function loadTransactions(page: number = 1) {
     if (!userPrincipal || userPrincipal === "anonymous") {
       transactions = [];
       loading = false;
@@ -39,14 +52,37 @@
     }
 
     loading = true;
+    currentPage = page;
     error = "";
 
     try {
+      // For true pagination, we need to estimate the start index
+      // Since we can't get exact pagination from the canister, we'll fetch a larger batch
+      // and slice it to show the requested page
+      const batchSize = Math.max(100, page * transactionsPerPage * 2);
       const fetchedTransactions = await TransactionService.fetchUserTransactions(
         userPrincipal, 
-        maxResults
+        batchSize
       );
-      transactions = fetchedTransactions;
+      
+      // Calculate pagination
+      const startIndex = (page - 1) * transactionsPerPage;
+      const endIndex = startIndex + transactionsPerPage;
+      
+      // Store all transactions for pagination
+      const allTransactions = fetchedTransactions;
+      transactions = allTransactions.slice(startIndex, endIndex);
+      
+      // Update pagination state
+      totalPages = Math.ceil(allTransactions.length / transactionsPerPage);
+      hasMore = allTransactions.length >= batchSize; // Might have more if we hit the batch limit
+      
+      // If we're on a page beyond what we have, adjust
+      if (page > totalPages && totalPages > 0) {
+        currentPage = totalPages;
+        transactions = allTransactions.slice((totalPages - 1) * transactionsPerPage, totalPages * transactionsPerPage);
+      }
+      
     } catch (err) {
       console.error("Error loading transactions:", err);
       error = "Failed to load transaction history";
@@ -56,10 +92,97 @@
     }
   }
 
+  function loadNextPage() {
+    if (!loading && (currentPage < totalPages || hasMore)) {
+      loadTransactions(currentPage + 1);
+    }
+  }
+
+  function loadPreviousPage() {
+    if (currentPage > 1 && !loading) {
+      loadTransactions(currentPage - 1);
+    }
+  }
+
+  function goToPage(page: number) {
+    if (page !== currentPage && page >= 1 && !loading) {
+      loadTransactions(page);
+    }
+  }
+
+  function goToFirstPage() {
+    if (currentPage > 1 && !loading) {
+      loadTransactions(1);
+    }
+  }
+
+  function goToLastPage() {
+    if (currentPage < totalPages && !loading) {
+      loadTransactions(totalPages);
+    }
+  }
+
+  function handleJumpToPage() {
+    const page = parseInt(jumpToPage);
+    if (page && page >= 1 && page <= totalPages && page !== currentPage) {
+      loadTransactions(page);
+      jumpToPage = "";
+    }
+  }
+
+  // Generate page numbers for display with ellipsis
+  function getVisiblePages(): (number | string)[] {
+    if (totalPages <= maxVisiblePages) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    const pages: (number | string)[] = [];
+    const halfVisible = Math.floor(maxVisiblePages / 2);
+
+    if (currentPage <= halfVisible + 1) {
+      // Show pages from start
+      for (let i = 1; i <= maxVisiblePages - 2; i++) {
+        pages.push(i);
+      }
+      pages.push('...');
+      pages.push(totalPages);
+    } else if (currentPage >= totalPages - halfVisible) {
+      // Show pages near end
+      pages.push(1);
+      pages.push('...');
+      for (let i = totalPages - (maxVisiblePages - 3); i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show pages around current
+      pages.push(1);
+      pages.push('...');
+      for (let i = currentPage - halfVisible + 1; i <= currentPage + halfVisible - 1; i++) {
+        pages.push(i);
+      }
+      pages.push('...');
+      pages.push(totalPages);
+    }
+
+    return pages;
+  }
+
+  function toggleTransactionDetails(txId: string) {
+    expandedTransaction = expandedTransaction === txId ? null : txId;
+  }
+
+  function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      // You could add a toast notification here
+      console.log('Copied to clipboard:', text);
+    });
+  }
+
   function handleRefresh() {
     if (userPrincipal) {
       TransactionService.clearCache(userPrincipal);
-      loadTransactions();
+      currentPage = 1;
+      loadTransactions(1);
     }
   }
 
@@ -114,7 +237,7 @@
     if (refreshInterval > 0) {
       refreshTimer = setInterval(() => {
         if (userPrincipal && !loading) {
-          loadTransactions();
+          loadTransactions(currentPage);
         }
       }, refreshInterval);
     }
@@ -128,41 +251,44 @@
   });
 </script>
 
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 {compact ? 'p-4' : 'p-6'}">
   <!-- Header -->
   <div class="flex items-center justify-between mb-6">
-    <div class="flex items-center space-x-2">
-      <div class="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
-        <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+    <div class="flex items-center space-x-3">
+      <div class="p-2.5 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-sm">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
       </div>
       <div>
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
-        <p class="text-sm text-gray-600 dark:text-gray-400">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white">{title}</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
           {#if !userPrincipal || userPrincipal === "anonymous"}
-            Please connect your wallet to view transactions
+            Connect wallet to view transactions
           {:else if transactions.length > 0}
-            Showing {transactions.length} recent transactions
+            Showing {Math.min(currentPage * transactionsPerPage, transactions.length)} of {transactions.length}{hasMore ? '+' : ''} transactions
           {:else if !loading && !error}
             No transactions found
           {:else}
-            Loading transaction history...
+            Loading...
           {/if}
         </p>
       </div>
     </div>
 
-    <div class="flex items-center gap-2">
-      {#if loading}
-        <div class="animate-spin h-4 w-4 border-2 border-purple-500 rounded-full border-t-transparent"></div>
+    <div class="flex items-center gap-3">
+      {#if loading || loadingMore}
+        <div class="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
       {/if}
+      
       <button 
         on:click={handleRefresh}
-        class="text-xs text-purple-600 dark:text-purple-400 hover:underline px-2 py-1 rounded hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
-        disabled={loading || !userPrincipal || userPrincipal === "anonymous"}
+        class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+        disabled={loading || loadingMore || !userPrincipal || userPrincipal === "anonymous"}
       >
-        Refresh
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
       </button>
     </div>
   </div>
@@ -181,16 +307,43 @@
 
   <!-- Loading State -->
   {#if loading}
-    <div class="space-y-3">
+    <!-- Table header skeleton -->
+    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-3">
+      <div class="grid grid-cols-12 gap-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+        <div class="col-span-1">Type</div>
+        <div class="col-span-4">Description</div>
+        <div class="col-span-2">Amount</div>
+        <div class="col-span-2">Status</div>
+        <div class="col-span-2">Time</div>
+        <div class="col-span-1">Fee</div>
+      </div>
+    </div>
+    
+    <!-- Table rows skeleton -->
+    <div class="space-y-1">
       {#each Array(5) as _}
         <div class="animate-pulse">
-          <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-            <div class="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
-            <div class="flex-1 space-y-2">
+          <div class="grid grid-cols-12 gap-4 items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div class="col-span-1 flex justify-center">
+              <div class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+            </div>
+            <div class="col-span-4 space-y-2">
               <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
               <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
             </div>
-            <div class="w-20 h-4 bg-gray-300 dark:bg-gray-600 rounded"></div>
+            <div class="col-span-2 text-right space-y-1">
+              <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-16 ml-auto"></div>
+              <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-12 ml-auto"></div>
+            </div>
+            <div class="col-span-2">
+              <div class="h-6 bg-gray-300 dark:bg-gray-600 rounded-full w-20"></div>
+            </div>
+            <div class="col-span-2 text-right">
+              <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-16 ml-auto"></div>
+            </div>
+            <div class="col-span-1 text-right">
+              <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-8 ml-auto"></div>
+            </div>
           </div>
         </div>
       {/each}
@@ -221,50 +374,271 @@
     </div>
   <!-- Transactions List -->
   {:else}
-    <div class="space-y-2 max-h-96 overflow-y-auto">
-      {#each transactions as tx (tx.id)}
-        {@const style = TransactionService.getTransactionStyle(tx.type)}
-        <div class="flex items-center space-x-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-600">
-          <!-- Transaction Icon -->
-          <div class="w-10 h-10 rounded-full {style.bgColor} flex items-center justify-center flex-shrink-0">
-            <span class="text-lg {style.color}">{style.icon}</span>
-          </div>
+    {@const displayTransactions = transactions}
+    
+    <!-- Exchange-style table header -->
+    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 mb-3">
+      <div class="grid grid-cols-12 gap-4 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+        <div class="col-span-1">Type</div>
+        <div class="col-span-4">Description</div>
+        <div class="col-span-2">Amount</div>
+        <div class="col-span-2">Status</div>
+        <div class="col-span-2">Time</div>
+        <div class="col-span-1">Fee</div>
+      </div>
+    </div>
 
-          <!-- Transaction Details -->
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between">
+    <!-- Transactions table -->
+    <div class="space-y-1 max-h-96 overflow-y-auto">
+      {#each displayTransactions as tx (tx.id)}
+        {@const style = TransactionService.getTransactionStyle(tx.type)}
+        {@const isOutgoing = tx.type === "burn" || (tx.type === "transfer" && tx.from === userPrincipal)}
+        {@const amount = TransactionService.formatAmount(tx.amount)}
+        {@const fee = tx.fee ? TransactionService.formatAmount(tx.fee) : null}
+        
+        <div class="hover:bg-gray-50 dark:hover:bg-gray-700/30 rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 group">
+          <!-- Main transaction row -->
+          <div 
+            class="grid grid-cols-12 gap-4 items-center p-3 cursor-pointer" 
+            on:click={() => toggleTransactionDetails(tx.id)}
+            on:keydown={(e) => e.key === 'Enter' && toggleTransactionDetails(tx.id)}
+            role="button"
+            tabindex="0"
+          >
+            <!-- Type Icon -->
+            <div class="col-span-1 flex justify-center">
+              <div class="w-8 h-8 rounded-full {style.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                <span class="text-sm {style.color} font-bold">{style.icon}</span>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="col-span-4 min-w-0">
               <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
                 {getTransactionDescription(tx)}
               </p>
-              <p class="text-sm font-semibold {style.color} ml-2">
-                {#if tx.type === "burn" || (tx.type === "transfer" && tx.from === userPrincipal)}
-                  -{TransactionService.formatAmount(tx.amount)}
-                {:else}
-                  +{TransactionService.formatAmount(tx.amount)}
-                {/if}
+              <p class="text-xs text-gray-500 dark:text-gray-400 truncate font-mono">
+                {tx.id.slice(0, 8)}...{tx.id.slice(-8)}
               </p>
             </div>
-            <div class="flex items-center justify-between mt-1">
-              <p class="text-xs text-gray-500 dark:text-gray-400">
+
+            <!-- Amount -->
+            <div class="col-span-2 text-right">
+              <p class="text-sm font-bold {isOutgoing ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
+                {isOutgoing ? '-' : '+'}{amount}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">FUNNAI</p>
+            </div>
+
+            <!-- Status -->
+            <div class="col-span-2">
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                <div class="w-1.5 h-1.5 bg-green-500 rounded-full mr-1.5"></div>
+                Confirmed
+              </span>
+            </div>
+
+            <!-- Time -->
+            <div class="col-span-2 text-right">
+              <p class="text-sm text-gray-900 dark:text-white">
                 {formatTimestamp(tx.timestamp)}
               </p>
-              {#if tx.fee && tx.fee > 0n}
-                <p class="text-xs text-gray-400 dark:text-gray-500">
-                  Fee: {TransactionService.formatAmount(tx.fee)}
-                </p>
+            </div>
+
+            <!-- Fee & Expand -->
+            <div class="col-span-1 text-right flex items-center justify-end gap-2">
+              {#if fee}
+                <p class="text-xs text-gray-500 dark:text-gray-400">{fee}</p>
+              {:else}
+                <p class="text-xs text-gray-300 dark:text-gray-600">-</p>
               {/if}
+              <svg class="w-4 h-4 text-gray-400 transition-transform duration-200 {expandedTransaction === tx.id ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
             </div>
           </div>
+
+          <!-- Expanded details -->
+          {#if expandedTransaction === tx.id}
+            <div class="px-3 pb-3 border-t border-gray-200 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-700/20">
+              <div class="pt-3 space-y-3">
+                <!-- Transaction ID -->
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">Transaction ID</span>
+                  <div class="flex items-center gap-2">
+                    <code class="text-xs font-mono text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">
+                      {tx.id}
+                    </code>
+                    <button 
+                      on:click|stopPropagation={() => copyToClipboard(tx.id)}
+                      class="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                    >
+                      <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- From/To addresses -->
+                {#if tx.from}
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">From</span>
+                    <div class="flex items-center gap-2">
+                      <code class="text-xs font-mono text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">
+                        {truncatePrincipal(tx.from)}
+                      </code>
+                      <button 
+                        on:click|stopPropagation={() => copyToClipboard(tx.from)}
+                        class="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                      >
+                        <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                {/if}
+
+                {#if tx.to}
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">To</span>
+                    <div class="flex items-center gap-2">
+                      <code class="text-xs font-mono text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-600 px-2 py-1 rounded">
+                        {truncatePrincipal(tx.to)}
+                      </code>
+                      <button 
+                        on:click|stopPropagation={() => copyToClipboard(tx.to)}
+                        class="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                      >
+                        <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                {/if}
+
+                <!-- Timestamp -->
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">Timestamp</span>
+                  <span class="text-xs text-gray-800 dark:text-gray-200">
+                    {tx.timestamp.toISOString()}
+                  </span>
+                </div>
+
+                <!-- Transaction Type -->
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">Type</span>
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                    {tx.type.toUpperCase()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          {/if}
         </div>
       {/each}
     </div>
 
-    <!-- View More Link -->
-    {#if transactions.length >= maxResults}
-      <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <p class="text-center text-sm text-gray-500 dark:text-gray-400">
-          Showing {maxResults} most recent transactions
-        </p>
+    <!-- Pagination Controls -->
+    {#if showPagination && transactions.length > 0 && totalPages > 1}
+      <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <!-- Page info and jump controls -->
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-sm text-gray-600 dark:text-gray-400">
+            Page {currentPage} of {totalPages}{hasMore ? '+' : ''} • Showing {transactions.length} transactions
+          </div>
+          
+          <!-- Jump to page -->
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-gray-600 dark:text-gray-400">Go to page:</span>
+            <input 
+              type="number" 
+              bind:value={jumpToPage}
+              on:keydown={(e) => e.key === 'Enter' && handleJumpToPage()}
+              min="1" 
+              max={totalPages}
+              class="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+              placeholder={currentPage.toString()}
+            />
+            <button 
+              on:click={handleJumpToPage}
+              disabled={loading}
+              class="px-2 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 disabled:opacity-50"
+            >
+              Go
+            </button>
+          </div>
+        </div>
+
+        <!-- Pagination buttons -->
+        <div class="flex items-center justify-center gap-1">
+          <!-- First page -->
+          <button 
+            on:click={goToFirstPage}
+            disabled={currentPage <= 1 || loading}
+            class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-all duration-200"
+            title="First page"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+            </svg>
+          </button>
+
+          <!-- Previous page -->
+          <button 
+            on:click={loadPreviousPage}
+            disabled={currentPage <= 1 || loading}
+            class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-all duration-200"
+            title="Previous page"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          <!-- Page numbers with ellipsis -->
+          {#each getVisiblePages() as page}
+            {#if page === '...'}
+              <span class="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">...</span>
+            {:else}
+              <button 
+                on:click={() => goToPage(typeof page === 'number' ? page : parseInt(page.toString()))}
+                disabled={loading}
+                class="px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 {page === currentPage 
+                  ? 'text-white bg-blue-600 border border-blue-600 shadow-sm' 
+                  : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-300'} disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {page}
+              </button>
+            {/if}
+          {/each}
+
+          <!-- Next page -->
+          <button 
+            on:click={loadNextPage}
+            disabled={currentPage >= totalPages && !hasMore || loading}
+            class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-all duration-200"
+            title="Next page"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          <!-- Last page -->
+          <button 
+            on:click={goToLastPage}
+            disabled={currentPage >= totalPages || loading}
+            class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-all duration-200"
+            title="Last page"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
       </div>
     {/if}
   {/if}

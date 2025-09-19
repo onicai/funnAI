@@ -220,8 +220,9 @@ const tokenIndexIDL = ({ IDL }: any) => {
 };
 
 export class TransactionService {
-  private static cache = new Map<string, { data: ProcessedTransaction[]; timestamp: number }>();
+  private static cache = new Map<string, { data: ProcessedTransaction[]; timestamp: number; totalCount?: number }>();
   private static readonly CACHE_DURATION = 2 * 60 * 1000; // 2 minutes cache
+  private static readonly MAX_CACHE_SIZE = 10; // Maximum number of cached entries
   private static actor: any = null;
 
   /**
@@ -392,19 +393,26 @@ export class TransactionService {
   }
 
   /**
-   * Fetch transactions for a user account
+   * Fetch transactions for a user account with pagination support
    */
   public static async fetchUserTransactions(
     principalId: string, 
-    maxResults: number = 50
+    maxResults: number = 50,
+    startFrom?: number
   ): Promise<ProcessedTransaction[]> {
-    const cacheKey = `${principalId}-${maxResults}`;
+    const cacheKey = `${principalId}-${maxResults}${startFrom ? `-${startFrom}` : ''}`;
     
     // Check cache first
     const cached = this.cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
       console.log(`Using cached transaction data for ${principalId}`);
       return cached.data;
+    }
+
+    // Clean up old cache entries if we have too many
+    if (this.cache.size >= this.MAX_CACHE_SIZE) {
+      const oldestKey = this.cache.keys().next().value;
+      this.cache.delete(oldestKey);
     }
 
     try {
@@ -419,7 +427,7 @@ export class TransactionService {
           owner: principal,
           subaccount: [] // Empty array for optional subaccount (means null)
         },
-        start: [], // Optional start block index (empty array = null)
+        start: startFrom ? [startFrom] : [], // Optional start block index (empty array = null)
         max_results: maxResults // Required nat
       };
       
@@ -483,6 +491,26 @@ export class TransactionService {
   }
 
   /**
+   * Get estimated transaction count for a user (for pagination)
+   */
+  public static async getTransactionCount(principalId: string): Promise<number> {
+    try {
+      // Fetch a small batch to estimate total count
+      const sampleTransactions = await this.fetchUserTransactions(principalId, 10);
+      if (sampleTransactions.length < 10) {
+        return sampleTransactions.length;
+      }
+      
+      // If we got 10 transactions, there might be more
+      // This is a rough estimate - in a real implementation, you'd want a proper count endpoint
+      return Math.max(50, sampleTransactions.length * 2);
+    } catch (error) {
+      console.error('Error getting transaction count:', error);
+      return 0;
+    }
+  }
+
+  /**
    * Clear cache for a specific user or all users
    */
   public static clearCache(principalId?: string) {
@@ -494,6 +522,17 @@ export class TransactionService {
       // Clear all cache
       this.cache.clear();
     }
+  }
+
+  /**
+   * Get cache statistics for debugging
+   */
+  public static getCacheStats() {
+    return {
+      size: this.cache.size,
+      maxSize: this.MAX_CACHE_SIZE,
+      entries: Array.from(this.cache.keys())
+    };
   }
 
   /**
