@@ -162,20 +162,19 @@ type ApiError =
 type ApiCanister = 
  service {
    amiController: () -> (AuthRecordResult) query;
-   bulkCreateDailyMetricsAdmin: (inputs: vec DailyMetricInput) -> (NatResult);
-   createDailyMetricAdmin: (input: DailyMetricInput) -> (DailyMetricResult);
-   deleteDailyMetricAdmin: (date: text) -> (NatResult);
-   getDailyMetricByDate: (date: text) -> (DailyMetricResult) query;
-   getDailyMetrics: (dailyMetricsQuery: opt DailyMetricsQuery) ->
-    (DailyMetricsResult) query;
+   bulkCreateDailyMetricsAdmin: (vec DailyMetricInput) -> (NatResult);
+   createDailyMetricAdmin: (DailyMetricInput) -> (DailyMetricResult);
+   deleteDailyMetricAdmin: (text) -> (NatResult);
+   getDailyMetricByDate: (text) -> (DailyMetricResult) query;
+   getDailyMetrics: (opt DailyMetricsQuery) -> (DailyMetricsResult) query;
    getDailyMetricsAdmin: () -> (DailyMetricsResult) query;
    getLatestDailyMetric: () -> (DailyMetricResult) query;
    getMasterCanisterId: () -> (AuthRecordResult) query;
    getNumDailyMetrics: () -> (NatResult) query;
    health: () -> (StatusCodeRecordResult) query;
    resetDailyMetricsAdmin: () -> (NatResult);
-   setMasterCanisterId: (newMasterCanisterId: text) -> (AuthRecordResult);
-   updateDailyMetricAdmin: (params: UpdateDailyMetricAdminInput) ->
+   setMasterCanisterId: (text) -> (AuthRecordResult);
+   updateDailyMetricAdmin: (UpdateDailyMetricAdminInput) ->
     (DailyMetricResult);
    whoami: () -> (principal) query;
  };

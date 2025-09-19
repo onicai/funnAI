@@ -10,7 +10,7 @@
   import LoadingIndicator from "../components/LoadingIndicator.svelte";
   import LoadingEllipsis from "../components/LoadingEllipsis.svelte";
   import Footer from "../components/funnai/Footer.svelte";
-
+  import TransactionHistory from "../components/dashboard/TransactionHistory.svelte";
   import { store } from "../stores/store";
   import { WalletDataService, walletDataStore } from "../helpers/WalletDataService";
 
@@ -129,7 +129,7 @@
                     <!-- <WalletTable {transactions} /> -->
 
                     <!-- Content with consistent height to prevent flickering -->
-                    <div class="min-h-[400px] relative">
+                    <div class="min-h-[340px] relative">
                         {#if isDataLoading}
                             <!-- Show skeleton immediately with loading overlay -->
                             <TokenListSkeleton rows={4} />
@@ -178,6 +178,12 @@
                     </div>
                 {/if}
             </div>
+
+          <!-- Transaction History Section -->
+          <div class="grid grid-cols-1 mt-6">
+            <TransactionHistory maxResults={20} />
+          </div>
+
         </div>
     </div>
 

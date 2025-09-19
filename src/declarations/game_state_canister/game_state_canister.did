@@ -540,6 +540,7 @@ type GameStateCanister =
    resetIsMigratingChallengesFlagAdmin: () -> (AuthRecordResult);
    resetRoundRobinChallengeIndexAdmin: () -> (StatusCodeRecordResult);
    resetRoundRobinTopicIndexAdmin: () -> (StatusCodeRecordResult);
+   setApiCanisterId: (text) -> (AuthRecordResult);
    setArchiveCanisterId: (text) -> (AuthRecordResult);
    setBufferMainerCreation: (nat) -> (AuthRecordResult);
    setCyclesBalanceThresholdFunnaiTopups: (nat) -> (AuthRecordResult);
