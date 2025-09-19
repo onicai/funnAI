@@ -60,7 +60,7 @@
   let isValidating: boolean = false;
   let errorMessage: string = "";
   let balance: bigint = BigInt(0);
-  let tokenFee: bigint = BigInt(1); // FUNNAI fee
+  let tokenFee: bigint = BigInt(0); // FUNNAI fee
   
   // Check if user has enough FUNNAI balance (no fee required for burning)
   $: hasEnoughBalance = funnaiToken && balance >= BURN_AMOUNT_BIGINT;
@@ -120,7 +120,8 @@
         throw new Error("Game state canister not available for FUNNAI operations");
       }
 
-      // For burning tokens, omit the fee parameter entirely - the ledger handles this automatically
+      tokenFee = BigInt(0); // for burn transactions, set to 0
+
       // Transfer FUNNAI tokens to the Protocol's account (same logic as top-up)
       // The backend will handle this as a burn for enabling Very High burn rate
       const result = await IcrcService.transfer(
@@ -128,7 +129,7 @@
         protocolAddress,  // Use protocol address from token_helpers
         BURN_AMOUNT_BIGINT,
         {
-          // No fee parameter for burning operations
+          fee: tokenFee,
           // Include the memo for transactions to the Protocol
           memo: MEMO_PAYMENT_PROTOCOL
         }
