@@ -22,9 +22,9 @@
 
   console.log("in VeryHighBurnRateModal protocolAddress ", protocolAddress);
   
-  // Fixed FUNNAI burn amount (1 FUNNAI)
-  const BURN_AMOUNT = "1";
-  const BURN_AMOUNT_BIGINT = BigInt("100000000"); // 1 FUNNAI in e8s (1 * 10^8)
+  // Fixed FUNNAI burn amount (42 FUNNAI)
+  const BURN_AMOUNT = "42";
+  const BURN_AMOUNT_BIGINT = BigInt("4200000000"); // 42 FUNNAI in e8s (42 * 10^8)
   
   // Token configurations - only FUNNAI for burning
   let funnaiToken: any = null;
@@ -243,13 +243,13 @@
           <div class="flex-1">
             <h3 class="text-lg font-bold text-red-900 dark:text-red-100 mb-2">Unlock Maximum Performance</h3>
             <p class="text-sm text-red-800 dark:text-red-200 mb-3">
-              Activate <span class="font-bold">Very High</span> burn rate (≈6T cycles/day) by burning <span class="font-bold">{BURN_AMOUNT} FUNNAI</span> token.
+              Activate <span class="font-bold">Very High</span> burn rate (≈6T cycles/day) by burning <span class="font-bold">{BURN_AMOUNT} FUNNAI</span> tokens.
             </p>
             <div class="flex justify-between items-center bg-red-100 dark:bg-red-800/30 rounded-md p-2">
               <span class="text-xs text-red-700 dark:text-red-300 font-medium pr-1">🔥</span>
               <span class="text-xs text-red-600/80 dark:text-red-300/80">
                 <span class="text-xs text-red-700 dark:text-red-300 font-medium">Permanent Burn</span><br/>
-                Burns {BURN_AMOUNT} FUNNAI token to unlock Very High performance tier.
+                Burns {BURN_AMOUNT} FUNNAI tokens to unlock Very High performance tier.
               </span>
             </div>
           </div>
