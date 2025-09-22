@@ -66,7 +66,30 @@ def main(network, user):
             return
         print(f"Found {len(mainers)} mainers for user '{user}' on network '{network}'")
         for mainer in mainers:
-            print(f"  - {mainer.get('address', 'N/A')}")
+            address = mainer.get('address', 'N/A')
+            # Get mAIner burn rate setting
+            try:
+                cmd = ["dfx", "canister", "call", address, "getMainerStatisticsAdmin", "--network", network, "--output", "json"]
+                output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
+                data = json.loads(output)
+                cycles_burn_rate = data.get('Ok', {}).get('cyclesBurnRate', {}).get('cycles', None)
+
+                # Map cycles burn rate to human-readable setting
+                setting = "Unknown"
+                if cycles_burn_rate == "1_000_000_000_000":
+                    setting = "Low"
+                elif cycles_burn_rate == "2_000_000_000_000":
+                    setting = "Medium"
+                elif cycles_burn_rate == "4_000_000_000_000":
+                    setting = "High"
+                elif cycles_burn_rate == "6_000_000_000_000":
+                    setting = "VeryHigh"
+                else:
+                    setting = "Custom"
+
+                print(f"  - {address} ({setting})")
+            except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError):
+                print(f"  - {address} (Unable to query setting)")
         env_file_path = os.path.join(SCRIPT_DIR, f"canister_ids_mainers-{network}-{user}.env")
     
     if not mainers or len(mainers) == 0:
