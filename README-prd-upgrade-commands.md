@@ -129,7 +129,7 @@ dfx canister --network $NETWORK call game_state_canister setGameStateThresholdsA
         thresholdArchiveClosedChallenges = 140 : nat;
         thresholdMaxOpenChallenges = 7 : nat;
         thresholdMaxOpenSubmissions = 140 : nat;
-        thresholdScoredResponsesPerChallenge = 33 : nat;
+        thresholdScoredResponsesPerChallenge = 30 : nat;
     }
 )'
 

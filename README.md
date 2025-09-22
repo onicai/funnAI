@@ -305,7 +305,7 @@ dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdArchiveClosedChallenges = 140 : nat;
         thresholdMaxOpenChallenges = 7 : nat;
         thresholdMaxOpenSubmissions = 140 : nat;
-        thresholdScoredResponsesPerChallenge = 33 : nat;
+        thresholdScoredResponsesPerChallenge = 30 : nat;
     }
 )' --network $NETWORK
 ```
@@ -401,7 +401,12 @@ dfx deploy --network development funnai_frontend
 or
 
 dfx deploy funnai_frontend --network development --wallet "$(dfx identity --network development get-wallet)"
+
+demo
+
+dfx deploy funnai_frontend --network demo --wallet "$(dfx identity --network demo get-wallet)"
 ```
+
 
 For setting up stages, see [Notes on Stages](./notes/NotesOnStages.md)
 
