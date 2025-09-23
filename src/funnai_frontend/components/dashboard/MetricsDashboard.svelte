@@ -32,17 +32,9 @@
       latestMetrics = latest;
       timeSeriesMetrics = timeSeries;
       
-      // Set display metrics based on time filter
-      if (selectedTimeFilter === "all" && timeSeries.length > 0) {
-        // For "all" time, show the latest available data
-        displayMetrics = timeSeries[timeSeries.length - 1];
-      } else if (timeSeries.length > 0) {
-        // For specific time filters, show the latest data within that range
-        displayMetrics = timeSeries[timeSeries.length - 1];
-      } else {
-        // Fallback to latest metrics if no time series data
-        displayMetrics = latest;
-      }
+      // Always use the latest metrics for the quick stats display
+      // This ensures FunnAI Index and other key metrics show the most recent data
+      displayMetrics = latest;
     } catch (err) {
       console.error("Error loading metrics:", err);
       error = "Failed to load metrics data";
@@ -80,7 +72,14 @@
 
     <!-- Quick Stats Row -->
     {#if displayMetrics && !loading}
-      <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="mt-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Current Metrics</h3>
+          <div class="text-sm text-gray-600 dark:text-gray-400">
+            Latest data from {new Date(displayMetrics.metadata.date).toLocaleDateString()}
+          </div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
           <div class="text-sm font-medium text-blue-600 dark:text-blue-400">Total mAIners</div>
           <div class="text-2xl font-bold text-blue-900 dark:text-blue-300">
@@ -125,6 +124,7 @@
           </div>
         </div>
       </div>
+    </div>
     {/if}
   </div>
 
@@ -134,7 +134,7 @@
       <div>
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Historical Charts</h3>
         <p class="text-sm text-gray-600 dark:text-gray-400">
-          View trends and patterns over time
+          View trends and patterns over time (time filter applies to charts only)
         </p>
       </div>
       

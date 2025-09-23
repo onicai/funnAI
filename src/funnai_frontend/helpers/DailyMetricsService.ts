@@ -60,8 +60,11 @@ export type TimeFilter = "7days" | "15days" | "1month" | "all";
 
 export class DailyMetricsService {
   private static cache = new Map<string, DailyMetricsData[]>();
+  private static latestMetricCache: DailyMetricsData | null = null;
   private static cacheTimestamps = new Map<string, number>();
-  private static readonly CACHE_DURATION = 4 * 60 * 60 * 1000; // 4 hours - data updates daily
+  private static latestMetricTimestamp: number = 0;
+  private static readonly CACHE_DURATION = 30 * 60 * 1000; // 30 minutes - shorter cache for fresher data
+  private static readonly LATEST_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes for latest metrics
 
   /**
    * Get date range for time filter
@@ -241,18 +244,113 @@ export class DailyMetricsService {
   static clearCache(): void {
     this.cache.clear();
     this.cacheTimestamps.clear();
+    this.latestMetricCache = null;
+    this.latestMetricTimestamp = 0;
   }
 
   /**
-   * Get the most recent metrics entry
+   * Check if latest metric cache is valid
+   */
+  private static isLatestCacheValid(): boolean {
+    if (!this.latestMetricTimestamp) return false;
+    return Date.now() - this.latestMetricTimestamp < this.LATEST_CACHE_DURATION;
+  }
+
+  /**
+   * Get the most recent metrics entry using dedicated latest endpoint
    */
   static async getLatestMetrics(): Promise<DailyMetricsData | null> {
+    // Check cache first
+    if (this.isLatestCacheValid() && this.latestMetricCache) {
+      console.log("Returning cached latest metric");
+      return this.latestMetricCache;
+    }
+
     try {
-      const metrics = await this.fetchDailyMetrics({ limit: 1 });
-      return metrics.length > 0 ? metrics[0] : null;
+      const storeValue = get(store);
+      if (!storeValue.apiCanisterActor) {
+        throw new Error("API canister actor not available");
+      }
+
+      console.log("Fetching latest daily metric using getLatestDailyMetric");
+      
+      const result = await storeValue.apiCanisterActor.getLatestDailyMetric();
+      
+      if ("Ok" in result) {
+        const metric = result.Ok;
+        
+        // Transform the single metric to match our interface
+        const transformedMetric: DailyMetricsData = {
+          metadata: {
+            updated_at: metric.metadata.updated_at.toString(),
+            date: metric.metadata.date,
+            created_at: metric.metadata.created_at.toString()
+          },
+          mainers: {
+            totals: {
+              created: Number(metric.mainers.totals.created),
+              active: Number(metric.mainers.totals.active),
+              total_cycles: Number(metric.mainers.totals.total_cycles),
+              paused: Number(metric.mainers.totals.paused)
+            },
+            breakdown_by_tier: {
+              active: {
+                low: Number(metric.mainers.breakdown_by_tier.active.low),
+                high: Number(metric.mainers.breakdown_by_tier.active.high),
+                very_high: Number(metric.mainers.breakdown_by_tier.active.very_high),
+                medium: Number(metric.mainers.breakdown_by_tier.active.medium)
+              },
+              paused: {
+                low: Number(metric.mainers.breakdown_by_tier.paused.low),
+                high: Number(metric.mainers.breakdown_by_tier.paused.high),
+                very_high: Number(metric.mainers.breakdown_by_tier.paused.very_high),
+                medium: Number(metric.mainers.breakdown_by_tier.paused.medium)
+              }
+            }
+          },
+          derived_metrics: {
+            avg_cycles_per_mainer: Number(metric.derived_metrics.avg_cycles_per_mainer),
+            paused_percentage: Number(metric.derived_metrics.paused_percentage),
+            tier_distribution: {
+              low: Number(metric.derived_metrics.tier_distribution.low),
+              high: Number(metric.derived_metrics.tier_distribution.high),
+              very_high: Number(metric.derived_metrics.tier_distribution.very_high),
+              medium: Number(metric.derived_metrics.tier_distribution.medium)
+            },
+            burn_rate_per_active_mainer: Number(metric.derived_metrics.burn_rate_per_active_mainer),
+            active_percentage: Number(metric.derived_metrics.active_percentage)
+          },
+          system_metrics: {
+            funnai_index: Number(metric.system_metrics.funnai_index),
+            daily_burn_rate: {
+              usd: Number(metric.system_metrics.daily_burn_rate.usd),
+              cycles: Number(metric.system_metrics.daily_burn_rate.cycles)
+            }
+          }
+        };
+
+        // Cache the result
+        this.latestMetricCache = transformedMetric;
+        this.latestMetricTimestamp = Date.now();
+        
+        console.log(`Fetched latest daily metric for date: ${transformedMetric.metadata.date}`);
+        return transformedMetric;
+      } else {
+        console.error("Error fetching latest daily metric:", result.Err);
+        // Fallback to the original method if the new one fails
+        const metrics = await this.fetchDailyMetrics({ limit: 1 });
+        return metrics.length > 0 ? metrics[0] : null;
+      }
     } catch (error) {
-      console.error("Error fetching latest metrics:", error);
-      return null;
+      console.error("Error in getLatestMetrics:", error);
+      // Fallback to the original method
+      try {
+        const metrics = await this.fetchDailyMetrics({ limit: 1 });
+        return metrics.length > 0 ? metrics[0] : null;
+      } catch (fallbackError) {
+        console.error("Error in fallback getLatestMetrics:", fallbackError);
+        return null;
+      }
     }
   }
 }
