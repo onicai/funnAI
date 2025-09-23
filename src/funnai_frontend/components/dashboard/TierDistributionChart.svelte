@@ -103,12 +103,12 @@
         tierData.very_high
       ];
 
-      // Define colors matching the Daily Burn Rate component
+      // Define colors matching the app's color scheme
       const burnRateColors = [
         '#10b981', // Low - green-500 (emerald)
         '#f59e0b', // Medium - amber-500 (yellow/orange)
         '#ef4444', // High - red-500
-        '#dc2626'  // Very High - red-600 (darker red)
+        '#8b5cf6'  // Very High - violet-500 (purple) - better contrast and matches app style
       ];
 
       // Filter out zero values
@@ -184,10 +184,6 @@
     }
   });
 
-  function handleRefresh() {
-    DailyMetricsService.clearCache();
-    loadChartData();
-  }
 </script>
 
 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -206,13 +202,6 @@
       {#if loading}
         <div class="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
       {/if}
-      <button 
-        on:click={handleRefresh}
-        class="text-xs text-blue-600 dark:text-blue-400 hover:underline px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20"
-        disabled={loading}
-      >
-        Refresh
-      </button>
     </div>
   </div>
 

@@ -128,72 +128,106 @@
     {/if}
   </div>
 
-  <!-- Charts Controls -->
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      <div>
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Historical Charts</h3>
-        <p class="text-sm text-gray-600 dark:text-gray-400">
-          View trends and patterns over time (time filter applies to charts only)
-        </p>
-      </div>
-      
-      <div class="flex items-center gap-4">
-        <TimeFilterSelector 
-          selectedFilter={selectedTimeFilter} 
-          onFilterChange={handleFilterChange}
-        />
-        <button 
-          on:click={handleRefreshAll}
-          class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
-          disabled={loading}
-        >
-          {loading ? "Loading..." : "Refresh All"}
-        </button>
+  <!-- Historical Charts Section -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+    <!-- Charts Header with Controls -->
+    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">Historical Charts</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            View trends and patterns over time • Time filter controls all charts below
+          </p>
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Time Period:</span>
+          <TimeFilterSelector 
+            selectedFilter={selectedTimeFilter} 
+            onFilterChange={handleFilterChange}
+          />
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Charts Grid -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- mAIner Activity Chart -->
-    <div class="lg:col-span-2">
-      <MainerMetricsChart 
-        timeFilter={selectedTimeFilter}
-        title="mAIner Activity Over Time"
-        height="400px"
-        preloadedData={timeSeriesMetrics}
-        {loading}
-      />
+    <!-- Charts Grid -->
+    <div class="p-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- mAIner Activity Chart -->
+        <div class="lg:col-span-2">
+          <div class="relative">
+            <!-- Filter indicator -->
+            <div class="absolute top-2 right-2 z-10">
+              <div class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs px-3 py-1.5 rounded-full border border-blue-200 dark:border-blue-700">
+                {selectedTimeFilter === "7days" ? "Last 7 days" : 
+                 selectedTimeFilter === "15days" ? "Last 15 days" :
+                 selectedTimeFilter === "1month" ? "Last month" : "All time"}
+              </div>
+            </div>
+            <MainerMetricsChart 
+              timeFilter={selectedTimeFilter}
+              title="mAIner Activity Over Time"
+              height="400px"
+              preloadedData={timeSeriesMetrics}
+              {loading}
+            />
+          </div>
+        </div>
+
+        <!-- Tier Distribution Chart -->
+        <div class="relative">
+          <!-- Filter indicator -->
+          <div class="absolute top-2 right-2 z-10">
+            <div class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs px-3 py-1.5 rounded-full border border-green-200 dark:border-green-700">
+              Latest data
+            </div>
+          </div>
+          <TierDistributionChart 
+            title="mAIner Tier Distribution"
+            height="350px"
+            preloadedLatestMetrics={latestMetrics}
+            {loading}
+          />
+        </div>
+
+        <!-- System Metrics Chart -->
+        <div class="relative">
+          <!-- Filter indicator -->
+          <div class="absolute top-2 right-2 z-10">
+            <div class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs px-3 py-1.5 rounded-full border border-blue-200 dark:border-blue-700">
+              {selectedTimeFilter === "7days" ? "Last 7 days" : 
+               selectedTimeFilter === "15days" ? "Last 15 days" :
+               selectedTimeFilter === "1month" ? "Last month" : "All time"}
+            </div>
+          </div>
+          <SystemMetricsChart 
+            timeFilter={selectedTimeFilter}
+            title="System Performance Metrics"
+            height="350px"
+            preloadedData={timeSeriesMetrics}
+            {loading}
+          />
+        </div>
+      </div>
     </div>
-
-    <!-- Tier Distribution Chart -->
-    <TierDistributionChart 
-      title="mAIner Tier Distribution"
-      height="350px"
-      preloadedLatestMetrics={latestMetrics}
-      {loading}
-    />
-
-    <!-- System Metrics Chart -->
-    <SystemMetricsChart 
-      timeFilter={selectedTimeFilter}
-      title="System Performance Metrics"
-      height="350px"
-      preloadedData={timeSeriesMetrics}
-      {loading}
-    />
   </div>
 
   <!-- Additional Metrics Row -->
   {#if displayMetrics && !loading}
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        Additional Metrics
-        <span class="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
-          (as of {new Date(displayMetrics.metadata.date).toLocaleDateString()})
-        </span>
-      </h3>
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Additional Metrics
+        </h3>
+        <div class="flex items-center gap-2">
+          <div class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs px-3 py-1.5 rounded-full border border-green-200 dark:border-green-700">
+            Latest data
+          </div>
+          <span class="text-sm text-gray-500 dark:text-gray-400">
+            as of {new Date(displayMetrics.metadata.date).toLocaleDateString()}
+          </span>
+        </div>
+      </div>
       
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div class="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-4">
@@ -221,12 +255,12 @@
     </div>
   {/if}
 
-  <!-- Data freshness indicator -->
+  <!-- Data freshness indicator 
   {#if latestMetrics}
     <div class="text-center">
       <p class="text-xs text-gray-500 dark:text-gray-400">
         Data last updated: {new Date(parseInt(latestMetrics.metadata.updated_at) / 1000000).toLocaleString()}
       </p>
     </div>
-  {/if}
+  {/if}-->
 </div>
