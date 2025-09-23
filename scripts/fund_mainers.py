@@ -17,7 +17,7 @@ from .ledgers.icp import get_usd_per_computed_xdr_from_cmc, icp_xdr_summary, get
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
-TARGET_CYCLES_BALANCE = 20_000_000_000_000
+TARGET_CYCLES_BALANCE = 100_000_000_000_000
 
 def main(network, user):
     print("----------------------------------------------")
