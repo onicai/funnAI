@@ -251,11 +251,11 @@
       
     <div class="text-center p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
       <div class="flex flex-col items-center space-y-2">
-        <div class="text-sm text-gray-500 dark:text-gray-500 mt-1">Sep 28th, 2025</div>
+        <div class="text-sm text-gray-500 dark:text-gray-500 mt-1">Sep 29th, 2025 at 12pm PT / 9pm CET</div>
       
         <div class="text-xl font-bold text-red-600 dark:text-red-400 mt-4">
           <Countdown 
-            targetDate="2025-09-28" 
+            targetDate={new Date("2025-09-29T12:00:00-07:00")} 
             format="detailed"
             className="text-red-600 dark:text-red-400"
           />
