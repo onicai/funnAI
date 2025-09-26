@@ -192,7 +192,7 @@
       },
       // Stabilization point marker for quarterly minting (positioned higher)
       {
-        label: 'Stabilization Point (Minting)',
+        label: 'Stabilization Point',
         data: growthData.map((item, index) => {
           return item.quarter === 'Q3 2027' ? (item.quarterly_increase / 1000000) + 1.25 : null;
         }),
@@ -208,35 +208,6 @@
         fill: false,
         tension: 0,
         yAxisID: 'y'
-      },
-      // Stabilization point marker for rewards (positioned above minting marker)
-      {
-        label: 'Stabilization Point (Rewards)',
-        data: growthData.map((item, index) => {
-          if (item.quarter === 'Q3 2027') {
-            const matchingReward = allData.find(reward => {
-              const rewardDate = new Date(reward.date);
-              const quarterStart = new Date(item.date);
-              const quarterEnd = new Date(quarterStart);
-              quarterEnd.setMonth(quarterEnd.getMonth() + 3);
-              return rewardDate >= quarterStart && rewardDate < quarterEnd;
-            });
-            return matchingReward ? matchingReward.rewards_per_challenge + 14.88 : null;
-          }
-          return null;
-        }),
-        type: 'line',
-        backgroundColor: isDark ? '#8B5CF6' : '#7C3AED',
-        borderColor: isDark ? '#8B5CF6' : '#7C3AED',
-        borderWidth: 0,
-        pointRadius: 10,
-        pointHoverRadius: 12,
-        showLine: false,
-        pointStyle: 'triangle',
-        pointBorderWidth: 3,
-        fill: false,
-        tension: 0,
-        yAxisID: 'y1'
       }
     ]
   };
