@@ -6,7 +6,7 @@
 
   export let title: string = "Token Rewards & Supply Analytics";
   export let height: string = "400px";
-  export let activeView: 'supply' | 'rewards' | 'growth' = 'supply';
+  export let activeView: 'supply' | 'combined' = 'supply';
 
   let loading = true;
   let error = "";
@@ -149,6 +149,98 @@
     ]
   };
 
+  // Combined Rewards & Growth Chart Data
+  $: combinedChartData = {
+    labels: growthData.map(item => item.quarter),
+    datasets: [
+      // Quarterly Minting bars
+      {
+        label: 'Quarterly Minting (FUNNAI)',
+        data: growthData.map(item => item.quarterly_increase / 1000000), // Convert to millions
+        backgroundColor: isDark ? 'rgba(34, 197, 94, 0.7)' : 'rgba(34, 197, 94, 0.8)',
+        borderColor: isDark ? '#22C55E' : '#16A34A',
+        borderWidth: 2,
+        borderRadius: 6,
+        borderSkipped: false,
+        yAxisID: 'y',
+        type: 'bar'
+      },
+      // Rewards per challenge line (mapped to quarterly data)
+      {
+        label: 'Rewards per Challenge',
+        data: growthData.map(item => {
+          // Find corresponding rewards data by matching dates
+          const matchingReward = allData.find(reward => {
+            const rewardDate = new Date(reward.date);
+            const quarterStart = new Date(item.date);
+            const quarterEnd = new Date(quarterStart);
+            quarterEnd.setMonth(quarterEnd.getMonth() + 3);
+            return rewardDate >= quarterStart && rewardDate < quarterEnd;
+          });
+          return matchingReward ? matchingReward.rewards_per_challenge : null;
+        }),
+        backgroundColor: isDark ? 'rgba(248, 113, 113, 0.7)' : 'rgba(239, 68, 68, 0.8)',
+        borderColor: isDark ? '#F87171' : '#EF4444',
+        borderWidth: 3,
+        borderRadius: 8,
+        borderSkipped: false,
+        yAxisID: 'y1',
+        type: 'bar',
+        hoverBackgroundColor: isDark ? 'rgba(248, 113, 113, 0.9)' : 'rgba(239, 68, 68, 0.95)',
+        hoverBorderColor: isDark ? '#FCA5A5' : '#DC2626',
+        hoverBorderWidth: 3,
+      },
+      // Stabilization point marker for quarterly minting (positioned higher)
+      {
+        label: 'Stabilization Point (Minting)',
+        data: growthData.map((item, index) => {
+          return item.quarter === 'Q3 2027' ? (item.quarterly_increase / 1000000) + 1.25 : null;
+        }),
+        type: 'line',
+        backgroundColor: isDark ? '#F59E0B' : '#D97706',
+        borderColor: isDark ? '#F59E0B' : '#D97706',
+        borderWidth: 0,
+        pointRadius: 10,
+        pointHoverRadius: 12,
+        showLine: false,
+        pointStyle: 'rectRot',
+        pointBorderWidth: 3,
+        fill: false,
+        tension: 0,
+        yAxisID: 'y'
+      },
+      // Stabilization point marker for rewards (positioned above minting marker)
+      {
+        label: 'Stabilization Point (Rewards)',
+        data: growthData.map((item, index) => {
+          if (item.quarter === 'Q3 2027') {
+            const matchingReward = allData.find(reward => {
+              const rewardDate = new Date(reward.date);
+              const quarterStart = new Date(item.date);
+              const quarterEnd = new Date(quarterStart);
+              quarterEnd.setMonth(quarterEnd.getMonth() + 3);
+              return rewardDate >= quarterStart && rewardDate < quarterEnd;
+            });
+            return matchingReward ? matchingReward.rewards_per_challenge + 14.88 : null;
+          }
+          return null;
+        }),
+        type: 'line',
+        backgroundColor: isDark ? '#8B5CF6' : '#7C3AED',
+        borderColor: isDark ? '#8B5CF6' : '#7C3AED',
+        borderWidth: 0,
+        pointRadius: 10,
+        pointHoverRadius: 12,
+        showLine: false,
+        pointStyle: 'triangle',
+        pointBorderWidth: 3,
+        fill: false,
+        tension: 0,
+        yAxisID: 'y1'
+      }
+    ]
+  };
+
 
   // Chart Options
   $: supplyChartOptions = {
@@ -259,6 +351,69 @@
     }
   };
 
+  $: combinedChartOptions = {
+    ...getBaseChartOptions(isDark),
+    scales: {
+      ...getBaseChartOptions(isDark).scales,
+      y: {
+        ...getBaseChartOptions(isDark).scales.y,
+        type: 'linear',
+        position: 'left',
+        title: {
+          display: true,
+          text: 'Quarterly Minting (Millions of FUNNAI)',
+          color: isDark ? '#22C55E' : '#16A34A'
+        },
+        ticks: {
+          ...getBaseChartOptions(isDark).scales.y.ticks,
+          callback: function(value) {
+            return value.toFixed(1) + 'M';
+          }
+        },
+        grid: {
+          color: isDark ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.1)'
+        }
+      },
+      y1: {
+        ...getBaseChartOptions(isDark).scales.y,
+        type: 'linear',
+        position: 'right',
+        title: {
+          display: true,
+          text: 'Rewards per Challenge (FUNNAI)',
+          color: isDark ? '#F87171' : '#EF4444'
+        },
+        ticks: {
+          ...getBaseChartOptions(isDark).scales.y.ticks,
+          callback: function(value) {
+            return value.toFixed(2);
+          }
+        },
+        grid: {
+          drawOnChartArea: false, // Don't draw grid lines for secondary axis
+        }
+      }
+    },
+    plugins: {
+      ...getBaseChartOptions(isDark).plugins,
+      tooltip: {
+        ...getBaseChartOptions(isDark).plugins.tooltip,
+        callbacks: {
+          label: function(context) {
+            if (context.dataset.label === 'Quarterly Minting (FUNNAI)') {
+              return `${context.dataset.label}: ${(context.parsed.y * 1000000).toLocaleString()} FUNNAI`;
+            } else if (context.dataset.label === 'Rewards per Challenge') {
+              return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} FUNNAI`;
+            } else if (context.dataset.label.includes('Stabilization Point')) {
+              return context.dataset.label; // Only show the label text, no value
+            }
+            return `${context.dataset.label}: ${context.parsed.y}`;
+          }
+        }
+      }
+    }
+  };
+
 
   function setActiveView(view: typeof activeView) {
     activeView = view;
@@ -298,20 +453,12 @@
       Supply Timeline
     </button>
     <button
-      class="px-4 py-2 text-sm font-medium rounded-md transition-colors {activeView === 'rewards' 
+      class="px-4 py-2 text-sm font-medium rounded-md transition-colors {activeView === 'combined' 
         ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm' 
         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}"
-      on:click={() => setActiveView('rewards')}
+      on:click={() => setActiveView('combined')}
     >
-      Rewards
-    </button>
-    <button
-      class="px-4 py-2 text-sm font-medium rounded-md transition-colors {activeView === 'growth' 
-        ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm' 
-        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}"
-      on:click={() => setActiveView('growth')}
-    >
-      Quarterly Mint
+      Rewards & Minting
     </button>
   </div>
 
@@ -341,21 +488,13 @@
       <div style="height: 350px;">
         <Line data={supplyChartData} options={supplyChartOptions} />
       </div>
-    {:else if activeView === 'rewards'}
+    {:else if activeView === 'combined'}
       <div class="mb-4">
-        <h4 class="text-md font-medium text-gray-900 dark:text-white mb-2">Rewards per Challenge Decay</h4>
-        <p class="text-sm text-gray-600 dark:text-gray-400">How challenge rewards decrease over time (deflationary mechanism)</p>
+        <h4 class="text-md font-medium text-gray-900 dark:text-white mb-2">Quarterly Minting & Rewards Analysis</h4>
+        <p class="text-sm text-gray-600 dark:text-gray-400">Combined view showing quarterly token minting (green bars) and rewards per challenge (red bars) with stabilization points</p>
       </div>
       <div style="height: 350px;">
-        <Bar data={rewardsChartData} options={rewardsChartOptions} />
-      </div>
-    {:else if activeView === 'growth'}
-      <div class="mb-4">
-        <h4 class="text-md font-medium text-gray-900 dark:text-white mb-2">Quarterly Token Minting</h4>
-        <p class="text-sm text-gray-600 dark:text-gray-400">Amount of new FUNNAI tokens minted each quarter</p>
-      </div>
-      <div style="height: 350px;">
-        <Bar data={growthChartData} options={growthChartOptions} />
+        <Bar data={combinedChartData} options={combinedChartOptions} />
       </div>
     {/if}
   </div>
