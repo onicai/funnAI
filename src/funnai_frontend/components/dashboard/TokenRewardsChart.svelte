@@ -81,12 +81,18 @@
   $: rewardsChartData = {
     labels: chartLabels,
     datasets: [
-      createDataset(
-        'Rewards per Challenge',
-        allData.map(item => item.rewards_per_challenge),
-        isDark ? '#F87171' : '#EF4444',
-        'line'
-      ),
+      {
+        label: 'Rewards per Challenge',
+        data: allData.map(item => item.rewards_per_challenge),
+        backgroundColor: isDark ? 'rgba(248, 113, 113, 0.7)' : 'rgba(239, 68, 68, 0.8)',
+        borderColor: isDark ? '#F87171' : '#EF4444',
+        borderWidth: 2,
+        borderRadius: 8,
+        borderSkipped: false,
+        hoverBackgroundColor: isDark ? 'rgba(248, 113, 113, 0.9)' : 'rgba(239, 68, 68, 0.95)',
+        hoverBorderColor: isDark ? '#FCA5A5' : '#DC2626',
+        hoverBorderWidth: 3,
+      },
       // Stabilization point marker
       {
         label: 'Stabilization Point',
@@ -126,7 +132,7 @@
       {
         label: 'Stabilization Point',
         data: growthData.map((item, index) => {
-          return item.date === '2027-06-29' ? item.quarterly_increase / 1000000 : null;
+          return item.quarter === 'Q3 2027' ? item.quarterly_increase / 1000000 : null;
         }),
         type: 'line',
         backgroundColor: isDark ? '#F59E0B' : '#D97706',
@@ -305,7 +311,7 @@
         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}"
       on:click={() => setActiveView('growth')}
     >
-      Quarterly Growth
+      Quarterly Mint
     </button>
   </div>
 
@@ -341,7 +347,7 @@
         <p class="text-sm text-gray-600 dark:text-gray-400">How challenge rewards decrease over time (deflationary mechanism)</p>
       </div>
       <div style="height: 350px;">
-        <Line data={rewardsChartData} options={rewardsChartOptions} />
+        <Bar data={rewardsChartData} options={rewardsChartOptions} />
       </div>
     {:else if activeView === 'growth'}
       <div class="mb-4">
