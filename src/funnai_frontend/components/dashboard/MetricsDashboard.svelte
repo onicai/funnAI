@@ -111,7 +111,7 @@
             </div>
           </div>
           <div class="text-2xl font-bold text-purple-900 dark:text-purple-300">
-            {displayMetrics.system_metrics.funnai_index.toFixed(3)}
+            {(displayMetrics.system_metrics.funnai_index * 100).toFixed(1)}%
           </div>
         </div>
         <div class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">

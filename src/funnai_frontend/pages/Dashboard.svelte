@@ -11,6 +11,7 @@
   import SystemStatus from "../components/dashboard/SystemStatus.svelte";
   import MetricsDashboard from "../components/dashboard/MetricsDashboard.svelte";
   import TokenInfo from "../components/dashboard/TokenInfo.svelte";
+  import TokenRewardsChart from "../components/dashboard/TokenRewardsChart.svelte";
   
   // Import services for fetching token data
   import { IcrcService } from "../helpers/IcrcService";
@@ -175,6 +176,8 @@
         <TokenInfo />
       </div>
 
+      
+
       <!-- Top Row: User mAIner Stats and Protocol Metrics -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="grid grid-cols-1 gap-6">
@@ -185,6 +188,11 @@
           <MainerLeaderboard variant="user" maxItems={8} />
         </div>
         
+      </div>
+
+      <!-- Token Rewards Analytics Section -->
+      <div class="grid grid-cols-1">
+        <TokenRewardsChart />
       </div>
     </div>
 
