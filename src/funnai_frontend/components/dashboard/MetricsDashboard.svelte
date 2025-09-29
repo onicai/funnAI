@@ -111,7 +111,7 @@
             </div>
           </div>
           <div class="text-2xl font-bold text-purple-900 dark:text-purple-300">
-            {displayMetrics.system_metrics.funnai_index.toFixed(3)}
+            {(displayMetrics.system_metrics.funnai_index * 100).toFixed(1)}%
           </div>
         </div>
         <div class="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
@@ -127,6 +127,49 @@
     </div>
     {/if}
   </div>
+
+  <!-- Additional Metrics Row -->
+  {#if displayMetrics && !loading}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+          Additional Metrics
+        </h3>
+        <div class="flex items-center gap-2">
+          <div class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs px-3 py-1.5 rounded-full border border-green-200 dark:border-green-700">
+            Latest data
+          </div>
+          <span class="text-sm text-gray-500 dark:text-gray-400">
+            as of {new Date(displayMetrics.metadata.date).toLocaleDateString()}
+          </span>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-4">
+          <div class="text-sm font-medium text-cyan-600 dark:text-cyan-400">Total Cycles</div>
+          <div class="text-xl font-bold text-cyan-900 dark:text-cyan-300">
+            {formatChartNumber(displayMetrics.mainers.totals.total_cycles * 1e12, 'cycles')}
+
+          </div>
+        </div>
+        
+        <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4">
+          <div class="text-sm font-medium text-indigo-600 dark:text-indigo-400">Avg Cycles per mAIner</div>
+          <div class="text-xl font-bold text-indigo-900 dark:text-indigo-300">
+            {formatChartNumber(displayMetrics.derived_metrics.avg_cycles_per_mainer * 1e12, 'cycles')}
+          </div>
+        </div>
+        
+        <div class="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-4">
+          <div class="text-sm font-medium text-teal-600 dark:text-teal-400">Burn Rate per Active</div>
+          <div class="text-xl font-bold text-teal-900 dark:text-teal-300">
+            {formatChartNumber(displayMetrics.derived_metrics.burn_rate_per_active_mainer * 1e12, 'cycles')}
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
 
   <!-- Historical Charts Section -->
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
@@ -212,48 +255,7 @@
     </div>
   </div>
 
-  <!-- Additional Metrics Row -->
-  {#if displayMetrics && !loading}
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-          Additional Metrics
-        </h3>
-        <div class="flex items-center gap-2">
-          <div class="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs px-3 py-1.5 rounded-full border border-green-200 dark:border-green-700">
-            Latest data
-          </div>
-          <span class="text-sm text-gray-500 dark:text-gray-400">
-            as of {new Date(displayMetrics.metadata.date).toLocaleDateString()}
-          </span>
-        </div>
-      </div>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div class="bg-cyan-50 dark:bg-cyan-900/20 rounded-lg p-4">
-          <div class="text-sm font-medium text-cyan-600 dark:text-cyan-400">Total Cycles</div>
-          <div class="text-xl font-bold text-cyan-900 dark:text-cyan-300">
-            {formatChartNumber(displayMetrics.mainers.totals.total_cycles * 1e12, 'cycles')}
-
-          </div>
-        </div>
-        
-        <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4">
-          <div class="text-sm font-medium text-indigo-600 dark:text-indigo-400">Avg Cycles per mAIner</div>
-          <div class="text-xl font-bold text-indigo-900 dark:text-indigo-300">
-            {formatChartNumber(displayMetrics.derived_metrics.avg_cycles_per_mainer * 1e12, 'cycles')}
-          </div>
-        </div>
-        
-        <div class="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-4">
-          <div class="text-sm font-medium text-teal-600 dark:text-teal-400">Burn Rate per Active</div>
-          <div class="text-xl font-bold text-teal-900 dark:text-teal-300">
-            {formatChartNumber(displayMetrics.derived_metrics.burn_rate_per_active_mainer * 1e12, 'cycles')}
-          </div>
-        </div>
-      </div>
-    </div>
-  {/if}
+  
 
   <!-- Data freshness indicator 
   {#if latestMetrics}
