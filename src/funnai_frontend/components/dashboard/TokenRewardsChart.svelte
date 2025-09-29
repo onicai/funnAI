@@ -149,42 +149,32 @@
     ]
   };
 
-  // Combined Rewards & Growth Chart Data
+  // Combined Rewards & Growth Chart Data - use all data points for labels
   $: combinedChartData = {
-    labels: growthData.map(item => item.quarter),
+    labels: allData.map(item => item.quarter),
     datasets: [
       // Quarterly Minting bars
       {
         label: 'Quarterly Minting (FUNNAI)',
-        data: growthData.map(item => item.quarterly_increase / 1000000), // Convert to millions
+        data: allData.map(item => item.quarterly_increase ? item.quarterly_increase / 1000000 : 0), // Convert to millions, show 0 for null
         backgroundColor: isDark ? 'rgba(34, 197, 94, 0.7)' : 'rgba(34, 197, 94, 0.8)',
         borderColor: isDark ? '#22C55E' : '#16A34A',
         borderWidth: 2,
         borderRadius: 6,
         borderSkipped: false,
-        yAxisID: 'y',
+        yAxisID: 'y1',
         type: 'bar'
       },
-      // Rewards per challenge line (mapped to quarterly data)
+      // Rewards per challenge bars (directly mapped by quarter)
       {
         label: 'Rewards per Challenge',
-        data: growthData.map(item => {
-          // Find corresponding rewards data by matching dates
-          const matchingReward = allData.find(reward => {
-            const rewardDate = new Date(reward.date);
-            const quarterStart = new Date(item.date);
-            const quarterEnd = new Date(quarterStart);
-            quarterEnd.setMonth(quarterEnd.getMonth() + 3);
-            return rewardDate >= quarterStart && rewardDate < quarterEnd;
-          });
-          return matchingReward ? matchingReward.rewards_per_challenge : null;
-        }),
+        data: allData.map(item => item.rewards_per_challenge),
         backgroundColor: isDark ? 'rgba(248, 113, 113, 0.7)' : 'rgba(239, 68, 68, 0.8)',
         borderColor: isDark ? '#F87171' : '#EF4444',
         borderWidth: 3,
         borderRadius: 8,
         borderSkipped: false,
-        yAxisID: 'y1',
+        yAxisID: 'y',
         type: 'bar',
         hoverBackgroundColor: isDark ? 'rgba(248, 113, 113, 0.9)' : 'rgba(239, 68, 68, 0.95)',
         hoverBorderColor: isDark ? '#FCA5A5' : '#DC2626',
@@ -193,8 +183,8 @@
       // Stabilization point marker for quarterly minting (positioned higher)
       {
         label: 'Stabilization Point',
-        data: growthData.map((item, index) => {
-          return item.quarter === 'Q3 2027' ? (item.quarterly_increase / 1000000) + 1.25 : null;
+        data: allData.map((item, index) => {
+          return item.quarter === 'Q3 2027' ? (item.quarterly_increase ? item.quarterly_increase / 1000000 : 0) + 1.25 : null;
         }),
         type: 'line',
         backgroundColor: isDark ? '#F59E0B' : '#D97706',
@@ -207,7 +197,7 @@
         pointBorderWidth: 3,
         fill: false,
         tension: 0,
-        yAxisID: 'y'
+        yAxisID: 'y1'
       }
     ]
   };
@@ -332,17 +322,17 @@
         position: 'left',
         title: {
           display: true,
-          text: 'Quarterly Minting (Millions of FUNNAI)',
-          color: isDark ? '#22C55E' : '#16A34A'
+          text: 'Rewards per Challenge (FUNNAI)',
+          color: isDark ? '#F87171' : '#EF4444'
         },
         ticks: {
           ...getBaseChartOptions(isDark).scales.y.ticks,
           callback: function(value) {
-            return value.toFixed(1) + 'M';
+            return value.toFixed(2);
           }
         },
         grid: {
-          color: isDark ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.1)'
+          color: isDark ? 'rgba(248, 113, 113, 0.1)' : 'rgba(239, 68, 68, 0.1)'
         }
       },
       y1: {
@@ -351,13 +341,13 @@
         position: 'right',
         title: {
           display: true,
-          text: 'Rewards per Challenge (FUNNAI)',
-          color: isDark ? '#F87171' : '#EF4444'
+          text: 'Quarterly Minting (Millions of FUNNAI)',
+          color: isDark ? '#22C55E' : '#16A34A'
         },
         ticks: {
           ...getBaseChartOptions(isDark).scales.y.ticks,
           callback: function(value) {
-            return value.toFixed(2);
+            return value.toFixed(1) + 'M';
           }
         },
         grid: {
