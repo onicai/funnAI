@@ -201,7 +201,7 @@
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
       <div class="text-center p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg">
         <div class="text-2xl font-bold text-pink-600 dark:text-pink-400">
-          181.9
+          139.9
         </div>
         <div class="text-sm text-gray-600 dark:text-gray-400">FUNNAI</div>
         <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Reward per challenge</div>
