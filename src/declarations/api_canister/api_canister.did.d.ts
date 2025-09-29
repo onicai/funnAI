@@ -19,6 +19,7 @@ export interface ApiCanister {
   'getLatestDailyMetric' : ActorMethod<[], DailyMetricResult>,
   'getMasterCanisterId' : ActorMethod<[], AuthRecordResult>,
   'getNumDailyMetrics' : ActorMethod<[], NatResult>,
+  'getTokenRewardsData' : ActorMethod<[], TokenRewardsDataResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
   'resetDailyMetricsAdmin' : ActorMethod<[], NatResult>,
   'setMasterCanisterId' : ActorMethod<[string], AuthRecordResult>,
@@ -148,6 +149,27 @@ export type StatusCodeRecordResult = { 'Ok' : StatusCodeRecord } |
 export interface SystemMetrics {
   'funnai_index' : number,
   'daily_burn_rate' : DailyBurnRate,
+}
+export interface TokenRewardsData {
+  'metadata' : TokenRewardsMetadata,
+  'data' : Array<TokenRewardsEntry>,
+}
+export type TokenRewardsDataResult = { 'Ok' : TokenRewardsData } |
+  { 'Err' : ApiError };
+export interface TokenRewardsEntry {
+  'quarterly_increase' : number,
+  'date' : string,
+  'quarter' : string,
+  'rewards_per_challenge' : number,
+  'total_minted' : number,
+  'notes' : string,
+}
+export interface TokenRewardsMetadata {
+  'dataset' : string,
+  'description' : string,
+  'last_updated' : string,
+  'version' : string,
+  'units' : { 'rewards_per_challenge' : string, 'total_minted' : string },
 }
 export interface UpdateDailyMetricAdminInput {
   'date' : string,
