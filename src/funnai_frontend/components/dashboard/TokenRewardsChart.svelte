@@ -77,13 +77,22 @@
     ]
   };
 
-  // Rewards Decay Chart Data
+  // Rewards Decay Chart Data - filter out Q2 2025 (first data point)
+  $: rewardsData = allData.filter(item => item.quarter !== 'Q2 2025');
+  $: rewardsChartLabels = rewardsData.map((item, index) => {
+    const date = new Date(item.date);
+    // Show every other label for better readability, but always show first and last
+    if (index === 0 || index === rewardsData.length - 1 || index % 2 === 0) {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+    return ''; // Empty string for hidden labels
+  });
   $: rewardsChartData = {
-    labels: chartLabels,
+    labels: rewardsChartLabels,
     datasets: [
       {
         label: 'Rewards per Challenge',
-        data: allData.map(item => item.rewards_per_challenge),
+        data: rewardsData.map(item => item.rewards_per_challenge),
         backgroundColor: isDark ? 'rgba(248, 113, 113, 0.7)' : 'rgba(239, 68, 68, 0.8)',
         borderColor: isDark ? '#F87171' : '#EF4444',
         borderWidth: 2,
@@ -96,7 +105,7 @@
       // Stabilization point marker
       {
         label: 'Stabilization Point',
-        data: allData.map((item, index) => {
+        data: rewardsData.map((item, index) => {
           return item.date === '2027-06-29' ? item.rewards_per_challenge : null;
         }),
         type: 'line',
@@ -149,14 +158,15 @@
     ]
   };
 
-  // Combined Rewards & Growth Chart Data - use all data points for labels
+  // Combined Rewards & Growth Chart Data - filter out Q2 2025
+  $: combinedData = allData.filter(item => item.quarter !== 'Q2 2025');
   $: combinedChartData = {
-    labels: allData.map(item => item.quarter),
+    labels: combinedData.map(item => item.quarter),
     datasets: [
       // Quarterly Minting bars
       {
         label: 'Quarterly Minting (FUNNAI)',
-        data: allData.map(item => item.quarterly_increase ? item.quarterly_increase / 1000000 : 0), // Convert to millions, show 0 for null
+        data: combinedData.map(item => item.quarterly_increase ? item.quarterly_increase / 1000000 : 0), // Convert to millions, show 0 for null
         backgroundColor: isDark ? 'rgba(34, 197, 94, 0.7)' : 'rgba(34, 197, 94, 0.8)',
         borderColor: isDark ? '#22C55E' : '#16A34A',
         borderWidth: 2,
@@ -168,7 +178,7 @@
       // Rewards per challenge bars (directly mapped by quarter)
       {
         label: 'Rewards per Challenge',
-        data: allData.map(item => item.rewards_per_challenge),
+        data: combinedData.map(item => item.rewards_per_challenge),
         backgroundColor: isDark ? 'rgba(248, 113, 113, 0.7)' : 'rgba(239, 68, 68, 0.8)',
         borderColor: isDark ? '#F87171' : '#EF4444',
         borderWidth: 3,
@@ -183,7 +193,7 @@
       // Stabilization point marker for quarterly minting (positioned higher)
       {
         label: 'Stabilization Point',
-        data: allData.map((item, index) => {
+        data: combinedData.map((item, index) => {
           return item.quarter === 'Q3 2027' ? (item.quarterly_increase ? item.quarterly_increase / 1000000 : 0) + 1.25 : null;
         }),
         type: 'line',
@@ -366,7 +376,7 @@
             } else if (context.dataset.label === 'Rewards per Challenge') {
               return `${context.dataset.label}: ${context.parsed.y.toFixed(2)} FUNNAI`;
             } else if (context.dataset.label.includes('Stabilization Point')) {
-              return context.dataset.label; // Only show the label text, no value
+              return "Rewards per challenge stabilized at 34.96 from this date onward until max supply is reached";
             }
             return `${context.dataset.label}: ${context.parsed.y}`;
           }
