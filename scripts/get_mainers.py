@@ -15,6 +15,8 @@ from .ledgers.icp import get_usd_per_computed_xdr_from_cmc, icp_xdr_summary, get
 
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+POAIW_DFX_JSON_PATH = os.path.join(SCRIPT_DIR, "../PoAIW/src/mAIner/dfx.json")
+POAIW_CANISTER_IDS_PATH = os.path.join(SCRIPT_DIR, "../PoAIW/src/mAIner/canister_ids.json")
 
 # The current value of 1 trillion cycles in USD, as computed by the CMC canister
 CMC_USD_PER_COMPUTED_XDR = get_usd_per_computed_xdr_from_cmc()
@@ -52,9 +54,78 @@ def get_mainers_for_user(network, user):
     
     return [mainer for mainer in mainers if (mainer.get('address','') != '' and mainer.get('ownedBy', '') == user)]
 
-def main(network, user):
+def write_mainers_env_file(mainers, env_file_path, network):
+    """Write ShareAgent mainers to .env file."""
+    mainers_created = 0
+    with open(env_file_path, 'w') as f:
+        f.write(f"# {len(mainers)-1} mAIners - data from game_state_canister on network {network}\n")
+        f.write(f"# DO NOT MANUALLY UPDATE THIS FILE, instead run: scripts/get_mainers.sh --network $NETWORK \n")
+
+        for mainer in mainers:
+            address = mainer.get('address', '')
+            canister_type_dict = mainer.get('canisterType', {}).get("MainerAgent", {})
+            canister_type = list(canister_type_dict.keys())[0] if canister_type_dict else ''
+
+            if canister_type == "ShareService":
+                continue
+
+            if canister_type != "ShareAgent":
+                continue
+
+            if address != "":
+                line = f"MAINER_SHARE_AGENT_{mainers_created:04d}={address}\n"
+                f.write(line)
+                mainers_created += 1
+
+    print(f"Updated {mainers_created} ShareAgent mainers in {os.path.abspath(env_file_path)}")
+    return mainers_created
+
+def update_poaiw_files(mainers, network):
+    """Update dfx.json and canister_ids.json with ShareAgent mainers."""
+    share_agent_mainers = []
+
+    # Filter for ShareAgent type mainers only
+    for mainer in mainers:
+        address = mainer.get('address', '')
+        canister_type_dict = mainer.get('canisterType', {}).get("MainerAgent", {})
+        canister_type = list(canister_type_dict.keys())[0] if canister_type_dict else ''
+
+        if canister_type == "ShareAgent" and address != "":
+            share_agent_mainers.append(address)
+
+    # Update dfx.json
+    with open(POAIW_DFX_JSON_PATH, 'r') as f:
+        dfx_config = json.load(f)
+
+    # Add or update ShareAgent mainers in dfx.json (preserve all existing entries)
+    for i, address in enumerate(share_agent_mainers):
+        canister_name = f"mainer_ctrlb_canister_{i}"
+        if canister_name not in dfx_config['canisters']:
+            dfx_config['canisters'][canister_name] = {"main": "src/Main.mo"}
+
+    with open(POAIW_DFX_JSON_PATH, 'w') as f:
+        json.dump(dfx_config, f, indent=2)
+
+    # Update canister_ids.json
+    with open(POAIW_CANISTER_IDS_PATH, 'r') as f:
+        canister_ids = json.load(f)
+
+    # Add or update ShareAgent mainers with their addresses for the specified network (preserve all existing entries)
+    for i, address in enumerate(share_agent_mainers):
+        canister_name = f"mainer_ctrlb_canister_{i}"
+        if canister_name not in canister_ids:
+            canister_ids[canister_name] = {}
+        canister_ids[canister_name][network] = address
+
+    with open(POAIW_CANISTER_IDS_PATH, 'w') as f:
+        json.dump(canister_ids, f, indent=2)
+
+    print(f"Updated {len(share_agent_mainers)} ShareAgent mainers in {os.path.abspath(POAIW_DFX_JSON_PATH)}")
+    print(f"Updated {len(share_agent_mainers)} ShareAgent mainers in {os.path.abspath(POAIW_CANISTER_IDS_PATH)}")
+
+def main(network, user, skip_poaiw_update=False, daily_metrics=False):
     print("----------------------------------------------")
-    
+
     # Get mainers based on user parameter
     if user == "all" or user is None:
         mainers = get_mainers(network)
@@ -91,130 +162,120 @@ def main(network, user):
             except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError):
                 print(f"  - {address} (Unable to query setting)")
         env_file_path = os.path.join(SCRIPT_DIR, f"canister_ids_mainers-{network}-{user}.env")
-    
+
     if not mainers or len(mainers) == 0:
         print(f"No mainers found for the specified network {network}.")
         return
-    
-    print("----------------------------------------------")
-    # Print the summary of ICP to XDR conversion
-    icp_xdr_summary()
 
-    print("----------------------------------------------")
-    print(f"Writing mainers to {env_file_path}")
+    # Update PoAIW files unless skipped (only when processing all mainers)
+    if not skip_poaiw_update and (user == "all" or user is None):
+        update_poaiw_files(mainers, network)
 
-    # get total cycle balance
-    total_cycles = 0
-    total_paused_low = 0
-    total_paused_medium = 0
-    total_paused_high = 0
-    total_paused_very_high = 0
-    total_active_low = 0
-    total_active_medium = 0
-    total_active_high = 0
-    total_active_very_high = 0
-    total_paused = 0
-    total_active = 0
-    mainers_created = 0
+    # Write mainers to .env file
+    mainers_created = write_mainers_env_file(mainers, env_file_path, network)
 
-    with open(env_file_path, 'w') as f:
-        f.write(f"# {len(mainers)-1} mAIners - data from game_state_canister on network {network}\n")
-        f.write(f"# DO NOT MANUALLY UPDATE THIS FILE, instead run: scripts/get_mainers.sh --network $NETWORK \n")
-    
+    # Calculate daily metrics if requested
+    if daily_metrics and (user == "all" or user is None):
+        print("----------------------------------------------")
+        # Print the summary of ICP to XDR conversion
+        icp_xdr_summary()
+
+        print("----------------------------------------------")
+        print(f"Calculating daily metrics for {mainers_created} mainers...")
+
+        total_cycles = 0
+        total_paused_low = 0
+        total_paused_medium = 0
+        total_paused_high = 0
+        total_paused_very_high = 0
+        total_active_low = 0
+        total_active_medium = 0
+        total_active_high = 0
+        total_active_very_high = 0
+        total_paused = 0
+        total_active = 0
+
         try:
+            processed = 0
             for mainer in mainers:
                 address = mainer.get('address', '')
                 canister_type_dict = mainer.get('canisterType', {}).get("MainerAgent", {})
                 canister_type = list(canister_type_dict.keys())[0] if canister_type_dict else ''
 
-                if canister_type == "ShareService":
-                    print(f"Skipping ShareService canister, because this is part of the protocol canisters: {address}")
+                if canister_type != "ShareAgent" or address == "":
                     continue
 
-                if canister_type != "ShareAgent":
-                    print(f"Skipping canister, because the canister_type is unknown : {canister_type}")
+                processed += 1
+
+                # check if the canister is paused or active
+                active = False
+                cmd = ["dfx", "canister", "call", address, "getIssueFlagsAdmin", "--network", network, "--output", "json"]
+                output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
+                data = json.loads(output)
+                low_cycle_balance = data.get('Ok', {}).get('lowCycleBalance', None)
+                if low_cycle_balance is None:
+                    print(f"ERROR 1: Unable to get issue flags for canister {address} on network {network}")
+                    print(f"  {' '.join(cmd)}")
+                    print(output)
+                    continue
+                elif low_cycle_balance == False:
+                    active = True
+                    total_active += 1
+                elif low_cycle_balance == True:
+                    total_paused += 1
+
+                # get cycleBalance & cyclesBurnRate from getMainerStatisticsAdmin endpoint
+                cmd = ["dfx", "canister", "call", address, "getMainerStatisticsAdmin", "--network", network, "--output", "json"]
+                output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
+                data = json.loads(output)
+
+                cycle_balance = int(data.get('Ok', {}).get('cycleBalance', 0))
+                if cycle_balance > 0:
+                    total_cycles += cycle_balance
+                else:
+                    print(f"ERROR: Unable to get cycleBalance for canister {address} on network {network}")
+                    print(f"  {' '.join(cmd)}")
+                    print(output)
                     continue
 
-                if address !="":
-                    mainers_created += 1
-
-                    line = f"MAINER_SHARE_AGENT_{mainers_created:04d}={address}\n"
-                    f.write(line)
-
-                    if user == "all" or user is None:
-                        # check if the canister is paused or active
-                        active = False
-                        cmd = ["dfx", "canister", "call", address, "getIssueFlagsAdmin", "--network", network, "--output", "json"]
-                        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
-                        data = json.loads(output)
-                        low_cycle_balance = data.get('Ok', {}).get('lowCycleBalance', None)
-                        if low_cycle_balance is None:
-                            print(f"ERROR 1: Unable to get issue flags for canister {address} on network {network}")
-                            print(f"  {' '.join(cmd)}")
-                            print(output)
-                            continue
-                        elif low_cycle_balance == False:
-                            active = True
-                            total_active += 1
-                        elif low_cycle_balance == True:
-                            total_paused += 1        
-
-                        # This used 'dfx status', which is slow...
-                        # balance = get_balance(address, network)
-                        # total_cycles += balance if balance is not None else 0
-
-                        # get cycleBalance & cyclesBurnRate from getMainerStatisticsAdmin endpoint
-                        cmd = ["dfx", "canister", "call", address, "getMainerStatisticsAdmin", "--network", network, "--output", "json"]
-                        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
-                        data = json.loads(output)
-
-                        cycle_balance = int(data.get('Ok', {}).get('cycleBalance', 0))
-                        if cycle_balance > 0:
-                            total_cycles += cycle_balance
+                cycles_burn_rate = data.get('Ok', {}).get('cyclesBurnRate', {}).get('cycles', None)
+                if cycles_burn_rate is not None:
+                    # These ranges need to be kept up to date with the backend (Game State: mAIner Burn Rates)
+                    if cycles_burn_rate == "1_000_000_000_000":
+                        if active:
+                            total_active_low += 1
                         else:
-                            print(f"ERROR: Unable to get cycleBalance for canister {address} on network {network}")
-                            print(f"  {' '.join(cmd)}")
-                            print(output)
-                            continue
-
-                        cycles_burn_rate = data.get('Ok', {}).get('cyclesBurnRate', {}).get('cycles', None)
-                        if cycles_burn_rate is not None:
-                            # These ranges need to be kept up to date with the backend (Game State: mAIner Burn Rates)
-                            if cycles_burn_rate == "1_000_000_000_000":
-                                if active:
-                                    total_active_low += 1
-                                else:
-                                    total_paused_low += 1
-                            elif cycles_burn_rate == "2_000_000_000_000":
-                                if active:
-                                    total_active_medium += 1
-                                else:
-                                    total_paused_medium += 1
-                            elif cycles_burn_rate == "4_000_000_000_000":
-                                if active:
-                                    total_active_high += 1
-                                else:
-                                    total_paused_high += 1
-                            elif cycles_burn_rate == "6_000_000_000_000":
-                                if active:
-                                    total_active_very_high += 1
-                                else:
-                                    total_paused_very_high += 1
-                            else:
-                                print(f"ERROR: Unknown cyclesBurnRate {cycles_burn_rate} for canister {address} on network {network}")
-                                print(f"  {' '.join(cmd)}")
-                                print(output)
-                                continue
+                            total_paused_low += 1
+                    elif cycles_burn_rate == "2_000_000_000_000":
+                        if active:
+                            total_active_medium += 1
                         else:
-                            print(f"ERROR: Unable to get cyclesBurnRate for canister {address} on network {network}")
-                            print(f"  {' '.join(cmd)}")
-                            print(output)
-                            continue
+                            total_paused_medium += 1
+                    elif cycles_burn_rate == "4_000_000_000_000":
+                        if active:
+                            total_active_high += 1
+                        else:
+                            total_paused_high += 1
+                    elif cycles_burn_rate == "6_000_000_000_000":
+                        if active:
+                            total_active_very_high += 1
+                        else:
+                            total_paused_very_high += 1
+                    else:
+                        print(f"ERROR: Unknown cyclesBurnRate {cycles_burn_rate} for canister {address} on network {network}")
+                        print(f"  {' '.join(cmd)}")
+                        print(output)
+                        continue
+                else:
+                    print(f"ERROR: Unable to get cyclesBurnRate for canister {address} on network {network}")
+                    print(f"  {' '.join(cmd)}")
+                    print(output)
+                    continue
 
-                        # print progress every 25 mainers
-                        if mainers_created % 25 == 0:
-                            print(f"Processed {mainers_created} mainers:")
-                            
+                # print progress every 25 mainers
+                if processed % 25 == 0:
+                    print(f"Processed {processed} mainers")
+
         except subprocess.CalledProcessError as e:
             print(f"ERROR occured when calling the subprocess command.")
             print("Command:", e.cmd)
@@ -222,34 +283,35 @@ def main(network, user):
             print("Output:\n", e.output)
             sys.exit(1)
 
-    total_cycles = total_cycles // 1_000_000_000_000 # Convert to trillion cycles
-    total_cycles_usd = total_cycles * CMC_USD_PER_COMPUTED_XDR  # Convert to USD
+    if daily_metrics:
+        total_cycles = total_cycles // 1_000_000_000_000 # Convert to trillion cycles
+        total_cycles_usd = total_cycles * CMC_USD_PER_COMPUTED_XDR  # Convert to USD
 
-    daily_burn_rate = total_active_low * DAILY_BURN_RATE_LOW+ total_active_medium * DAILY_BURN_RATE_MEDIUM + total_active_high * DAILY_BURN_RATE_HIGH + total_active_very_high * DAILY_BURN_RATE_VERY_HIGH
-    daily_burn_rate_usd = daily_burn_rate * CMC_USD_PER_COMPUTED_XDR  # Convert to USD
-    
-    funnai_index = 0.9 * daily_burn_rate / IC_API_TCYCLE_BURN_RATE_PER_DAY if IC_API_TCYCLE_BURN_RATE_PER_DAY > 0 else 0
+        daily_burn_rate = total_active_low * DAILY_BURN_RATE_LOW+ total_active_medium * DAILY_BURN_RATE_MEDIUM + total_active_high * DAILY_BURN_RATE_HIGH + total_active_very_high * DAILY_BURN_RATE_VERY_HIGH
+        daily_burn_rate_usd = daily_burn_rate * CMC_USD_PER_COMPUTED_XDR  # Convert to USD
 
-    print(f"FUNNAI Index                            : {funnai_index:.2f}")
-    print(f"Total daily burn rate                   : {daily_burn_rate} trillion cycles /day (${daily_burn_rate_usd:.2f} USD/day)")
-    print(f"Total mainers created                   : {mainers_created}")
-    print(f"Total cycles across all mainers         : {total_cycles} trillion cycles")
-    print(f"Total paused mainers                    : {total_paused}")
-    print(f"Total active mainers                    : {total_active}")
-    print(f"Total active low burn rate mainers      : {total_active_low}")
-    print(f"Total active medium burn rate mainers   : {total_active_medium}")
-    print(f"Total active high burn rate mainers     : {total_active_high}")
-    print(f"Total active very high burn rate mainers: {total_active_very_high}")
-    print(f"Total paused low burn rate mainers      : {total_paused_low}")
-    print(f"Total paused medium burn rate mainers   : {total_paused_medium}")
-    print(f"Total paused high burn rate mainers     : {total_paused_high}")
-    print(f"Total paused very high burn rate mainers: {total_paused_very_high}")
+        funnai_index = 0.9 * daily_burn_rate / IC_API_TCYCLE_BURN_RATE_PER_DAY if IC_API_TCYCLE_BURN_RATE_PER_DAY > 0 else 0
 
-    if user == "all" or user is None:
+        print(f"FUNNAI Index                            : {funnai_index:.2f}")
+        print(f"Total daily burn rate                   : {daily_burn_rate} trillion cycles /day (${daily_burn_rate_usd:.2f} USD/day)")
+        print(f"Total cycles across all mainers         : {total_cycles} trillion cycles")
+        print(f"Total paused mainers                    : {total_paused}")
+        print(f"Total active mainers                    : {total_active}")
+        print(f"Total active low burn rate mainers      : {total_active_low}")
+        print(f"Total active medium burn rate mainers   : {total_active_medium}")
+        print(f"Total active high burn rate mainers     : {total_active_high}")
+        print(f"Total active very high burn rate mainers: {total_active_very_high}")
+        print(f"Total paused low burn rate mainers      : {total_paused_low}")
+        print(f"Total paused medium burn rate mainers   : {total_paused_medium}")
+        print(f"Total paused high burn rate mainers     : {total_paused_high}")
+        print(f"Total paused very high burn rate mainers: {total_paused_very_high}")
+
+    if daily_metrics and (user == "all" or user is None):
         # Write counts to a timestamped CSV file only if there's a change
         timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         csv_file_path = os.path.join(SCRIPT_DIR, f"get_mainers-{network}.csv")
-            
+
+        df = pd.DataFrame()
         if os.path.exists(csv_file_path) and os.stat(csv_file_path).st_size > 0:
             # Read the contents of the CSV file and store it in a pandas dataframe. It has a header line
             df = pd.read_csv(csv_file_path)
@@ -297,5 +359,15 @@ if __name__ == "__main__":
         default="all",
         help="Specify the user for which to get mainers (default: 'all')",
     )
+    parser.add_argument(
+        "--skip-poaiw-update",
+        action="store_true",
+        help="Skip updating PoAIW dfx.json and canister_ids.json files",
+    )
+    parser.add_argument(
+        "--daily-metrics",
+        action="store_true",
+        help="Calculate daily metrics including cycle burn rates and active/paused status",
+    )
     args = parser.parse_args()
-    main(args.network, args.user)
+    main(args.network, args.user, args.skip_poaiw_update, args.daily_metrics)
