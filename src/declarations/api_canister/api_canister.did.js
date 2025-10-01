@@ -102,6 +102,32 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : DailyMetricsResponse,
     'Err' : ApiError,
   });
+  const TokenRewardsMetadata = IDL.Record({
+    'dataset' : IDL.Text,
+    'description' : IDL.Text,
+    'last_updated' : IDL.Text,
+    'version' : IDL.Text,
+    'units' : IDL.Record({
+      'rewards_per_challenge' : IDL.Text,
+      'total_minted' : IDL.Text,
+    }),
+  });
+  const TokenRewardsEntry = IDL.Record({
+    'date' : IDL.Text,
+    'quarter' : IDL.Text,
+    'rewards_per_challenge' : IDL.Float64,
+    'total_minted' : IDL.Float64,
+    'notes' : IDL.Text,
+    'rewards_per_quarter' : IDL.Float64,
+  });
+  const TokenRewardsData = IDL.Record({
+    'metadata' : TokenRewardsMetadata,
+    'data' : IDL.Vec(TokenRewardsEntry),
+  });
+  const TokenRewardsDataResult = IDL.Variant({
+    'Ok' : TokenRewardsData,
+    'Err' : ApiError,
+  });
   const StatusCodeRecord = IDL.Record({ 'status_code' : StatusCode });
   const StatusCodeRecordResult = IDL.Variant({
     'Ok' : StatusCodeRecord,
@@ -157,6 +183,7 @@ export const idlFactory = ({ IDL }) => {
     'getLatestDailyMetric' : IDL.Func([], [DailyMetricResult], ['query']),
     'getMasterCanisterId' : IDL.Func([], [AuthRecordResult], ['query']),
     'getNumDailyMetrics' : IDL.Func([], [NatResult], ['query']),
+    'getTokenRewardsData' : IDL.Func([], [TokenRewardsDataResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
     'resetDailyMetricsAdmin' : IDL.Func([], [NatResult], []),
     'setMasterCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),

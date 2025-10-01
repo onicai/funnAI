@@ -201,6 +201,7 @@ dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_b
 ## ensure you have the latest from the PoAIW repo
 dfx generate game_state_canister
 dfx generate mainer_ctrlb_canister
+dfx generate api_canister
 dfx deploy funnai_frontend --network $NETWORK
 # Note: you might need to give yourself these explicit permissions:
 dfx canister call funnai_frontend grant_permission '(record {permission = variant {Prepare}; to_principal = principal "<your-principal>"})'
