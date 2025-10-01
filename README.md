@@ -201,6 +201,7 @@ dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_b
 ## ensure you have the latest from the PoAIW repo
 dfx generate game_state_canister
 dfx generate mainer_ctrlb_canister
+dfx generate api_canister
 dfx deploy funnai_frontend --network $NETWORK
 
 # Deploy the token ledger canister:

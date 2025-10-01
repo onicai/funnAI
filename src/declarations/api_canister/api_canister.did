@@ -19,8 +19,8 @@ type TokenRewardsEntry =
    date: text;
    notes: text;
    quarter: text;
-   quarterly_increase: float64;
    rewards_per_challenge: float64;
+   rewards_per_quarter: float64;
    total_minted: float64;
  };
 type TokenRewardsDataResult = 

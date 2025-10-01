@@ -157,12 +157,12 @@ export interface TokenRewardsData {
 export type TokenRewardsDataResult = { 'Ok' : TokenRewardsData } |
   { 'Err' : ApiError };
 export interface TokenRewardsEntry {
-  'quarterly_increase' : number,
   'date' : string,
   'quarter' : string,
   'rewards_per_challenge' : number,
   'total_minted' : number,
   'notes' : string,
+  'rewards_per_quarter' : number,
 }
 export interface TokenRewardsMetadata {
   'dataset' : string,

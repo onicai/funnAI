@@ -113,12 +113,12 @@ export const idlFactory = ({ IDL }) => {
     }),
   });
   const TokenRewardsEntry = IDL.Record({
-    'quarterly_increase' : IDL.Float64,
     'date' : IDL.Text,
     'quarter' : IDL.Text,
     'rewards_per_challenge' : IDL.Float64,
     'total_minted' : IDL.Float64,
     'notes' : IDL.Text,
+    'rewards_per_quarter' : IDL.Float64,
   });
   const TokenRewardsData = IDL.Record({
     'metadata' : TokenRewardsMetadata,
