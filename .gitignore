@@ -133,8 +133,11 @@ src/arcmindvectordb/target/**
 
 *.pyc
 
-# scripts 
+# scripts
 canister_ids_mainers-*.env
+!canister_ids_mainers-demo.env
+!canister_ids_mainers-testing.env
+!canister_ids_mainers-prd.env
 secret/
 
 # whitelist analysis output (contains sensitive user data)
@@ -142,3 +145,11 @@ funnai_accounts/
 
 # claude code
 CLAUDE.md
+
+scripts/burned_tokens_cache.json
+
+scripts/burned_tokens_prd.json
+
+scripts/mint_tokens_cache.json
+
+scripts/mint_tokens_prd.json
