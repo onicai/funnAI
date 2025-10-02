@@ -3,6 +3,36 @@ type UpdateDailyMetricAdminInput =
    date: text;
    input: DailyMetricUpdateInput;
  };
+type TokenRewardsMetadata = 
+ record {
+   dataset: text;
+   description: text;
+   last_updated: text;
+   units: record {
+            rewards_per_challenge: text;
+            total_minted: text;
+          };
+   version: text;
+ };
+type TokenRewardsEntry = 
+ record {
+   date: text;
+   notes: text;
+   quarter: text;
+   rewards_per_challenge: float64;
+   rewards_per_quarter: float64;
+   total_minted: float64;
+ };
+type TokenRewardsDataResult = 
+ variant {
+   Err: ApiError;
+   Ok: TokenRewardsData;
+ };
+type TokenRewardsData = 
+ record {
+   data: vec TokenRewardsEntry;
+   metadata: TokenRewardsMetadata;
+ };
 type SystemMetrics = 
  record {
    daily_burn_rate: DailyBurnRate;
@@ -170,9 +200,10 @@ type ApiCanister =
     (DailyMetricsResult) query;
    getDailyMetricsAdmin: () -> (DailyMetricsResult) query;
    getLatestDailyMetric: () -> (DailyMetricResult) query;
-   getMasterCanisterId: () -> (AuthRecordResult) query;
-   getNumDailyMetrics: () -> (NatResult) query;
-   health: () -> (StatusCodeRecordResult) query;
+  getMasterCanisterId: () -> (AuthRecordResult) query;
+  getNumDailyMetrics: () -> (NatResult) query;
+  getTokenRewardsData: () -> (TokenRewardsDataResult) query;
+  health: () -> (StatusCodeRecordResult) query;
    resetDailyMetricsAdmin: () -> (NatResult);
    setMasterCanisterId: (newMasterCanisterId: text) -> (AuthRecordResult);
    updateDailyMetricAdmin: (params: UpdateDailyMetricAdminInput) ->
