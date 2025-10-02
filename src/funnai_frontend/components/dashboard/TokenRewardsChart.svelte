@@ -3,6 +3,7 @@
   import { Line, Bar } from 'svelte-chartjs';
   import { theme } from '../../stores/store';
   import { getBaseChartOptions, createDataset, formatChartNumber } from '../../helpers/chartUtils';
+  import { TokenRewardsService, type TokenRewardsData } from '../../helpers/TokenRewardsService';
 
   export let title: string = "Token Rewards & Supply Analytics";
   export let height: string = "400px";
@@ -10,21 +11,17 @@
 
   let loading = true;
   let error = "";
-  let tokenRewardsData: any = null;
+  let tokenRewardsData: TokenRewardsData | null = null;
 
   // Theme reactivity
   $: isDark = $theme === 'dark';
 
-  // Load token rewards data
+  // Load token rewards data from API canister
   async function loadTokenRewardsData() {
     try {
       loading = true;
       error = "";
-      const response = await fetch('/token_rewards_data.json');
-      if (!response.ok) {
-        throw new Error(`Failed to load token rewards data: ${response.status}`);
-      }
-      tokenRewardsData = await response.json();
+      tokenRewardsData = await TokenRewardsService.fetchTokenRewardsData();
     } catch (err) {
       console.error('Error loading token rewards data:', err);
       error = "Failed to load token rewards data";
@@ -77,8 +74,8 @@
     ]
   };
 
-  // Rewards Decay Chart Data - filter out Q2 2025 (first data point)
-  $: rewardsData = allData.filter(item => item.quarter !== 'Q2 2025');
+  // Rewards Decay Chart Data - filter out first data point if it's Q2 2025
+  $: rewardsData = allData.filter(item => item.quarter !== 'Q2 2025' && item.quarter !== '');
   $: rewardsChartLabels = rewardsData.map((item, index) => {
     const date = new Date(item.date);
     // Show every other label for better readability, but always show first and last
@@ -123,14 +120,14 @@
     ]
   };
 
-  // Quarterly Growth Chart Data - filter out items with null quarterly_increase
-  $: growthData = allData.filter(item => item.quarterly_increase !== null);
+  // Quarterly Growth Chart Data - use rewards_per_quarter from API
+  $: growthData = allData.filter(item => item.rewards_per_quarter && item.rewards_per_quarter > 0);
   $: growthChartData = {
     labels: growthData.map(item => item.quarter),
     datasets: [
       {
         label: 'Quarterly Minting (FUNNAI)',
-        data: growthData.map(item => item.quarterly_increase / 1000000), // Convert to millions
+        data: growthData.map(item => item.rewards_per_quarter / 1000000), // Convert to millions
         backgroundColor: isDark ? 'rgba(34, 197, 94, 0.7)' : 'rgba(34, 197, 94, 0.8)',
         borderColor: isDark ? '#22C55E' : '#16A34A',
         borderWidth: 2,
@@ -141,7 +138,7 @@
       {
         label: 'Stabilization Point',
         data: growthData.map((item, index) => {
-          return item.quarter === 'Q3 2027' ? item.quarterly_increase / 1000000 : null;
+          return item.quarter === 'Q3 2027' ? item.rewards_per_quarter / 1000000 : null;
         }),
         type: 'line',
         backgroundColor: isDark ? '#F59E0B' : '#D97706',
@@ -158,15 +155,15 @@
     ]
   };
 
-  // Combined Rewards & Growth Chart Data - filter out Q2 2025
-  $: combinedData = allData.filter(item => item.quarter !== 'Q2 2025');
+  // Combined Rewards & Growth Chart Data - filter out Q2 2025 and empty quarters
+  $: combinedData = allData.filter(item => item.quarter !== 'Q2 2025' && item.quarter !== '');
   $: combinedChartData = {
     labels: combinedData.map(item => item.quarter),
     datasets: [
       // Quarterly Minting bars
       {
         label: 'Quarterly Minting (FUNNAI)',
-        data: combinedData.map(item => item.quarterly_increase ? item.quarterly_increase / 1000000 : 0), // Convert to millions, show 0 for null
+        data: combinedData.map(item => item.rewards_per_quarter ? item.rewards_per_quarter / 1000000 : 0), // Convert to millions, show 0 for null
         backgroundColor: isDark ? 'rgba(34, 197, 94, 0.7)' : 'rgba(34, 197, 94, 0.8)',
         borderColor: isDark ? '#22C55E' : '#16A34A',
         borderWidth: 2,
@@ -194,7 +191,7 @@
       {
         label: 'Stabilization Point',
         data: combinedData.map((item, index) => {
-          return item.quarter === 'Q3 2027' ? (item.quarterly_increase ? item.quarterly_increase / 1000000 : 0) + 1.25 : null;
+          return item.quarter === 'Q3 2027' ? (item.rewards_per_quarter ? item.rewards_per_quarter / 1000000 : 0) + 1.25 : null;
         }),
         type: 'line',
         backgroundColor: isDark ? '#F59E0B' : '#D97706',
