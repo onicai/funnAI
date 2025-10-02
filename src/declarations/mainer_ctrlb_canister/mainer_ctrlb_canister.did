@@ -93,8 +93,9 @@ type MainerAgentCtrlbCanister =
     (ChallengeResponseSubmissionsResult) query;
    getTimerActionRegularityInSecondsAdmin: () -> (MainerTimersResult) query;
    get_llm_canisters: () -> (LlmCanistersRecordResult) query;
-   health: () -> (StatusCodeRecordResult) query;
-   ready: () -> (StatusCodeRecordResult);
+  health: () -> (StatusCodeRecordResult) query;
+  setHealthStatus: (bool, text) -> (StatusCodeRecordResult);
+  ready: () -> (StatusCodeRecordResult);
    remove_llm_canister: (llmCanisterIdRecord: CanisterIDRecord) ->
     (StatusCodeRecordResult);
    resetChallengeQueueAdmin: () -> (StatusCodeRecordResult);

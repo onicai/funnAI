@@ -13,6 +13,7 @@
   import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
   import { tooltip } from "../../helpers/utils/tooltip";
   import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped, getWhitelistAgentPrice, getPauseWhitelistMainerCreationFlag, getIsWhitelistPhaseActive } from "../../helpers/gameState";
+  import { mainerHealthService, mainerHealthStatuses, isMaintenanceMode, maintenanceMessage } from "../../helpers/mainerHealthService";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -188,7 +189,18 @@
     mainerPaymentModalOpen = true;
   };
   
-  function openTopUpModal(agent) {
+  async function openTopUpModal(agent) {
+    // Check mAIner health before allowing top-up
+    const actor = agentCanisterActors.find(a => a.id === agent.id)?.actor;
+    if (actor) {
+      const healthStatus = await mainerHealthService.checkMainerHealth(agent.id, actor);
+      if (!healthStatus.isHealthy) {
+        // Don't open modal if mAIner is not healthy
+        console.warn(`Cannot top-up mAIner ${agent.id}: ${healthStatus.maintenanceMessage}`);
+        return;
+      }
+    }
+    
     // Set the selected canister
     selectedCanister = {
       id: agent.id,
@@ -844,6 +856,13 @@
     // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
     agents = await loadAgents();
     
+    // Start health checks for all mAIners
+    agentCanisterActors.forEach(agent => {
+      if (agent.actor && agent.id) {
+        mainerHealthService.startHealthChecks(agent.id, agent.actor);
+      }
+    });
+    
     // Only auto-open create accordion if no agents exist and not in whitelist phase
     // In whitelist phase, show unlocked mAIners instead
     if (agents.length === 0 && !isWhitelistPhaseActive) {
@@ -941,6 +960,9 @@
 
   // Cleanup on component destroy
   onDestroy(() => {
+    // Stop all health checks when component is destroyed
+    mainerHealthService.stopAllHealthChecks();
+    
     if (typeof window !== 'undefined') {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     }
@@ -1861,31 +1883,43 @@
                   </div>
                   
                   <!-- Primary Top-up Button -->
-                  <button 
-                    type="button" 
-                    class="group relative inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-emerald-400/50 dark:border-emerald-500/50 w-full md:w-auto"
-                    class:opacity-50={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                    class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                    class:transform-none={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                    class:hover:scale-100={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                    disabled={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                    on:click={() => openTopUpModal(agent)}
-                  >
-                    {#if agentsBeingToppedUp.has(agent.id)}
-                      <div class="flex items-center space-x-2">
-                        <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                        <span>Processing...</span>
-                      </div>
-                    {:else}
-                      <div class="flex items-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                  {#if !$mainerHealthStatuses.get(agent.id)?.isHealthy && $mainerHealthStatuses.has(agent.id)}
+                    <!-- Show maintenance message instead of button -->
+                    <div class="w-full md:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-400 dark:border-amber-600 rounded-xl">
+                      <div class="flex items-center space-x-2 text-amber-800 dark:text-amber-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        <span>Top-up Cycles</span>
+                        <span class="text-sm font-medium">{$mainerHealthStatuses.get(agent.id)?.maintenanceMessage || 'Maintenance in progress'}</span>
                       </div>
-                    {/if}
-                    <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-100 to-emerald-100 dark:from-teal-600/20 dark:to-emerald-600/20 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                  </button>
+                    </div>
+                  {:else}
+                    <button 
+                      type="button" 
+                      class="group relative inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-emerald-400/50 dark:border-emerald-500/50 w-full md:w-auto"
+                      class:opacity-50={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                      class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                      class:transform-none={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                      class:hover:scale-100={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                      disabled={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                      on:click={() => openTopUpModal(agent)}
+                    >
+                      {#if agentsBeingToppedUp.has(agent.id)}
+                        <div class="flex items-center space-x-2">
+                          <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                          <span>Processing...</span>
+                        </div>
+                      {:else}
+                        <div class="flex items-center space-x-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                          </svg>
+                          <span>Top-up Cycles</span>
+                        </div>
+                      {/if}
+                      <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-100 to-emerald-100 dark:from-teal-600/20 dark:to-emerald-600/20 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                    </button>
+                  {/if}
                 </div>
 
                 <!-- Balance Display Section -->
