@@ -193,7 +193,7 @@ class MainerHealthService {
    */
   isMainerHealthy(canisterId: string): boolean {
     const status = this.getHealthStatus(canisterId);
-    return status?.isHealthy ?? true; // Default to healthy if no status available
+    return status?.isHealthy ?? false; // Default to unhealthy if no status available (defensive)
   }
 }
 

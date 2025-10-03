@@ -193,10 +193,16 @@
     // Check mAIner health before allowing top-up
     const actor = agentCanisterActors.find(a => a.id === agent.id)?.actor;
     if (actor) {
-      const healthStatus = await mainerHealthService.checkMainerHealth(agent.id, actor);
-      if (!healthStatus.isHealthy) {
-        // Don't open modal if mAIner is not healthy
-        console.warn(`Cannot top-up mAIner ${agent.id}: ${healthStatus.maintenanceMessage}`);
+      try {
+        const healthStatus = await mainerHealthService.checkMainerHealth(agent.id, actor);
+        if (!healthStatus.isHealthy) {
+          // Don't open modal if mAIner is not healthy
+          console.warn(`Cannot top-up mAIner ${agent.id}: ${healthStatus.maintenanceMessage}`);
+          return;
+        }
+      } catch (error) {
+        // If health check fails, assume unhealthy and don't allow top-up
+        console.error(`Failed to check mAIner health for ${agent.id}:`, error);
         return;
       }
     }
@@ -1883,14 +1889,14 @@
                   </div>
                   
                   <!-- Primary Top-up Button -->
-                  {#if !$mainerHealthStatuses.get(agent.id)?.isHealthy && $mainerHealthStatuses.has(agent.id)}
-                    <!-- Show maintenance message instead of button -->
+                  {#if $mainerHealthStatuses.get(agent.id)?.isHealthy !== true}
+                    <!-- Show maintenance message instead of button (defensive: hide button unless explicitly healthy) -->
                     <div class="w-full md:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-400 dark:border-amber-600 rounded-xl">
                       <div class="flex items-center space-x-2 text-amber-800 dark:text-amber-200">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        <span class="text-sm font-medium">{$mainerHealthStatuses.get(agent.id)?.maintenanceMessage || 'Maintenance in progress'}</span>
+                        <span class="text-sm font-medium">{$mainerHealthStatuses.get(agent.id)?.maintenanceMessage || 'Checking mAIner status...'}</span>
                       </div>
                     </div>
                   {:else}
