@@ -8,6 +8,7 @@
   export let agent: any;
   export let agentCanisterActors: any[];
   export let agentCanistersInfo: any[];
+  export let isHealthy: boolean = true; // Health status from health check service
 
   // Event dispatcher for communicating with parent
   const dispatch = createEventDispatcher();
@@ -427,11 +428,11 @@
           {agent.cyclesBurnRateSetting === 'Low' 
             ? 'bg-gradient-to-r from-green-500 to-emerald-600 dark:from-green-600 dark:to-emerald-700 text-white border-green-400 shadow-lg scale-105' 
             : 'bg-white/70 dark:bg-gray-800/70 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-500 hover:scale-102'}"
-          class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:transform-none={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:hover:scale-100={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          disabled={agentsBeingUpdated.has(agent.id) || !canUpdate}
+          class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:transform-none={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:hover:scale-100={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          disabled={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
           on:click={() => updateAgentBurnRate('Low', agent)}
         >
           <div class="flex flex-col items-center space-y-1">

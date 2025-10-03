@@ -926,6 +926,27 @@
     }
   }
 
+  // Update agent status based on health checks
+  $: if (agents && agents.length > 0 && $mainerHealthStatuses) {
+    agents = agents.map(agent => {
+      const healthStatus = $mainerHealthStatuses.get(agent.id);
+      
+      // Only update status if we have a health check result
+      if (healthStatus) {
+        // If health check shows unhealthy (stopped/maintenance), mark as inactive
+        if (!healthStatus.isHealthy) {
+          return { ...agent, status: 'inactive' };
+        } 
+        // If healthy and was inactive, update to active
+        else if (healthStatus.isHealthy && agent.status === 'inactive') {
+          return { ...agent, status: 'active' };
+        }
+      }
+      
+      return agent;
+    });
+  }
+
   // Watch for changes in agents or auth status - only auto-open create accordion when no agents
   $: if (agents.length === 0) {
     // Only open create accordion if no agents
