@@ -13,7 +13,7 @@
   import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
   import { tooltip } from "../../helpers/utils/tooltip";
   import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped, getWhitelistAgentPrice, getPauseWhitelistMainerCreationFlag, getIsWhitelistPhaseActive } from "../../helpers/gameState";
-  import { mainerHealthService, mainerHealthStatuses, isMaintenanceMode, maintenanceMessage } from "../../helpers/mainerHealthService";
+  import { mainerHealthService, mainerHealthStatuses } from "../../helpers/mainerHealthService";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -862,12 +862,7 @@
     // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
     agents = await loadAgents();
     
-    // Start health checks for all mAIners
-    agentCanisterActors.forEach(agent => {
-      if (agent.actor && agent.id) {
-        mainerHealthService.startHealthChecks(agent.id, agent.actor);
-      }
-    });
+    // Note: Health checks are started reactively below when agentCanisterActors updates
     
     // Only auto-open create accordion if no agents exist and not in whitelist phase
     // In whitelist phase, show unlocked mAIners instead
@@ -888,6 +883,48 @@
       currentWhitelistPrice = 5;
     }
   });
+
+  // Track which mAIners have health checks running to prevent duplicate starts
+  let healthChecksStarted = new Set();
+
+  // Start health checks reactively when both actors and info are loaded
+  $: {
+    console.log(`[Health Check Debug] agentCanisterActors: ${agentCanisterActors?.length}, agentCanistersInfo: ${agentCanistersInfo?.length}`);
+    
+    // We need to combine actors with their canister IDs from the info array
+    if (agentCanisterActors && agentCanisterActors.length > 0 && 
+        agentCanistersInfo && agentCanistersInfo.length > 0) {
+      
+      console.log(`[Health Check Debug] Found ${agentCanistersInfo.length} mAIner(s) to check`);
+      
+      // Match actors with their info by index (they should be in the same order)
+      const newMainerIds = agentCanistersInfo
+        .filter((info, index) => {
+          const actor = agentCanisterActors[index];
+          const canisterId = info.address || info.id || info.canisterId;
+          return actor && canisterId && !healthChecksStarted.has(canisterId);
+        })
+        .map(info => info.address || info.id || info.canisterId);
+      
+      console.log(`[Health Check Debug] Filtered to ${newMainerIds.length} new mAIners that need health checks`);
+      
+      if (newMainerIds.length > 0) {
+        console.log(`Starting health checks for ${newMainerIds.length} new mAIner(s)...`);
+        agentCanistersInfo.forEach((info, index) => {
+          const actor = agentCanisterActors[index];
+          const canisterId = info.address || info.id || info.canisterId;
+          
+          if (actor && canisterId && !healthChecksStarted.has(canisterId)) {
+            console.log(`  - Starting health checks for: ${canisterId}`);
+            mainerHealthService.startHealthChecks(canisterId, actor);
+            healthChecksStarted.add(canisterId);
+          }
+        });
+      }
+    } else {
+      console.log(`[Health Check Debug] Waiting for actors and info to load...`);
+    }
+  }
 
   // Watch for changes in agents or auth status - only auto-open create accordion when no agents
   $: if (agents.length === 0) {
@@ -968,6 +1005,9 @@
   onDestroy(() => {
     // Stop all health checks when component is destroyed
     mainerHealthService.stopAllHealthChecks();
+    
+    // Clear tracking
+    healthChecksStarted.clear();
     
     if (typeof window !== 'undefined') {
       window.removeEventListener('beforeunload', handleBeforeUnload);
