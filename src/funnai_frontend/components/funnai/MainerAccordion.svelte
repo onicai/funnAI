@@ -1871,8 +1871,8 @@
                   </span>
                 {/if}
                 
-                <!-- Cycles warning -->
-                {#if agent.status === 'inactive'}
+                <!-- Cycles warning (only show if inactive due to low cycles, not if stopped) -->
+                {#if agent.status === 'inactive' && $mainerHealthStatuses.get(agent.id)?.isHealthy !== false}
                   <span 
                     class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100/80 text-red-800 border border-red-300/50 backdrop-blur-sm cursor-help"
                     use:tooltip={{ 
@@ -1891,7 +1891,11 @@
               
               <!-- Cycles Balance preview -->
               <div class="text-sm {identity.colors.text} opacity-90 truncate max-w-full mt-1">
-                {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 2, false)} TCYCLES
+                {#if $mainerHealthStatuses.get(agent.id)?.isHealthy === false}
+                  <span class="opacity-60">Cycles: Unknown (mAIner stopped)</span>
+                {:else}
+                  {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 2, false)} TCYCLES
+                {/if}
               </div>
               {#if agent.createdAt}
                 <div class="text-xs {identity.colors.text} opacity-60">
@@ -2040,15 +2044,29 @@
                         </div>
                       {:else}
                         <div class="flex flex-col">
-                          <div class="flex items-baseline space-x-2">
-                            <span class="text-2xl sm:text-3xl font-bold text-emerald-900 dark:text-emerald-100">
-                              {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)}
+                          {#if $mainerHealthStatuses.get(agent.id)?.isHealthy === false}
+                            <div class="flex items-center space-x-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span class="text-xl sm:text-2xl font-bold text-gray-600 dark:text-gray-400">
+                                Unknown
+                              </span>
+                            </div>
+                            <span class="text-xs text-gray-600 dark:text-gray-400 opacity-75">
+                              Balance unavailable (mAIner stopped)
                             </span>
-                            <span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">T cycles</span>
-                          </div>
-                          <span class="text-xs text-emerald-600 dark:text-emerald-400 opacity-75">
-                            ≈ {formatLargeNumber(agent.cycleBalance, 2, true)} total cycles
-                          </span>
+                          {:else}
+                            <div class="flex items-baseline space-x-2">
+                              <span class="text-2xl sm:text-3xl font-bold text-emerald-900 dark:text-emerald-100">
+                                {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)}
+                              </span>
+                              <span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">T cycles</span>
+                            </div>
+                            <span class="text-xs text-emerald-600 dark:text-emerald-400 opacity-75">
+                              ≈ {formatLargeNumber(agent.cycleBalance, 2, true)} total cycles
+                            </span>
+                          {/if}
                         </div>
                       {/if}
 
@@ -2084,7 +2102,7 @@
                           <span class="text-emerald-600 dark:text-emerald-400 opacity-75">
                             💡 Cycles power your mAIner's computational tasks
                           </span>
-                          {#if agent.cycleBalance <= 1_000_000_000_000}
+                          {#if agent.cycleBalance <= 1_000_000_000_000 && $mainerHealthStatuses.get(agent.id)?.isHealthy !== false}
                             <span class="text-red-600 dark:text-red-400 font-medium">
                               ⚠️ Top-up recommended
                             </span>

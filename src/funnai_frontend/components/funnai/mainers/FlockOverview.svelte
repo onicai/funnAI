@@ -89,7 +89,7 @@
               </div>
               <div class="flex flex-col">
                 <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Inactive</span>
-                <span class="text-xs text-gray-600/70 dark:text-gray-400/70 hidden sm:block">Need cycles</span>
+                <span class="text-xs text-gray-600/70 dark:text-gray-400/70 hidden sm:block">Stopped/Low cycles</span>
               </div>
             </div>
           </div>
