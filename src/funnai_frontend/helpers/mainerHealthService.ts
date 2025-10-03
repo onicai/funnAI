@@ -96,9 +96,9 @@ class MainerHealthService {
       let maintenanceMessage = 'Failed to connect to mAIner';
       
       if (errorMessage.includes('is stopped') || errorMessage.includes('CallContextManager')) {
-        maintenanceMessage = 'mAIner is stopped';
+        maintenanceMessage = 'Under maintenance';
       } else if (errorMessage.includes('does not have a') || errorMessage.includes('Canister')) {
-        maintenanceMessage = 'mAIner is currently unavailable';
+        maintenanceMessage = 'mAIner is unavailable';
       }
       
       const status = {
