@@ -419,6 +419,21 @@
         <span class="text-sm font-medium text-purple-900 dark:text-purple-100">Select Performance Level</span>
       </div>
 
+      <!-- Health Status Warning -->
+      {#if !isHealthy}
+        <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg p-3 mb-2">
+          <div class="flex items-start space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-amber-800 dark:text-amber-200">Settings temporarily disabled</p>
+              <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">Performance settings cannot be changed while the mAIner is stopped or in maintenance mode.</p>
+            </div>
+          </div>
+        </div>
+      {/if}
+
       <!-- Enhanced Button Group -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3" role="group">
         <!-- Low Button -->
@@ -454,11 +469,11 @@
           {agent.cyclesBurnRateSetting === 'Medium' 
             ? 'bg-gradient-to-r from-yellow-500 to-orange-600 dark:from-yellow-600 dark:to-orange-700 text-white border-yellow-400 shadow-lg scale-105' 
             : 'bg-white/70 dark:bg-gray-800/70 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-500 hover:scale-102'}"
-          class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:transform-none={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:hover:scale-100={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          disabled={agentsBeingUpdated.has(agent.id) || !canUpdate}
+          class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:transform-none={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:hover:scale-100={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          disabled={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
           on:click={() => updateAgentBurnRate('Medium', agent)}
         >
           <div class="flex flex-col items-center space-y-1">
@@ -480,11 +495,11 @@
           {agent.cyclesBurnRateSetting === 'High' 
             ? 'bg-gradient-to-r from-red-500 to-pink-600 dark:from-red-600 dark:to-pink-700 text-white border-red-400 shadow-lg scale-105' 
             : 'bg-white/70 dark:bg-gray-800/70 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-500 hover:scale-102'}"
-          class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:transform-none={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:hover:scale-100={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          disabled={agentsBeingUpdated.has(agent.id) || !canUpdate}
+          class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:transform-none={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:hover:scale-100={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          disabled={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
           on:click={() => updateAgentBurnRate('High', agent)}
         >
           <div class="flex flex-col items-center space-y-1">
@@ -506,11 +521,11 @@
           {agent.cyclesBurnRateSetting === 'VeryHigh' 
             ? 'bg-gradient-to-r from-purple-600 to-pink-700 dark:from-purple-700 dark:to-pink-800 text-white border-purple-500 shadow-lg scale-105' 
             : 'bg-white/70 dark:bg-gray-800/70 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-500 hover:scale-102'}"
-          class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:transform-none={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:hover:scale-100={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          disabled={agentsBeingUpdated.has(agent.id) || !canUpdate}
+          class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:transform-none={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:hover:scale-100={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          disabled={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
           on:click={() => {
             if (agent.cyclesBurnRateSetting === 'VeryHigh') {
               // Already at Very High, no action needed

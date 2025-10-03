@@ -2107,6 +2107,7 @@
               {agent} 
               {agentCanisterActors} 
               {agentCanistersInfo}
+              isHealthy={$mainerHealthStatuses.get(agent.id)?.isHealthy ?? true}
               on:burnRateUpdated={handleBurnRateUpdate}
             />
           </div>
