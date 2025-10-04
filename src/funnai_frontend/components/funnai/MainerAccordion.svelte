@@ -13,6 +13,7 @@
   import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
   import { tooltip } from "../../helpers/utils/tooltip";
   import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped, getWhitelistAgentPrice, getPauseWhitelistMainerCreationFlag, getIsWhitelistPhaseActive } from "../../helpers/gameState";
+  import { mainerHealthService, mainerHealthStatuses } from "../../helpers/mainerHealthService";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -188,7 +189,24 @@
     mainerPaymentModalOpen = true;
   };
   
-  function openTopUpModal(agent) {
+  async function openTopUpModal(agent) {
+    // Check mAIner health before allowing top-up
+    const actor = agentCanisterActors.find(a => a.id === agent.id)?.actor;
+    if (actor) {
+      try {
+        const healthStatus = await mainerHealthService.checkMainerHealth(agent.id, actor);
+        if (!healthStatus.isHealthy) {
+          // Don't open modal if mAIner is not healthy
+          console.warn(`Cannot top-up mAIner ${agent.id}: ${healthStatus.maintenanceMessage}`);
+          return;
+        }
+      } catch (error) {
+        // If health check fails, assume unhealthy and don't allow top-up
+        console.error(`Failed to check mAIner health for ${agent.id}:`, error);
+        return;
+      }
+    }
+    
     // Set the selected canister
     selectedCanister = {
       id: agent.id,
@@ -844,6 +862,8 @@
     // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
     agents = await loadAgents();
     
+    // Note: Health checks are started reactively below when agentCanisterActors updates
+    
     // Only auto-open create accordion if no agents exist and not in whitelist phase
     // In whitelist phase, show unlocked mAIners instead
     if (agents.length === 0 && !isWhitelistPhaseActive) {
@@ -863,6 +883,69 @@
       currentWhitelistPrice = 5;
     }
   });
+
+  // Track which mAIners have health checks running to prevent duplicate starts
+  let healthChecksStarted = new Set();
+
+  // Start health checks reactively when both actors and info are loaded
+  $: {
+    console.log(`[Health Check Debug] agentCanisterActors: ${agentCanisterActors?.length}, agentCanistersInfo: ${agentCanistersInfo?.length}`);
+    
+    // We need to combine actors with their canister IDs from the info array
+    if (agentCanisterActors && agentCanisterActors.length > 0 && 
+        agentCanistersInfo && agentCanistersInfo.length > 0) {
+      
+      console.log(`[Health Check Debug] Found ${agentCanistersInfo.length} mAIner(s) to check`);
+      
+      // Match actors with their info by index (they should be in the same order)
+      const newMainerIds = agentCanistersInfo
+        .filter((info, index) => {
+          const actor = agentCanisterActors[index];
+          const canisterId = info.address || info.id || info.canisterId;
+          return actor && canisterId && !healthChecksStarted.has(canisterId);
+        })
+        .map(info => info.address || info.id || info.canisterId);
+      
+      console.log(`[Health Check Debug] Filtered to ${newMainerIds.length} new mAIners that need health checks`);
+      
+      if (newMainerIds.length > 0) {
+        console.log(`Starting health checks for ${newMainerIds.length} new mAIner(s)...`);
+        agentCanistersInfo.forEach((info, index) => {
+          const actor = agentCanisterActors[index];
+          const canisterId = info.address || info.id || info.canisterId;
+          
+          if (actor && canisterId && !healthChecksStarted.has(canisterId)) {
+            console.log(`  - Starting health checks for: ${canisterId}`);
+            mainerHealthService.startHealthChecks(canisterId, actor);
+            healthChecksStarted.add(canisterId);
+          }
+        });
+      }
+    } else {
+      console.log(`[Health Check Debug] Waiting for actors and info to load...`);
+    }
+  }
+
+  // Update agent status based on health checks
+  $: if (agents && agents.length > 0 && $mainerHealthStatuses) {
+    agents = agents.map(agent => {
+      const healthStatus = $mainerHealthStatuses.get(agent.id);
+      
+      // Only update status if we have a health check result
+      if (healthStatus) {
+        // If health check shows unhealthy (stopped/maintenance), mark as inactive
+        if (!healthStatus.isHealthy) {
+          return { ...agent, status: 'inactive' };
+        } 
+        // If healthy and was inactive, update to active
+        else if (healthStatus.isHealthy && agent.status === 'inactive') {
+          return { ...agent, status: 'active' };
+        }
+      }
+      
+      return agent;
+    });
+  }
 
   // Watch for changes in agents or auth status - only auto-open create accordion when no agents
   $: if (agents.length === 0) {
@@ -941,6 +1024,12 @@
 
   // Cleanup on component destroy
   onDestroy(() => {
+    // Stop all health checks when component is destroyed
+    mainerHealthService.stopAllHealthChecks();
+    
+    // Clear tracking
+    healthChecksStarted.clear();
+    
     if (typeof window !== 'undefined') {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     }
@@ -1782,8 +1871,8 @@
                   </span>
                 {/if}
                 
-                <!-- Cycles warning -->
-                {#if agent.status === 'inactive'}
+                <!-- Cycles warning (only show if inactive due to low cycles, not if stopped) -->
+                {#if agent.status === 'inactive' && $mainerHealthStatuses.get(agent.id)?.isHealthy !== false}
                   <span 
                     class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100/80 text-red-800 border border-red-300/50 backdrop-blur-sm cursor-help"
                     use:tooltip={{ 
@@ -1802,7 +1891,11 @@
               
               <!-- Cycles Balance preview -->
               <div class="text-sm {identity.colors.text} opacity-90 truncate max-w-full mt-1">
-                {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 2, false)} TCYCLES
+                {#if $mainerHealthStatuses.get(agent.id)?.isHealthy === false}
+                  <span class="opacity-60">Cycles: Unknown (mAIner stopped)</span>
+                {:else}
+                  {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 2, false)} TCYCLES
+                {/if}
               </div>
               {#if agent.createdAt}
                 <div class="text-xs {identity.colors.text} opacity-60">
@@ -1861,31 +1954,43 @@
                   </div>
                   
                   <!-- Primary Top-up Button -->
-                  <button 
-                    type="button" 
-                    class="group relative inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-emerald-400/50 dark:border-emerald-500/50 w-full md:w-auto"
-                    class:opacity-50={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                    class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                    class:transform-none={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                    class:hover:scale-100={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                    disabled={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                    on:click={() => openTopUpModal(agent)}
-                  >
-                    {#if agentsBeingToppedUp.has(agent.id)}
-                      <div class="flex items-center space-x-2">
-                        <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                        <span>Processing...</span>
-                      </div>
-                    {:else}
-                      <div class="flex items-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                  {#if $mainerHealthStatuses.get(agent.id)?.isHealthy !== true}
+                    <!-- Show maintenance message instead of button (defensive: hide button unless explicitly healthy) -->
+                    <div class="w-full md:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-400 dark:border-amber-600 rounded-xl">
+                      <div class="flex items-center space-x-2 text-amber-800 dark:text-amber-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        <span>Top-up Cycles</span>
+                        <span class="text-sm font-medium">{$mainerHealthStatuses.get(agent.id)?.maintenanceMessage || 'Checking mAIner status...'}</span>
                       </div>
-                    {/if}
-                    <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-100 to-emerald-100 dark:from-teal-600/20 dark:to-emerald-600/20 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                  </button>
+                    </div>
+                  {:else}
+                    <button 
+                      type="button" 
+                      class="group relative inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-emerald-400/50 dark:border-emerald-500/50 w-full md:w-auto"
+                      class:opacity-50={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                      class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                      class:transform-none={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                      class:hover:scale-100={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                      disabled={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
+                      on:click={() => openTopUpModal(agent)}
+                    >
+                      {#if agentsBeingToppedUp.has(agent.id)}
+                        <div class="flex items-center space-x-2">
+                          <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                          <span>Processing...</span>
+                        </div>
+                      {:else}
+                        <div class="flex items-center space-x-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                          </svg>
+                          <span>Top-up Cycles</span>
+                        </div>
+                      {/if}
+                      <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-100 to-emerald-100 dark:from-teal-600/20 dark:to-emerald-600/20 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                    </button>
+                  {/if}
                 </div>
 
                 <!-- Balance Display Section -->
@@ -1939,15 +2044,29 @@
                         </div>
                       {:else}
                         <div class="flex flex-col">
-                          <div class="flex items-baseline space-x-2">
-                            <span class="text-2xl sm:text-3xl font-bold text-emerald-900 dark:text-emerald-100">
-                              {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)}
+                          {#if $mainerHealthStatuses.get(agent.id)?.isHealthy === false}
+                            <div class="flex items-center space-x-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span class="text-xl sm:text-2xl font-bold text-gray-600 dark:text-gray-400">
+                                Unknown
+                              </span>
+                            </div>
+                            <span class="text-xs text-gray-600 dark:text-gray-400 opacity-75">
+                              Balance unavailable (mAIner stopped)
                             </span>
-                            <span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">T cycles</span>
-                          </div>
-                          <span class="text-xs text-emerald-600 dark:text-emerald-400 opacity-75">
-                            ≈ {formatLargeNumber(agent.cycleBalance, 2, true)} total cycles
-                          </span>
+                          {:else}
+                            <div class="flex items-baseline space-x-2">
+                              <span class="text-2xl sm:text-3xl font-bold text-emerald-900 dark:text-emerald-100">
+                                {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)}
+                              </span>
+                              <span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">T cycles</span>
+                            </div>
+                            <span class="text-xs text-emerald-600 dark:text-emerald-400 opacity-75">
+                              ≈ {formatLargeNumber(agent.cycleBalance, 2, true)} total cycles
+                            </span>
+                          {/if}
                         </div>
                       {/if}
 
@@ -1983,7 +2102,7 @@
                           <span class="text-emerald-600 dark:text-emerald-400 opacity-75">
                             💡 Cycles power your mAIner's computational tasks
                           </span>
-                          {#if agent.cycleBalance <= 1_000_000_000_000}
+                          {#if agent.cycleBalance <= 1_000_000_000_000 && $mainerHealthStatuses.get(agent.id)?.isHealthy !== false}
                             <span class="text-red-600 dark:text-red-400 font-medium">
                               ⚠️ Top-up recommended
                             </span>
@@ -2006,6 +2125,7 @@
               {agent} 
               {agentCanisterActors} 
               {agentCanistersInfo}
+              isHealthy={$mainerHealthStatuses.get(agent.id)?.isHealthy ?? true}
               on:burnRateUpdated={handleBurnRateUpdate}
             />
           </div>

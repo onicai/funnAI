@@ -239,6 +239,7 @@ export interface MainerAgentCtrlbCanister {
   >,
   'get_llm_canisters' : ActorMethod<[], LlmCanistersRecordResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
+  'setHealthStatus' : ActorMethod<[boolean, string], StatusCodeRecordResult>,
   'ready' : ActorMethod<[], StatusCodeRecordResult>,
   'remove_llm_canister' : ActorMethod<
     [CanisterIDRecord],
