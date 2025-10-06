@@ -12,9 +12,13 @@
   import Brand from "../pages/Brand.svelte";
   import AppStore from "../pages/AppStore.svelte";
   import { onMount } from 'svelte';
+  import { initializeChartJS } from '../helpers/chartSetup';
 
   // Initialize theme from localStorage on mount
   onMount(() => {
+    // Initialize Chart.js components early
+    initializeChartJS();
+    
     // Set dark mode as default if no preference is stored
     const savedTheme = localStorage.getItem("theme") || "dark";
     theme.set(savedTheme);

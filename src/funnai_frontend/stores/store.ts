@@ -25,6 +25,13 @@ import {
   idlFactory as mainerControllerIdlFactory,
 } from "../../declarations/mainer_ctrlb_canister";
 
+import {
+  api_canister,
+  createActor as createApiCanisterActor,
+  canisterId as apiCanisterId,
+  idlFactory as apiIdlFactory,
+} from "../../declarations/api_canister";
+
 import { ICRC2_IDL as icrc2IDL } from "../helpers/idls/icrc2.idl.js";
 import { idlFactory as icpIDL } from "../helpers/idls/icp.idl.js";
 
@@ -39,7 +46,7 @@ const getCyclesBurnRateLabel = (cyclesBurnRate) => {
   } else if (cycles === 4_000_000_000_000n) {
     return "High";
   } else if (cycles === 6_000_000_000_000n) {
-    return "Very High";
+    return "VeryHigh";
   } else {
     return "Medium";
   }
@@ -47,7 +54,8 @@ const getCyclesBurnRateLabel = (cyclesBurnRate) => {
 
 export const canisterIds = {
   backendCanisterId,
-  gameStateCanisterId
+  gameStateCanisterId,
+  apiCanisterId
 };
 
 export const canisterIDLs = {
@@ -158,6 +166,7 @@ type State = {
   isLoading: boolean;
   gameStateCanisterActor: typeof game_state_canister;
   mainerControllerCanisterActor: typeof mainer_ctrlb_canister;
+  apiCanisterActor: typeof api_canister | null;
   userMainerCanisterActors: any[];
   userMainerAgentCanistersInfo: any[];
   sessionExpiry: bigint | null; // Track session expiration time
@@ -187,6 +196,9 @@ const defaultState: State = {
   mainerControllerCanisterActor: createMainerControllerCanisterActor(mainerControllerCanisterId, {
     agentOptions: { host: HOST },
   }),
+  apiCanisterActor: apiCanisterId ? createApiCanisterActor(apiCanisterId, {
+    agentOptions: { host: HOST },
+  }) : null,
   userMainerCanisterActors: [],
   userMainerAgentCanistersInfo: [],
   sessionExpiry: null,
@@ -502,6 +514,41 @@ export const createStore = ({
     return gameStateActor;
   };
 
+  const initApiCanisterActor = async (loginType, identity: Identity) => {
+    let canisterId = apiCanisterId;
+    
+    // Fallback to canister_ids.json if environment variable is not set
+    if (!canisterId) {
+      // Import canister IDs from the JSON file
+      const canisterIds = {
+        "demo": "p6pu7-5aaaa-aaaap-qqdfa-cai",
+        "prd": "bgm6p-5aaaa-aaaaf-qbzda-cai", 
+        "testing": "nyxgs-uqaaa-aaaap-qqdia-cai",
+        "development": "p6pu7-5aaaa-aaaap-qqdfa-cai",
+        "ic": "bgm6p-5aaaa-aaaaf-qbzda-cai"
+      };
+      
+      // Determine current network/environment
+      const network = process.env.DFX_NETWORK || 'development';
+      canisterId = canisterIds[network] || canisterIds['development'];
+      
+      console.log("Using fallback API canister ID:", canisterId, "for network:", network);
+    }
+    
+    if (!canisterId) {
+      console.error("No API canister ID found for current environment");
+      return null;
+    }
+    
+    let apiActor = createApiCanisterActor(canisterId, {
+      agentOptions: {
+        identity,
+        host: HOST,
+      },
+    });
+    return apiActor;
+  };
+
   const initMainerControllerCanisterActor = async (loginType, identity: Identity) => {
     let canisterId = mainerControllerCanisterId;
     
@@ -723,6 +770,13 @@ export const createStore = ({
       return;
     };
 
+    const apiCanisterActor = await initApiCanisterActor("nfid", identity);
+    
+    if (!apiCanisterActor) {
+      console.warn("couldn't create API canister actor");
+      return;
+    };
+
     // Initialize user's mAIner agent (controller) canisters
     const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "nfid", identity);
     const userMainerCanisterActors = mainerActors;
@@ -744,6 +798,7 @@ export const createStore = ({
       accountId: null,
       isAuthed: "nfid",
       gameStateCanisterActor,
+      apiCanisterActor,
       userMainerCanisterActors,
       userMainerAgentCanistersInfo,
       sessionExpiry
@@ -800,6 +855,13 @@ export const createStore = ({
       return;
     };
 
+    const apiCanisterActor = await initApiCanisterActor("internetidentity", identity);
+    
+    if (!apiCanisterActor) {
+      console.warn("couldn't create API canister actor");
+      return;
+    };
+
     // Initialize user's mAIner agent (controller) canisters
     const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "internetidentity", identity);
     
@@ -822,6 +884,7 @@ export const createStore = ({
       accountId: null,
       isAuthed: "internetidentity",
       gameStateCanisterActor,
+      apiCanisterActor,
       userMainerCanisterActors,
       userMainerAgentCanistersInfo,
       sessionExpiry
@@ -1179,6 +1242,6 @@ export const createStore = ({
 };
 
 export const store = createStore({
-  whitelist: [backendCanisterId, gameStateCanisterId],
+  whitelist: [backendCanisterId, gameStateCanisterId, apiCanisterId],
   host: HOST,
 });

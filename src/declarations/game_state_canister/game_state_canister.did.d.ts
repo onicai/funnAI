@@ -645,6 +645,7 @@ export interface GameStateCanister {
     StatusCodeRecordResult
   >,
   'resetRoundRobinTopicIndexAdmin' : ActorMethod<[], StatusCodeRecordResult>,
+  'setApiCanisterId' : ActorMethod<[string], AuthRecordResult>,
   'setArchiveCanisterId' : ActorMethod<[string], AuthRecordResult>,
   'setBufferMainerCreation' : ActorMethod<[bigint], AuthRecordResult>,
   'setCyclesBalanceThresholdFunnaiTopups' : ActorMethod<
