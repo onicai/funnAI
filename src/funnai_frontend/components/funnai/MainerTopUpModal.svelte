@@ -27,9 +27,9 @@
 
   console.log("in MainerTopUpModal protocolAddress ", protocolAddress);
   
-  // Token configurations - now supporting both ICP and FUNNAI
+  // Token configurations - now supporting ICP, FUNNAI, BOB, and ckBTC
   let availableTokens: any[] = [];
-  let selectedTokenSymbol: 'ICP' | 'FUNNAI' = 'ICP';
+  let selectedTokenSymbol: 'ICP' | 'FUNNAI' | 'BOB' | 'ckBTC' = 'ICP';
   let isTokenLoading: boolean = true;
   
   // Get currently selected token
@@ -42,11 +42,13 @@
       const result = await fetchTokens({});
       const icpToken = result.tokens.find(t => t.symbol === "ICP");
       const funnaiToken = result.tokens.find(t => t.symbol === "FUNNAI");
+      const bobToken = result.tokens.find(t => t.symbol === "BOB");
+      const ckbtcToken = result.tokens.find(t => t.symbol === "ckBTC");
       
-      if (icpToken && funnaiToken) {
-        availableTokens = [icpToken, funnaiToken];
+      if (icpToken && funnaiToken && bobToken && ckbtcToken) {
+        availableTokens = [icpToken, funnaiToken, bobToken, ckbtcToken];
       } else {
-        throw new Error("Required tokens (ICP/FUNNAI) not found in token_helpers");
+        throw new Error("Required tokens not found in token_helpers");
       }
     } catch (error) {
       console.error("Error loading token data:", error);
@@ -65,6 +67,20 @@
           decimals: 8,
           fee_fixed: "1", // 0.00000001 FUNNAI fee
           canister_id: "vpyot-zqaaa-aaaaa-qavaq-cai" // FUNNAI canister ID
+        },
+        {
+          name: "BOB",
+          symbol: "BOB",
+          decimals: 8,
+          fee_fixed: "1000000",
+          canister_id: "7pail-xaaaa-aaaas-aabmq-cai"
+        },
+        {
+          name: "ckBTC",
+          symbol: "ckBTC",
+          decimals: 8,
+          fee_fixed: "10",
+          canister_id: "mxzaz-hqaaa-aaaar-qaada-cai"
         }
       ];
     } finally {
@@ -88,21 +104,64 @@
   // FUNNAI constants
   const FUNNAI_MIN_CYCLES = new BigNumber("1000000000000"); // 1T cycles (hardcoded)
   
+  // Helper function to round amounts sensibly based on magnitude
+  function roundToSensibleDecimals(amount: BigNumber): number {
+    const absAmount = amount.abs();
+    
+    // For amounts >= 1000: round to whole numbers
+    if (absAmount.gte(1000)) {
+      return Number(amount.toFixed(0));
+    }
+    // For amounts >= 10: round to 2 decimals
+    if (absAmount.gte(10)) {
+      return Number(amount.toFixed(2));
+    }
+    // For amounts >= 1: round to 4 decimals
+    if (absAmount.gte(1)) {
+      return Number(amount.toFixed(4));
+    }
+    // For amounts >= 0.01: round to 6 decimals
+    if (absAmount.gte(0.01)) {
+      return Number(amount.toFixed(6));
+    }
+    // For very small amounts: keep 8 decimals
+    return Number(amount.toFixed(8));
+  }
+
   // Dynamic limits based on token type and conversion rate
   $: dynamicLimits = (() => {
     if (selectedTokenSymbol === 'FUNNAI' && conversionRate && !conversionRate.isZero()) {
-      // FUNNAI limits: backend max, hardcoded min (0.4T cycles)
+      // FUNNAI limits: backend max, hardcoded min (1T cycles)
       const E8S_PER_FUNNAI = new BigNumber("100000000000"); // 10^8 units per FUNNAI
       
-      // Calculate FUNNAI amount for minimum (0.4T cycles)
+      // Calculate FUNNAI amount for minimum (1T cycles)
       const minFunnaiAmount = FUNNAI_MIN_CYCLES.div(conversionRate);
       
       return {
         min: Number(minFunnaiAmount.toFixed(8)),
         max: funnaiMaxAmount || 0 // Use backend value or 0 if not loaded
       };
+    } else if (selectedTokenSymbol === 'BOB') {
+      // BOB has its own limits for easier testing (BOB is ~$0.20, ICP is ~$4.20, ratio ~21:1)
+      return {
+        min: 1,      // 1 BOB minimum for testing
+        max: 4200    // Equivalent to 200 ICP (200 * 21 = 4200)
+      };
+    } else if (selectedTokenSymbol === 'ckBTC') {
+      // ckBTC has its own limits (ckBTC is worth much more than ICP)
+      // ckBTC is ~$60,000, ICP is ~$4.20, ratio ~1:14,285
+      return {
+        min: 0.00001,  // Very small minimum
+        max: 0.014     // Equivalent to 200 ICP (200 / 14285 ≈ 0.014)
+      };
+    } else if (conversionRate && !conversionRate.isZero()) {
+      // For ICP: use config limits directly
+      return {
+        min: MIN_AMOUNT,
+        max: MAX_AMOUNT
+      };
     } else {
-      // ICP limits from config
+      // Default to ICP limits from config if no conversion rate
       return {
         min: MIN_AMOUNT,
         max: MAX_AMOUNT
@@ -196,7 +255,7 @@
     }
   }
 
-  // Function to get conversion rate (ICP from CMC, FUNNAI from game state canister)
+  // Function to get conversion rate (ICP/BOB/ckBTC from CMC, FUNNAI from game state canister)
   async function loadConversionRate() {
     isLoadingConversionRate = true;
     errorMessage = ""; // Clear any previous error messages
@@ -233,7 +292,7 @@
           throw new Error("Failed to get FUNNAI conversion rate from backend");
         }
       } else {
-        // ICP conversion rate from CMC
+        // ICP, BOB, and ckBTC conversion rate from CMC
         const cmcCanisterId = "rkp4c-7iaaa-aaaaa-aaaca-cai";
         
         try {
@@ -249,12 +308,27 @@
             // 1 XDR = 1 trillion cycles, and the rate is in 10,000ths (permyriad)
             const CYCLES_PER_XDR = new BigNumber("1000000000000"); // 1 trillion cycles
             
-            // Calculate: (xdr_permyriad_per_icp * CYCLES_PER_XDR) / 10000
-            conversionRate = new BigNumber(xdrRate)
+            // Calculate base ICP rate: (xdr_permyriad_per_icp * CYCLES_PER_XDR) / 10000
+            const icpConversionRate = new BigNumber(xdrRate)
               .times(CYCLES_PER_XDR)
               .div(10000);
-              
-            console.log("ICP conversion rate loaded:", conversionRate.toString());
+            
+            // For BOB and ckBTC, adjust the conversion rate based on approximate token value
+            // BOB: ~$0.20, ICP: ~$4.20, ratio: 21:1
+            // ckBTC: ~$60,000, ICP: ~$4.20, ratio: 1:14,285
+            if (selectedTokenSymbol === 'BOB') {
+              // BOB is worth ~$0.20, ICP is ~$4.20, so ratio is ~21:1
+              conversionRate = icpConversionRate.div(21);
+              console.log("BOB conversion rate (estimated):", conversionRate.toString(), "cycles per BOB");
+            } else if (selectedTokenSymbol === 'ckBTC') {
+              // ckBTC is worth much more than ICP (~$60k vs ~$4.20, ratio ~14,285:1)
+              conversionRate = icpConversionRate.times(14285);
+              console.log("ckBTC conversion rate (estimated):", conversionRate.toString(), "cycles per ckBTC");
+            } else {
+              // ICP
+              conversionRate = icpConversionRate;
+              console.log("ICP conversion rate loaded:", conversionRate.toString(), "cycles per ICP");
+            }
           } else {
             throw new Error("Failed to get conversion rate data");
           }
@@ -274,8 +348,16 @@
           errorMessage = "Failed to get FUNNAI conversion rate from backend";
           conversionRate = new BigNumber("1000000000000"); // 1T cycles per FUNNAI (fallback)
         }
+      } else if (selectedTokenSymbol === 'BOB') {
+        errorMessage = "Using estimated conversion rate";
+        // BOB is ~1/21 of ICP value, so ~476B cycles per BOB (10T / 21)
+        conversionRate = new BigNumber("476190476190"); // ~476B cycles per BOB (fallback)
+      } else if (selectedTokenSymbol === 'ckBTC') {
+        errorMessage = "Using estimated conversion rate";
+        // ckBTC is ~14,285x ICP value, so ~142,850T cycles per ckBTC (10T * 14,285)
+        conversionRate = new BigNumber("142850000000000000"); // ~142,850T cycles per ckBTC (fallback)
       } else {
-        errorMessage = "Using estimated conversion rate (10T cycles per ICP)";
+        errorMessage = "Using estimated conversion rate";
         conversionRate = new BigNumber("10000000000000"); // ~10T cycles per ICP (fallback)
       }
     } finally {
@@ -353,7 +435,7 @@
   }
 
   // Handle token selection change
-  function handleTokenChange(tokenSymbol: 'ICP' | 'FUNNAI') {
+  function handleTokenChange(tokenSymbol: 'ICP' | 'FUNNAI' | 'BOB' | 'ckBTC') {
     selectedTokenSymbol = tokenSymbol;
     // Reset amount when switching tokens to avoid confusion
     amount = "";
@@ -495,20 +577,20 @@
         // Create the backend promise based on token type
         let backendPromise: Promise<any>;
         if (selectedTokenSymbol === 'FUNNAI') {
-          // For FUNNAI, use the new FUNNAI-specific endpoint
+          // For FUNNAI, use the FUNNAI-specific endpoint
           if (!$store.gameStateCanisterActor) {
             throw new Error("Game state canister not available");
           };
           backendPromise = $store.gameStateCanisterActor.topUpCyclesForMainerAgentWithFunnai(topUpInput);
         } else {
-          // For ICP, use the existing endpoint
+          // For ICP, BOB, and ckBTC, use the standard ICP endpoint
           if (!$store.gameStateCanisterActor) {
             throw new Error("Game state canister not available");
           };
           backendPromise = $store.gameStateCanisterActor.topUpCyclesForMainerAgent(topUpInput);
         }
 
-        // Handle celebration for max amounts (only for ICP, not FUNNAI)
+        // Handle celebration for max amounts (only for ICP/BOB/ckBTC, not FUNNAI)
         const shouldCelebrate = isMaxAmount && CELEBRATION_ENABLED && selectedTokenSymbol !== 'FUNNAI';
         
         // Close modal immediately and pass promise to parent
@@ -521,7 +603,7 @@
             onCelebration(amount, selectedToken?.symbol || selectedTokenSymbol);
           }, 300);
           
-          // Handle max top-up storage in background - only for ICP
+          // Handle max top-up storage in background - only for ICP/BOB/ckBTC
           try {
             let maxTopUpInput = {
               paymentTransactionBlockId: BigInt(txId),
@@ -577,23 +659,23 @@
     {:else}
       <!-- Token Selector -->
       <div class="flex flex-col gap-2">
-        <label class="block text-xs text-gray-600 mb-1 dark:text-gray-400">Select Payment Token</label>
-        <div class="flex gap-2">
+        <div class="block text-xs text-gray-600 mb-1 dark:text-gray-400">Select Payment Token</div>
+        <div class="grid grid-cols-2 gap-2">
           {#each availableTokens as token}
-                         <button
+            <button
                type="button"
-               class="flex-1 flex items-center gap-2 p-3 rounded-lg border transition-colors {selectedToken?.symbol === token.symbol ? 'bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-900 dark:bg-opacity-20 dark:border-purple-600 dark:border-opacity-30 dark:text-purple-300' : 'bg-gray-50 border-gray-300 text-gray-700 dark:bg-gray-800 dark:bg-opacity-50 dark:border-gray-600 dark:border-opacity-30 dark:text-gray-300'}"
+               class="flex items-center gap-2 p-2.5 rounded-lg border transition-colors {selectedToken?.symbol === token.symbol ? 'bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-900 dark:bg-opacity-20 dark:border-purple-600 dark:border-opacity-30 dark:text-purple-300' : 'bg-gray-50 border-gray-300 text-gray-700 dark:bg-gray-800 dark:bg-opacity-50 dark:border-gray-600 dark:border-opacity-30 dark:text-gray-300'}"
                on:click={() => handleTokenChange(token.symbol)}
              >
-              <div class="w-8 h-8 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-700 dark:border-gray-600">
-                <TokenImages tokens={[token]} size={30} showSymbolFallback={true} />
+              <div class="w-7 h-7 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-700 dark:border-gray-600">
+                <TokenImages tokens={[token]} size={26} showSymbolFallback={true} />
               </div>
               <div class="flex flex-col min-w-0 flex-1 text-left">
-                <div class="font-medium text-sm truncate">{token.symbol}</div>
-                <div class="text-xs opacity-70 truncate">{token.name}</div>
+                <div class="font-medium text-xs truncate">{token.symbol}</div>
+                <div class="text-xs opacity-60 truncate">{token.name}</div>
               </div>
               {#if selectedToken?.symbol === token.symbol}
-                <Check size={16} class="text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                <Check size={14} class="text-purple-600 dark:text-purple-400 flex-shrink-0" />
               {/if}
             </button>
           {/each}
@@ -622,7 +704,7 @@
       <div class="flex flex-col gap-2 sm:gap-3">
         <!-- Canister ID -->
         <div>
-          <label class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">mAIner canister</label>
+          <div class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">mAIner canister</div>
           <div class="relative">
             <input
               type="text"
@@ -652,6 +734,7 @@
           </div>
           <div class="relative">
             <input
+              id="amount-input"
               type="text"
               inputmode="decimal"
               class="w-full py-2 px-2 sm:px-3 bg-white border rounded-md text-xs sm:text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-100 pr-12 sm:pr-16"
