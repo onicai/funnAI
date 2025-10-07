@@ -11,6 +11,7 @@
   import Lottery from "../pages/Lottery.svelte";
   import Brand from "../pages/Brand.svelte";
   import AppStore from "../pages/AppStore.svelte";
+  import Marketplace from "../pages/Marketplace.svelte";
   import { onMount } from 'svelte';
   import { initializeChartJS } from '../helpers/chartSetup';
 
@@ -52,6 +53,7 @@
     "/chat": ChatLayout,
     "/chat/*": ChatLayout,
     "/wallet": Wallet,
+    "/marketplace": Marketplace,
     "/lottery": Lottery,
     "/brand": Brand,
     "/store": AppStore,
