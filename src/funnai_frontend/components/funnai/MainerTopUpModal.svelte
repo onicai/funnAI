@@ -317,24 +317,40 @@
             // For BOB and ckBTC, adjust the conversion rate based on a quote from the swap pool (against ICP)
             if (selectedTokenSymbol === 'BOB') {
               const numberOfTokensForQuote = 1000000000; // 8 decimals, i.e. 10 BOB
-              const args : SwapArgs = {
-                amountIn: numberOfTokensForQuote.toString(),
-                zeroForOne: true,
-                amountOutMinimum: "0"
-              };
-              const quoteResult = await ICPSwapService.getQuoteFromPool(selectedToken.pools[0], args);
-              conversionRate = icpConversionRate.times(quoteResult).div(numberOfTokensForQuote);
-              console.log("BOB conversion rate:", conversionRate.toString(), "cycles per BOB");
+              // Use the new method that automatically determines swap direction based on pool metadata
+              const quoteResult = await ICPSwapService.getQuoteWithAutoDirection(
+                selectedToken.pools[0],
+                selectedToken.canister_id,
+                numberOfTokensForQuote.toString()
+              );
+              console.log("BOB quote result:", quoteResult);
+              
+              if (quoteResult && typeof quoteResult === 'object' && 'ok' in quoteResult) {
+                const icpAmount = new BigNumber(quoteResult.ok.toString());
+                conversionRate = icpConversionRate.times(icpAmount).div(numberOfTokensForQuote);
+                console.log("BOB conversion rate:", conversionRate.toString(), "cycles per BOB");
+              } else {
+                console.warn("Failed to get BOB quote, using fallback estimate");
+                throw new Error("Quote failed for BOB");
+              }
             } else if (selectedTokenSymbol === 'ckBTC') {
               const numberOfTokensForQuote = 10000; // 8 decimals, i.e. 0.0001;
-              const args : SwapArgs = {
-                amountIn: numberOfTokensForQuote.toString(),
-                zeroForOne: true,
-                amountOutMinimum: "0"
-              };
-              const quoteResult = await ICPSwapService.getQuoteFromPool(selectedToken.pools[0], args);
-              conversionRate = icpConversionRate.times(quoteResult).div(numberOfTokensForQuote);
-              console.log("ckBTC conversion rate:", conversionRate.toString(), "cycles per ckBTC");
+              // Use the new method that automatically determines swap direction based on pool metadata
+              const quoteResult = await ICPSwapService.getQuoteWithAutoDirection(
+                selectedToken.pools[0],
+                selectedToken.canister_id,
+                numberOfTokensForQuote.toString()
+              );
+              console.log("ckBTC quote result:", quoteResult);
+              
+              if (quoteResult && typeof quoteResult === 'object' && 'ok' in quoteResult) {
+                const icpAmount = new BigNumber(quoteResult.ok.toString());
+                conversionRate = icpConversionRate.times(icpAmount).div(numberOfTokensForQuote);
+                console.log("ckBTC conversion rate:", conversionRate.toString(), "cycles per ckBTC");
+              } else {
+                console.warn("Failed to get ckBTC quote, using fallback estimate");
+                throw new Error("Quote failed for ckBTC");
+              }
             } else {
               // ICP
               conversionRate = icpConversionRate;
@@ -539,18 +555,38 @@
       let result;
       if (selectedTokenSymbol !== 'FUNNAI' && selectedTokenSymbol !== 'ICP') {
         // Swap any other tokens than FUNNAI to ICP first, then proceed with ICP flow
+        console.log("Starting swap for token:", selectedToken.symbol);
+        console.log("User balance:", balance.toString(), selectedToken.symbol);
+        console.log("Amount to swap:", amountBigInt.toString());
+        console.log("Token fee:", tokenFee.toString());
+        console.log("Total needed:", (amountBigInt + tokenFee).toString());
+        console.log("Has enough?", balance >= (amountBigInt + tokenFee));
+        
+        // Note: zeroForOne is now determined automatically by ICPSwapService based on pool metadata
         const args : DepositAndSwapArgs = {
           tokenInFee: tokenFee,
-          amountIn: amount,
-          zeroForOne: true,
+          amountIn: amountBigInt.toString(), // Convert amount to smallest unit (e8s)
+          zeroForOne: true, // This will be overridden by ICPSwapService based on actual pool token order
           amountOutMinimum: "0",
-          tokenOutFee: icpToken.fee_fixed
+          tokenOutFee: BigInt(icpToken.fee_fixed)
         };
+        console.log("Swap args:", args);
         const swapResult = await ICPSwapService.approveAndSwap(selectedToken, selectedToken.pools[0], args, selectedToken.pools[0]);
+        console.log("Swap result:", swapResult);
+        
         if (swapResult && typeof swapResult === 'object' && 'ok' in swapResult) {
           // The user now has the corresponding ICP in their wallet
           // Transfer the ICP to the Protocol's account for top-up
-          const icpToTransfer = BigInt(swapResult.ok - icpToken.fee_fixed);
+          
+          // swapResult.ok is the withdrawal result (BigInt), subtract the ICP fee for the transfer
+          const outputAmount = typeof swapResult.ok === 'bigint' ? swapResult.ok : BigInt(swapResult.ok);
+          const icpFee = BigInt(icpToken.fee_fixed);
+          const icpToTransfer = outputAmount - icpFee;
+          
+          console.log("ICP received from swap:", outputAmount.toString());
+          console.log("ICP fee:", icpFee.toString());
+          console.log("ICP to transfer to protocol:", icpToTransfer.toString());
+          
           result = await IcrcService.transfer(
             icpToken,
             protocolAddress,  // Use protocol address from token_helpers
@@ -562,8 +598,14 @@
             }
           );
         } else {
-          console.error("Swap error:", swapResult);
-          throw new Error("Swap error");
+          // Better error logging
+          const errorDetails = swapResult?.err 
+            ? (typeof swapResult.err === 'object' 
+                ? JSON.stringify(swapResult.err) 
+                : swapResult.err)
+            : 'Unknown error';
+          console.error("Swap error details:", errorDetails);
+          throw new Error(`Swap failed: ${errorDetails}`);
         };
       } else {
         // Transfer tokens to the Protocol's account for top-up

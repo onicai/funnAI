@@ -289,21 +289,20 @@ class ICPSwapService {
     }
   }
 
-  public static async approveAndSwap(
-    token: FE.Token,
+  /**
+   * Get a quote from an ICPSwap pool with automatic direction detection based on input token.
+   * This method determines the correct zeroForOne value based on pool metadata.
+   * @param poolCanisterId The canister ID of the swap pool
+   * @param inputTokenCanisterId The canister ID of the input token
+   * @param amountIn The amount of input tokens
+   * @returns The quote result or null if failed
+   */
+  public static async getQuoteWithAutoDirection(
     poolCanisterId: string,
-    depositAndSwapArgs: DepositAndSwapArgs,
-    spender: string = poolCanisterId
+    inputTokenCanisterId: string,
+    amountIn: string
   ): Promise<any | null> {
     try {
-      // 1. Approve the pool canister to spend the input token
-      await IcrcService.checkAndRequestIcrc2Allowances(
-        token,
-        BigInt(depositAndSwapArgs.amountIn),
-        spender
-      );
-
-      // 2. Create the pool actor
       const poolActor = await store.getActor(
         poolCanisterId,
         canisterIDLs.swapPool,
@@ -313,13 +312,185 @@ class ICPSwapService {
         },
       );
 
-      // 3. Call depositAndSwap on the pool
-      const result = await poolActor.depositAndSwap(depositAndSwapArgs);
+      // Get pool metadata to determine token order
+      const metadata = await poolActor.metadata();
+      console.log("Pool metadata for quote:", metadata);
+      
+      if (!metadata || typeof metadata !== 'object' || !('ok' in metadata)) {
+        console.error("Failed to get pool metadata for quote");
+        return null;
+      }
+
+      const metadataOk: any = metadata.ok;
+      const token0Address = metadataOk.token0?.address;
+      const token1Address = metadataOk.token1?.address;
+      
+      if (!token0Address || !token1Address) {
+        console.error("Invalid pool metadata - missing token addresses");
+        return null;
+      }
+
+      // Determine if input token is token0 or token1
+      const isToken0 = inputTokenCanisterId === token0Address;
+      const zeroForOne = isToken0;
+      
+      console.log("Quote - Input token is:", isToken0 ? "token0" : "token1");
+      console.log("Quote - Swap direction (zeroForOne):", zeroForOne);
+
+      const args: SwapArgs = {
+        amountIn: amountIn,
+        zeroForOne: zeroForOne,
+        amountOutMinimum: "0"
+      };
+
+      console.log("Quote args:", args);
+      const result = await poolActor.quote(args);
+      console.log("Quote result:", result);
 
       return result;
     } catch (error) {
-      console.error("Error in approveAndSwap:", error);
+      console.error("Error fetching quote with auto direction:", error);
       return null;
+    }
+  }
+
+  public static async approveAndSwap(
+    token: FE.Token,
+    poolCanisterId: string,
+    depositAndSwapArgs: DepositAndSwapArgs,
+    spender: string = poolCanisterId
+  ): Promise<any | null> {
+    try {
+      // 1. Create the pool actor first to check metadata
+      const poolActor = await store.getActor(
+        poolCanisterId,
+        canisterIDLs.swapPool,
+        {
+          anon: false,
+          requiresSigning: true,
+        },
+      );
+
+      // Check pool metadata to understand token order - CRITICAL for correct swap direction
+      let metadata;
+      let isToken0: boolean = true; // Assume token is token0 by default
+      let outputTokenAddress = "ryjl3-tyaaa-aaaaa-aaaba-cai"; // Default to ICP
+      
+      try {
+        metadata = await poolActor.metadata();
+        console.log("Pool metadata:", metadata);
+        
+        if (metadata && 'ok' in metadata) {
+          const metadataOk: any = metadata.ok;
+          console.log("Token0:", metadataOk.token0);
+          console.log("Token1:", metadataOk.token1);
+          
+          // Determine if our input token is token0 or token1
+          const token0Address = metadataOk.token0?.address;
+          const token1Address = metadataOk.token1?.address;
+          
+          if (token0Address && token1Address) {
+            // Check which token we're swapping
+            isToken0 = token.canister_id === token0Address;
+            
+            // Set output token address (opposite of input)
+            outputTokenAddress = isToken0 ? token1Address : token0Address;
+            
+            console.log("Input token is:", isToken0 ? "token0" : "token1");
+            console.log("Output token address:", outputTokenAddress);
+          }
+        }
+      } catch (metaError) {
+        console.warn("Could not fetch pool metadata:", metaError);
+        throw new Error("Failed to fetch pool metadata - cannot determine token order");
+      }
+
+      // Determine swap direction based on which token we're swapping
+      // zeroForOne = true means swapping token0 for token1
+      // zeroForOne = false means swapping token1 for token0
+      const zeroForOne = isToken0;
+      console.log("Swap direction (zeroForOne):", zeroForOne);
+
+      // 2. Approve the pool canister to spend the input token + fee
+      // The pool needs to pull both the swap amount and the token fee
+      const totalAmountNeeded = BigInt(depositAndSwapArgs.amountIn) + depositAndSwapArgs.tokenInFee;
+      
+      console.log("Approving amount:", {
+        tokenCanisterId: token.canister_id,
+        amountIn: depositAndSwapArgs.amountIn,
+        tokenInFee: depositAndSwapArgs.tokenInFee.toString(),
+        totalAmountNeeded: totalAmountNeeded.toString(),
+        spender: spender
+      });
+      
+      await IcrcService.checkAndRequestIcrc2Allowances(
+        token,
+        totalAmountNeeded,
+        spender
+      );
+
+      // 3. Use depositFrom to pull tokens, then swap
+      // depositFromAndSwap seems to have issues, so we'll do it in two steps
+      console.log("Step 1: Depositing tokens via depositFrom");
+      const depositArgs = {
+        token: token.canister_id,
+        amount: BigInt(depositAndSwapArgs.amountIn),
+        fee: depositAndSwapArgs.tokenInFee
+      };
+      console.log("Deposit args:", depositArgs);
+      
+      const depositResult = await poolActor.depositFrom(depositArgs);
+      console.log("Deposit result:", depositResult);
+      
+      if (!depositResult || (typeof depositResult === 'object' && 'err' in depositResult)) {
+        console.error("Deposit failed:", depositResult);
+        return depositResult;
+      }
+
+      // 4. Now swap the deposited tokens with the correct direction
+      console.log("Step 2: Swapping deposited tokens");
+      const swapArgs = {
+        amountIn: depositAndSwapArgs.amountIn,
+        zeroForOne: zeroForOne, // Use dynamically determined direction
+        amountOutMinimum: depositAndSwapArgs.amountOutMinimum
+      };
+      console.log("Swap args:", swapArgs);
+      
+      const swapResult = await poolActor.swap(swapArgs);
+      console.log("Swap result:", swapResult);
+      
+      if (!swapResult || (typeof swapResult === 'object' && 'err' in swapResult)) {
+        console.error("Swap failed:", swapResult);
+        return swapResult;
+      }
+
+      // 5. Withdraw the output tokens
+      console.log("Step 3: Withdrawing output tokens");
+      
+      // The swap result should contain the amount of output tokens received
+      const swapResultValue = (swapResult as any).ok;
+      const outputAmount = typeof swapResultValue === 'bigint' 
+        ? swapResultValue 
+        : BigInt(swapResultValue || '0');
+      
+      console.log("Output amount from swap:", outputAmount.toString());
+      
+      const withdrawArgs = {
+        token: outputTokenAddress,
+        amount: outputAmount,
+        fee: depositAndSwapArgs.tokenOutFee
+      };
+      console.log("Withdraw args:", withdrawArgs);
+      
+      const withdrawResult = await poolActor.withdraw(withdrawArgs);
+      console.log("Withdraw result:", withdrawResult);
+
+      return withdrawResult;
+    } catch (error) {
+      console.error("Error in approveAndSwap:", error);
+      console.error("Error stack:", error.stack);
+      // Return the error as an object so we can see it in the UI
+      return { err: { InternalError: error.message || "Unknown error" } };
     }
   }
 }
