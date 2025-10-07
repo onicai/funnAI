@@ -181,7 +181,7 @@ const availableTokens: FE.Token[] = [ // TODO
     icrc2: true,
     icrc3: true,
     pool_symbol: "",
-    pools: [],
+    pools: ["ybilh-nqaaa-aaaag-qkhzq-cai"],
     timestamp: Date.now(),
     metrics: null,
     balance: '0',
