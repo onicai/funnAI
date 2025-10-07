@@ -129,7 +129,7 @@ def stop_timer(network: str, canister_id: str, dry_run: bool = False) -> bool:
     try:
         result = run_command(command)
         # Check if the response indicates success
-        if 'variant { Ok = record { auth = "You stopped the timers: "' in result.stdout:
+        if 'variant { Ok = record { auth = "You stopped the timers: ' in result.stdout:
             log_message(f"Timer stopped for {canister_id}", "SUCCESS")
             return True
         else:
@@ -179,17 +179,28 @@ def check_queue(network: str, canister_id: str) -> Tuple[bool, Optional[datetime
             log_message("Challenge queue is empty", "SUCCESS")
             return False, None
 
-        # Get the timestamp of the last entry
-        last_entry = queue[-1]
-        # Parse timestamp - expecting a string with nanosecond timestamp
-        timestamp_str = last_entry.get('timestamp', '0')
-        # Remove underscores from timestamp string if present
-        timestamp_str = timestamp_str.replace('_', '')
-        timestamp_ns = int(timestamp_str)
-        timestamp = datetime.fromtimestamp(timestamp_ns / 1_000_000_000)
+        # Find the entry with the most recent (highest) challengeQueuedTimestamp
+        # The queue can contain up to 5 items and they may not be in timestamp order
+        most_recent_timestamp = 0
+        most_recent_entry = None
 
+        for entry in queue:
+            timestamp_str = entry.get('challengeQueuedTimestamp', '0')
+            # Remove underscores from timestamp string if present
+            timestamp_str = timestamp_str.replace('_', '')
+            timestamp_ns = int(timestamp_str)
+
+            if timestamp_ns > most_recent_timestamp:
+                most_recent_timestamp = timestamp_ns
+                most_recent_entry = entry
+
+        if most_recent_timestamp == 0:
+            log_message("Could not find valid timestamp in queue", "ERROR")
+            return False, None
+
+        timestamp = datetime.fromtimestamp(most_recent_timestamp / 1_000_000_000)
         age = datetime.now() - timestamp
-        log_message(f"Last queue entry age: {age.total_seconds() / 60:.1f} minutes")
+        log_message(f"Most recent queue entry age: {age.total_seconds() / 60:.1f} minutes")
 
         return True, timestamp
     except Exception as e:
@@ -210,12 +221,16 @@ def clear_queue(network: str, canister_id: str, dry_run: bool = False) -> bool:
 
     try:
         result = run_command(command)
-        log_message(f"Challenge queue cleared for {canister_id}", "SUCCESS")
-        return True
+        # Check if the result contains Ok with status_code = 200
+        if "Ok" in result.stdout and "status_code = 200" in result.stdout:
+            log_message(f"Challenge queue cleared for {canister_id}", "SUCCESS")
+            return True
+        else:
+            log_message(f"Failed to clear challenge queue for {canister_id}: {result.stdout}", "ERROR")
+            sys.exit(1)
     except Exception as e:
-        log_message(f"Failed to clear challenge queue for {canister_id}: {e}", "WARNING")
-        # Continue even if clearing fails
-        return True
+        log_message(f"Failed to clear challenge queue for {canister_id}: {e}", "ERROR")
+        sys.exit(1)
 
 def stop_canister(network: str, canister_id: str, dry_run: bool = False) -> bool:
     """Stop a canister."""
@@ -341,6 +356,58 @@ def check_health(network: str, canister_id: str, dry_run: bool = False) -> bool:
             return False
     except Exception as e:
         log_message(f"Health check failed for {canister_id}: {e}", "ERROR")
+        return False
+
+def turn_off_maintenance_flag(network: str, canister_id: str, dry_run: bool = False) -> bool:
+    """Turn off the maintenance flag if it's on."""
+    log_message(f"Checking maintenance flag for {canister_id}...")
+
+    # Step 1: Check current maintenance flag status
+    command = [
+        "dfx", "canister", "--network", network, "call",
+        canister_id, "getMaintenanceFlag", "--output", "json"
+    ]
+
+    if dry_run:
+        log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
+        return True
+
+    try:
+        result = run_command(command)
+        data = json.loads(result.stdout)
+
+        # Check if flag is already false
+        flag_value = data.get('Ok', {}).get('flag', None)
+        if flag_value is False:
+            log_message(f"Maintenance flag already off for {canister_id}", "SUCCESS")
+            return True
+        elif flag_value is True:
+            log_message(f"Maintenance flag is ON, turning it off...")
+
+            # Step 2: Toggle the flag
+            toggle_command = [
+                "dfx", "canister", "--network", network, "call",
+                canister_id, "toggleMaintenanceFlagAdmin"
+            ]
+            toggle_result = run_command(toggle_command)
+
+            # Step 3: Verify flag is now false
+            verify_result = run_command(command)
+            verify_data = json.loads(verify_result.stdout)
+            new_flag_value = verify_data.get('Ok', {}).get('flag', None)
+
+            if new_flag_value is False:
+                log_message(f"Maintenance flag turned OFF for {canister_id}", "SUCCESS")
+                return True
+            else:
+                log_message(f"Failed to turn off maintenance flag for {canister_id}: flag is still {new_flag_value}", "ERROR")
+                return False
+        else:
+            log_message(f"Unexpected response checking maintenance flag: {data}", "ERROR")
+            return False
+
+    except Exception as e:
+        log_message(f"Failed to check/toggle maintenance flag for {canister_id}: {e}", "ERROR")
         return False
 
 def prepare_for_deployment(network: str, dry_run: bool = False) -> bool:
@@ -476,8 +543,14 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
     # Step 2j: Start timer
     if not start_timer(network, address, dry_run):
         if not dry_run:
-            log_message(f"Failed to start timer. Canister upgraded but timer not running!", "WARNING")
-        # Don't fail the upgrade, just warn
+            log_message(f"Failed to start timer. Canister upgraded but timer not running!", "ERROR")
+            return False
+
+    # Step 2k: Turn off maintenance flag
+    if not turn_off_maintenance_flag(network, address, dry_run):
+        if not dry_run:
+            log_message(f"Failed to turn off maintenance flag. Canister upgraded but maintenance flag may still be ON!", "ERROR")
+            return False
 
     log_message(f"Successfully upgraded mAIner {canister_index}: {address}", "SUCCESS")
     return True
