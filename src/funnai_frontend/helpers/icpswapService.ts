@@ -1,4 +1,15 @@
 // ICPSwap API Service for fetching real-time token data
+import {
+  store,
+  canisterIds,
+  canisterIDLs
+} from "../stores/store";
+
+import { IcrcService } from "./IcrcService";
+
+let storeState;
+store.subscribe((value) => storeState = value);
+
 export interface ICPSwapTokenData {
   price: string;
   priceUSD: number;
@@ -15,6 +26,20 @@ export interface ICPSwapApiResponse {
   success: boolean;
   data?: ICPSwapTokenData;
   error?: string;
+}
+
+export interface SwapArgs {
+  amountIn: string;
+  zeroForOne: boolean;
+  amountOutMinimum: string;
+}
+
+export interface DepositAndSwapArgs {
+  tokenInFee: bigint;
+  amountIn: string;
+  zeroForOne: boolean;
+  amountOutMinimum: string;
+  tokenOutFee: bigint;
 }
 
 class ICPSwapService {
@@ -230,6 +255,72 @@ class ICPSwapService {
     }
 
     return results;
+  }
+
+  /**
+   * Get a quote from an ICPSwap pool canister by calling its `quote` method.
+   * @param poolCanisterId The canister ID of the swap pool
+   * @param args The swap arguments
+   * @returns The quote result or null if failed
+   */
+  public static async getQuoteFromPool(
+    poolCanisterId: string,
+    args: SwapArgs
+  ): Promise<any | null> {
+    try {
+      const poolActor = await store.getActor(
+        poolCanisterId,
+        canisterIDLs.swapPool,
+        {
+          anon: false,
+          requiresSigning: true,
+        },
+      );
+
+      // Call the quote method
+      console.log("in getQuoteFromPool args ", args);
+      const result = await poolActor.quote(args);
+      console.log("in getQuoteFromPool result ", result);
+
+      return result;
+    } catch (error) {
+      console.error("Error fetching quote from ICPSwap pool:", error);
+      return null;
+    }
+  }
+
+  public static async approveAndSwap(
+    token: FE.Token,
+    poolCanisterId: string,
+    depositAndSwapArgs: DepositAndSwapArgs,
+    spender: string = poolCanisterId
+  ): Promise<any | null> {
+    try {
+      // 1. Approve the pool canister to spend the input token
+      await IcrcService.checkAndRequestIcrc2Allowances(
+        token,
+        BigInt(depositAndSwapArgs.amountIn),
+        spender
+      );
+
+      // 2. Create the pool actor
+      const poolActor = await store.getActor(
+        poolCanisterId,
+        canisterIDLs.swapPool,
+        {
+          anon: false,
+          requiresSigning: true,
+        },
+      );
+
+      // 3. Call depositAndSwap on the pool
+      const result = await poolActor.depositAndSwap(depositAndSwapArgs);
+
+      return result;
+    } catch (error) {
+      console.error("Error in approveAndSwap:", error);
+      return null;
+    }
   }
 }
 

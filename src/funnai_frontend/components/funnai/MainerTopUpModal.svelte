@@ -4,16 +4,16 @@
   import TokenImages from "../TokenImages.svelte";
 
   import { ArrowUp, Info, Check } from 'lucide-svelte';
-  import { MEMO_PAYMENT_PROTOCOL, store, theme } from "../../stores/store";
+  import { MEMO_PAYMENT_PROTOCOL, store, canisterIDLs } from "../../stores/store";
   import { IcrcService } from "../../helpers/IcrcService";
   import BigNumber from "bignumber.js";
   import { formatBalance, formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
   import { fetchTokens, protocolConfig } from "../../helpers/token_helpers";
   import { createAnonymousActorHelper } from "../../helpers/utils/actorUtils";
-  import { idlFactory as cmcIdlFactory } from "../../helpers/idls/cmc.idl.js";
   import { MIN_AMOUNT, MAX_AMOUNT, CELEBRATION_DURATION, CELEBRATION_ENABLED } from "../../helpers/config/topUpConfig";
   import { getIsProtocolActive } from "../../helpers/gameState";
   import { mainerHealthService } from "../../helpers/mainerHealthService";
+  import ICPSwapService, { SwapArgs, DepositAndSwapArgs } from "../../helpers/icpswapService";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
@@ -34,13 +34,14 @@
   
   // Get currently selected token
   $: selectedToken = availableTokens.find(t => t.symbol === selectedTokenSymbol);
+  let icpToken;
   
   // Load token data from token_helpers
   async function loadTokenData() {
     isTokenLoading = true;
     try {
       const result = await fetchTokens({});
-      const icpToken = result.tokens.find(t => t.symbol === "ICP");
+      icpToken = result.tokens.find(t => t.symbol === "ICP");
       const funnaiToken = result.tokens.find(t => t.symbol === "FUNNAI");
       const bobToken = result.tokens.find(t => t.symbol === "BOB");
       const ckbtcToken = result.tokens.find(t => t.symbol === "ckBTC");
@@ -291,13 +292,13 @@
           console.error("Error getting FUNNAI conversion rate:", actorError);
           throw new Error("Failed to get FUNNAI conversion rate from backend");
         }
-      } else {
+      } else {        
         // ICP, BOB, and ckBTC conversion rate from CMC
         const cmcCanisterId = "rkp4c-7iaaa-aaaaa-aaaca-cai";
         
         try {
           // Create the CMC actor using the imported IDL factory
-          const cmcActor = await createAnonymousActorHelper(cmcCanisterId, cmcIdlFactory);
+          const cmcActor = await createAnonymousActorHelper(cmcCanisterId, canisterIDLs.cmc);
           
           // Get conversion rate from CMC
           const response = await cmcActor.get_icp_xdr_conversion_rate();
@@ -313,17 +314,27 @@
               .times(CYCLES_PER_XDR)
               .div(10000);
             
-            // For BOB and ckBTC, adjust the conversion rate based on approximate token value
-            // BOB: ~$0.20, ICP: ~$4.20, ratio: 21:1
-            // ckBTC: ~$60,000, ICP: ~$4.20, ratio: 1:14,285
+            // For BOB and ckBTC, adjust the conversion rate based on a quote from the swap pool (against ICP)
             if (selectedTokenSymbol === 'BOB') {
-              // BOB is worth ~$0.20, ICP is ~$4.20, so ratio is ~21:1
-              conversionRate = icpConversionRate.div(21);
-              console.log("BOB conversion rate (estimated):", conversionRate.toString(), "cycles per BOB");
+              const numberOfTokensForQuote = 1000000000; // 8 decimals, i.e. 10 BOB
+              const args : SwapArgs = {
+                amountIn: numberOfTokensForQuote.toString(),
+                zeroForOne: true,
+                amountOutMinimum: "0"
+              };
+              const quoteResult = await ICPSwapService.getQuoteFromPool(selectedToken.pools[0], args);
+              conversionRate = icpConversionRate.times(quoteResult).div(numberOfTokensForQuote);
+              console.log("BOB conversion rate:", conversionRate.toString(), "cycles per BOB");
             } else if (selectedTokenSymbol === 'ckBTC') {
-              // ckBTC is worth much more than ICP (~$60k vs ~$4.20, ratio ~14,285:1)
-              conversionRate = icpConversionRate.times(14285);
-              console.log("ckBTC conversion rate (estimated):", conversionRate.toString(), "cycles per ckBTC");
+              const numberOfTokensForQuote = 10000; // 8 decimals, i.e. 0.0001;
+              const args : SwapArgs = {
+                amountIn: numberOfTokensForQuote.toString(),
+                zeroForOne: true,
+                amountOutMinimum: "0"
+              };
+              const quoteResult = await ICPSwapService.getQuoteFromPool(selectedToken.pools[0], args);
+              conversionRate = icpConversionRate.times(quoteResult).div(numberOfTokensForQuote);
+              console.log("ckBTC conversion rate:", conversionRate.toString(), "cycles per ckBTC");
             } else {
               // ICP
               conversionRate = icpConversionRate;
@@ -524,19 +535,50 @@
         }
         throw new Error("Invalid amount");
       };
-      
-      // Transfer tokens to the Protocol's account for top-up
-      // The backend will handle the actual cycles minting and top-up process
-      const result = await IcrcService.transfer(
-        selectedToken,
-        protocolAddress,  // Use protocol address from token_helpers
-        amountBigInt,
-        {
-          fee: tokenFee,
-          // Include the memo for transactions to the Protocol
-          memo: MEMO_PAYMENT_PROTOCOL
-        }
-      );
+
+      let result;
+      if (selectedTokenSymbol !== 'FUNNAI' && selectedTokenSymbol !== 'ICP') {
+        // Swap any other tokens than FUNNAI to ICP first, then proceed with ICP flow
+        const args : DepositAndSwapArgs = {
+          tokenInFee: tokenFee,
+          amountIn: amount,
+          zeroForOne: true,
+          amountOutMinimum: "0",
+          tokenOutFee: icpToken.fee_fixed
+        };
+        const swapResult = await ICPSwapService.approveAndSwap(selectedToken, selectedToken.pools[0], args, selectedToken.pools[0]);
+        if (swapResult && typeof swapResult === 'object' && 'ok' in swapResult) {
+          // The user now has the corresponding ICP in their wallet
+          // Transfer the ICP to the Protocol's account for top-up
+          const icpToTransfer = BigInt(swapResult.ok - icpToken.fee_fixed);
+          result = await IcrcService.transfer(
+            icpToken,
+            protocolAddress,  // Use protocol address from token_helpers
+            icpToTransfer,
+            {
+              fee: icpToken.fee_fixed,
+              // Include the memo for transactions to the Protocol
+              memo: MEMO_PAYMENT_PROTOCOL
+            }
+          );
+        } else {
+          console.error("Swap error:", swapResult);
+          throw new Error("Swap error");
+        };
+      } else {
+        // Transfer tokens to the Protocol's account for top-up
+        // The backend will handle the actual cycles minting and top-up process
+        result = await IcrcService.transfer(
+          selectedToken,
+          protocolAddress,  // Use protocol address from token_helpers
+          amountBigInt,
+          {
+            fee: tokenFee,
+            // Include the memo for transactions to the Protocol
+            memo: MEMO_PAYMENT_PROTOCOL
+          }
+        );
+      };
 
       if (result && typeof result === 'object' && 'Ok' in result) {
         const txId = result.Ok?.toString();
