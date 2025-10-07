@@ -163,8 +163,52 @@ export const idlFactory = ({ IDL }) => {
     'Err' : ApiError,
   });
   const CanisterIDRecord = IDL.Record({ 'canister_id' : IDL.Text });
+  const TimeInterval = IDL.Variant({ 'Daily' : IDL.Null });
+  const CyclesBurnRate = IDL.Record({
+    'cycles' : IDL.Nat,
+    'timeInterval' : TimeInterval,
+  });
+  const CyclesBurnRateDefault = IDL.Variant({
+    'Low' : IDL.Null,
+    'Mid' : IDL.Null,
+    'VeryHigh' : IDL.Null,
+    'High' : IDL.Null,
+    'Custom' : CyclesBurnRate,
+  });
+  const MainerAgentSettings = IDL.Record({
+    'creationTimestamp' : IDL.Nat64,
+    'createdBy' : IDL.Principal,
+    'cyclesBurnRate' : CyclesBurnRateDefault,
+  });
+  const MainerAgentSettingsListResult = IDL.Variant({
+    'Ok' : IDL.Vec(MainerAgentSettings),
+    'Err' : ApiError,
+  });
+  const MainerAgentTimers = IDL.Record({
+    'recurringTimerId1' : IDL.Opt(IDL.Nat),
+    'recurringTimerId2' : IDL.Opt(IDL.Nat),
+    'randomInitialTimer1InSeconds' : IDL.Opt(IDL.Nat),
+    'creationTimestamp' : IDL.Nat64,
+    'calledFromEndpoint' : IDL.Text,
+    'createdBy' : IDL.Principal,
+    'action2RegularityInSeconds' : IDL.Nat,
+    'initialTimerId1' : IDL.Opt(IDL.Nat),
+    'action1RegularityInSeconds' : IDL.Nat,
+  });
+  const MainerAgentTimersListResult = IDL.Variant({
+    'Ok' : IDL.Vec(MainerAgentTimers),
+    'Err' : ApiError,
+  });
   const ChallengeQueueInputsResult = IDL.Variant({
     'Ok' : IDL.Vec(ChallengeQueueInput),
+    'Err' : ApiError,
+  });
+  const MainerAgentSettingsResult = IDL.Variant({
+    'Ok' : MainerAgentSettings,
+    'Err' : ApiError,
+  });
+  const MainerAgentTimersResult = IDL.Variant({
+    'Ok' : MainerAgentTimers,
     'Err' : ApiError,
   });
   const IssueFlagsRecord = IDL.Record({ 'lowCycleBalance' : IDL.Bool });
@@ -180,11 +224,6 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : MainerAgentCanisterType,
     'Err' : ApiError,
   });
-  const TimeInterval = IDL.Variant({ 'Daily' : IDL.Null });
-  const CyclesBurnRate = IDL.Record({
-    'cycles' : IDL.Nat,
-    'timeInterval' : TimeInterval,
-  });
   const StatisticsRecord = IDL.Record({
     'cycleBalance' : IDL.Nat,
     'totalCyclesBurnt' : IDL.Nat,
@@ -194,6 +233,8 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : StatisticsRecord,
     'Err' : ApiError,
   });
+  const FlagRecord = IDL.Record({ 'flag' : IDL.Bool });
+  const FlagResult = IDL.Variant({ 'Ok' : FlagRecord, 'Err' : ApiError });
   const ChallengeResponseSubmissionStatus = IDL.Variant({
     'Judged' : IDL.Null,
     'FailedSubmission' : IDL.Null,
@@ -260,6 +301,15 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : MainerTimers,
     'Err' : ApiError,
   });
+  const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
+  const MainerTimerBuffers = IDL.Record({
+    'bufferTimerId1' : IDL.Vec(IDL.Nat),
+    'bufferTimerId2' : IDL.Vec(IDL.Nat),
+  });
+  const MainerTimerBuffersResult = IDL.Variant({
+    'Ok' : MainerTimerBuffers,
+    'Err' : ApiError,
+  });
   const LlmCanistersRecord = IDL.Record({
     'roundRobinUseAll' : IDL.Bool,
     'roundRobinLLMs' : IDL.Nat,
@@ -271,14 +321,6 @@ export const idlFactory = ({ IDL }) => {
   });
   const AuthRecord = IDL.Record({ 'auth' : IDL.Text });
   const AuthRecordResult = IDL.Variant({ 'Ok' : AuthRecord, 'Err' : ApiError });
-  const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
-  const CyclesBurnRateDefault = IDL.Variant({
-    'Low' : IDL.Null,
-    'Mid' : IDL.Null,
-    'VeryHigh' : IDL.Null,
-    'High' : IDL.Null,
-    'Custom' : CyclesBurnRate,
-  });
   const MainerAgentSettingsInput = IDL.Record({
     'cyclesBurnRate' : CyclesBurnRateDefault,
   });
@@ -312,9 +354,29 @@ export const idlFactory = ({ IDL }) => {
     'amiController' : IDL.Func([], [StatusCodeRecordResult], ['query']),
     'canAgentSettingsBeUpdated' : IDL.Func([], [StatusCodeRecordResult], []),
     'checkAccessToLLMs' : IDL.Func([], [StatusCodeRecordResult], []),
+    'getAgentSettingsAdmin' : IDL.Func(
+        [],
+        [MainerAgentSettingsListResult],
+        ['query'],
+      ),
+    'getAgentTimersAdmin' : IDL.Func(
+        [],
+        [MainerAgentTimersListResult],
+        ['query'],
+      ),
     'getChallengeQueueAdmin' : IDL.Func(
         [],
         [ChallengeQueueInputsResult],
+        ['query'],
+      ),
+    'getCurrentAgentSettingsAdmin' : IDL.Func(
+        [],
+        [MainerAgentSettingsResult],
+        ['query'],
+      ),
+    'getCurrentAgentTimersAdmin' : IDL.Func(
+        [],
+        [MainerAgentTimersResult],
         ['query'],
       ),
     'getGameStateCanisterId' : IDL.Func([], [IDL.Text], ['query']),
@@ -330,6 +392,7 @@ export const idlFactory = ({ IDL }) => {
         [StatisticsRetrievalResult],
         ['query'],
       ),
+    'getMaintenanceFlag' : IDL.Func([], [FlagResult], ['query']),
     'getRecentSubmittedResponsesAdmin' : IDL.Func(
         [],
         [ChallengeResponseSubmissionsResult],
@@ -347,9 +410,14 @@ export const idlFactory = ({ IDL }) => {
         [MainerTimersResult],
         ['query'],
       ),
+    'getTimerBufferMaxSizeAdmin' : IDL.Func([], [NatResult], ['query']),
+    'getTimerBuffersAdmin' : IDL.Func(
+        [],
+        [MainerTimerBuffersResult],
+        ['query'],
+      ),
     'get_llm_canisters' : IDL.Func([], [LlmCanistersRecordResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
-    'setHealthStatus' : IDL.Func([IDL.Bool, IDL.Text], [StatusCodeRecordResult], []),
     'ready' : IDL.Func([], [StatusCodeRecordResult], []),
     'remove_llm_canister' : IDL.Func(
         [CanisterIDRecord],
@@ -380,9 +448,15 @@ export const idlFactory = ({ IDL }) => {
         [StatusCodeRecordResult],
         [],
       ),
+    'setTimerBufferMaxSizeAdmin' : IDL.Func(
+        [IDL.Nat],
+        [StatusCodeRecordResult],
+        [],
+      ),
     'startTimerExecutionAdmin' : IDL.Func([], [AuthRecordResult], []),
     'stopTimerExecutionAdmin' : IDL.Func([], [AuthRecordResult], []),
     'timeToNextAgentSettingsUpdate' : IDL.Func([], [NatResult], []),
+    'toggleMaintenanceFlagAdmin' : IDL.Func([], [AuthRecordResult], []),
     'triggerChallengeResponseAdmin' : IDL.Func([], [AuthRecordResult], []),
     'updateAgentSettings' : IDL.Func(
         [MainerAgentSettingsInput],

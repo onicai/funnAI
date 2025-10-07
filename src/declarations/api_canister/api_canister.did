@@ -200,10 +200,10 @@ type ApiCanister =
     (DailyMetricsResult) query;
    getDailyMetricsAdmin: () -> (DailyMetricsResult) query;
    getLatestDailyMetric: () -> (DailyMetricResult) query;
-  getMasterCanisterId: () -> (AuthRecordResult) query;
-  getNumDailyMetrics: () -> (NatResult) query;
-  getTokenRewardsData: () -> (TokenRewardsDataResult) query;
-  health: () -> (StatusCodeRecordResult) query;
+   getMasterCanisterId: () -> (AuthRecordResult) query;
+   getNumDailyMetrics: () -> (NatResult) query;
+   getTokenRewardsData: () -> (TokenRewardsDataResult) query;
+   health: () -> (StatusCodeRecordResult) query;
    resetDailyMetricsAdmin: () -> (NatResult);
    setMasterCanisterId: (newMasterCanisterId: text) -> (AuthRecordResult);
    updateDailyMetricAdmin: (params: UpdateDailyMetricAdminInput) ->

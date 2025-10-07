@@ -172,6 +172,9 @@ export type CyclesBurnRateDefault = { 'Low' : null } |
   { 'VeryHigh' : null } |
   { 'High' : null } |
   { 'Custom' : CyclesBurnRate };
+export interface FlagRecord { 'flag' : boolean }
+export type FlagResult = { 'Ok' : FlagRecord } |
+  { 'Err' : ApiError };
 export interface IssueFlagsRecord { 'lowCycleBalance' : boolean }
 export type IssueFlagsRetrievalResult = { 'Ok' : IssueFlagsRecord } |
   { 'Err' : ApiError };
@@ -217,12 +220,17 @@ export interface MainerAgentCtrlbCanister {
   'amiController' : ActorMethod<[], StatusCodeRecordResult>,
   'canAgentSettingsBeUpdated' : ActorMethod<[], StatusCodeRecordResult>,
   'checkAccessToLLMs' : ActorMethod<[], StatusCodeRecordResult>,
+  'getAgentSettingsAdmin' : ActorMethod<[], MainerAgentSettingsListResult>,
+  'getAgentTimersAdmin' : ActorMethod<[], MainerAgentTimersListResult>,
   'getChallengeQueueAdmin' : ActorMethod<[], ChallengeQueueInputsResult>,
+  'getCurrentAgentSettingsAdmin' : ActorMethod<[], MainerAgentSettingsResult>,
+  'getCurrentAgentTimersAdmin' : ActorMethod<[], MainerAgentTimersResult>,
   'getGameStateCanisterId' : ActorMethod<[], string>,
   'getIssueFlagsAdmin' : ActorMethod<[], IssueFlagsRetrievalResult>,
   'getLLMCanisterIds' : ActorMethod<[], CanisterAddressesResult>,
   'getMainerCanisterType' : ActorMethod<[], MainerAgentCanisterTypeResult>,
   'getMainerStatisticsAdmin' : ActorMethod<[], StatisticsRetrievalResult>,
+  'getMaintenanceFlag' : ActorMethod<[], FlagResult>,
   'getRecentSubmittedResponsesAdmin' : ActorMethod<
     [],
     ChallengeResponseSubmissionsResult
@@ -237,9 +245,10 @@ export interface MainerAgentCtrlbCanister {
     [],
     MainerTimersResult
   >,
+  'getTimerBufferMaxSizeAdmin' : ActorMethod<[], NatResult>,
+  'getTimerBuffersAdmin' : ActorMethod<[], MainerTimerBuffersResult>,
   'get_llm_canisters' : ActorMethod<[], LlmCanistersRecordResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
-  'setHealthStatus' : ActorMethod<[boolean, string], StatusCodeRecordResult>,
   'ready' : ActorMethod<[], StatusCodeRecordResult>,
   'remove_llm_canister' : ActorMethod<
     [CanisterIDRecord],
@@ -259,9 +268,11 @@ export interface MainerAgentCtrlbCanister {
     [bigint],
     StatusCodeRecordResult
   >,
+  'setTimerBufferMaxSizeAdmin' : ActorMethod<[bigint], StatusCodeRecordResult>,
   'startTimerExecutionAdmin' : ActorMethod<[], AuthRecordResult>,
   'stopTimerExecutionAdmin' : ActorMethod<[], AuthRecordResult>,
   'timeToNextAgentSettingsUpdate' : ActorMethod<[], NatResult>,
+  'toggleMaintenanceFlagAdmin' : ActorMethod<[], AuthRecordResult>,
   'triggerChallengeResponseAdmin' : ActorMethod<[], AuthRecordResult>,
   'updateAgentSettings' : ActorMethod<
     [MainerAgentSettingsInput],
@@ -269,9 +280,35 @@ export interface MainerAgentCtrlbCanister {
   >,
   'whoami' : ActorMethod<[], Principal>,
 }
+export interface MainerAgentSettings {
+  'creationTimestamp' : bigint,
+  'createdBy' : Principal,
+  'cyclesBurnRate' : CyclesBurnRateDefault,
+}
 export interface MainerAgentSettingsInput {
   'cyclesBurnRate' : CyclesBurnRateDefault,
 }
+export type MainerAgentSettingsListResult = {
+    'Ok' : Array<MainerAgentSettings>
+  } |
+  { 'Err' : ApiError };
+export type MainerAgentSettingsResult = { 'Ok' : MainerAgentSettings } |
+  { 'Err' : ApiError };
+export interface MainerAgentTimers {
+  'recurringTimerId1' : [] | [bigint],
+  'recurringTimerId2' : [] | [bigint],
+  'randomInitialTimer1InSeconds' : [] | [bigint],
+  'creationTimestamp' : bigint,
+  'calledFromEndpoint' : string,
+  'createdBy' : Principal,
+  'action2RegularityInSeconds' : bigint,
+  'initialTimerId1' : [] | [bigint],
+  'action1RegularityInSeconds' : bigint,
+}
+export type MainerAgentTimersListResult = { 'Ok' : Array<MainerAgentTimers> } |
+  { 'Err' : ApiError };
+export type MainerAgentTimersResult = { 'Ok' : MainerAgentTimers } |
+  { 'Err' : ApiError };
 export interface MainerConfigurationInput {
   'selectedLLM' : [] | [SelectableMainerLLMs],
   'subnetLlm' : string,
@@ -279,6 +316,12 @@ export interface MainerConfigurationInput {
   'cyclesForMainer' : bigint,
   'subnetCtrl' : string,
 }
+export interface MainerTimerBuffers {
+  'bufferTimerId1' : Array<bigint>,
+  'bufferTimerId2' : Array<bigint>,
+}
+export type MainerTimerBuffersResult = { 'Ok' : MainerTimerBuffers } |
+  { 'Err' : ApiError };
 export interface MainerTimers {
   'action2RegularityInSeconds' : bigint,
   'action1RegularityInSeconds' : bigint,
