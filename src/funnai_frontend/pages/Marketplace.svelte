@@ -2,141 +2,211 @@
   import { onMount } from 'svelte';
   import { store } from "../stores/store";
   import Footer from "../components/funnai/Footer.svelte";
+  import MyMainersForSale from "../components/marketplace/MyMainersForSale.svelte";
+  import MarketplaceListings from "../components/marketplace/MarketplaceListings.svelte";
+  import { Store, TrendingUp, Users, Zap } from "lucide-svelte";
 
   let isLoading = true;
+  let activeTab: 'sell' | 'buy' = 'buy';
+  let stats = {
+    totalListings: 0,
+    totalVolume: "0",
+    activeTraders: 0,
+  };
 
   onMount(() => {
-    // Initialize marketplace data
-    isLoading = false;
+    initialize();
   });
+
+  async function initialize() {
+    isLoading = true;
+    try {
+      await loadMarketplaceStats();
+    } catch (error) {
+      console.error("Error initializing marketplace:", error);
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  async function loadMarketplaceStats() {
+    // TODO: Replace with actual backend call
+    // const result = await $store.gameStateCanisterActor.getMarketplaceStats();
+    
+    // Mock data for now
+    stats = {
+      totalListings: 12,
+      totalVolume: "45.5",
+      activeTraders: 28,
+    };
+  }
+
+  async function handleListToMarketplace(mainerIds: string[], prices: Record<string, number>) {
+    console.log("Listing mAIners to marketplace:", mainerIds, prices);
+    
+    try {
+      // TODO: Implement actual backend call
+      // for (const mainerId of mainerIds) {
+      //   const price = prices[mainerId];
+      //   await $store.gameStateCanisterActor.listMainerOnMarketplace(mainerId, price);
+      // }
+      
+      // For now, just show success
+      alert(`Successfully listed ${mainerIds.length} mAIner(s) to marketplace!`);
+      
+      // Refresh marketplace data
+      await loadMarketplaceStats();
+    } catch (error) {
+      console.error("Error listing mAIners:", error);
+      alert("Failed to list mAIners. Please try again.");
+      throw error;
+    }
+  }
+
+  async function handleBuyMainer(listingId: string, mainerId: string, price: number) {
+    console.log("Buying mAIner:", listingId, mainerId, price);
+    
+    try {
+      // TODO: Implement actual backend call
+      // await $store.gameStateCanisterActor.buyMainerFromMarketplace(listingId);
+      
+      // For now, just show success
+      alert(`Successfully purchased mAIner for ${price} ICP!`);
+      
+      // Refresh marketplace data
+      await loadMarketplaceStats();
+    } catch (error) {
+      console.error("Error buying mAIner:", error);
+      alert("Failed to purchase mAIner. Please try again.");
+      throw error;
+    }
+  }
+
+  async function handleCancelListing(listingId: string) {
+    console.log("Canceling listing:", listingId);
+    
+    try {
+      // TODO: Implement actual backend call
+      // await $store.gameStateCanisterActor.cancelMarketplaceListing(listingId);
+      
+      // For now, just show success
+      alert("Successfully canceled listing!");
+      
+      // Refresh marketplace data
+      await loadMarketplaceStats();
+    } catch (error) {
+      console.error("Error canceling listing:", error);
+      alert("Failed to cancel listing. Please try again.");
+      throw error;
+    }
+  }
 </script>
 
-<div class="min-h-screen bg-white dark:bg-gray-900">
+<div class="min-h-screen bg-gradient-to-br from-gray-50 via-purple-50 to-blue-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20">
   <div class="container mx-auto px-4 py-8">
     <!-- Header Section -->
     <div class="mb-8">
-      <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">Marketplace</h1>
-      <p class="text-lg text-gray-600 dark:text-gray-400">
-        Discover and trade digital assets
-      </p>
+      <div class="flex items-center space-x-4 mb-4">
+        <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl shadow-lg flex items-center justify-center">
+          <Store class="w-8 h-8 text-white" />
+        </div>
+        <div>
+          <h1 class="text-4xl font-bold text-gray-900 dark:text-white">mAIner Marketplace</h1>
+          <p class="text-lg text-gray-600 dark:text-gray-400">
+            Buy and sell funnAI mAIner agents on the Internet Computer
+          </p>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      {#if !isLoading}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                <Store class="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Total Listings</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalListings}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                <TrendingUp class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Total Volume</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalVolume} ICP</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                <Users class="w-5 h-5 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Active Traders</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">{stats.activeTraders}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      {/if}
     </div>
 
     {#if isLoading}
       <div class="flex items-center justify-center py-20">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        <div class="text-center">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p class="text-gray-600 dark:text-gray-400">Loading marketplace...</p>
+        </div>
       </div>
     {:else}
-      <!-- Featured Section -->
-      <div class="mb-12">
-        <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Featured Items</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <!-- Placeholder cards -->
-          {#each [1, 2, 3] as item}
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-shadow duration-200">
-              <div class="aspect-video bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center">
-                <svg class="w-16 h-16 text-white opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
-              </div>
-              <div class="p-6">
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Item #{item}</h3>
-                <p class="text-gray-600 dark:text-gray-400 mb-4">
-                  Description of the marketplace item goes here.
-                </p>
-                <div class="flex items-center justify-between">
-                  <span class="text-2xl font-bold text-purple-600 dark:text-purple-400">0.5 ICP</span>
-                  <button class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors duration-200">
-                    View Details
-                  </button>
-                </div>
-              </div>
-            </div>
-          {/each}
+      <!-- Tab Navigation -->
+      <div class="mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-1 inline-flex shadow-sm">
+          <button
+            on:click={() => activeTab = 'buy'}
+            class="px-6 py-2.5 rounded-lg font-semibold transition-all duration-200 flex items-center space-x-2
+                   {activeTab === 'buy' 
+                     ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md' 
+                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}"
+          >
+            <Store class="w-4 h-4" />
+            <span>Browse Marketplace</span>
+          </button>
+          
+          <button
+            on:click={() => activeTab = 'sell'}
+            class="px-6 py-2.5 rounded-lg font-semibold transition-all duration-200 flex items-center space-x-2
+                   {activeTab === 'sell' 
+                     ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md' 
+                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}"
+          >
+            <Zap class="w-4 h-4" />
+            <span>Sell My mAIners</span>
+          </button>
         </div>
       </div>
 
-      <!-- Categories Section -->
-      <div class="mb-12">
-        <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Categories</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {#each ['NFTs', 'Tokens', 'Services', 'Digital Art'] as category}
-            <button class="p-6 bg-white dark:bg-gray-800 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-purple-500 dark:hover:border-purple-500 transition-all duration-200 text-center">
-              <div class="text-lg font-semibold text-gray-900 dark:text-white">{category}</div>
-              <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Explore</div>
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <!-- Recent Listings -->
-      <div>
-        <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Recent Listings</h2>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead class="bg-gray-50 dark:bg-gray-900">
-                <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Item</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Seller</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
-                </tr>
-              </thead>
-              <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {#each [1, 2, 3, 4, 5] as item}
-                  <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm font-medium text-gray-900 dark:text-white">Item #{item}</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-900 dark:text-white font-semibold">0.{item} ICP</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="text-sm text-gray-500 dark:text-gray-400">0x1234...5678</div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                      <button class="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 font-medium">
-                        View →
-                      </button>
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+      <!-- Tab Content -->
+      {#if activeTab === 'sell'}
+        <MyMainersForSale onListToMarketplace={handleListToMarketplace} />
+      {:else}
+        <MarketplaceListings 
+          onBuyMainer={handleBuyMainer}
+          onCancelListing={handleCancelListing}
+        />
+      {/if}
     {/if}
   </div>
 
   <Footer />
 </div>
-
-<style>
-  /* Custom scrollbar for table */
-  .overflow-x-auto::-webkit-scrollbar {
-    height: 8px;
-  }
-
-  .overflow-x-auto::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .overflow-x-auto::-webkit-scrollbar-thumb {
-    background: rgba(156, 163, 175, 0.5);
-    border-radius: 4px;
-  }
-
-  .overflow-x-auto::-webkit-scrollbar-thumb:hover {
-    background: rgba(156, 163, 175, 0.7);
-  }
-
-  .dark .overflow-x-auto::-webkit-scrollbar-thumb {
-    background: rgba(75, 85, 99, 0.5);
-  }
-
-  .dark .overflow-x-auto::-webkit-scrollbar-thumb:hover {
-    background: rgba(75, 85, 99, 0.7);
-  }
-</style>
 
