@@ -34,6 +34,8 @@ import {
 
 import { ICRC2_IDL as icrc2IDL } from "../helpers/idls/icrc2.idl.js";
 import { idlFactory as icpIDL } from "../helpers/idls/icp.idl.js";
+import { idlFactory as swapPoolIDL } from "../helpers/idls/swappool.idl.js";
+import { idlFactory as cmcIDL } from "../helpers/idls/cmc.idl.js";
 
 // TODO: move this into a utils file
 const getCyclesBurnRateLabel = (cyclesBurnRate) => {
@@ -64,6 +66,8 @@ export const canisterIDLs = {
   icrc1: icrc2IDL,
   icrc2: icrc2IDL,
   ICP: icpIDL,
+  swapPool: swapPoolIDL,
+  cmc: cmcIDL,
 };
 
 //__________Local vs Mainnet Development____________
