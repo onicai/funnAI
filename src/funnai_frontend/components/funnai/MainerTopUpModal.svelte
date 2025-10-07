@@ -90,6 +90,7 @@
   }
   
   let isValidating: boolean = false;
+  let validatingMessage: string = "Processing...";
   let errorMessage: string = "";
   let isLoadingConversionRate: boolean = true;
   let tokenFee: bigint = BigInt(0); // Will be set once token is loaded
@@ -555,6 +556,7 @@
       let result;
       if (selectedTokenSymbol !== 'FUNNAI' && selectedTokenSymbol !== 'ICP') {
         // Swap any other tokens than FUNNAI to ICP first, then proceed with ICP flow
+        validatingMessage = `Swapping ${selectedToken.symbol} to ICP...`;
         console.log("Starting swap for token:", selectedToken.symbol);
         console.log("User balance:", balance.toString(), selectedToken.symbol);
         console.log("Amount to swap:", amountBigInt.toString());
@@ -577,6 +579,7 @@
         if (swapResult && typeof swapResult === 'object' && 'ok' in swapResult) {
           // The user now has the corresponding ICP in their wallet
           // Transfer the ICP to the Protocol's account for top-up
+          validatingMessage = "Sending ICP to protocol...";
           
           // swapResult.ok is the withdrawal result (BigInt), subtract the ICP fee for the transfer
           const outputAmount = typeof swapResult.ok === 'bigint' ? swapResult.ok : BigInt(swapResult.ok);
@@ -713,6 +716,7 @@
       errorMessage = err.message || "Top-up failed";
     } finally {
       isValidating = false;
+      validatingMessage = "Processing..."; // Reset message
     }
   }
 
@@ -876,6 +880,16 @@
             <div class="text-blue-600/70 dark:text-blue-300/70">Loading conversion rate...</div>
           {/if}
         </div>
+
+        <!-- Swap progress panel -->
+        {#if isValidating && validatingMessage !== "Processing..."}
+          <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200">
+            <div class="flex items-center gap-2">
+              <span class="w-4 h-4 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin dark:border-blue-400/30 dark:border-t-blue-400"></span>
+              <span class="text-sm font-medium">{validatingMessage}</span>
+            </div>
+          </div>
+        {/if}
 
         <!-- Error message -->
         {#if errorMessage}
