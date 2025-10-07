@@ -135,7 +135,7 @@ const availableTokens: FE.Token[] = [ // TODO
     icrc2: true,
     icrc3: true,
     pool_symbol: "",
-    pools: [],
+    pools: ["xmiu5-jqaaa-aaaag-qbz7q-cai"], // ckBTC/ICP pool on ICPSwap
     timestamp: Date.now(),
     metrics: null,
     balance: '0',
