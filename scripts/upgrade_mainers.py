@@ -4,6 +4,34 @@ mAIner Upgrade Script
 
 This script safely upgrades mAIner canisters with health checks, snapshots, and rollback capability.
 
+To run the upgrade in a safe sequence:
+    # from the root of the repository
+    conda activate llama_cpp_canister
+    
+    # Upgrade 1 mAIner of IConfucius on production network confirmation prompt:
+    USER=xijdk-rtoet-smgxl-a4apd-ahchq-bslha-ope4a-zlpaw-ldxat-prh6f-jqe
+    scripts/upgrade_mainers.sh --network prd --user $USER --num 1 --ask-before-upgrade [--dry-run]
+    # -> Now you know the target hash
+    TARGET_HASH=0xf2a40400e1f0cc0896c976eb2efa7a902aff68266b69b4a6be0a077b022db819
+
+    # By providing the target hash, the script will skip upgrade for mAIners already at that hash and healthy
+
+    # Upgrade 2 mAIner of IConfucius on production network confirmation prompt:
+    scripts/upgrade_mainers.sh --network prd --user $USER --target-hash $TARGET_HASH --num 2 --ask-before-upgrade [--dry-run]
+
+    # Upgrade ALL mAIners of IConfucius on production network confirmation prompt:
+    scripts/upgrade_mainers.sh --network prd --user $USER --target-hash $TARGET_HASH --ask-before-upgrade [--dry-run]
+
+    # Upgrade 1 mAIner on production network confirmation prompt:
+    scripts/upgrade_mainers.sh --network prd --num 1 --target-hash $TARGET_HASH --ask-before-upgrade [--dry-run]
+
+    # Upgrade 2 mainers on production network with target hash and confirmation prompt:
+    scripts/upgrade_mainers.sh --network prd --num 2 --target-hash $TARGET_HASH --ask-before-upgrade [--dry-run]
+
+    # Upgrade ALL mainers on production network with target hash and confirmation prompt:
+    scripts/upgrade_mainers.sh --network prd --target-hash $TARGET_HASH --ask-before-upgrade [--dry-run]
+
+
 To run unit tests:
     # from the root of the repository
     conda activate llama_cpp_canister
@@ -197,32 +225,53 @@ def write_status_to_markdown(filepath: str = "scripts/upgrade_mainers_status.md"
     except Exception as e:
         log_message(f"Failed to write Markdown status file: {e}", "ERROR")
 
-def print_status_report():
-    """Print a detailed status report of all mAIners."""
+def print_status_report(processed_count: int = 0):
+    """
+    Print a concise status report of all mAIners.
+
+    Args:
+        processed_count: Number of mAIners that were actually processed (not filtered out)
+    """
     if not mainer_status_tracker:
         log_message("No mAIners tracked", "INFO")
         return
 
-    log_message(f"{'='*60}", "INFO")
-    log_message("DETAILED STATUS REPORT", "INFO")
-    log_message(f"{'='*60}", "INFO")
+    # Get summary counts
+    summary = get_status_summary()
 
-    # Group by status
-    by_status = {}
-    for address, data in mainer_status_tracker.items():
-        status = data['status']
-        if status not in by_status:
-            by_status[status] = []
-        by_status[status].append((address, data))
+    # Count key categories (only for processed mAIners, not filtered ones)
+    success_count = summary.get('success', 0)
+    failed_count = sum(count for status, count in summary.items() if status.startswith('failed_'))
 
-    # Print each group
-    for status in MainerStatus:
-        if status in by_status:
-            items = by_status[status]
-            log_message(f"\n{status.value.upper()}: {len(items)}", "INFO")
-            for address, data in items:
-                error_info = f" - {data['error']}" if data.get('error') else ""
-                log_message(f"  {address}{error_info}", "INFO")
+    # For skipped, only count the ones that were actually checked (not pre-filtered)
+    skipped_already_upgraded = summary.get('skipped_upgraded', 0)
+    skipped_user = summary.get('skipped_user', 0)
+    skipped_processed = skipped_already_upgraded + skipped_user
+
+    # Total that were actually looked at
+    total_processed = success_count + failed_count + skipped_processed
+
+    # Print concise summary
+    log_message(f"{'='*60}", "INFO")
+    log_message("UPGRADE SUMMARY", "INFO")
+    log_message(f"Processed: {total_processed} mAIner(s)", "INFO")
+    log_message(f"  ✓ Upgraded: {success_count}", "SUCCESS" if success_count > 0 else "INFO")
+    log_message(f"  ⊘ Already up-to-date: {skipped_already_upgraded}", "INFO")
+    log_message(f"  ⊘ Skipped by user: {skipped_user}", "INFO" if skipped_user == 0 else "WARNING")
+    log_message(f"  ✗ Failed: {failed_count}", "ERROR" if failed_count > 0 else "INFO")
+
+    # Show failed mAIners with details if any
+    if failed_count > 0:
+        log_message("\nFailed mAIners:", "ERROR")
+        for address, data in mainer_status_tracker.items():
+            if data['status'].value.startswith('failed_'):
+                error_msg = f" - {data['error']}" if data.get('error') else ""
+                log_message(f"  {address}: {data['status'].value}{error_msg}", "ERROR")
+
+    log_message(f"\nDetailed status saved to:", "INFO")
+    log_message(f"  - scripts/upgrade_mainers_status.json", "INFO")
+    log_message(f"  - scripts/upgrade_mainers_status.md", "INFO")
+    log_message(f"{'='*60}", "INFO")
 
 def signal_handler(sig, frame):
     """Handle Ctrl+C interruption gracefully."""
@@ -937,8 +986,12 @@ def main():
         log_message("No ShareAgent mAIners found to upgrade", "WARNING")
         sys.exit(0)
 
-    log_message(f"Found {total_mainers} ShareAgent mAIners to upgrade", "SUCCESS")
-    log_message(f"Will upgrade up to {max_upgrades} mAIners", "INFO")
+    # Print clear message - highlight what will actually be processed
+    if args.num and args.num < total_mainers:
+        log_message(f"Found {total_mainers} ShareAgent mAIners matching filters", "INFO")
+        log_message(f"Will process {max_upgrades} mAIners (--num limit)", "SUCCESS")
+    else:
+        log_message(f"Will process {total_mainers} ShareAgent mAIners", "SUCCESS")
 
     # Track results
     successful = 0
@@ -1006,20 +1059,12 @@ def main():
             update_mainer_status(address, MainerStatus.FAILED_OTHER, f"Unexpected error: {str(e)}")
             break
 
-    # Print summary
-    log_message(f"{'='*60}", "INFO")
-    log_message("UPGRADE SUMMARY", "INFO")
-    log_message(f"Successful: {successful}", "SUCCESS" if successful > 0 else "INFO")
-    log_message(f"Failed: {failed}", "ERROR" if failed > 0 else "INFO")
-    log_message(f"Skipped: {total_mainers - successful - failed}", "INFO")
-    log_message(f"{'='*60}", "INFO")
-
-    # Print detailed status report
-    print_status_report()
-
     # Write status to files
     write_status_to_json()
     write_status_to_markdown()
+
+    # Print concise status report (pass max_upgrades to show only what was processed)
+    print_status_report(processed_count=max_upgrades)
 
     if failed > 0:
         sys.exit(1)
