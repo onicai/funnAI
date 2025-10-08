@@ -706,6 +706,9 @@ def turn_off_maintenance_flag(network: str, canister_id: str, dry_run: bool = Fa
             ]
             toggle_result = run_command(toggle_command)
 
+            # Give canister a moment for the flag change to propagate
+            time.sleep(3)
+
             # Step 3: Verify flag is now false
             new_flag_value = get_maintenance_flag(network, canister_id)
 
