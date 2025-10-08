@@ -296,26 +296,81 @@ def log_message(message: str, level: str = "INFO"):
 
     print(f"{color}[{timestamp}] {level}: {message}{NC}")
 
-def run_command(command: List[str], capture_output: bool = True, check: bool = True, cwd: Optional[str] = None) -> subprocess.CompletedProcess:
-    """Run a command and return the result."""
+def run_command(
+    command: List[str],
+    capture_output: bool = True,
+    check: bool = True,
+    cwd: Optional[str] = None,
+    retry_on_transient_errors: bool = False,
+    max_retries: int = 3,
+    retry_delay: float = 2.0
+) -> subprocess.CompletedProcess:
+    """Run a command and return the result.
+
+    Args:
+        command: Command to run as list of strings
+        capture_output: Whether to capture stdout/stderr
+        check: Whether to raise on non-zero exit code
+        cwd: Working directory for command
+        retry_on_transient_errors: If True, retry on transient errors like timeouts, IC0508, etc.
+        max_retries: Maximum number of retry attempts (only used if retry_on_transient_errors=True)
+        retry_delay: Base delay between retries in seconds (exponential backoff applied)
+    """
     # Log the command being executed with details
     cmd_str = ' '.join(command)
     cwd_info = f" (cwd: {cwd})" if cwd else " (cwd: current directory)"
     capture_info = " (capturing output)" if capture_output else " (not capturing output)"
     log_message(f"Executing: {cmd_str}{cwd_info}{capture_info}", "INFO")
 
-    try:
-        if capture_output:
-            result = subprocess.run(command, capture_output=True, text=True, check=check, cwd=cwd)
-            return result
-        else:
-            result = subprocess.run(command, check=check, cwd=cwd)
-            return result
-    except subprocess.CalledProcessError as e:
-        log_message(f"Command failed: {' '.join(command)}", "ERROR")
-        if e.stderr:
-            log_message(f"Error output: {e.stderr}", "ERROR")
-        raise
+    def is_transient_error(stderr: str) -> bool:
+        """Check if error message indicates a transient error worth retrying."""
+        if not stderr:
+            return False
+        transient_indicators = [
+            "Failed query call",
+            "CanisterError",
+            "IC0508",
+            "IC0503",  # Canister trapped
+            "timeout",
+            "Timeout",
+            "connection refused",
+            "Connection refused",
+            "temporarily unavailable"
+        ]
+        return any(indicator in stderr for indicator in transient_indicators)
+
+    attempt = 0
+    while True:
+        try:
+            if capture_output:
+                result = subprocess.run(command, capture_output=True, text=True, check=check, cwd=cwd)
+                return result
+            else:
+                result = subprocess.run(command, check=check, cwd=cwd)
+                return result
+        except subprocess.CalledProcessError as e:
+            attempt += 1
+
+            # Check if we should retry
+            should_retry = (
+                retry_on_transient_errors
+                and attempt < max_retries
+                and is_transient_error(e.stderr if hasattr(e, 'stderr') else "")
+            )
+
+            if should_retry:
+                delay = retry_delay * (2 ** (attempt - 1))  # Exponential backoff
+                log_message(f"Transient error detected (attempt {attempt}/{max_retries}). Retrying in {delay}s...", "WARNING")
+                if e.stderr:
+                    log_message(f"Error was: {e.stderr.strip()}", "WARNING")
+                time.sleep(delay)
+                continue
+
+            # Not retrying - log and raise
+            log_message(f"Command failed: {' '.join(command)}", "ERROR")
+            if e.stderr:
+                log_message(f"Error output: {e.stderr}", "ERROR")
+            raise
 
 def get_mainers(network: str) -> List[Dict]:
     """Get all mainers from game state canister."""
@@ -418,7 +473,7 @@ def check_queue(network: str, canister_id: str) -> Tuple[bool, Optional[datetime
         result = run_command([
             "dfx", "canister", "--network", network, "call",
             canister_id, "getChallengeQueueAdmin", "--output", "json"
-        ])
+        ], retry_on_transient_errors=True)
         data = json.loads(result.stdout)
         queue = data.get('Ok', [])
 
@@ -591,7 +646,7 @@ def check_health(network: str, canister_id: str, dry_run: bool = False) -> bool:
         return True
 
     try:
-        result = run_command(command)
+        result = run_command(command, retry_on_transient_errors=True)
         output = result.stdout.strip()
 
         # Check for successful health response
@@ -618,7 +673,7 @@ def get_maintenance_flag(network: str, canister_id: str, dry_run: bool = False) 
         return True
 
     try:
-        result = run_command(command)
+        result = run_command(command, retry_on_transient_errors=True)
         data = json.loads(result.stdout)
         return data.get('Ok', {}).get('flag', None)
     except Exception as e:
@@ -844,6 +899,7 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
     if not get_maintenance_flag(network, address, dry_run):
         if not dry_run:
             log_message(f"Maintenance flag check failed. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+            update_mainer_status(address, MainerStatus.FAILED_MAINTENANCE, f"Could not get maintenance flag. Snapshot: {snapshot_id}")
             return False
 
     # Step 2j: Start timer
