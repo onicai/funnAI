@@ -73,8 +73,8 @@
   let celebrationToken = "";
 
   // Reactive counters for mAIner status
-  $: activeMainers = agents.filter(agent => agent.status === 'active').length;
-  $: inactiveMainers = agents.filter(agent => agent.status === 'inactive').length;
+  $: activeMainers = agents.filter(agent => agent.uiStatus === 'active').length;
+  $: inactiveMainers = agents.filter(agent => agent.uiStatus === 'inactive').length;
   $: totalMainers = agents.length;
 
   // Reactive counters for burn rate distribution
@@ -799,7 +799,7 @@
       const mainerData = {
         id: canisterInfo.address || `unlocked-${index}`, // Use index for unlocked without address
         name: isUnlocked ? `Unlocked mAIner ${index + 1}` : `mAIner ${canisterInfo.address?.slice(0, 5) || 'Unknown'}`,
-        status: isUnlocked ? "unlocked" : (canisterInfo.uiStatus || "active"),
+        uiStatus: isUnlocked ? "unlocked" : (canisterInfo.uiStatus || "active"),
         burnedCycles: canisterInfo.burnedCycles || 0,
         cycleBalance: canisterInfo.cycleBalance || 0,
         cyclesBurnRate: canisterInfo.cyclesBurnRate || {},
@@ -935,12 +935,10 @@
       if (healthStatus) {
         // If health check shows unhealthy (stopped/maintenance), mark as inactive
         if (!healthStatus.isHealthy) {
-          return { ...agent, status: 'inactive' };
-        } 
-        // If healthy and was inactive, update to active
-        else if (healthStatus.isHealthy && agent.status === 'inactive') {
-          return { ...agent, status: 'active' };
+          return { ...agent, uiStatus: 'inactive' };
         }
+        // If health check is healthy, don't change the status - it was already set based on cycle balance
+        // A mAIner can be healthy (responding) but still inactive due to low cycles
       }
       
       return agent;
@@ -1804,7 +1802,7 @@
   {#if agent && agent.id}
     {@const sanitizedId = agent.id.replace(/[^a-zA-Z0-9-_]/g, '_')}
     {@const identity = getMainerVisualIdentity(agent.id)}
-    <div class="border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 mb-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300" class:opacity-75={agent.status === 'inactive'}>
+    <div class="border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 mb-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300" class:opacity-75={agent.uiStatus === 'inactive'}>
       <button 
         on:click={() => toggleAccordion(agent.id)} 
         class="w-full relative overflow-hidden bg-gradient-to-r {identity.colors.bg} hover:{identity.colors.bgHover} {identity.colors.border} border-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform group"
@@ -1833,7 +1831,7 @@
               
               <!-- Status indicator dot -->
               <div class="absolute -bottom-1 -left-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-white shadow-lg flex items-center justify-center">
-                <div class={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${agent.status === 'active' ? 'bg-green-400' : 'bg-red-400'} animate-pulse`}></div>
+                <div class={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${agent.uiStatus === 'active' ? 'bg-green-400' : 'bg-red-400'} animate-pulse`}></div>
               </div>
             </div>
             
@@ -1841,15 +1839,15 @@
             <div class="flex flex-col items-start min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-1 sm:gap-2 mb-1">
                 <!-- Status badge -->
-                <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm border ${agent.status === 'active' 
+                <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm border ${agent.uiStatus === 'active' 
                   ? 'bg-green-100/80 text-green-800 border-green-300/50' 
                   : 'bg-red-100/80 text-red-800 border-red-300/50'}`}>
-                  <div class={`w-2 h-2 rounded-full mr-1 ${agent.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  {agent.status}
+                  <div class={`w-2 h-2 rounded-full mr-1 ${agent.uiStatus === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  {agent.uiStatus}
                 </span>
                 
                 <!-- Daily Burn Rate badge (only show if active) -->
-                {#if agent.status === 'active' && agent.cyclesBurnRateSetting}
+                {#if agent.uiStatus === 'active' && agent.cyclesBurnRateSetting}
                   {@const burnRateColors = {
                     'Low': 'bg-green-100/80 text-green-800 border-green-300/50',
                     'Medium': 'bg-yellow-100/80 text-yellow-800 border-yellow-300/50', 
@@ -1872,7 +1870,7 @@
                 {/if}
                 
                 <!-- Cycles warning (only show if inactive due to low cycles, not if stopped) -->
-                {#if agent.status === 'inactive' && $mainerHealthStatuses.get(agent.id)?.isHealthy !== false}
+                {#if agent.uiStatus === 'inactive' && $mainerHealthStatuses.get(agent.id)?.isHealthy !== false}
                   <span 
                     class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100/80 text-red-800 border border-red-300/50 backdrop-blur-sm cursor-help"
                     use:tooltip={{ 
@@ -1924,7 +1922,7 @@
         </div>
         
         <!-- Bottom accent line with pulse animation for active mAIners -->
-        <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent {agent.status === 'active' ? 'animate-pulse' : ''}"></div>
+        <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent {agent.uiStatus === 'active' ? 'animate-pulse' : ''}"></div>
       </button>
       <div id="content-{sanitizedId}" class="accordion-content">
         <div class="pb-3 sm:pb-5 text-xs sm:text-sm text-gray-700 dark:text-gray-300 p-3 sm:p-4 bg-gray-50 dark:bg-gray-800">
