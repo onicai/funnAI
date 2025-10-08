@@ -620,6 +620,7 @@ export const createStore = ({
       // Check issue flags to determine if mAIner is inactive
       const issueFlagsResult = await mainerActor.getIssueFlagsAdmin();
       if ('Ok' in issueFlagsResult && issueFlagsResult.Ok.lowCycleBalance) {
+        console.log(`[Status] ${canisterInfo.address.slice(0, 5)}: lowCycleBalance flag is TRUE - marking inactive`);
         enrichedInfo.uiStatus = "inactive";
       }
     } catch (error) {
@@ -641,6 +642,16 @@ export const createStore = ({
           enrichedInfo.cyclesBurnRateSetting = getCyclesBurnRateLabel(statsResult.Ok.cyclesBurnRate);
         } catch (error) {
           console.error("Error converting to cyclesBurnRateSetting: ", error);
+        }
+        
+        // Check if cycle balance is below minimum threshold (250 billion cycles)
+        // This catches cases where the mAIner has low cycles but hasn't tried to pull a challenge yet
+        const CYCLE_BALANCE_MINIMUM = 250_000_000_000;
+        if (enrichedInfo.cycleBalance < CYCLE_BALANCE_MINIMUM) {
+          console.log(`[Status] ${canisterInfo.address.slice(0, 5)}: Balance ${(enrichedInfo.cycleBalance / 1_000_000_000).toFixed(2)}B < ${CYCLE_BALANCE_MINIMUM / 1_000_000_000}B threshold - marking inactive`);
+          enrichedInfo.uiStatus = "inactive";
+        } else {
+          console.log(`[Status] ${canisterInfo.address.slice(0, 5)}: Balance ${(enrichedInfo.cycleBalance / 1_000_000_000).toFixed(2)}B >= ${CYCLE_BALANCE_MINIMUM / 1_000_000_000}B threshold - keeping ${enrichedInfo.uiStatus}`);
         }
       }
     } catch (error) {
@@ -667,6 +678,7 @@ export const createStore = ({
       }
     }
 
+    console.log(`[Status] ${canisterInfo.address.slice(0, 5)}: Final uiStatus = "${enrichedInfo.uiStatus}"`);
     return enrichedInfo;
   };
 

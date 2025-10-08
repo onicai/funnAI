@@ -388,7 +388,7 @@
       </div>
 
       <!-- Cooldown Timer Display -->
-      {#if !canUpdate && timeUntilNextUpdate > 0 && agent.status === "active"}
+      {#if !canUpdate && timeUntilNextUpdate > 0 && agent.uiStatus === "active"}
         <div class="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-lg p-3">
           <div class="flex items-start space-x-3">
             <div class="flex-shrink-0">
