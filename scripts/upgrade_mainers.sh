@@ -8,6 +8,7 @@ SPECIFIC_MAINER=""
 USER_PRINCIPAL=""
 DRY_RUN=""
 SKIP_PREPARATION=""
+ASK_BEFORE_UPGRADE=""
 
 # Parse command line arguments
 while [ $# -gt 0 ]; do
@@ -22,7 +23,7 @@ while [ $# -gt 0 ]; do
             fi
             shift
             ;;
-        --hash)
+        --target-hash)
             shift
             TARGET_HASH=$1
             shift
@@ -50,18 +51,23 @@ while [ $# -gt 0 ]; do
             SKIP_PREPARATION="--skip-preparation"
             shift
             ;;
+        --ask-before-upgrade)
+            ASK_BEFORE_UPGRADE="--ask-before-upgrade"
+            shift
+            ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--hash HASH] [--num NUM] [--mainer CANISTER_ID] [--user PRINCIPAL] [--dry-run] [--skip-preparation]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--target-hash HASH] [--num NUM] [--mainer CANISTER_ID] [--user PRINCIPAL] [--dry-run] [--skip-preparation] [--ask-before-upgrade]"
             echo ""
             echo "Options:"
             echo "  --network NETWORK       Required. Network to upgrade mainers on"
-            echo "  --hash HASH            Optional. Target wasm hash to upgrade to"
-            echo "  --num NUM              Optional. Number of mAIners to upgrade"
-            echo "  --mainer CANISTER_ID   Optional. Specific mAIner canister to upgrade"
-            echo "  --user PRINCIPAL       Optional. Principal ID of user whose mAIners to upgrade"
-            echo "  --dry-run              Optional. Run in dry-run mode without making changes"
-            echo "  --skip-preparation     Optional. Skip Step 1 preparation"
+            echo "  --target-hash HASH      Optional. Target wasm hash to upgrade to (from 'dfx canister info <canister_id>')"
+            echo "  --num NUM               Optional. Number of mAIners to upgrade"
+            echo "  --mainer CANISTER_ID    Optional. Specific mAIner canister to upgrade"
+            echo "  --user PRINCIPAL        Optional. Principal ID of user whose mAIners to upgrade"
+            echo "  --dry-run               Optional. Run in dry-run mode without making changes"
+            echo "  --skip-preparation      Optional. Skip Step 1 preparation"
+            echo "  --ask-before-upgrade    Optional. Ask for confirmation before upgrading each canister"
             exit 1
             ;;
     esac
@@ -78,7 +84,7 @@ fi
 PYTHON_CMD="python -m scripts.upgrade_mainers --network $NETWORK_TYPE"
 
 if [ ! -z "$TARGET_HASH" ]; then
-    PYTHON_CMD="$PYTHON_CMD --hash $TARGET_HASH"
+    PYTHON_CMD="$PYTHON_CMD --target-hash $TARGET_HASH"
 fi
 
 if [ ! -z "$NUM_MAINERS" ]; then
@@ -99,6 +105,10 @@ fi
 
 if [ ! -z "$SKIP_PREPARATION" ]; then
     PYTHON_CMD="$PYTHON_CMD $SKIP_PREPARATION"
+fi
+
+if [ ! -z "$ASK_BEFORE_UPGRADE" ]; then
+    PYTHON_CMD="$PYTHON_CMD $ASK_BEFORE_UPGRADE"
 fi
 
 echo "Executing: $PYTHON_CMD"

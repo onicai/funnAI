@@ -153,3 +153,7 @@ scripts/burned_tokens_prd.json
 scripts/mint_tokens_cache.json
 
 scripts/mint_tokens_prd.json
+
+# Upgrade status reports (generated output)
+scripts/upgrade_mainers_status.json
+scripts/upgrade_mainers_status.md

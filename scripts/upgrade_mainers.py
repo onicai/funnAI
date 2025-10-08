@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+"""
+mAIner Upgrade Script
+
+This script safely upgrades mAIner canisters with health checks, snapshots, and rollback capability.
+
+To run unit tests:
+    # from the root of the repository
+    conda activate llama_cpp_canister
+    pytest scripts/test/test_upgrade_mainers.py -v
+"""
 
 import subprocess
 import time
@@ -9,6 +19,7 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
 import signal
 from pathlib import Path
+from enum import Enum
 
 # Get the directory of this script
 SCRIPT_DIR = Path(__file__).parent.resolve()
@@ -25,6 +36,193 @@ NC = '\033[0m'  # No Color
 
 # Global flag for interruption handling
 interrupted = False
+
+# Status tracking for each mAIner
+class MainerStatus(Enum):
+    """Status flags for mAIner upgrade process."""
+    PENDING = "pending"                          # Not yet processed
+    SKIPPED_ALREADY_UPGRADED = "skipped_upgraded"  # Skipped - already at target hash and healthy
+    SKIPPED_USER_REQUEST = "skipped_user"        # Skipped - user chose to skip
+    SKIPPED_FILTER = "skipped_filter"            # Skipped - filtered out (not ShareAgent, empty address, etc.)
+    IN_PROGRESS = "in_progress"                  # Currently being upgraded
+    SUCCESS = "success"                          # Successfully upgraded
+    FAILED_STOP_TIMER = "failed_stop_timer"      # Failed to stop timer
+    FAILED_SNAPSHOT = "failed_snapshot"          # Failed to create snapshot
+    FAILED_UPGRADE = "failed_upgrade"            # Failed during upgrade
+    FAILED_START = "failed_start"                # Failed to start canister
+    FAILED_HEALTH = "failed_health"              # Failed health check after upgrade
+    FAILED_START_TIMER = "failed_start_timer"    # Failed to start timer
+    FAILED_MAINTENANCE = "failed_maintenance"    # Failed to turn off maintenance flag
+    FAILED_OTHER = "failed_other"                # Failed for other reason
+
+# Global dictionary to track status of each mAIner
+# Key: canister address, Value: dict with status, timestamp, and optional error message
+mainer_status_tracker: Dict[str, Dict] = {}
+
+def update_mainer_status(address: str, status: MainerStatus, error_msg: Optional[str] = None):
+    """
+    Update the status of a mAIner in the global tracker.
+
+    Args:
+        address: Canister address
+        status: MainerStatus enum value
+        error_msg: Optional error message for failed statuses
+    """
+    mainer_status_tracker[address] = {
+        'status': status,
+        'timestamp': datetime.now(),
+        'error': error_msg
+    }
+
+def get_status_summary() -> Dict[str, int]:
+    """
+    Get a summary count of mAIners by status.
+
+    Returns:
+        Dictionary with status counts
+    """
+    summary = {}
+    for data in mainer_status_tracker.values():
+        status = data['status'].value
+        summary[status] = summary.get(status, 0) + 1
+    return summary
+
+def write_status_to_json(filepath: str = "scripts/upgrade_mainers_status.json"):
+    """
+    Write the status tracker to a JSON file.
+
+    Args:
+        filepath: Path to the JSON file (default: scripts/upgrade_mainers_status.json)
+    """
+    if not mainer_status_tracker:
+        log_message("No status data to write to JSON", "WARNING")
+        return
+
+    # Convert to JSON-serializable format
+    json_data = {}
+    for address, data in mainer_status_tracker.items():
+        json_data[address] = {
+            'status': data['status'].value,
+            'timestamp': data['timestamp'].isoformat(),
+            'error': data.get('error')
+        }
+
+    try:
+        with open(filepath, 'w') as f:
+            json.dump(json_data, f, indent=2)
+        log_message(f"Status written to {filepath}", "SUCCESS")
+    except Exception as e:
+        log_message(f"Failed to write JSON status file: {e}", "ERROR")
+
+def write_status_to_markdown(filepath: str = "scripts/upgrade_mainers_status.md"):
+    """
+    Write the status tracker to a Markdown file with a properly formatted table.
+
+    Args:
+        filepath: Path to the Markdown file (default: scripts/upgrade_mainers_status.md)
+    """
+    if not mainer_status_tracker:
+        log_message("No status data to write to Markdown", "WARNING")
+        return
+
+    try:
+        with open(filepath, 'w') as f:
+            # Write header
+            f.write("# mAIner Upgrade Status Report\n\n")
+            f.write(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+
+            # Get summary counts
+            summary = get_status_summary()
+            f.write("## Summary\n\n")
+            for status_value in sorted(summary.keys()):
+                count = summary[status_value]
+                f.write(f"- **{status_value}**: {count}\n")
+            f.write(f"\n**Total mAIners tracked:** {len(mainer_status_tracker)}\n\n")
+
+            # Create detailed table
+            f.write("## Detailed Status\n\n")
+
+            # Prepare data for table
+            rows = []
+            max_address_len = len("Canister Address")
+            max_status_len = len("Status")
+            max_error_len = len("Error/Notes")
+
+            for address, data in sorted(mainer_status_tracker.items()):
+                status = data['status'].value
+                timestamp = data['timestamp'].strftime('%Y-%m-%d %H:%M:%S')
+                error = data.get('error') or '-'
+
+                max_address_len = max(max_address_len, len(address))
+                max_status_len = max(max_status_len, len(status))
+                max_error_len = max(max_error_len, len(error))
+
+                rows.append({
+                    'address': address,
+                    'status': status,
+                    'timestamp': timestamp,
+                    'error': error
+                })
+
+            # Write table header
+            header = f"| {'Canister Address':{max_address_len}} | {'Status':{max_status_len}} | Timestamp           | {'Error/Notes':{max_error_len}} |"
+            separator = f"|{'-' * (max_address_len + 2)}|{'-' * (max_status_len + 2)}|{'-' * 21}|{'-' * (max_error_len + 2)}|"
+
+            f.write(header + "\n")
+            f.write(separator + "\n")
+
+            # Write table rows
+            for row in rows:
+                line = f"| {row['address']:{max_address_len}} | {row['status']:{max_status_len}} | {row['timestamp']} | {row['error']:{max_error_len}} |"
+                f.write(line + "\n")
+
+            # Group by status section
+            f.write("\n## Grouped by Status\n\n")
+            by_status = {}
+            for address, data in mainer_status_tracker.items():
+                status = data['status']
+                if status not in by_status:
+                    by_status[status] = []
+                by_status[status].append((address, data))
+
+            for status in MainerStatus:
+                if status in by_status:
+                    items = by_status[status]
+                    f.write(f"\n### {status.value.upper()} ({len(items)})\n\n")
+                    for address, data in items:
+                        error_info = f" - {data['error']}" if data.get('error') else ""
+                        f.write(f"- `{address}`{error_info}\n")
+
+        log_message(f"Status written to {filepath}", "SUCCESS")
+    except Exception as e:
+        log_message(f"Failed to write Markdown status file: {e}", "ERROR")
+
+def print_status_report():
+    """Print a detailed status report of all mAIners."""
+    if not mainer_status_tracker:
+        log_message("No mAIners tracked", "INFO")
+        return
+
+    log_message(f"{'='*60}", "INFO")
+    log_message("DETAILED STATUS REPORT", "INFO")
+    log_message(f"{'='*60}", "INFO")
+
+    # Group by status
+    by_status = {}
+    for address, data in mainer_status_tracker.items():
+        status = data['status']
+        if status not in by_status:
+            by_status[status] = []
+        by_status[status].append((address, data))
+
+    # Print each group
+    for status in MainerStatus:
+        if status in by_status:
+            items = by_status[status]
+            log_message(f"\n{status.value.upper()}: {len(items)}", "INFO")
+            for address, data in items:
+                error_info = f" - {data['error']}" if data.get('error') else ""
+                log_message(f"  {address}{error_info}", "INFO")
 
 def signal_handler(sig, frame):
     """Handle Ctrl+C interruption gracefully."""
@@ -349,20 +547,18 @@ def check_health(network: str, canister_id: str, dry_run: bool = False) -> bool:
 
         # Check for successful health response
         if "(variant { Ok = record { status_code = 200 : nat16 } })" in output:
-            log_message(f"Health check passed for {canister_id}", "SUCCESS")
-            return True
+                log_message(f"Health check passed for {canister_id}", "SUCCESS")
+                return True
         else:
             log_message(f"Health check failed for {canister_id}: {output}", "ERROR")
             return False
     except Exception as e:
         log_message(f"Health check failed for {canister_id}: {e}", "ERROR")
         return False
+    
 
-def turn_off_maintenance_flag(network: str, canister_id: str, dry_run: bool = False) -> bool:
-    """Turn off the maintenance flag if it's on."""
-    log_message(f"Checking maintenance flag for {canister_id}...")
-
-    # Step 1: Check current maintenance flag status
+def get_maintenance_flag(network: str, canister_id: str, dry_run: bool = False) -> Optional[bool]:
+    """Get the current maintenance flag status."""
     command = [
         "dfx", "canister", "--network", network, "call",
         canister_id, "getMaintenanceFlag", "--output", "json"
@@ -375,9 +571,24 @@ def turn_off_maintenance_flag(network: str, canister_id: str, dry_run: bool = Fa
     try:
         result = run_command(command)
         data = json.loads(result.stdout)
+        return data.get('Ok', {}).get('flag', None)
+    except Exception as e:
+        log_message(f"Failed to get maintenance flag for {canister_id}: {e}", "ERROR")
+        return None
+
+def turn_off_maintenance_flag(network: str, canister_id: str, dry_run: bool = False) -> bool:
+    """Turn off the maintenance flag if it's on."""
+    log_message(f"Checking maintenance flag for {canister_id}...")
+
+    if dry_run:
+        log_message(f"DRY RUN: Would check maintenance flag", "INFO")
+        return True
+
+    try:
+        # Step 1: Check current maintenance flag status
+        flag_value = get_maintenance_flag(network, canister_id)
 
         # Check if flag is already false
-        flag_value = data.get('Ok', {}).get('flag', None)
         if flag_value is False:
             log_message(f"Maintenance flag already off for {canister_id}", "SUCCESS")
             return True
@@ -392,9 +603,7 @@ def turn_off_maintenance_flag(network: str, canister_id: str, dry_run: bool = Fa
             toggle_result = run_command(toggle_command)
 
             # Step 3: Verify flag is now false
-            verify_result = run_command(command)
-            verify_data = json.loads(verify_result.stdout)
-            new_flag_value = verify_data.get('Ok', {}).get('flag', None)
+            new_flag_value = get_maintenance_flag(network, canister_id)
 
             if new_flag_value is False:
                 log_message(f"Maintenance flag turned OFF for {canister_id}", "SUCCESS")
@@ -403,7 +612,7 @@ def turn_off_maintenance_flag(network: str, canister_id: str, dry_run: bool = Fa
                 log_message(f"Failed to turn off maintenance flag for {canister_id}: flag is still {new_flag_value}", "ERROR")
                 return False
         else:
-            log_message(f"Unexpected response checking maintenance flag: {data}", "ERROR")
+            log_message(f"Unexpected maintenance flag value: {flag_value}", "ERROR")
             return False
 
     except Exception as e:
@@ -448,6 +657,54 @@ def get_canister_name_from_address(address: str, network: str) -> Optional[str]:
         log_message(f"Failed to find canister name for {address}: {e}", "ERROR")
         return None
 
+def should_skip_upgrade(network: str, address: str, target_hash: Optional[str], dry_run: bool = False) -> bool:
+    """
+    Determine if upgrade should be skipped.
+
+    Skip upgrade only if:
+    1. target_hash is provided AND current_hash matches target_hash
+    2. AND health check passes
+
+    Args:
+        network: Network name (e.g., 'testing', 'ic')
+        address: Canister address
+        target_hash: Target wasm hash (optional)
+        dry_run: If True, simulates checks without making actual calls
+
+    Returns:
+        True if upgrade should be skipped, False otherwise
+    """
+    # Get current hash
+    current_hash = get_canister_wasm_hash(network, address)
+
+    # Log current hash
+    if current_hash:
+        log_message(f"Current hash: {current_hash}", "INFO")
+    else:
+        log_message(f"Could not retrieve current hash", "WARNING")
+
+    # If no target hash specified, don't skip
+    if not target_hash:
+        return False
+
+    log_message(f"Target hash: {target_hash}", "INFO")
+
+    # If hashes don't match, don't skip
+    if current_hash != target_hash:
+        log_message(f"Hash mismatch - upgrade needed", "INFO")
+        return False
+
+    # Hashes match - now check health
+    log_message(f"Hash matches target - checking health before skipping", "INFO")
+    health_ok = check_health(network, address, dry_run)
+
+    if health_ok:
+        log_message(f"Already upgraded to target hash and health check passed - skipping", "INFO")
+        return True
+    else:
+        log_message(f"Hash matches but health check failed - will upgrade anyway", "WARNING")
+        return False
+
 def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
                   dry_run: bool = False, canister_index: int = 0) -> bool:
     """Upgrade a single mAIner through all steps."""
@@ -456,24 +713,19 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
     log_message(f"{'='*60}", "INFO")
     log_message(f"Processing mAIner {canister_index}: {address}", "INFO")
 
+    # Mark as in progress
+    update_mainer_status(address, MainerStatus.IN_PROGRESS)
+
     # Find the actual canister name from canister_ids.json
     canister_name = get_canister_name_from_address(address, network)
 
     if not canister_name:
         log_message(f"Cannot find canister name for {address} in canister_ids.json", "ERROR")
         log_message("Make sure to run get_mainers.sh first to update the configuration files", "WARNING")
+        update_mainer_status(address, MainerStatus.FAILED_OTHER, "Canister name not found in canister_ids.json")
         return False
 
     log_message(f"canister_ids.json key: {canister_name}", "INFO")
-
-    # Step 2a: Check wasm hash if target provided
-    if target_hash:
-        current_hash = get_canister_wasm_hash(network, address)
-        if current_hash == target_hash:
-            log_message(f"Already upgraded to target hash: {target_hash}", "SUCCESS")
-            return True
-        log_message(f"Current hash: {current_hash}", "INFO")
-        log_message(f"Target hash: {target_hash}", "INFO")
 
     # Check canister status before proceeding
     initial_status = get_canister_status(network, address)
@@ -488,6 +740,7 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
         # Step 2c: Stop timer
         if not stop_timer(network, address, dry_run):
             log_message("Failed to stop timer", "ERROR")
+            update_mainer_status(address, MainerStatus.FAILED_STOP_TIMER, "Could not stop timer")
             return False
 
         # Step 2d: Check queue
@@ -509,6 +762,7 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
         # Step 2e: Stop canister
         if not stop_canister(network, address, dry_run):
             log_message("Failed to stop canister", "ERROR")
+            update_mainer_status(address, MainerStatus.FAILED_OTHER, "Could not stop canister")
             return False
 
     # Step 2f: Create snapshot
@@ -518,41 +772,57 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
         # Start canister and timer before failing
         start_canister(network, address, dry_run)
         start_timer(network, address, dry_run)
+        update_mainer_status(address, MainerStatus.FAILED_SNAPSHOT, "Could not create snapshot")
         return False
 
     # Step 2g: Deploy upgrade
     if not upgrade_canister(network, canister_name, dry_run):
         log_message(f"Failed to upgrade canister. Snapshot ID for rollback: {snapshot_id}", "ERROR")
         # Don't auto-rollback, let admin decide
+        update_mainer_status(address, MainerStatus.FAILED_UPGRADE, f"Upgrade failed. Snapshot: {snapshot_id}")
         return False
 
     # Step 2h: Start canister
     if not start_canister(network, address, dry_run):
         log_message(f"Failed to start canister. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+        update_mainer_status(address, MainerStatus.FAILED_START, f"Could not start canister. Snapshot: {snapshot_id}")
         return False
 
-    # Step 2i: Check health
+    # Step 2i: Check maintenance flag (endpoint must now be available and return true)
     if not dry_run:
         # Give canister a moment to fully start
         time.sleep(5)
-    if not check_health(network, address, dry_run):
+    if not get_maintenance_flag(network, address, dry_run):
         if not dry_run:
-            log_message(f"Health check failed. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+            log_message(f"Maintenance flag check failed. Snapshot ID for rollback: {snapshot_id}", "ERROR")
             return False
 
     # Step 2j: Start timer
     if not start_timer(network, address, dry_run):
         if not dry_run:
             log_message(f"Failed to start timer. Canister upgraded but timer not running!", "ERROR")
+            update_mainer_status(address, MainerStatus.FAILED_START_TIMER, f"Could not start timer. Snapshot: {snapshot_id}")
             return False
 
     # Step 2k: Turn off maintenance flag
     if not turn_off_maintenance_flag(network, address, dry_run):
         if not dry_run:
             log_message(f"Failed to turn off maintenance flag. Canister upgraded but maintenance flag may still be ON!", "ERROR")
+            update_mainer_status(address, MainerStatus.FAILED_MAINTENANCE, f"Could not turn off maintenance flag. Snapshot: {snapshot_id}")
+            return False
+
+    # Step 2i: Check health (must now return 200 OK)
+    if not dry_run:
+        # Give canister a moment to fully start
+        time.sleep(5)
+    if not check_health(network, address, dry_run):
+        if not dry_run:
+            log_message(f"Health check failed. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+            update_mainer_status(address, MainerStatus.FAILED_HEALTH, f"Health check failed. Snapshot: {snapshot_id}")
             return False
 
     log_message(f"Successfully upgraded mAIner {canister_index}: {address}", "SUCCESS")
+    update_mainer_status(address, MainerStatus.SUCCESS)
     return True
 
 def main():
@@ -566,7 +836,7 @@ def main():
         help="Network to upgrade mainers on"
     )
     parser.add_argument(
-        "--hash",
+        "--target-hash",
         help="Target wasm hash to upgrade to (optional)"
     )
     parser.add_argument(
@@ -592,17 +862,23 @@ def main():
         action="store_true",
         help="Skip Step 1 preparation (use if files already updated)"
     )
+    parser.add_argument(
+        "--ask-before-upgrade",
+        action="store_true",
+        help="Ask for confirmation before upgrading each canister"
+    )
 
     args = parser.parse_args()
 
     log_message(f"{'='*60}", "INFO")
     log_message(f"mAIner Upgrade Script", "INFO")
     log_message(f"Network: {args.network}", "INFO")
-    log_message(f"Target Hash: {args.hash or 'Not specified'}", "INFO")
+    log_message(f"Target Hash: {args.target_hash or 'Not specified'}", "INFO")
     log_message(f"Max mAIners: {args.num or 'All'}", "INFO")
     log_message(f"Specific mAIner: {args.mainer or 'None'}", "INFO")
     log_message(f"User: {args.user or 'All'}", "INFO")
     log_message(f"Dry Run: {args.dry_run}", "INFO")
+    log_message(f"Ask Before Upgrade: {args.ask_before_upgrade}", "INFO")
     log_message(f"{'='*60}", "INFO")
 
     if args.dry_run:
@@ -636,16 +912,22 @@ def main():
 
         # Skip if not ShareAgent type
         if canister_type != "ShareAgent" or address == "":
+            if address:  # Only track if we have an address
+                update_mainer_status(address, MainerStatus.SKIPPED_FILTER, f"Not ShareAgent or empty address")
             continue
 
         # Filter by specific mainer if provided
         if args.mainer and address != args.mainer:
+            update_mainer_status(address, MainerStatus.SKIPPED_FILTER, "Not the specified mainer")
             continue
 
         # Filter by user if provided
         if args.user and owned_by != args.user:
+            update_mainer_status(address, MainerStatus.SKIPPED_FILTER, "Not owned by specified user")
             continue
 
+        # Mark as pending initially
+        update_mainer_status(address, MainerStatus.PENDING)
         share_agent_mainers.append(mainer)
 
     total_mainers = len(share_agent_mainers)
@@ -670,15 +952,58 @@ def main():
             break
 
         try:
-            if upgrade_mainer(args.network, mainer, args.hash, args.dry_run, i):
+            # Check if upgrade should be skipped
+            address = mainer.get('address', '')
+
+            if should_skip_upgrade(args.network, address, args.target_hash, args.dry_run):
+                update_mainer_status(address, MainerStatus.SKIPPED_ALREADY_UPGRADED, "Already at target hash and healthy")
+                skipped += 1
+                continue
+
+            # Ask for confirmation if --ask-before-upgrade is set
+            if args.ask_before_upgrade:
+                log_message(f"About to upgrade mAIner {i}: {address}", "WARNING")
+                response = input(f"Continue with upgrade? (y/n/exit) [y]: ").strip().lower()
+                if not response:
+                    response = 'y'  # Default to yes
+
+                # Normalize responses
+                if response in ['yes', 'y']:
+                    response = 'y'
+                elif response in ['no', 'n']:
+                    response = 'n'
+                elif response in ['exit', 'e']:
+                    response = 'exit'
+
+                if response == 'exit':
+                    log_message(f"Exiting upgrade process by user request", "INFO")
+                    update_mainer_status(address, MainerStatus.SKIPPED_USER_REQUEST, "User chose to exit")
+                    break
+                elif response == 'n':
+                    log_message(f"Skipping mAIner {i} by user request", "INFO")
+                    update_mainer_status(address, MainerStatus.SKIPPED_USER_REQUEST, "User chose to skip")
+                    skipped += 1
+                    continue
+                elif response != 'y':
+                    log_message(f"Invalid response. Skipping mAIner {i}", "WARNING")
+                    update_mainer_status(address, MainerStatus.SKIPPED_USER_REQUEST, "Invalid response")
+                    skipped += 1
+                    continue
+
+            # Proceed with upgrade
+            if upgrade_mainer(args.network, mainer, args.target_hash, args.dry_run, i):
                 successful += 1
+                new_hash = get_canister_wasm_hash(args.network, address)
+                log_message(f"New hash: {new_hash}", "INFO")
             else:
                 failed += 1
                 log_message(f"Failed to upgrade mAIner {i}. Stopping process.", "ERROR")
                 break
         except Exception as e:
             failed += 1
+            address = mainer.get('address', '')
             log_message(f"Unexpected error upgrading mAIner {i}: {e}", "ERROR")
+            update_mainer_status(address, MainerStatus.FAILED_OTHER, f"Unexpected error: {str(e)}")
             break
 
     # Print summary
@@ -688,6 +1013,13 @@ def main():
     log_message(f"Failed: {failed}", "ERROR" if failed > 0 else "INFO")
     log_message(f"Skipped: {total_mainers - successful - failed}", "INFO")
     log_message(f"{'='*60}", "INFO")
+
+    # Print detailed status report
+    print_status_report()
+
+    # Write status to files
+    write_status_to_json()
+    write_status_to_markdown()
 
     if failed > 0:
         sys.exit(1)
