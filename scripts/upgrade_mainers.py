@@ -55,6 +55,9 @@ POAIW_MAINER_DIR = (SCRIPT_DIR / "../PoAIW/src/mAIner").resolve()
 POAIW_DFX_JSON_PATH = (POAIW_MAINER_DIR / "dfx.json").resolve()
 POAIW_CANISTER_IDS_PATH = (POAIW_MAINER_DIR / "canister_ids.json").resolve()
 
+# Log file path
+LOG_FILE_PATH = SCRIPT_DIR / "upgrade_mainers.logs"
+
 # Color codes for output
 RED = '\033[0;31m'
 GREEN = '\033[0;32m'
@@ -64,6 +67,13 @@ NC = '\033[0m'  # No Color
 
 # Global flag for interruption handling
 interrupted = False
+
+# Global log file handle
+log_file_handle = None
+
+# Global progress tracking for logging
+current_mainer_index = None
+total_mainers_to_process = None
 
 # Status tracking for each mAIner
 class MainerStatus(Enum):
@@ -271,19 +281,27 @@ def print_status_report(processed_count: int = 0):
     log_message(f"\nDetailed status saved to:", "INFO")
     log_message(f"  - scripts/upgrade_mainers_status.json", "INFO")
     log_message(f"  - scripts/upgrade_mainers_status.md", "INFO")
+    log_message(f"  - scripts/upgrade_mainers.logs", "INFO")
     log_message(f"{'='*60}", "INFO")
 
 def signal_handler(sig, frame):
     """Handle Ctrl+C interruption gracefully."""
-    global interrupted
+    global interrupted, log_file_handle
     interrupted = True
     print(f"\n{RED}Upgrade process interrupted! Current canister may need manual inspection.{NC}")
+
+    # Close log file before exiting
+    if log_file_handle:
+        log_file_handle.close()
+
     sys.exit(1)
 
 signal.signal(signal.SIGINT, signal_handler)
 
 def log_message(message: str, level: str = "INFO"):
-    """Log messages with timestamps and colors."""
+    """Log messages with timestamps and colors to both console and file."""
+    global log_file_handle, current_mainer_index, total_mainers_to_process
+
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if level == "ERROR":
         color = RED
@@ -294,7 +312,20 @@ def log_message(message: str, level: str = "INFO"):
     else:
         color = BLUE
 
-    print(f"{color}[{timestamp}] {level}: {message}{NC}")
+    # Add progress indicator if we're in a mainer processing loop
+    progress = ""
+    if current_mainer_index is not None and total_mainers_to_process is not None:
+        progress = f" ({current_mainer_index + 1}/{total_mainers_to_process})"
+
+    # Print to console with color
+    console_message = f"{color}[{timestamp}]{progress} {level}: {message}{NC}"
+    print(console_message)
+
+    # Write to log file without color codes
+    if log_file_handle:
+        file_message = f"[{timestamp}]{progress} {level}: {message}\n"
+        log_file_handle.write(file_message)
+        log_file_handle.flush()  # Ensure it's written immediately
 
 def run_command(
     command: List[str],
@@ -706,18 +737,26 @@ def turn_off_maintenance_flag(network: str, canister_id: str, dry_run: bool = Fa
             ]
             toggle_result = run_command(toggle_command)
 
-            # Give canister a moment for the flag change to propagate
-            time.sleep(3)
+            # Step 3: Verify flag is now false (with retries)
+            max_retries = 5
+            retry_delay = 3.0
 
-            # Step 3: Verify flag is now false
-            new_flag_value = get_maintenance_flag(network, canister_id)
+            for attempt in range(1, max_retries + 1):
+                # Give canister a moment for the flag change to propagate
+                time.sleep(retry_delay)
 
-            if new_flag_value is False:
-                log_message(f"Maintenance flag turned OFF for {canister_id}", "SUCCESS")
-                return True
-            else:
-                log_message(f"Failed to turn off maintenance flag for {canister_id}: flag is still {new_flag_value}", "ERROR")
-                return False
+                new_flag_value = get_maintenance_flag(network, canister_id)
+
+                if new_flag_value is False:
+                    log_message(f"Maintenance flag turned OFF for {canister_id}", "SUCCESS")
+                    return True
+                elif attempt < max_retries:
+                    log_message(f"Flag still ON (attempt {attempt}/{max_retries}). Waiting {retry_delay}s before next check...", "WARNING")
+                else:
+                    log_message(f"Failed to turn off maintenance flag for {canister_id}: flag is still {new_flag_value}", "ERROR")
+                    return False
+
+            return False
         else:
             log_message(f"Unexpected maintenance flag value: {flag_value}", "ERROR")
             return False
@@ -978,155 +1017,179 @@ def main():
 
     args = parser.parse_args()
 
-    log_message(f"{'='*60}", "INFO")
-    log_message(f"mAIner Upgrade Script", "INFO")
-    log_message(f"Network: {args.network}", "INFO")
-    log_message(f"Target Hash: {args.target_hash or 'Not specified'}", "INFO")
-    log_message(f"Max mAIners: {args.num or 'All'}", "INFO")
-    log_message(f"Specific mAIner: {args.mainer or 'None'}", "INFO")
-    log_message(f"User: {args.user or 'All'}", "INFO")
-    log_message(f"Dry Run: {args.dry_run}", "INFO")
-    log_message(f"Ask Before Upgrade: {args.ask_before_upgrade}", "INFO")
-    log_message(f"{'='*60}", "INFO")
+    # Open log file
+    global log_file_handle
+    try:
+        log_file_handle = open(LOG_FILE_PATH, 'w')
+    except Exception as e:
+        print(f"{RED}Warning: Could not open log file {LOG_FILE_PATH}: {e}{NC}")
+        log_file_handle = None
 
-    if args.dry_run:
-        log_message("RUNNING IN DRY-RUN MODE - NO ACTUAL CHANGES WILL BE MADE", "WARNING")
-        input("Press Enter to continue...")
-    else:
-        log_message("THIS IS A LIVE RUN - CHANGES WILL BE MADE TO CANISTERS", "WARNING")
-        confirm = input("Type 'yes' to continue: ")
-        if confirm.lower() != 'yes':
-            log_message("Upgrade cancelled", "INFO")
-            sys.exit(0)
+    try:
+        log_message(f"{'='*60}", "INFO")
+        log_message(f"mAIner Upgrade Script", "INFO")
+        log_message(f"Log file: {LOG_FILE_PATH}", "INFO")
+        log_message(f"Network: {args.network}", "INFO")
+        log_message(f"Target Hash: {args.target_hash or 'Not specified'}", "INFO")
+        log_message(f"Max mAIners: {args.num or 'All'}", "INFO")
+        log_message(f"Specific mAIner: {args.mainer or 'None'}", "INFO")
+        log_message(f"User: {args.user or 'All'}", "INFO")
+        log_message(f"Dry Run: {args.dry_run}", "INFO")
+        log_message(f"Ask Before Upgrade: {args.ask_before_upgrade}", "INFO")
+        log_message(f"{'='*60}", "INFO")
 
-    # Step 1: Prepare for deployment
-    if not args.skip_preparation:
-        if not prepare_for_deployment(args.network, args.dry_run):
-            log_message("Failed to prepare for deployment", "ERROR")
-            sys.exit(1)
-    else:
-        log_message("Skipping preparation step", "INFO")
+        if args.dry_run:
+            log_message("RUNNING IN DRY-RUN MODE - NO ACTUAL CHANGES WILL BE MADE", "WARNING")
+            input("Press Enter to continue...")
+        else:
+            log_message("THIS IS A LIVE RUN - CHANGES WILL BE MADE TO CANISTERS", "WARNING")
+            confirm = input("Type 'yes' to continue: ")
+            if confirm.lower() != 'yes':
+                log_message("Upgrade cancelled", "INFO")
+                sys.exit(0)
 
-    # Get all mAIners
-    mainers = get_mainers(args.network)
+        # Step 1: Prepare for deployment
+        if not args.skip_preparation:
+            if not prepare_for_deployment(args.network, args.dry_run):
+                log_message("Failed to prepare for deployment", "ERROR")
+                sys.exit(1)
+        else:
+            log_message("Skipping preparation step", "INFO")
 
-    # Filter mAIners based on arguments
-    share_agent_mainers = []
-    for mainer in mainers:
-        address = mainer.get('address', '')
-        canister_type_dict = mainer.get('canisterType', {}).get("MainerAgent", {})
-        canister_type = list(canister_type_dict.keys())[0] if canister_type_dict else ''
-        owned_by = mainer.get('ownedBy', '')
+        # Get all mAIners
+        mainers = get_mainers(args.network)
 
-        # Skip if not ShareAgent type
-        if canister_type != "ShareAgent" or address == "":
-            if address:  # Only track if we have an address
-                update_mainer_status(address, MainerStatus.SKIPPED_FILTER, f"Not ShareAgent or empty address")
-            continue
-
-        # Filter by specific mainer if provided
-        if args.mainer and address != args.mainer:
-            update_mainer_status(address, MainerStatus.SKIPPED_FILTER, "Not the specified mainer")
-            continue
-
-        # Filter by user if provided
-        if args.user and owned_by != args.user:
-            update_mainer_status(address, MainerStatus.SKIPPED_FILTER, "Not owned by specified user")
-            continue
-
-        # Mark as pending initially
-        update_mainer_status(address, MainerStatus.PENDING)
-        share_agent_mainers.append(mainer)
-
-    total_mainers = len(share_agent_mainers)
-    max_upgrades = min(args.num, total_mainers) if args.num else total_mainers
-
-    if total_mainers == 0:
-        log_message("No ShareAgent mAIners found to upgrade", "WARNING")
-        sys.exit(0)
-
-    # Print clear message - highlight what will actually be processed
-    if args.num and args.num < total_mainers:
-        log_message(f"Found {total_mainers} ShareAgent mAIners matching filters", "INFO")
-        log_message(f"Will process {max_upgrades} mAIners (--num limit)", "SUCCESS")
-    else:
-        log_message(f"Will process {total_mainers} ShareAgent mAIners", "SUCCESS")
-
-    # Track results
-    successful = 0
-    failed = 0
-    skipped = 0
-
-    # Process mAIners
-    for i, mainer in enumerate(share_agent_mainers[:max_upgrades]):
-        if interrupted:
-            log_message("Process interrupted by user", "WARNING")
-            break
-
-        try:
-            # Check if upgrade should be skipped
+        # Filter mAIners based on arguments
+        share_agent_mainers = []
+        for mainer in mainers:
             address = mainer.get('address', '')
+            canister_type_dict = mainer.get('canisterType', {}).get("MainerAgent", {})
+            canister_type = list(canister_type_dict.keys())[0] if canister_type_dict else ''
+            owned_by = mainer.get('ownedBy', '')
 
-            if should_skip_upgrade(args.network, address, args.target_hash, args.dry_run):
-                update_mainer_status(address, MainerStatus.SKIPPED_ALREADY_UPGRADED, "Already at target hash and healthy")
-                skipped += 1
+            # Skip if not ShareAgent type
+            if canister_type != "ShareAgent" or address == "":
+                if address:  # Only track if we have an address
+                    update_mainer_status(address, MainerStatus.SKIPPED_FILTER, f"Not ShareAgent or empty address")
                 continue
 
-            # Ask for confirmation if --ask-before-upgrade is set
-            if args.ask_before_upgrade:
-                log_message(f"About to upgrade mAIner {i}: {address}", "WARNING")
-                response = input(f"Continue with upgrade? (y/n/exit) [y]: ").strip().lower()
-                if not response:
-                    response = 'y'  # Default to yes
+            # Filter by specific mainer if provided
+            if args.mainer and address != args.mainer:
+                update_mainer_status(address, MainerStatus.SKIPPED_FILTER, "Not the specified mainer")
+                continue
 
-                # Normalize responses
-                if response in ['yes', 'y']:
-                    response = 'y'
-                elif response in ['no', 'n']:
-                    response = 'n'
-                elif response in ['exit', 'e']:
-                    response = 'exit'
+            # Filter by user if provided
+            if args.user and owned_by != args.user:
+                update_mainer_status(address, MainerStatus.SKIPPED_FILTER, "Not owned by specified user")
+                continue
 
-                if response == 'exit':
-                    log_message(f"Exiting upgrade process by user request", "INFO")
-                    update_mainer_status(address, MainerStatus.SKIPPED_USER_REQUEST, "User chose to exit")
-                    break
-                elif response == 'n':
-                    log_message(f"Skipping mAIner {i} by user request", "INFO")
-                    update_mainer_status(address, MainerStatus.SKIPPED_USER_REQUEST, "User chose to skip")
-                    skipped += 1
-                    continue
-                elif response != 'y':
-                    log_message(f"Invalid response. Skipping mAIner {i}", "WARNING")
-                    update_mainer_status(address, MainerStatus.SKIPPED_USER_REQUEST, "Invalid response")
-                    skipped += 1
-                    continue
+            # Mark as pending initially
+            update_mainer_status(address, MainerStatus.PENDING)
+            share_agent_mainers.append(mainer)
 
-            # Proceed with upgrade
-            if upgrade_mainer(args.network, mainer, args.target_hash, args.dry_run, i):
-                successful += 1
-                new_hash = get_canister_wasm_hash(args.network, address)
-                log_message(f"New hash: {new_hash}", "INFO")
-            else:
-                failed += 1
-                log_message(f"Failed to upgrade mAIner {i}. Stopping process.", "ERROR")
+        total_mainers = len(share_agent_mainers)
+        max_upgrades = min(args.num, total_mainers) if args.num else total_mainers
+
+        if total_mainers == 0:
+            log_message("No ShareAgent mAIners found to upgrade", "WARNING")
+            sys.exit(0)
+
+        # Print clear message - highlight what will actually be processed
+        if args.num and args.num < total_mainers:
+            log_message(f"Found {total_mainers} ShareAgent mAIners matching filters", "INFO")
+            log_message(f"Will process {max_upgrades} mAIners (--num limit)", "SUCCESS")
+        else:
+            log_message(f"Will process {total_mainers} ShareAgent mAIners", "SUCCESS")
+
+        # Track results
+        successful = 0
+        failed = 0
+        skipped = 0
+
+        # Set global progress tracking for logging
+        global current_mainer_index, total_mainers_to_process
+        total_mainers_to_process = max_upgrades
+
+        # Process mAIners
+        for i, mainer in enumerate(share_agent_mainers[:max_upgrades]):
+            current_mainer_index = i
+
+            if interrupted:
+                log_message("Process interrupted by user", "WARNING")
                 break
-        except Exception as e:
-            failed += 1
-            address = mainer.get('address', '')
-            log_message(f"Unexpected error upgrading mAIner {i}: {e}", "ERROR")
-            update_mainer_status(address, MainerStatus.FAILED_OTHER, f"Unexpected error: {str(e)}")
-            break
 
-    # Write status to files
-    write_status_to_json()
-    write_status_to_markdown()
+            try:
+                # Check if upgrade should be skipped
+                address = mainer.get('address', '')
 
-    # Print concise status report (pass max_upgrades to show only what was processed)
-    print_status_report(processed_count=max_upgrades)
+                if should_skip_upgrade(args.network, address, args.target_hash, args.dry_run):
+                    update_mainer_status(address, MainerStatus.SKIPPED_ALREADY_UPGRADED, "Already at target hash and healthy")
+                    skipped += 1
+                    continue
 
-    if failed > 0:
-        sys.exit(1)
+                # Ask for confirmation if --ask-before-upgrade is set
+                if args.ask_before_upgrade:
+                    log_message(f"About to upgrade mAIner {i}: {address}", "WARNING")
+                    response = input(f"Continue with upgrade? (y/n/exit) [y]: ").strip().lower()
+                    if not response:
+                        response = 'y'  # Default to yes
+
+                    # Normalize responses
+                    if response in ['yes', 'y']:
+                        response = 'y'
+                    elif response in ['no', 'n']:
+                        response = 'n'
+                    elif response in ['exit', 'e']:
+                        response = 'exit'
+
+                    if response == 'exit':
+                        log_message(f"Exiting upgrade process by user request", "INFO")
+                        update_mainer_status(address, MainerStatus.SKIPPED_USER_REQUEST, "User chose to exit")
+                        break
+                    elif response == 'n':
+                        log_message(f"Skipping mAIner {i} by user request", "INFO")
+                        update_mainer_status(address, MainerStatus.SKIPPED_USER_REQUEST, "User chose to skip")
+                        skipped += 1
+                        continue
+                    elif response != 'y':
+                        log_message(f"Invalid response. Skipping mAIner {i}", "WARNING")
+                        update_mainer_status(address, MainerStatus.SKIPPED_USER_REQUEST, "Invalid response")
+                        skipped += 1
+                        continue
+
+                # Proceed with upgrade
+                if upgrade_mainer(args.network, mainer, args.target_hash, args.dry_run, i):
+                    successful += 1
+                    new_hash = get_canister_wasm_hash(args.network, address)
+                    log_message(f"New hash: {new_hash}", "INFO")
+                else:
+                    failed += 1
+                    log_message(f"Failed to upgrade mAIner {i}. Stopping process.", "ERROR")
+                    break
+            except Exception as e:
+                failed += 1
+                address = mainer.get('address', '')
+                log_message(f"Unexpected error upgrading mAIner {i}: {e}", "ERROR")
+                update_mainer_status(address, MainerStatus.FAILED_OTHER, f"Unexpected error: {str(e)}")
+                break
+
+        # Reset progress tracking
+        current_mainer_index = None
+        total_mainers_to_process = None
+
+        # Write status to files
+        write_status_to_json()
+        write_status_to_markdown()
+
+        # Print concise status report (pass max_upgrades to show only what was processed)
+        print_status_report(processed_count=max_upgrades)
+
+        if failed > 0:
+            sys.exit(1)
+    finally:
+        # Always close log file
+        if log_file_handle:
+            log_file_handle.close()
 
 if __name__ == "__main__":
     main()
