@@ -144,17 +144,16 @@
         max: funnaiMaxAmount || 0 // Use backend value or 0 if not loaded
       };
     } else if (selectedTokenSymbol === 'BOB') {
-      // BOB has its own limits for easier testing (BOB is ~$0.20, ICP is ~$4.20, ratio ~21:1)
+      // BOB has its own limits for easier testing
       return {
-        min: 1,      // 1 BOB minimum for testing
-        max: 4200    // Equivalent to 200 ICP (200 * 21 = 4200)
+        min: 1,      // 1 BOB minimum
+        max: 200     // 200 BOB maximum
       };
     } else if (selectedTokenSymbol === 'ckBTC') {
       // ckBTC has its own limits (ckBTC is worth much more than ICP)
-      // ckBTC is ~$60,000, ICP is ~$4.20, ratio ~1:14,285
       return {
-        min: 0.00001,  // Very small minimum
-        max: 0.014     // Equivalent to 200 ICP (200 / 14285 ≈ 0.014)
+        min: 0.00001,     // Very small minimum
+        max: 0.0003456    // 0.0003456 ckBTC maximum
       };
     } else if (conversionRate && !conversionRate.isZero()) {
       // For ICP: use config limits directly
