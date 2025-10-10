@@ -13,6 +13,7 @@
   import { idlFactory as cmcIdlFactory } from "../../helpers/idls/cmc.idl.js";
   import { MIN_AMOUNT, MAX_AMOUNT, CELEBRATION_DURATION, CELEBRATION_ENABLED } from "../../helpers/config/topUpConfig";
   import { getIsProtocolActive } from "../../helpers/gameState";
+  import { mainerHealthService } from "../../helpers/mainerHealthService";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
@@ -384,6 +385,21 @@
       
       if (!canisterId) {
         throw new Error("Canister ID is required");
+      }
+
+      // Check mAIner health before proceeding (defensive: fail if health check errors)
+      const mainerActor = $store.userMainerCanisterActors.find(a => a.id === canisterId)?.actor;
+      if (mainerActor) {
+        try {
+          const healthStatus = await mainerHealthService.checkMainerHealth(canisterId, mainerActor);
+          if (!healthStatus.isHealthy) {
+            throw new Error(healthStatus.maintenanceMessage || "mAIner is currently unavailable for top-up");
+          }
+        } catch (error) {
+          // If health check fails, treat as unhealthy and prevent top-up
+          const errorMsg = error instanceof Error ? error.message : "Failed to verify mAIner health";
+          throw new Error(errorMsg);
+        }
       }
 
       // Additional FUNNAI-specific security checks

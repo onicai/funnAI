@@ -25,5 +25,12 @@
   },
   "mainer_ctrlb_canister": {
     "ic": "x6o6k-kqaaa-aaaaj-az4pa-cai"
+  },
+  "api_canister": {
+    "demo": "p6pu7-5aaaa-aaaap-qqdfa-cai",
+    "prd": "bgm6p-5aaaa-aaaaf-qbzda-cai",
+    "testing": "nyxgs-uqaaa-aaaap-qqdia-cai",
+    "development": "p6pu7-5aaaa-aaaap-qqdfa-cai",
+    "ic": "bgm6p-5aaaa-aaaaf-qbzda-cai"
   }
 }

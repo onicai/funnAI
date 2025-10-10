@@ -6,6 +6,7 @@
   export let lowBurnRateMainers: number;
   export let mediumBurnRateMainers: number;
   export let highBurnRateMainers: number;
+  export let veryHighBurnRateMainers: number;
 </script>
 
 <!-- Enhanced mAIner Summary Header -->
@@ -51,8 +52,8 @@
       </div>
     </div>
 
-    <!-- Status Cards Grid - Responsive 3-column layout -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+    <!-- Status Cards Grid - Responsive layout optimized for 7 cards (3 status + 4 burn rate) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-2">
       <!-- Active mAIners Card -->
       <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg p-2 sm:p-3 border border-green-200/40 dark:border-green-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
         <div class="absolute top-0 right-0 w-6 h-6 sm:w-10 sm:h-10 bg-green-200/20 dark:bg-green-600/10 rounded-full -translate-y-3 translate-x-3 sm:-translate-y-5 sm:translate-x-5"></div>
@@ -88,7 +89,7 @@
               </div>
               <div class="flex flex-col">
                 <span class="text-xs font-medium text-gray-700 dark:text-gray-300">Inactive</span>
-                <span class="text-xs text-gray-600/70 dark:text-gray-400/70 hidden sm:block">Need cycles</span>
+                <span class="text-xs text-gray-600/70 dark:text-gray-400/70 hidden sm:block">Stopped/Low cycles</span>
               </div>
             </div>
           </div>
@@ -146,7 +147,7 @@
       {/if}
 
       <!-- Burn Rate Distribution Header -->
-      <div class="mt-3 mb-1 flex items-center space-x-2 lg:col-span-3 md:col-span-2">
+      <div class="mt-3 mb-1 flex items-center space-x-2 col-span-full">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
         </svg>
@@ -220,6 +221,30 @@
                 <span class="text-xs font-medium text-red-700 dark:text-red-300 sm:hidden">High</span>
                 <span class="text-xs font-medium text-red-700 dark:text-red-300 hidden sm:inline">High burn</span>
                 <span class="text-xs text-red-600/70 dark:text-red-400/70 hidden sm:block">Performance</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Very High Burn Rate Card -->
+      <div class="relative overflow-hidden bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-lg p-2 sm:p-3 border border-purple-200/40 dark:border-purple-700/40 shadow-sm hover:shadow-md transition-all duration-300 group">
+        <div class="absolute top-0 right-0 w-6 h-6 sm:w-10 sm:h-10 bg-purple-200/20 dark:bg-purple-600/10 rounded-full -translate-y-3 translate-x-3 sm:-translate-y-5 sm:translate-x-5"></div>
+        <div class="relative">
+          <div class="flex items-center justify-between lg:flex-col lg:items-start lg:space-y-2">
+            <!-- Number first on large screens -->
+            <span class="text-base sm:text-lg font-bold text-purple-600 dark:text-purple-400 lg:order-1 lg:text-xl lg:mb-1">{veryHighBurnRateMainers}</span>
+            
+            <div class="flex items-center space-x-1.5 sm:space-x-2 lg:order-2">
+              <div class="w-5 h-5 sm:w-6 sm:h-6 bg-purple-100 dark:bg-purple-900/40 rounded-md flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-2.5 w-2.5 sm:h-3 sm:w-3 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-medium text-purple-700 dark:text-purple-300 sm:hidden">V.High</span>
+                <span class="text-xs font-medium text-purple-700 dark:text-purple-300 hidden sm:inline">Very high</span>
+                <span class="text-xs text-purple-600/70 dark:text-purple-400/70 hidden sm:block">Maximum</span>
               </div>
             </div>
           </div>

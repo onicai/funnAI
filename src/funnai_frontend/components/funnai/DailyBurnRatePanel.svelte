@@ -2,17 +2,22 @@
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { store } from "../../stores/store";
   import { tooltip } from "../../helpers/utils/tooltip";
+  import VeryHighBurnRateModal from "./VeryHighBurnRateModal.svelte";
 
   // Props
   export let agent: any;
   export let agentCanisterActors: any[];
   export let agentCanistersInfo: any[];
+  export let isHealthy: boolean = true; // Health status from health check service
 
   // Event dispatcher for communicating with parent
   const dispatch = createEventDispatcher();
 
   // Track which agents are having their burn rate updated
   let agentsBeingUpdated = new Set<string>();
+
+  // Very High burn rate modal state
+  let showVeryHighModal = false;
 
   // Timer state
   let canUpdate = true;
@@ -205,10 +210,10 @@
   /**
    * Updates the agent settings based on user-selected burn rate level.
    * 
-   * @param {'Low' | 'Medium' | 'High'} level - The burn rate level selected by the user
+   * @param {'Low' | 'Medium' | 'High' | 'VeryHigh'} level - The burn rate level selected by the user
    * @param {object} agent - The mAIner agent to update
   */
-  async function updateAgentBurnRate(level: 'Low' | 'Medium' | 'High', agent: any) {
+  async function updateAgentBurnRate(level: 'Low' | 'Medium' | 'High' | 'VeryHigh', agent: any) {
     if (!canUpdate) {
       console.warn("Cannot update burn rate - cooldown period active");
       return;
@@ -238,6 +243,9 @@
         break;
       case 'High':
         burnRateSetting = { cyclesBurnRate: { High: null } };
+        break;
+      case 'VeryHigh':
+        burnRateSetting = { cyclesBurnRate: { VeryHigh: null } };
         break;
       default:
         console.error(`updateAgentBurnRate Unsupported level: ${level}`);
@@ -290,6 +298,54 @@
   $: {
     canUpdate; timeUntilNextUpdate; // Trigger reactivity
   }
+
+  // Handle Very High burn rate activation
+  function handleVeryHighActivation() {
+    showVeryHighModal = true;
+  }
+
+  // Handle modal close
+  function handleVeryHighModalClose() {
+    showVeryHighModal = false;
+  }
+
+  // Handle successful FUNNAI burn and activate Very High burn rate
+  async function handleVeryHighSuccess(txId: string, canisterId: string, backendPromise: Promise<any>) {
+    console.log('Very High burn rate activation initiated:', txId);
+    
+    // Add this agent to the updating set to show loading state
+    agentsBeingUpdated.add(agent.id);
+    agentsBeingUpdated = agentsBeingUpdated; // Trigger reactivity
+    
+    try {
+      // Wait for the backend to process the updateAgentSettings call
+      await backendPromise;
+      
+      // Store the update time for fallback tracking
+      const storageKey = `lastBurnRateUpdate_${agent.id}`;
+      localStorage.setItem(storageKey, Date.now().toString());
+      
+      // Re-check eligibility to get accurate backend timing
+      await checkUpdateEligibility();
+      
+      // Update the local agent state to show VeryHigh immediately
+      agent.cyclesBurnRateSetting = 'VeryHigh';
+      // Trigger reactivity by reassigning the agent object
+      agent = { ...agent };
+      
+      // Notify parent to refresh the agents list
+      dispatch('burnRateUpdated');
+      
+      console.log('Very High burn rate successfully activated for agent:', canisterId);
+    } catch (error) {
+      console.error('Error activating Very High burn rate:', error);
+      // You might want to show an error message to the user here
+    } finally {
+      // Remove from updating set after processing
+      agentsBeingUpdated.delete(agent.id);
+      agentsBeingUpdated = agentsBeingUpdated; // Trigger reactivity
+    }
+  }
 </script>
 
 <!-- Enhanced Daily Burn Rate Panel -->
@@ -332,7 +388,7 @@
       </div>
 
       <!-- Cooldown Timer Display -->
-      {#if !canUpdate && timeUntilNextUpdate > 0 && agent.status === "active"}
+      {#if !canUpdate && timeUntilNextUpdate > 0 && agent.uiStatus === "active"}
         <div class="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-700 rounded-lg p-3">
           <div class="flex items-start space-x-3">
             <div class="flex-shrink-0">
@@ -363,8 +419,23 @@
         <span class="text-sm font-medium text-purple-900 dark:text-purple-100">Select Performance Level</span>
       </div>
 
+      <!-- Health Status Warning -->
+      {#if !isHealthy}
+        <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg p-3 mb-2">
+          <div class="flex items-start space-x-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div class="flex-1">
+              <p class="text-sm font-medium text-amber-800 dark:text-amber-200">Settings temporarily disabled</p>
+              <p class="text-xs text-amber-700 dark:text-amber-300 mt-1">Performance settings cannot be changed while the mAIner is stopped or in maintenance mode.</p>
+            </div>
+          </div>
+        </div>
+      {/if}
+
       <!-- Enhanced Button Group -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3" role="group">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3" role="group">
         <!-- Low Button -->
         <button 
           type="button" 
@@ -372,11 +443,11 @@
           {agent.cyclesBurnRateSetting === 'Low' 
             ? 'bg-gradient-to-r from-green-500 to-emerald-600 dark:from-green-600 dark:to-emerald-700 text-white border-green-400 shadow-lg scale-105' 
             : 'bg-white/70 dark:bg-gray-800/70 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-500 hover:scale-102'}"
-          class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:transform-none={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:hover:scale-100={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          disabled={agentsBeingUpdated.has(agent.id) || !canUpdate}
+          class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:transform-none={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:hover:scale-100={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          disabled={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
           on:click={() => updateAgentBurnRate('Low', agent)}
         >
           <div class="flex flex-col items-center space-y-1">
@@ -398,11 +469,11 @@
           {agent.cyclesBurnRateSetting === 'Medium' 
             ? 'bg-gradient-to-r from-yellow-500 to-orange-600 dark:from-yellow-600 dark:to-orange-700 text-white border-yellow-400 shadow-lg scale-105' 
             : 'bg-white/70 dark:bg-gray-800/70 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-500 hover:scale-102'}"
-          class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:transform-none={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:hover:scale-100={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          disabled={agentsBeingUpdated.has(agent.id) || !canUpdate}
+          class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:transform-none={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:hover:scale-100={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          disabled={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
           on:click={() => updateAgentBurnRate('Medium', agent)}
         >
           <div class="flex flex-col items-center space-y-1">
@@ -424,11 +495,11 @@
           {agent.cyclesBurnRateSetting === 'High' 
             ? 'bg-gradient-to-r from-red-500 to-pink-600 dark:from-red-600 dark:to-pink-700 text-white border-red-400 shadow-lg scale-105' 
             : 'bg-white/70 dark:bg-gray-800/70 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-500 hover:scale-102'}"
-          class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:transform-none={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          class:hover:scale-100={agentsBeingUpdated.has(agent.id) || !canUpdate}
-          disabled={agentsBeingUpdated.has(agent.id) || !canUpdate}
+          class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:transform-none={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:hover:scale-100={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          disabled={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
           on:click={() => updateAgentBurnRate('High', agent)}
         >
           <div class="flex flex-col items-center space-y-1">
@@ -436,10 +507,47 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.251.757l2.551 7.843h8.244a.75.75 0 01.441 1.356l-6.673 4.845 2.551 7.844a.75.75 0 01-1.154.956L12 18.756l-6.211 4.845a.75.75 0 01-1.154-.956l2.551-7.844L.513 9.956A.75.75 0 01.954 8.6h8.244L11.749.757a.75.75 0 01.502 0z"/>
             </svg>
             <span>High</span>
-            <span class="text-xs opacity-75 hidden sm:block">Max power</span>
+            <span class="text-xs opacity-75 hidden sm:block">Power mode</span>
           </div>
           {#if agent.cyclesBurnRateSetting === 'High'}
             <div class="absolute top-1 right-1 w-2 h-2 bg-white rounded-full shadow-sm"></div>
+          {/if}
+        </button>
+        
+        <!-- Very High Button -->
+        <button 
+          type="button" 
+          class="group relative px-2 sm:px-3 md:px-4 py-2 sm:py-3 md:py-4 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl transition-all duration-300 transform border-2 focus:z-10 focus:ring-2 focus:ring-purple-500
+          {agent.cyclesBurnRateSetting === 'VeryHigh' 
+            ? 'bg-gradient-to-r from-purple-600 to-pink-700 dark:from-purple-700 dark:to-pink-800 text-white border-purple-500 shadow-lg scale-105' 
+            : 'bg-white/70 dark:bg-gray-800/70 text-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:border-purple-300 dark:hover:border-purple-500 hover:scale-102'}"
+          class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:transform-none={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          class:hover:scale-100={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          disabled={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
+          on:click={() => {
+            if (agent.cyclesBurnRateSetting === 'VeryHigh') {
+              // Already at Very High, no action needed
+              return;
+            }
+            // Show modal to burn FUNNAI first
+            handleVeryHighActivation();
+          }}
+        >
+          <div class="flex flex-col items-center space-y-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2l1.09 3.26L16 6l-2.91 1.09L12 10l-1.09-3.26L8 6l2.91-1.09L12 2zM7 12l1.09 3.26L11 16l-2.91 1.09L7 20l-1.09-3.26L3 16l2.91-1.09L7 12zM17 12l1.09 3.26L21 16l-2.91 1.09L17 20l-1.09-3.26L13 16l2.91-1.09L17 12z"/>
+            </svg>
+            <span>Very High</span>
+            <span class="text-xs opacity-75 hidden sm:block">🔥 Premium</span>
+          </div>
+          {#if agent.cyclesBurnRateSetting === 'VeryHigh'}
+            <div class="absolute top-1 right-1 w-2 h-2 bg-white rounded-full shadow-sm"></div>
+          {:else}
+            <div class="absolute top-1 right-1 w-3 h-3 bg-orange-500 rounded-full shadow-sm flex items-center justify-center">
+              <span class="text-white text-xs font-bold">🔥</span>
+            </div>
           {/if}
         </button>
       </div>
@@ -459,18 +567,18 @@
         <!-- Info Footer -->
         <div class="bg-white/40 dark:bg-gray-800/40 backdrop-blur-sm rounded-lg p-3 border border-purple-200/30 dark:border-purple-700/30">
           <div class="flex items-start space-x-2 text-xs text-purple-700 dark:text-purple-300">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
+            
             <div class="space-y-2">
-              <p><span class="font-medium">💡 Tip:</span> Higher burn rates provide faster AI responses but consume more cycles.</p>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-1 text-xs opacity-75">
-                <span>🟢 <strong>Low:</strong> ~1-2T cycles/day</span>
-                <span>🟡 <strong>Medium:</strong> ~3-5T cycles/day</span>
-                <span>🔴 <strong>High:</strong> ~6-10T cycles/day</span>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-1 text-xs opacity-75">
+                <span>🟢 <strong>Low:</strong><br/> ≈1T cycles/day</span>
+                <span>🟡 <strong>Medium:</strong><br/> ≈2T cycles/day</span>
+                <span>🔴 <strong>High:</strong><br/> ≈4T cycles/day</span>
+                <span>🔥 <strong>Very High:</strong><br/> ≈6T cycles/day</span>
               </div>
               <div class="border-t border-purple-200/30 dark:border-purple-700/30 pt-2 mt-2">
-                <p><span class="font-medium">⏰ Important:</span> Burn rate can only be updated once every 24 hours to prevent abuse.</p>
+              <p><span class="font-medium">💡 Tip:</span> Higher burn rates speed up AI but use more cycles.</p>
+              
+                <p><span class="font-medium">⏰ Important:</span> Burn rate can only be updated once every 24 hours.</p>
               </div>
             </div>
           </div>
@@ -481,4 +589,13 @@
   
   <!-- Bottom accent line -->
   <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-purple-400 dark:via-purple-500 to-transparent"></div>
-</div> 
+</div>
+
+<!-- Very High Burn Rate Modal -->
+<VeryHighBurnRateModal
+  bind:isOpen={showVeryHighModal}
+  onClose={handleVeryHighModalClose}
+  onSuccess={handleVeryHighSuccess}
+  canisterId={agent.id}
+  canisterName={agent.name || ''}
+/> 

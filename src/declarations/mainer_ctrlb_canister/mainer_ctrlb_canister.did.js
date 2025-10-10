@@ -349,6 +349,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'get_llm_canisters' : IDL.Func([], [LlmCanistersRecordResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
+    'setHealthStatus' : IDL.Func([IDL.Bool, IDL.Text], [StatusCodeRecordResult], []),
     'ready' : IDL.Func([], [StatusCodeRecordResult], []),
     'remove_llm_canister' : IDL.Func(
         [CanisterIDRecord],

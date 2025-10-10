@@ -1131,6 +1131,7 @@ export const idlFactory = ({ IDL }) => {
         [StatusCodeRecordResult],
         [],
       ),
+    'setApiCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
     'setArchiveCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
     'setBufferMainerCreation' : IDL.Func([IDL.Nat], [AuthRecordResult], []),
     'setCyclesBalanceThresholdFunnaiTopups' : IDL.Func(
