@@ -191,7 +191,12 @@
   
   async function openTopUpModal(agent) {
     // Check mAIner health before allowing top-up
-    const actor = agentCanisterActors.find(a => a.id === agent.id)?.actor;
+    // Find the index of this agent in agentCanistersInfo to get the corresponding actor
+    const agentIndex = agentCanistersInfo.findIndex(canister => 
+      (canister.address === agent.id) || (canister.id === agent.id)
+    );
+    const actor = agentIndex !== -1 ? agentCanisterActors[agentIndex] : null;
+    
     if (actor) {
       try {
         const healthStatus = await mainerHealthService.checkMainerHealth(agent.id, actor);
