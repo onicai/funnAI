@@ -660,7 +660,61 @@ If you want to do it all manually, follow these steps:
     dfx canister --network $NETWORK status $llm | grep "Memory Size"
 ```
 
-# Upgrade a mAIner
+# Upgrade the mAIners
+
+## Using script
+
+The following script is used to upgrade ALL or selected mAIners.
+
+It puts the mAIner in MAINTENANCE mode and safely upgrades it.
+A snapshot of the stopped canister before upgrade will be taken.
+If something goes wrong with a canister, it will exit.
+Just restore the canister from the snapshot, and run the script again.
+
+The only errors seen so far is when the IC timed out. 
+The script has been made robust against this using retry logic.
+
+```bash
+scripts/upgrade_mainers.sh --network [local|ic|testing|development|demo|prd] [--target-hash HASH] [--num NUM] [--mainer CANISTER_ID] [--user PRINCIPAL] [--dry-run] [--skip-preparation] [--ask-before-upgrade] [--reverse]
+
+Options:
+  --network NETWORK       Required. Network to upgrade mainers on
+  --target-hash HASH      Optional. Target wasm hash to upgrade to (from 'dfx canister info <canister_id>')
+  --num NUM               Optional. Number of mAIners to upgrade
+  --mainer CANISTER_ID    Optional. Specific mAIner canister to upgrade
+  --user PRINCIPAL        Optional. Principal ID of user whose mAIners to upgrade
+  --dry-run               Optional. Run in dry-run mode without making changes
+  --skip-preparation      Optional. Skip Step 1 preparation
+  --ask-before-upgrade    Optional. Ask for confirmation before upgrading each canister
+  --reverse               Optional. Process mainers in reverse order
+
+# from the folder: funnAI
+conda activate llama_cpp_canister
+
+# Upgrade 1 mAIner of IConfucius on production networkm with confirmation prompt:
+USER=xijdk-rtoet-smgxl-a4apd-ahchq-bslha-ope4a-zlpaw-ldxat-prh6f-jqe
+scripts/upgrade_mainers.sh --network prd --user $USER --num 1 --ask-before-upgrade [--dry-run]
+# -> It will print new wasm hash, which you set as the target hash for rest of deployment
+TARGET_HASH=0xf2a40400e1f0cc0896c976eb2efa7a902aff68266b69b4a6be0a077b022db819
+# By providing the target hash, the script will skip upgrade for mAIners already at that hash and healthy
+
+# Upgrade 2 mAIner of IConfucius on production network, with confirmation prompt:
+scripts/upgrade_mainers.sh --network prd --user $USER --target-hash $TARGET_HASH --num 2 --ask-before-upgrade [--dry-run]
+
+# Upgrade ALL mAIners of IConfucius on production network confirmation prompt:
+scripts/upgrade_mainers.sh --network prd --user $USER --target-hash $TARGET_HASH --ask-before-upgrade [--dry-run]
+
+# Upgrade 1 mAIner on production network, with confirmation prompt:
+scripts/upgrade_mainers.sh --network prd --num 1 --target-hash $TARGET_HASH --ask-before-upgrade [--dry-run]
+
+# Upgrade 100 mainers on production network with target hash and without confirmation prompt:
+scripts/upgrade_mainers.sh --network prd --num 100 --target-hash $TARGET_HASH [--dry-run]
+
+# Upgrade ALL mainers on production network with target hash and without confirmation prompt:
+scripts/upgrade_mainers.sh --network prd --target-hash $TARGET_HASH [--dry-run]
+```
+
+## Old approach
 
 An individual mAIner agent can be upgraded with the following commands:
 
