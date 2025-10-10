@@ -5,7 +5,7 @@ mAIner Upgrade Script
 This script safely upgrades mAIner canisters with health checks, snapshots, and rollback capability.
 
 To run the upgrade in a safe sequence:
-    # from the root of the repository
+    # from the folder: funnAI
     conda activate llama_cpp_canister
     
     # Upgrade 1 mAIner of IConfucius on production network confirmation prompt:
@@ -25,11 +25,11 @@ To run the upgrade in a safe sequence:
     # Upgrade 1 mAIner on production network confirmation prompt:
     scripts/upgrade_mainers.sh --network prd --num 1 --target-hash $TARGET_HASH --ask-before-upgrade [--dry-run]
 
-    # Upgrade 2 mainers on production network with target hash and confirmation prompt:
-    scripts/upgrade_mainers.sh --network prd --num 2 --target-hash $TARGET_HASH --ask-before-upgrade [--dry-run]
+    # Upgrade 100 mainers on production network with target hash and without confirmation prompt:
+    scripts/upgrade_mainers.sh --network prd --num 100 --target-hash $TARGET_HASH [--dry-run]
 
-    # Upgrade ALL mainers on production network with target hash and confirmation prompt:
-    scripts/upgrade_mainers.sh --network prd --target-hash $TARGET_HASH --ask-before-upgrade [--dry-run]
+    # Upgrade ALL mainers on production network with target hash and without confirmation prompt:
+    scripts/upgrade_mainers.sh --network prd --target-hash $TARGET_HASH [--dry-run]
 
 
 To run unit tests:
