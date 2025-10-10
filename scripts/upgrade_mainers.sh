@@ -9,6 +9,7 @@ USER_PRINCIPAL=""
 DRY_RUN=""
 SKIP_PREPARATION=""
 ASK_BEFORE_UPGRADE=""
+REVERSE=""
 
 # Parse command line arguments
 while [ $# -gt 0 ]; do
@@ -55,9 +56,13 @@ while [ $# -gt 0 ]; do
             ASK_BEFORE_UPGRADE="--ask-before-upgrade"
             shift
             ;;
+        --reverse)
+            REVERSE="--reverse"
+            shift
+            ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--target-hash HASH] [--num NUM] [--mainer CANISTER_ID] [--user PRINCIPAL] [--dry-run] [--skip-preparation] [--ask-before-upgrade]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--target-hash HASH] [--num NUM] [--mainer CANISTER_ID] [--user PRINCIPAL] [--dry-run] [--skip-preparation] [--ask-before-upgrade] [--reverse]"
             echo ""
             echo "Options:"
             echo "  --network NETWORK       Required. Network to upgrade mainers on"
@@ -68,6 +73,7 @@ while [ $# -gt 0 ]; do
             echo "  --dry-run               Optional. Run in dry-run mode without making changes"
             echo "  --skip-preparation      Optional. Skip Step 1 preparation"
             echo "  --ask-before-upgrade    Optional. Ask for confirmation before upgrading each canister"
+            echo "  --reverse               Optional. Process mainers in reverse order"
             exit 1
             ;;
     esac
@@ -109,6 +115,10 @@ fi
 
 if [ ! -z "$ASK_BEFORE_UPGRADE" ]; then
     PYTHON_CMD="$PYTHON_CMD $ASK_BEFORE_UPGRADE"
+fi
+
+if [ ! -z "$REVERSE" ]; then
+    PYTHON_CMD="$PYTHON_CMD $REVERSE"
 fi
 
 echo "Executing: $PYTHON_CMD"

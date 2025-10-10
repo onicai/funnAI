@@ -357,10 +357,21 @@ def run_command(
         """Check if error message indicates a transient error worth retrying."""
         if not stderr:
             return False
+
+        # Non-transient errors that should NOT be retried
+        non_transient_indicators = [
+            "IC0536",  # Method not found - permanent error
+            "has no update method",
+            "has no query method",
+        ]
+        if any(indicator in stderr for indicator in non_transient_indicators):
+            return False
+
+        # Transient errors that SHOULD be retried
         transient_indicators = [
             "Failed query call",
             "CanisterError",
-            "IC0508",
+            "IC0508",  # Canister stopped
             "IC0503",  # Canister trapped
             "timeout",
             "Timeout",
@@ -681,7 +692,8 @@ def check_health(network: str, canister_id: str, dry_run: bool = False) -> bool:
         output = result.stdout.strip()
 
         # Check for successful health response
-        if "(variant { Ok = record { status_code = 200 : nat16 } })" in output:
+        # (Sometimes dfx fails to parse the candid and shows numeric variant)
+        if "(variant { Ok = record { status_code = 200 : nat16 } })" in output or "(variant { 17_724 = record { 3_475_804_314 = 200 : nat16 } })" in output:
                 log_message(f"Health check passed for {canister_id}", "SUCCESS")
                 return True
         else:
@@ -693,7 +705,13 @@ def check_health(network: str, canister_id: str, dry_run: bool = False) -> bool:
     
 
 def get_maintenance_flag(network: str, canister_id: str, dry_run: bool = False) -> Optional[bool]:
-    """Get the current maintenance flag status."""
+    """Get the current maintenance flag status.
+
+    Returns:
+        True if flag is on
+        False if flag is off
+        None if method doesn't exist (old canister) - treated as success in turn_on_maintenance_flag
+    """
     command = [
         "dfx", "canister", "--network", network, "call",
         canister_id, "getMaintenanceFlag", "--output", "json"
@@ -707,12 +725,23 @@ def get_maintenance_flag(network: str, canister_id: str, dry_run: bool = False) 
         result = run_command(command, retry_on_transient_errors=True)
         data = json.loads(result.stdout)
         return data.get('Ok', {}).get('flag', None)
+    except subprocess.CalledProcessError as e:
+        # Check if the error is because the method doesn't exist (old canister)
+        if e.stderr and "has no update method 'getMaintenanceFlag'" in e.stderr:
+            log_message(f"Canister {canister_id} does not have getMaintenanceFlag method (old version)", "INFO")
+            return None
+        log_message(f"Failed to get maintenance flag for {canister_id}: {e}", "ERROR")
+        return None
     except Exception as e:
         log_message(f"Failed to get maintenance flag for {canister_id}: {e}", "ERROR")
         return None
 
-def turn_off_maintenance_flag(network: str, canister_id: str, dry_run: bool = False) -> bool:
-    """Turn off the maintenance flag if it's on."""
+def turn_on_maintenance_flag(network: str, canister_id: str, dry_run: bool = False) -> bool:
+    """Turn on the maintenance flag if it's off.
+
+    For old canisters without getMaintenanceFlag method, this returns True (success)
+    since the upgrade will add the method and the flag will be on by default.
+    """
     log_message(f"Checking maintenance flag for {canister_id}...")
 
     if dry_run:
@@ -722,6 +751,87 @@ def turn_off_maintenance_flag(network: str, canister_id: str, dry_run: bool = Fa
     try:
         # Step 1: Check current maintenance flag status
         flag_value = get_maintenance_flag(network, canister_id)
+
+        # Handle old canisters without the method
+        if flag_value is None:
+            log_message(f"Canister does not have maintenance flag method (old version) - skipping", "SUCCESS")
+            return True
+
+        # Check if flag is already true
+        if flag_value is True:
+            log_message(f"Maintenance flag already on for {canister_id}", "SUCCESS")
+            return True
+        elif flag_value is False:
+            log_message(f"Maintenance flag is OFF, turning it on...")
+
+            # Step 2: Toggle the flag
+            toggle_command = [
+                "dfx", "canister", "--network", network, "call",
+                canister_id, "toggleMaintenanceFlagAdmin"
+            ]
+            toggle_result = run_command(toggle_command)
+
+            # Step 3: Verify flag is now true (with retries)
+            max_retries = 5
+            retry_delay = 3.0
+
+            for attempt in range(1, max_retries + 1):
+                # Give canister a moment for the flag change to propagate
+                time.sleep(retry_delay)
+
+                new_flag_value = get_maintenance_flag(network, canister_id)
+
+                if new_flag_value is True:
+                    log_message(f"Maintenance flag turned ON for {canister_id}", "SUCCESS")
+                    return True
+                elif attempt < max_retries:
+                    log_message(f"Flag still OFF (attempt {attempt}/{max_retries}). Waiting {retry_delay}s before next check...", "WARNING")
+                else:
+                    log_message(f"Failed to turn on maintenance flag for {canister_id}: flag is still {new_flag_value}", "ERROR")
+                    return False
+
+            return False
+        else:
+            log_message(f"Unexpected maintenance flag value: {flag_value}", "ERROR")
+            return False
+
+    except Exception as e:
+        log_message(f"Failed to check/toggle maintenance flag for {canister_id}: {e}", "ERROR")
+        return False
+
+def turn_off_maintenance_flag(network: str, canister_id: str, dry_run: bool = False) -> bool:
+    """Turn off the maintenance flag if it's on.
+
+    After an upgrade, the canister might temporarily report method not found
+    while initializing. This function retries to handle that case.
+    """
+    log_message(f"Checking maintenance flag for {canister_id}...")
+
+    if dry_run:
+        log_message(f"DRY RUN: Would check maintenance flag", "INFO")
+        return True
+
+    try:
+        # Step 1: Check current maintenance flag status with retries
+        # After upgrade, canister may need time to initialize
+        max_initial_retries = 5
+        initial_retry_delay = 3.0
+        flag_value = None
+
+        for initial_attempt in range(1, max_initial_retries + 1):
+            flag_value = get_maintenance_flag(network, canister_id)
+
+            # If we got a valid response (True or False), proceed
+            if flag_value is not None:
+                break
+
+            # If None (method not found or error), retry with delay
+            if initial_attempt < max_initial_retries:
+                log_message(f"Could not get maintenance flag (attempt {initial_attempt}/{max_initial_retries}). Canister may be initializing. Waiting {initial_retry_delay}s...", "WARNING")
+                time.sleep(initial_retry_delay)
+            else:
+                log_message(f"Could not get maintenance flag after {max_initial_retries} attempts. Canister may not have this method (old version) - assuming success", "WARNING")
+                return True
 
         # Check if flag is already false
         if flag_value is False:
@@ -880,8 +990,11 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
     if initial_status == "Stopped":
         log_message("Canister is already stopped, skipping steps 2b-2e", "INFO")
     else:
-        # Step 2b: Set maintenance flag (placeholder - not yet implemented)
-        log_message("Step 2b: Maintenance flag - SKIPPED (not yet implemented)", "WARNING")
+        # Step 2b: Set maintenance flag
+        if not turn_on_maintenance_flag(network, address, dry_run):
+            log_message("Failed to turn on maintenance flag", "ERROR")
+            update_mainer_status(address, MainerStatus.FAILED_MAINTENANCE, "Could not turn on maintenance flag")
+            return False
 
         # Step 2c: Stop timer
         if not stop_timer(network, address, dry_run):
@@ -935,14 +1048,27 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
         return False
 
     # Step 2i: Check maintenance flag (endpoint must now be available and return true)
+    # Retry logic: canister may need time to fully initialize after upgrade
     if not dry_run:
-        # Give canister a moment to fully start
-        time.sleep(5)
-    if not get_maintenance_flag(network, address, dry_run):
-        if not dry_run:
-            log_message(f"Maintenance flag check failed. Snapshot ID for rollback: {snapshot_id}", "ERROR")
-            update_mainer_status(address, MainerStatus.FAILED_MAINTENANCE, f"Could not get maintenance flag. Snapshot: {snapshot_id}")
-            return False
+        max_retries = 5
+        retry_delay = 5.0
+        flag_value = None
+
+        for attempt in range(1, max_retries + 1):
+            time.sleep(retry_delay)
+            flag_value = get_maintenance_flag(network, address, dry_run)
+
+            if flag_value is True:
+                log_message(f"Maintenance flag check passed (attempt {attempt}/{max_retries})", "SUCCESS")
+                break
+            elif attempt < max_retries:
+                log_message(f"Maintenance flag not yet True (got: {flag_value}), attempt {attempt}/{max_retries}. Waiting {retry_delay}s...", "WARNING")
+            else:
+                log_message(f"Maintenance flag check failed after {max_retries} attempts. Expected True, got: {flag_value}. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+                update_mainer_status(address, MainerStatus.FAILED_MAINTENANCE, f"Maintenance flag was {flag_value}, expected True. Snapshot: {snapshot_id}")
+                return False
+    else:
+        flag_value = get_maintenance_flag(network, address, dry_run)
 
     # Step 2j: Start timer
     if not start_timer(network, address, dry_run):
@@ -1013,6 +1139,11 @@ def main():
         "--ask-before-upgrade",
         action="store_true",
         help="Ask for confirmation before upgrading each canister"
+    )
+    parser.add_argument(
+        "--reverse",
+        action="store_true",
+        help="Process mainers in reverse order (start from the end)"
     )
 
     args = parser.parse_args()
@@ -1093,6 +1224,11 @@ def main():
         if total_mainers == 0:
             log_message("No ShareAgent mAIners found to upgrade", "WARNING")
             sys.exit(0)
+
+        # Reverse the list if --reverse flag is set
+        if args.reverse:
+            share_agent_mainers.reverse()
+            log_message("Processing mAIners in REVERSE order", "WARNING")
 
         # Print clear message - highlight what will actually be processed
         if args.num and args.num < total_mainers:
