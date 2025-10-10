@@ -777,12 +777,18 @@
     const unlockedAgents = [];
 
     enrichedCanistersInfo.forEach((canisterInfo, index) => {
+      // Skip if canisterInfo is null or undefined
+      if (!canisterInfo) {
+        console.warn(`Skipping null/undefined canisterInfo at index ${index}`);
+        return;
+      }
+
       // Get the correct actor by index (might be null for unlocked mAIners)
       const agentActor = agentCanisterActors[index];
-      
+
       // Determine mainer type from the canister info
       let mainerType = 'Unknown';
-      if (canisterInfo.canisterType) {
+      if (canisterInfo.canisterType && canisterInfo.canisterType.MainerAgent) {
         if ('Own' in canisterInfo.canisterType.MainerAgent) {
           mainerType = 'Own';
         } else if ('ShareAgent' in canisterInfo.canisterType.MainerAgent) {
@@ -792,10 +798,37 @@
 
       // Check if this is an unlocked mAIner
       const isUnlocked = canisterInfo.status && 'Unlocked' in canisterInfo.status;
-      
+
       // Check if this unlocked mAIner is owned by the current user
       const isOwnedByCurrentUser = !canisterInfo.ownedBy || canisterInfo.ownedBy.toString() === $store.principal?.toString();
-      
+
+      // Skip unlocked mAIners without a valid address (they shouldn't appear in the active agents list)
+      if (isUnlocked && (!canisterInfo.address || canisterInfo.address === "")) {
+        console.log(`Skipping unlocked mAIner at index ${index} - no address yet, isOwnedByCurrentUser: ${isOwnedByCurrentUser}`);
+        if (isOwnedByCurrentUser) {
+          // Still add to unlocked agents if owned by current user
+          const unlockedMainerData = {
+            id: `unlocked-${index}`,
+            name: `Unlocked mAIner ${index + 1}`,
+            status: "unlocked",
+            burnedCycles: canisterInfo.burnedCycles || 0,
+            cycleBalance: canisterInfo.cycleBalance || 0,
+            cyclesBurnRate: canisterInfo.cyclesBurnRate || {},
+            cyclesBurnRateSetting: canisterInfo.cyclesBurnRateSetting || "Medium",
+            mainerType,
+            llmCanisters: canisterInfo.llmCanisters || [],
+            llmSetupStatus: canisterInfo.llmSetupStatus || '',
+            hasError: canisterInfo.hasError || false,
+            isUnlocked: true,
+            isOwnedByCurrentUser: true,
+            originalCanisterInfo: canisterInfo,
+            createdAt: canisterInfo.creationTimestamp ? Number(canisterInfo.creationTimestamp / 1000000n) : null
+          };
+          unlockedAgents.push(unlockedMainerData);
+        }
+        return;
+      }
+
       const mainerData = {
         id: canisterInfo.address || `unlocked-${index}`, // Use index for unlocked without address
         name: isUnlocked ? `Unlocked mAIner ${index + 1}` : `mAIner ${canisterInfo.address?.slice(0, 5) || 'Unknown'}`,
