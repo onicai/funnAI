@@ -429,8 +429,12 @@ class ICPSwapService {
         spender
       );
 
-      // 3. Use depositFrom to pull tokens, then swap
-      // depositFromAndSwap seems to have issues, so we'll do it in two steps
+      // 3. Use depositFrom → swap → withdraw instead of depositFromAndSwap
+      // The all-in-one depositFromAndSwap endpoint had issues with:
+      // - Proper fee handling (needed approval for amount + fee, not just amount)
+      // - Error visibility (hard to debug which step failed)
+      // - Swap direction control (zeroForOne determination)
+      // Breaking into three steps gives us better control and error handling
       console.log("Step 1: Depositing tokens via depositFrom");
       const depositArgs = {
         token: token.canister_id,
