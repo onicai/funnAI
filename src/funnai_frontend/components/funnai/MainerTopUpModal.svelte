@@ -388,7 +388,12 @@
       }
 
       // Check mAIner health before proceeding (defensive: fail if health check errors)
-      const mainerActor = $store.userMainerCanisterActors.find(a => a.id === canisterId)?.actor;
+      // Find the index of this canister in userMainerAgentCanistersInfo to get the corresponding actor
+      const mainerIndex = $store.userMainerAgentCanistersInfo.findIndex(canister => 
+        (canister.address === canisterId) || (canister.id === canisterId)
+      );
+      const mainerActor = mainerIndex !== -1 ? $store.userMainerCanisterActors[mainerIndex] : null;
+      
       if (mainerActor) {
         try {
           const healthStatus = await mainerHealthService.checkMainerHealth(canisterId, mainerActor);
