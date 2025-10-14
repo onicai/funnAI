@@ -207,6 +207,7 @@ dfx deploy funnai_frontend --network $NETWORK
 dfx canister call funnai_frontend grant_permission '(record {permission = variant {Prepare}; to_principal = principal "<your-principal>"})'
 dfx canister call funnai_frontend grant_permission '(record {permission = variant {Commit}; to_principal = principal "<your-principal>"})'
 
+
 # Deploy the token ledger canister:
 # from folder: PoAIW/src/TokenLedger
 dfx deploy

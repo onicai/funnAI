@@ -5,6 +5,8 @@ NETWORK_TYPE="local"
 LOOP="false"
 LOOP_DELAY=0
 USER="all"
+SKIP_POAIW_UPDATE=""
+DAILY_METRICS=""
 
 # Parse command line arguments for network type
 while [ $# -gt 0 ]; do
@@ -30,9 +32,17 @@ while [ $# -gt 0 ]; do
             USER=$1  # "all" or a specific principal"
             shift
             ;;
+        --skip-poaiw-update)
+            SKIP_POAIW_UPDATE="--skip-poaiw-update"
+            shift
+            ;;
+        --daily-metrics)
+            DAILY_METRICS="--daily-metrics"
+            shift
+            ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--loop [delay]] [--user principal]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--loop [delay]] [--user principal] [--skip-poaiw-update] [--daily-metrics]"
             exit 1
             ;;
     esac
@@ -43,12 +53,10 @@ echo "Using network type: $NETWORK_TYPE"
 if [ "$LOOP" = "true" ]; then
     echo "Running in loop mode with a delay of $LOOP_DELAY seconds."
     while true; do
-        echo "Fetching mainers on network: $NETWORK_TYPE for user: $USER"
-        python -m scripts.get_mainers --network $NETWORK_TYPE --user $USER
+        python -m scripts.get_mainers --network $NETWORK_TYPE --user $USER $SKIP_POAIW_UPDATE $DAILY_METRICS
         sleep $LOOP_DELAY
     done
 fi
 
-echo "Fetching mainers on network: $NETWORK_TYPE for user: $USER"
-python -m scripts.get_mainers --network $NETWORK_TYPE --user $USER
+python -m scripts.get_mainers --network $NETWORK_TYPE --user $USER $SKIP_POAIW_UPDATE $DAILY_METRICS
 
