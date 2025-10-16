@@ -5,6 +5,7 @@ NETWORK_TYPE="local"
 CANISTER_ID="all"
 CANISTER_TYPES="protocol"
 DRY_RUN=""
+WORKERS=""
 
 # Parse command line arguments for network type
 while [ $# -gt 0 ]; do
@@ -38,9 +39,14 @@ while [ $# -gt 0 ]; do
             DRY_RUN="--dry-run"
             shift
             ;;
+        --workers)
+            shift
+            WORKERS="--workers $1"
+            shift
+            ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --canister-id [CANISTER_ID/all] --canister-types [all|protocol|mainers] [--dry-run]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --canister-id [CANISTER_ID/all] --canister-types [all|protocol|mainers] [--dry-run] [--workers N]"
             exit 1
             ;;
     esac
@@ -49,4 +55,4 @@ done
 echo "Using network type: $NETWORK_TYPE"
 echo "Using canister ID : $CANISTER_ID"
 
-python -m scripts.delete_snapshots --network $NETWORK_TYPE --canister-id $CANISTER_ID --canister-types $CANISTER_TYPES $DRY_RUN
+python -m scripts.delete_snapshots --network $NETWORK_TYPE --canister-id $CANISTER_ID --canister-types $CANISTER_TYPES $DRY_RUN $WORKERS
