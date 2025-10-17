@@ -208,16 +208,28 @@
     loadFunnaiLimits();
   }
   
-  async function loadBalance() {
+  async function loadBalance(loadIcp=false) {
+    console.log("handleSubmit loadBalance: ", loadIcp);
     try {
-      if (!$store.principal || !selectedToken) return;
-      
-      balance = await IcrcService.getIcrc1Balance(
-        selectedToken,
-        $store.principal
-      ) as bigint;
+      if (!$store.principal) return;
+      if (loadIcp) {
+        if (!icpToken) return;
+        const icpBalance = await IcrcService.getIcrc1Balance(
+          icpToken,
+          $store.principal
+        ) as bigint;
+        console.log("handleSubmit loadBalance icpBalance: ", icpBalance);
+        return icpBalance;
+      } else {
+        if (!selectedToken) return;
+        balance = await IcrcService.getIcrc1Balance(
+          selectedToken,
+          $store.principal
+        ) as bigint;
+        console.log("handleSubmit loadBalance: ", balance);
+      };
     } catch (error) {
-      console.error("Error loading balance:", error);
+      console.error("Error loading balance: ", error);
     }
   }
 
@@ -561,12 +573,12 @@
       if (selectedTokenSymbol !== 'FUNNAI' && selectedTokenSymbol !== 'ICP') {
         // Swap any other tokens than FUNNAI to ICP first, then proceed with ICP flow
         validatingMessage = `Swapping ${selectedToken.symbol} to ICP...`;
-        console.log("Starting swap for token:", selectedToken.symbol);
-        console.log("User balance:", balance.toString(), selectedToken.symbol);
-        console.log("Amount to swap:", amountBigInt.toString());
-        console.log("Token fee:", tokenFee.toString());
-        console.log("Total needed:", (amountBigInt + tokenFee).toString());
-        console.log("Has enough?", balance >= (amountBigInt + tokenFee));
+        console.log("handleSubmit Starting swap for token:", selectedToken.symbol);
+        console.log("handleSubmit User balance:", balance.toString(), selectedToken.symbol);
+        console.log("handleSubmit Amount to swap:", amountBigInt.toString());
+        console.log("handleSubmit Token fee:", tokenFee.toString());
+        console.log("handleSubmit Total needed:", (amountBigInt + tokenFee).toString());
+        console.log("handleSubmit Has enough?", balance >= (amountBigInt + tokenFee));
         
         // Note: zeroForOne is now determined automatically by ICPSwapService based on pool metadata
         const args : DepositAndSwapArgs = {
@@ -576,9 +588,9 @@
           amountOutMinimum: "0",
           tokenOutFee: BigInt(icpToken.fee_fixed)
         };
-        console.log("Swap args:", args);
+        console.log("handleSubmit Swap args:", args);
         const swapResult = await ICPSwapService.approveAndSwap(selectedToken, selectedToken.pools[0], args, selectedToken.pools[0]);
-        console.log("Swap result:", swapResult);
+        console.log("handleSubmit Swap result:", swapResult);
         
         if (swapResult && typeof swapResult === 'object' && 'ok' in swapResult) {
           // The user now has the corresponding ICP in their wallet
@@ -588,11 +600,19 @@
           // swapResult.ok is the withdrawal result (BigInt), subtract the ICP fee for the transfer
           const outputAmount = typeof swapResult.ok === 'bigint' ? swapResult.ok : BigInt(swapResult.ok);
           const icpFee = BigInt(icpToken.fee_fixed);
-          const icpToTransfer = outputAmount - icpFee;
+          const icpToTransfer = outputAmount - icpFee - icpFee;
           
-          console.log("ICP received from swap:", outputAmount.toString());
-          console.log("ICP fee:", icpFee.toString());
-          console.log("ICP to transfer to protocol:", icpToTransfer.toString());
+          console.log("handleSubmit ICP received from swap:", outputAmount.toString());
+          console.log("handleSubmit ICP fee:", icpFee.toString());
+          console.log("handleSubmit ICP to transfer to protocol:", icpToTransfer.toString());
+          await loadBalance();
+          var icpBalance = await loadBalance(true);
+          while (icpBalance < icpToTransfer) {
+            console.log("handleSubmit waiting on ICP Ledger: ", icpBalance);
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait as the ICP Ledger needs time to reflect the new ICP balance
+            icpBalance = await loadBalance(true);
+          };
+          console.log("handleSubmit ICP Balance: ", icpBalance);
           
           result = await IcrcService.transfer(
             icpToken,
@@ -611,7 +631,7 @@
                 ? JSON.stringify(swapResult.err) 
                 : swapResult.err)
             : 'Unknown error';
-          console.error("Swap error details:", errorDetails);
+          console.error("handleSubmit Swap error details:", errorDetails);
           throw new Error(`Swap failed: ${errorDetails}`);
         };
       } else {
@@ -702,10 +722,10 @@
               amount: BigInt(amount),
             };
             $store.backendActor.addMaxMainerTopup(maxTopUpInput).catch(maxTopUpStorageError => {
-              console.error("Top-up storage error: ", maxTopUpStorageError);            
+              console.error("handleSubmit Top-up storage error: ", maxTopUpStorageError);            
             });
           } catch (error) {
-            console.error("Error setting up max top-up storage: ", error);
+            console.error("handleSubmit Error setting up max top-up storage: ", error);
           }
         }
       } else if (result && typeof result === 'object' && 'Err' in result) {
@@ -713,10 +733,10 @@
           ? Object.keys(result.Err)[0]
           : String(result.Err);
         errorMessage = `Transfer failed: ${errMsg}`;
-        console.error("Transfer error details:", result.Err);
+        console.error("handleSubmit Transfer error details:", result.Err);
       }
     } catch (err) {
-      console.error("Top-up error:", err);
+      console.error("handleSubmit Top-up error:", err);
       errorMessage = err.message || "Top-up failed";
     } finally {
       isValidating = false;
