@@ -378,12 +378,12 @@ class ICPSwapService {
       
       try {
         metadata = await poolActor.metadata();
-        console.log("Pool metadata:", metadata);
+        console.log("depositFromAndSwap Pool metadata:", metadata);
         
         if (metadata && 'ok' in metadata) {
           const metadataOk: any = metadata.ok;
-          console.log("Token0:", metadataOk.token0);
-          console.log("Token1:", metadataOk.token1);
+          console.log("depositFromAndSwap Token0:", metadataOk.token0);
+          console.log("depositFromAndSwap Token1:", metadataOk.token1);
           
           // Determine if our input token is token0 or token1
           const token0Address = metadataOk.token0?.address;
@@ -396,26 +396,33 @@ class ICPSwapService {
             // Set output token address (opposite of input)
             outputTokenAddress = isToken0 ? token1Address : token0Address;
             
-            console.log("Input token is:", isToken0 ? "token0" : "token1");
-            console.log("Output token address:", outputTokenAddress);
+            console.log("depositFromAndSwap Input token is:", isToken0 ? "token0" : "token1");
+            console.log("depositFromAndSwap Output token address:", outputTokenAddress);
           }
         }
       } catch (metaError) {
-        console.warn("Could not fetch pool metadata:", metaError);
-        throw new Error("Failed to fetch pool metadata - cannot determine token order");
+        console.warn("depositFromAndSwap Could not fetch pool metadata:", metaError);
+        throw new Error("depositFromAndSwap Failed to fetch pool metadata - cannot determine token order");
       }
 
       // Determine swap direction based on which token we're swapping
       // zeroForOne = true means swapping token0 for token1
       // zeroForOne = false means swapping token1 for token0
       const zeroForOne = isToken0;
-      console.log("Swap direction (zeroForOne):", zeroForOne);
+      console.log("depositFromAndSwap Swap direction (zeroForOne):", zeroForOne);
 
-      // 2. Approve the pool canister to spend the input token + fee
-      // The pool needs to pull both the swap amount and the token fee
-      const totalAmountNeeded = BigInt(depositAndSwapArgs.amountIn) + depositAndSwapArgs.tokenInFee;
+      // 2. Approve the pool canister to spend the input token
+      const totalAmountNeeded = BigInt(depositAndSwapArgs.amountIn) + depositAndSwapArgs.tokenInFee + depositAndSwapArgs.tokenInFee; // Approve more as a margin
+      console.log("depositFromAndSwap totalAmountNeeded: ", totalAmountNeeded);
+      // We cannot assume the user has more tokens in their balance than this amount, i.e. the transfer fee needs to be included in it
+      const amountToSwap = BigInt(depositAndSwapArgs.amountIn) - depositAndSwapArgs.tokenInFee;
+      console.log("depositFromAndSwap amountToSwap: ", amountToSwap);
+      const amountIn = amountToSwap.toString();
+      console.log("depositFromAndSwap amountIn: ", amountIn);
+      depositAndSwapArgs.amountIn = amountIn;
+      console.log("depositFromAndSwap depositAndSwapArgs.amountIn: ", depositAndSwapArgs.amountIn);
       
-      console.log("Approving amount:", {
+      console.log("Approving amount: ", {
         tokenCanisterId: token.canister_id,
         amountIn: depositAndSwapArgs.amountIn,
         tokenInFee: depositAndSwapArgs.tokenInFee.toString(),
@@ -429,63 +436,15 @@ class ICPSwapService {
         spender
       );
 
-      // 3. Use depositFrom to pull tokens, then swap
-      // depositFromAndSwap seems to have issues, so we'll do it in two steps
-      console.log("Step 1: Depositing tokens via depositFrom");
-      const depositArgs = {
-        token: token.canister_id,
-        amount: BigInt(depositAndSwapArgs.amountIn),
-        fee: depositAndSwapArgs.tokenInFee
+      // 3. Call depositFromAndSwap on the pool
+      console.log("depositFromAndSwap depositAndSwapArgs: ", depositAndSwapArgs);
+      const result = await poolActor.depositFromAndSwap(depositAndSwapArgs);
+      console.log("depositFromAndSwap result: ", result);
+      
+      if (!result || (typeof result === 'object' && 'err' in result)) {
+        console.error("depositFromAndSwap failed: ", result);
       };
-      console.log("Deposit args:", depositArgs);
-      
-      const depositResult = await poolActor.depositFrom(depositArgs);
-      console.log("Deposit result:", depositResult);
-      
-      if (!depositResult || (typeof depositResult === 'object' && 'err' in depositResult)) {
-        console.error("Deposit failed:", depositResult);
-        return depositResult;
-      }
-
-      // 4. Now swap the deposited tokens with the correct direction
-      console.log("Step 2: Swapping deposited tokens");
-      const swapArgs = {
-        amountIn: depositAndSwapArgs.amountIn,
-        zeroForOne: zeroForOne, // Use dynamically determined direction
-        amountOutMinimum: depositAndSwapArgs.amountOutMinimum
-      };
-      console.log("Swap args:", swapArgs);
-      
-      const swapResult = await poolActor.swap(swapArgs);
-      console.log("Swap result:", swapResult);
-      
-      if (!swapResult || (typeof swapResult === 'object' && 'err' in swapResult)) {
-        console.error("Swap failed:", swapResult);
-        return swapResult;
-      }
-
-      // 5. Withdraw the output tokens
-      console.log("Step 3: Withdrawing output tokens");
-      
-      // The swap result should contain the amount of output tokens received
-      const swapResultValue = (swapResult as any).ok;
-      const outputAmount = typeof swapResultValue === 'bigint' 
-        ? swapResultValue 
-        : BigInt(swapResultValue || '0');
-      
-      console.log("Output amount from swap:", outputAmount.toString());
-      
-      const withdrawArgs = {
-        token: outputTokenAddress,
-        amount: outputAmount,
-        fee: depositAndSwapArgs.tokenOutFee
-      };
-      console.log("Withdraw args:", withdrawArgs);
-      
-      const withdrawResult = await poolActor.withdraw(withdrawArgs);
-      console.log("Withdraw result:", withdrawResult);
-
-      return withdrawResult;
+      return result;
     } catch (error) {
       console.error("Error in approveAndSwap:", error);
       console.error("Error stack:", error.stack);
