@@ -4,16 +4,16 @@
   import TokenImages from "../TokenImages.svelte";
 
   import { ArrowUp, Info, Check } from 'lucide-svelte';
-  import { MEMO_PAYMENT_PROTOCOL, store, theme } from "../../stores/store";
+  import { MEMO_PAYMENT_PROTOCOL, store, canisterIDLs } from "../../stores/store";
   import { IcrcService } from "../../helpers/IcrcService";
   import BigNumber from "bignumber.js";
   import { formatBalance, formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
   import { fetchTokens, protocolConfig } from "../../helpers/token_helpers";
   import { createAnonymousActorHelper } from "../../helpers/utils/actorUtils";
-  import { idlFactory as cmcIdlFactory } from "../../helpers/idls/cmc.idl.js";
   import { MIN_AMOUNT, MAX_AMOUNT, CELEBRATION_DURATION, CELEBRATION_ENABLED } from "../../helpers/config/topUpConfig";
   import { getIsProtocolActive } from "../../helpers/gameState";
   import { mainerHealthService } from "../../helpers/mainerHealthService";
+  import ICPSwapService, { SwapArgs, DepositAndSwapArgs } from "../../helpers/icpswapService";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
@@ -27,26 +27,29 @@
 
   console.log("in MainerTopUpModal protocolAddress ", protocolAddress);
   
-  // Token configurations - now supporting both ICP and FUNNAI
+  // Token configurations - now supporting ICP, FUNNAI, BOB, and ckBTC
   let availableTokens: any[] = [];
-  let selectedTokenSymbol: 'ICP' | 'FUNNAI' = 'ICP';
+  let selectedTokenSymbol: 'ICP' | 'FUNNAI' | 'BOB' | 'ckBTC' = 'ICP';
   let isTokenLoading: boolean = true;
   
   // Get currently selected token
   $: selectedToken = availableTokens.find(t => t.symbol === selectedTokenSymbol);
+  let icpToken;
   
   // Load token data from token_helpers
   async function loadTokenData() {
     isTokenLoading = true;
     try {
       const result = await fetchTokens({});
-      const icpToken = result.tokens.find(t => t.symbol === "ICP");
+      icpToken = result.tokens.find(t => t.symbol === "ICP");
       const funnaiToken = result.tokens.find(t => t.symbol === "FUNNAI");
+      const bobToken = result.tokens.find(t => t.symbol === "BOB");
+      const ckbtcToken = result.tokens.find(t => t.symbol === "ckBTC");
       
-      if (icpToken && funnaiToken) {
-        availableTokens = [icpToken, funnaiToken];
+      if (icpToken && funnaiToken && bobToken && ckbtcToken) {
+        availableTokens = [icpToken, funnaiToken, bobToken, ckbtcToken];
       } else {
-        throw new Error("Required tokens (ICP/FUNNAI) not found in token_helpers");
+        throw new Error("Required tokens not found in token_helpers");
       }
     } catch (error) {
       console.error("Error loading token data:", error);
@@ -65,6 +68,20 @@
           decimals: 8,
           fee_fixed: "1", // 0.00000001 FUNNAI fee
           canister_id: "vpyot-zqaaa-aaaaa-qavaq-cai" // FUNNAI canister ID
+        },
+        {
+          name: "BOB",
+          symbol: "BOB",
+          decimals: 8,
+          fee_fixed: "1000000",
+          canister_id: "7pail-xaaaa-aaaas-aabmq-cai"
+        },
+        {
+          name: "ckBTC",
+          symbol: "ckBTC",
+          decimals: 8,
+          fee_fixed: "10",
+          canister_id: "mxzaz-hqaaa-aaaar-qaada-cai"
         }
       ];
     } finally {
@@ -73,6 +90,7 @@
   }
   
   let isValidating: boolean = false;
+  let validatingMessage: string = "Processing...";
   let errorMessage: string = "";
   let isLoadingConversionRate: boolean = true;
   let tokenFee: bigint = BigInt(0); // Will be set once token is loaded
@@ -88,21 +106,63 @@
   // FUNNAI constants
   const FUNNAI_MIN_CYCLES = new BigNumber("1000000000000"); // 1T cycles (hardcoded)
   
+  // Helper function to round amounts sensibly based on magnitude
+  function roundToSensibleDecimals(amount: BigNumber): number {
+    const absAmount = amount.abs();
+    
+    // For amounts >= 1000: round to whole numbers
+    if (absAmount.gte(1000)) {
+      return Number(amount.toFixed(0));
+    }
+    // For amounts >= 10: round to 2 decimals
+    if (absAmount.gte(10)) {
+      return Number(amount.toFixed(2));
+    }
+    // For amounts >= 1: round to 4 decimals
+    if (absAmount.gte(1)) {
+      return Number(amount.toFixed(4));
+    }
+    // For amounts >= 0.01: round to 6 decimals
+    if (absAmount.gte(0.01)) {
+      return Number(amount.toFixed(6));
+    }
+    // For very small amounts: keep 8 decimals
+    return Number(amount.toFixed(8));
+  }
+
   // Dynamic limits based on token type and conversion rate
   $: dynamicLimits = (() => {
     if (selectedTokenSymbol === 'FUNNAI' && conversionRate && !conversionRate.isZero()) {
-      // FUNNAI limits: backend max, hardcoded min (0.4T cycles)
+      // FUNNAI limits: backend max, hardcoded min (1T cycles)
       const E8S_PER_FUNNAI = new BigNumber("100000000000"); // 10^8 units per FUNNAI
       
-      // Calculate FUNNAI amount for minimum (0.4T cycles)
+      // Calculate FUNNAI amount for minimum (1T cycles)
       const minFunnaiAmount = FUNNAI_MIN_CYCLES.div(conversionRate);
       
       return {
         min: Number(minFunnaiAmount.toFixed(8)),
         max: funnaiMaxAmount || 0 // Use backend value or 0 if not loaded
       };
+    } else if (selectedTokenSymbol === 'BOB') {
+      // BOB has its own limits for easier testing
+      return {
+        min: 1,      // 1 BOB minimum
+        max: 200     // 200 BOB maximum
+      };
+    } else if (selectedTokenSymbol === 'ckBTC') {
+      // ckBTC has its own limits (ckBTC is worth much more than ICP)
+      return {
+        min: 0.00001,     // Very small minimum
+        max: 0.0003456    // 0.0003456 ckBTC maximum
+      };
+    } else if (conversionRate && !conversionRate.isZero()) {
+      // For ICP: use config limits directly
+      return {
+        min: MIN_AMOUNT,
+        max: MAX_AMOUNT
+      };
     } else {
-      // ICP limits from config
+      // Default to ICP limits from config if no conversion rate
       return {
         min: MIN_AMOUNT,
         max: MAX_AMOUNT
@@ -148,16 +208,28 @@
     loadFunnaiLimits();
   }
   
-  async function loadBalance() {
+  async function loadBalance(loadIcp=false) {
+    console.log("handleSubmit loadBalance: ", loadIcp);
     try {
-      if (!$store.principal || !selectedToken) return;
-      
-      balance = await IcrcService.getIcrc1Balance(
-        selectedToken,
-        $store.principal
-      ) as bigint;
+      if (!$store.principal) return;
+      if (loadIcp) {
+        if (!icpToken) return;
+        const icpBalance = await IcrcService.getIcrc1Balance(
+          icpToken,
+          $store.principal
+        ) as bigint;
+        console.log("handleSubmit loadBalance icpBalance: ", icpBalance);
+        return icpBalance;
+      } else {
+        if (!selectedToken) return;
+        balance = await IcrcService.getIcrc1Balance(
+          selectedToken,
+          $store.principal
+        ) as bigint;
+        console.log("handleSubmit loadBalance: ", balance);
+      };
     } catch (error) {
-      console.error("Error loading balance:", error);
+      console.error("Error loading balance: ", error);
     }
   }
 
@@ -196,7 +268,7 @@
     }
   }
 
-  // Function to get conversion rate (ICP from CMC, FUNNAI from game state canister)
+  // Function to get conversion rate (ICP/BOB/ckBTC from CMC, FUNNAI from game state canister)
   async function loadConversionRate() {
     isLoadingConversionRate = true;
     errorMessage = ""; // Clear any previous error messages
@@ -232,13 +304,13 @@
           console.error("Error getting FUNNAI conversion rate:", actorError);
           throw new Error("Failed to get FUNNAI conversion rate from backend");
         }
-      } else {
-        // ICP conversion rate from CMC
+      } else {        
+        // ICP, BOB, and ckBTC conversion rate from CMC
         const cmcCanisterId = "rkp4c-7iaaa-aaaaa-aaaca-cai";
         
         try {
           // Create the CMC actor using the imported IDL factory
-          const cmcActor = await createAnonymousActorHelper(cmcCanisterId, cmcIdlFactory);
+          const cmcActor = await createAnonymousActorHelper(cmcCanisterId, canisterIDLs.cmc);
           
           // Get conversion rate from CMC
           const response = await cmcActor.get_icp_xdr_conversion_rate();
@@ -249,12 +321,53 @@
             // 1 XDR = 1 trillion cycles, and the rate is in 10,000ths (permyriad)
             const CYCLES_PER_XDR = new BigNumber("1000000000000"); // 1 trillion cycles
             
-            // Calculate: (xdr_permyriad_per_icp * CYCLES_PER_XDR) / 10000
-            conversionRate = new BigNumber(xdrRate)
+            // Calculate base ICP rate: (xdr_permyriad_per_icp * CYCLES_PER_XDR) / 10000
+            const icpConversionRate = new BigNumber(xdrRate)
               .times(CYCLES_PER_XDR)
               .div(10000);
+            
+            // For BOB and ckBTC, adjust the conversion rate based on a quote from the swap pool (against ICP)
+            if (selectedTokenSymbol === 'BOB') {
+              const numberOfTokensForQuote = 1000000000; // 8 decimals, i.e. 10 BOB
+              // Use the new method that automatically determines swap direction based on pool metadata
+              const quoteResult = await ICPSwapService.getQuoteWithAutoDirection(
+                selectedToken.pools[0],
+                selectedToken.canister_id,
+                numberOfTokensForQuote.toString()
+              );
+              console.log("BOB quote result:", quoteResult);
               
-            console.log("ICP conversion rate loaded:", conversionRate.toString());
+              if (quoteResult && typeof quoteResult === 'object' && 'ok' in quoteResult) {
+                const icpAmount = new BigNumber(quoteResult.ok.toString());
+                conversionRate = icpConversionRate.times(icpAmount).div(numberOfTokensForQuote);
+                console.log("BOB conversion rate:", conversionRate.toString(), "cycles per BOB");
+              } else {
+                console.warn("Failed to get BOB quote, using fallback estimate");
+                throw new Error("Quote failed for BOB");
+              }
+            } else if (selectedTokenSymbol === 'ckBTC') {
+              const numberOfTokensForQuote = 10000; // 8 decimals, i.e. 0.0001;
+              // Use the new method that automatically determines swap direction based on pool metadata
+              const quoteResult = await ICPSwapService.getQuoteWithAutoDirection(
+                selectedToken.pools[0],
+                selectedToken.canister_id,
+                numberOfTokensForQuote.toString()
+              );
+              console.log("ckBTC quote result:", quoteResult);
+              
+              if (quoteResult && typeof quoteResult === 'object' && 'ok' in quoteResult) {
+                const icpAmount = new BigNumber(quoteResult.ok.toString());
+                conversionRate = icpConversionRate.times(icpAmount).div(numberOfTokensForQuote);
+                console.log("ckBTC conversion rate:", conversionRate.toString(), "cycles per ckBTC");
+              } else {
+                console.warn("Failed to get ckBTC quote, using fallback estimate");
+                throw new Error("Quote failed for ckBTC");
+              }
+            } else {
+              // ICP
+              conversionRate = icpConversionRate;
+              console.log("ICP conversion rate loaded:", conversionRate.toString(), "cycles per ICP");
+            }
           } else {
             throw new Error("Failed to get conversion rate data");
           }
@@ -274,8 +387,16 @@
           errorMessage = "Failed to get FUNNAI conversion rate from backend";
           conversionRate = new BigNumber("1000000000000"); // 1T cycles per FUNNAI (fallback)
         }
+      } else if (selectedTokenSymbol === 'BOB') {
+        errorMessage = "Using estimated conversion rate";
+        // BOB is ~1/21 of ICP value, so ~476B cycles per BOB (10T / 21)
+        conversionRate = new BigNumber("476190476190"); // ~476B cycles per BOB (fallback)
+      } else if (selectedTokenSymbol === 'ckBTC') {
+        errorMessage = "Using estimated conversion rate";
+        // ckBTC is ~14,285x ICP value, so ~142,850T cycles per ckBTC (10T * 14,285)
+        conversionRate = new BigNumber("142850000000000000"); // ~142,850T cycles per ckBTC (fallback)
       } else {
-        errorMessage = "Using estimated conversion rate (10T cycles per ICP)";
+        errorMessage = "Using estimated conversion rate";
         conversionRate = new BigNumber("10000000000000"); // ~10T cycles per ICP (fallback)
       }
     } finally {
@@ -353,7 +474,7 @@
   }
 
   // Handle token selection change
-  function handleTokenChange(tokenSymbol: 'ICP' | 'FUNNAI') {
+  function handleTokenChange(tokenSymbol: 'ICP' | 'FUNNAI' | 'BOB' | 'ckBTC') {
     selectedTokenSymbol = tokenSymbol;
     // Reset amount when switching tokens to avoid confusion
     amount = "";
@@ -388,7 +509,12 @@
       }
 
       // Check mAIner health before proceeding (defensive: fail if health check errors)
-      const mainerActor = $store.userMainerCanisterActors.find(a => a.id === canisterId)?.actor;
+      // Find the index of this canister in userMainerAgentCanistersInfo to get the corresponding actor
+      const mainerIndex = $store.userMainerAgentCanistersInfo.findIndex(canister => 
+        (canister.address === canisterId) || (canister.id === canisterId)
+      );
+      const mainerActor = mainerIndex !== -1 ? $store.userMainerCanisterActors[mainerIndex] : null;
+      
       if (mainerActor) {
         try {
           const healthStatus = await mainerHealthService.checkMainerHealth(canisterId, mainerActor);
@@ -442,19 +568,86 @@
         }
         throw new Error("Invalid amount");
       };
-      
-      // Transfer tokens to the Protocol's account for top-up
-      // The backend will handle the actual cycles minting and top-up process
-      const result = await IcrcService.transfer(
-        selectedToken,
-        protocolAddress,  // Use protocol address from token_helpers
-        amountBigInt,
-        {
-          fee: tokenFee,
-          // Include the memo for transactions to the Protocol
-          memo: MEMO_PAYMENT_PROTOCOL
-        }
-      );
+
+      let result;
+      if (selectedTokenSymbol !== 'FUNNAI' && selectedTokenSymbol !== 'ICP') {
+        // Swap any other tokens than FUNNAI to ICP first, then proceed with ICP flow
+        validatingMessage = `Swapping ${selectedToken.symbol} to ICP...`;
+        console.log("handleSubmit Starting swap for token:", selectedToken.symbol);
+        console.log("handleSubmit User balance:", balance.toString(), selectedToken.symbol);
+        console.log("handleSubmit Amount to swap:", amountBigInt.toString());
+        console.log("handleSubmit Token fee:", tokenFee.toString());
+        console.log("handleSubmit Total needed:", (amountBigInt + tokenFee).toString());
+        console.log("handleSubmit Has enough?", balance >= (amountBigInt + tokenFee));
+        
+        // Note: zeroForOne is now determined automatically by ICPSwapService based on pool metadata
+        const args : DepositAndSwapArgs = {
+          tokenInFee: tokenFee,
+          amountIn: amountBigInt.toString(), // Convert amount to smallest unit (e8s)
+          zeroForOne: true, // This will be overridden by ICPSwapService based on actual pool token order
+          amountOutMinimum: "0",
+          tokenOutFee: BigInt(icpToken.fee_fixed)
+        };
+        console.log("handleSubmit Swap args:", args);
+        const swapResult = await ICPSwapService.approveAndSwap(selectedToken, selectedToken.pools[0], args, selectedToken.pools[0]);
+        console.log("handleSubmit Swap result:", swapResult);
+        
+        if (swapResult && typeof swapResult === 'object' && 'ok' in swapResult) {
+          // The user now has the corresponding ICP in their wallet
+          // Transfer the ICP to the Protocol's account for top-up
+          validatingMessage = "Sending ICP to protocol...";
+          
+          // swapResult.ok is the withdrawal result (BigInt), subtract the ICP fee for the transfer
+          const outputAmount = typeof swapResult.ok === 'bigint' ? swapResult.ok : BigInt(swapResult.ok);
+          const icpFee = BigInt(icpToken.fee_fixed);
+          const icpToTransfer = outputAmount - icpFee - icpFee;
+          
+          console.log("handleSubmit ICP received from swap:", outputAmount.toString());
+          console.log("handleSubmit ICP fee:", icpFee.toString());
+          console.log("handleSubmit ICP to transfer to protocol:", icpToTransfer.toString());
+          await loadBalance();
+          var icpBalance = await loadBalance(true);
+          while (icpBalance < icpToTransfer) {
+            console.log("handleSubmit waiting on ICP Ledger: ", icpBalance);
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait as the ICP Ledger needs time to reflect the new ICP balance
+            icpBalance = await loadBalance(true);
+          };
+          console.log("handleSubmit ICP Balance: ", icpBalance);
+          
+          result = await IcrcService.transfer(
+            icpToken,
+            protocolAddress,  // Use protocol address from token_helpers
+            icpToTransfer,
+            {
+              fee: icpToken.fee_fixed,
+              // Include the memo for transactions to the Protocol
+              memo: MEMO_PAYMENT_PROTOCOL
+            }
+          );
+        } else {
+          // Better error logging
+          const errorDetails = swapResult?.err 
+            ? (typeof swapResult.err === 'object' 
+                ? JSON.stringify(swapResult.err) 
+                : swapResult.err)
+            : 'Unknown error';
+          console.error("handleSubmit Swap error details:", errorDetails);
+          throw new Error(`Swap failed: ${errorDetails}`);
+        };
+      } else {
+        // Transfer tokens to the Protocol's account for top-up
+        // The backend will handle the actual cycles minting and top-up process
+        result = await IcrcService.transfer(
+          selectedToken,
+          protocolAddress,  // Use protocol address from token_helpers
+          amountBigInt,
+          {
+            fee: tokenFee,
+            // Include the memo for transactions to the Protocol
+            memo: MEMO_PAYMENT_PROTOCOL
+          }
+        );
+      };
 
       if (result && typeof result === 'object' && 'Ok' in result) {
         const txId = result.Ok?.toString();
@@ -495,20 +688,20 @@
         // Create the backend promise based on token type
         let backendPromise: Promise<any>;
         if (selectedTokenSymbol === 'FUNNAI') {
-          // For FUNNAI, use the new FUNNAI-specific endpoint
+          // For FUNNAI, use the FUNNAI-specific endpoint
           if (!$store.gameStateCanisterActor) {
             throw new Error("Game state canister not available");
           };
           backendPromise = $store.gameStateCanisterActor.topUpCyclesForMainerAgentWithFunnai(topUpInput);
         } else {
-          // For ICP, use the existing endpoint
+          // For ICP, BOB, and ckBTC, use the standard ICP endpoint
           if (!$store.gameStateCanisterActor) {
             throw new Error("Game state canister not available");
           };
           backendPromise = $store.gameStateCanisterActor.topUpCyclesForMainerAgent(topUpInput);
         }
 
-        // Handle celebration for max amounts (only for ICP, not FUNNAI)
+        // Handle celebration for max amounts (only for ICP/BOB/ckBTC, not FUNNAI)
         const shouldCelebrate = isMaxAmount && CELEBRATION_ENABLED && selectedTokenSymbol !== 'FUNNAI';
         
         // Close modal immediately and pass promise to parent
@@ -521,7 +714,7 @@
             onCelebration(amount, selectedToken?.symbol || selectedTokenSymbol);
           }, 300);
           
-          // Handle max top-up storage in background - only for ICP
+          // Handle max top-up storage in background - only for ICP/BOB/ckBTC
           try {
             let maxTopUpInput = {
               paymentTransactionBlockId: BigInt(txId),
@@ -529,10 +722,10 @@
               amount: BigInt(amount),
             };
             $store.backendActor.addMaxMainerTopup(maxTopUpInput).catch(maxTopUpStorageError => {
-              console.error("Top-up storage error: ", maxTopUpStorageError);            
+              console.error("handleSubmit Top-up storage error: ", maxTopUpStorageError);            
             });
           } catch (error) {
-            console.error("Error setting up max top-up storage: ", error);
+            console.error("handleSubmit Error setting up max top-up storage: ", error);
           }
         }
       } else if (result && typeof result === 'object' && 'Err' in result) {
@@ -540,13 +733,14 @@
           ? Object.keys(result.Err)[0]
           : String(result.Err);
         errorMessage = `Transfer failed: ${errMsg}`;
-        console.error("Transfer error details:", result.Err);
+        console.error("handleSubmit Transfer error details:", result.Err);
       }
     } catch (err) {
-      console.error("Top-up error:", err);
+      console.error("handleSubmit Top-up error:", err);
       errorMessage = err.message || "Top-up failed";
     } finally {
       isValidating = false;
+      validatingMessage = "Processing..."; // Reset message
     }
   }
 
@@ -577,23 +771,23 @@
     {:else}
       <!-- Token Selector -->
       <div class="flex flex-col gap-2">
-        <label class="block text-xs text-gray-600 mb-1 dark:text-gray-400">Select Payment Token</label>
-        <div class="flex gap-2">
+        <div class="block text-xs text-gray-600 mb-1 dark:text-gray-400">Select Payment Token</div>
+        <div class="grid grid-cols-2 gap-2">
           {#each availableTokens as token}
-                         <button
+            <button
                type="button"
-               class="flex-1 flex items-center gap-2 p-3 rounded-lg border transition-colors {selectedToken?.symbol === token.symbol ? 'bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-900 dark:bg-opacity-20 dark:border-purple-600 dark:border-opacity-30 dark:text-purple-300' : 'bg-gray-50 border-gray-300 text-gray-700 dark:bg-gray-800 dark:bg-opacity-50 dark:border-gray-600 dark:border-opacity-30 dark:text-gray-300'}"
+               class="flex items-center gap-2 p-2.5 rounded-lg border transition-colors {selectedToken?.symbol === token.symbol ? 'bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-900 dark:bg-opacity-20 dark:border-purple-600 dark:border-opacity-30 dark:text-purple-300' : 'bg-gray-50 border-gray-300 text-gray-700 dark:bg-gray-800 dark:bg-opacity-50 dark:border-gray-600 dark:border-opacity-30 dark:text-gray-300'}"
                on:click={() => handleTokenChange(token.symbol)}
              >
-              <div class="w-8 h-8 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-700 dark:border-gray-600">
-                <TokenImages tokens={[token]} size={30} showSymbolFallback={true} />
+              <div class="w-7 h-7 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-700 dark:border-gray-600">
+                <TokenImages tokens={[token]} size={26} showSymbolFallback={true} />
               </div>
               <div class="flex flex-col min-w-0 flex-1 text-left">
-                <div class="font-medium text-sm truncate">{token.symbol}</div>
-                <div class="text-xs opacity-70 truncate">{token.name}</div>
+                <div class="font-medium text-xs truncate">{token.symbol}</div>
+                <div class="text-xs opacity-60 truncate">{token.name}</div>
               </div>
               {#if selectedToken?.symbol === token.symbol}
-                <Check size={16} class="text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                <Check size={14} class="text-purple-600 dark:text-purple-400 flex-shrink-0" />
               {/if}
             </button>
           {/each}
@@ -622,7 +816,7 @@
       <div class="flex flex-col gap-2 sm:gap-3">
         <!-- Canister ID -->
         <div>
-          <label class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">mAIner canister</label>
+          <div class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">mAIner canister</div>
           <div class="relative">
             <input
               type="text"
@@ -652,6 +846,7 @@
           </div>
           <div class="relative">
             <input
+              id="amount-input"
               type="text"
               inputmode="decimal"
               class="w-full py-2 px-2 sm:px-3 bg-white border rounded-md text-xs sm:text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-100 pr-12 sm:pr-16"
@@ -709,6 +904,16 @@
             <div class="text-blue-600/70 dark:text-blue-300/70">Loading conversion rate...</div>
           {/if}
         </div>
+
+        <!-- Swap progress panel -->
+        {#if isValidating && validatingMessage !== "Processing..."}
+          <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200">
+            <div class="flex items-center gap-2">
+              <span class="w-4 h-4 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin dark:border-blue-400/30 dark:border-t-blue-400"></span>
+              <span class="text-sm font-medium">{validatingMessage}</span>
+            </div>
+          </div>
+        {/if}
 
         <!-- Error message -->
         {#if errorMessage}

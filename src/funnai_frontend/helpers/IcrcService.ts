@@ -259,6 +259,10 @@ export class IcrcService {
       throw new Error("Invalid token: missing canister_id");
     }
 
+    console.log("checkAndRequestIcrc2Allowances token ", token);
+    console.log("checkAndRequestIcrc2Allowances payAmount ", payAmount);
+    console.log("checkAndRequestIcrc2Allowances spender ", spender);
+
     try {
       const expiresAt =
         BigInt(Date.now() + 1000 * 60 * 60 * 24 * 29) * BigInt(1000000);
@@ -268,6 +272,7 @@ export class IcrcService {
         ? BigInt(token.fee_fixed.toString().replace("_", ""))
         : 0n;
       const totalAmount = payAmount + tokenFee;
+      console.log("checkAndRequestIcrc2Allowances totalAmount ", totalAmount);
 
       // Check current allowance
       const currentAllowance = allowanceStore.getAllowance(
@@ -275,6 +280,7 @@ export class IcrcService {
         storeState.principal.toString(),
         spender,
       );
+      console.log("checkAndRequestIcrc2Allowances currentAllowance ", currentAllowance);
 
       if (currentAllowance && currentAllowance.amount >= totalAmount) {
         return currentAllowance.amount;
@@ -295,6 +301,7 @@ export class IcrcService {
           subaccount: [],
         },
       };
+      console.log("checkAndRequestIcrc2Allowances approveArgs ", approveArgs);
 
       const approveActor = await store.getActor(
         token.canister_id,
@@ -306,6 +313,7 @@ export class IcrcService {
       );
 
       const result = await approveActor.icrc2_approve(approveArgs);
+      console.log("checkAndRequestIcrc2Allowances result ", result);
       allowanceStore.addAllowance(token.canister_id, {
         address: token.canister_id,
         wallet_address: storeState.principal.toString(),
@@ -321,6 +329,7 @@ export class IcrcService {
         );
         throw new Error(`ICRC2 approve error: ${stringifiedError}`);
       }
+      console.log("checkAndRequestIcrc2Allowances result.Ok ", result.Ok);
       //@ts-ignore
       return result.Ok;
     } catch (error) {

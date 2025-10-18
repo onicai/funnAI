@@ -207,6 +207,7 @@ dfx deploy funnai_frontend --network $NETWORK
 dfx canister call funnai_frontend grant_permission '(record {permission = variant {Prepare}; to_principal = principal "<your-principal>"})'
 dfx canister call funnai_frontend grant_permission '(record {permission = variant {Commit}; to_principal = principal "<your-principal>"})'
 
+
 # Deploy the token ledger canister:
 # from folder: PoAIW/src/TokenLedger
 dfx deploy
@@ -309,7 +310,7 @@ dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdArchiveClosedChallenges = 140 : nat;
         thresholdMaxOpenChallenges = 7 : nat;
         thresholdMaxOpenSubmissions = 140 : nat;
-        thresholdScoredResponsesPerChallenge = 33 : nat;
+        thresholdScoredResponsesPerChallenge = 27 : nat;
     }
 )' --network $NETWORK
 ```
