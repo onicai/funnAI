@@ -52,7 +52,7 @@ export class IcrcService {
   }
 
   private static handleError(methodName: string, error: any) {
-    console.error(`Error in ${methodName}:`, error);
+    console.error(`Error in ${methodName}: `, error);
     const errorType = this.classifyError(error);
 
     if (errorType === ErrorType.AUTH) {
@@ -89,7 +89,7 @@ export class IcrcService {
         results.push(result);
       } catch (error) {
         results.push(null as T);
-        console.error("Operation failed:", error);
+        console.error("Operation failed: ", error);
       }
       await executeNext();
     }
@@ -137,7 +137,7 @@ export class IcrcService {
         subaccount: subaccountBalance,
       };
     } catch (error) {
-      console.error(`Error getting ICRC1 balance for ${token.symbol}:`, error);
+      console.error(`Error getting ICRC1 balance for ${token.symbol}: `, error);
       return separateBalances
         ? { default: BigInt(0), subaccount: BigInt(0) }
         : BigInt(0);
@@ -179,7 +179,7 @@ export class IcrcService {
       const result = await promise;
       return result;
     } catch (error) {
-      console.error("Error in batchGetBalances:", error);
+      console.error("Error in batchGetBalances: ", error);
       requestKeys.forEach((key) => this.pendingRequests.delete(key));
       return new Map();
     }
@@ -223,7 +223,7 @@ export class IcrcService {
               return { token, balance };
             } catch (error) {
               console.error(
-                `Failed to get balance for ${token.symbol}:`,
+                `Failed to get balance for ${token.symbol}: `,
                 error,
               );
               return { token, balance: BigInt(0) };
@@ -259,10 +259,6 @@ export class IcrcService {
       throw new Error("Invalid token: missing canister_id");
     }
 
-    console.log("checkAndRequestIcrc2Allowances token ", token);
-    console.log("checkAndRequestIcrc2Allowances payAmount ", payAmount);
-    console.log("checkAndRequestIcrc2Allowances spender ", spender);
-
     try {
       const expiresAt =
         BigInt(Date.now() + 1000 * 60 * 60 * 24 * 29) * BigInt(1000000);
@@ -272,7 +268,6 @@ export class IcrcService {
         ? BigInt(token.fee_fixed.toString().replace("_", ""))
         : 0n;
       const totalAmount = payAmount + tokenFee;
-      console.log("checkAndRequestIcrc2Allowances totalAmount ", totalAmount);
 
       // Check current allowance
       const currentAllowance = allowanceStore.getAllowance(
@@ -280,7 +275,6 @@ export class IcrcService {
         storeState.principal.toString(),
         spender,
       );
-      console.log("checkAndRequestIcrc2Allowances currentAllowance ", currentAllowance);
 
       if (currentAllowance && currentAllowance.amount >= totalAmount) {
         return currentAllowance.amount;
@@ -301,7 +295,6 @@ export class IcrcService {
           subaccount: [],
         },
       };
-      console.log("checkAndRequestIcrc2Allowances approveArgs ", approveArgs);
 
       const approveActor = await store.getActor(
         token.canister_id,
@@ -313,7 +306,6 @@ export class IcrcService {
       );
 
       const result = await approveActor.icrc2_approve(approveArgs);
-      console.log("checkAndRequestIcrc2Allowances result ", result);
       allowanceStore.addAllowance(token.canister_id, {
         address: token.canister_id,
         wallet_address: storeState.principal.toString(),
@@ -328,12 +320,11 @@ export class IcrcService {
           typeof value === "bigint" ? value.toString() : value,
         );
         throw new Error(`ICRC2 approve error: ${stringifiedError}`);
-      }
-      console.log("checkAndRequestIcrc2Allowances result.Ok ", result.Ok);
+      };
       //@ts-ignore
       return result.Ok;
     } catch (error) {
-      console.error("ICRC2 approve error:", error);
+      console.error("ICRC2 approve error: ", error);
       //toastStore.error(`Failed to approve ${token.symbol}: ${error.message}`);
       throw error;
     }
@@ -380,7 +371,7 @@ export class IcrcService {
       //@ts-ignore
       return await actor.icrc1_fee();
     } catch (error) {
-      console.error(`Error getting token fee for ${token.symbol}:`, error);
+      console.error(`Error getting token fee for ${token.symbol}: `, error);
       return BigInt(10000); // Fallback to default fee
     }
   }
@@ -394,7 +385,7 @@ export class IcrcService {
       const totalSupply = await actor.icrc1_total_supply();
       return BigInt(totalSupply);
     } catch (error) {
-      console.error(`Error getting total supply for ${token.symbol}:`, error);
+      console.error(`Error getting total supply for ${token.symbol}: `, error);
       return BigInt(0); // Fallback to 0
     }
   }
@@ -466,7 +457,7 @@ export class IcrcService {
         created_at_time: opts.createdAtTime ? [opts.createdAtTime] : [],
       });
     } catch (error) {
-      console.error("Transfer error:", error);
+      console.error("Transfer error: ", error);
       return { Err: error };
     }
   }

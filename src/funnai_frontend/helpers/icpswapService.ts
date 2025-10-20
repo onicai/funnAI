@@ -278,13 +278,11 @@ class ICPSwapService {
       );
 
       // Call the quote method
-      console.log("in getQuoteFromPool args ", args);
       const result = await poolActor.quote(args);
-      console.log("in getQuoteFromPool result ", result);
 
       return result;
     } catch (error) {
-      console.error("Error fetching quote from ICPSwap pool:", error);
+      console.error("Error fetching quote from ICPSwap pool: ", error);
       return null;
     }
   }
@@ -314,7 +312,7 @@ class ICPSwapService {
 
       // Get pool metadata to determine token order
       const metadata = await poolActor.metadata();
-      console.log("Pool metadata for quote:", metadata);
+      console.log("Pool metadata for quote: ", metadata);
       
       if (!metadata || typeof metadata !== 'object' || !('ok' in metadata)) {
         console.error("Failed to get pool metadata for quote");
@@ -333,9 +331,6 @@ class ICPSwapService {
       // Determine if input token is token0 or token1
       const isToken0 = inputTokenCanisterId === token0Address;
       const zeroForOne = isToken0;
-      
-      console.log("Quote - Input token is:", isToken0 ? "token0" : "token1");
-      console.log("Quote - Swap direction (zeroForOne):", zeroForOne);
 
       const args: SwapArgs = {
         amountIn: amountIn,
@@ -343,13 +338,12 @@ class ICPSwapService {
         amountOutMinimum: "0"
       };
 
-      console.log("Quote args:", args);
       const result = await poolActor.quote(args);
-      console.log("Quote result:", result);
+      console.log("Quote result: ", result);
 
       return result;
     } catch (error) {
-      console.error("Error fetching quote with auto direction:", error);
+      console.error("Error fetching quote with auto direction: ", error);
       return null;
     }
   }
@@ -378,12 +372,9 @@ class ICPSwapService {
       
       try {
         metadata = await poolActor.metadata();
-        console.log("depositFromAndSwap Pool metadata:", metadata);
         
         if (metadata && 'ok' in metadata) {
           const metadataOk: any = metadata.ok;
-          console.log("depositFromAndSwap Token0:", metadataOk.token0);
-          console.log("depositFromAndSwap Token1:", metadataOk.token1);
           
           // Determine if our input token is token0 or token1
           const token0Address = metadataOk.token0?.address;
@@ -395,32 +386,24 @@ class ICPSwapService {
             
             // Set output token address (opposite of input)
             outputTokenAddress = isToken0 ? token1Address : token0Address;
-            
-            console.log("depositFromAndSwap Input token is:", isToken0 ? "token0" : "token1");
-            console.log("depositFromAndSwap Output token address:", outputTokenAddress);
           }
         }
       } catch (metaError) {
-        console.warn("depositFromAndSwap Could not fetch pool metadata:", metaError);
-        throw new Error("depositFromAndSwap Failed to fetch pool metadata - cannot determine token order");
+        console.warn("Could not fetch pool metadata: ", metaError);
+        throw new Error("Failed to fetch pool metadata - cannot determine token order");
       }
 
       // Determine swap direction based on which token we're swapping
       // zeroForOne = true means swapping token0 for token1
       // zeroForOne = false means swapping token1 for token0
       const zeroForOne = isToken0;
-      console.log("depositFromAndSwap Swap direction (zeroForOne):", zeroForOne);
 
       // 2. Approve the pool canister to spend the input token
       const totalAmountNeeded = BigInt(depositAndSwapArgs.amountIn) + depositAndSwapArgs.tokenInFee + depositAndSwapArgs.tokenInFee; // Approve more as a margin
-      console.log("depositFromAndSwap totalAmountNeeded: ", totalAmountNeeded);
       // We cannot assume the user has more tokens in their balance than this amount, i.e. the transfer fee needs to be included in it
       const amountToSwap = BigInt(depositAndSwapArgs.amountIn) - depositAndSwapArgs.tokenInFee;
-      console.log("depositFromAndSwap amountToSwap: ", amountToSwap);
       const amountIn = amountToSwap.toString();
-      console.log("depositFromAndSwap amountIn: ", amountIn);
-      depositAndSwapArgs.amountIn = amountIn;
-      console.log("depositFromAndSwap depositAndSwapArgs.amountIn: ", depositAndSwapArgs.amountIn);
+      depositAndSwapArgs.amountIn = amountIn; // Update amount to be used accordingly
       
       console.log("Approving amount: ", {
         tokenCanisterId: token.canister_id,
@@ -437,17 +420,15 @@ class ICPSwapService {
       );
 
       // 3. Call depositFromAndSwap on the pool
-      console.log("depositFromAndSwap depositAndSwapArgs: ", depositAndSwapArgs);
       const result = await poolActor.depositFromAndSwap(depositAndSwapArgs);
-      console.log("depositFromAndSwap result: ", result);
       
       if (!result || (typeof result === 'object' && 'err' in result)) {
         console.error("depositFromAndSwap failed: ", result);
       };
       return result;
     } catch (error) {
-      console.error("Error in approveAndSwap:", error);
-      console.error("Error stack:", error.stack);
+      console.error("Error in approveAndSwap: ", error);
+      console.error("Error stack: ", error.stack);
       // Return the error as an object so we can see it in the UI
       return { err: { InternalError: error.message || "Unknown error" } };
     }
