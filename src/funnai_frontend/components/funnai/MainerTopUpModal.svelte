@@ -551,6 +551,7 @@
         };
 
         tokenFee = BigInt(0); // for burn transactions, set to 0
+        // protocolAddress = "r5m5y-diaaa-aaaaa-qanaa-cai"; // hardcode address for FUNNAI token (as burn transactions need to go to prd game state canister)
       }
 
       // Validate amount ranges
