@@ -701,8 +701,8 @@
           backendPromise = $store.gameStateCanisterActor.topUpCyclesForMainerAgent(topUpInput);
         }
 
-        // Handle celebration for max amounts (only for ICP/BOB/ckBTC, not FUNNAI)
-        const shouldCelebrate = isMaxAmount && CELEBRATION_ENABLED && selectedTokenSymbol !== 'FUNNAI';
+        // Handle celebration for max amounts (only for ICP)
+        const shouldCelebrate = isMaxAmount && CELEBRATION_ENABLED && selectedTokenSymbol === 'ICP';
         
         // Close modal immediately and pass promise to parent
         onSuccess(txId, canisterId, backendPromise);
@@ -714,7 +714,7 @@
             onCelebration(amount, selectedToken?.symbol || selectedTokenSymbol);
           }, 300);
           
-          // Handle max top-up storage in background - only for ICP/BOB/ckBTC
+          // Handle max top-up storage in background - only for ICP
           try {
             let maxTopUpInput = {
               paymentTransactionBlockId: BigInt(txId),
