@@ -7,6 +7,8 @@ LOOP_DELAY=0
 USER="all"
 SKIP_POAIW_UPDATE=""
 DAILY_METRICS=""
+LIMIT=""
+STATISTICS=""
 
 # Parse command line arguments for network type
 while [ $# -gt 0 ]; do
@@ -40,9 +42,18 @@ while [ $# -gt 0 ]; do
             DAILY_METRICS="--daily-metrics"
             shift
             ;;
+        --limit)
+            shift
+            LIMIT="--limit $1"
+            shift
+            ;;
+        --statistics)
+            STATISTICS="--statistics"
+            shift
+            ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--loop [delay]] [--user principal] [--skip-poaiw-update] [--daily-metrics]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--loop [delay]] [--user principal] [--skip-poaiw-update] [--daily-metrics] [--limit N] [--statistics]"
             exit 1
             ;;
     esac
@@ -53,10 +64,10 @@ echo "Using network type: $NETWORK_TYPE"
 if [ "$LOOP" = "true" ]; then
     echo "Running in loop mode with a delay of $LOOP_DELAY seconds."
     while true; do
-        python -m scripts.get_mainers --network $NETWORK_TYPE --user $USER $SKIP_POAIW_UPDATE $DAILY_METRICS
+        python -m scripts.get_mainers --network $NETWORK_TYPE --user $USER $SKIP_POAIW_UPDATE $DAILY_METRICS $LIMIT $STATISTICS
         sleep $LOOP_DELAY
     done
 fi
 
-python -m scripts.get_mainers --network $NETWORK_TYPE --user $USER $SKIP_POAIW_UPDATE $DAILY_METRICS
+python -m scripts.get_mainers --network $NETWORK_TYPE --user $USER $SKIP_POAIW_UPDATE $DAILY_METRICS $LIMIT $STATISTICS
 
