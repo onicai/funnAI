@@ -4,6 +4,8 @@ import argparse
 import os
 import json
 import sys
+import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 
 # Get the directory of this script
@@ -61,13 +63,14 @@ def calculate_icp_and_usd_for_burn_rate(burn_rate_tcycles, cycles_per_icp, usd_p
     return icp_per_day, usd_per_day
 
 
-def check_mainer_controllers(network, canister_id):
+def check_mainer_controllers(network, canister_id, debug=False):
     """
     Check if a mainer has CycleOps canisters as controllers.
 
     Args:
         network: The network to query
         canister_id: The mainer canister ID to check
+        debug: If True, print debug information
 
     Returns:
         List of CycleOps canister IDs that are controllers, or empty list
@@ -76,10 +79,19 @@ def check_mainer_controllers(network, canister_id):
         cmd = ["dfx", "canister", "--network", network, "info", canister_id]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
 
+        if debug:
+            print(f"    DEBUG: Checking {canister_id}")
+            print(f"    Return code: {result.returncode}")
+
         if result.returncode != 0:
+            if debug:
+                print(f"    Error: {result.stderr[:200]}")
             return []
 
         output = result.stdout
+
+        if debug:
+            print(f"    Output sample: {output[:300]}")
 
         # Parse the controllers from the output
         # Looking for lines like "Controllers: canister1 canister2 ..."
@@ -87,6 +99,8 @@ def check_mainer_controllers(network, canister_id):
 
         for line in output.split('\n'):
             if 'Controllers:' in line or 'Controller' in line:
+                if debug:
+                    print(f"    Found controller line: {line}")
                 # Check if any of the CycleOps canister IDs are in this line
                 for cycleops_id in CYCLEOPS_CANISTER_IDS:
                     if cycleops_id in line:
@@ -95,6 +109,8 @@ def check_mainer_controllers(network, canister_id):
         return cycleops_controllers
 
     except Exception as e:
+        if debug:
+            print(f"    Exception: {e}")
         return []
 
 
@@ -418,21 +434,50 @@ def main(network, analyze_topups=False, limit=None):
     data['total_network_icp_per_day'] = round(total_icp, 8)
     data['total_network_usd_per_day'] = round(total_usd, 2)
 
-    # Check CycleOps controllers for all mainers
+    # Check CycleOps controllers for all mainers (in parallel)
     print("----------------------------------------------")
-    print("Checking for CycleOps controllers on mainers...")
+    print("Checking for CycleOps controllers on mainers (parallel)...")
     print("----------------------------------------------")
 
-    first_cycleops_found = False
-
+    # Build a list of all (principal_id, address) pairs to check
+    mainers_to_check = []
     for principal_id, principal_data in principals.items():
         addresses = principal_data.get('addresses', [])
-        cycleops_count = 0
-
         for address in addresses:
-            cycleops_controllers = check_mainer_controllers(network, address)
+            mainers_to_check.append((principal_id, address))
+
+    print(f"Total mainers to check: {len(mainers_to_check)}")
+
+    # Initialize counts
+    for principal_id in principals.keys():
+        principals[principal_id]['mainers_with_cycleops'] = 0
+
+    # Check controllers in parallel
+    first_cycleops_found = False
+    total_checked = 0
+    total_with_cycleops = 0
+
+    def check_controller_wrapper(principal_id, address, is_first):
+        """Wrapper function for parallel execution."""
+        controllers = check_mainer_controllers(network, address, debug=is_first)
+        return (principal_id, address, controllers)
+
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        # Submit all tasks
+        futures = []
+        for idx, (principal_id, address) in enumerate(mainers_to_check):
+            is_first = (idx == 0)
+            future = executor.submit(check_controller_wrapper, principal_id, address, is_first)
+            futures.append(future)
+
+        # Process results as they complete
+        for future in as_completed(futures):
+            principal_id, address, cycleops_controllers = future.result()
+            total_checked += 1
+
             if cycleops_controllers:
-                cycleops_count += 1
+                principals[principal_id]['mainers_with_cycleops'] += 1
+                total_with_cycleops += 1
 
                 # Debug: Print the first time we find a CycleOps controller
                 if not first_cycleops_found:
@@ -441,9 +486,12 @@ def main(network, analyze_topups=False, limit=None):
                     print(f"       Principal: {principal_id[:20]}...")
                     first_cycleops_found = True
 
-        principal_data['mainers_with_cycleops'] = cycleops_count
+            # Progress update every 50 mainers
+            if total_checked % 50 == 0:
+                percent = (total_checked / len(mainers_to_check)) * 100
+                print(f"Progress: {total_checked}/{len(mainers_to_check)} ({percent:.1f}%) - {total_with_cycleops} with CycleOps")
 
-    print("CycleOps controller check complete!")
+    print(f"CycleOps controller check complete! Found {total_with_cycleops} mainers with CycleOps controllers.")
     print("----------------------------------------------")
 
     # Analyze ICP top-ups if requested
