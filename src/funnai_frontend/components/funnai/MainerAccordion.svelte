@@ -1988,7 +1988,7 @@
                           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                           </svg>
-                          <span>Top-up Cycles</span>
+                          <span>Top-up Cycles<sup class="text-amber-200 dark:text-amber-300 font-bold ml-0.5">(1)</sup></span>
                         </div>
                       {/if}
                       <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-100 to-emerald-100 dark:from-teal-600/20 dark:to-emerald-600/20 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
@@ -2101,15 +2101,28 @@
                     <!-- Balance Info Footer -->
                     {#if !agentsBeingToppedUp.has(agent.id) && !agentsBeingRefreshed.has(agent.id)}
                       <div class="pt-2 border-t border-emerald-200/50 dark:border-emerald-700/50">
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between text-xs space-y-1 sm:space-y-0">
-                          <span class="text-emerald-600 dark:text-emerald-400 opacity-75">
-                            💡 Cycles power your mAIner's computational tasks
-                          </span>
-                          {#if agent.cycleBalance <= 1_000_000_000_000 && $mainerHealthStatuses.get(agent.id)?.isHealthy !== false}
-                            <span class="text-red-600 dark:text-red-400 font-medium">
-                              ⚠️ Top-up recommended
+                        <div class="flex flex-col text-xs space-y-1.5">
+                          <!-- Official App Warning -->
+                          <div class="flex items-start gap-1.5 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded">
+                            <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-amber-800 dark:text-amber-200 font-medium leading-tight">
+                              <sup class="font-bold mr-1">(1)</sup>Only top-up via this official app. Direct cycles transfers incur fees or are unsupported.
                             </span>
-                          {/if}
+                          </div>
+                          
+                          <!-- Info and Low Balance Warning -->
+                          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1 sm:space-y-0">
+                            <span class="text-emerald-600 dark:text-emerald-400 opacity-75">
+                              💡 Cycles power your mAIner's computational tasks
+                            </span>
+                            {#if agent.cycleBalance <= 1_000_000_000_000 && $mainerHealthStatuses.get(agent.id)?.isHealthy !== false}
+                              <span class="text-red-600 dark:text-red-400 font-medium">
+                                ⚠️ Top-up recommended
+                              </span>
+                            {/if}
+                          </div>
                         </div>
                       </div>
                     {/if}
