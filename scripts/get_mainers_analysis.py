@@ -114,6 +114,64 @@ def check_mainer_controllers(network, canister_id, debug=False):
         return []
 
 
+def get_canister_cycle_balance(network, canister_id, debug=False):
+    """
+    Get the cycle balance of a canister.
+
+    Args:
+        network: The network to query
+        canister_id: The canister ID to check
+        debug: If True, print debug information
+
+    Returns:
+        Cycle balance as an integer, or None if error
+    """
+    try:
+        cmd = ["dfx", "canister", "--network", network, "status", canister_id]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+
+        if debug:
+            print(f"    DEBUG: Checking cycle balance for {canister_id}")
+            print(f"    Return code: {result.returncode}")
+
+        if result.returncode != 0:
+            if debug:
+                print(f"    Error: {result.stderr[:200]}")
+            return None
+
+        output = result.stdout
+
+        if debug:
+            print(f"    Output sample: {output[:300]}")
+
+        # Parse the balance from the output
+        # Looking for a line like "Balance: 3_141_592_653_589 Cycles"
+        for line in output.split('\n'):
+            if 'Balance:' in line:
+                if debug:
+                    print(f"    Found balance line: {line}")
+                # Extract the numeric value
+                parts = line.split()
+                for i, part in enumerate(parts):
+                    if part == 'Balance:' and i + 1 < len(parts):
+                        # Remove underscores and convert to int
+                        balance_str = parts[i + 1].replace('_', '').replace(',', '')
+                        try:
+                            balance = int(balance_str)
+                            return balance
+                        except ValueError:
+                            if debug:
+                                print(f"    Failed to parse balance: {balance_str}")
+                            return None
+
+        return None
+
+    except Exception as e:
+        if debug:
+            print(f"    Exception: {e}")
+        return None
+
+
 def analyze_principal_topups(principal_id):
     """
     Analyze ICP top-ups sent by a principal to the GameState treasury.
@@ -262,10 +320,17 @@ def generate_markdown_summary(data, network, cycles_per_icp, usd_per_icp):
     md_lines.append("## Top Principals by Daily Burn Rate")
     md_lines.append("")
 
-    # Check if we have topup data
+    # Check if we have topup data and cycle balance data
     has_topup_data = any('topups' in pdata for pdata in data.get('principals', {}).values())
+    has_balance_data = any('total_cycle_balance' in pdata for pdata in data.get('principals', {}).values())
 
-    if has_topup_data:
+    if has_topup_data and has_balance_data:
+        md_lines.append("| Rank | Principal            | Active mAIners | CycleOps | Daily Burn (Tcycles) | ICP/day    | USD/day    | Total Cycles (Tcycles) | Days Until Topup | Avg/Day ICP Top-up (Last Month) |")
+        md_lines.append("|-----:|:---------------------|---------------:|---------:|---------------------:|-----------:|-----------:|-----------------------:|-----------------:|--------------------------------:|")
+    elif has_balance_data:
+        md_lines.append("| Rank | Principal            | Active mAIners | CycleOps | Daily Burn (Tcycles) | ICP/day    | USD/day    | Total Cycles (Tcycles) | Days Until Topup |")
+        md_lines.append("|-----:|:---------------------|---------------:|---------:|---------------------:|-----------:|-----------:|-----------------------:|-----------------:|")
+    elif has_topup_data:
         md_lines.append("| Rank | Principal            | Active mAIners | CycleOps | Daily Burn (Tcycles) | ICP/day    | USD/day    | Avg/Day ICP Top-up (Last Month) |")
         md_lines.append("|-----:|:---------------------|---------------:|---------:|---------------------:|-----------:|-----------:|--------------------------------:|")
     else:
@@ -287,7 +352,18 @@ def generate_markdown_summary(data, network, cycles_per_icp, usd_per_icp):
         # Truncate principal for readability
         principal_short = f"{principal_id[:8]}...{principal_id[-3:]}"
 
-        if has_topup_data:
+        # Format cycle balance and days until topup
+        total_cycles = principal_data.get('total_cycle_balance', 0)
+        total_tcycles = total_cycles / 1_000_000_000_000 if total_cycles else 0
+        days_until_topup = principal_data.get('days_until_topup')
+        days_str = f"{days_until_topup:>16.1f}" if days_until_topup is not None else f"{'N/A':>16}"
+
+        if has_topup_data and has_balance_data:
+            avg_topup = principal_data.get('topups', {}).get('avg_per_day_last_month', 0)
+            md_lines.append(f"| {rank:>4} | `{principal_short:<18}` | {active_count:>14} | {cycleops_count:>8} | {burn_rate:>20} | {icp_per_day:>10.2f} | ${usd_per_day:>9.2f} | {total_tcycles:>21.2f} | {days_str} | {avg_topup:>31.4f} |")
+        elif has_balance_data:
+            md_lines.append(f"| {rank:>4} | `{principal_short:<18}` | {active_count:>14} | {cycleops_count:>8} | {burn_rate:>20} | {icp_per_day:>10.2f} | ${usd_per_day:>9.2f} | {total_tcycles:>21.2f} | {days_str} |")
+        elif has_topup_data:
             avg_topup = principal_data.get('topups', {}).get('avg_per_day_last_month', 0)
             md_lines.append(f"| {rank:>4} | `{principal_short:<18}` | {active_count:>14} | {cycleops_count:>8} | {burn_rate:>20} | {icp_per_day:>10.2f} | ${usd_per_day:>9.2f} | {avg_topup:>31.4f} |")
         else:
@@ -297,7 +373,13 @@ def generate_markdown_summary(data, network, cycles_per_icp, usd_per_icp):
     md_lines.append("## All Principals Summary")
     md_lines.append("")
 
-    if has_topup_data:
+    if has_topup_data and has_balance_data:
+        md_lines.append("| Principal            | Total mAIners | Active | Paused | CycleOps | Daily Burn (Tcycles) | ICP/day    | USD/day    | Total Cycles (Tcycles) | Days Until Topup | Avg/Day ICP Top-up (Last Month) |")
+        md_lines.append("|:---------------------|----------------|--------|--------|:--------:|---------------------:|-----------:|-----------:|-----------------------:|-----------------:|--------------------------------:|")
+    elif has_balance_data:
+        md_lines.append("| Principal            | Total mAIners | Active | Paused | CycleOps | Daily Burn (Tcycles) | ICP/day    | USD/day    | Total Cycles (Tcycles) | Days Until Topup |")
+        md_lines.append("|:---------------------|----------------|--------|--------|:--------:|---------------------:|-----------:|-----------:|-----------------------:|-----------------:|")
+    elif has_topup_data:
         md_lines.append("| Principal            | Total mAIners | Active | Paused | CycleOps | Daily Burn (Tcycles) | ICP/day    | USD/day    | Avg/Day ICP Top-up (Last Month) |")
         md_lines.append("|:---------------------|----------------|--------|--------|:--------:|---------------------:|-----------:|-----------:|--------------------------------:|")
     else:
@@ -319,7 +401,18 @@ def generate_markdown_summary(data, network, cycles_per_icp, usd_per_icp):
         # Truncate principal for readability
         principal_short = f"{principal_id[:8]}...{principal_id[-3:]}"
 
-        if has_topup_data:
+        # Format cycle balance and days until topup
+        total_cycles = principal_data.get('total_cycle_balance', 0)
+        total_tcycles = total_cycles / 1_000_000_000_000 if total_cycles else 0
+        days_until_topup = principal_data.get('days_until_topup')
+        days_str = f"{days_until_topup:>16.1f}" if days_until_topup is not None else f"{'N/A':>16}"
+
+        if has_topup_data and has_balance_data:
+            avg_topup = principal_data.get('topups', {}).get('avg_per_day_last_month', 0)
+            md_lines.append(f"| `{principal_short:<18}` | {total_mainers:>14} | {active_count:>6} | {paused_count:>6} | {cycleops_count:>8} | {burn_rate:>20} | {icp_per_day:>10.2f} | ${usd_per_day:>9.2f} | {total_tcycles:>21.2f} | {days_str} | {avg_topup:>31.4f} |")
+        elif has_balance_data:
+            md_lines.append(f"| `{principal_short:<18}` | {total_mainers:>14} | {active_count:>6} | {paused_count:>6} | {cycleops_count:>8} | {burn_rate:>20} | {icp_per_day:>10.2f} | ${usd_per_day:>9.2f} | {total_tcycles:>21.2f} | {days_str} |")
+        elif has_topup_data:
             avg_topup = principal_data.get('topups', {}).get('avg_per_day_last_month', 0)
             md_lines.append(f"| `{principal_short:<18}` | {total_mainers:>14} | {active_count:>6} | {paused_count:>6} | {cycleops_count:>8} | {burn_rate:>20} | {icp_per_day:>10.2f} | ${usd_per_day:>9.2f} | {avg_topup:>31.4f} |")
         else:
@@ -492,6 +585,77 @@ def main(network, analyze_topups=False, limit=None):
                 print(f"Progress: {total_checked}/{len(mainers_to_check)} ({percent:.1f}%) - {total_with_cycleops} with CycleOps")
 
     print(f"CycleOps controller check complete! Found {total_with_cycleops} mainers with CycleOps controllers.")
+    print("----------------------------------------------")
+
+    # Get cycle balances for all mainers (in parallel)
+    print("----------------------------------------------")
+    print("Fetching cycle balances for all mainers (parallel)...")
+    print("----------------------------------------------")
+
+    # Build a dictionary to store cycle balances by canister_id
+    cycle_balances = {}
+
+    def get_balance_wrapper(address, is_first):
+        """Wrapper function for parallel execution."""
+        balance = get_canister_cycle_balance(network, address, debug=is_first)
+        return (address, balance)
+
+    total_balance_checked = 0
+    total_balance_success = 0
+
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        # Submit all tasks
+        futures = []
+        for idx, (principal_id, address) in enumerate(mainers_to_check):
+            is_first = (idx == 0)
+            future = executor.submit(get_balance_wrapper, address, is_first)
+            futures.append(future)
+
+        # Process results as they complete
+        for future in as_completed(futures):
+            address, balance = future.result()
+            total_balance_checked += 1
+
+            if balance is not None:
+                cycle_balances[address] = balance
+                total_balance_success += 1
+
+            # Progress update every 50 mainers
+            if total_balance_checked % 50 == 0:
+                percent = (total_balance_checked / len(mainers_to_check)) * 100
+                print(f"Progress: {total_balance_checked}/{len(mainers_to_check)} ({percent:.1f}%) - {total_balance_success} successful")
+
+    print(f"Cycle balance check complete! Successfully fetched {total_balance_success}/{len(mainers_to_check)} balances.")
+    print("----------------------------------------------")
+
+    # Update mainer_details with cycle balances and calculate totals per principal
+    print("Updating mainer details with cycle balances...")
+    for principal_id, principal_data in principals.items():
+        total_cycles = 0
+        mainer_details = principal_data.get('mainer_details', [])
+
+        for detail in mainer_details:
+            address = detail.get('address')
+            if address in cycle_balances:
+                detail['cycle_balance'] = cycle_balances[address]
+                total_cycles += cycle_balances[address]
+            else:
+                detail['cycle_balance'] = None
+
+        # Store total cycle balance for the principal
+        principal_data['total_cycle_balance'] = total_cycles
+
+        # Calculate days until topup needed
+        # days = total_cycles / (daily_burn_rate_tcycles * 1_000_000_000_000)
+        burn_rate_tcycles = principal_data.get('total_daily_burn_rate_active', 0)
+        if burn_rate_tcycles > 0 and total_cycles > 0:
+            burn_rate_cycles = burn_rate_tcycles * 1_000_000_000_000
+            days_until_topup = total_cycles / burn_rate_cycles
+            principal_data['days_until_topup'] = round(days_until_topup, 2)
+        else:
+            principal_data['days_until_topup'] = None
+
+    print("Cycle balance data updated for all principals.")
     print("----------------------------------------------")
 
     # Analyze ICP top-ups if requested
