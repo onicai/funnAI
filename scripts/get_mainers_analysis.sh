@@ -2,7 +2,7 @@
 
 # Default network type is local
 NETWORK_TYPE="local"
-TOPUPS=""
+NO_TOPUPS=""
 LIMIT=""
 
 # Parse command line arguments for network type
@@ -18,8 +18,8 @@ while [ $# -gt 0 ]; do
             fi
             shift
             ;;
-        --topups)
-            TOPUPS="--topups"
+        --no-topups)
+            NO_TOPUPS="--no-topups"
             shift
             ;;
         --limit)
@@ -29,12 +29,16 @@ while [ $# -gt 0 ]; do
             ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--topups] [--limit N]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--no-topups] [--limit N]"
             exit 1
             ;;
     esac
 done
 
 echo "Using network type: $NETWORK_TYPE"
+echo ""
+echo "NOTE: Make sure you have first run: scripts/get_mainers.sh --network $NETWORK_TYPE --statistics"
+echo "      to generate the base JSON with statistics"
+echo ""
 
-python -m scripts.get_mainers_analysis --network $NETWORK_TYPE $TOPUPS $LIMIT
+python -m scripts.get_mainers_analysis --network $NETWORK_TYPE $NO_TOPUPS $LIMIT

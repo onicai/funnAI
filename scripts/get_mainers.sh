@@ -71,3 +71,12 @@ fi
 
 python -m scripts.get_mainers --network $NETWORK_TYPE --user $USER $SKIP_POAIW_UPDATE $DAILY_METRICS $LIMIT $STATISTICS
 
+# If statistics flag is set, automatically run the analysis script
+if [ -n "$STATISTICS" ]; then
+    echo ""
+    echo "----------------------------------------------"
+    echo "Running mAIners analysis..."
+    echo "----------------------------------------------"
+    python -m scripts.get_mainers_analysis --network $NETWORK_TYPE
+fi
+

@@ -471,11 +471,13 @@ def generate_markdown_summary(data, network, cycles_per_icp, usd_per_icp):
     return "\n".join(md_lines)
 
 
-def main(network, analyze_topups=False, limit=None):
+def main(network, analyze_topups=True, limit=None):
     print("----------------------------------------------")
     print(f"Loading mAIners data for network: {network}")
     if analyze_topups:
         print("Top-up analysis: ENABLED (this will be slow)")
+    else:
+        print("Top-up analysis: DISABLED")
     if limit:
         print(f"Limit: Processing only first {limit} principals")
     print("----------------------------------------------")
@@ -725,9 +727,11 @@ if __name__ == "__main__":
         help="Specify the network to analyze (default: local)",
     )
     parser.add_argument(
-        "--topups",
-        action="store_true",
-        help="Analyze ICP top-ups sent to GameState treasury (slow, queries transaction history)",
+        "--no-topups",
+        action="store_false",
+        dest="topups",
+        default=True,
+        help="Skip analyzing ICP top-ups sent to GameState treasury (by default, topups are analyzed)",
     )
     parser.add_argument(
         "--limit",
