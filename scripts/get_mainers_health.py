@@ -3,6 +3,7 @@
 import argparse
 import os
 import subprocess
+import json
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
@@ -152,6 +153,28 @@ def main(network, workers=10):
     else:
         log_message("All mAIners are healthy!", "SUCCESS")
         log_message("")
+
+    # Save results to JSON file with date prefix
+    date_prefix = datetime.now().strftime("%Y-%m-%d")
+    logs_dir = os.path.join(SCRIPT_DIR, "logs-mainer-analysis")
+    os.makedirs(logs_dir, exist_ok=True)
+
+    results = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "network": network,
+        "total_mainers": total_mainers,
+        "healthy_count": len(healthy_mainers),
+        "unhealthy_count": len(unhealthy_mainers),
+        "healthy_mainers": healthy_mainers,
+        "unhealthy_mainers": unhealthy_mainers
+    }
+
+    json_file_path = os.path.join(logs_dir, f"{date_prefix}-get_mainers_health-{network}.json")
+    with open(json_file_path, 'w') as f:
+        json.dump(results, f, indent=2)
+
+    log_message(f"Results saved to: {os.path.abspath(json_file_path)}", "INFO")
+    log_message("")
 
 
 if __name__ == "__main__":

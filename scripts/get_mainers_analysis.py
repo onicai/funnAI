@@ -688,8 +688,12 @@ def main(network, analyze_topups=True, limit=None):
         print("Top-up analysis complete!")
         print("----------------------------------------------")
 
-    # Save updated JSON
-    json_file_path = os.path.join(SCRIPT_DIR, f"get_mainers_by_principal-{network}.json")
+    # Save updated JSON with date prefix
+    date_prefix = datetime.now().strftime("%Y-%m-%d")
+    logs_dir = os.path.join(SCRIPT_DIR, "logs-mainer-analysis")
+    os.makedirs(logs_dir, exist_ok=True)
+
+    json_file_path = os.path.join(logs_dir, f"{date_prefix}-get_mainers_by_principal-{network}.json")
     with open(json_file_path, 'w') as f:
         json.dump(data, f, indent=2)
 
@@ -700,7 +704,7 @@ def main(network, analyze_topups=True, limit=None):
     print("Generating markdown summary...")
     md_content = generate_markdown_summary(data, network, cycles_per_icp, usd_per_icp)
 
-    md_file_path = os.path.join(SCRIPT_DIR, f"get_mainers_analysis-{network}.md")
+    md_file_path = os.path.join(logs_dir, f"{date_prefix}-get_mainers_analysis-{network}.md")
     with open(md_file_path, 'w') as f:
         f.write(md_content)
 
