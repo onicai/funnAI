@@ -676,8 +676,12 @@ def upgrade_canister(network: str, canister_name: str, dry_run: bool = False) ->
         log_message(f"Failed to upgrade {canister_name}: {e}", "ERROR")
         return False
 
-def check_health(network: str, canister_id: str, dry_run: bool = False) -> bool:
-    """Check the health of a canister."""
+def check_health(network: str, canister_id: str, dry_run: bool = False) -> tuple[bool, str]:
+    """Check the health of a canister.
+
+    Returns:
+        Tuple of (success: bool, output: str)
+    """
     log_message(f"Checking health for {canister_id}...")
     command = [
         "dfx", "canister", "--network", network, "call",
@@ -685,7 +689,7 @@ def check_health(network: str, canister_id: str, dry_run: bool = False) -> bool:
     ]
     if dry_run:
         log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
-        return True
+        return True, ""
 
     try:
         result = run_command(command, retry_on_transient_errors=True)
@@ -695,13 +699,14 @@ def check_health(network: str, canister_id: str, dry_run: bool = False) -> bool:
         # (Sometimes dfx fails to parse the candid and shows numeric variant)
         if "(variant { Ok = record { status_code = 200 : nat16 } })" in output or "(variant { 17_724 = record { 3_475_804_314 = 200 : nat16 } })" in output:
                 log_message(f"Health check passed for {canister_id}", "SUCCESS")
-                return True
+                return True, output
         else:
             log_message(f"Health check failed for {canister_id}: {output}", "ERROR")
-            return False
+            return False, output
     except Exception as e:
-        log_message(f"Health check failed for {canister_id}: {e}", "ERROR")
-        return False
+        error_msg = str(e)
+        log_message(f"Health check failed for {canister_id}: {error_msg}", "ERROR")
+        return False, error_msg
     
 
 def get_maintenance_flag(network: str, canister_id: str, dry_run: bool = False) -> Optional[bool]:
@@ -952,7 +957,7 @@ def should_skip_upgrade(network: str, address: str, target_hash: Optional[str], 
 
     # Hashes match - now check health
     log_message(f"Hash matches target - checking health before skipping", "INFO")
-    health_ok = check_health(network, address, dry_run)
+    health_ok, _ = check_health(network, address, dry_run)
 
     if health_ok:
         log_message(f"Already upgraded to target hash and health check passed - skipping", "INFO")
@@ -1085,10 +1090,40 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
             return False
 
     # Step 2i: Check health (must now return 200 OK)
+    # Give canister time for maintenance flag to fully propagate
     if not dry_run:
-        # Give canister a moment to fully start
-        time.sleep(5)
-    if not check_health(network, address, dry_run):
+        log_message(f"Waiting 10 seconds for maintenance flag to propagate before health check...", "INFO")
+        time.sleep(10)
+
+    # Retry health check if it fails due to maintenance flag not yet propagated
+    max_health_retries = 3
+    health_retry_delay = 30.0
+    health_ok = False
+
+    for health_attempt in range(1, max_health_retries + 1):
+        health_ok, health_output = check_health(network, address, dry_run)
+
+        if health_ok:
+            break
+
+        # Check if failure is due to maintenance flag still being on
+        if 'mAIner is under maintenance' in health_output:
+            if health_attempt < max_health_retries:
+                log_message(f"Health check failed due to maintenance flag (attempt {health_attempt}/{max_health_retries}). Waiting {health_retry_delay}s before retry...", "WARNING")
+                if not dry_run:
+                    time.sleep(health_retry_delay)
+            else:
+                log_message(f"Health check still failing after {max_health_retries} attempts. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+                update_mainer_status(address, MainerStatus.FAILED_HEALTH, f"Health check failed (maintenance flag). Snapshot: {snapshot_id}")
+                return False
+        else:
+            # Different error - don't retry
+            if not dry_run:
+                log_message(f"Health check failed with unexpected error. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+                update_mainer_status(address, MainerStatus.FAILED_HEALTH, f"Health check failed. Snapshot: {snapshot_id}")
+                return False
+
+    if not health_ok:
         if not dry_run:
             log_message(f"Health check failed. Snapshot ID for rollback: {snapshot_id}", "ERROR")
             update_mainer_status(address, MainerStatus.FAILED_HEALTH, f"Health check failed. Snapshot: {snapshot_id}")
