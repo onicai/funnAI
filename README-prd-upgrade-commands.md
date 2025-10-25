@@ -718,6 +718,15 @@ scripts/upgrade_mainers.sh --network prd --num 100 --target-hash $TARGET_HASH [-
 scripts/upgrade_mainers.sh --network prd --target-hash $TARGET_HASH [--dry-run]
 ```
 
+### Verify Health & Hash
+
+After upgrade is completed, verify every mAIner is healthy and has correct module hash:
+
+```bash
+TARGET_HASH=0x...
+scripts/get_mainers_health.sh --network prd --target-hash $TARGET_HASH
+```
+
 ## Old approach
 
 An individual mAIner agent can be upgraded with the following commands:
