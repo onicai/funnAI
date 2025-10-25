@@ -498,7 +498,7 @@ def stop_timer(network: str, canister_id: str, dry_run: bool = False) -> bool:
         # Valid responses include:
         # - "You stopped the timers: ..."
         # - "No timers were running"
-        if 'variant { Ok' in result.stdout:
+        if 'variant { Ok' in result.stdout or  'variant { 17_724' in result.stdout:
             log_message(f"Timer stopped for {canister_id}", "SUCCESS")
             return True
         else:
