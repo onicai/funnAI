@@ -269,14 +269,16 @@ Once deployed and confirmed it is OK, apply a tag:
 ```bash
 # From folder: PoAIW
 
+# Check out main branch
+
 # get all the current tags, with their commit sha & description
 git fetch --tags
 git tag -l --format='%(refname:short) -> %(if)%(*objectname)%(then)%(*objectname:short)%(else)%(objectname:short)%(end) %(contents:subject)'
 
 # add the tag, as in this example
-RELEASE_TAG=release-2    # increment
-RELEASE_SHA=ccd5962      # get with `git log --oneline -5`
-RELEASE_MESSAGE="Release 2: Phase out direct cycle topups - fee 30%"
+RELEASE_TAG=release-3    # increment
+RELEASE_SHA=c8295d6      # get with `git log --oneline -5`
+RELEASE_MESSAGE="Release 3: Phase out direct cycle topups - fee 90%"
 git tag -a $RELEASE_TAG $RELEASE_SHA -m "$RELEASE_MESSAGE"
 
 # push it to github
@@ -694,6 +696,7 @@ conda activate llama_cpp_canister
 MAINER=nkftb-zqaaa-aaaaa-qbbxa-cai
 scripts/upgrade_mainers.sh --network prd --mainer $MAINER --ask-before-upgrade [--dry-run]
 # -> It will print new wasm hash, which you set as the target hash for rest of deployment
+TARGET_HASH=0xad2c4545d533e4a01f81e9ec57c9bd16e1c5c358208ef8f9122f9c0e43ed547f  # Oct 25, 2025 (release-3)
 TARGET_HASH=0x55ab6af1cdaf08ddd34776e7404aecd3eacba3b86ba03eb9196ddfd8113d50c2  # Oct 23, 2025 (release-2)
 TARGET_HASH=0xf2a40400e1f0cc0896c976eb2efa7a902aff68266b69b4a6be0a077b022db819  # Oct 10, 2025 (release-1)
 # By providing the target hash, the script will skip upgrade for mAIners already at that hash and healthy
