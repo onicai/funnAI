@@ -3,6 +3,7 @@
 # Default network type is local
 NETWORK_TYPE="local"
 WORKERS=""
+TARGET_HASH=""
 
 # Parse command line arguments for network type
 while [ $# -gt 0 ]; do
@@ -22,9 +23,14 @@ while [ $# -gt 0 ]; do
             WORKERS="--workers $1"
             shift
             ;;
+        --target-hash)
+            shift
+            TARGET_HASH="--target-hash $1"
+            shift
+            ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--workers N]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--workers N] [--target-hash HASH]"
             exit 1
             ;;
     esac
@@ -32,4 +38,4 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 
-python -m scripts.get_mainers_health --network $NETWORK_TYPE $WORKERS
+python -m scripts.get_mainers_health --network $NETWORK_TYPE $WORKERS $TARGET_HASH
