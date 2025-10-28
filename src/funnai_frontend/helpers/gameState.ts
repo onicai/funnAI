@@ -174,3 +174,92 @@ export const getIsWhitelistPhaseActive = async (isRetry = false) => {
     };
   };
 };
+
+// Reverse Auction Helper Functions
+export const getIsMainerAuctionActive = async () => {
+  try {
+    if (!storeState.gameStateCanisterActor.getIsMainerAuctionActive) {
+      console.warn("getIsMainerAuctionActive method not available, defaulting to false");
+      return false;
+    }
+    
+    let response = await storeState.gameStateCanisterActor.getIsMainerAuctionActive();
+    
+    if ('Ok' in response) {
+      return response.Ok.flag;
+    } else if ('Err' in response) {
+      console.error("Error in getIsMainerAuctionActive:", response.Err);
+      return false;
+    }
+  } catch (error) {
+    console.error("Failed to getIsMainerAuctionActive:", error);
+    return false;
+  }
+};
+
+export const getMainerAuctionTimerInfo = async () => {
+  try {
+    if (!storeState.gameStateCanisterActor.getMainerAuctionTimerInfo) {
+      console.warn("getMainerAuctionTimerInfo method not available");
+      return null;
+    }
+    
+    let response = await storeState.gameStateCanisterActor.getMainerAuctionTimerInfo();
+    
+    if ('Ok' in response) {
+      return {
+        lastUpdateNs: Number(response.Ok.lastUpdateNs),
+        intervalSeconds: Number(response.Ok.intervalSeconds),
+        active: response.Ok.active
+      };
+    } else if ('Err' in response) {
+      console.error("Error in getMainerAuctionTimerInfo:", response.Err);
+      return null;
+    }
+  } catch (error) {
+    console.error("Failed to getMainerAuctionTimerInfo:", error);
+    return null;
+  }
+};
+
+export const getNextMainerAuctionPriceDropAtNs = async () => {
+  try {
+    if (!storeState.gameStateCanisterActor.getNextMainerAuctionPriceDropAtNs) {
+      console.warn("getNextMainerAuctionPriceDropAtNs method not available");
+      return 0;
+    }
+    
+    let response = await storeState.gameStateCanisterActor.getNextMainerAuctionPriceDropAtNs();
+    
+    if ('Ok' in response) {
+      return Number(response.Ok);
+    } else if ('Err' in response) {
+      console.error("Error in getNextMainerAuctionPriceDropAtNs:", response.Err);
+      return 0;
+    }
+  } catch (error) {
+    console.error("Failed to getNextMainerAuctionPriceDropAtNs:", error);
+    return 0;
+  }
+};
+
+export const getAvailableMainers = async () => {
+  try {
+    if (!storeState.gameStateCanisterActor.getAvailableMainers) {
+      console.warn("getAvailableMainers method not available");
+      return 0;
+    }
+    
+    let response = await storeState.gameStateCanisterActor.getAvailableMainers();
+    
+    if ('Ok' in response) {
+      return Number(response.Ok);
+    } else if ('Err' in response) {
+      console.error("Error in getAvailableMainers:", response.Err);
+      return 0;
+    }
+  } catch (error) {
+    console.error("Failed to getAvailableMainers:", error);
+    return 0;
+  }
+};

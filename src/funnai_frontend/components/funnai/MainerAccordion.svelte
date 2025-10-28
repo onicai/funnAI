@@ -5,6 +5,7 @@
   import FlockOverview from './mainers/FlockOverview.svelte';
   import MainerCreationPanel from './mainers/MainerCreationPanel.svelte';
   import WhitelistMainerPanel from './mainers/WhitelistMainerPanel.svelte';
+  import ReverseAuctionPanel from './mainers/ReverseAuctionPanel.svelte';
   import NetworkCapacityPanel from './mainers/NetworkCapacityPanel.svelte';
   import CanisterInfo from './CanisterInfo.svelte';
   import { store } from "../../stores/store";
@@ -15,7 +16,7 @@
   import { Principal } from '@dfinity/principal';
   import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
   import { tooltip } from "../../helpers/utils/tooltip";
-  import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped, getWhitelistAgentPrice, getPauseWhitelistMainerCreationFlag, getIsWhitelistPhaseActive } from "../../helpers/gameState";
+  import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped, getWhitelistAgentPrice, getPauseWhitelistMainerCreationFlag, getIsWhitelistPhaseActive, getIsMainerAuctionActive, getMainerAuctionTimerInfo, getNextMainerAuctionPriceDropAtNs, getAvailableMainers } from "../../helpers/gameState";
   import { mainerHealthService, mainerHealthStatuses } from "../../helpers/mainerHealthService";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
@@ -40,6 +41,17 @@
   
   let isPauseWhitelistMainerCreationFlag = false; // Will be loaded
   $: isPauseWhitelistMainerCreation = isPauseWhitelistMainerCreationFlag;
+
+  // Reverse Auction variables
+  let isAuctionActiveFlag = false; // Will be loaded
+  $: isAuctionActive = isAuctionActiveFlag;
+  
+  let availableMainersCount = 0; // Will be loaded
+  $: availableMainers = availableMainersCount;
+  
+  let nextPriceDropAtNs = 0; // Will be loaded
+  let auctionIntervalSeconds = 0; // Will be loaded
+  let auctionUpdateInterval: number | null = null;
 
   let agents = [];
 
@@ -518,6 +530,42 @@
     };    
   };
 
+  async function loadAuctionData() {
+    try {
+      // Load auction active flag
+      isAuctionActiveFlag = await getIsMainerAuctionActive();
+      
+      // Load available mainers count
+      availableMainersCount = await getAvailableMainers();
+      
+      // Load auction timer info if auction is active
+      if (isAuctionActiveFlag) {
+        const timerInfo = await getMainerAuctionTimerInfo();
+        if (timerInfo) {
+          auctionIntervalSeconds = timerInfo.intervalSeconds;
+        }
+        
+        // Load next price drop timestamp
+        nextPriceDropAtNs = await getNextMainerAuctionPriceDropAtNs();
+        
+        // Also refresh the price when loading auction data
+        currentMainerPrice = await getMainerPrice();
+      }
+    } catch (error) {
+      console.error("Error loading auction data:", error);
+      // Set safe defaults
+      isAuctionActiveFlag = false;
+      availableMainersCount = 0;
+      nextPriceDropAtNs = 0;
+      auctionIntervalSeconds = 0;
+    }
+  };
+
+  async function updateAuctionData() {
+    // This function is called from the ReverseAuctionPanel to update data
+    await loadAuctionData();
+  };
+
   async function handleWhitelistMainerCreation(txId?: string, selectedMainer?: any) {
     try {
       addProgressMessage("Preparing whitelist mAIner creation...");
@@ -867,6 +915,9 @@
     // Load initial state of flags
     await loadProtocolFlags();
     
+    // Load auction data
+    await loadAuctionData();
+    
     // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
     agents = await loadAgents();
     
@@ -1016,10 +1067,37 @@
     // Clear tracking
     healthChecksStarted.clear();
     
+    // Clear auction update interval
+    if (auctionUpdateInterval) {
+      clearInterval(auctionUpdateInterval);
+      auctionUpdateInterval = null;
+    }
+    
     if (typeof window !== 'undefined') {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     }
   });
+
+  // Setup regular auction data updates when auction is active
+  $: {
+    if (isAuctionActive && !protocolFlagsLoading) {
+      // Clear any existing interval
+      if (auctionUpdateInterval) {
+        clearInterval(auctionUpdateInterval);
+      }
+      
+      // Set up interval to refresh auction data every 30 seconds
+      auctionUpdateInterval = window.setInterval(async () => {
+        await loadAuctionData();
+      }, 30000); // 30 seconds
+    } else {
+      // Clear interval when auction is not active
+      if (auctionUpdateInterval) {
+        clearInterval(auctionUpdateInterval);
+        auctionUpdateInterval = null;
+      }
+    }
+  }
 </script>
 
 <!-- Loading state for protocol flags -->
@@ -1074,6 +1152,32 @@
   onCreateWhitelistAgent={createWhitelistAgent}
   onToggleLoginModal={toggleLoginModal}
 />
+
+<!-- Reverse Auction Section (show when auction is active and not in whitelist phase) -->
+{#if isAuctionActive && !isWhitelistPhaseActive && !protocolFlagsLoading}
+  <div class="mt-4">
+    <ReverseAuctionPanel
+      {isAuthenticated}
+      {isProtocolActive}
+      {stopMainerCreation}
+      {isCreatingMainer}
+      {mainerCreationProgress}
+      {mainerPrice}
+      {modelType}
+      {selectedModel}
+      {addressCopied}
+      shouldAutoOpen={agents.length === 0}
+      {isAuctionActive}
+      {availableMainers}
+      {nextPriceDropAtNs}
+      onCreateAgent={createAgent}
+      onToggleLoginModal={toggleLoginModal}
+      onToggleAccordion={toggleAccordion}
+      onModelTypeChange={(type) => modelType = type}
+      onUpdateAuctionData={updateAuctionData}
+    />
+  </div>
+{/if}
 
 <!-- Warning Banner - Don't refresh/navigate during creation -->
 {#if isCreatingMainer}
