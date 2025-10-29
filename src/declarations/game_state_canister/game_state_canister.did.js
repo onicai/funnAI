@@ -369,6 +369,15 @@ export const idlFactory = ({ IDL }) => {
   const CyclesFlowResult = IDL.Variant({ 'Ok' : CyclesFlow, 'Err' : ApiError });
   const FlagRecord = IDL.Record({ 'flag' : IDL.Bool });
   const FlagResult = IDL.Variant({ 'Ok' : FlagRecord, 'Err' : ApiError });
+  const MainerAuctionTimerInfo = IDL.Record({
+    'lastUpdateNs' : IDL.Nat,
+    'intervalSeconds' : IDL.Nat,
+    'active' : IDL.Bool,
+  });
+  const MainerAuctionTimerInfoResult = IDL.Variant({
+    'Ok' : MainerAuctionTimerInfo,
+    'Err' : ApiError,
+  });
   const GameStateTresholds = IDL.Record({
     'thresholdMaxOpenSubmissions' : IDL.Nat,
     'thresholdMaxOpenChallenges' : IDL.Nat,
@@ -913,6 +922,10 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getIsMigratingChallengesFlagAdmin' : IDL.Func([], [FlagResult], ['query']),
     'getIsWhitelistPhaseActive' : IDL.Func([], [FlagResult], ['query']),
+    'getIsMainerAuctionActive' : IDL.Func([], [FlagResult], ['query']),
+    'getMainerAuctionTimerInfo' : IDL.Func([], [MainerAuctionTimerInfoResult], ['query']),
+    'getNextMainerAuctionPriceDropAtNs' : IDL.Func([], [NatResult], ['query']),
+    'getAvailableMainers' : IDL.Func([], [NatResult], ['query']),
     'getJudgePromptInfo' : IDL.Func(
         [IDL.Text],
         [JudgePromptInfoResult],

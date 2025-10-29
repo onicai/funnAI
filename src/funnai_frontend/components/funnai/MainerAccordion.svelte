@@ -912,11 +912,13 @@
 
   onMount(async () => {
     
-    // Load initial state of flags
-    await loadProtocolFlags();
-    
-    // Load auction data
-    await loadAuctionData();
+    // Load initial state of flags and auction data in parallel (don't block each other)
+    Promise.all([
+      loadProtocolFlags(),
+      loadAuctionData()
+    ]).catch(error => {
+      console.error("Error loading initial data:", error);
+    });
     
     // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
     agents = await loadAgents();
@@ -1098,6 +1100,7 @@
       }
     }
   }
+
 </script>
 
 <!-- Loading state for protocol flags -->
@@ -1112,10 +1115,10 @@
   </div>
 {:else}
   <!-- Network Capacity Panel - Shows outside dropdown when creation is unavailable -->
-  <NetworkCapacityPanel isVisible={stopMainerCreation && !protocolFlagsLoading && !isWhitelistPhaseActive} />
+  <NetworkCapacityPanel isVisible={stopMainerCreation && !protocolFlagsLoading && !isWhitelistPhaseActive && !isAuctionActive} />
 
-  <!-- Create Agent Accordion (only show when not in whitelist phase) -->
-  {#if !isWhitelistPhaseActive}
+  <!-- Create Agent Accordion (only show when not in whitelist phase AND not in auction mode) -->
+  {#if !isWhitelistPhaseActive && !isAuctionActive}
     <MainerCreationPanel
       {isAuthenticated}
       {isProtocolActive}
@@ -1126,7 +1129,7 @@
       {modelType}
       {selectedModel}
       {addressCopied}
-      shouldAutoOpen={agents.length === 0 && !isWhitelistPhaseActive}
+      shouldAutoOpen={agents.length === 0 && !isWhitelistPhaseActive && !isAuctionActive}
       onCreateAgent={createAgent}
       onToggleLoginModal={toggleLoginModal}
       onToggleAccordion={toggleAccordion}
@@ -1163,7 +1166,6 @@
       {isCreatingMainer}
       {mainerCreationProgress}
       {mainerPrice}
-      {modelType}
       {selectedModel}
       {addressCopied}
       shouldAutoOpen={agents.length === 0}
@@ -1173,7 +1175,6 @@
       onCreateAgent={createAgent}
       onToggleLoginModal={toggleLoginModal}
       onToggleAccordion={toggleAccordion}
-      onModelTypeChange={(type) => modelType = type}
       onUpdateAuctionData={updateAuctionData}
     />
   </div>

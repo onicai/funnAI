@@ -89,15 +89,8 @@
         <!-- Authenticated Content -->
         <div class="p-6 sm:p-8 space-y-6">
           
-          <!-- Step 1: Agent Type Selection -->
+          <!-- Agent Type Selection -->
           <div class="space-y-4">
-            <div class="flex items-center space-x-3">
-              <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-sm shadow-lg">
-                1
-              </div>
-              <h3 class="text-lg font-bold text-gray-900 dark:text-white">Select Agent Type</h3>
-            </div>
-            
             <!-- Agent Type Card -->
             <div 
               class="group relative overflow-hidden border-2 rounded-2xl transition-all duration-300 cursor-pointer {modelType === 'Shared' 

@@ -191,6 +191,8 @@ export const getIsMainerAuctionActive = async () => {
       console.error("Error in getIsMainerAuctionActive:", response.Err);
       return false;
     }
+    
+    return false;
   } catch (error) {
     console.error("Failed to getIsMainerAuctionActive:", error);
     return false;

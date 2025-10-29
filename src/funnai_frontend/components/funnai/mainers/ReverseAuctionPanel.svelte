@@ -9,7 +9,6 @@
   export let isCreatingMainer: boolean;
   export let mainerCreationProgress: Array<{message: string, timestamp: string, complete: boolean}>;
   export let mainerPrice: number;
-  export let modelType: 'Own' | 'Shared';
   export let selectedModel: string;
   export let addressCopied: boolean;
   export let shouldAutoOpen: boolean = false;
@@ -21,7 +20,6 @@
   export let onCreateAgent: () => void;
   export let onToggleLoginModal: () => void;
   export let onToggleAccordion: (id: string) => void;
-  export let onModelTypeChange: (type: 'Own' | 'Shared') => void;
   export let onUpdateAuctionData: () => Promise<void>;
   
   // Internal state for accordion
@@ -229,24 +227,10 @@
             </div>
           </div>
           
-          <!-- Step 1: Agent Type Selection -->
+          <!-- mAIner Agent Card -->
           <div class="space-y-4">
-            <div class="flex items-center space-x-3">
-              <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 text-white font-bold text-sm shadow-lg">
-                1
-              </div>
-              <h3 class="text-lg font-bold text-gray-900 dark:text-white">Select Agent Type</h3>
-            </div>
-            
-            <!-- Agent Type Card -->
             <div 
-              class="group relative overflow-hidden border-2 rounded-2xl transition-all duration-300 cursor-pointer {modelType === 'Shared' 
-                ? 'border-purple-500 dark:border-purple-400 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 shadow-lg shadow-purple-500/20' 
-                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-600 hover:shadow-md'}"
-              on:click={() => onModelTypeChange('Shared')}
-              on:keydown={(e) => e.key === 'Enter' && onModelTypeChange('Shared')}
-              role="button"
-              tabindex="0"
+              class="group relative overflow-hidden border-2 rounded-2xl transition-all duration-300 border-purple-500 dark:border-purple-400 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 shadow-lg shadow-purple-500/20"
             >
               <!-- Decorative background elements -->
               <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-200/20 to-pink-200/20 dark:from-purple-500/10 dark:to-pink-500/10 rounded-full -translate-y-16 translate-x-16 blur-2xl"></div>
@@ -306,19 +290,6 @@
                         {/if}
                       </div>
                     </div>
-                  </div>
-                  
-                  <!-- Selection Indicator -->
-                  <div class="flex-shrink-0 ml-4">
-                    {#if modelType === 'Shared'}
-                      <div class="w-6 h-6 sm:w-7 sm:h-7 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center shadow-lg">
-                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                      </div>
-                    {:else}
-                      <div class="w-6 h-6 sm:w-7 sm:h-7 border-2 border-gray-300 dark:border-gray-600 rounded-full"></div>
-                    {/if}
                   </div>
                 </div>
               </div>
