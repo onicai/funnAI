@@ -649,7 +649,7 @@ If you want to do it all manually, follow these steps:
 
 ```bash
     # We have a script to delete ALL snapshots for either ALL protocol canisters or a specified canister-id
-    scripts/delete_snapshots.sh --network $NETWORK [--canister-id <canister-id>]
+    scripts/delete_snapshots.sh --network $NETWORK --canister-types [all/protocol/mainers] [--canister-id <canister-id>] [--dry-run] [--workers N]
 
     # You can do it manually with:
     LLM="<canister-id>"
@@ -721,13 +721,21 @@ scripts/upgrade_mainers.sh --network prd --num 100 --target-hash $TARGET_HASH [-
 scripts/upgrade_mainers.sh --network prd --target-hash $TARGET_HASH [--dry-run]
 ```
 
-### Verify Health & Hash
+### Verify mAIners Health & Hash
 
 After upgrade is completed, verify every mAIner is healthy and has correct module hash:
 
 ```bash
 TARGET_HASH=0x...
 scripts/get_mainers_health.sh --network prd --target-hash $TARGET_HASH
+```
+
+### Delete mAIners snapshots
+
+Delete snapshot of all the mAIners:
+
+```bash
+scripts/delete_snapshots.sh --network prd --canister-types mainers [--dry-run]
 ```
 
 ## Old approach
