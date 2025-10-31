@@ -1088,10 +1088,16 @@
         clearInterval(auctionUpdateInterval);
       }
       
-      // Set up interval to refresh auction data every 30 seconds
+      // Use auction interval if it's shorter than 30 seconds, otherwise use 30 seconds
+      // Convert auctionIntervalSeconds to milliseconds and default to 30 seconds if not set
+      const updateIntervalMs = auctionIntervalSeconds > 0 && auctionIntervalSeconds < 30 
+        ? auctionIntervalSeconds * 1000 
+        : 30000;
+      
+      // Set up interval to refresh auction data
       auctionUpdateInterval = window.setInterval(async () => {
         await loadAuctionData();
-      }, 30000); // 30 seconds
+      }, updateIntervalMs);
     } else {
       // Clear interval when auction is not active
       if (auctionUpdateInterval) {
