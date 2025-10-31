@@ -28,6 +28,7 @@
   // Timer state
   let timeUntilNextDrop = "";
   let countdownInterval: number | null = null;
+  let auctionDataInterval: number | null = null;
   
   function toggleAccordion() {
     isOpen = !isOpen;
@@ -76,11 +77,21 @@
       updateCountdown();
       countdownInterval = window.setInterval(updateCountdown, 1000);
     }
+    
+    // Start interval to check available mainers every 2 seconds
+    auctionDataInterval = window.setInterval(() => {
+      if (onUpdateAuctionData) {
+        onUpdateAuctionData();
+      }
+    }, 2000);
   });
   
   onDestroy(() => {
     if (countdownInterval) {
       clearInterval(countdownInterval);
+    }
+    if (auctionDataInterval) {
+      clearInterval(auctionDataInterval);
     }
   });
   
