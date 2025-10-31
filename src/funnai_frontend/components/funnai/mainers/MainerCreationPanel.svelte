@@ -118,9 +118,15 @@
                     <div class="flex-1 min-w-0">
                       <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
                         <h4 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white">mAIner Agent</h4>
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 w-fit border border-red-200 dark:border-red-800">
-                          Not Available
-                        </span>
+                        {#if isProtocolActive && !stopMainerCreation}
+                          <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 w-fit border border-green-200 dark:border-green-800">
+                            Available
+                          </span>
+                        {:else}
+                          <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 w-fit border border-red-200 dark:border-red-800">
+                            Not Available
+                          </span>
+                        {/if}
                       </div>
                       
                       <p class="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
