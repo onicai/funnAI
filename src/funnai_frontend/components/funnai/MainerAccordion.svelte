@@ -1140,7 +1140,7 @@
     />
   {/if}
    <!-- Network Capacity Panel - Shows outside dropdown when creation is unavailable -->
-   <NetworkCapacityPanel isVisible={stopMainerCreation && !protocolFlagsLoading && !isWhitelistPhaseActive && !isAuctionActive} />
+   <NetworkCapacityPanel isVisible={isAuthenticated && stopMainerCreation && !protocolFlagsLoading && !isWhitelistPhaseActive && !isAuctionActive} />
 {/if}
 
 
