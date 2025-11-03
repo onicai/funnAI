@@ -1120,9 +1120,6 @@
     </div>
   </div>
 {:else}
-  <!-- Network Capacity Panel - Shows outside dropdown when creation is unavailable -->
-  <NetworkCapacityPanel isVisible={stopMainerCreation && !protocolFlagsLoading && !isWhitelistPhaseActive && !isAuctionActive} />
-
   <!-- Create Agent Accordion (only show when not in whitelist phase AND not in auction mode) -->
   {#if !isWhitelistPhaseActive && !isAuctionActive}
     <MainerCreationPanel
@@ -1142,6 +1139,8 @@
       onModelTypeChange={(type) => modelType = type}
     />
   {/if}
+   <!-- Network Capacity Panel - Shows outside dropdown when creation is unavailable -->
+   <NetworkCapacityPanel isVisible={stopMainerCreation && !protocolFlagsLoading && !isWhitelistPhaseActive && !isAuctionActive} />
 {/if}
 
 
