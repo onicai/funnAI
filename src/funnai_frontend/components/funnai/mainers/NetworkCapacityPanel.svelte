@@ -4,7 +4,7 @@
 </script>
 
 {#if isVisible}
-  <div class="mb-4 relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-900/20 dark:via-amber-900/20 dark:to-yellow-900/20 border border-orange-200/60 dark:border-orange-700/60 rounded-xl shadow-sm">
+  <div class="my-4 relative overflow-hidden bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 dark:from-orange-900/20 dark:via-amber-900/20 dark:to-yellow-900/20 border border-orange-200/60 dark:border-orange-700/60 rounded-xl shadow-sm">
     <!-- Background decorative elements -->
     <div class="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-orange-200/30 to-amber-200/30 dark:from-orange-600/10 dark:to-amber-600/10 rounded-full -translate-y-8 translate-x-8"></div>
     <div class="absolute bottom-0 left-0 w-12 h-12 bg-gradient-to-tr from-yellow-200/30 to-orange-200/30 dark:from-yellow-600/10 dark:to-orange-600/10 rounded-full translate-y-6 -translate-x-6"></div>
