@@ -7,6 +7,7 @@
   import WhitelistMainerPanel from './mainers/WhitelistMainerPanel.svelte';
   import ReverseAuctionPanel from './mainers/ReverseAuctionPanel.svelte';
   import NetworkCapacityPanel from './mainers/NetworkCapacityPanel.svelte';
+  import AnnouncementPanel from './mainers/AnnouncementPanel.svelte';
   import CanisterInfo from './CanisterInfo.svelte';
   import { store } from "../../stores/store";
   import LoginModal from '../login/LoginModal.svelte';
@@ -48,6 +49,9 @@
   
   let availableMainersCount = 0; // Will be loaded
   $: availableMainers = availableMainersCount;
+  
+  // Announcement visibility state
+  let showAnnouncement = true;
   
   let nextPriceDropAtNs = 0; // Will be loaded
   let auctionIntervalSeconds = 0; // Will be loaded
@@ -1108,6 +1112,19 @@
   }
 
 </script>
+
+<!-- Reverse Auction Announcement -->
+<AnnouncementPanel
+  isVisible={showAnnouncement}
+  title="Live Reverse Auction 💎"
+  subtitle="Price drops until all mAIners are sold. Limited availability!"
+  variant="announcement"
+  items={[
+    { icon: "🕗", text: "November 09, 8 AM PT" },
+    { icon: "🦜", text: "Aira, your Parrot Auctioneer, takes the stand." }
+  ]}
+  onClose={() => showAnnouncement = false}
+/>
 
 <!-- Loading state for protocol flags -->
 {#if protocolFlagsLoading}
