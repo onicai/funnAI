@@ -210,6 +210,7 @@
                 <div class="flex-1">
                   <div class="text-xs text-gray-600 dark:text-gray-400 font-medium mb-0.5">Current Price</div>
                   <div class="text-xl font-bold text-gray-900 dark:text-white">{mainerPrice} ICP</div>
+                  <div class="text-xs text-gray-600 dark:text-gray-400 font-medium mb-0.5">90% converted to Cycles</div>
                 </div>
               </div>
             </div>
