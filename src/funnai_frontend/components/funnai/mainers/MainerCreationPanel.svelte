@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { tooltip } from "../../../helpers/utils/tooltip";
+  import NetworkCapacityPanel from './NetworkCapacityPanel.svelte';
 
   // Props
   export let isAuthenticated: boolean;
@@ -236,6 +237,9 @@
               </span>
             </button>
           </div>
+          
+          <!-- Network Capacity Warning (if applicable) -->
+          <NetworkCapacityPanel isVisible={stopMainerCreation} />
         </div>
         
       {:else}

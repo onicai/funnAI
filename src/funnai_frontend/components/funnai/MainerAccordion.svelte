@@ -1156,8 +1156,6 @@
       onModelTypeChange={(type) => modelType = type}
     />
   {/if}
-   <!-- Network Capacity Panel - Shows outside dropdown when creation is unavailable -->
-   <NetworkCapacityPanel isVisible={isAuthenticated && stopMainerCreation && !protocolFlagsLoading && !isWhitelistPhaseActive && !isAuctionActive} />
 {/if}
 
 
