@@ -151,7 +151,7 @@
             {/if}
           </div>
           {#if timeUntilNextDrop}
-            <p class="text-sm text-white/90 font-semibold">⏱️ Next drop: {timeUntilNextDrop}</p>
+            <p class="text-sm text-white/90 font-semibold">⏱️ Next price drop: {timeUntilNextDrop}</p>
           {:else}
             <p class="text-sm text-white/80 font-medium hidden sm:block">Price drops over time</p>
           {/if}
