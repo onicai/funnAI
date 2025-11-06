@@ -70,11 +70,13 @@ dfx canister --network $NETWORK stop $SUBNET_0_1_GAMESTATE
 dfx canister --network $NETWORK stop $SUBNET_0_1_CHALLENGER
 dfx canister --network $NETWORK stop $SUBNET_0_1_JUDGE
 dfx canister --network $NETWORK stop $SUBNET_0_1_SHARE_SERVICE
+dfx canister --network $NETWORK stop $SUBNET_0_1_MAINER_CREATOR
 
 dfx canister --network $NETWORK status $SUBNET_0_1_GAMESTATE     | grep Status
 dfx canister --network $NETWORK status $SUBNET_0_1_CHALLENGER    | grep Status
 dfx canister --network $NETWORK status $SUBNET_0_1_JUDGE         | grep Status
 dfx canister --network $NETWORK status $SUBNET_0_1_SHARE_SERVICE | grep Status
+dfx canister --network $NETWORK status $SUBNET_0_1_MAINER_CREATOR | grep Status
 ```
 
 # snapshot the protocol canisters
@@ -85,7 +87,8 @@ echo $NETWORK
 dfx canister --network $NETWORK snapshot create $SUBNET_0_1_GAMESTATE
 dfx canister --network $NETWORK snapshot create $SUBNET_0_1_CHALLENGER    
 dfx canister --network $NETWORK snapshot create $SUBNET_0_1_JUDGE         
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE 
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_MAINER_CREATOR 
 ```
 
 # upgrade the GameState
@@ -228,14 +231,26 @@ dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE setTimerActionRegularityI
 # reset the isProcessingSubmissions flag
 dfx canister --network $NETWORK call   $SUBNET_0_1_JUDGE resetIsProcessingSubmissionsAdmin
 
-# Test the new endpoints to manage the deployed LLMs
-# Get the LLMs currently in use > Remove > check > Add > check
+# Verify registered LLMs
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --output json
-echo "SUBNET_1_1_JUDGE_LLM_0: $SUBNET_1_1_JUDGE_LLM_0"
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    remove_llm_canister "(record {canister_id = \"$SUBNET_1_1_JUDGE_LLM_0\"})"
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    add_llm_canister    "(record {canister_id = \"$SUBNET_1_1_JUDGE_LLM_0\"})"
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters
+```
+
+# upgrade the mAInerCreator
+
+```bash
+# Verify correct network !
+echo $NETWORK
+
+# from folder: PoAIW/src/mAInerCreator
+dfx deploy --network $NETWORK mainer_creator_canister --mode upgrade
+
+# start the mAInerCreator canister back up
+dfx canister --network $NETWORK start  $SUBNET_0_1_MAINER_CREATOR
+dfx canister --network $NETWORK status $SUBNSUBNET_0_1_MAINER_CREATORET_0_1_JUDGE     | grep Status
+dfx canister --network $NETWORK call   $SUBNET_0_1_MAINER_CREATOR health
+
+# TODO: upload latest versions of mAIner & LLM wasm
+
 ```
 
 # un-pause protocol
@@ -330,6 +345,13 @@ dfx canister --network $NETWORK snapshot load $SUBNET_0_1_JUDGE         <snapsho
 --------------------------------------------------------
 
 # Deploy or Upgrade LLMs
+
+## IMPORTANT: Also upload wasm to mAInerCreator
+
+Even though we are not using the mAInerCreator to upgrade mAIners, it
+is important to keep the wasm file up to date.
+
+## Description
 
 Deploying or upgrading LLMs is done without pausing the protocol.
 
@@ -513,7 +535,7 @@ In these folders, the following files are used by dfx:
     dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numJudgeLlms = opt ($NUM_LLMS_DEPLOYED : nat);})" 
 ```
 
-## Upgrade an existing LLM, including offline cleaning
+## Upgrade an existing LLM
 
 ```bash
     # Takes the LLM offline, upgrades it, tests it, and puts it back online
@@ -525,7 +547,7 @@ In these folders, the following files are used by dfx:
 
 ## Using a daily task
 
-The cleaning of the LLMs is now done automatically via a periodic task.
+The cleaning of the LLMs is now done automatically via a periodic task in funnAI_django.
 
 ## Manually, while the LLM is still online
 
@@ -661,6 +683,11 @@ If you want to do it all manually, follow these steps:
 ```
 
 # Upgrade the mAIners
+
+## IMPORTANT: Also upload wasm to mAInerCreator
+
+Even though we are not using the mAInerCreator to upgrade mAIners, it
+is important to keep the wasm file up to date.
 
 ## Using script
 
