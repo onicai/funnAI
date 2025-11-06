@@ -249,8 +249,19 @@ dfx canister --network $NETWORK start  $SUBNET_0_1_MAINER_CREATOR
 dfx canister --network $NETWORK status $SUBNSUBNET_0_1_MAINER_CREATORET_0_1_JUDGE     | grep Status
 dfx canister --network $NETWORK call   $SUBNET_0_1_MAINER_CREATOR health
 
-# TODO: upload latest versions of mAIner & LLM wasm
+# ensure the correct wasm & did files are in this folder
+# -> PoAIW/src/mAInerCreator/files
+#    Instructions in PoAIW/src/mAInerCreator/README.md
+#
+# from folder: PoAIW/src/mAInerCreator
+# (if changed) Upload the mainer controller canister wasm
+python -m scripts.upload_mainer_controller_canister --network prd --canister mainer_creator_canister --wasm files/mainer_ctrlb_canister.wasm --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
+#
+# (if changed) Upload the mainer LLM canister wasm
+python -m scripts.upload_mainer_llm_canister_wasm --network prd --canister mainer_creator_canister --wasm files/llama_cpp.wasm --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
 
+# (if changed) Upload the mainer LLM model file (gguf)
+python -m scripts.upload_mainer_llm_canister_modelfile --network prd --canister mainer_creator_canister --wasm files/qwen2.5-0.5b-instruct-q8_0.gguf --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
 ```
 
 # un-pause protocol
