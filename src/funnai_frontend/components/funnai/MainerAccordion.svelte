@@ -1116,12 +1116,12 @@
 <!-- Reverse Auction Announcement -->
 <AnnouncementPanel
   isVisible={showAnnouncement}
-  title="Live Reverse Auction 💎"
-  subtitle="Price drops until all mAIners are sold. Limited availability!"
-  variant="announcement"
+  title="Reverse Auction Completed! 🎉"
+  subtitle="All mAIners sold successfully on November 9th!"
+  variant="success"
   items={[
-    { icon: "🕗", text: "November 09, 8 AM PT" },
-    { icon: "🦜", text: "Aira, your Parrot Auctioneer, takes the stand." }
+    { icon: "💎", text: "Sold for 65-130 ICP per mAIner" },
+    { icon: "🦜", text: "Aira the Parrot ended the auction." }
   ]}
   onClose={() => showAnnouncement = false}
 />
