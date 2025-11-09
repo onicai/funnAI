@@ -1120,7 +1120,7 @@
   subtitle="All mAIners sold successfully on November 9th!"
   variant="success"
   items={[
-    { icon: "💎", text: "Sold for 65-130 ICP per mAIner" },
+    { icon: "💎", text: "Sold for 65-130 ICP per mAIner." },
     { icon: "🦜", text: "Aira the Parrot ended the auction." }
   ]}
   onClose={() => showAnnouncement = false}
