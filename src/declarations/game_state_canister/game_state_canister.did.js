@@ -1,6 +1,7 @@
 export const idlFactory = ({ IDL }) => {
   const List = IDL.Rec();
   const List_1 = IDL.Rec();
+  const Value__1 = IDL.Rec();
   const ChallengeTopicStatus = IDL.Variant({
     'Open' : IDL.Null,
     'Closed' : IDL.Null,
@@ -83,6 +84,14 @@ export const idlFactory = ({ IDL }) => {
   });
   const ChallengeTopicResult = IDL.Variant({
     'Ok' : ChallengeTopic,
+    'Err' : ApiError,
+  });
+  const AddCyclesRecord = IDL.Record({
+    'added' : IDL.Bool,
+    'amount' : IDL.Nat,
+  });
+  const AddCyclesResult = IDL.Variant({
+    'Ok' : AddCyclesRecord,
     'Err' : ApiError,
   });
   const LlmSetupStatus = IDL.Variant({
@@ -217,6 +226,21 @@ export const idlFactory = ({ IDL }) => {
   const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
   const AuthRecord = IDL.Record({ 'auth' : IDL.Text });
   const AuthRecordResult = IDL.Variant({ 'Ok' : AuthRecord, 'Err' : ApiError });
+  const MainerMarketplaceReservationInput = IDL.Record({
+    'address' : CanisterAddress,
+  });
+  const MainerMarketplaceListing = IDL.Record({
+    'listedTimestamp' : IDL.Nat64,
+    'listedBy' : IDL.Principal,
+    'mainerType' : MainerAgentCanisterType,
+    'address' : CanisterAddress,
+    'reservedBy' : IDL.Opt(IDL.Principal),
+    'priceE8S' : IDL.Nat,
+  });
+  const MainerMarketplaceReservationResult = IDL.Variant({
+    'Ok' : MainerMarketplaceListing,
+    'Err' : ApiError,
+  });
   const MainerCreationInput = IDL.Record({
     'owner' : IDL.Opt(IDL.Principal),
     'paymentTransactionBlockId' : IDL.Nat64,
@@ -367,6 +391,18 @@ export const idlFactory = ({ IDL }) => {
     'costCreateMainerLlm' : IDL.Nat,
   });
   const CyclesFlowResult = IDL.Variant({ 'Ok' : CyclesFlow, 'Err' : ApiError });
+  const CyclesTransaction = IDL.Record({
+    'newOfficialCycleBalance' : IDL.Nat,
+    'creationTimestamp' : IDL.Nat64,
+    'amountAdded' : IDL.Nat,
+    'sentBy' : IDL.Principal,
+    'previousCyclesBalance' : IDL.Nat,
+    'succeeded' : IDL.Bool,
+  });
+  const CyclesTransactionsResult = IDL.Variant({
+    'Ok' : IDL.Vec(CyclesTransaction),
+    'Err' : ApiError,
+  });
   const FlagRecord = IDL.Record({ 'flag' : IDL.Bool });
   const FlagResult = IDL.Variant({ 'Ok' : FlagRecord, 'Err' : ApiError });
   const GameStateTresholds = IDL.Record({
@@ -397,6 +433,15 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : IDL.Vec(OfficialMainerAgentCanister),
     'Err' : ApiError,
   });
+  const MainerAuctionTimerInfoRecord = IDL.Record({
+    'active' : IDL.Bool,
+    'intervalSeconds' : IDL.Nat,
+    'lastUpdateNs' : IDL.Nat,
+  });
+  const MainerAuctionTimerInfoResult = IDL.Variant({
+    'Ok' : MainerAuctionTimerInfoRecord,
+    'Err' : ApiError,
+  });
   const MainerPromptInfo = IDL.Record({
     'promptCacheFilename' : IDL.Text,
     'promptText' : IDL.Text,
@@ -405,6 +450,10 @@ export const idlFactory = ({ IDL }) => {
   });
   const MainerPromptInfoResult = IDL.Variant({
     'Ok' : MainerPromptInfo,
+    'Err' : ApiError,
+  });
+  const MainerMarketplaceListingsResult = IDL.Variant({
+    'Ok' : IDL.Vec(MainerMarketplaceListing),
     'Err' : ApiError,
   });
   const ChallengeResponseSubmission = IDL.Record({
@@ -624,6 +673,122 @@ export const idlFactory = ({ IDL }) => {
     'subnetShareServiceLlm' : IDL.Text,
   });
   const SubnetIdsResult = IDL.Variant({ 'Ok' : SubnetIds, 'Err' : ApiError });
+  const SupportedStandards = IDL.Vec(
+    IDL.Record({ 'url' : IDL.Text, 'name' : IDL.Text })
+  );
+  const Subaccount = IDL.Vec(IDL.Nat8);
+  const Account__1 = IDL.Record({
+    'owner' : IDL.Principal,
+    'subaccount' : IDL.Opt(Subaccount),
+  });
+  const ApprovalInfo = IDL.Record({
+    'memo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+    'from_subaccount' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+    'created_at_time' : IDL.Opt(IDL.Nat64),
+    'expires_at' : IDL.Opt(IDL.Nat64),
+    'spender' : Account__1,
+  });
+  const ApproveTokenArg = IDL.Record({
+    'token_id' : IDL.Nat,
+    'approval_info' : ApprovalInfo,
+  });
+  const ApproveTokenError = IDL.Variant({
+    'GenericError' : IDL.Record({
+      'message' : IDL.Text,
+      'error_code' : IDL.Nat,
+    }),
+    'Duplicate' : IDL.Record({ 'duplicate_of' : IDL.Nat }),
+    'InvalidSpender' : IDL.Null,
+    'NonExistingTokenId' : IDL.Null,
+    'Unauthorized' : IDL.Null,
+    'CreatedInFuture' : IDL.Record({ 'ledger_time' : IDL.Nat64 }),
+    'GenericBatchError' : IDL.Record({
+      'message' : IDL.Text,
+      'error_code' : IDL.Nat,
+    }),
+    'TooOld' : IDL.Null,
+  });
+  const ApproveTokenResult = IDL.Variant({
+    'Ok' : IDL.Nat,
+    'Err' : ApproveTokenError,
+  });
+  const RevokeTokenApprovalArg = IDL.Record({
+    'token_id' : IDL.Nat,
+    'memo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+    'from_subaccount' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+    'created_at_time' : IDL.Opt(IDL.Nat64),
+    'spender' : IDL.Opt(Account__1),
+  });
+  const RevokeTokenApprovalError = IDL.Variant({
+    'GenericError' : IDL.Record({
+      'message' : IDL.Text,
+      'error_code' : IDL.Nat,
+    }),
+    'Duplicate' : IDL.Record({ 'duplicate_of' : IDL.Nat }),
+    'NonExistingTokenId' : IDL.Null,
+    'Unauthorized' : IDL.Null,
+    'CreatedInFuture' : IDL.Record({ 'ledger_time' : IDL.Nat64 }),
+    'ApprovalDoesNotExist' : IDL.Null,
+    'GenericBatchError' : IDL.Record({
+      'message' : IDL.Text,
+      'error_code' : IDL.Nat,
+    }),
+    'TooOld' : IDL.Null,
+  });
+  const RevokeTokenApprovalResult = IDL.Variant({
+    'Ok' : IDL.Nat,
+    'Err' : RevokeTokenApprovalError,
+  });
+  const TransferFromArg = IDL.Record({
+    'to' : Account__1,
+    'spender_subaccount' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+    'token_id' : IDL.Nat,
+    'from' : Account__1,
+    'memo' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+    'created_at_time' : IDL.Opt(IDL.Nat64),
+  });
+  const TransferFromError = IDL.Variant({
+    'GenericError' : IDL.Record({
+      'message' : IDL.Text,
+      'error_code' : IDL.Nat,
+    }),
+    'Duplicate' : IDL.Record({ 'duplicate_of' : IDL.Nat }),
+    'NonExistingTokenId' : IDL.Null,
+    'Unauthorized' : IDL.Null,
+    'CreatedInFuture' : IDL.Record({ 'ledger_time' : IDL.Nat64 }),
+    'InvalidRecipient' : IDL.Null,
+    'GenericBatchError' : IDL.Record({
+      'message' : IDL.Text,
+      'error_code' : IDL.Nat,
+    }),
+    'TooOld' : IDL.Null,
+  });
+  const TransferFromResult = IDL.Variant({
+    'Ok' : IDL.Nat,
+    'Err' : TransferFromError,
+  });
+  const Account = IDL.Record({
+    'owner' : IDL.Principal,
+    'subaccount' : IDL.Opt(IDL.Vec(IDL.Nat8)),
+  });
+  Value__1.fill(
+    IDL.Variant({
+      'Int' : IDL.Int,
+      'Map' : IDL.Vec(IDL.Tuple(IDL.Text, Value__1)),
+      'Nat' : IDL.Nat,
+      'Blob' : IDL.Vec(IDL.Nat8),
+      'Text' : IDL.Text,
+      'Array' : IDL.Vec(Value__1),
+    })
+  );
+  const Value = IDL.Variant({
+    'Int' : IDL.Int,
+    'Map' : IDL.Vec(IDL.Tuple(IDL.Text, Value__1)),
+    'Nat' : IDL.Nat,
+    'Blob' : IDL.Vec(IDL.Nat8),
+    'Text' : IDL.Text,
+    'Array' : IDL.Vec(Value__1),
+  });
   const MainerctrlReinstallInput = IDL.Record({
     'canisterAddress' : CanisterAddress,
   });
@@ -820,6 +985,7 @@ export const idlFactory = ({ IDL }) => {
         [ChallengeTopicResult],
         [],
       ),
+    'addCycles' : IDL.Func([], [AddCyclesResult], []),
     'addLlmCanisterToMainer' : IDL.Func(
         [OfficialMainerAgentCanister],
         [SetUpMainerLlmCanisterResult],
@@ -855,6 +1021,11 @@ export const idlFactory = ({ IDL }) => {
         [MainerAgentCanisterResult],
         [],
       ),
+    'confirmUserMarketplaceMainerReservation' : IDL.Func(
+        [MainerMarketplaceReservationInput],
+        [MainerMarketplaceReservationResult],
+        ['query'],
+      ),
     'createUserMainerAgent' : IDL.Func(
         [MainerCreationInput],
         [MainerAgentCanisterResult],
@@ -887,6 +1058,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'getArchivedChallengesAdmin' : IDL.Func([], [ChallengesResult], ['query']),
+    'getAvailableMainers' : IDL.Func([], [NatResult], ['query']),
     'getBufferMainerCreation' : IDL.Func([], [NatResult], ['query']),
     'getCanisterPrincipal' : IDL.Func([], [IDL.Text], ['query']),
     'getClosedChallengesAdmin' : IDL.Func([], [ChallengesResult], ['query']),
@@ -903,6 +1075,11 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'getCyclesFlowAdmin' : IDL.Func([], [CyclesFlowResult], []),
+    'getCyclesTransactionsAdmin' : IDL.Func(
+        [],
+        [CyclesTransactionsResult],
+        ['query'],
+      ),
     'getDisburseFundsToTreasuryFlag' : IDL.Func([], [FlagResult], ['query']),
     'getFunnaiCyclesPrice' : IDL.Func([], [NatResult], ['query']),
     'getFunnaiCyclesPriceAdmin' : IDL.Func([], [NatResult], ['query']),
@@ -911,6 +1088,7 @@ export const idlFactory = ({ IDL }) => {
         [GameStateTresholdsResult],
         ['query'],
       ),
+    'getIsMainerAuctionActive' : IDL.Func([], [FlagResult], ['query']),
     'getIsMigratingChallengesFlagAdmin' : IDL.Func([], [FlagResult], ['query']),
     'getIsWhitelistPhaseActive' : IDL.Func([], [FlagResult], ['query']),
     'getJudgePromptInfo' : IDL.Func(
@@ -943,15 +1121,26 @@ export const idlFactory = ({ IDL }) => {
         [MainerAgentCanistersResult],
         ['query'],
       ),
+    'getMainerAuctionTimerInfo' : IDL.Func(
+        [],
+        [MainerAuctionTimerInfoResult],
+        ['query'],
+      ),
     'getMainerCyclesUsedPerResponse' : IDL.Func([], [NatResult], []),
     'getMainerPromptInfo' : IDL.Func(
         [IDL.Text],
         [MainerPromptInfoResult],
         ['query'],
       ),
+    'getMarketplaceMainerListings' : IDL.Func(
+        [],
+        [MainerMarketplaceListingsResult],
+        ['query'],
+      ),
     'getMaxFunnaiTopupCyclesAmount' : IDL.Func([], [NatResult], ['query']),
     'getMaxFunnaiTopupCyclesAmountAdmin' : IDL.Func([], [NatResult], ['query']),
     'getMinimumIcpBalance' : IDL.Func([], [NatResult], ['query']),
+    'getNextMainerAuctionPriceDropAtNs' : IDL.Func([], [NatResult], ['query']),
     'getNextSubmissionToJudge' : IDL.Func(
         [],
         [ChallengeResponseSubmissionWithQueueStatusResult],
@@ -1074,9 +1263,60 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getSubnetsAdmin' : IDL.Func([], [SubnetIdsResult], ['query']),
     'getTreasuryCanisterId' : IDL.Func([], [IDL.Text], ['query']),
+    'getUserMarketplaceMainerListings' : IDL.Func(
+        [],
+        [MainerMarketplaceListingsResult],
+        ['query'],
+      ),
     'getWhitelistPriceForOwnMainer' : IDL.Func([], [PriceResult], ['query']),
     'getWhitelistPriceForShareAgent' : IDL.Func([], [PriceResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
+    'icrc10_supported_standards' : IDL.Func(
+        [],
+        [SupportedStandards],
+        ['query'],
+      ),
+    'icrc37_approve_tokens' : IDL.Func(
+        [IDL.Vec(ApproveTokenArg)],
+        [IDL.Vec(IDL.Opt(ApproveTokenResult))],
+        [],
+      ),
+    'icrc37_revoke_token_approvals' : IDL.Func(
+        [IDL.Vec(RevokeTokenApprovalArg)],
+        [IDL.Vec(IDL.Opt(RevokeTokenApprovalResult))],
+        [],
+      ),
+    'icrc37_transfer_from' : IDL.Func(
+        [IDL.Vec(TransferFromArg)],
+        [IDL.Vec(IDL.Opt(TransferFromResult))],
+        [],
+      ),
+    'icrc7_balance_of' : IDL.Func(
+        [IDL.Vec(Account)],
+        [IDL.Vec(IDL.Nat)],
+        ['query'],
+      ),
+    'icrc7_collection_metadata' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Text, Value))],
+        ['query'],
+      ),
+    'icrc7_description' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
+    'icrc7_logo' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
+    'icrc7_name' : IDL.Func([], [IDL.Text], ['query']),
+    'icrc7_supply_cap' : IDL.Func([], [IDL.Opt(IDL.Nat)], ['query']),
+    'icrc7_symbol' : IDL.Func([], [IDL.Text], ['query']),
+    'icrc7_token_metadata' : IDL.Func(
+        [IDL.Vec(IDL.Nat)],
+        [IDL.Vec(IDL.Opt(IDL.Vec(IDL.Tuple(IDL.Text, Value))))],
+        ['query'],
+      ),
+    'icrc7_tokens' : IDL.Func(
+        [IDL.Opt(IDL.Nat), IDL.Opt(IDL.Nat)],
+        [IDL.Vec(IDL.Nat)],
+        ['query'],
+      ),
+    'icrc7_total_supply' : IDL.Func([], [IDL.Nat], ['query']),
     'initializeOpenSubmissionsQueueAdmin' : IDL.Func(
         [],
         [AuthRecordResult],
@@ -1114,6 +1354,11 @@ export const idlFactory = ({ IDL }) => {
         [StatusCodeRecordResult],
         [],
       ),
+    'reserveMarketplaceListedMainer' : IDL.Func(
+        [MainerMarketplaceReservationInput],
+        [MainerMarketplaceReservationResult],
+        [],
+      ),
     'resetCurrentChallengesAdmin' : IDL.Func([], [StatusCodeRecordResult], []),
     'resetCyclesFlowAdmin' : IDL.Func([], [StatusCodeRecordResult], []),
     'resetIsMigratingChallengesFlagAdmin' : IDL.Func(
@@ -1133,6 +1378,16 @@ export const idlFactory = ({ IDL }) => {
       ),
     'setApiCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
     'setArchiveCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
+    'setAuctionIntervalSecondsAdmin' : IDL.Func(
+        [IDL.Nat],
+        [AuthRecordResult],
+        [],
+      ),
+    'setAuctionPricesAdmin' : IDL.Func(
+        [IDL.Vec(IDL.Nat64)],
+        [AuthRecordResult],
+        [],
+      ),
     'setBufferMainerCreation' : IDL.Func([IDL.Nat], [AuthRecordResult], []),
     'setCyclesBalanceThresholdFunnaiTopups' : IDL.Func(
         [IDL.Nat],
@@ -1211,6 +1466,11 @@ export const idlFactory = ({ IDL }) => {
         [SetUpMainerLlmCanisterResult],
         [],
       ),
+    'setupAuctionAdmin' : IDL.Func(
+        [IDL.Vec(IDL.Nat64), IDL.Nat],
+        [AuthRecordResult],
+        [],
+      ),
     'shouldCreatingMainersBeStopped' : IDL.Func(
         [CheckMainerLimit],
         [FlagResult],
@@ -1226,6 +1486,7 @@ export const idlFactory = ({ IDL }) => {
         [MainerAgentCanisterResult],
         [],
       ),
+    'startAuctionAdmin' : IDL.Func([], [AuthRecordResult], []),
     'startUploadJudgePromptCache' : IDL.Func(
         [],
         [StartUploadJudgePromptCacheRecordResult],
@@ -1236,6 +1497,7 @@ export const idlFactory = ({ IDL }) => {
         [StartUploadMainerPromptCacheRecordResult],
         [],
       ),
+    'stopAuctionAdmin' : IDL.Func([], [AuthRecordResult], []),
     'submitChallengeResponse' : IDL.Func(
         [ChallengeResponseSubmissionInput],
         [ChallengeResponseSubmissionMetadataResult],

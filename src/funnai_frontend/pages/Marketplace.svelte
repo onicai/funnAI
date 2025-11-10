@@ -1,10 +1,15 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { store } from "../stores/store";
+  import { toastStore } from "../stores/toastStore";
   import Footer from "../components/funnai/Footer.svelte";
   import MyMainersForSale from "../components/marketplace/MyMainersForSale.svelte";
   import MarketplaceListings from "../components/marketplace/MarketplaceListings.svelte";
+  import MarketplacePaymentModal from "../components/marketplace/MarketplacePaymentModal.svelte";
+  import ToastContainer from "../components/common/ToastContainer.svelte";
   import { Store, TrendingUp, Users, Zap } from "lucide-svelte";
+  import { MarketplaceService } from "../helpers/marketplaceService";
+  import type { Principal } from '@dfinity/principal';
 
   let isLoading = true;
   let activeTab: 'sell' | 'buy' = 'buy';
@@ -13,6 +18,15 @@
     totalVolume: "0",
     activeTraders: 0,
   };
+
+  // Payment modal state
+  let showPaymentModal = false;
+  let selectedListingForPurchase: any = null;
+  
+  // Buy process state
+  let isBuyingMainer = false;
+  let buyProcessStep: 'idle' | 'reserving' | 'payment' | 'completing' | 'success' | 'error' = 'idle';
+  let buyProcessError: string = '';
 
   onMount(() => {
     initialize();
@@ -30,73 +44,192 @@
   }
 
   async function loadMarketplaceStats() {
-    // TODO: Replace with actual backend call
-    // const result = await $store.gameStateCanisterActor.getMarketplaceStats();
+    const result = await MarketplaceService.getMarketplaceStats();
     
-    // Mock data for now
-    stats = {
-      totalListings: 12,
-      totalVolume: "45.5",
-      activeTraders: 28,
-    };
+    if (result.success && result.stats) {
+      stats = result.stats;
+    } else {
+      console.error("Failed to load marketplace stats:", result.error);
+      // Keep default values
+      stats = {
+        totalListings: 0,
+        totalVolume: "0",
+        activeTraders: 0,
+      };
+    }
   }
 
   async function handleListToMarketplace(mainerIds: string[], prices: Record<string, number>) {
     console.log("Listing mAIners to marketplace:", mainerIds, prices);
     
+    let successCount = 0;
+    let errorCount = 0;
+    const errors: string[] = [];
+    
     try {
-      // TODO: Implement actual backend call
-      // for (const mainerId of mainerIds) {
-      //   const price = prices[mainerId];
-      //   await $store.gameStateCanisterActor.listMainerOnMarketplace(mainerId, price);
-      // }
+      for (const mainerId of mainerIds) {
+        const price = prices[mainerId];
+        const result = await MarketplaceService.listMainer(mainerId, price);
+        
+        if (result.success) {
+          successCount++;
+          console.log(`Successfully listed ${mainerId} for ${price} ICP`);
+        } else {
+          errorCount++;
+          errors.push(`${mainerId.slice(0, 8)}...: ${result.error}`);
+          console.error(`Failed to list ${mainerId}:`, result.error);
+        }
+      }
       
-      // For now, just show success
-      alert(`Successfully listed ${mainerIds.length} mAIner(s) to marketplace!`);
-      
-      // Refresh marketplace data
-      await loadMarketplaceStats();
+      // Show result
+      if (successCount > 0) {
+        toastStore.success(
+          `Successfully listed ${successCount} mAIner${successCount > 1 ? 's' : ''} to marketplace!`,
+          6000
+        );
+        
+        if (errorCount > 0) {
+          toastStore.warning(
+            `Failed to list ${errorCount} mAIner${errorCount > 1 ? 's' : ''}. Check console for details.`,
+            6000
+          );
+        }
+        
+        // Refresh marketplace data
+        await loadMarketplaceStats();
+      } else {
+        throw new Error(`Failed to list all mAIners. ${errors.join('; ')}`);
+      }
     } catch (error) {
       console.error("Error listing mAIners:", error);
-      alert("Failed to list mAIners. Please try again.");
+      toastStore.error(`Failed to list mAIners: ${error.message || 'Unknown error'}`, 8000);
       throw error;
     }
   }
 
   async function handleBuyMainer(listingId: string, mainerId: string, price: number) {
-    console.log("Buying mAIner:", listingId, mainerId, price);
+    console.log("Starting buy process for mAIner:", mainerId);
+    
+    if (isBuyingMainer) {
+      toastStore.warning("Another purchase is already in progress. Please wait.");
+      return;
+    }
+    
+    // Find the full listing object to pass to payment modal
+    // We'll trigger this from MarketplaceListings component with full listing
+    buyProcessStep = 'reserving';
+    isBuyingMainer = true;
+    buyProcessError = '';
     
     try {
-      // TODO: Implement actual backend call
-      // await $store.gameStateCanisterActor.buyMainerFromMarketplace(listingId);
+      // Step 1: Reserve the mAIner
+      console.log("Step 1: Reserving mAIner...");
+      const reserveResult = await MarketplaceService.reserveMainer(mainerId);
       
-      // For now, just show success
-      alert(`Successfully purchased mAIner for ${price} ICP!`);
+      if (!reserveResult.success || !reserveResult.listing) {
+        throw new Error(reserveResult.error || 'Failed to reserve mAIner');
+      }
       
-      // Refresh marketplace data
-      await loadMarketplaceStats();
+      console.log("Step 1: mAIner reserved successfully");
+      
+      // Step 2: Show payment modal
+      console.log("Step 2: Opening payment modal...");
+      selectedListingForPurchase = {
+        ...reserveResult.listing,
+        mainerId: mainerId,
+        mainerName: `mAIner ${mainerId.slice(0, 5)}`,
+        seller: reserveResult.listing.listedBy,
+        priceE8S: Number(reserveResult.listing.priceE8S)
+      };
+      
+      buyProcessStep = 'payment';
+      showPaymentModal = true;
+      
     } catch (error) {
-      console.error("Error buying mAIner:", error);
-      alert("Failed to purchase mAIner. Please try again.");
-      throw error;
+      console.error("Error in buy process:", error);
+      buyProcessStep = 'error';
+      buyProcessError = error.message || 'Failed to initiate purchase';
+      toastStore.error(`Failed to purchase mAIner: ${buyProcessError}`, 8000);
+      isBuyingMainer = false;
     }
   }
 
-  async function handleCancelListing(listingId: string) {
-    console.log("Canceling listing:", listingId);
+  async function handlePaymentSuccess(txId: bigint) {
+    console.log("Step 2: Payment successful, transaction ID:", txId.toString());
+    
+    if (!selectedListingForPurchase) {
+      console.error("No selected listing for purchase");
+      isBuyingMainer = false;
+      return;
+    }
     
     try {
-      // TODO: Implement actual backend call
-      // await $store.gameStateCanisterActor.cancelMarketplaceListing(listingId);
+      // Step 3: Complete the purchase
+      console.log("Step 3: Completing purchase...");
+      buyProcessStep = 'completing';
       
-      // For now, just show success
-      alert("Successfully canceled listing!");
+      const completeResult = await MarketplaceService.completePurchase(
+        selectedListingForPurchase.mainerId,
+        selectedListingForPurchase.seller,
+        txId
+      );
       
-      // Refresh marketplace data
+      if (!completeResult.success) {
+        throw new Error(completeResult.error || 'Failed to complete purchase');
+      }
+      
+      console.log("Step 3: Purchase completed successfully!");
+      buyProcessStep = 'success';
+      
+      toastStore.success(
+        `Successfully purchased ${selectedListingForPurchase.mainerName}! The mAIner has been transferred to your account.`,
+        8000
+      );
+      
+      // Refresh marketplace data and user's mAIner list
       await loadMarketplaceStats();
+      await store.loadUserMainerCanisters();
+      
+    } catch (error) {
+      console.error("Error completing purchase:", error);
+      buyProcessStep = 'error';
+      buyProcessError = error.message || 'Failed to complete purchase';
+      toastStore.error(
+        `Failed to complete purchase: ${buyProcessError}. Your payment was processed. Transaction ID: ${txId.toString().slice(0, 10)}... Please contact support.`,
+        12000
+      );
+    } finally {
+      isBuyingMainer = false;
+      selectedListingForPurchase = null;
+    }
+  }
+
+  function handlePaymentModalClose() {
+    if (!isBuyingMainer || buyProcessStep === 'payment') {
+      showPaymentModal = false;
+      selectedListingForPurchase = null;
+      isBuyingMainer = false;
+      buyProcessStep = 'idle';
+    }
+  }
+
+  async function handleCancelListing(listingId: string, mainerId: string) {
+    console.log("Canceling listing:", mainerId);
+    
+    try {
+      const result = await MarketplaceService.cancelListing(mainerId);
+      
+      if (result.success) {
+        toastStore.success("Successfully canceled listing!", 5000);
+        
+        // Refresh marketplace data
+        await loadMarketplaceStats();
+      } else {
+        throw new Error(result.error || 'Failed to cancel listing');
+      }
     } catch (error) {
       console.error("Error canceling listing:", error);
-      alert("Failed to cancel listing. Please try again.");
+      toastStore.error(`Failed to cancel listing: ${error.message}`, 8000);
       throw error;
     }
   }
@@ -202,6 +335,7 @@
         <MarketplaceListings 
           onBuyMainer={handleBuyMainer}
           onCancelListing={handleCancelListing}
+          isProcessing={isBuyingMainer}
         />
       {/if}
     {/if}
@@ -209,4 +343,15 @@
 
   <Footer />
 </div>
+
+<!-- Payment Modal -->
+<MarketplacePaymentModal 
+  isOpen={showPaymentModal}
+  onClose={handlePaymentModalClose}
+  onSuccess={handlePaymentSuccess}
+  listing={selectedListingForPurchase}
+/>
+
+<!-- Toast Notifications -->
+<ToastContainer />
 

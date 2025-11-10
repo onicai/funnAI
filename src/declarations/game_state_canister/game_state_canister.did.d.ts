@@ -2,6 +2,17 @@ import type { Principal } from '@dfinity/principal';
 import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
+export interface Account {
+  'owner' : Principal,
+  'subaccount' : [] | [Uint8Array | number[]],
+}
+export interface Account__1 {
+  'owner' : Principal,
+  'subaccount' : [] | [Subaccount],
+}
+export interface AddCyclesRecord { 'added' : boolean, 'amount' : bigint }
+export type AddCyclesResult = { 'Ok' : AddCyclesRecord } |
+  { 'Err' : ApiError };
 export type ApiError = { 'FailedOperation' : null } |
   { 'InvalidId' : null } |
   { 'ZeroAddress' : null } |
@@ -9,6 +20,29 @@ export type ApiError = { 'FailedOperation' : null } |
   { 'StatusCode' : StatusCode } |
   { 'Other' : string } |
   { 'InsuffientCycles' : bigint };
+export interface ApprovalInfo {
+  'memo' : [] | [Uint8Array | number[]],
+  'from_subaccount' : [] | [Uint8Array | number[]],
+  'created_at_time' : [] | [bigint],
+  'expires_at' : [] | [bigint],
+  'spender' : Account__1,
+}
+export interface ApproveTokenArg {
+  'token_id' : bigint,
+  'approval_info' : ApprovalInfo,
+}
+export type ApproveTokenError = {
+    'GenericError' : { 'message' : string, 'error_code' : bigint }
+  } |
+  { 'Duplicate' : { 'duplicate_of' : bigint } } |
+  { 'InvalidSpender' : null } |
+  { 'NonExistingTokenId' : null } |
+  { 'Unauthorized' : null } |
+  { 'CreatedInFuture' : { 'ledger_time' : bigint } } |
+  { 'GenericBatchError' : { 'message' : string, 'error_code' : bigint } } |
+  { 'TooOld' : null };
+export type ApproveTokenResult = { 'Ok' : bigint } |
+  { 'Err' : ApproveTokenError };
 export interface AuthRecord { 'auth' : string }
 export type AuthRecordResult = { 'Ok' : AuthRecord } |
   { 'Err' : ApiError };
@@ -395,6 +429,16 @@ export interface CyclesFlowSettings {
   'cyclesGenerateResponseSsctrlGs' : [] | [bigint],
   'costCreateMainerLlm' : [] | [bigint],
 }
+export interface CyclesTransaction {
+  'newOfficialCycleBalance' : bigint,
+  'creationTimestamp' : bigint,
+  'amountAdded' : bigint,
+  'sentBy' : Principal,
+  'previousCyclesBalance' : bigint,
+  'succeeded' : boolean,
+}
+export type CyclesTransactionsResult = { 'Ok' : Array<CyclesTransaction> } |
+  { 'Err' : ApiError };
 export interface DeriveWasmHashInput {
   'textNote' : string,
   'address' : CanisterAddress,
@@ -446,6 +490,7 @@ export interface GameStateCanister {
     [ChallengeTopicInput],
     ChallengeTopicResult
   >,
+  'addCycles' : ActorMethod<[], AddCyclesResult>,
   'addLlmCanisterToMainer' : ActorMethod<
     [OfficialMainerAgentCanister],
     SetUpMainerLlmCanisterResult
@@ -471,6 +516,10 @@ export interface GameStateCanister {
   'completeMainerSetupForUserAdmin' : ActorMethod<
     [OfficialMainerAgentCanister],
     MainerAgentCanisterResult
+  >,
+  'confirmUserMarketplaceMainerReservation' : ActorMethod<
+    [MainerMarketplaceReservationInput],
+    MainerMarketplaceReservationResult
   >,
   'createUserMainerAgent' : ActorMethod<
     [MainerCreationInput],
@@ -498,6 +547,7 @@ export interface GameStateCanister {
     StatusCodeRecordResult
   >,
   'getArchivedChallengesAdmin' : ActorMethod<[], ChallengesResult>,
+  'getAvailableMainers' : ActorMethod<[], NatResult>,
   'getBufferMainerCreation' : ActorMethod<[], NatResult>,
   'getCanisterPrincipal' : ActorMethod<[], string>,
   'getClosedChallengesAdmin' : ActorMethod<[], ChallengesResult>,
@@ -509,10 +559,12 @@ export interface GameStateCanister {
     CyclesBurnRateResult
   >,
   'getCyclesFlowAdmin' : ActorMethod<[], CyclesFlowResult>,
+  'getCyclesTransactionsAdmin' : ActorMethod<[], CyclesTransactionsResult>,
   'getDisburseFundsToTreasuryFlag' : ActorMethod<[], FlagResult>,
   'getFunnaiCyclesPrice' : ActorMethod<[], NatResult>,
   'getFunnaiCyclesPriceAdmin' : ActorMethod<[], NatResult>,
   'getGameStateThresholdsAdmin' : ActorMethod<[], GameStateTresholdsResult>,
+  'getIsMainerAuctionActive' : ActorMethod<[], FlagResult>,
   'getIsMigratingChallengesFlagAdmin' : ActorMethod<[], FlagResult>,
   'getIsWhitelistPhaseActive' : ActorMethod<[], FlagResult>,
   'getJudgePromptInfo' : ActorMethod<[string], JudgePromptInfoResult>,
@@ -530,11 +582,17 @@ export interface GameStateCanister {
     [string],
     MainerAgentCanistersResult
   >,
+  'getMainerAuctionTimerInfo' : ActorMethod<[], MainerAuctionTimerInfoResult>,
   'getMainerCyclesUsedPerResponse' : ActorMethod<[], NatResult>,
   'getMainerPromptInfo' : ActorMethod<[string], MainerPromptInfoResult>,
+  'getMarketplaceMainerListings' : ActorMethod<
+    [],
+    MainerMarketplaceListingsResult
+  >,
   'getMaxFunnaiTopupCyclesAmount' : ActorMethod<[], NatResult>,
   'getMaxFunnaiTopupCyclesAmountAdmin' : ActorMethod<[], NatResult>,
   'getMinimumIcpBalance' : ActorMethod<[], NatResult>,
+  'getNextMainerAuctionPriceDropAtNs' : ActorMethod<[], NatResult>,
   'getNextSubmissionToJudge' : ActorMethod<
     [],
     ChallengeResponseSubmissionWithQueueStatusResult
@@ -607,9 +665,39 @@ export interface GameStateCanister {
   'getSubmissionsAdmin' : ActorMethod<[], ChallengeResponseSubmissionsResult>,
   'getSubnetsAdmin' : ActorMethod<[], SubnetIdsResult>,
   'getTreasuryCanisterId' : ActorMethod<[], string>,
+  'getUserMarketplaceMainerListings' : ActorMethod<
+    [],
+    MainerMarketplaceListingsResult
+  >,
   'getWhitelistPriceForOwnMainer' : ActorMethod<[], PriceResult>,
   'getWhitelistPriceForShareAgent' : ActorMethod<[], PriceResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
+  'icrc10_supported_standards' : ActorMethod<[], SupportedStandards>,
+  'icrc37_approve_tokens' : ActorMethod<
+    [Array<ApproveTokenArg>],
+    Array<[] | [ApproveTokenResult]>
+  >,
+  'icrc37_revoke_token_approvals' : ActorMethod<
+    [Array<RevokeTokenApprovalArg>],
+    Array<[] | [RevokeTokenApprovalResult]>
+  >,
+  'icrc37_transfer_from' : ActorMethod<
+    [Array<TransferFromArg>],
+    Array<[] | [TransferFromResult]>
+  >,
+  'icrc7_balance_of' : ActorMethod<[Array<Account>], Array<bigint>>,
+  'icrc7_collection_metadata' : ActorMethod<[], Array<[string, Value]>>,
+  'icrc7_description' : ActorMethod<[], [] | [string]>,
+  'icrc7_logo' : ActorMethod<[], [] | [string]>,
+  'icrc7_name' : ActorMethod<[], string>,
+  'icrc7_supply_cap' : ActorMethod<[], [] | [bigint]>,
+  'icrc7_symbol' : ActorMethod<[], string>,
+  'icrc7_token_metadata' : ActorMethod<
+    [Array<bigint>],
+    Array<[] | [Array<[string, Value]>]>
+  >,
+  'icrc7_tokens' : ActorMethod<[[] | [bigint], [] | [bigint]], Array<bigint>>,
+  'icrc7_total_supply' : ActorMethod<[], bigint>,
   'initializeOpenSubmissionsQueueAdmin' : ActorMethod<[], AuthRecordResult>,
   'migrateArchivedChallengesAdmin' : ActorMethod<[], NatResult>,
   'migrateScoredResponsesForChallengeAdmin' : ActorMethod<
@@ -637,6 +725,10 @@ export interface GameStateCanister {
     [{ 'canisterId' : string }],
     StatusCodeRecordResult
   >,
+  'reserveMarketplaceListedMainer' : ActorMethod<
+    [MainerMarketplaceReservationInput],
+    MainerMarketplaceReservationResult
+  >,
   'resetCurrentChallengesAdmin' : ActorMethod<[], StatusCodeRecordResult>,
   'resetCyclesFlowAdmin' : ActorMethod<[], StatusCodeRecordResult>,
   'resetIsMigratingChallengesFlagAdmin' : ActorMethod<[], AuthRecordResult>,
@@ -647,6 +739,11 @@ export interface GameStateCanister {
   'resetRoundRobinTopicIndexAdmin' : ActorMethod<[], StatusCodeRecordResult>,
   'setApiCanisterId' : ActorMethod<[string], AuthRecordResult>,
   'setArchiveCanisterId' : ActorMethod<[string], AuthRecordResult>,
+  'setAuctionIntervalSecondsAdmin' : ActorMethod<[bigint], AuthRecordResult>,
+  'setAuctionPricesAdmin' : ActorMethod<
+    [BigUint64Array | bigint[]],
+    AuthRecordResult
+  >,
   'setBufferMainerCreation' : ActorMethod<[bigint], AuthRecordResult>,
   'setCyclesBalanceThresholdFunnaiTopups' : ActorMethod<
     [bigint],
@@ -699,6 +796,10 @@ export interface GameStateCanister {
     [OfficialMainerAgentCanister],
     SetUpMainerLlmCanisterResult
   >,
+  'setupAuctionAdmin' : ActorMethod<
+    [BigUint64Array | bigint[], bigint],
+    AuthRecordResult
+  >,
   'shouldCreatingMainersBeStopped' : ActorMethod<
     [CheckMainerLimit],
     FlagResult
@@ -711,6 +812,7 @@ export interface GameStateCanister {
     [OfficialMainerAgentCanister],
     MainerAgentCanisterResult
   >,
+  'startAuctionAdmin' : ActorMethod<[], AuthRecordResult>,
   'startUploadJudgePromptCache' : ActorMethod<
     [],
     StartUploadJudgePromptCacheRecordResult
@@ -719,6 +821,7 @@ export interface GameStateCanister {
     [],
     StartUploadMainerPromptCacheRecordResult
   >,
+  'stopAuctionAdmin' : ActorMethod<[], AuthRecordResult>,
   'submitChallengeResponse' : ActorMethod<
     [ChallengeResponseSubmissionInput],
     ChallengeResponseSubmissionMetadataResult
@@ -799,6 +902,15 @@ export interface MainerAgentTopUpInput {
   'paymentTransactionBlockId' : bigint,
   'mainerAgent' : OfficialMainerAgentCanister,
 }
+export interface MainerAuctionTimerInfoRecord {
+  'active' : boolean,
+  'intervalSeconds' : bigint,
+  'lastUpdateNs' : bigint,
+}
+export type MainerAuctionTimerInfoResult = {
+    'Ok' : MainerAuctionTimerInfoRecord
+  } |
+  { 'Err' : ApiError };
 export interface MainerConfigurationInput {
   'selectedLLM' : [] | [SelectableMainerLLMs],
   'subnetLlm' : string,
@@ -815,6 +927,25 @@ export interface MainerLimitInput {
   'mainerType' : MainerAgentCanisterType,
   'newLimit' : bigint,
 }
+export interface MainerMarketplaceListing {
+  'listedTimestamp' : bigint,
+  'listedBy' : Principal,
+  'mainerType' : MainerAgentCanisterType,
+  'address' : CanisterAddress,
+  'reservedBy' : [] | [Principal],
+  'priceE8S' : bigint,
+}
+export type MainerMarketplaceListingsResult = {
+    'Ok' : Array<MainerMarketplaceListing>
+  } |
+  { 'Err' : ApiError };
+export interface MainerMarketplaceReservationInput {
+  'address' : CanisterAddress,
+}
+export type MainerMarketplaceReservationResult = {
+    'Ok' : MainerMarketplaceListing
+  } |
+  { 'Err' : ApiError };
 export interface MainerPromptInfo {
   'promptCacheFilename' : string,
   'promptText' : string,
@@ -904,6 +1035,25 @@ export type RedeemedTransactionBlocksResult = {
     'Ok' : Array<RedeemedTransactionBlock>
   } |
   { 'Err' : ApiError };
+export interface RevokeTokenApprovalArg {
+  'token_id' : bigint,
+  'memo' : [] | [Uint8Array | number[]],
+  'from_subaccount' : [] | [Uint8Array | number[]],
+  'created_at_time' : [] | [bigint],
+  'spender' : [] | [Account__1],
+}
+export type RevokeTokenApprovalError = {
+    'GenericError' : { 'message' : string, 'error_code' : bigint }
+  } |
+  { 'Duplicate' : { 'duplicate_of' : bigint } } |
+  { 'NonExistingTokenId' : null } |
+  { 'Unauthorized' : null } |
+  { 'CreatedInFuture' : { 'ledger_time' : bigint } } |
+  { 'ApprovalDoesNotExist' : null } |
+  { 'GenericBatchError' : { 'message' : string, 'error_code' : bigint } } |
+  { 'TooOld' : null };
+export type RevokeTokenApprovalResult = { 'Ok' : bigint } |
+  { 'Err' : RevokeTokenApprovalError };
 export interface RewardPerChallenge {
   'amountForAllParticipants' : bigint,
   'thirdPlaceAmount' : bigint,
@@ -1043,6 +1193,7 @@ export type StatusCode = number;
 export interface StatusCodeRecord { 'status_code' : StatusCode }
 export type StatusCodeRecordResult = { 'Ok' : StatusCodeRecord } |
   { 'Err' : ApiError };
+export type Subaccount = Uint8Array | number[];
 export interface SubmissionRetrievalInput {
   'challengeId' : string,
   'submissionId' : string,
@@ -1054,9 +1205,30 @@ export interface SubnetIds {
 }
 export type SubnetIdsResult = { 'Ok' : SubnetIds } |
   { 'Err' : ApiError };
+export type SupportedStandards = Array<{ 'url' : string, 'name' : string }>;
 export type TextResult = { 'Ok' : string } |
   { 'Err' : ApiError };
 export type TimeInterval = { 'Daily' : null };
+export interface TransferFromArg {
+  'to' : Account__1,
+  'spender_subaccount' : [] | [Uint8Array | number[]],
+  'token_id' : bigint,
+  'from' : Account__1,
+  'memo' : [] | [Uint8Array | number[]],
+  'created_at_time' : [] | [bigint],
+}
+export type TransferFromError = {
+    'GenericError' : { 'message' : string, 'error_code' : bigint }
+  } |
+  { 'Duplicate' : { 'duplicate_of' : bigint } } |
+  { 'NonExistingTokenId' : null } |
+  { 'Unauthorized' : null } |
+  { 'CreatedInFuture' : { 'ledger_time' : bigint } } |
+  { 'InvalidRecipient' : null } |
+  { 'GenericBatchError' : { 'message' : string, 'error_code' : bigint } } |
+  { 'TooOld' : null };
+export type TransferFromResult = { 'Ok' : bigint } |
+  { 'Err' : TransferFromError };
 export interface UpdateWasmHashInput {
   'wasmHash' : Uint8Array | number[],
   'textNote' : string,
@@ -1071,6 +1243,18 @@ export interface UploadMainerPromptCacheBytesChunkInput {
   'chunkID' : bigint,
   'bytesChunk' : Uint8Array | number[],
 }
+export type Value = { 'Int' : bigint } |
+  { 'Map' : Array<[string, Value__1]> } |
+  { 'Nat' : bigint } |
+  { 'Blob' : Uint8Array | number[] } |
+  { 'Text' : string } |
+  { 'Array' : Array<Value__1> };
+export type Value__1 = { 'Int' : bigint } |
+  { 'Map' : Array<[string, Value__1]> } |
+  { 'Nat' : bigint } |
+  { 'Blob' : Uint8Array | number[] } |
+  { 'Text' : string } |
+  { 'Array' : Array<Value__1> };
 export interface WhitelistMainerCreationInput {
   'status' : CanisterStatus,
   'canisterType' : ProtocolCanisterType,

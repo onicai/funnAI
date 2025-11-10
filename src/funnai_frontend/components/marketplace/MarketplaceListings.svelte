@@ -4,16 +4,17 @@
   import { getMainerVisualIdentity } from "../../helpers/utils/mainerIdentity";
   import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
   import { ShoppingBag, Crown, X, Eye, Tag, TrendingUp, Clock } from "lucide-svelte";
+  import { MarketplaceService } from "../../helpers/marketplaceService";
+  import { Principal } from '@dfinity/principal';
 
   export let onBuyMainer: (listingId: string, mainerId: string, price: number) => Promise<void>;
-  export let onCancelListing: (listingId: string) => Promise<void>;
+  export let onCancelListing: (listingId: string, mainerId: string) => Promise<void>;
+  export let isProcessing: boolean = false;
 
-  // Mock data - will be replaced with actual backend calls
   let listings: MarketplaceListing[] = [];
   let isLoading = true;
   let selectedListing: MarketplaceListing | null = null;
   let showDetailsModal = false;
-  let processingAction = false;
 
   interface MarketplaceListing {
     id: string;
@@ -35,31 +36,48 @@
     loadListings();
   });
 
+  // Reload when user changes
+  $: if ($store.principal) {
+    loadListings();
+  }
+
   async function loadListings() {
     isLoading = true;
     try {
-      // TODO: Replace with actual backend call
-      // const result = await $store.gameStateCanisterActor.getMarketplaceListings();
+      const result = await MarketplaceService.getAllListings();
       
-      // Mock data for now
-      listings = [
-        {
-          id: "listing-1",
-          mainerId: "canister-abc123",
-          mainerName: "mAIner abc12",
-          price: 1.5,
-          seller: "principal-xyz",
-          listedAt: Date.now() - 86400000,
-          cycleBalance: 5_000_000_000_000,
-          mainerType: "Own",
-          status: "active",
-          isOwnListing: false,
-          createdAt: Date.now() - 2592000000,
-        },
-        // Add more mock listings as needed
-      ];
+      if (result.success && result.listings) {
+        // Convert backend listings to frontend format
+        listings = result.listings.map(listing => {
+          const priceE8s = Number(listing.priceE8S);
+          const priceICP = priceE8s / 100_000_000;
+          const isOwnListing = currentUserPrincipal && 
+            listing.listedBy.toString() === currentUserPrincipal;
+          
+          return {
+            id: listing.address, // Use address as unique ID
+            mainerId: listing.address,
+            mainerName: `mAIner ${listing.address.slice(0, 5)}`,
+            price: priceICP,
+            seller: listing.listedBy.toString(),
+            listedAt: Number(listing.listedTimestamp) / 1_000_000, // Convert from nanoseconds to milliseconds
+            cycleBalance: 0, // Will be enriched if available
+            mainerType: 'Own' in listing.mainerType ? 'Own' : 'Shared',
+            status: 'active',
+            isOwnListing,
+            createdAt: null,
+            priceE8S: priceE8s
+          };
+        });
+        
+        console.log(`Loaded ${listings.length} marketplace listings`);
+      } else {
+        console.error("Failed to load listings:", result.error);
+        listings = [];
+      }
     } catch (error) {
       console.error("Error loading listings:", error);
+      listings = [];
     } finally {
       isLoading = false;
     }
@@ -76,32 +94,26 @@
   }
 
   async function handleBuy(listing: MarketplaceListing) {
-    if (processingAction) return;
+    if (isProcessing) return;
     
-    processingAction = true;
     try {
       await onBuyMainer(listing.id, listing.mainerId, listing.price);
       closeDetailsModal();
       await loadListings(); // Refresh listings
     } catch (error) {
       console.error("Error buying mAIner:", error);
-    } finally {
-      processingAction = false;
     }
   }
 
   async function handleCancelListing(listing: MarketplaceListing) {
-    if (processingAction) return;
+    if (isProcessing) return;
     
-    processingAction = true;
     try {
-      await onCancelListing(listing.id);
+      await onCancelListing(listing.id, listing.mainerId);
       closeDetailsModal();
       await loadListings(); // Refresh listings
     } catch (error) {
       console.error("Error canceling listing:", error);
-    } finally {
-      processingAction = false;
     }
   }
 
@@ -209,7 +221,7 @@
                   
                   <button
                     on:click={() => handleCancelListing(listing)}
-                    disabled={processingAction}
+                    disabled={isProcessing}
                     class="w-full px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                   >
                     <X class="w-4 h-4" />
@@ -340,7 +352,7 @@
                     
                     <button
                       on:click={() => handleBuy(listing)}
-                      disabled={processingAction}
+                      disabled={isProcessing}
                       class="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1.5"
                     >
                       <ShoppingBag class="w-4 h-4" />
@@ -453,10 +465,10 @@
         {#if selectedListing.isOwnListing}
           <button
             on:click={() => handleCancelListing(selectedListing)}
-            disabled={processingAction}
+            disabled={isProcessing}
             class="w-full px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
-            {#if processingAction}
+            {#if isProcessing}
               <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               <span>Canceling...</span>
             {:else}
@@ -467,10 +479,10 @@
         {:else}
           <button
             on:click={() => handleBuy(selectedListing)}
-            disabled={processingAction}
+            disabled={isProcessing}
             class="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl"
           >
-            {#if processingAction}
+            {#if isProcessing}
               <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               <span>Processing...</span>
             {:else}
