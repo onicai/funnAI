@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { SvelteComponent } from 'svelte';
   import Router from "svelte-spa-router";
   import { store, theme } from "../stores/store";
   import NavigationMainLayout from "./funnai/NavigationMainLayout.svelte";
@@ -46,7 +45,7 @@
     }
   }
 
-  const routes: Record<string, typeof SvelteComponent> = {
+  const routes = {
     "/": Mainers,
     "/dashboard": Dashboard,
     "/chat": ChatLayout,
