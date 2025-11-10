@@ -780,11 +780,8 @@ export const createStore = ({
               console.log("Session expired due to inactivity");
               await disconnect();
             }
-          },
-          onLogout: async () => {
-            console.log("User logged out from NFID");
-            await disconnect();
           }
+          // Note: onLogout callback removed to prevent infinite loop with disconnect()
         },
         authType: IdentityKitAuthType.DELEGATION
       });
