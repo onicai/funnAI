@@ -2,8 +2,7 @@
   import { store } from "../../stores/store";
   import { onMount } from "svelte";
   import { getMainerVisualIdentity } from "../../helpers/utils/mainerIdentity";
-  import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
-  import { ShoppingBag, Crown, X, Eye, Tag, TrendingUp, Clock } from "lucide-svelte";
+  import { ShoppingBag, Crown, X, Eye, Tag, Clock } from "lucide-svelte";
   import { MarketplaceService } from "../../helpers/marketplaceService";
   import { Principal } from '@dfinity/principal';
 
@@ -24,8 +23,6 @@
     price: number;
     seller: string;
     listedAt: number;
-    cycleBalance: number;
-    mainerType: string;
     status: string;
     isOwnListing: boolean;
     createdAt: number | null;
@@ -69,8 +66,6 @@
             price: priceICP,
             seller: listing.listedBy.toString(),
             listedAt: Number(listing.listedTimestamp) / 1_000_000, // Convert from nanoseconds to milliseconds
-            cycleBalance: 0, // Will be enriched if available
-            mainerType: 'Own' in listing.mainerType ? 'Own' : 'Shared',
             status: 'active',
             isOwnListing,
             createdAt: null,
@@ -204,20 +199,11 @@
                   
                   <div class="flex-1 min-w-0">
                     <h3 class="font-bold text-gray-900 dark:text-white truncate">🦜 {listing.mainerName}</h3>
-                    <span class="inline-block mt-1 px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
-                      {listing.mainerType}
-                    </span>
                   </div>
                 </div>
 
                 <!-- Stats -->
                 <div class="space-y-2 mb-4">
-                  <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Cycles:</span>
-                    <span class="font-semibold text-gray-900 dark:text-white">
-                      {formatLargeNumber(listing.cycleBalance / 1_000_000_000_000, 2, false)} T
-                    </span>
-                  </div>
                   <div class="flex items-center justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Listed:</span>
                     <span class="font-semibold text-gray-900 dark:text-white">
@@ -314,34 +300,11 @@
                   
                   <div class="flex-1 min-w-0">
                     <h3 class="font-bold text-gray-900 dark:text-white truncate">🦜 {listing.mainerName}</h3>
-                    <span class="inline-block mt-1 px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
-                      {listing.mainerType}
-                    </span>
                   </div>
                 </div>
 
                 <!-- Stats Grid -->
                 <div class="space-y-2 mb-4">
-                  <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400 flex items-center space-x-1">
-                      <TrendingUp class="w-3.5 h-3.5" />
-                      <span>Cycles:</span>
-                    </span>
-                    <span class="font-semibold text-gray-900 dark:text-white">
-                      {formatLargeNumber(listing.cycleBalance / 1_000_000_000_000, 2, false)} T
-                    </span>
-                  </div>
-                  {#if listing.createdAt}
-                    <div class="flex items-center justify-between text-sm">
-                      <span class="text-gray-600 dark:text-gray-400 flex items-center space-x-1">
-                        <Clock class="w-3.5 h-3.5" />
-                        <span>Created:</span>
-                      </span>
-                      <span class="font-semibold text-gray-900 dark:text-white">
-                        {formatDate(listing.createdAt)}
-                      </span>
-                    </div>
-                  {/if}
                   <div class="flex items-center justify-between text-sm">
                     <span class="text-gray-600 dark:text-gray-400">Seller:</span>
                     <span class="font-mono text-xs text-gray-700 dark:text-gray-300">
@@ -446,32 +409,11 @@
         </div>
 
         <!-- Details Grid -->
-        <div class="grid grid-cols-2 gap-4">
-          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-            <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Type</p>
-            <p class="font-semibold text-gray-900 dark:text-white">{selectedListing.mainerType}</p>
-          </div>
-          
+        <div class="grid grid-cols-1 gap-4">
           <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
             <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Status</p>
             <p class="font-semibold text-gray-900 dark:text-white capitalize">{selectedListing.status}</p>
           </div>
-          
-          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-            <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Cycles Balance</p>
-            <p class="font-semibold text-gray-900 dark:text-white">
-              {formatLargeNumber(selectedListing.cycleBalance / 1_000_000_000_000, 2, false)} TCYCLES
-            </p>
-          </div>
-          
-          {#if selectedListing.createdAt}
-            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-              <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Created</p>
-              <p class="font-semibold text-gray-900 dark:text-white">
-                {formatDate(selectedListing.createdAt)}
-              </p>
-            </div>
-          {/if}
         </div>
 
         <!-- Seller Info -->
