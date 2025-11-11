@@ -53,10 +53,19 @@
           const isOwnListing = currentUserPrincipal && 
             listing.listedBy.toString() === currentUserPrincipal;
           
-          console.log('📊 Listing Price:', {
+          // Convert timestamp from nanoseconds to milliseconds
+          const listedAtMs = Number(listing.listedTimestamp) / 1_000_000;
+          
+          console.log('📊 Listing Data:', {
             address: listing.address.slice(0, 10) + '...',
             priceE8S: priceE8s,
-            priceICP: priceICP
+            priceICP: priceICP,
+            listedTimestampRaw: listing.listedTimestamp.toString(),
+            listedTimestampMs: listedAtMs,
+            listedDate: new Date(listedAtMs).toISOString(),
+            nowMs: Date.now(),
+            diffMs: Date.now() - listedAtMs,
+            diffMinutes: (Date.now() - listedAtMs) / 60000
           });
           
           return {
@@ -65,7 +74,7 @@
             mainerName: `mAIner ${listing.address.slice(0, 5)}`,
             price: priceICP,
             seller: listing.listedBy.toString(),
-            listedAt: Number(listing.listedTimestamp) / 1_000_000, // Convert from nanoseconds to milliseconds
+            listedAt: listedAtMs,
             status: 'active',
             isOwnListing,
             createdAt: null,
@@ -134,11 +143,24 @@
   function formatTimeAgo(timestamp: number): string {
     const now = Date.now();
     const diff = now - timestamp;
+    const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
     
+    // Debug logging
+    console.log('⏰ Time Ago Calculation:', {
+      timestamp,
+      now,
+      diff,
+      minutes,
+      hours,
+      days,
+      timestampDate: new Date(timestamp).toISOString()
+    });
+    
     if (days > 0) return `${days}d ago`;
     if (hours > 0) return `${hours}h ago`;
+    if (minutes > 0) return `${minutes}m ago`;
     return 'Just now';
   }
 

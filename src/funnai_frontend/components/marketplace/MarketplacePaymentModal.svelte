@@ -296,8 +296,8 @@
       <div class="flex items-start space-x-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
         <Info class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
         <div class="text-xs text-blue-700 dark:text-blue-300">
-          <p class="font-medium mb-1">Payment will be sent directly to the seller</p>
-          <p>Once payment is confirmed, the mAIner ownership will be transferred to you automatically.</p>
+          <p class="font-medium mb-1">Payment will be processed through the protocol</p>
+          <p>The protocol will handle the payment distribution and transfer ownership to you automatically.</p>
         </div>
       </div>
 
