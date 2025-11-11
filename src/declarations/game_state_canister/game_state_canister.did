@@ -666,6 +666,7 @@ type GameStateCanister =
    getTreasuryCanisterId: () -> (text) query;
    getUserMarketplaceMainerListings: () ->
     (MainerMarketplaceListingsResult) query;
+   getUserMarketplaceReservation: () -> (opt MainerMarketplaceListing) query;
    getWhitelistPriceForOwnMainer: () -> (PriceResult) query;
    getWhitelistPriceForShareAgent: () -> (PriceResult) query;
    health: () -> (StatusCodeRecordResult) query;

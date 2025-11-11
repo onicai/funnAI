@@ -676,6 +676,10 @@ export interface GameStateCanister {
     [],
     MainerMarketplaceListingsResult
   >,
+  'getUserMarketplaceReservation' : ActorMethod<
+    [],
+    [] | [MainerMarketplaceListing]
+  >,
   'getWhitelistPriceForOwnMainer' : ActorMethod<[], PriceResult>,
   'getWhitelistPriceForShareAgent' : ActorMethod<[], PriceResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,

@@ -169,6 +169,76 @@ export class MarketplaceService {
   }
 
   /**
+   * Check if user has an active reservation
+   */
+  static async getUserReservation(): Promise<{ success: boolean; reservation?: any; error?: string }> {
+    try {
+      const $store = get(store);
+      
+      if (!$store.gameStateCanisterActor) {
+        throw new Error('Game State canister not initialized');
+      }
+      
+      if (!$store.isAuthed) {
+        return { success: true, reservation: null };
+      }
+      
+      const reservation = await $store.gameStateCanisterActor.getUserMarketplaceReservation();
+      
+      // The backend returns ?MainerMarketplaceListing, which comes as an array in Candid
+      // If array has element, user has a reservation
+      return {
+        success: true,
+        reservation: reservation || null
+      };
+      
+    } catch (error) {
+      console.error('Error checking user reservation:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to check reservation'
+      };
+    }
+  }
+
+  /**
+   * Clear any stale reservation the user might have (call on page load)
+   */
+  static async clearStaleReservation(): Promise<{ success: boolean; hadReservation: boolean; error?: string }> {
+    try {
+      const reservationResult = await this.getUserReservation();
+      
+      if (!reservationResult.success || !reservationResult.reservation) {
+        return { success: true, hadReservation: false };
+      }
+      
+      console.log('Found stale reservation, clearing:', reservationResult.reservation);
+      
+      // Cancel the stale reservation
+      const cancelResult = await this.cancelReservation(reservationResult.reservation.address);
+      
+      if (cancelResult.success) {
+        console.log('Cleared stale reservation successfully');
+        return { success: true, hadReservation: true };
+      } else {
+        return {
+          success: false,
+          hadReservation: true,
+          error: cancelResult.error
+        };
+      }
+      
+    } catch (error) {
+      console.error('Error clearing stale reservation:', error);
+      return {
+        success: false,
+        hadReservation: false,
+        error: error.message || 'Failed to clear stale reservation'
+      };
+    }
+  }
+
+  /**
    * Cancel a marketplace listing
    * Uses ICRC37 revoke_token_approvals with mAIner address as memo
    */

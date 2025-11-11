@@ -1286,6 +1286,11 @@ export const idlFactory = ({ IDL }) => {
         [MainerMarketplaceListingsResult],
         ['query'],
       ),
+    'getUserMarketplaceReservation' : IDL.Func(
+        [],
+        [IDL.Opt(MainerMarketplaceListing)],
+        ['query'],
+      ),
     'getWhitelistPriceForOwnMainer' : IDL.Func([], [PriceResult], ['query']),
     'getWhitelistPriceForShareAgent' : IDL.Func([], [PriceResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),

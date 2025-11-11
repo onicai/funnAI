@@ -55,6 +55,15 @@
   async function initialize() {
     isLoading = true;
     try {
+      // Clear any stale reservation from previous session/page refresh
+      if ($store.isAuthed) {
+        const cleanupResult = await MarketplaceService.clearStaleReservation();
+        if (cleanupResult.hadReservation) {
+          console.log('Cleared stale reservation on page load');
+          toastStore.info('Cleared pending reservation from previous session', 3000);
+        }
+      }
+
       await Promise.all([
         loadMarketplaceStats(),
         loadUserListings()
