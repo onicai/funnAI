@@ -231,6 +231,12 @@
   async function handleBuyMainer(listingId: string, mainerId: string, price: number) {
     console.log("Starting buy process for mAIner:", mainerId);
     
+    // Check if user is authenticated
+    if (!$store.isAuthed) {
+      toastStore.warning("Please connect your wallet to purchase mAIners", 5000);
+      return;
+    }
+    
     if (isBuyingMainer) {
       toastStore.warning("Another purchase is already in progress. Please wait.");
       return;

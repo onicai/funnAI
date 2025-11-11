@@ -358,11 +358,12 @@
                     
                     <button
                       on:click={() => handleBuy(listing)}
-                      disabled={isProcessing}
+                      disabled={isProcessing || !$store.isAuthed}
                       class="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1.5"
+                      title={!$store.isAuthed ? 'Please connect your wallet to purchase' : ''}
                     >
                       <ShoppingBag class="w-4 h-4" />
-                      <span>Buy</span>
+                      <span>{$store.isAuthed ? 'Buy' : 'Connect Wallet'}</span>
                     </button>
                   </div>
                 </div>
@@ -464,10 +465,15 @@
         {:else}
           <button
             on:click={() => handleBuy(selectedListing)}
-            disabled={isProcessing}
+            disabled={isProcessing || !$store.isAuthed}
             class="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl"
           >
-            {#if isProcessing}
+            {#if !$store.isAuthed}
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span>Connect Wallet to Purchase</span>
+            {:else if isProcessing}
               <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               <span>Processing...</span>
             {:else}
