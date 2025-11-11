@@ -403,6 +403,13 @@ type NatResult =
    Err: ApiError;
    Ok: nat;
  };
+type MarketplaceStats = 
+ record {
+   totalSales: nat;
+   totalVolumeE8S: nat;
+   uniqueBuyers: nat;
+   uniqueSellers: nat;
+ };
 type MainerctrlUpgradeInput = record {canisterAddress: CanisterAddress;};
 type MainerctrlReinstallInput = record {canisterAddress: CanisterAddress;};
 type MainerPromptInfoResult = 
@@ -604,6 +611,7 @@ type GameStateCanister =
    getMainerPromptInfo: (text) -> (MainerPromptInfoResult) query;
    getMarketplaceMainerListings: () ->
     (MainerMarketplaceListingsResult) query;
+   getMarketplaceSalesStats: () -> (MarketplaceStats) query;
    getMaxFunnaiTopupCyclesAmount: () -> (NatResult) query;
    getMaxFunnaiTopupCyclesAmountAdmin: () -> (NatResult) query;
    getMinimumIcpBalance: () -> (NatResult) query;

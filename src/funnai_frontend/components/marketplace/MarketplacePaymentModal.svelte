@@ -330,7 +330,7 @@
           disabled={isValidating || isCanceling}
         >
           {#if isCanceling}
-            <span class="w-4 h-4 border-2 border-gray-600 dark:border-gray-300 border-t-transparent rounded-full animate-spin"></span>
+            <div class="spinner w-4 h-4 border-2 border-gray-600 dark:border-gray-300 border-t-transparent rounded-full"></div>
             <span>Canceling...</span>
           {:else}
             <span>Cancel</span>
@@ -348,7 +348,7 @@
           disabled={!canSubmit}
         >
           {#if isValidating}
-            <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            <div class="spinner w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></div>
             <span>Processing...</span>
           {:else}
             <ShoppingBag class="w-4 h-4" />
@@ -370,6 +370,19 @@
   @media (max-width: 640px) {
     :global(.marketplace-payment-modal) {
       margin: 0.5rem;
+    }
+  }
+
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
     }
   }
 </style>

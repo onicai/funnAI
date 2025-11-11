@@ -595,6 +595,7 @@ export interface GameStateCanister {
     [],
     MainerMarketplaceListingsResult
   >,
+  'getMarketplaceSalesStats' : ActorMethod<[], MarketplaceStats>,
   'getMaxFunnaiTopupCyclesAmount' : ActorMethod<[], NatResult>,
   'getMaxFunnaiTopupCyclesAmountAdmin' : ActorMethod<[], NatResult>,
   'getMinimumIcpBalance' : ActorMethod<[], NatResult>,
@@ -965,6 +966,12 @@ export interface MainerctrlReinstallInput {
   'canisterAddress' : CanisterAddress,
 }
 export interface MainerctrlUpgradeInput { 'canisterAddress' : CanisterAddress }
+export interface MarketplaceStats {
+  'uniqueBuyers' : bigint,
+  'uniqueSellers' : bigint,
+  'totalVolumeE8S' : bigint,
+  'totalSales' : bigint,
+}
 export type NatResult = { 'Ok' : bigint } |
   { 'Err' : ApiError };
 export interface NewChallengeInput {

@@ -417,7 +417,7 @@ export class MarketplaceService {
    */
   static async getMarketplaceStats(): Promise<{
     success: boolean;
-    stats?: { totalListings: number; totalVolume: string; activeTraders: number };
+    stats?: { totalListings: number; totalSales: number; totalVolume: string; activeTraders: number };
     error?: string;
   }> {
     try {
@@ -427,34 +427,25 @@ export class MarketplaceService {
         throw new Error('Game State canister not initialized');
       }
       
-      // Get total supply (number of listings)
+      // Get actual sales statistics from backend
+      const salesStats = await $store.gameStateCanisterActor.getMarketplaceSalesStats();
+      
+      // Get current number of listings
       const totalListings = await $store.gameStateCanisterActor.icrc7_total_supply();
       
-      // Get all listings to calculate volume
-      const listingsResult = await MarketplaceService.getAllListings();
+      // Convert total volume from e8s to ICP
+      const totalVolumeICP = (Number(salesStats.totalVolumeE8S) / 100_000_000).toFixed(2);
       
-      if (!listingsResult.success || !listingsResult.listings) {
-        throw new Error('Failed to get listings for stats');
-      }
-      
-      // Calculate total volume (sum of all listing prices)
-      const totalVolumeE8s = listingsResult.listings.reduce((sum, listing) => {
-        return sum + Number(listing.priceE8S);
-      }, 0);
-      
-      const totalVolumeICP = (totalVolumeE8s / 100_000_000).toFixed(1);
-      
-      // Count unique sellers as active traders
-      const uniqueSellers = new Set(
-        listingsResult.listings.map(l => l.listedBy.toString())
-      );
+      // Calculate total active traders (buyers + sellers, deduplicated)
+      const totalTraders = Number(salesStats.uniqueBuyers) + Number(salesStats.uniqueSellers);
       
       return {
         success: true,
         stats: {
           totalListings: Number(totalListings),
+          totalSales: Number(salesStats.totalSales),
           totalVolume: totalVolumeICP,
-          activeTraders: uniqueSellers.size
+          activeTraders: totalTraders
         }
       };
       

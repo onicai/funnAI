@@ -15,6 +15,7 @@
   let isLoading = true;
   let selectedListing: MarketplaceListing | null = null;
   let showDetailsModal = false;
+  let cancelingListingId: string | null = null; // Track which listing is being canceled
 
   interface MarketplaceListing {
     id: string;
@@ -106,14 +107,17 @@
   }
 
   async function handleCancelListing(listing: MarketplaceListing) {
-    if (isProcessing) return;
+    if (isProcessing || cancelingListingId) return;
     
+    cancelingListingId = listing.id;
     try {
       await onCancelListing(listing.id, listing.mainerId);
       closeDetailsModal();
       await loadListings(); // Refresh listings
     } catch (error) {
       console.error("Error canceling listing:", error);
+    } finally {
+      cancelingListingId = null;
     }
   }
 
@@ -221,11 +225,16 @@
                   
                   <button
                     on:click={() => handleCancelListing(listing)}
-                    disabled={isProcessing}
+                    disabled={isProcessing || cancelingListingId === listing.id}
                     class="w-full px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                   >
-                    <X class="w-4 h-4" />
-                    <span>Cancel Listing</span>
+                    {#if cancelingListingId === listing.id}
+                      <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full spinner"></div>
+                      <span>Canceling...</span>
+                    {:else}
+                      <X class="w-4 h-4" />
+                      <span>Cancel Listing</span>
+                    {/if}
                   </button>
                 </div>
               </div>
@@ -465,11 +474,11 @@
         {#if selectedListing.isOwnListing}
           <button
             on:click={() => handleCancelListing(selectedListing)}
-            disabled={isProcessing}
+            disabled={isProcessing || cancelingListingId === selectedListing.id}
             class="w-full px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
-            {#if isProcessing}
-              <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            {#if isProcessing || cancelingListingId === selectedListing.id}
+              <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full spinner"></div>
               <span>Canceling...</span>
             {:else}
               <X class="w-5 h-5" />
@@ -497,6 +506,14 @@
 {/if}
 
 <style>
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  .spinner {
+    animation: spin 1s linear infinite;
+  }
+
   /* Modal scroll */
   .overflow-y-auto::-webkit-scrollbar {
     width: 8px;

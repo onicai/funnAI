@@ -456,6 +456,12 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : IDL.Vec(MainerMarketplaceListing),
     'Err' : ApiError,
   });
+  const MarketplaceStats = IDL.Record({
+    'uniqueBuyers' : IDL.Nat,
+    'uniqueSellers' : IDL.Nat,
+    'totalVolumeE8S' : IDL.Nat,
+    'totalSales' : IDL.Nat,
+  });
   const ChallengeResponseSubmission = IDL.Record({
     'challengeClosedTimestamp' : IDL.Opt(IDL.Nat64),
     'challengeTopicStatus' : ChallengeTopicStatus,
@@ -1148,6 +1154,7 @@ export const idlFactory = ({ IDL }) => {
         [MainerMarketplaceListingsResult],
         ['query'],
       ),
+    'getMarketplaceSalesStats' : IDL.Func([], [MarketplaceStats], ['query']),
     'getMaxFunnaiTopupCyclesAmount' : IDL.Func([], [NatResult], ['query']),
     'getMaxFunnaiTopupCyclesAmountAdmin' : IDL.Func([], [NatResult], ['query']),
     'getMinimumIcpBalance' : IDL.Func([], [NatResult], ['query']),

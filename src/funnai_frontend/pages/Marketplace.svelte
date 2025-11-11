@@ -15,6 +15,7 @@
   let activeTab: 'sell' | 'buy' = 'buy';
   let stats = {
     totalListings: 0,
+    totalSales: 0,
     totalVolume: "0",
     activeTraders: 0,
   };
@@ -75,6 +76,7 @@
       // Keep default values
       stats = {
         totalListings: 0,
+        totalSales: 0,
         totalVolume: "0",
         activeTraders: 0,
       };
@@ -214,14 +216,21 @@
       return;
     }
     
+    // Save listing info before it might get cleared by modal closing
+    const listingInfo = {
+      mainerId: selectedListingForPurchase.mainerId,
+      mainerName: selectedListingForPurchase.mainerName,
+      seller: selectedListingForPurchase.seller
+    };
+    
     try {
       // Step 3: Complete the purchase
       console.log("Step 3: Completing purchase...");
       buyProcessStep = 'completing';
       
       const completeResult = await MarketplaceService.completePurchase(
-        selectedListingForPurchase.mainerId,
-        selectedListingForPurchase.seller,
+        listingInfo.mainerId,
+        listingInfo.seller,
         txId
       );
       
@@ -236,7 +245,7 @@
       showPaymentModal = false;
       
       toastStore.success(
-        `Successfully purchased ${selectedListingForPurchase.mainerName}! The mAIner has been transferred to your account.`,
+        `Successfully purchased ${listingInfo.mainerName}! The mAIner has been transferred to your account.`,
         8000
       );
       
@@ -336,15 +345,27 @@
 
       <!-- Stats Cards -->
       {#if !isLoading}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
           <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
             <div class="flex items-center space-x-3">
               <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
                 <Store class="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">Total Listings</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Active Listings</p>
                 <p class="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalListings}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+                <Zap class="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Total Sales</p>
+                <p class="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalSales}</p>
               </div>
             </div>
           </div>
@@ -355,7 +376,7 @@
                 <TrendingUp class="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">Total Volume</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Sales Volume</p>
                 <p class="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalVolume} ICP</p>
               </div>
             </div>
@@ -367,7 +388,7 @@
                 <Users class="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">Active Traders</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Total Traders</p>
                 <p class="text-2xl font-bold text-gray-900 dark:text-white">{stats.activeTraders}</p>
               </div>
             </div>
