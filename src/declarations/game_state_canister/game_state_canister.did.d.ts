@@ -510,6 +510,11 @@ export interface GameStateCanister {
   >,
   'archiveSubmissionsAdmin' : ActorMethod<[], NatResult>,
   'backupMainersAdmin' : ActorMethod<[], NatResult>,
+  'cancelMarketplaceReservation' : ActorMethod<
+    [MainerMarketplaceReservationInput],
+    StatusCodeRecordResult
+  >,
+  'checkUserMainerMappingConsistencyAdmin' : ActorMethod<[], AuthRecordResult>,
   'cleanOpenSubmissionsQueueAdmin' : ActorMethod<[], NatResult>,
   'cleanSubmissionsAdmin' : ActorMethod<[], AuthRecordResult>,
   'cleanUnlockedMainerStoragesAdmin' : ActorMethod<[], AuthRecordResult>,
@@ -709,6 +714,7 @@ export interface GameStateCanister {
     [Array<string>],
     AuthRecordResult
   >,
+  'rebuildUserMainerMappingAdmin' : ActorMethod<[], AuthRecordResult>,
   'reinstallMainerControllerAdmin' : ActorMethod<
     [MainerctrlReinstallInput],
     MainerAgentCanisterResult

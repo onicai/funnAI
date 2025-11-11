@@ -224,11 +224,11 @@ export const idlFactory = ({ IDL }) => {
     'Err' : ApiError,
   });
   const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
-  const AuthRecord = IDL.Record({ 'auth' : IDL.Text });
-  const AuthRecordResult = IDL.Variant({ 'Ok' : AuthRecord, 'Err' : ApiError });
   const MainerMarketplaceReservationInput = IDL.Record({
     'address' : CanisterAddress,
   });
+  const AuthRecord = IDL.Record({ 'auth' : IDL.Text });
+  const AuthRecordResult = IDL.Variant({ 'Ok' : AuthRecord, 'Err' : ApiError });
   const MainerMarketplaceListing = IDL.Record({
     'listedTimestamp' : IDL.Nat64,
     'listedBy' : IDL.Principal,
@@ -1013,6 +1013,16 @@ export const idlFactory = ({ IDL }) => {
       ),
     'archiveSubmissionsAdmin' : IDL.Func([], [NatResult], []),
     'backupMainersAdmin' : IDL.Func([], [NatResult], []),
+    'cancelMarketplaceReservation' : IDL.Func(
+        [MainerMarketplaceReservationInput],
+        [StatusCodeRecordResult],
+        [],
+      ),
+    'checkUserMainerMappingConsistencyAdmin' : IDL.Func(
+        [],
+        [AuthRecordResult],
+        ['query'],
+      ),
     'cleanOpenSubmissionsQueueAdmin' : IDL.Func([], [NatResult], []),
     'cleanSubmissionsAdmin' : IDL.Func([], [AuthRecordResult], []),
     'cleanUnlockedMainerStoragesAdmin' : IDL.Func([], [AuthRecordResult], []),
@@ -1334,6 +1344,7 @@ export const idlFactory = ({ IDL }) => {
         [AuthRecordResult],
         [],
       ),
+    'rebuildUserMainerMappingAdmin' : IDL.Func([], [AuthRecordResult], []),
     'reinstallMainerControllerAdmin' : IDL.Func(
         [MainerctrlReinstallInput],
         [MainerAgentCanisterResult],

@@ -6,6 +6,7 @@
   import { Check, X, ShoppingCart, Sparkles } from "lucide-svelte";
 
   export let onListToMarketplace: (mainerIds: string[], prices: Record<string, number>) => Promise<void>;
+  export let listedMainers: string[] = []; // Array of already-listed mAIner addresses
 
   // State
   let myMainers: any[] = [];
@@ -20,7 +21,7 @@
     loadMyMainers();
   });
 
-  $: if (agentCanistersInfo) {
+  $: if (agentCanistersInfo || listedMainers) {
     loadMyMainers();
   }
 
@@ -30,11 +31,12 @@
       return;
     }
 
-    // Filter out unlocked mAIners and only show active ones that can be sold
+    // Filter out unlocked mAIners, already-listed mAIners, and only show active ones that can be sold
     myMainers = agentCanistersInfo
       .filter(canister => {
         const isUnlocked = canister.status && 'Unlocked' in canister.status;
-        return !isUnlocked && canister.address;
+        const isAlreadyListed = listedMainers.includes(canister.address);
+        return !isUnlocked && canister.address && !isAlreadyListed;
       })
       .map((canister, index) => {
         let mainerType = 'Unknown';

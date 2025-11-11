@@ -19,6 +19,9 @@
     activeTraders: 0,
   };
 
+  // User's listed mAIners (for filtering in "My mAIners" section)
+  let userListedMainerAddresses: string[] = [];
+
   // Payment modal state
   let showPaymentModal = false;
   let selectedListingForPurchase: any = null;
@@ -35,7 +38,10 @@
   async function initialize() {
     isLoading = true;
     try {
-      await loadMarketplaceStats();
+      await Promise.all([
+        loadMarketplaceStats(),
+        loadUserListings()
+      ]);
     } catch (error) {
       console.error("Error initializing marketplace:", error);
     } finally {
@@ -56,6 +62,28 @@
         totalVolume: "0",
         activeTraders: 0,
       };
+    }
+  }
+
+  async function loadUserListings() {
+    if (!$store.isAuthed) {
+      userListedMainerAddresses = [];
+      return;
+    }
+
+    try {
+      const result = await MarketplaceService.getUserListings();
+      
+      if (result.success && result.listings) {
+        userListedMainerAddresses = result.listings.map(listing => listing.address);
+        console.log(`User has ${userListedMainerAddresses.length} mAIners listed`);
+      } else {
+        console.error("Failed to load user listings:", result.error);
+        userListedMainerAddresses = [];
+      }
+    } catch (error) {
+      console.error("Error loading user listings:", error);
+      userListedMainerAddresses = [];
     }
   }
 
@@ -95,8 +123,11 @@
           );
         }
         
-        // Refresh marketplace data
-        await loadMarketplaceStats();
+        // Refresh marketplace data and user listings
+        await Promise.all([
+          loadMarketplaceStats(),
+          loadUserListings()
+        ]);
       } else {
         throw new Error(`Failed to list all mAIners. ${errors.join('; ')}`);
       }
@@ -222,8 +253,11 @@
       if (result.success) {
         toastStore.success("Successfully canceled listing!", 5000);
         
-        // Refresh marketplace data
-        await loadMarketplaceStats();
+        // Refresh marketplace data and user listings
+        await Promise.all([
+          loadMarketplaceStats(),
+          loadUserListings()
+        ]);
       } else {
         throw new Error(result.error || 'Failed to cancel listing');
       }
@@ -330,7 +364,10 @@
 
       <!-- Tab Content -->
       {#if activeTab === 'sell'}
-        <MyMainersForSale onListToMarketplace={handleListToMarketplace} />
+        <MyMainersForSale 
+          onListToMarketplace={handleListToMarketplace}
+          listedMainers={userListedMainerAddresses}
+        />
       {:else}
         <MarketplaceListings 
           onBuyMainer={handleBuyMainer}

@@ -546,6 +546,9 @@ type GameStateCanister =
    addScoredResponse: (ScoredResponseInput) -> (ScoredResponseResult);
    archiveSubmissionsAdmin: () -> (NatResult);
    backupMainersAdmin: () -> (NatResult);
+   cancelMarketplaceReservation: (MainerMarketplaceReservationInput) ->
+    (StatusCodeRecordResult);
+   checkUserMainerMappingConsistencyAdmin: () -> (AuthRecordResult) query;
    cleanOpenSubmissionsQueueAdmin: () -> (NatResult);
    cleanSubmissionsAdmin: () -> (AuthRecordResult);
    cleanUnlockedMainerStoragesAdmin: () -> (AuthRecordResult);
@@ -686,6 +689,7 @@ type GameStateCanister =
    migrateScoredResponsesForChallengeAdmin: (text) -> (AuthRecordResult);
    migrateSubmissionsAdmin: () -> (AuthRecordResult);
    migrateWinnerDeclarationsAdmin: (vec text) -> (AuthRecordResult);
+   rebuildUserMainerMappingAdmin: () -> (AuthRecordResult);
    reinstallMainerControllerAdmin: (MainerctrlReinstallInput) ->
     (MainerAgentCanisterResult);
    removeRedeemedFunnaiTransactionBlockAdmin: (PaymentTransactionBlockId) ->
