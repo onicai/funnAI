@@ -185,11 +185,13 @@ export class MarketplaceService {
       
       const reservation = await $store.gameStateCanisterActor.getUserMarketplaceReservation();
       
-      // The backend returns ?MainerMarketplaceListing, which comes as an array in Candid
-      // If array has element, user has a reservation
+      // The backend returns ?MainerMarketplaceListing, which comes as an empty array [] when null
+      // Check if it's actually a reservation or just an empty array
+      const actualReservation = (Array.isArray(reservation) && reservation.length === 0) ? null : reservation;
+      
       return {
         success: true,
-        reservation: reservation || null
+        reservation: actualReservation
       };
       
     } catch (error) {
@@ -206,21 +208,41 @@ export class MarketplaceService {
    */
   static async clearStaleReservation(): Promise<{ success: boolean; hadReservation: boolean; error?: string }> {
     try {
+      console.log('🔍 Checking for existing reservation...');
       const reservationResult = await this.getUserReservation();
       
-      if (!reservationResult.success || !reservationResult.reservation) {
+      console.log('📋 Reservation check result:', reservationResult);
+      
+      if (!reservationResult.success) {
+        console.error('❌ Failed to check reservation:', reservationResult.error);
+        return { success: false, hadReservation: false, error: reservationResult.error };
+      }
+      
+      // Check if reservation exists (handle both null and empty array from Candid optional)
+      const hasReservation = reservationResult.reservation && 
+                            !(Array.isArray(reservationResult.reservation) && reservationResult.reservation.length === 0);
+      
+      if (!hasReservation) {
+        console.log('✅ No reservation found');
         return { success: true, hadReservation: false };
       }
       
-      console.log('Found stale reservation, clearing:', reservationResult.reservation);
+      console.log('🔧 Found stale reservation, clearing:', {
+        address: reservationResult.reservation.address,
+        priceE8S: reservationResult.reservation.priceE8S,
+        listedBy: reservationResult.reservation.listedBy.toString()
+      });
       
       // Cancel the stale reservation
       const cancelResult = await this.cancelReservation(reservationResult.reservation.address);
       
+      console.log('🔧 Cancel result:', cancelResult);
+      
       if (cancelResult.success) {
-        console.log('Cleared stale reservation successfully');
+        console.log('✅ Successfully cleared stale reservation and returned mAIner to marketplace');
         return { success: true, hadReservation: true };
       } else {
+        console.error('❌ Failed to cancel reservation:', cancelResult.error);
         return {
           success: false,
           hadReservation: true,
@@ -229,7 +251,7 @@ export class MarketplaceService {
       }
       
     } catch (error) {
-      console.error('Error clearing stale reservation:', error);
+      console.error('❌ Error in clearStaleReservation:', error);
       return {
         success: false,
         hadReservation: false,
@@ -313,27 +335,55 @@ export class MarketplaceService {
         throw new Error('Game State canister not initialized');
       }
       
-      console.log('Reserving mAIner:', mainerAddress);
+      console.log('🔄 Attempting to reserve mAIner:', mainerAddress);
+      
+      // First, verify the mAIner is actually listed
+      const allListingsResult = await this.getAllListings();
+      if (allListingsResult.success && allListingsResult.listings) {
+        const isListed = allListingsResult.listings.some(l => l.address === mainerAddress);
+        console.log('🔍 Is mAIner in listings?', isListed);
+        if (!isListed) {
+          console.error('❌ mAIner not found in listings!');
+          throw new Error('mAIner is not currently available for purchase');
+        }
+        
+        const listing = allListingsResult.listings.find(l => l.address === mainerAddress);
+        console.log('📋 Listing details:', listing);
+      }
+      
+      // Check if mAIner is stuck in reserved storage (diagnostic)
+      try {
+        const isInReservedStorage = await $store.gameStateCanisterActor.isMainerInReservedStorage(mainerAddress);
+        console.log('🔍 Is mAIner in reserved storage?', isInReservedStorage);
+        if (isInReservedStorage) {
+          console.error('❌ mAIner is stuck in reserved storage! This should not happen.');
+          throw new Error('mAIner has a stale reservation. Please try again in 2 minutes or contact support.');
+        }
+      } catch (err) {
+        console.log('⚠️ Could not check reserved storage (might be old backend):', err.message);
+      }
       
       const result = await $store.gameStateCanisterActor.reserveMarketplaceListedMainer({
         address: mainerAddress
       });
       
-      console.log('Reserve result:', result);
+      console.log('🔄 Reserve result:', result);
       
       if ('Ok' in result) {
+        console.log('✅ Reservation successful!');
         return {
           success: true,
           listing: result.Ok
         };
       } else if ('Err' in result) {
+        console.error('❌ Reservation failed:', result.Err);
         throw new Error(`Reservation failed: ${JSON.stringify(result.Err)}`);
       } else {
         throw new Error('Unknown response format');
       }
       
     } catch (error) {
-      console.error('Error reserving mAIner:', error);
+      console.error('❌ Error reserving mAIner:', error);
       return {
         success: false,
         error: error.message || 'Failed to reserve mAIner'

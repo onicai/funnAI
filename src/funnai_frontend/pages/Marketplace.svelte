@@ -36,15 +36,46 @@
   // Reactive key to force MarketplaceListings to refresh
   let listingsRefreshKey = 0;
 
+  let hasRunCleanup = false;
+
   onMount(() => {
     initialize();
   });
+
+  // Reactive: Clean up stale reservations when user becomes authenticated
+  $: if ($store.isAuthed && !hasRunCleanup) {
+    console.log('🔄 Auth state changed, running cleanup check...');
+    clearStaleReservationsOnAuth();
+  }
+
+  async function clearStaleReservationsOnAuth() {
+    hasRunCleanup = true;
+    console.log('🔍 Checking for stale reservations on auth...');
+    const cleanupResult = await MarketplaceService.clearStaleReservation();
+    if (cleanupResult.hadReservation) {
+      console.log('✅ Cleared stale reservation after auth');
+      toastStore.info('Cleared pending reservation from previous session', 3000);
+      
+      // Wait for backend to update
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Verify cleanup worked
+      const verifyResult = await MarketplaceService.getUserReservation();
+      console.log('🔍 Verification after auth cleanup:', verifyResult);
+      
+      // Refresh listings
+      listingsRefreshKey++;
+    } else {
+      console.log('✅ No stale reservations found on auth');
+    }
+  }
 
   // Reactive: reload user listings when auth state changes
   $: if ($store.isAuthed) {
     loadUserListings();
   } else {
     userListedMainerAddresses = [];
+    hasRunCleanup = false; // Reset cleanup flag when user logs out
   }
 
   // Reactive: reload when switching to sell tab
@@ -54,20 +85,16 @@
 
   async function initialize() {
     isLoading = true;
+    
+    // If user is already authenticated on page load, run cleanup immediately
+    if ($store.isAuthed && !hasRunCleanup) {
+      console.log('🔄 User already authenticated on load, running cleanup...');
+      await clearStaleReservationsOnAuth();
+    }
+    
     try {
-      // Clear any stale reservation from previous session/page refresh
-      if ($store.isAuthed) {
-        const cleanupResult = await MarketplaceService.clearStaleReservation();
-        if (cleanupResult.hadReservation) {
-          console.log('Cleared stale reservation on page load');
-          toastStore.info('Cleared pending reservation from previous session', 3000);
-        }
-      }
-
-      await Promise.all([
-        loadMarketplaceStats(),
-        loadUserListings()
-      ]);
+      await loadMarketplaceStats();
+      await loadUserListings();
     } catch (error) {
       console.error("Error initializing marketplace:", error);
     } finally {
@@ -182,6 +209,23 @@
     buyProcessError = '';
     
     try {
+      // Pre-check: Verify user doesn't have an existing reservation
+      console.log("🔍 Pre-check: Verifying no existing reservations...");
+      const preCheckResult = await MarketplaceService.getUserReservation();
+      console.log("🔍 Pre-check result:", preCheckResult);
+      
+      // Check if reservation exists (handle both null and empty array)
+      const hasReservation = preCheckResult.success && 
+                            preCheckResult.reservation && 
+                            !(Array.isArray(preCheckResult.reservation) && preCheckResult.reservation.length === 0);
+      
+      if (hasReservation) {
+        console.error("❌ User still has a reservation:", preCheckResult.reservation);
+        throw new Error('You already have a pending reservation. Please refresh the page or wait for it to expire.');
+      }
+      
+      console.log("✅ Pre-check passed, proceeding with reservation");
+      
       // Step 1: Reserve the mAIner
       console.log("Step 1: Reserving mAIner...");
       const reserveResult = await MarketplaceService.reserveMainer(mainerId);

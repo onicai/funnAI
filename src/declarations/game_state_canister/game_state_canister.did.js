@@ -1345,6 +1345,7 @@ export const idlFactory = ({ IDL }) => {
         [AuthRecordResult],
         [],
       ),
+    'isMainerInReservedStorage' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
     'migrateArchivedChallengesAdmin' : IDL.Func([], [NatResult], []),
     'migrateScoredResponsesForChallengeAdmin' : IDL.Func(
         [IDL.Text],
