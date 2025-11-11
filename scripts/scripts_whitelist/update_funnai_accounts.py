@@ -3,14 +3,17 @@ import subprocess
 import sys
 from pathlib import Path
 from datetime import datetime
-from funnai import get_funnai_principals, get_mainer_ownership_data
+from .funnai import get_funnai_principals, get_mainer_ownership_data
 
 def update_funnai_accounts():
     """
     Pull fresh data from the funnai_backend canister and update funnai_accounts.json
     """
     print("=== Updating FunnAI Accounts Data ===")
-    
+
+    # Get the directory where this script is located
+    SCRIPT_DIR = Path(__file__).parent
+
     try:
         # Get all principals from the backend
         print("Fetching all FunnAI principals from backend canister...")
@@ -54,7 +57,7 @@ def update_funnai_accounts():
         }
         
         # Save to funnai_accounts folder
-        output_dir = Path("funnai_accounts")
+        output_dir = SCRIPT_DIR / "funnai_accounts"
         output_dir.mkdir(exist_ok=True)
         output_file = output_dir / "funnai_accounts.json"
         
