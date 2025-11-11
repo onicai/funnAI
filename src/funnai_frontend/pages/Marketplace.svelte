@@ -258,13 +258,23 @@
     }
   }
 
-  function handlePaymentModalClose() {
-    if (!isBuyingMainer || buyProcessStep === 'payment') {
-      showPaymentModal = false;
-      selectedListingForPurchase = null;
-      isBuyingMainer = false;
-      buyProcessStep = 'idle';
+  async function handlePaymentModalClose() {
+    // If user is closing the modal during payment step, cancel the reservation
+    if (buyProcessStep === 'payment' && selectedListingForPurchase) {
+      console.log("User canceled purchase, canceling reservation...");
+      try {
+        await MarketplaceService.cancelReservation(selectedListingForPurchase.mainerId);
+        console.log("Reservation canceled successfully");
+      } catch (error) {
+        console.error("Error canceling reservation:", error);
+        // Don't show error to user, just log it
+      }
     }
+    
+    showPaymentModal = false;
+    selectedListingForPurchase = null;
+    isBuyingMainer = false;
+    buyProcessStep = 'idle';
   }
 
   async function handleCancelListing(listingId: string, mainerId: string) {

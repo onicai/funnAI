@@ -62,12 +62,12 @@
       timeRemaining = Math.max(0, 120 - elapsed);
       
       if (timeRemaining === 0) {
-        // Timer expired - close modal
+        // Timer expired - the backend will auto-cancel, just close modal
         if (timerInterval) {
           clearInterval(timerInterval);
           timerInterval = null;
         }
-        errorMessage = "Reservation expired. The mAIner will be returned to the marketplace.";
+        errorMessage = "Reservation expired. The mAIner has been returned to the marketplace.";
         setTimeout(() => {
           onClose();
         }, 2000);

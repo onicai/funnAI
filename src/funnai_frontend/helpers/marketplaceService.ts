@@ -124,6 +124,42 @@ export class MarketplaceService {
   }
   
   /**
+   * Cancel a reservation (for buyers who reserved but didn't complete purchase)
+   */
+  static async cancelReservation(mainerAddress: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const $store = get(store);
+      
+      if (!$store.gameStateCanisterActor) {
+        throw new Error('Game State canister not initialized');
+      }
+      
+      console.log('Canceling reservation for mAIner:', mainerAddress);
+      
+      const result = await $store.gameStateCanisterActor.cancelMarketplaceReservation({
+        address: mainerAddress
+      });
+      
+      console.log('Cancel reservation result:', result);
+      
+      if ('Ok' in result) {
+        return { success: true };
+      } else if ('Err' in result) {
+        throw new Error(`Cancel reservation failed: ${JSON.stringify(result.Err)}`);
+      } else {
+        throw new Error('Unknown response format');
+      }
+      
+    } catch (error) {
+      console.error('Error canceling reservation:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to cancel reservation'
+      };
+    }
+  }
+
+  /**
    * Cancel a marketplace listing
    * Uses ICRC37 revoke_token_approvals with mAIner address as memo
    */
