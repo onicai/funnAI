@@ -196,6 +196,8 @@
       buyProcessError = error.message || 'Failed to initiate purchase';
       toastStore.error(`Failed to purchase mAIner: ${buyProcessError}`, 8000);
       isBuyingMainer = false;
+      showPaymentModal = false; // Ensure modal doesn't open on error
+      selectedListingForPurchase = null; // Clear any partial state
     }
   }
 
@@ -226,6 +228,9 @@
       console.log("Step 3: Purchase completed successfully!");
       buyProcessStep = 'success';
       
+      // Close the modal immediately after success
+      showPaymentModal = false;
+      
       toastStore.success(
         `Successfully purchased ${selectedListingForPurchase.mainerName}! The mAIner has been transferred to your account.`,
         8000
@@ -239,6 +244,10 @@
       console.error("Error completing purchase:", error);
       buyProcessStep = 'error';
       buyProcessError = error.message || 'Failed to complete purchase';
+      
+      // Close modal on error too
+      showPaymentModal = false;
+      
       toastStore.error(
         `Failed to complete purchase: ${buyProcessError}. Your payment was processed. Transaction ID: ${txId.toString().slice(0, 10)}... Please contact support.`,
         12000

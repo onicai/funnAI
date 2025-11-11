@@ -518,6 +518,7 @@ export interface GameStateCanister {
   'cleanOpenSubmissionsQueueAdmin' : ActorMethod<[], NatResult>,
   'cleanSubmissionsAdmin' : ActorMethod<[], AuthRecordResult>,
   'cleanUnlockedMainerStoragesAdmin' : ActorMethod<[], AuthRecordResult>,
+  'clearMarketplaceReservationsAdmin' : ActorMethod<[], AuthRecordResult>,
   'completeMainerSetupForUserAdmin' : ActorMethod<
     [OfficialMainerAgentCanister],
     MainerAgentCanisterResult

@@ -552,6 +552,7 @@ type GameStateCanister =
    cleanOpenSubmissionsQueueAdmin: () -> (NatResult);
    cleanSubmissionsAdmin: () -> (AuthRecordResult);
    cleanUnlockedMainerStoragesAdmin: () -> (AuthRecordResult);
+   clearMarketplaceReservationsAdmin: () -> (AuthRecordResult);
    completeMainerSetupForUserAdmin: (OfficialMainerAgentCanister) ->
     (MainerAgentCanisterResult);
    confirmUserMarketplaceMainerReservation:

@@ -1026,6 +1026,7 @@ export const idlFactory = ({ IDL }) => {
     'cleanOpenSubmissionsQueueAdmin' : IDL.Func([], [NatResult], []),
     'cleanSubmissionsAdmin' : IDL.Func([], [AuthRecordResult], []),
     'cleanUnlockedMainerStoragesAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'clearMarketplaceReservationsAdmin' : IDL.Func([], [AuthRecordResult], []),
     'completeMainerSetupForUserAdmin' : IDL.Func(
         [OfficialMainerAgentCanister],
         [MainerAgentCanisterResult],
