@@ -30,6 +30,7 @@
   let isBuyingMainer = false;
   let buyProcessStep: 'idle' | 'reserving' | 'payment' | 'completing' | 'success' | 'error' = 'idle';
   let buyProcessError: string = '';
+  let isCancelingReservation = false;
   
   // Reactive key to force MarketplaceListings to refresh
   let listingsRefreshKey = 0;
@@ -265,6 +266,8 @@
     // If user is closing the modal during payment step, cancel the reservation
     if (buyProcessStep === 'payment' && selectedListingForPurchase) {
       console.log("User canceled purchase, canceling reservation...");
+      isCancelingReservation = true;
+      
       try {
         await MarketplaceService.cancelReservation(selectedListingForPurchase.mainerId);
         console.log("Reservation canceled successfully");
@@ -279,6 +282,8 @@
       } catch (error) {
         console.error("Error canceling reservation:", error);
         // Don't show error to user, just log it
+      } finally {
+        isCancelingReservation = false;
       }
     }
     
@@ -428,12 +433,13 @@
 </div>
 
 <!-- Payment Modal -->
-<MarketplacePaymentModal 
-  isOpen={showPaymentModal}
-  onClose={handlePaymentModalClose}
-  onSuccess={handlePaymentSuccess}
-  listing={selectedListingForPurchase}
-/>
+  <MarketplacePaymentModal
+    isOpen={showPaymentModal}
+    onClose={handlePaymentModalClose}
+    onSuccess={handlePaymentSuccess}
+    listing={selectedListingForPurchase}
+    isCanceling={isCancelingReservation}
+  />
 
 <!-- Toast Notifications -->
 <ToastContainer />

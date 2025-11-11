@@ -11,6 +11,7 @@
   export let onClose: () => void = () => {};
   export let onSuccess: (txId: bigint) => void = () => {};
   export let listing: any = null; // The marketplace listing being purchased
+  export let isCanceling: boolean = false; // Loading state when canceling reservation
   
   // ICP Token configuration
   const ICP_LEDGER_CANISTER_ID = "ryjl3-tyaaa-aaaaa-aaaba-cai";
@@ -176,7 +177,7 @@
   }
   
   function handleClose() {
-    if (!isValidating) {
+    if (!isValidating && !isCanceling) {
       errorMessage = "";
       onClose();
     }
@@ -325,10 +326,15 @@
         <button
           type="button"
           on:click={handleClose}
-          class="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={isValidating}
+          class="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          disabled={isValidating || isCanceling}
         >
-          Cancel
+          {#if isCanceling}
+            <span class="w-4 h-4 border-2 border-gray-600 dark:border-gray-300 border-t-transparent rounded-full animate-spin"></span>
+            <span>Canceling...</span>
+          {:else}
+            <span>Cancel</span>
+          {/if}
         </button>
         <button
           type="button"
