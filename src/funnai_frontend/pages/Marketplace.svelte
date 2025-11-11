@@ -37,37 +37,71 @@
   let listingsRefreshKey = 0;
 
   let hasRunCleanup = false;
+  let isCleaningReservation = false;
 
   onMount(() => {
     initialize();
   });
 
   // Reactive: Clean up stale reservations when user becomes authenticated
-  $: if ($store.isAuthed && !hasRunCleanup) {
+  $: if ($store.isAuthed && !hasRunCleanup && !isCleaningReservation) {
     console.log('🔄 Auth state changed, running cleanup check...');
     clearStaleReservationsOnAuth();
   }
 
   async function clearStaleReservationsOnAuth() {
-    hasRunCleanup = true;
-    console.log('🔍 Checking for stale reservations on auth...');
-    const cleanupResult = await MarketplaceService.clearStaleReservation();
-    if (cleanupResult.hadReservation) {
-      console.log('✅ Cleared stale reservation after auth');
-      toastStore.info('Cleared pending reservation from previous session', 3000);
-      
-      // Wait for backend to update
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Verify cleanup worked
-      const verifyResult = await MarketplaceService.getUserReservation();
-      console.log('🔍 Verification after auth cleanup:', verifyResult);
-      
-      // Refresh listings
-      listingsRefreshKey++;
-    } else {
-      console.log('✅ No stale reservations found on auth');
+    if (isCleaningReservation) {
+      console.log('⚠️ Cleanup already in progress, skipping');
+      return;
     }
+    
+    isCleaningReservation = true;
+    hasRunCleanup = true;
+    
+    try {
+      console.log('🔍 Checking for stale reservations on auth...');
+      const cleanupResult = await MarketplaceService.clearStaleReservation();
+      
+      if (cleanupResult.hadReservation) {
+        console.log('✅ Cleared stale reservation after auth');
+        toastStore.success('Cleared stale reservation - marketplace is ready!', 4000);
+        
+        // Wait for backend to fully process
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Verify cleanup worked
+        const verifyResult = await MarketplaceService.getUserReservation();
+        console.log('🔍 Verification after auth cleanup:', verifyResult);
+        
+        if (verifyResult.reservation) {
+          console.error('❌ Verification failed - reservation still exists!');
+          toastStore.error('Failed to clear reservation. Please wait 2 minutes or contact support.', 8000);
+        } else {
+          console.log('✅ Verification passed - no reservation exists');
+        }
+        
+        // Refresh listings
+        listingsRefreshKey++;
+      } else {
+        console.log('✅ No stale reservations found on auth');
+      }
+    } catch (error) {
+      console.error('❌ Error during cleanup:', error);
+      toastStore.error('Error clearing reservation: ' + error.message, 6000);
+    } finally {
+      isCleaningReservation = false;
+    }
+  }
+
+  // Manual cleanup function (for button)
+  async function manualClearReservation() {
+    console.log('🔧 Manual cleanup requested...');
+    hasRunCleanup = false; // Reset the flag to allow cleanup
+    await clearStaleReservationsOnAuth();
+    
+    // Reload listings after manual cleanup
+    await loadMarketplaceStats();
+    listingsRefreshKey++;
   }
 
   // Reactive: reload user listings when auth state changes
@@ -395,6 +429,42 @@
           </p>
         </div>
       </div>
+
+      <!-- Stale Reservation Warning Banner -->
+      {#if $store.isAuthed}
+        {#await MarketplaceService.getUserReservation() then reservationCheck}
+          {#if reservationCheck.success && reservationCheck.reservation}
+            <div class="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg">
+              <div class="flex items-start space-x-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div class="flex-1">
+                  <h3 class="text-lg font-semibold text-yellow-900 dark:text-yellow-200">Stale Reservation Detected</h3>
+                  <p class="text-sm text-yellow-800 dark:text-yellow-300 mt-1">
+                    You have a pending reservation from a previous session. This prevents you from purchasing other mAIners.
+                  </p>
+                  <button
+                    on:click={manualClearReservation}
+                    disabled={isCleaningReservation}
+                    class="mt-3 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                  >
+                    {#if isCleaningReservation}
+                      <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Clearing...</span>
+                    {:else}
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span>Clear Reservation Now</span>
+                    {/if}
+                  </button>
+                </div>
+              </div>
+            </div>
+          {/if}
+        {/await}
+      {/if}
 
       <!-- Stats Cards -->
       {#if !isLoading}

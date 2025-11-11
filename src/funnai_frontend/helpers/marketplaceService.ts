@@ -185,9 +185,20 @@ export class MarketplaceService {
       
       const reservation = await $store.gameStateCanisterActor.getUserMarketplaceReservation();
       
-      // The backend returns ?MainerMarketplaceListing, which comes as an empty array [] when null
-      // Check if it's actually a reservation or just an empty array
-      const actualReservation = (Array.isArray(reservation) && reservation.length === 0) ? null : reservation;
+      // The backend returns ?MainerMarketplaceListing
+      // Candid optional types come as empty array [] when null, or [value] when present
+      let actualReservation = null;
+      
+      if (Array.isArray(reservation)) {
+        if (reservation.length > 0) {
+          // Extract the first element from the array
+          actualReservation = reservation[0];
+        }
+        // else: empty array means no reservation
+      } else if (reservation) {
+        // Direct object (shouldn't happen but handle it)
+        actualReservation = reservation;
+      }
       
       return {
         success: true,
@@ -227,14 +238,19 @@ export class MarketplaceService {
         return { success: true, hadReservation: false };
       }
       
+      // Extract the actual reservation object (might be wrapped in array)
+      const reservation = Array.isArray(reservationResult.reservation) && reservationResult.reservation.length > 0
+        ? reservationResult.reservation[0]
+        : reservationResult.reservation;
+      
       console.log('🔧 Found stale reservation, clearing:', {
-        address: reservationResult.reservation.address,
-        priceE8S: reservationResult.reservation.priceE8S,
-        listedBy: reservationResult.reservation.listedBy.toString()
+        address: reservation.address,
+        priceE8S: reservation.priceE8S,
+        listedBy: reservation.listedBy?.toString?.() || reservation.listedBy
       });
       
       // Cancel the stale reservation
-      const cancelResult = await this.cancelReservation(reservationResult.reservation.address);
+      const cancelResult = await this.cancelReservation(reservation.address);
       
       console.log('🔧 Cancel result:', cancelResult);
       
