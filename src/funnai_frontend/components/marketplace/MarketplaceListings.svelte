@@ -51,9 +51,16 @@
         // Convert backend listings to frontend format
         listings = result.listings.map(listing => {
           const priceE8s = Number(listing.priceE8S);
-          const priceICP = priceE8s / 100_000_000;
+          // Use parseFloat with toFixed to avoid floating point display issues
+          const priceICP = parseFloat((priceE8s / 100_000_000).toFixed(8));
           const isOwnListing = currentUserPrincipal && 
             listing.listedBy.toString() === currentUserPrincipal;
+          
+          console.log('📊 Listing Price:', {
+            address: listing.address.slice(0, 10) + '...',
+            priceE8S: priceE8s,
+            priceICP: priceICP
+          });
           
           return {
             id: listing.address, // Use address as unique ID
@@ -145,6 +152,11 @@
     return `${principal.slice(0, 5)}...${principal.slice(-5)}`;
   }
 
+  function formatPrice(price: number): string {
+    // Format to 2 decimal places, but remove trailing zeros
+    return price.toFixed(8).replace(/\.?0+$/, '');
+  }
+
   $: ownListings = listings.filter(l => l.isOwnListing);
   $: otherListings = listings.filter(l => !l.isOwnListing);
 </script>
@@ -219,7 +231,7 @@
                   <div class="flex items-center justify-between mb-3">
                     <span class="text-sm text-gray-600 dark:text-gray-400">Price:</span>
                     <span class="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                      {listing.price} ICP
+                      {formatPrice(listing.price)} ICP
                     </span>
                   </div>
                   
@@ -346,7 +358,7 @@
                       <span>Price:</span>
                     </div>
                     <span class="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                      {listing.price} ICP
+                      {formatPrice(listing.price)} ICP
                     </span>
                   </div>
                   
@@ -496,7 +508,7 @@
               <span>Processing...</span>
             {:else}
               <ShoppingBag class="w-5 h-5" />
-              <span>Buy Now for {selectedListing.price} ICP</span>
+              <span>Buy Now for {formatPrice(selectedListing.price)} ICP</span>
             {/if}
           </button>
         {/if}

@@ -47,7 +47,16 @@ export class MarketplaceService {
       }
       
       // Convert ICP to e8s (smallest unit)
-      const priceE8s = BigInt(Math.floor(priceICP * 100_000_000));
+      // Use string multiplication to avoid floating point precision issues
+      const priceE8s = BigInt(Math.round(priceICP * 100_000_000));
+      
+      console.log('💰 Price Conversion:', {
+        inputICP: priceICP,
+        calculatedE8s: priceICP * 100_000_000,
+        roundedE8s: Math.round(priceICP * 100_000_000),
+        finalE8s: priceE8s.toString(),
+        backToICP: Number(priceE8s) / 100_000_000
+      });
       
       // Minimum price check (0.01 ICP = 1,000,000 e8s)
       if (priceE8s < 1_000_000n) {
