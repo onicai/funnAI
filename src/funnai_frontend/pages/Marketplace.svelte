@@ -35,6 +35,18 @@
     initialize();
   });
 
+  // Reactive: reload user listings when auth state changes
+  $: if ($store.isAuthed) {
+    loadUserListings();
+  } else {
+    userListedMainerAddresses = [];
+  }
+
+  // Reactive: reload when switching to sell tab
+  $: if (activeTab === 'sell' && $store.isAuthed) {
+    loadUserListings();
+  }
+
   async function initialize() {
     isLoading = true;
     try {
@@ -67,16 +79,18 @@
 
   async function loadUserListings() {
     if (!$store.isAuthed) {
+      console.log('Not authenticated, clearing user listings');
       userListedMainerAddresses = [];
       return;
     }
 
     try {
+      console.log('Loading user listings...');
       const result = await MarketplaceService.getUserListings();
       
       if (result.success && result.listings) {
         userListedMainerAddresses = result.listings.map(listing => listing.address);
-        console.log(`User has ${userListedMainerAddresses.length} mAIners listed`);
+        console.log(`✅ User has ${userListedMainerAddresses.length} mAIners listed:`, userListedMainerAddresses);
       } else {
         console.error("Failed to load user listings:", result.error);
         userListedMainerAddresses = [];

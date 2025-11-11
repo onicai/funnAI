@@ -31,12 +31,22 @@
       return;
     }
 
+    console.log('MyMainersForSale: loadMyMainers called');
+    console.log('  Total canisters:', agentCanistersInfo.length);
+    console.log('  Listed mAIners to filter:', listedMainers);
+
     // Filter out unlocked mAIners, already-listed mAIners, and only show active ones that can be sold
     myMainers = agentCanistersInfo
       .filter(canister => {
         const isUnlocked = canister.status && 'Unlocked' in canister.status;
         const isAlreadyListed = listedMainers.includes(canister.address);
-        return !isUnlocked && canister.address && !isAlreadyListed;
+        const shouldShow = !isUnlocked && canister.address && !isAlreadyListed;
+        
+        if (!shouldShow && canister.address) {
+          console.log(`  Filtering out ${canister.address}: unlocked=${isUnlocked}, listed=${isAlreadyListed}`);
+        }
+        
+        return shouldShow;
       })
       .map((canister, index) => {
         let mainerType = 'Unknown';
@@ -58,6 +68,8 @@
           burnedCycles: canister.burnedCycles || 0,
         };
       });
+    
+    console.log(`  ✅ Showing ${myMainers.length} available mAIners for sale`);
   }
 
   function toggleMainerSelection(mainerId: string) {
