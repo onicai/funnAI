@@ -30,6 +30,9 @@
   let isBuyingMainer = false;
   let buyProcessStep: 'idle' | 'reserving' | 'payment' | 'completing' | 'success' | 'error' = 'idle';
   let buyProcessError: string = '';
+  
+  // Reactive key to force MarketplaceListings to refresh
+  let listingsRefreshKey = 0;
 
   onMount(() => {
     initialize();
@@ -265,6 +268,14 @@
       try {
         await MarketplaceService.cancelReservation(selectedListingForPurchase.mainerId);
         console.log("Reservation canceled successfully");
+        
+        // Refresh marketplace listings so the mAIner appears again
+        await loadMarketplaceStats();
+        
+        // Trigger a refresh of the MarketplaceListings component
+        // We'll do this by incrementing a reactive key
+        listingsRefreshKey++;
+        
       } catch (error) {
         console.error("Error canceling reservation:", error);
         // Don't show error to user, just log it
@@ -402,11 +413,13 @@
           listedMainers={userListedMainerAddresses}
         />
       {:else}
-        <MarketplaceListings 
-          onBuyMainer={handleBuyMainer}
-          onCancelListing={handleCancelListing}
-          isProcessing={isBuyingMainer}
-        />
+        {#key listingsRefreshKey}
+          <MarketplaceListings 
+            onBuyMainer={handleBuyMainer}
+            onCancelListing={handleCancelListing}
+            isProcessing={isBuyingMainer}
+          />
+        {/key}
       {/if}
     {/if}
   </div>
