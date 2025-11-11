@@ -2,7 +2,6 @@
   import { store } from "../../stores/store";
   import { onMount } from "svelte";
   import { getMainerVisualIdentity } from "../../helpers/utils/mainerIdentity";
-  import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
   import { Check, X, ShoppingCart, Sparkles } from "lucide-svelte";
 
   export let onListToMarketplace: (mainerIds: string[], prices: Record<string, number>) => Promise<void>;
@@ -49,21 +48,10 @@
         return shouldShow;
       })
       .map((canister, index) => {
-        let mainerType = 'Unknown';
-        if (canister.canisterType) {
-          if ('Own' in canister.canisterType.MainerAgent) {
-            mainerType = 'Own';
-          } else if ('ShareAgent' in canister.canisterType.MainerAgent) {
-            mainerType = 'Shared';
-          }
-        }
-
         return {
           id: canister.address,
           name: `mAIner ${canister.address?.slice(0, 5)}`,
           status: canister.uiStatus || "active",
-          cycleBalance: canister.cycleBalance || 0,
-          mainerType,
           createdAt: canister.creationTimestamp ? Number(canister.creationTimestamp / 1000000n) : null,
           burnedCycles: canister.burnedCycles || 0,
         };
@@ -226,17 +214,9 @@
                       </div>
                       
                       <div>
-                        <div class="flex items-center space-x-2">
-                          <h3 class="font-semibold text-gray-900 dark:text-white">🦜 {mainer.name}</h3>
-                          <span class="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
-                            {mainer.mainerType}
-                          </span>
-                        </div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          {formatLargeNumber(mainer.cycleBalance / 1_000_000_000_000, 2, false)} TCYCLES
-                        </p>
+                        <h3 class="font-semibold text-gray-900 dark:text-white">🦜 {mainer.name}</h3>
                         {#if mainer.createdAt}
-                          <p class="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+                          <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
                             Created: {formatDate(mainer.createdAt)}
                           </p>
                         {/if}
