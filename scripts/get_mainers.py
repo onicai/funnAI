@@ -51,8 +51,77 @@ def get_mainers_for_user(network, user):
     mainers = get_mainers(network)
     if not mainers:
         return []
-    
+
     return [mainer for mainer in mainers if (mainer.get('address','') != '' and mainer.get('ownedBy', '') == user)]
+
+def get_mainer_setting(network, address):
+    """Get the mainer setting (Low, Medium, High, VeryHigh, Custom) for a given mainer."""
+    try:
+        cmd = ["dfx", "canister", "call", address, "getMainerStatisticsAdmin", "--network", network, "--output", "json"]
+        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True, timeout=10)
+        data = json.loads(output)
+        cycles_burn_rate = data.get('Ok', {}).get('cyclesBurnRate', {}).get('cycles', None)
+
+        # Map cycles burn rate to human-readable setting
+        if cycles_burn_rate == "1_000_000_000_000":
+            return "Low"
+        elif cycles_burn_rate == "2_000_000_000_000":
+            return "Medium"
+        elif cycles_burn_rate == "4_000_000_000_000":
+            return "High"
+        elif cycles_burn_rate == "6_000_000_000_000":
+            return "VeryHigh"
+        elif cycles_burn_rate is not None:
+            return "Custom"
+        else:
+            return "Unknown"
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, json.JSONDecodeError, KeyError):
+        return "Unable to query"
+
+def get_mainer_is_active(network, address):
+    """Check if a mainer is active (not paused due to low cycle balance)."""
+    try:
+        cmd = ["dfx", "canister", "call", address, "getIssueFlagsAdmin", "--network", network, "--output", "json"]
+        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True, timeout=10)
+        data = json.loads(output)
+        low_cycle_balance = data.get('Ok', {}).get('lowCycleBalance', None)
+
+        if low_cycle_balance is None:
+            return None
+        return not low_cycle_balance  # Active if lowCycleBalance is False
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, json.JSONDecodeError, KeyError):
+        return None
+
+def get_daily_burn_rate_for_setting(setting, is_active):
+    """Get the daily burn rate in trillion cycles for a given setting."""
+    if not is_active:
+        return 0
+
+    if setting == "Low":
+        return DAILY_BURN_RATE_LOW
+    elif setting == "Medium":
+        return DAILY_BURN_RATE_MEDIUM
+    elif setting == "High":
+        return DAILY_BURN_RATE_HIGH
+    elif setting == "VeryHigh":
+        return DAILY_BURN_RATE_VERY_HIGH
+    else:
+        return 0  # Custom, Unknown, or Unable to query
+
+def group_mainers_by_owner(mainers):
+    """Group mainers by their owner (principal ID)."""
+    grouped = defaultdict(list)
+    for mainer in mainers:
+        address = mainer.get('address', '')
+        canister_type_dict = mainer.get('canisterType', {}).get("MainerAgent", {})
+        canister_type = list(canister_type_dict.keys())[0] if canister_type_dict else ''
+
+        # Only include ShareAgent mainers with valid addresses
+        if canister_type == "ShareAgent" and address != "":
+            owner = mainer.get('ownedBy', 'Unknown')
+            grouped[owner].append(address)
+
+    return grouped
 
 def write_mainers_env_file(mainers, env_file_path, network):
     """Write ShareAgent mainers to .env file."""
@@ -123,7 +192,17 @@ def update_poaiw_files(mainers, network):
     print(f"Updated {len(share_agent_mainers)} ShareAgent mainers in {os.path.abspath(POAIW_DFX_JSON_PATH)}")
     print(f"Updated {len(share_agent_mainers)} ShareAgent mainers in {os.path.abspath(POAIW_CANISTER_IDS_PATH)}")
 
-def main(network, user, skip_poaiw_update=False, daily_metrics=False):
+def get_mainer_info_parallel(network, address):
+    """Get both setting and active status for a mainer in a single call (for parallel processing)."""
+    setting = get_mainer_setting(network, address)
+    is_active = get_mainer_is_active(network, address)
+    return {
+        "address": address,
+        "setting": setting,
+        "is_active": is_active
+    }
+
+def main(network, user, skip_poaiw_update=False, daily_metrics=False, limit=None, statistics=False):
     print("----------------------------------------------")
 
     # Get mainers based on user parameter
@@ -138,34 +217,20 @@ def main(network, user, skip_poaiw_update=False, daily_metrics=False):
         print(f"Found {len(mainers)} mainers for user '{user}' on network '{network}'")
         for mainer in mainers:
             address = mainer.get('address', 'N/A')
-            # Get mAIner burn rate setting
-            try:
-                cmd = ["dfx", "canister", "call", address, "getMainerStatisticsAdmin", "--network", network, "--output", "json"]
-                output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
-                data = json.loads(output)
-                cycles_burn_rate = data.get('Ok', {}).get('cyclesBurnRate', {}).get('cycles', None)
-
-                # Map cycles burn rate to human-readable setting
-                setting = "Unknown"
-                if cycles_burn_rate == "1_000_000_000_000":
-                    setting = "Low"
-                elif cycles_burn_rate == "2_000_000_000_000":
-                    setting = "Medium"
-                elif cycles_burn_rate == "4_000_000_000_000":
-                    setting = "High"
-                elif cycles_burn_rate == "6_000_000_000_000":
-                    setting = "VeryHigh"
-                else:
-                    setting = "Custom"
-
-                print(f"  - {address} ({setting})")
-            except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError):
-                print(f"  - {address} (Unable to query setting)")
+            setting = get_mainer_setting(network, address)
+            print(f"  - {address} ({setting})")
         env_file_path = os.path.join(SCRIPT_DIR, f"canister_ids_mainers-{network}-{user}.env")
 
     if not mainers or len(mainers) == 0:
         print(f"No mainers found for the specified network {network}.")
         return
+
+    # Apply limit if specified
+    original_count = len(mainers)
+    if limit is not None and limit > 0:
+        mainers = mainers[:limit]
+        print(f"Limiting to first {limit} mainers (out of {original_count} total)")
+        print("----------------------------------------------")
 
     # Update PoAIW files unless skipped (only when processing all mainers)
     if not skip_poaiw_update and (user == "all" or user is None):
@@ -173,6 +238,123 @@ def main(network, user, skip_poaiw_update=False, daily_metrics=False):
 
     # Write mainers to .env file
     mainers_created = write_mainers_env_file(mainers, env_file_path, network)
+
+    # Display mainers grouped by principal ID with settings (only for "all" users and when --statistics flag is set)
+    if statistics and (user == "all" or user is None):
+        print("----------------------------------------------")
+        print("mAIners grouped by Principal ID with settings:")
+        print("----------------------------------------------")
+
+        grouped_mainers = group_mainers_by_owner(mainers)
+
+        # Sort by number of mainers (descending) then by principal ID
+        sorted_owners = sorted(grouped_mainers.items(), key=lambda x: (-len(x[1]), x[0]))
+
+        # Prepare data for JSON output
+        principals_data = {}
+        total_network_daily_burn = 0
+
+        # Use ThreadPoolExecutor for parallel processing
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        for owner, addresses in sorted_owners:
+            print(f"\nPrincipal: {owner}")
+            print(f"  Total mainers: {len(addresses)}")
+            print(f"  Fetching statistics for {len(addresses)} mainers in parallel...")
+
+            # Get settings and calculate daily burn rate for each mainer in parallel
+            settings_count = defaultdict(int)
+            total_daily_burn_rate = 0
+            active_count = 0
+            paused_count = 0
+            mainer_details = []
+
+            # Fetch all mainer info in parallel
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                future_to_address = {
+                    executor.submit(get_mainer_info_parallel, network, address): address
+                    for address in addresses
+                }
+
+                for future in as_completed(future_to_address):
+                    try:
+                        info = future.result()
+                        address = info["address"]
+                        setting = info["setting"]
+                        is_active = info["is_active"]
+
+                        settings_count[setting] += 1
+
+                        if is_active is True:
+                            active_count += 1
+                            daily_burn = get_daily_burn_rate_for_setting(setting, is_active)
+                            total_daily_burn_rate += daily_burn
+                        elif is_active is False:
+                            paused_count += 1
+
+                        mainer_details.append({
+                            "address": address,
+                            "setting": setting,
+                            "is_active": is_active
+                        })
+                    except Exception as e:
+                        address = future_to_address[future]
+                        print(f"  Error fetching info for {address}: {e}")
+                        mainer_details.append({
+                            "address": address,
+                            "setting": "Unable to query",
+                            "is_active": None
+                        })
+
+            total_network_daily_burn += total_daily_burn_rate
+
+            # Display settings summary
+            print(f"  Settings breakdown:")
+            for setting in ["Low", "Medium", "High", "VeryHigh", "Custom", "Unknown", "Unable to query"]:
+                if settings_count[setting] > 0:
+                    print(f"    - {setting}: {settings_count[setting]}")
+
+            print(f"  Active mainers: {active_count}")
+            print(f"  Paused mainers: {paused_count}")
+            print(f"  Total daily burn rate (active): {total_daily_burn_rate} trillion cycles/day")
+
+            # Store data for JSON output
+            principals_data[owner] = {
+                "total_mainers": len(addresses),
+                "active_mainers": active_count,
+                "paused_mainers": paused_count,
+                "addresses": addresses,
+                "mainer_details": mainer_details,
+                "settings": dict(settings_count),
+                "total_daily_burn_rate_active": total_daily_burn_rate
+            }
+
+        print(f"\nTotal network daily burn rate (active): {total_network_daily_burn} trillion cycles/day")
+        print("\n----------------------------------------------")
+
+        # Write JSON summary file
+        timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        json_file_path = os.path.join(SCRIPT_DIR, f"get_mainers_by_principal-{network}.json")
+
+        # Sort principals by burn rate (descending)
+        sorted_principals_data = dict(
+            sorted(principals_data.items(), key=lambda x: x[1]["total_daily_burn_rate_active"], reverse=True)
+        )
+
+        json_output = {
+            "network": network,
+            "timestamp": timestamp,
+            "total_mainers": len(mainers),
+            "total_principals": len(principals_data),
+            "total_network_daily_burn_rate_active": total_network_daily_burn,
+            "principals": sorted_principals_data
+        }
+
+        with open(json_file_path, 'w') as f:
+            json.dump(json_output, f, indent=2)
+
+        print(f"Written principal ownership summary to {os.path.abspath(json_file_path)}")
+        print("----------------------------------------------")
 
     # Calculate daily metrics if requested
     if daily_metrics and (user == "all" or user is None):
@@ -369,5 +551,16 @@ if __name__ == "__main__":
         action="store_true",
         help="Calculate daily metrics including cycle burn rates and active/paused status",
     )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Limit the number of mainers to process (for testing purposes)",
+    )
+    parser.add_argument(
+        "--statistics",
+        action="store_true",
+        help="Calculate per-principal statistics including settings and daily burn rates",
+    )
     args = parser.parse_args()
-    main(args.network, args.user, args.skip_poaiw_update, args.daily_metrics)
+    main(args.network, args.user, args.skip_poaiw_update, args.daily_metrics, args.limit, args.statistics)
