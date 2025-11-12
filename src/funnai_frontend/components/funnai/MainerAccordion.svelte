@@ -14,6 +14,7 @@
   import { tooltip } from "../../helpers/utils/tooltip";
   import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped, getWhitelistAgentPrice, getPauseWhitelistMainerCreationFlag, getIsWhitelistPhaseActive } from "../../helpers/gameState";
   import { mainerHealthService, mainerHealthStatuses } from "../../helpers/mainerHealthService";
+  import { MarketplaceService } from "../../helpers/marketplaceService";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -71,6 +72,9 @@
   let showCelebration = false;
   let celebrationAmount = "";
   let celebrationToken = "";
+
+  // Track mAIners listed for sale on marketplace
+  let listedMainerAddresses = new Set<string>();
 
   // Reactive counters for mAIner status
   $: activeMainers = agents.filter(agent => agent.uiStatus === 'active').length;
@@ -379,6 +383,25 @@
       protocolFlagsLoading = false;
     };    
   };
+
+  async function loadMarketplaceListings() {
+    if (!isAuthenticated) {
+      listedMainerAddresses = new Set<string>();
+      return;
+    }
+    
+    try {
+      const result = await MarketplaceService.getUserListings();
+      if (result.success && result.listings) {
+        listedMainerAddresses = new Set(result.listings.map(listing => listing.address));
+      } else {
+        listedMainerAddresses = new Set<string>();
+      }
+    } catch (error) {
+      console.error("Error loading marketplace listings:", error);
+      listedMainerAddresses = new Set<string>();
+    }
+  }
 
   async function handleWhitelistMainerCreation(txId?: string, selectedMainer?: any) {
     try {
@@ -732,6 +755,9 @@
     // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
     agents = await loadAgents();
     
+    // Load marketplace listings to show "For Sale" badges
+    await loadMarketplaceListings();
+    
     // Note: Health checks are started reactively below when agentCanisterActors updates
     
     // Only auto-open create accordion if no agents exist and not in whitelist phase
@@ -756,6 +782,11 @@
 
   // Track which mAIners have health checks running to prevent duplicate starts
   let healthChecksStarted = new Set();
+
+  // Reload marketplace listings when authentication changes
+  $: if (isAuthenticated !== undefined) {
+    loadMarketplaceListings();
+  }
 
   // Start health checks reactively when both actors and info are loaded
   $: {
@@ -1736,6 +1767,16 @@
                       <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" stroke-opacity="0.75"/>
                     </svg>
                     LLM Setup
+                  </span>
+                {/if}
+                
+                <!-- Marketplace listing badge -->
+                {#if listedMainerAddresses.has(agent.id)}
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100/80 text-purple-800 border border-purple-300/50 backdrop-blur-sm">
+                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    For Sale
                   </span>
                 {/if}
                 

@@ -695,12 +695,11 @@ type GameStateCanister =
    icrc7_tokens: (opt nat, opt nat) -> (vec nat) query;
    icrc7_total_supply: () -> (nat) query;
    initializeOpenSubmissionsQueueAdmin: () -> (AuthRecordResult);
-   isMainerInReservedStorage: (text) -> (bool) query;
+   isMainerReservedOnMarketplaceAdmin: (text) -> (bool) query;
    migrateArchivedChallengesAdmin: () -> (NatResult);
    migrateScoredResponsesForChallengeAdmin: (text) -> (AuthRecordResult);
    migrateSubmissionsAdmin: () -> (AuthRecordResult);
    migrateWinnerDeclarationsAdmin: (vec text) -> (AuthRecordResult);
-   rebuildUserMainerMappingAdmin: () -> (AuthRecordResult);
    reinstallMainerControllerAdmin: (MainerctrlReinstallInput) ->
     (MainerAgentCanisterResult);
    removeRedeemedFunnaiTransactionBlockAdmin: (PaymentTransactionBlockId) ->

@@ -1345,7 +1345,11 @@ export const idlFactory = ({ IDL }) => {
         [AuthRecordResult],
         [],
       ),
-    'isMainerInReservedStorage' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
+    'isMainerReservedOnMarketplaceAdmin' : IDL.Func(
+        [IDL.Text],
+        [IDL.Bool],
+        ['query'],
+      ),
     'migrateArchivedChallengesAdmin' : IDL.Func([], [NatResult], []),
     'migrateScoredResponsesForChallengeAdmin' : IDL.Func(
         [IDL.Text],
@@ -1358,7 +1362,6 @@ export const idlFactory = ({ IDL }) => {
         [AuthRecordResult],
         [],
       ),
-    'rebuildUserMainerMappingAdmin' : IDL.Func([], [AuthRecordResult], []),
     'reinstallMainerControllerAdmin' : IDL.Func(
         [MainerctrlReinstallInput],
         [MainerAgentCanisterResult],
