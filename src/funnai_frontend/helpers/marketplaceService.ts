@@ -369,7 +369,7 @@ export class MarketplaceService {
       
       // Check if mAIner is stuck in reserved storage (diagnostic)
       try {
-        const isInReservedStorage = await $store.gameStateCanisterActor.isMainerInReservedStorage(mainerAddress);
+        const isInReservedStorage = await $store.gameStateCanisterActor.isMainerReservedOnMarketplaceAdmin(mainerAddress);
         console.log('🔍 Is mAIner in reserved storage?', isInReservedStorage);
         if (isInReservedStorage) {
           console.error('❌ mAIner is stuck in reserved storage! This should not happen.');
