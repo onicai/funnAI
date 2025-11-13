@@ -23,28 +23,29 @@ MAINER=37wzp-laaaa-aaaaa-qc6jq-cai
 MAINER=3kric-kiaaa-aaaaa-qc6ka-cai
 
 ```bash
+NETWORK=prd
 # Step 1: Set correct type & register with ShareService
-dfx canister call --ic $MAINER setMainerCanisterType '(variant {ShareAgent} )'
-dfx canister call --ic $MAINER setShareServiceCanisterId '("rilmv-caaaa-aaaaa-qandq-cai")'
+dfx canister call --network $NETWORK $MAINER setMainerCanisterType '(variant {ShareAgent} )'
+dfx canister call --network $NETWORK $MAINER setShareServiceCanisterId '("rilmv-caaaa-aaaaa-qandq-cai")'
 # verify
-dfx canister call --ic $MAINER getMainerCanisterType
-dfx canister --ic call $MAINER getGameStateCanisterId 
-dfx canister --ic call $MAINER health
-dfx canister --ic call $MAINER getMaintenanceFlag
+dfx canister call --network $NETWORK $MAINER getMainerCanisterType
+dfx canister --network $NETWORK call $MAINER getGameStateCanisterId 
+dfx canister --network $NETWORK call $MAINER health
+dfx canister --network $NETWORK call $MAINER getMaintenanceFlag
 
 # Step 2: Turn maintenance flag off, so health endpoint will work, then upgrade to fix remaining steps
-dfx canister --ic stop $MAINER
-dfx canister --ic snapshot create $MAINER
-dfx canister --ic start $MAINER
-dfx canister --ic call $MAINER toggleMaintenanceFlagAdmin
+dfx canister --network $NETWORK stop $MAINER
+dfx canister --network $NETWORK snapshot create $MAINER
+dfx canister --network $NETWORK start $MAINER
+dfx canister --network $NETWORK call $MAINER toggleMaintenanceFlagAdmin
 # verify
-dfx canister --ic call $MAINER getMaintenanceFlag
+dfx canister --network $NETWORK call $MAINER getMaintenanceFlag
 
 # Step 3: Upgrade
-dfx canister --ic call r5m5y-diaaa-aaaaa-qanaa-cai upgradeMainerControllerAdmin "(record {canisterAddress = \"$MAINER\" })"
+dfx canister --network $NETWORK call r5m5y-diaaa-aaaaa-qanaa-cai upgradeMainerControllerAdmin "(record {canisterAddress = \"$MAINER\" })"
 
 # Verify
-dfx canister call --ic $MAINER getMainerCanisterType
-dfx canister --ic call $MAINER getGameStateCanisterId 
-dfx canister --ic call $MAINER health
+dfx canister call --network $NETWORK $MAINER getMainerCanisterType
+dfx canister --network $NETWORK call $MAINER getGameStateCanisterId 
+dfx canister --network $NETWORK call $MAINER health
 ```
