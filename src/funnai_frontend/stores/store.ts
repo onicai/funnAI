@@ -3,6 +3,10 @@ import { Principal } from "@dfinity/principal";
 import type { Identity } from "@dfinity/agent";
 import { HttpAgent, Actor } from "@dfinity/agent";
 import { AuthClient } from "@dfinity/auth-client";
+import { Signer } from "@slide-computer/signer";
+import { PostMessageTransport } from "@slide-computer/signer-web";
+import { IdentityKit, NFIDW, IdentityKitAuthType } from "@nfid/identitykit";
+import type { DelegationSignerClient } from "@nfid/identitykit";
 import UAParser from 'ua-parser-js';
 import {
   funnai_backend,
@@ -163,13 +167,13 @@ const STORAGE_KEYS = {
 
 type State = {
   isAuthed: "nfid" | "internetidentity" | null;
-  backendActor: typeof funnai_backend;
-  principal: Principal;
+  backendActor: typeof funnai_backend | null;
+  principal: Principal | null;
   accountId: string;
   error: string;
   isLoading: boolean;
-  gameStateCanisterActor: typeof game_state_canister;
-  mainerControllerCanisterActor: typeof mainer_ctrlb_canister;
+  gameStateCanisterActor: typeof game_state_canister | null;
+  mainerControllerCanisterActor: typeof mainer_ctrlb_canister | null;
   apiCanisterActor: typeof api_canister | null;
   userMainerCanisterActors: any[];
   userMainerAgentCanistersInfo: any[];
@@ -187,19 +191,19 @@ let defaultBackendCanisterId = backendCanisterId;
 
 const defaultState: State = {
   isAuthed: null,
-  backendActor: createBackendCanisterActor(defaultBackendCanisterId, {
+  backendActor: defaultBackendCanisterId ? createBackendCanisterActor(defaultBackendCanisterId, {
     agentOptions: { host: HOST },
-  }),
+  }) : null,
   principal: null,
   accountId: "",
   error: "",
   isLoading: false,
-  gameStateCanisterActor: createGameStateCanisterActor(gameStateCanisterId, {
+  gameStateCanisterActor: gameStateCanisterId ? createGameStateCanisterActor(gameStateCanisterId, {
     agentOptions: { host: HOST },
-  }),
-  mainerControllerCanisterActor: createMainerControllerCanisterActor(mainerControllerCanisterId, {
+  }) : null,
+  mainerControllerCanisterActor: mainerControllerCanisterId ? createMainerControllerCanisterActor(mainerControllerCanisterId, {
     agentOptions: { host: HOST },
-  }),
+  }) : null,
   apiCanisterActor: apiCanisterId ? createApiCanisterActor(apiCanisterId, {
     agentOptions: { host: HOST },
   }) : null,
@@ -470,6 +474,12 @@ export const createStore = ({
 
   const initBackendCanisterActor = async (loginType, identity: Identity) => {
     let canisterId = backendCanisterId;
+    
+    if (!canisterId) {
+      console.error("❌ Backend canister ID is undefined!");
+      return null;
+    }
+    
     let backendActor = createBackendCanisterActor(canisterId, {
       agentOptions: {
         identity,
@@ -509,6 +519,11 @@ export const createStore = ({
   const initGameStateCanisterActor = async (loginType, identity: Identity) => {
     let canisterId = gameStateCanisterId;
     
+    if (!canisterId) {
+      console.error("❌ Game State canister ID is undefined!");
+      return null;
+    }
+    
     let gameStateActor = createGameStateCanisterActor(canisterId, {
       agentOptions: {
         identity,
@@ -526,7 +541,7 @@ export const createStore = ({
       // Import canister IDs from the JSON file
       const canisterIds = {
         "demo": "p6pu7-5aaaa-aaaap-qqdfa-cai",
-        "prd": "bgm6p-5aaaa-aaaaf-qbzda-cai", 
+        "prd": "bgm6p-5aaaa-aaaaf-qbzda-cai",
         "testing": "nyxgs-uqaaa-aaaap-qqdia-cai",
         "development": "p6pu7-5aaaa-aaaap-qqdfa-cai",
         "ic": "bgm6p-5aaaa-aaaaf-qbzda-cai"
@@ -540,7 +555,7 @@ export const createStore = ({
     }
     
     if (!canisterId) {
-      console.error("No API canister ID found for current environment");
+      console.error("❌ No API canister ID found for current environment");
       return null;
     }
     
@@ -742,24 +757,49 @@ export const createStore = ({
 
   const nfidConnect = async () => {
     try {
-      authClient = await AuthClient.create();
-      if (await authClient.isAuthenticated()) {
-        const identity = await authClient.getIdentity();
-        await initNfid(identity);
-      } else {
-        await authClient.login({
-          onSuccess: async () => {
-            const identity = await authClient.getIdentity();
-            await initNfid(identity);
-          },
-          identityProvider: "https://nfid.one" + AUTH_PATH,
+      // Create Signer with PostMessageTransport for NFID
+      const transport = new PostMessageTransport({
+        url: NFIDW.providerUrl,
+        windowOpenerFeatures:
+          `left=${window.screen.width / 2 - 525 / 2}, `+
+          `top=${window.screen.height / 2 - 705 / 2},` +
+          `toolbar=0,location=0,menubar=0,width=525,height=705`,
+      });
+      const signer = new Signer({ transport });
+
+      // Create IdentityKit instance with delegation-based auth (like Internet Identity)
+      const identityKit = await IdentityKit.create({
+        signerClientOptions: {
+          signer,
           maxTimeToLive: days * hours * nanosecondsPerHour,
-          windowOpenerFeatures:
-            `left=${window.screen.width / 2 - 525 / 2}, `+
-            `top=${window.screen.height / 2 - 705 / 2},` +
-            `toolbar=0,location=0,menubar=0,width=525,height=705`,
-        });
-      }
+          idleOptions: {
+            idleTimeout: Number(days * hours) * 60 * 60 * 1000, // Convert to milliseconds (30 days * 24 hours * 60 min * 60 sec * 1000 ms)
+            disableIdle: false,
+            disableDefaultIdleCallback: true,
+            onIdle: async () => {
+              console.log("Session expired due to inactivity");
+              await disconnect();
+            }
+          }
+          // Note: onLogout callback removed to prevent infinite loop with disconnect()
+        },
+        authType: IdentityKitAuthType.DELEGATION
+      });
+
+      // Get the delegation client
+      const signerClient = identityKit.signerClient as DelegationSignerClient;
+      
+      // Login with NFID
+      await signerClient.login();
+      
+      // Get the identity
+      const identity = signerClient.getIdentity();
+      
+      // Store the identity kit instance for later use
+      (globalThis as any).__nfid_identity_kit__ = identityKit;
+      (globalThis as any).__nfid_signer_client__ = signerClient;
+      
+      await initNfid(identity);
     } catch (error) {
       console.error("Error in nfidConnect:", error);
       update((state) => ({
@@ -925,9 +965,18 @@ export const createStore = ({
     // Check isAuthed to determine which method to use to disconnect
     if (globalState.isAuthed === "nfid") {
       try {
-        await authClient.logout();
+        // Use the new IdentityKit logout if available
+        const signerClient = (globalThis as any).__nfid_signer_client__;
+        if (signerClient) {
+          await signerClient.logout();
+          delete (globalThis as any).__nfid_identity_kit__;
+          delete (globalThis as any).__nfid_signer_client__;
+        } else {
+          // Fallback to legacy AuthClient logout
+          await authClient.logout();
+        }
       } catch (error) {
-        console.error("NFid disconnect error: ", error);
+        console.error("NFID disconnect error: ", error);
       };
     } else if (globalState.isAuthed === "internetidentity") {
       try {

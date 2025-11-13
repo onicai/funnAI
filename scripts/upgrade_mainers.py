@@ -334,7 +334,8 @@ def run_command(
     cwd: Optional[str] = None,
     retry_on_transient_errors: bool = False,
     max_retries: int = 3,
-    retry_delay: float = 2.0
+    retry_delay: float = 2.0,
+    log_stdout: bool = False
 ) -> subprocess.CompletedProcess:
     """Run a command and return the result.
 
@@ -346,6 +347,7 @@ def run_command(
         retry_on_transient_errors: If True, retry on transient errors like timeouts, IC0508, etc.
         max_retries: Maximum number of retry attempts (only used if retry_on_transient_errors=True)
         retry_delay: Base delay between retries in seconds (exponential backoff applied)
+        log_stdout: If True, log stdout output line by line (only when capture_output=True)
     """
     # Log the command being executed with details
     cmd_str = ' '.join(command)
@@ -375,9 +377,14 @@ def run_command(
             "IC0503",  # Canister trapped
             "timeout",
             "Timeout",
+            "timed out",  # Operation timed out
+            "Operation timed out",
+            "tcp connect error",
             "connection refused",
             "Connection refused",
-            "temporarily unavailable"
+            "temporarily unavailable",
+            "error sending request",  # Network request errors
+            "client error (Connect)"  # Connection errors
         ]
         return any(indicator in stderr for indicator in transient_indicators)
 
@@ -386,6 +393,11 @@ def run_command(
         try:
             if capture_output:
                 result = subprocess.run(command, capture_output=True, text=True, check=check, cwd=cwd)
+                # Log stdout if requested (useful for dfx deploy output)
+                if log_stdout and result.stdout and result.stdout.strip():
+                    for line in result.stdout.strip().split('\n'):
+                        if line.strip():
+                            log_message(line, "INFO")
                 return result
             else:
                 result = subprocess.run(command, check=check, cwd=cwd)
@@ -393,11 +405,19 @@ def run_command(
         except subprocess.CalledProcessError as e:
             attempt += 1
 
+            # Collect error messages from all available sources
+            error_text = ""
+            if hasattr(e, 'stderr') and e.stderr:
+                error_text += e.stderr
+            if hasattr(e, 'stdout') and e.stdout:
+                error_text += " " + e.stdout
+            error_text += " " + str(e)
+
             # Check if we should retry
             should_retry = (
                 retry_on_transient_errors
                 and attempt < max_retries
-                and is_transient_error(e.stderr if hasattr(e, 'stderr') else "")
+                and is_transient_error(error_text)
             )
 
             if should_retry:
@@ -405,6 +425,8 @@ def run_command(
                 log_message(f"Transient error detected (attempt {attempt}/{max_retries}). Retrying in {delay}s...", "WARNING")
                 if e.stderr:
                     log_message(f"Error was: {e.stderr.strip()}", "WARNING")
+                elif str(e):
+                    log_message(f"Error was: {str(e)}", "WARNING")
                 time.sleep(delay)
                 continue
 
@@ -432,11 +454,11 @@ def get_mainers(network: str) -> List[Dict]:
         sys.exit(1)
 
 def get_canister_status(network: str, canister_id: str) -> Optional[str]:
-    """Get the status of a canister (Running, Stopping, or Stopped)."""
+    """Get the status of a canister (Running, Stopping, or Stopped) with retry on transient network errors."""
     try:
         result = run_command([
             "dfx", "canister", "--network", network, "status", canister_id
-        ])
+        ], retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
         for line in result.stdout.split('\n'):
             if line.startswith('Status:'):
                 return line.split(':')[1].strip()
@@ -446,11 +468,11 @@ def get_canister_status(network: str, canister_id: str) -> Optional[str]:
         return None
 
 def get_canister_wasm_hash(network: str, canister_id: str) -> Optional[str]:
-    """Get the wasm hash of a canister."""
+    """Get the wasm hash of a canister with retry on transient network errors."""
     try:
         result = run_command([
             "dfx", "canister", "--network", network, "info", canister_id
-        ])
+        ], retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
         for line in result.stdout.split('\n'):
             if 'Module hash:' in line:
                 return line.split(':')[1].strip()
@@ -460,7 +482,7 @@ def get_canister_wasm_hash(network: str, canister_id: str) -> Optional[str]:
         return None
 
 def stop_timer(network: str, canister_id: str, dry_run: bool = False) -> bool:
-    """Stop the timer execution for a canister."""
+    """Stop the timer execution for a canister with retry on transient network errors."""
     log_message(f"Stopping timer for {canister_id}...")
     command = [
         "dfx", "canister", "--network", network, "call",
@@ -471,9 +493,12 @@ def stop_timer(network: str, canister_id: str, dry_run: bool = False) -> bool:
         return True
 
     try:
-        result = run_command(command)
-        # Check if the response indicates success
-        if 'variant { Ok = record { auth = "You stopped the timers: ' in result.stdout:
+        result = run_command(command, retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
+        # Check if the response indicates success (Ok variant)
+        # Valid responses include:
+        # - "You stopped the timers: ..."
+        # - "No timers were running"
+        if 'variant { Ok' in result.stdout or  'variant { 17_724' in result.stdout:
             log_message(f"Timer stopped for {canister_id}", "SUCCESS")
             return True
         else:
@@ -484,7 +509,7 @@ def stop_timer(network: str, canister_id: str, dry_run: bool = False) -> bool:
         return False
 
 def start_timer(network: str, canister_id: str, dry_run: bool = False) -> bool:
-    """Start the timer execution for a canister."""
+    """Start the timer execution for a canister with retry on transient network errors."""
     log_message(f"Starting timer for {canister_id}...")
     command = [
         "dfx", "canister", "--network", network, "call",
@@ -495,7 +520,7 @@ def start_timer(network: str, canister_id: str, dry_run: bool = False) -> bool:
         return True
 
     try:
-        result = run_command(command)
+        result = run_command(command, retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
         # Check for the exact expected response
         expected_response = '(variant { Ok = record { auth = "You started the timers:  1, " } })'
         if expected_response in result.stdout:
@@ -553,7 +578,7 @@ def check_queue(network: str, canister_id: str) -> Tuple[bool, Optional[datetime
         return False, None
 
 def clear_queue(network: str, canister_id: str, dry_run: bool = False) -> bool:
-    """Clear the challenge queue for a canister."""
+    """Clear the challenge queue for a canister with retry on transient network errors."""
     log_message(f"Clearing challenge queue for {canister_id}...")
     command = [
         "dfx", "canister", "--network", network, "call",
@@ -564,7 +589,7 @@ def clear_queue(network: str, canister_id: str, dry_run: bool = False) -> bool:
         return True
 
     try:
-        result = run_command(command)
+        result = run_command(command, retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
         # Check if the result contains Ok with status_code = 200
         if "Ok" in result.stdout and "status_code = 200" in result.stdout:
             log_message(f"Challenge queue cleared for {canister_id}", "SUCCESS")
@@ -577,7 +602,7 @@ def clear_queue(network: str, canister_id: str, dry_run: bool = False) -> bool:
         sys.exit(1)
 
 def stop_canister(network: str, canister_id: str, dry_run: bool = False) -> bool:
-    """Stop a canister."""
+    """Stop a canister with retry on transient network errors."""
     log_message(f"Stopping canister {canister_id}...")
     command = [
         "dfx", "canister", "--network", network, "stop", canister_id
@@ -587,7 +612,7 @@ def stop_canister(network: str, canister_id: str, dry_run: bool = False) -> bool
         return True
 
     try:
-        result = run_command(command)
+        result = run_command(command, retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
         # For stop command, success means empty stdout (message goes to stderr)
         if result.stdout == '':
             log_message(f"Canister {canister_id} stopped", "SUCCESS")
@@ -600,7 +625,7 @@ def stop_canister(network: str, canister_id: str, dry_run: bool = False) -> bool
         return False
 
 def start_canister(network: str, canister_id: str, dry_run: bool = False) -> bool:
-    """Start a canister."""
+    """Start a canister with retry on transient network errors."""
     log_message(f"Starting canister {canister_id}...")
     command = [
         "dfx", "canister", "--network", network, "start", canister_id
@@ -610,7 +635,7 @@ def start_canister(network: str, canister_id: str, dry_run: bool = False) -> boo
         return True
 
     try:
-        result = run_command(command)
+        result = run_command(command, retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
         # For start command, success means empty stdout (message goes to stderr)
         if result.stdout == '':
             log_message(f"Canister {canister_id} started", "SUCCESS")
@@ -623,7 +648,7 @@ def start_canister(network: str, canister_id: str, dry_run: bool = False) -> boo
         return False
 
 def create_snapshot(network: str, canister_id: str, dry_run: bool = False) -> Optional[str]:
-    """Create a snapshot of a canister and return the snapshot ID."""
+    """Create a snapshot of a canister and return the snapshot ID with retry on transient network errors."""
     log_message(f"Creating snapshot for {canister_id}...")
     command = [
         "dfx", "canister", "--network", network, "snapshot", "create", canister_id
@@ -633,7 +658,7 @@ def create_snapshot(network: str, canister_id: str, dry_run: bool = False) -> Op
         return "dry-run-snapshot-id"
 
     try:
-        result = run_command(command)
+        result = run_command(command, retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
         # The snapshot creation output goes to stderr, not stdout
         # Expected format: "Created a new snapshot of canister xxx. Snapshot ID: yyy"
         if result.returncode == 0 and result.stdout == '':
@@ -657,7 +682,7 @@ def create_snapshot(network: str, canister_id: str, dry_run: bool = False) -> Op
         return None
 
 def upgrade_canister(network: str, canister_name: str, dry_run: bool = False) -> bool:
-    """Upgrade a canister."""
+    """Upgrade a canister with retry on transient network errors."""
     log_message(f"Upgrading {canister_name}...")
 
     command = [
@@ -668,16 +693,30 @@ def upgrade_canister(network: str, canister_name: str, dry_run: bool = False) ->
         return True
 
     try:
-        # Run the command WITHOUT capture_output so user can interact if needed
-        result = run_command(command, capture_output=False, cwd=str(POAIW_MAINER_DIR))
+        # Run the command WITH retry on transient errors (including network timeouts)
+        # Capture output so we can detect transient errors for retry logic
+        # Max 5 retries with 10 second base delay for network operations
+        run_command(
+            command,
+            capture_output=True,
+            cwd=str(POAIW_MAINER_DIR),
+            retry_on_transient_errors=True,
+            max_retries=5,
+            retry_delay=10.0,
+            log_stdout=True  # Show deployment progress
+        )
         log_message(f"Canister {canister_name} upgraded", "SUCCESS")
         return True
     except Exception as e:
         log_message(f"Failed to upgrade {canister_name}: {e}", "ERROR")
         return False
 
-def check_health(network: str, canister_id: str, dry_run: bool = False) -> bool:
-    """Check the health of a canister."""
+def check_health(network: str, canister_id: str, dry_run: bool = False) -> tuple[bool, str]:
+    """Check the health of a canister.
+
+    Returns:
+        Tuple of (success: bool, output: str)
+    """
     log_message(f"Checking health for {canister_id}...")
     command = [
         "dfx", "canister", "--network", network, "call",
@@ -685,7 +724,7 @@ def check_health(network: str, canister_id: str, dry_run: bool = False) -> bool:
     ]
     if dry_run:
         log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
-        return True
+        return True, ""
 
     try:
         result = run_command(command, retry_on_transient_errors=True)
@@ -695,13 +734,14 @@ def check_health(network: str, canister_id: str, dry_run: bool = False) -> bool:
         # (Sometimes dfx fails to parse the candid and shows numeric variant)
         if "(variant { Ok = record { status_code = 200 : nat16 } })" in output or "(variant { 17_724 = record { 3_475_804_314 = 200 : nat16 } })" in output:
                 log_message(f"Health check passed for {canister_id}", "SUCCESS")
-                return True
+                return True, output
         else:
             log_message(f"Health check failed for {canister_id}: {output}", "ERROR")
-            return False
+            return False, output
     except Exception as e:
-        log_message(f"Health check failed for {canister_id}: {e}", "ERROR")
-        return False
+        error_msg = str(e)
+        log_message(f"Health check failed for {canister_id}: {error_msg}", "ERROR")
+        return False, error_msg
     
 
 def get_maintenance_flag(network: str, canister_id: str, dry_run: bool = False) -> Optional[bool]:
@@ -952,7 +992,7 @@ def should_skip_upgrade(network: str, address: str, target_hash: Optional[str], 
 
     # Hashes match - now check health
     log_message(f"Hash matches target - checking health before skipping", "INFO")
-    health_ok = check_health(network, address, dry_run)
+    health_ok, _ = check_health(network, address, dry_run)
 
     if health_ok:
         log_message(f"Already upgraded to target hash and health check passed - skipping", "INFO")
@@ -982,6 +1022,13 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
         return False
 
     log_message(f"canister_ids.json key: {canister_name}", "INFO")
+
+    # Get pre-upgrade hash for verification later
+    pre_upgrade_hash = None
+    if not dry_run:
+        pre_upgrade_hash = get_canister_wasm_hash(network, address)
+        if pre_upgrade_hash:
+            log_message(f"Pre-upgrade hash: {pre_upgrade_hash}", "INFO")
 
     # Check canister status before proceeding
     initial_status = get_canister_status(network, address)
@@ -1050,8 +1097,8 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
     # Step 2i: Check maintenance flag (endpoint must now be available and return true)
     # Retry logic: canister may need time to fully initialize after upgrade
     if not dry_run:
-        max_retries = 5
-        retry_delay = 5.0
+        max_retries = 10
+        retry_delay = 15.0
         flag_value = None
 
         for attempt in range(1, max_retries + 1):
@@ -1085,14 +1132,73 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
             return False
 
     # Step 2i: Check health (must now return 200 OK)
+    # Give canister time for maintenance flag to fully propagate
     if not dry_run:
-        # Give canister a moment to fully start
-        time.sleep(5)
-    if not check_health(network, address, dry_run):
+        log_message(f"Waiting 10 seconds for maintenance flag to propagate before health check...", "INFO")
+        time.sleep(10)
+
+    # Retry health check if it fails due to maintenance flag not yet propagated
+    max_health_retries = 3
+    health_retry_delay = 30.0
+    health_ok = False
+
+    for health_attempt in range(1, max_health_retries + 1):
+        health_ok, health_output = check_health(network, address, dry_run)
+
+        if health_ok:
+            break
+
+        # Check if failure is due to maintenance flag still being on
+        if 'mAIner is under maintenance' in health_output:
+            if health_attempt < max_health_retries:
+                log_message(f"Health check failed due to maintenance flag (attempt {health_attempt}/{max_health_retries}). Waiting {health_retry_delay}s before retry...", "WARNING")
+                if not dry_run:
+                    time.sleep(health_retry_delay)
+            else:
+                log_message(f"Health check still failing after {max_health_retries} attempts. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+                update_mainer_status(address, MainerStatus.FAILED_HEALTH, f"Health check failed (maintenance flag). Snapshot: {snapshot_id}")
+                return False
+        else:
+            # Different error - don't retry
+            if not dry_run:
+                log_message(f"Health check failed with unexpected error. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+                update_mainer_status(address, MainerStatus.FAILED_HEALTH, f"Health check failed. Snapshot: {snapshot_id}")
+                return False
+
+    if not health_ok:
         if not dry_run:
             log_message(f"Health check failed. Snapshot ID for rollback: {snapshot_id}", "ERROR")
             update_mainer_status(address, MainerStatus.FAILED_HEALTH, f"Health check failed. Snapshot: {snapshot_id}")
             return False
+
+    # Step 2l: Verify the hash after upgrade
+    if not dry_run:
+        log_message(f"Verifying module hash after upgrade...", "INFO")
+        post_upgrade_hash = get_canister_wasm_hash(network, address)
+
+        if not post_upgrade_hash:
+            log_message(f"Could not retrieve post-upgrade hash. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+            update_mainer_status(address, MainerStatus.FAILED_OTHER, f"Could not verify hash after upgrade. Snapshot: {snapshot_id}")
+            return False
+
+        # Always log the new hash
+        log_message(f"New hash: {post_upgrade_hash}", "INFO")
+
+        # Verify hash based on whether target_hash was provided
+        if target_hash:
+            # If target hash provided, verify it matches
+            if post_upgrade_hash != target_hash:
+                log_message(f"Hash mismatch after upgrade! Expected: {target_hash}, Got: {post_upgrade_hash}. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+                update_mainer_status(address, MainerStatus.FAILED_OTHER, f"Hash verification failed. Expected: {target_hash}, Got: {post_upgrade_hash}. Snapshot: {snapshot_id}")
+                return False
+            log_message(f"Hash verification passed: matches target hash", "SUCCESS")
+        else:
+            # If no target hash, verify that hash actually changed
+            if pre_upgrade_hash and post_upgrade_hash == pre_upgrade_hash:
+                log_message(f"Hash did not change after upgrade! Hash: {post_upgrade_hash}. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+                update_mainer_status(address, MainerStatus.FAILED_OTHER, f"Hash unchanged after upgrade: {post_upgrade_hash}. Snapshot: {snapshot_id}")
+                return False
+            log_message(f"Hash verification passed: hash changed from {pre_upgrade_hash} to {post_upgrade_hash}", "SUCCESS")
 
     log_message(f"Successfully upgraded mAIner {canister_index}: {address}", "SUCCESS")
     update_mainer_status(address, MainerStatus.SUCCESS)
@@ -1296,8 +1402,6 @@ def main():
                 # Proceed with upgrade
                 if upgrade_mainer(args.network, mainer, args.target_hash, args.dry_run, i):
                     successful += 1
-                    new_hash = get_canister_wasm_hash(args.network, address)
-                    log_message(f"New hash: {new_hash}", "INFO")
                 else:
                     failed += 1
                     log_message(f"Failed to upgrade mAIner {i}. Stopping process.", "ERROR")

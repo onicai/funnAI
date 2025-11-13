@@ -158,3 +158,4 @@ scripts/mint_tokens_prd.json
 scripts/upgrade_mainers_status.json
 scripts/upgrade_mainers_status.md
 scripts/upgrade_mainers.logs
+scripts/logs-mainer-analysis/

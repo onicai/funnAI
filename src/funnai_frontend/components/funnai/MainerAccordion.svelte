@@ -1176,7 +1176,7 @@
   onToggleLoginModal={toggleLoginModal}
 />
 
-<!-- Reverse Auction Section (show when auction is active and not in whitelist phase) -->
+<!--Reverse Auction Section (show when auction is active and not in whitelist phase) -->
 {#if isAuctionActive && !isWhitelistPhaseActive && !protocolFlagsLoading}
   <div class="mt-4">
     <ReverseAuctionPanel
