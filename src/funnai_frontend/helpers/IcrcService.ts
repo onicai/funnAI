@@ -434,6 +434,7 @@ export class IcrcService {
       }
 
       // For all other cases (ICRC1 transfers to principals)
+      console.log(`Creating ICRC1 actor for token ${token.symbol} (${token.canister_id})`);
       const actor = await store.getActor(token.canister_id, canisterIDLs.icrc1, {
         anon: false,
         requiresSigning: true,
@@ -445,7 +446,7 @@ export class IcrcService {
         fee = opts.fee;
       };
 
-      return await actor.icrc1_transfer({
+      const transferArgs = {
         to: {
           owner: typeof to === "string" ? Principal.fromText(to) : to,
           subaccount: [],
@@ -455,9 +456,24 @@ export class IcrcService {
         memo: opts.memo ? [opts.memo] : [],
         from_subaccount: opts.fromSubaccount ? [opts.fromSubaccount] : [],
         created_at_time: opts.createdAtTime ? [opts.createdAtTime] : [],
+      };
+      
+      console.log(`Calling icrc1_transfer for ${token.symbol}:`, {
+        to: transferArgs.to.owner.toString(),
+        amount: amount.toString(),
+        fee: fee.toString(),
       });
+
+      const result = await actor.icrc1_transfer(transferArgs);
+      console.log(`Transfer result for ${token.symbol}:`, result);
+      return result;
     } catch (error) {
-      console.error("Transfer error: ", error);
+      console.error(`Transfer error for ${token.symbol}:`, error);
+      // Log more details about the error
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
       return { Err: error };
     }
   }

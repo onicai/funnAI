@@ -1056,7 +1056,32 @@ export const createStore = ({
           update((state) => ({ ...state, sessionExpiry: sessionInfo.expiry }));
           
           if (sessionInfo.loginType === "nfid") {
-            await nfidConnect(true); // Pass true for session restore
+            // For NFID, we need to restore the session properly
+            console.log("Restoring NFID session...");
+            try {
+              const identityKit = await getOrCreateNfidIdentityKit();
+
+              if (identityKit?.signerClient) {
+                // Try to get the identity directly - NFID should persist its session
+                const identity = identityKit.signerClient.getIdentity();
+                if (identity) {
+                  console.log("Successfully restored NFID identity:", identity.getPrincipal().toString());
+                  (globalThis as any).__nfid_identity_kit__ = identityKit;
+                  (globalThis as any).__nfid_signer_client__ = identityKit.signerClient;
+                  await initNfid(identity);
+                  return;
+                } else {
+                  console.warn("NFID session could not be restored - no identity available");
+                }
+              } else {
+                console.warn("NFID IdentityKit not available for session restoration");
+              }
+            } catch (nfidError) {
+              console.error("Failed to restore NFID session:", nfidError);
+            }
+
+            // If restoration failed, clear the session
+            clearSessionInfo();
           } else if (sessionInfo.loginType === "internetidentity") {
             await internetIdentityConnect();
           }
@@ -1135,14 +1160,122 @@ export const createStore = ({
     if (!options.anon) {
       // Create an agent with the logged in user's identity (for authenticated calls)
       try {
-        authClient = await AuthClient.create();
-        if (await authClient.isAuthenticated()) {
-          const identity = await authClient.getIdentity();
-          agent = new HttpAgent({
-            identity,
-            host: HOST,
-          });
-        };
+        let identityFound = false;
+        let currentState;
+        
+        // Get current store state to check authentication type
+        subscribe((state) => {
+          currentState = state;
+        })();
+        
+        // Check if user is logged in with NFID first
+        // NFID uses a different authentication mechanism - try to restore the session
+        if (currentState?.isAuthed === "nfid") {
+          console.log(`Attempting to restore NFID identity for canister ${canisterId}`);
+
+          let identity = null;
+
+          // Method 1: Try to restore from stored signer client reference
+          const storedSignerClient = (globalThis as any).__nfid_signer_client__;
+          if (storedSignerClient && typeof storedSignerClient.getIdentity === 'function') {
+            try {
+              identity = storedSignerClient.getIdentity();
+              console.log(`✅ Got NFID identity from stored signer client for canister ${canisterId}`);
+            } catch (e) {
+              console.warn("Failed to get identity from stored signer client:", e);
+            }
+          }
+
+          // Method 2: If that didn't work, try to create a new IdentityKit and see if it can restore
+          if (!identity) {
+            try {
+              console.log("Trying to restore NFID session via IdentityKit...");
+              const nfidIdentityKit = await getOrCreateNfidIdentityKit();
+
+              if (nfidIdentityKit?.signerClient) {
+                // NFID Signer client might persist its own state
+                // Try to get identity directly - it should have the session if logged in
+                identity = nfidIdentityKit.signerClient.getIdentity();
+                console.log(`✅ Got NFID identity from fresh IdentityKit for canister ${canisterId}`);
+
+                // Store the reference for future use
+                (globalThis as any).__nfid_identity_kit__ = nfidIdentityKit;
+              }
+            } catch (restoreError) {
+              console.warn("Failed to restore NFID session via IdentityKit:", restoreError);
+            }
+          }
+
+          // Method 3: Last resort - check if NFID stores anything in localStorage
+          if (!identity) {
+            try {
+              // NFID might store delegation data in localStorage with specific keys
+              const nfidKeys = Object.keys(localStorage).filter(key => key.includes('nfid') || key.includes('NFID'));
+              console.log("NFID-related localStorage keys:", nfidKeys);
+
+              // If we find NFID keys, it might indicate an active session
+              if (nfidKeys.length > 0) {
+                console.log("Found NFID data in localStorage, trying alternative restoration...");
+
+                // Try one more time with a fresh IdentityKit
+                const freshKit = await getOrCreateNfidIdentityKit();
+                if (freshKit?.signerClient?.getIdentity) {
+                  identity = freshKit.signerClient.getIdentity();
+                  if (identity) {
+                    console.log(`✅ Got NFID identity from localStorage-based restoration for canister ${canisterId}`);
+                  }
+                }
+              }
+            } catch (lsError) {
+              console.warn("Failed to check localStorage for NFID data:", lsError);
+            }
+          }
+
+          // If we got an identity, use it
+          if (identity) {
+            const principal = identity.getPrincipal().toString();
+            console.log(`✅ Using NFID identity for canister ${canisterId}, principal:`, principal);
+
+            // Verify this matches the expected principal
+            if (currentState?.principal && principal !== currentState.principal.toString()) {
+              console.error(`❌ Principal mismatch! Expected ${currentState.principal.toString()}, got ${principal}`);
+            } else {
+              agent = new HttpAgent({
+                identity,
+                host: HOST,
+              });
+              identityFound = true;
+            }
+          } else {
+            console.warn("Could not restore NFID identity using any method");
+          }
+        }
+        
+        // Fallback to Internet Identity if NFID didn't work or if using II
+        if (!identityFound) {
+          authClient = await AuthClient.create();
+          if (await authClient.isAuthenticated()) {
+            const identity = await authClient.getIdentity();
+            const principal = identity.getPrincipal().toString();
+            console.log(`✅ Using Internet Identity for canister ${canisterId}, principal:`, principal);
+            
+            // Verify this matches the expected principal
+            if (currentState?.principal && principal !== currentState.principal.toString()) {
+              console.error(`❌ Principal mismatch! Expected ${currentState.principal.toString()}, got ${principal}`);
+            }
+            
+            agent = new HttpAgent({
+              identity,
+              host: HOST,
+            });
+            identityFound = true;
+          };
+        }
+        
+        if (!identityFound) {
+          console.error(`❌ No authenticated identity found for canister ${canisterId}. This will cause transfers to fail!`);
+          console.error(`Store state - isAuthed: ${currentState?.isAuthed}, principal: ${currentState?.principal?.toString()}`);
+        }
       } catch (error) {
         console.error("Error in getActor:", error);
         update((state) => ({
