@@ -14,20 +14,24 @@
   import { initializeChartJS } from '../helpers/chartSetup';
 
   // Initialize theme from localStorage on mount
-  onMount(() => {
+  onMount(async () => {
     // Initialize Chart.js components early
     initializeChartJS();
-    
+
     // Set dark mode as default if no preference is stored
     const savedTheme = localStorage.getItem("theme") || "dark";
     theme.set(savedTheme);
     applyTheme(savedTheme);
+
+    // Check login state - ensure this happens before the app renders
+    console.log("🚀 Starting app initialization...");
     try {
-      // Check login state
-      void store.checkExistingLoginAndConnect();      
+      await store.checkExistingLoginAndConnect();
+      console.log("✅ App initialization complete - session restored if available");
     } catch (error) {
-      console.warn("Error checking login state: ", error);      
-    };
+      console.error("❌ Error during app initialization:", error);
+      // Don't crash the app, just log the error
+    }
   });
   
   // React to theme changes

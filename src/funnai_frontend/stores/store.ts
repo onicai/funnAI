@@ -1038,78 +1038,109 @@ export const createStore = ({
   };
 
   const checkExistingLoginAndConnect = async () => {
+    console.log("🔄 Checking for existing login session...");
+
     // Check login state if user is already logged in
     const sessionInfo = getStoredSessionInfo();
-    
+
     if (sessionInfo) {
-      const authClient = await AuthClient.create();
-      const isAuthenticated = await authClient.isAuthenticated();
-      
-      if (isAuthenticated) {
-        // Check if session is still valid
-        const now = BigInt(Date.now()) * BigInt(1000000); // Convert to nanoseconds
-        
-        if (sessionInfo.expiry > now) {
-          console.info(`${sessionInfo.loginType} connection detected and session is valid`);
-          
-          // Update the session expiry in state
-          update((state) => ({ ...state, sessionExpiry: sessionInfo.expiry }));
-          
-          if (sessionInfo.loginType === "nfid") {
-            // For NFID, we need to restore the session properly
-            console.log("Restoring NFID session...");
-            try {
-              const identityKit = await getOrCreateNfidIdentityKit();
+      console.log(`📋 Found stored session info for ${sessionInfo.loginType}`);
 
-              if (identityKit?.signerClient) {
-                // Try to get the identity directly - NFID should persist its session
-                const identity = identityKit.signerClient.getIdentity();
-                if (identity) {
-                  console.log("Successfully restored NFID identity:", identity.getPrincipal().toString());
-                  (globalThis as any).__nfid_identity_kit__ = identityKit;
-                  (globalThis as any).__nfid_signer_client__ = identityKit.signerClient;
-                  await initNfid(identity);
-                  return;
-                } else {
-                  console.warn("NFID session could not be restored - no identity available");
-                }
+      // Check if session is still valid
+      const now = BigInt(Date.now()) * BigInt(1000000); // Convert to nanoseconds
+
+      if (sessionInfo.expiry > now) {
+        console.info(`✅ ${sessionInfo.loginType} session is valid (expires: ${new Date(Number(sessionInfo.expiry / BigInt(1000000))).toISOString()})`);
+
+        // Update the session expiry in state
+        update((state) => ({ ...state, sessionExpiry: sessionInfo.expiry }));
+
+        if (sessionInfo.loginType === "nfid") {
+          // For NFID, we need to restore the session properly
+          console.log("🔄 Restoring NFID session...");
+          try {
+            const identityKit = await getOrCreateNfidIdentityKit();
+
+            if (identityKit?.signerClient) {
+              // Try to get the identity directly - NFID should persist its session
+              const identity = identityKit.signerClient.getIdentity();
+              if (identity) {
+                const principal = identity.getPrincipal().toString();
+                console.log("✅ Successfully restored NFID session for principal:", principal);
+                (globalThis as any).__nfid_identity_kit__ = identityKit;
+                (globalThis as any).__nfid_signer_client__ = identityKit.signerClient;
+                await initNfid(identity);
+                console.log("🎉 NFID session fully restored!");
+                return;
               } else {
-                console.warn("NFID IdentityKit not available for session restoration");
+                console.warn("❌ NFID session could not be restored - no identity available");
               }
-            } catch (nfidError) {
-              console.error("Failed to restore NFID session:", nfidError);
+            } else {
+              console.warn("❌ NFID IdentityKit not available for session restoration");
             }
-
-            // If restoration failed, clear the session
-            clearSessionInfo();
-          } else if (sessionInfo.loginType === "internetidentity") {
-            await internetIdentityConnect();
+          } catch (nfidError) {
+            console.error("❌ Failed to restore NFID session:", nfidError);
           }
-        } else {
-          console.info("Stored session has expired, clearing session info");
+
+          // If restoration failed, clear the session and reset auth state
+          console.warn("🧹 Clearing invalid NFID session");
           clearSessionInfo();
-          await authClient.logout();
+          update((state) => ({
+            ...state,
+            isAuthed: null,
+            principal: null,
+            accountId: "",
+            sessionExpiry: null
+          }));
+        } else if (sessionInfo.loginType === "internetidentity") {
+          console.log("🔄 Restoring Internet Identity session...");
+          await internetIdentityConnect();
+          console.log("✅ Internet Identity session restored!");
         }
       } else {
-        console.info("AuthClient shows user is not authenticated, clearing session info");
+        console.info("⏰ Stored session has expired, clearing session info");
         clearSessionInfo();
       }
     } else {
+      console.log("📭 No stored session info found");
+
       // Fallback to old method for backward compatibility
       const isAuthed = localStorage.getItem('isAuthed');
       if (isAuthed) {
+        console.log(`📋 Found legacy auth info for ${isAuthed}`);
         const authClient = await AuthClient.create();
         if (await authClient.isAuthenticated()) {
           if (isAuthed === "nfid") {
-            console.info("NFID connection detected (legacy)");
-            await nfidConnect(true); // Pass true for session restore
+            console.info("🔄 NFID connection detected (legacy method)");
+            try {
+              await nfidConnect(true); // Pass true for session restore
+              console.log("✅ NFID session restored via legacy method!");
+            } catch (error) {
+              console.error("❌ Failed to restore NFID session via legacy method:", error);
+              clearSessionInfo();
+              update((state) => ({
+                ...state,
+                isAuthed: null,
+                principal: null,
+                accountId: "",
+                sessionExpiry: null
+              }));
+            }
           } else if (isAuthed === "internetidentity") {
-            console.info("Internet Identity connection detected (legacy)");
+            console.info("🔄 Internet Identity connection detected (legacy method)");
             await internetIdentityConnect();
+            console.log("✅ Internet Identity session restored via legacy method!");
           }
+        } else {
+          console.log("❌ Legacy auth client shows not authenticated, clearing session");
+          clearSessionInfo();
         }
+      } else {
+        console.log("📭 No legacy auth info found either");
       }
     }
+
+    console.log("🏁 Session restoration check complete");
   };
 
   const loadUserMainerCanisters = async () => {
