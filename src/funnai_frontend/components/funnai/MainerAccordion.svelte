@@ -1113,7 +1113,7 @@
 
 </script>
 
-<!-- Reverse Auction Announcement -->
+<!-- Announcements Panel 
 <AnnouncementPanel
   isVisible={showAnnouncement}
   title="Reverse Auction Completed! 🎉"
@@ -1125,6 +1125,7 @@
   ]}
   onClose={() => showAnnouncement = false}
 />
+-->
 
 <!-- Loading state for protocol flags -->
 {#if protocolFlagsLoading}
