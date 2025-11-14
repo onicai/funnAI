@@ -271,6 +271,44 @@ export const toggleTheme = () => {
   });
 };
 
+// Pre-initialize NFID IdentityKit to avoid async operations in click handler
+let nfidIdentityKitPromise: Promise<any> | null = null;
+
+const getOrCreateNfidIdentityKit = async () => {
+  if (!nfidIdentityKitPromise) {
+    nfidIdentityKitPromise = (async () => {
+      const transport = new PostMessageTransport({
+        url: NFIDW.providerUrl,
+        windowOpenerFeatures:
+          `left=${window.screen.width / 2 - 525 / 2}, `+
+          `top=${window.screen.height / 2 - 705 / 2},` +
+          `toolbar=0,location=0,menubar=0,width=525,height=705`,
+      });
+      const signer = new Signer({ transport });
+
+      const identityKit = await IdentityKit.create({
+        signerClientOptions: {
+          signer,
+          maxTimeToLive: days * hours * nanosecondsPerHour,
+          idleOptions: {
+            idleTimeout: Number(days * hours) * 60 * 60 * 1000,
+            disableIdle: false,
+            disableDefaultIdleCallback: true,
+            onIdle: async () => {
+              console.log("Session expired due to inactivity");
+              // Will be set up properly when store is created
+            }
+          }
+        },
+        authType: IdentityKitAuthType.DELEGATION
+      });
+
+      return identityKit;
+    })();
+  }
+  return nfidIdentityKitPromise;
+};
+
 export const createStore = ({
   whitelist,
   host,
@@ -755,53 +793,57 @@ export const createStore = ({
     return { mainerActors, userCanisters: enrichedUserCanisters };
   };
 
-  const nfidConnect = async () => {
+  const nfidConnect = async (isSessionRestore = false) => {
     try {
-      // Create Signer with PostMessageTransport for NFID
-      const transport = new PostMessageTransport({
-        url: NFIDW.providerUrl,
-        windowOpenerFeatures:
-          `left=${window.screen.width / 2 - 525 / 2}, `+
-          `top=${window.screen.height / 2 - 705 / 2},` +
-          `toolbar=0,location=0,menubar=0,width=525,height=705`,
-      });
-      const signer = new Signer({ transport });
-
-      // Create IdentityKit instance with delegation-based auth (like Internet Identity)
-      const identityKit = await IdentityKit.create({
-        signerClientOptions: {
-          signer,
-          maxTimeToLive: days * hours * nanosecondsPerHour,
-          idleOptions: {
-            idleTimeout: Number(days * hours) * 60 * 60 * 1000, // Convert to milliseconds (30 days * 24 hours * 60 min * 60 sec * 1000 ms)
-            disableIdle: false,
-            disableDefaultIdleCallback: true,
-            onIdle: async () => {
-              console.log("Session expired due to inactivity");
-              await disconnect();
-            }
+      // Get or create the IdentityKit (uses singleton pattern)
+      // This ensures IdentityKit is ready before we call login()
+      const identityKit = await getOrCreateNfidIdentityKit();
+      
+      if (identityKit.signerClient) {
+        const signerClient = identityKit.signerClient as DelegationSignerClient;
+        
+        // If this is a session restore (page refresh), check if already authenticated
+        if (isSessionRestore) {
+          // Try to get existing identity without opening popup
+          const isAuthenticated = signerClient.isAuthenticated();
+          if (isAuthenticated) {
+            console.log("Restoring NFID session from existing delegation");
+            const identity = signerClient.getIdentity();
+            
+            // Store the identity kit instance for later use
+            (globalThis as any).__nfid_identity_kit__ = identityKit;
+            (globalThis as any).__nfid_signer_client__ = signerClient;
+            
+            await initNfid(identity);
+            return;
+          } else {
+            // Session expired or not found, user needs to login again
+            console.warn("NFID session expired, user needs to login again");
+            clearSessionInfo();
+            return;
           }
-          // Note: onLogout callback removed to prevent infinite loop with disconnect()
-        },
-        authType: IdentityKitAuthType.DELEGATION
-      });
-
-      // Get the delegation client
-      const signerClient = identityKit.signerClient as DelegationSignerClient;
-      
-      // Login with NFID
-      await signerClient.login();
-      
-      // Get the identity
-      const identity = signerClient.getIdentity();
-      
-      // Store the identity kit instance for later use
-      (globalThis as any).__nfid_identity_kit__ = identityKit;
-      (globalThis as any).__nfid_signer_client__ = signerClient;
-      
-      await initNfid(identity);
+        }
+        
+        // For new logins (user clicked button), open the popup
+        // CRITICAL: Call login() to open the popup - this should happen quickly
+        // since IdentityKit is already initialized
+        await signerClient.login();
+        
+        // Get the identity
+        const identity = signerClient.getIdentity();
+        
+        // Store the identity kit instance for later use
+        (globalThis as any).__nfid_identity_kit__ = identityKit;
+        (globalThis as any).__nfid_signer_client__ = signerClient;
+        
+        await initNfid(identity);
+      } else {
+        throw new Error("SignerClient not available on IdentityKit");
+      }
     } catch (error) {
       console.error("Error in nfidConnect:", error);
+      // Reset the singleton so it can be retried
+      nfidIdentityKitPromise = null;
       update((state) => ({
         ...state,
         error: "Failed to connect with NFID"
@@ -971,6 +1013,8 @@ export const createStore = ({
           await signerClient.logout();
           delete (globalThis as any).__nfid_identity_kit__;
           delete (globalThis as any).__nfid_signer_client__;
+          // Reset the singleton so a fresh IdentityKit is created on next login
+          nfidIdentityKitPromise = null;
         } else {
           // Fallback to legacy AuthClient logout
           await authClient.logout();
@@ -1012,7 +1056,7 @@ export const createStore = ({
           update((state) => ({ ...state, sessionExpiry: sessionInfo.expiry }));
           
           if (sessionInfo.loginType === "nfid") {
-            await nfidConnect();
+            await nfidConnect(true); // Pass true for session restore
           } else if (sessionInfo.loginType === "internetidentity") {
             await internetIdentityConnect();
           }
@@ -1033,7 +1077,7 @@ export const createStore = ({
         if (await authClient.isAuthenticated()) {
           if (isAuthed === "nfid") {
             console.info("NFID connection detected (legacy)");
-            await nfidConnect();
+            await nfidConnect(true); // Pass true for session restore
           } else if (isAuthed === "internetidentity") {
             console.info("Internet Identity connection detected (legacy)");
             await internetIdentityConnect();
@@ -1189,7 +1233,7 @@ export const createStore = ({
         
         // Re-initialize the connection to extend the session
         if (sessionInfo.loginType === "nfid") {
-          await nfidConnect();
+          await nfidConnect(true); // Pass true for session restore
         } else if (sessionInfo.loginType === "internetidentity") {
           await internetIdentityConnect();
         }
@@ -1279,6 +1323,18 @@ export const createStore = ({
     clearStoredMainerCreationState();
   };
 
+  const preInitNfid = async () => {
+    // Start pre-initializing NFID IdentityKit in the background
+    // so it's ready when the user clicks the login button
+    try {
+      await getOrCreateNfidIdentityKit();
+      console.log("NFID IdentityKit pre-initialized successfully");
+    } catch (error) {
+      console.warn("Failed to pre-initialize NFID:", error);
+      throw error;
+    }
+  };
+
   const resetMainerCreationAfterOpen = () => {
     update((state) => ({
       ...state,
@@ -1290,6 +1346,7 @@ export const createStore = ({
     subscribe,
     update,
     nfidConnect,
+    preInitNfid,
     internetIdentityConnect,
     disconnect,
     checkExistingLoginAndConnect,
