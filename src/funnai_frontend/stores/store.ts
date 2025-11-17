@@ -1064,7 +1064,26 @@ export const createStore = ({
     if (sessionInfo) {
       console.log(`📋 Found stored session info for ${sessionInfo.loginType}`);
 
-      // Check if session is still valid
+      // IMPORTANT: Check if AuthClient still has the delegation
+      // (IndexedDB might be cleared even if localStorage remains)
+      const authClient = await AuthClient.create();
+      const isAuthenticated = await authClient.isAuthenticated();
+
+      if (!isAuthenticated) {
+        console.warn(`❌ AuthClient shows not authenticated - delegation missing`);
+        console.warn(`🧹 Clearing stale session info for ${sessionInfo.loginType}`);
+        clearSessionInfo();
+        update((state) => ({
+          ...state,
+          isAuthed: null,
+          principal: null,
+          accountId: "",
+          sessionExpiry: null
+        }));
+        return;
+      }
+
+      // Check if session is still valid (not expired)
       const now = BigInt(Date.now()) * BigInt(1000000); // Convert to nanoseconds
 
       if (sessionInfo.expiry > now) {
