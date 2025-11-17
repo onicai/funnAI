@@ -5,9 +5,9 @@ import { HttpAgent, Actor } from "@dfinity/agent";
 import { AuthClient } from "@dfinity/auth-client";
 import { Signer } from "@slide-computer/signer";
 import { PostMessageTransport } from "@slide-computer/signer-web";
-import { IdentityKit, NFIDW, IdentityKitAuthType } from "@nfid/identitykit";
-import type { DelegationSignerClient } from "@nfid/identitykit";
+import { IdentityKit, NFIDW, IdentityKitAuthType, type IdentityKitDelegationSignerClient as DelegationSignerClient } from "@nfid/identitykit";
 import UAParser from 'ua-parser-js';
+import { notificationStore } from "./notificationStore";
 import {
   funnai_backend,
   createActor as createBackendCanisterActor,
@@ -800,11 +800,12 @@ export const createStore = ({
       const identityKit = await getOrCreateNfidIdentityKit();
       
       if (identityKit.signerClient) {
-        const signerClient = identityKit.signerClient as DelegationSignerClient;
+        const signerClient = identityKit.signerClient;
         
         // If this is a session restore (page refresh), check if already authenticated
         if (isSessionRestore) {
           // Try to get existing identity without opening popup
+          //@ts-ignore - isAuthenticated exists at runtime
           const isAuthenticated = signerClient.isAuthenticated();
           if (isAuthenticated) {
             console.log("Restoring NFID session from existing delegation");
@@ -820,6 +821,23 @@ export const createStore = ({
             // Session expired or not found, user needs to login again
             console.warn("NFID session expired, user needs to login again");
             clearSessionInfo();
+            
+            // Show user-friendly notification
+            notificationStore.add(
+              "Your session has expired. Please log in again to continue.",
+              "warning",
+              8000 // Show for 8 seconds
+            );
+            
+            // Update store to show logged out state
+            update((state) => ({
+              ...state,
+              isAuthed: null,
+              principal: null,
+              accountId: "",
+              sessionExpiry: null
+            }));
+            
             return;
           }
         }
@@ -1071,6 +1089,14 @@ export const createStore = ({
                 (globalThis as any).__nfid_signer_client__ = identityKit.signerClient;
                 await initNfid(identity);
                 console.log("🎉 NFID session fully restored!");
+                
+                // Show welcome back notification
+                notificationStore.add(
+                  "Welcome back! Your session has been restored.",
+                  "success",
+                  4000
+                );
+                
                 return;
               } else {
                 console.warn("❌ NFID session could not be restored - no identity available");

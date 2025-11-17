@@ -10,6 +10,7 @@
   import Lottery from "../pages/Lottery.svelte";
   import Brand from "../pages/Brand.svelte";
   import AppStore from "../pages/AppStore.svelte";
+  import NotificationToast from "./NotificationToast.svelte";
   import { onMount } from 'svelte';
   import { initializeChartJS } from '../helpers/chartSetup';
 
@@ -82,8 +83,11 @@
       </div>
     </header>
     <div class="flex-grow flex flex-col dark:bg-gray-900">
-      <Router {routes} />
-    </div>
+  <Router {routes} />
+</div>
+
+<!-- Global notification toast -->
+<NotificationToast />
   </main>
 </div> 
 
