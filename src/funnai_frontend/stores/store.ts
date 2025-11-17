@@ -1073,6 +1073,10 @@ export const createStore = ({
         console.warn(`❌ AuthClient shows not authenticated - delegation missing`);
         console.warn(`🧹 Clearing stale session info for ${sessionInfo.loginType}`);
         clearSessionInfo();
+        
+        // No need to logout here - AuthClient already shows not authenticated
+        // (delegation is already gone from IndexedDB)
+        
         update((state) => ({
           ...state,
           isAuthed: null,
@@ -1130,6 +1134,16 @@ export const createStore = ({
           // If restoration failed, clear the session and reset auth state
           console.warn("🧹 Clearing invalid NFID session");
           clearSessionInfo();
+          
+          // IMPORTANT: Also logout from AuthClient to clear the delegation from IndexedDB
+          try {
+            const authClient = await AuthClient.create();
+            await authClient.logout();
+            console.log("✅ AuthClient delegation cleared");
+          } catch (logoutError) {
+            console.warn("Failed to logout from AuthClient:", logoutError);
+          }
+          
           update((state) => ({
             ...state,
             isAuthed: null,
@@ -1145,6 +1159,14 @@ export const createStore = ({
       } else {
         console.info("⏰ Stored session has expired, clearing session info");
         clearSessionInfo();
+        
+        // Clear the delegation from AuthClient/IndexedDB
+        try {
+          await authClient.logout();
+          console.log("✅ Expired session delegation cleared");
+        } catch (logoutError) {
+          console.warn("Failed to logout expired session:", logoutError);
+        }
       }
     } else {
       console.log("📭 No stored session info found");
@@ -1163,6 +1185,14 @@ export const createStore = ({
             } catch (error) {
               console.error("❌ Failed to restore NFID session via legacy method:", error);
               clearSessionInfo();
+              
+              // Clear AuthClient delegation
+              try {
+                await authClient.logout();
+              } catch (logoutError) {
+                console.warn("Failed to logout after failed restore:", logoutError);
+              }
+              
               update((state) => ({
                 ...state,
                 isAuthed: null,
@@ -1179,6 +1209,7 @@ export const createStore = ({
         } else {
           console.log("❌ Legacy auth client shows not authenticated, clearing session");
           clearSessionInfo();
+          // No need to logout - AuthClient already shows not authenticated
         }
       } else {
         console.log("📭 No legacy auth info found either");
