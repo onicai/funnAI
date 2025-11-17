@@ -48,28 +48,30 @@
   }
 </script>
 
-<div class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-md">
-  {#each notifications as notification (notification.id)}
-    <div
-      transition:fly={{ y: 50, duration: 300, easing: quintOut }}
-      class="flex items-start gap-3 p-4 rounded-lg shadow-lg border-2 {getClasses(notification.type)} backdrop-blur-sm"
-    >
-      <div class="flex-shrink-0 mt-0.5">
-        {@html getIcon(notification.type)}
-      </div>
-      <div class="flex-1 text-sm font-medium">
-        {notification.message}
-      </div>
-      <button
-        on:click={() => close(notification.id)}
-        class="flex-shrink-0 ml-2 hover:opacity-70 transition-opacity"
-        aria-label="Close notification"
+{#if notifications.length > 0}
+  <div class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-md">
+    {#each notifications as notification (notification.id)}
+      <div
+        transition:fly={{ y: 50, duration: 300, easing: quintOut }}
+        class="flex items-start gap-3 p-4 rounded-lg shadow-lg border-2 {getClasses(notification.type)} backdrop-blur-sm"
       >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-  {/each}
-</div>
+        <div class="flex-shrink-0 mt-0.5">
+          {@html getIcon(notification.type)}
+        </div>
+        <div class="flex-1 text-sm font-medium">
+          {notification.message}
+        </div>
+        <button
+          on:click={() => close(notification.id)}
+          class="flex-shrink-0 ml-2 hover:opacity-70 transition-opacity"
+          aria-label="Close notification"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    {/each}
+  </div>
+{/if}
 

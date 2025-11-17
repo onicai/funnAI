@@ -829,14 +829,12 @@ export const createStore = ({
               8000 // Show for 8 seconds
             );
             
-            // Update store to show logged out state
-            update((state) => ({
-              ...state,
-              isAuthed: null,
-              principal: null,
-              accountId: "",
-              sessionExpiry: null
-            }));
+            // Reset to default logged out state
+            update((prevState) => {
+              return {
+                ...defaultState,
+              };
+            });
             
             return;
           }
@@ -1075,13 +1073,12 @@ export const createStore = ({
           console.warn(`🧹 Clearing stale Internet Identity session`);
           clearSessionInfo();
           
-          update((state) => ({
-            ...state,
-            isAuthed: null,
-            principal: null,
-            accountId: "",
-            sessionExpiry: null
-          }));
+          // Reset to default logged out state
+          update((prevState) => {
+            return {
+              ...defaultState,
+            };
+          });
           return;
         }
       }
@@ -1143,13 +1140,12 @@ export const createStore = ({
             console.warn("Failed to logout from AuthClient:", logoutError);
           }
           
-          update((state) => ({
-            ...state,
-            isAuthed: null,
-            principal: null,
-            accountId: "",
-            sessionExpiry: null
-          }));
+          // Reset to default logged out state
+          update((prevState) => {
+            return {
+              ...defaultState,
+            };
+          });
         } else if (sessionInfo.loginType === "internetidentity") {
           console.log("🔄 Restoring Internet Identity session...");
           await internetIdentityConnect();
@@ -1193,13 +1189,12 @@ export const createStore = ({
               console.warn("Failed to logout after failed restore:", logoutError);
             }
             
-            update((state) => ({
-              ...state,
-              isAuthed: null,
-              principal: null,
-              accountId: "",
-              sessionExpiry: null
-            }));
+            // Reset to default logged out state
+            update((prevState) => {
+              return {
+                ...defaultState,
+              };
+            });
           }
         } else if (isAuthed === "internetidentity") {
           // For Internet Identity, check AuthClient first
