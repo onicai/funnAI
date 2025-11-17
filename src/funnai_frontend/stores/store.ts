@@ -1064,27 +1064,26 @@ export const createStore = ({
     if (sessionInfo) {
       console.log(`📋 Found stored session info for ${sessionInfo.loginType}`);
 
-      // IMPORTANT: Check if AuthClient still has the delegation
-      // (IndexedDB might be cleared even if localStorage remains)
-      const authClient = await AuthClient.create();
-      const isAuthenticated = await authClient.isAuthenticated();
+      // IMPORTANT: For Internet Identity, check if AuthClient still has the delegation
+      // NFID uses its own delegation mechanism (SignerClient), so skip this check for NFID
+      if (sessionInfo.loginType === "internetidentity") {
+        const authClient = await AuthClient.create();
+        const isAuthenticated = await authClient.isAuthenticated();
 
-      if (!isAuthenticated) {
-        console.warn(`❌ AuthClient shows not authenticated - delegation missing`);
-        console.warn(`🧹 Clearing stale session info for ${sessionInfo.loginType}`);
-        clearSessionInfo();
-        
-        // No need to logout here - AuthClient already shows not authenticated
-        // (delegation is already gone from IndexedDB)
-        
-        update((state) => ({
-          ...state,
-          isAuthed: null,
-          principal: null,
-          accountId: "",
-          sessionExpiry: null
-        }));
-        return;
+        if (!isAuthenticated) {
+          console.warn(`❌ Internet Identity delegation missing from AuthClient`);
+          console.warn(`🧹 Clearing stale Internet Identity session`);
+          clearSessionInfo();
+          
+          update((state) => ({
+            ...state,
+            isAuthed: null,
+            principal: null,
+            accountId: "",
+            sessionExpiry: null
+          }));
+          return;
+        }
       }
 
       // Check if session is still valid (not expired)
@@ -1175,41 +1174,44 @@ export const createStore = ({
       const isAuthed = localStorage.getItem('isAuthed');
       if (isAuthed) {
         console.log(`📋 Found legacy auth info for ${isAuthed}`);
-        const authClient = await AuthClient.create();
-        if (await authClient.isAuthenticated()) {
-          if (isAuthed === "nfid") {
-            console.info("🔄 NFID connection detected (legacy method)");
+        
+        if (isAuthed === "nfid") {
+          // For NFID, don't check AuthClient - it uses its own delegation mechanism
+          console.info("🔄 NFID connection detected (legacy method)");
+          try {
+            await nfidConnect(true); // Pass true for session restore
+            console.log("✅ NFID session restored via legacy method!");
+          } catch (error) {
+            console.error("❌ Failed to restore NFID session via legacy method:", error);
+            clearSessionInfo();
+            
+            // Try to clean up AuthClient just in case
             try {
-              await nfidConnect(true); // Pass true for session restore
-              console.log("✅ NFID session restored via legacy method!");
-            } catch (error) {
-              console.error("❌ Failed to restore NFID session via legacy method:", error);
-              clearSessionInfo();
-              
-              // Clear AuthClient delegation
-              try {
-                await authClient.logout();
-              } catch (logoutError) {
-                console.warn("Failed to logout after failed restore:", logoutError);
-              }
-              
-              update((state) => ({
-                ...state,
-                isAuthed: null,
-                principal: null,
-                accountId: "",
-                sessionExpiry: null
-              }));
+              const authClient = await AuthClient.create();
+              await authClient.logout();
+            } catch (logoutError) {
+              console.warn("Failed to logout after failed restore:", logoutError);
             }
-          } else if (isAuthed === "internetidentity") {
+            
+            update((state) => ({
+              ...state,
+              isAuthed: null,
+              principal: null,
+              accountId: "",
+              sessionExpiry: null
+            }));
+          }
+        } else if (isAuthed === "internetidentity") {
+          // For Internet Identity, check AuthClient first
+          const authClient = await AuthClient.create();
+          if (await authClient.isAuthenticated()) {
             console.info("🔄 Internet Identity connection detected (legacy method)");
             await internetIdentityConnect();
             console.log("✅ Internet Identity session restored via legacy method!");
+          } else {
+            console.log("❌ Internet Identity delegation missing, clearing session");
+            clearSessionInfo();
           }
-        } else {
-          console.log("❌ Legacy auth client shows not authenticated, clearing session");
-          clearSessionInfo();
-          // No need to logout - AuthClient already shows not authenticated
         }
       } else {
         console.log("📭 No legacy auth info found either");
