@@ -7,10 +7,15 @@
   export let toggleModal;
 
   async function connect() {
-    loading = "internetidentity";
-    store.internetIdentityConnect();
-    loading = "";
-    toggleModal();
+    try {
+      loading = "internetidentity";
+      await store.internetIdentityConnect();
+      loading = "";
+      toggleModal();
+    } catch (error) {
+      console.error("Internet Identity connection failed:", error);
+      loading = "";
+    }
   };
 </script>
 

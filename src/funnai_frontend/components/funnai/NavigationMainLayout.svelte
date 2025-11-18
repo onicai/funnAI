@@ -92,7 +92,7 @@
                data-modal-toggle="crypto-modal" 
                class="flex-shrink-0 group relative overflow-hidden px-4 py-2.5 sm:px-5 sm:py-3 rounded-xl transition-all duration-200 flex items-center gap-2 sm:gap-3 min-h-[44px] bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 dark:hover:from-purple-800/40 dark:hover:to-purple-700/40 border border-purple-200 hover:border-purple-300 dark:border-purple-700 dark:hover:border-purple-600 text-purple-700 hover:text-purple-800 dark:text-purple-300 dark:hover:text-purple-200 font-medium text-sm">
          
-         <span class="hidden xs:inline">Connect</span>
+         <span class="">Connect</span>
        </button>
     </div>
   {:else}

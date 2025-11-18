@@ -190,6 +190,29 @@ const availableTokens: FE.Token[] = [ // TODO
     token_id: 5,
     chain: 'IC',
     total_24h_volume: '0'
+  },
+  { 
+    canister_id: "6c7su-kiaaa-aaaar-qaira-cai",
+    name: "GLDT",
+    symbol: "GLDT",
+    decimals: 8,
+    address: "6c7su-kiaaa-aaaar-qaira-cai",
+    fee: 0.1,
+    fee_fixed: "10000000",
+    token: "6c7su-kiaaa-aaaar-qaira-cai",
+    icrc1: true,
+    icrc2: true,
+    icrc3: true,
+    pool_symbol: "",
+    pools: [],
+    timestamp: Date.now(),
+    metrics: null,
+    balance: '0',
+    logo_url: "/gldt_logo.svg",
+    token_type: 'IC',
+    token_id: 6,
+    chain: 'IC',
+    total_24h_volume: '0'
   }
 ];
 

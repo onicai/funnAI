@@ -4,7 +4,6 @@
   import { fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import Portal from "svelte-portal";
-  import Toast from "./_widgets/Toast.svelte";
   import { tick } from "svelte";
   import { X } from "lucide-svelte";
   import { modalStack } from "../stores/modalStore";
@@ -36,10 +35,6 @@
   let modalElement: HTMLDivElement;
   
   const SLIDE_THRESHOLD = 100; // pixels to trigger close
-
-  function handleToastClose() {
-    // TODO
-  }
 
   // Update modal stack when isOpen changes
   $ : (() => {
@@ -204,10 +199,6 @@
 
 <svelte:window on:keydown={handleEscape} />
 <Portal target={target}>
-  <Toast
-    message={""}
-    onClose={handleToastClose}
-  />
   {#if isOpen}
     <div
       class="fixed inset-0 grid place-items-center"
