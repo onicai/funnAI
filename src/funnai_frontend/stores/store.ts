@@ -1162,6 +1162,13 @@ export const createStore = ({
         } catch (logoutError) {
           console.warn("Failed to logout expired session:", logoutError);
         }
+
+        // Reset to default logged out state
+        update((prevState) => {
+          return {
+            ...defaultState,
+          };
+        });
       }
     } else {
       console.log("📭 No stored session info found");
@@ -1206,6 +1213,13 @@ export const createStore = ({
           } else {
             console.log("❌ Internet Identity delegation missing, clearing session");
             clearSessionInfo();
+
+            // Reset to default logged out state
+            update((prevState) => {
+              return {
+                ...defaultState,
+              };
+            });
           }
         }
       } else {
