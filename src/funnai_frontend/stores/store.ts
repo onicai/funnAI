@@ -1279,16 +1279,10 @@ export const createStore = ({
       // Create an agent with the logged in user's identity (for authenticated calls)
       try {
         let identityFound = false;
-        let currentState;
-        
-        // Get current store state to check authentication type
-        subscribe((state) => {
-          currentState = state;
-        })();
         
         // Check if user is logged in with NFID first
         // NFID uses a different authentication mechanism - try to restore the session
-        if (currentState?.isAuthed === "nfid") {
+        if (globalState?.isAuthed === "nfid") {
           console.log(`Attempting to restore NFID identity for canister ${canisterId}`);
 
           let identity = null;
@@ -1355,8 +1349,8 @@ export const createStore = ({
             console.log(`✅ Using NFID identity for canister ${canisterId}, principal:`, principal);
 
             // Verify this matches the expected principal
-            if (currentState?.principal && principal !== currentState.principal.toString()) {
-              console.error(`❌ Principal mismatch! Expected ${currentState.principal.toString()}, got ${principal}`);
+            if (globalState?.principal && principal !== globalState.principal.toString()) {
+              console.error(`❌ Principal mismatch! Expected ${globalState.principal.toString()}, got ${principal}`);
             } else {
               agent = new HttpAgent({
                 identity,
@@ -1378,8 +1372,8 @@ export const createStore = ({
             console.log(`✅ Using Internet Identity for canister ${canisterId}, principal:`, principal);
             
             // Verify this matches the expected principal
-            if (currentState?.principal && principal !== currentState.principal.toString()) {
-              console.error(`❌ Principal mismatch! Expected ${currentState.principal.toString()}, got ${principal}`);
+            if (globalState?.principal && principal !== globalState.principal.toString()) {
+              console.error(`❌ Principal mismatch! Expected ${globalState.principal.toString()}, got ${principal}`);
             }
             
             agent = new HttpAgent({
@@ -1392,7 +1386,7 @@ export const createStore = ({
         
         if (!identityFound) {
           console.error(`❌ No authenticated identity found for canister ${canisterId}. This will cause transfers to fail!`);
-          console.error(`Store state - isAuthed: ${currentState?.isAuthed}, principal: ${currentState?.principal?.toString()}`);
+          console.error(`Store state - isAuthed: ${globalState?.isAuthed}, principal: ${globalState?.principal?.toString()}`);
         }
       } catch (error) {
         console.error("Error in getActor:", error);
