@@ -1232,37 +1232,56 @@ export const createStore = ({
 
   const loadUserMainerCanisters = async () => {
     try {
-      // Get current auth client and identity
-      authClient = await AuthClient.create();
-      if (await authClient.isAuthenticated()) {
-        const identity = await authClient.getIdentity();
-        
-        // Get current auth type from store
-        const isAuthed = globalState.isAuthed;
-        if (!isAuthed) {
-          console.warn("User not authenticated, cannot reload mAIner canisters");
-          return;
-        }
-        
-        // Get current game state canister actor
-        const gameStateCanisterActor = globalState.gameStateCanisterActor;
-        if (!gameStateCanisterActor) {
-          console.warn("Game state canister actor not available");
-          return;
-        }
-        
-        // Reload user's mAIner agent canisters
-        const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, isAuthed, identity);
-        
-        // Update the store with new data
-        update((state) => ({
-          ...state,
-          userMainerCanisterActors: mainerActors,
-          userMainerAgentCanistersInfo: userCanisters
-        }));
-        
-        console.log("User mAIner canisters reloaded successfully");
+      // Check authentication status from store first
+      const isAuthed = globalState.isAuthed;
+      if (!isAuthed) {
+        console.warn("User not authenticated, cannot reload mAIner canisters");
+        return;
       }
+      
+      // Get current game state canister actor
+      const gameStateCanisterActor = globalState.gameStateCanisterActor;
+      if (!gameStateCanisterActor) {
+        console.warn("Game state canister actor not available");
+        return;
+      }
+      
+      // Get identity based on auth type
+      let identity;
+      if (isAuthed === "nfid") {
+        // For NFID, try to get identity from stored signer client
+        const storedSignerClient = (globalThis as any).__nfid_signer_client__;
+        if (storedSignerClient && typeof storedSignerClient.getIdentity === 'function') {
+          identity = storedSignerClient.getIdentity();
+        } else {
+          console.warn("NFID signer client not available for reload");
+          return;
+        }
+      } else if (isAuthed === "internetidentity") {
+        // For Internet Identity, use AuthClient
+        authClient = await AuthClient.create();
+        if (await authClient.isAuthenticated()) {
+          identity = await authClient.getIdentity();
+        } else {
+          console.warn("Internet Identity not authenticated");
+          return;
+        }
+      } else {
+        console.warn("Unknown auth type:", isAuthed);
+        return;
+      }
+      
+      // Reload user's mAIner agent canisters
+      const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, isAuthed, identity);
+      
+      // Update the store with new data
+      update((state) => ({
+        ...state,
+        userMainerCanisterActors: mainerActors,
+        userMainerAgentCanistersInfo: userCanisters
+      }));
+      
+      console.log("User mAIner canisters reloaded successfully");
     } catch (error) {
       console.error("Error reloading user mAIner canisters:", error);
     }
