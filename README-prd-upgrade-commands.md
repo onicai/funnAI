@@ -25,6 +25,7 @@ echo -n "SUBNET_0_1_JUDGE               = $SUBNET_0_1_JUDGE - "; dfx canister --
 echo -n "SUBNET_0_1_SHARE_SERVICE       = $SUBNET_0_1_SHARE_SERVICE - "; dfx canister --network $NETWORK status $SUBNET_0_1_SHARE_SERVICE | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "SUBNET_0_1_BACKEND             = $SUBNET_0_1_BACKEND - "; dfx canister --network $NETWORK status $SUBNET_0_1_BACKEND | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "SUBNET_0_1_FRONTEND            = $SUBNET_0_1_FRONTEND - "; dfx canister --network $NETWORK status $SUBNET_0_1_FRONTEND | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_2_API                 = $SUBNET_0_2_API - "; dfx canister --network $NETWORK status $SUBNET_0_2_API | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "SUBNET_1_1_CHALLENGER_LLM_0    = $SUBNET_1_1_CHALLENGER_LLM_0 - "; dfx canister --network $NETWORK status $SUBNET_1_1_CHALLENGER_LLM_0 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "SUBNET_1_1_JUDGE_LLM_0         = $SUBNET_1_1_JUDGE_LLM_0 - "; dfx canister --network $NETWORK status $SUBNET_1_1_JUDGE_LLM_0 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "SUBNET_1_1_JUDGE_LLM_1         = $SUBNET_1_1_JUDGE_LLM_1 - "; dfx canister --network $NETWORK status $SUBNET_1_1_JUDGE_LLM_1 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
@@ -296,6 +297,29 @@ dfx canister --network $NETWORK call   $SUBNET_0_1_JUDGE resetIsProcessingSubmis
 
 # Verify registered LLMs
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --output json
+```
+
+# upgrade the API canister
+
+```bash
+# Verify correct network !
+echo $NETWORK
+
+# from folder: PoAIW/src/Api
+dfx deploy --network $NETWORK api_canister --mode upgrade
+
+# start the API canister back up
+dfx canister --network $NETWORK start  $SUBNET_0_2_API
+```
+
+## Update Admin RBAC for API canister
+
+```bash
+# verify funnAI_django principal has #AdminUpdate permissions
+dfx canister --network $NETWORK call $SUBNET_0_2_API getAdminRoles
+dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$FUNNAI_DJANGO_PRINCIPAL'"; role = variant { AdminUpdate }; note = "Grant AdminUpdate access for funnai-django" } )'
+# if needed, this is how you revoke permissions for the previous principal
+dfx canister --network $NETWORK call SUBNET_0_2_API revokeAdminRole '( "'$FUNNAI_DJANGO_PRINCIPAL'")'
 ```
 
 # upgrade the mAInerCreator
