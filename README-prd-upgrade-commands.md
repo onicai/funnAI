@@ -3,8 +3,10 @@
 
 ```bash
 # One of these...
-NETWORK=prd       # CAREFUL - CAREFUL - CAREFUL
+NETWORK=prd
 NETWORK=testing
+NETWORK=demo
+NETWORK=development
 
 echo " "
 echo "Using network type: $NETWORK"
@@ -68,11 +70,13 @@ dfx canister --network $NETWORK stop $SUBNET_0_1_GAMESTATE
 dfx canister --network $NETWORK stop $SUBNET_0_1_CHALLENGER
 dfx canister --network $NETWORK stop $SUBNET_0_1_JUDGE
 dfx canister --network $NETWORK stop $SUBNET_0_1_SHARE_SERVICE
+dfx canister --network $NETWORK stop $SUBNET_0_1_MAINER_CREATOR
 
 dfx canister --network $NETWORK status $SUBNET_0_1_GAMESTATE     | grep Status
 dfx canister --network $NETWORK status $SUBNET_0_1_CHALLENGER    | grep Status
 dfx canister --network $NETWORK status $SUBNET_0_1_JUDGE         | grep Status
 dfx canister --network $NETWORK status $SUBNET_0_1_SHARE_SERVICE | grep Status
+dfx canister --network $NETWORK status $SUBNET_0_1_MAINER_CREATOR | grep Status
 ```
 
 # snapshot the protocol canisters
@@ -83,7 +87,8 @@ echo $NETWORK
 dfx canister --network $NETWORK snapshot create $SUBNET_0_1_GAMESTATE
 dfx canister --network $NETWORK snapshot create $SUBNET_0_1_CHALLENGER    
 dfx canister --network $NETWORK snapshot create $SUBNET_0_1_JUDGE         
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE 
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_MAINER_CREATOR 
 ```
 
 # upgrade the GameState
@@ -127,7 +132,7 @@ dfx canister --network $NETWORK call game_state_canister setGameStateThresholdsA
         thresholdArchiveClosedChallenges = 140 : nat;
         thresholdMaxOpenChallenges = 7 : nat;
         thresholdMaxOpenSubmissions = 140 : nat;
-        thresholdScoredResponsesPerChallenge = 33 : nat;
+        thresholdScoredResponsesPerChallenge = 27 : nat;
     }
 )'
 
@@ -197,6 +202,56 @@ dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE get_llm_canisters
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getTimerActionRegularityInSecondsAdmin
 ```
 
+## reinstall the ShareService
+
+```bash
+# Verify correct network !
+echo $NETWORK
+
+# from folder: PoAIW/src/mAIner
+dfx deploy --network $NETWORK mainer_service_canister --mode reinstall
+
+# start the ShareService canister back up
+echo "SUBNET_0_1_SHARE_SERVICE: $SUBNET_0_1_SHARE_SERVICE"
+dfx canister --network $NETWORK start  $SUBNET_0_1_SHARE_SERVICE
+dfx canister --network $NETWORK status $SUBNET_0_1_SHARE_SERVICE     | grep Status
+dfx canister --network $NETWORK call   $SUBNET_0_1_SHARE_SERVICE health
+
+# Verify timer setting
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getTimerActionRegularityInSecondsAdmin
+
+# register game state
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE setGameStateCanisterId '("'$SUBNET_0_1_GAMESTATE'")'
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getGameStateCanisterId
+
+# register the LLMs
+# from folder: PoAIW/src/mAIner
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE get_llm_canisters
+# register every LLM with the ShareService with this command
+CANISTER_ID_LLM=...
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE add_llm_canister '(record { canister_id = "'$CANISTER_ID_LLM'" })'
+
+# register all the ShareAgent mAIners, by upgrading them via GameState > mAInerCreator
+# -> This will take care of all proper registrations
+MAINER=...
+# snapshot
+dfx canister --network $NETWORK stop $MAINER
+dfx canister --network $NETWORK snapshot create $MAINER
+dfx canister --network $NETWORK start $MAINER
+# set correct type & register ShareAgent with ShareService
+dfx canister call --network $NETWORK $MAINER setMainerCanisterType '(variant {ShareAgent} )'
+dfx canister call --network $NETWORK $MAINER setShareServiceCanisterId '("'$SUBNET_0_1_SHARE_SERVICE'")'
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE upgradeMainerControllerAdmin "(record {canisterAddress = \"$MAINER\" })"
+# Note: it will fail if maintenance flag is on. Toggle it and retry
+dfx canister --network $NETWORK call $MAINER getMaintenanceFlag
+dfx canister --network $NETWORK call $MAINER toggleMaintenanceFlagAdmin # it must be off !
+# verify
+dfx canister call --network $NETWORK $MAINER getMainerCanisterType
+dfx canister --network $NETWORK call $MAINER getGameStateCanisterId 
+dfx canister --network $NETWORK call $MAINER health
+dfx canister --network $NETWORK call $MAINER getMaintenanceFlag
+```
+
 # upgrade the Judge
 
 ```bash
@@ -226,15 +281,51 @@ dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE setTimerActionRegularityI
 # reset the isProcessingSubmissions flag
 dfx canister --network $NETWORK call   $SUBNET_0_1_JUDGE resetIsProcessingSubmissionsAdmin
 
-# Test the new endpoints to manage the deployed LLMs
-# Get the LLMs currently in use > Remove > check > Add > check
+# Verify registered LLMs
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --output json
-echo "SUBNET_1_1_JUDGE_LLM_0: $SUBNET_1_1_JUDGE_LLM_0"
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    remove_llm_canister "(record {canister_id = \"$SUBNET_1_1_JUDGE_LLM_0\"})"
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    add_llm_canister    "(record {canister_id = \"$SUBNET_1_1_JUDGE_LLM_0\"})"
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters
 ```
+
+# upgrade the mAInerCreator
+
+```bash
+# Verify correct network !
+echo $NETWORK
+
+# from folder: PoAIW/src/mAInerCreator
+# Generate the bindings for the upload scripts and the frontend
+dfx generate mainer_creator_canister
+dfx deploy --network $NETWORK mainer_creator_canister --mode upgrade
+
+# start the mAInerCreator canister back up
+dfx canister --network $NETWORK start  $SUBNET_0_1_MAINER_CREATOR
+dfx canister --network $NETWORK status $SUBNET_0_1_MAINER_CREATOR     | grep Status
+dfx canister --network $NETWORK call   $SUBNET_0_1_MAINER_CREATOR health
+
+# ensure the correct wasm & did files are in this folder
+# -> PoAIW/src/mAInerCreator/files
+#    Instructions in PoAIW/src/mAInerCreator/README.md
+#
+# from folder: PoAIW/src/mAInerCreator
+# (if changed) Upload the mainer controller canister wasm
+python -m scripts.upload_mainer_controller_canister --network $NETWORK --canister mainer_creator_canister --wasm files/mainer_ctrlb_canister.wasm --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
+#
+# (if changed) Upload the mainer LLM canister wasm
+python -m scripts.upload_mainer_llm_canister_wasm --network $NETWORK --canister mainer_creator_canister --wasm files/llama_cpp.wasm --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
+
+# (if changed) Upload the mainer LLM model file (gguf)
+python -m scripts.upload_mainer_llm_canister_modelfile --network $NETWORK --canister mainer_creator_canister --chunksize 2000000 --wasm files/qwen2.5-0.5b-instruct-q8_0.gguf --hf-sha256 "ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e" --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
+
+# Verify the sha256 hashes of all uploaded files
+# Warning: do not run this while upload is in process. Wait till it is fully completed.
+#          It uses a lazy evaluation logic.
+dfx canister --network $NETWORK call mainer_creator_canister getSha256HashesAdmin
+```
+
+## Testing the mAInerCreator
+
+Final test must be done by creating a mAIner via the UI, but initial test you can do with dfx.
+
+Call the `spinUpMainerControllerCanisterForUserAdmin` endpoint as described in PoAIW/src/GameState/README.md 
 
 # un-pause protocol
 ```bash
@@ -330,6 +421,13 @@ dfx canister --network $NETWORK snapshot load $SUBNET_0_1_JUDGE         <snapsho
 --------------------------------------------------------
 
 # Deploy or Upgrade LLMs
+
+## IMPORTANT: Also upload wasm to mAInerCreator
+
+Even though we are not using the mAInerCreator to upgrade mAIners, it
+is important to keep the wasm file up to date.
+
+## Description
 
 Deploying or upgrading LLMs is done without pausing the protocol.
 
@@ -513,7 +611,7 @@ In these folders, the following files are used by dfx:
     dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numJudgeLlms = opt ($NUM_LLMS_DEPLOYED : nat);})" 
 ```
 
-## Upgrade an existing LLM, including offline cleaning
+## Upgrade an existing LLM
 
 ```bash
     # Takes the LLM offline, upgrades it, tests it, and puts it back online
@@ -525,7 +623,7 @@ In these folders, the following files are used by dfx:
 
 ## Using a daily task
 
-The cleaning of the LLMs is now done automatically via a periodic task.
+The cleaning of the LLMs is now done automatically via a periodic task in funnAI_django.
 
 ## Manually, while the LLM is still online
 
@@ -661,6 +759,11 @@ If you want to do it all manually, follow these steps:
 ```
 
 # Upgrade the mAIners
+
+## IMPORTANT: Also upload wasm to mAInerCreator
+
+Even though we are not using the mAInerCreator to upgrade mAIners, it
+is important to keep the wasm file up to date.
 
 ## Using script
 
