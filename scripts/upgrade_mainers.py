@@ -681,13 +681,16 @@ def create_snapshot(network: str, canister_id: str, dry_run: bool = False) -> Op
         log_message(f"Failed to create snapshot for {canister_id}: {e}", "ERROR")
         return None
 
-def upgrade_canister(network: str, canister_name: str, dry_run: bool = False) -> bool:
+def upgrade_canister(network: str, canister_name: str, dry_run: bool = False, deploy_with_yes: bool = False) -> bool:
     """Upgrade a canister with retry on transient network errors."""
     log_message(f"Upgrading {canister_name}...")
 
     command = [
         "dfx", "deploy", "--network", network, canister_name, "--mode", "upgrade"
     ]
+    if deploy_with_yes:
+        command.append("--yes")
+
     if dry_run:
         log_message(f"DRY RUN: Would execute (in {POAIW_MAINER_DIR}): {' '.join(command)}", "INFO")
         return True
@@ -1002,7 +1005,7 @@ def should_skip_upgrade(network: str, address: str, target_hash: Optional[str], 
         return False
 
 def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
-                  dry_run: bool = False, canister_index: int = 0) -> bool:
+                  dry_run: bool = False, canister_index: int = 0, deploy_with_yes: bool = False) -> bool:
     """Upgrade a single mAIner through all steps."""
     address = mainer.get('address', '')
 
@@ -1082,7 +1085,7 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
         return False
 
     # Step 2g: Deploy upgrade
-    if not upgrade_canister(network, canister_name, dry_run):
+    if not upgrade_canister(network, canister_name, dry_run, deploy_with_yes):
         log_message(f"Failed to upgrade canister. Snapshot ID for rollback: {snapshot_id}", "ERROR")
         # Don't auto-rollback, let admin decide
         update_mainer_status(address, MainerStatus.FAILED_UPGRADE, f"Upgrade failed. Snapshot: {snapshot_id}")
@@ -1096,6 +1099,7 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
 
     # Step 2i: Check maintenance flag (endpoint must now be available and return true)
     # Retry logic: canister may need time to fully initialize after upgrade
+    # If flag is False, call endpoint to turn it on
     if not dry_run:
         max_retries = 10
         retry_delay = 15.0
@@ -1108,6 +1112,17 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
             if flag_value is True:
                 log_message(f"Maintenance flag check passed (attempt {attempt}/{max_retries})", "SUCCESS")
                 break
+            elif flag_value is False:
+                log_message(f"Maintenance flag is False (attempt {attempt}/{max_retries}), calling endpoint to turn it on...", "WARNING")
+                if turn_on_maintenance_flag(network, address, dry_run):
+                    log_message(f"Successfully turned on maintenance flag", "SUCCESS")
+                    break
+                elif attempt < max_retries:
+                    log_message(f"Failed to turn on maintenance flag, will retry. Waiting {retry_delay}s...", "WARNING")
+                else:
+                    log_message(f"Failed to turn on maintenance flag after {max_retries} attempts. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+                    update_mainer_status(address, MainerStatus.FAILED_MAINTENANCE, f"Could not turn on maintenance flag. Snapshot: {snapshot_id}")
+                    return False
             elif attempt < max_retries:
                 log_message(f"Maintenance flag not yet True (got: {flag_value}), attempt {attempt}/{max_retries}. Waiting {retry_delay}s...", "WARNING")
             else:
@@ -1250,6 +1265,11 @@ def main():
         "--reverse",
         action="store_true",
         help="Process mainers in reverse order (start from the end)"
+    )
+    parser.add_argument(
+        "--deploy-with-yes",
+        action="store_true",
+        help="Use 'dfx deploy --yes' to skip confirmation prompts"
     )
 
     args = parser.parse_args()
@@ -1400,7 +1420,7 @@ def main():
                         continue
 
                 # Proceed with upgrade
-                if upgrade_mainer(args.network, mainer, args.target_hash, args.dry_run, i):
+                if upgrade_mainer(args.network, mainer, args.target_hash, args.dry_run, i, args.deploy_with_yes):
                     successful += 1
                 else:
                     failed += 1
