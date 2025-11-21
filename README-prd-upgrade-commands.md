@@ -2,6 +2,9 @@
 # Set NETWORK environment variable
 
 ```bash
+# The principal of funnAI Django running on aws-dev (same for all networks)
+FUNNAI_DJANGO_PRINCIPAL=bzqba-mwz5i-rq3oz-iie6i-gf7bi-kqr2x-tjuq4-nblmh-ephou-n27tl-xqe
+
 # One of these...
 NETWORK=prd
 NETWORK=testing
@@ -22,6 +25,7 @@ echo -n "SUBNET_0_1_JUDGE               = $SUBNET_0_1_JUDGE - "; dfx canister --
 echo -n "SUBNET_0_1_SHARE_SERVICE       = $SUBNET_0_1_SHARE_SERVICE - "; dfx canister --network $NETWORK status $SUBNET_0_1_SHARE_SERVICE | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "SUBNET_0_1_BACKEND             = $SUBNET_0_1_BACKEND - "; dfx canister --network $NETWORK status $SUBNET_0_1_BACKEND | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "SUBNET_0_1_FRONTEND            = $SUBNET_0_1_FRONTEND - "; dfx canister --network $NETWORK status $SUBNET_0_1_FRONTEND | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_2_API                 = $SUBNET_0_2_API - "; dfx canister --network $NETWORK status $SUBNET_0_2_API | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "SUBNET_1_1_CHALLENGER_LLM_0    = $SUBNET_1_1_CHALLENGER_LLM_0 - "; dfx canister --network $NETWORK status $SUBNET_1_1_CHALLENGER_LLM_0 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "SUBNET_1_1_JUDGE_LLM_0         = $SUBNET_1_1_JUDGE_LLM_0 - "; dfx canister --network $NETWORK status $SUBNET_1_1_JUDGE_LLM_0 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "SUBNET_1_1_JUDGE_LLM_1         = $SUBNET_1_1_JUDGE_LLM_1 - "; dfx canister --network $NETWORK status $SUBNET_1_1_JUDGE_LLM_1 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
@@ -141,12 +145,22 @@ dfx canister --network $NETWORK call game_state_canister setGameStateThresholdsA
 # - dailySubmissionsAllShare = dailyChallenges * thresholdScoredResponsesPerChallenge
 #                            = 144 * 33 = 4,752
 # - dailySubmissionsAllOwn = (TODO for PowerMainer)
-```bash
+
 # verify current settings
 dfx canister --network $NETWORK call game_state_canister getCyclesFlowAdmin | grep dailySubmissionsAllShare
 
 # set the values, which will trigger a recalculation
 dfx canister --network $NETWORK call game_state_canister setCyclesFlowAdmin '( record { dailySubmissionsAllShare = opt (4752 : nat);})'
+```
+
+## Update Admin RBAC for GameState
+
+```bash
+# verify funnAI_django principal has #AdminQuery permissions
+dfx canister --network $NETWORK call game_state_canister getAdminRoles
+dfx canister --network $NETWORK call game_state_canister assignAdminRole '( record { "principal" = "'$FUNNAI_DJANGO_PRINCIPAL'"; role = variant { AdminQuery }; note = "Grant AdminQuery access for funnai-django" } )'
+# if needed, this is how you revoke permissions for the previous principal
+dfx canister --network $NETWORK call game_state_canister revokeAdminRole '( "'$FUNNAI_DJANGO_PRINCIPAL'")'
 ```
 
 # upgrade the Challenger
@@ -283,6 +297,29 @@ dfx canister --network $NETWORK call   $SUBNET_0_1_JUDGE resetIsProcessingSubmis
 
 # Verify registered LLMs
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --output json
+```
+
+# upgrade the API canister
+
+```bash
+# Verify correct network !
+echo $NETWORK
+
+# from folder: PoAIW/src/Api
+dfx deploy --network $NETWORK api_canister --mode upgrade
+
+# start the API canister back up
+dfx canister --network $NETWORK start  $SUBNET_0_2_API
+```
+
+## Update Admin RBAC for API canister
+
+```bash
+# verify funnAI_django principal has #AdminUpdate permissions
+dfx canister --network $NETWORK call $SUBNET_0_2_API getAdminRoles
+dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$FUNNAI_DJANGO_PRINCIPAL'"; role = variant { AdminUpdate }; note = "Grant AdminUpdate access for funnai-django" } )'
+# if needed, this is how you revoke permissions for the previous principal
+dfx canister --network $NETWORK call SUBNET_0_2_API revokeAdminRole '( "'$FUNNAI_DJANGO_PRINCIPAL'")'
 ```
 
 # upgrade the mAInerCreator
@@ -762,9 +799,6 @@ If you want to do it all manually, follow these steps:
 
 ## IMPORTANT: Also upload wasm to mAInerCreator
 
-Even though we are not using the mAInerCreator to upgrade mAIners, it
-is important to keep the wasm file up to date.
-
 ## Using script
 
 The following script is used to upgrade ALL or selected mAIners.
@@ -790,6 +824,7 @@ Options:
   --skip-preparation      Optional. Skip Step 1 preparation
   --ask-before-upgrade    Optional. Ask for confirmation before upgrading each canister
   --reverse               Optional. Process mainers in reverse order
+  --deploy-with-yes       Optional. Will use: dfx deploy ... --yes
 
 # from the folder: funnAI
 conda activate llama_cpp_canister
@@ -797,7 +832,7 @@ conda activate llama_cpp_canister
 # Option 1: Upgrade a specific mAIner of IConfucius
 # -> eg: nkftb-zqaaa-aaaaa-qbbxa-cai is running at VeryHigh
 MAINER=nkftb-zqaaa-aaaaa-qbbxa-cai
-scripts/upgrade_mainers.sh --network prd --mainer $MAINER --ask-before-upgrade [--dry-run]
+scripts/upgrade_mainers.sh --network $NETWORK --mainer $MAINER --ask-before-upgrade [--dry-run]
 # -> It will print new wasm hash, which you set as the target hash for rest of deployment
 TARGET_HASH=0xad2c4545d533e4a01f81e9ec57c9bd16e1c5c358208ef8f9122f9c0e43ed547f  # Oct 25, 2025 (release-3)
 TARGET_HASH=0x55ab6af1cdaf08ddd34776e7404aecd3eacba3b86ba03eb9196ddfd8113d50c2  # Oct 23, 2025 (release-2)
@@ -806,22 +841,45 @@ TARGET_HASH=0xf2a40400e1f0cc0896c976eb2efa7a902aff68266b69b4a6be0a077b022db819  
 
 # Upgrade 1 more mAIner of IConfucius on production network with confirmation prompt:
 USER=xijdk-rtoet-smgxl-a4apd-ahchq-bslha-ope4a-zlpaw-ldxat-prh6f-jqe
-scripts/upgrade_mainers.sh --network prd --user $USER --target-hash $TARGET_HASH --num 1 --ask-before-upgrade [--dry-run]
+scripts/upgrade_mainers.sh --network $NETWORK --user $USER --target-hash $TARGET_HASH --num 1 --ask-before-upgrade [--dry-run]
 
 # Upgrade 2 more mAIners of IConfucius on production network, without confirmation prompt:
-scripts/upgrade_mainers.sh --network prd --user $USER --target-hash $TARGET_HASH --num 2 [--dry-run]
+scripts/upgrade_mainers.sh --network $NETWORK --user $USER --target-hash $TARGET_HASH --num 2 [--dry-run]
 
 # Upgrade ALL mAIners of IConfucius on production network without confirmation prompt:
-scripts/upgrade_mainers.sh --network prd --user $USER --target-hash $TARGET_HASH [--dry-run]
+scripts/upgrade_mainers.sh --network $NETWORK --user $USER --target-hash $TARGET_HASH [--dry-run]
 
 # Upgrade 1 other mAIner on production network, with confirmation prompt:
-scripts/upgrade_mainers.sh --network prd --num 1 --target-hash $TARGET_HASH [--dry-run]
+scripts/upgrade_mainers.sh --network $NETWORK --num 1 --target-hash $TARGET_HASH [--dry-run]
 
 # Upgrade 100 mainers on production network with target hash and without confirmation prompt:
-scripts/upgrade_mainers.sh --network prd --num 100 --target-hash $TARGET_HASH [--dry-run]
+scripts/upgrade_mainers.sh --network $NETWORK --num 100 --target-hash $TARGET_HASH [--dry-run]
 
 # Upgrade ALL mainers on production network with target hash and without confirmation prompt:
-scripts/upgrade_mainers.sh --network prd --target-hash $TARGET_HASH [--dry-run]
+scripts/upgrade_mainers.sh --network $NETWORK --target-hash $TARGET_HASH [--dry-run]
+```
+
+### Update Admin RBAC for mAIners
+
+#### Using script
+
+```bash
+# To assign permissions
+scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $FUNNAI_DJANGO_PRINCIPAL [--action assign] [--dry-run]
+
+# To revoke permissions
+scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $FUNNAI_DJANGO_PRINCIPAL --action revoke [--dry-run]
+```
+
+#### Manual
+
+```bash
+MAINER=...
+# verify funnAI_django principal has #AdminQuery permissions
+dfx canister --network $NETWORK call $MAINER getAdminRoles
+dfx canister --network $NETWORK call $MAINER assignAdminRole '( record { "principal" = "'$FUNNAI_DJANGO_PRINCIPAL'"; role = variant { AdminQuery }; note = "Grant AdminQuery access for funnai-django" } )'
+# if needed, this is how you revoke permissions for the previous principal
+dfx canister --network $MAINER revokeAdminRole '( "'$FUNNAI_DJANGO_PRINCIPAL'")'
 ```
 
 ### Verify mAIners Health & Hash
@@ -830,7 +888,7 @@ After upgrade is completed, verify every mAIner is healthy and has correct modul
 
 ```bash
 TARGET_HASH=0x...
-scripts/get_mainers_health.sh --network prd --target-hash $TARGET_HASH
+scripts/get_mainers_health.sh --network $NETWORK --target-hash $TARGET_HASH
 ```
 
 ### Delete mAIners snapshots
@@ -838,7 +896,7 @@ scripts/get_mainers_health.sh --network prd --target-hash $TARGET_HASH
 Delete snapshot of all the mAIners:
 
 ```bash
-scripts/delete_snapshots.sh --network prd --canister-types mainers [--dry-run]
+scripts/delete_snapshots.sh --network $NETWORK --canister-types mainers [--dry-run]
 ```
 
 ## Old approach
