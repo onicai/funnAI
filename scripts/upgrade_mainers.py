@@ -82,6 +82,7 @@ class MainerStatus(Enum):
     SKIPPED_ALREADY_UPGRADED = "skipped_upgraded"  # Skipped - already at target hash and healthy
     SKIPPED_USER_REQUEST = "skipped_user"        # Skipped - user chose to skip
     SKIPPED_FILTER = "skipped_filter"            # Skipped - filtered out (not ShareAgent, empty address, etc.)
+    SKIPPED_DOES_NOT_EXIST = "skipped_not_exist" # Skipped - canister does not exist
     IN_PROGRESS = "in_progress"                  # Currently being upgraded
     SUCCESS = "success"                          # Successfully upgraded
     FAILED_STOP_TIMER = "failed_stop_timer"      # Failed to stop timer
@@ -256,7 +257,8 @@ def print_status_report(processed_count: int = 0):
     # For skipped, only count the ones that were actually checked (not pre-filtered)
     skipped_already_upgraded = summary.get('skipped_upgraded', 0)
     skipped_user = summary.get('skipped_user', 0)
-    skipped_processed = skipped_already_upgraded + skipped_user
+    skipped_does_not_exist = summary.get('skipped_not_exist', 0)
+    skipped_processed = skipped_already_upgraded + skipped_user + skipped_does_not_exist
 
     # Total that were actually looked at
     total_processed = success_count + failed_count + skipped_processed
@@ -268,7 +270,15 @@ def print_status_report(processed_count: int = 0):
     log_message(f"  ✓ Upgraded: {success_count}", "SUCCESS" if success_count > 0 else "INFO")
     log_message(f"  ⊘ Already up-to-date: {skipped_already_upgraded}", "INFO")
     log_message(f"  ⊘ Skipped by user: {skipped_user}", "INFO" if skipped_user == 0 else "WARNING")
+    log_message(f"  ⊘ Does not exist: {skipped_does_not_exist}", "WARNING" if skipped_does_not_exist > 0 else "INFO")
     log_message(f"  ✗ Failed: {failed_count}", "ERROR" if failed_count > 0 else "INFO")
+
+    # Show canisters that don't exist
+    if skipped_does_not_exist > 0:
+        log_message("\nCanisters that do not exist:", "WARNING")
+        for address, data in mainer_status_tracker.items():
+            if data['status'].value == 'skipped_not_exist':
+                log_message(f"  {address}", "WARNING")
 
     # Show failed mAIners with details if any
     if failed_count > 0:
@@ -514,8 +524,16 @@ def get_canister_status(network: str, canister_id: str) -> Optional[str]:
     log_message(f"Failed to get status for {canister_id} after {max_attempts} attempts", "ERROR")
     return None
 
+class CanisterDoesNotExistError(Exception):
+    """Exception raised when a canister does not exist."""
+    pass
+
 def get_canister_wasm_hash(network: str, canister_id: str) -> Optional[str]:
-    """Get the wasm hash of a canister with retry on transient network errors."""
+    """Get the wasm hash of a canister with retry on transient network errors.
+
+    Raises:
+        CanisterDoesNotExistError: If the canister does not exist
+    """
     try:
         result = run_command([
             "dfx", "canister", "--network", network, "info", canister_id
@@ -523,6 +541,17 @@ def get_canister_wasm_hash(network: str, canister_id: str) -> Optional[str]:
         for line in result.stdout.split('\n'):
             if 'Module hash:' in line:
                 return line.split(':')[1].strip()
+        return None
+    except subprocess.CalledProcessError as e:
+        # Check if the error is because canister does not exist
+        error_text = ""
+        if hasattr(e, 'stderr') and e.stderr:
+            error_text = e.stderr
+
+        if "does not exist" in error_text:
+            raise CanisterDoesNotExistError(f"Canister {canister_id} does not exist")
+
+        log_message(f"Failed to get wasm hash for {canister_id}: {e}", "WARNING")
         return None
     except Exception as e:
         log_message(f"Failed to get wasm hash for {canister_id}: {e}", "WARNING")
@@ -1062,7 +1091,7 @@ def get_canister_name_from_address(address: str, network: str) -> Optional[str]:
         log_message(f"Failed to find canister name for {address}: {e}", "ERROR")
         return None
 
-def should_skip_upgrade(network: str, address: str, target_hash: Optional[str], dry_run: bool = False) -> bool:
+def should_skip_upgrade(network: str, address: str, target_hash: Optional[str], dry_run: bool = False) -> tuple[bool, Optional[str]]:
     """
     Determine if upgrade should be skipped.
 
@@ -1077,10 +1106,15 @@ def should_skip_upgrade(network: str, address: str, target_hash: Optional[str], 
         dry_run: If True, simulates checks without making actual calls
 
     Returns:
-        True if upgrade should be skipped, False otherwise
+        Tuple of (should_skip: bool, skip_reason: Optional[str])
+        skip_reason is "does_not_exist" if canister doesn't exist, None otherwise
     """
     # Get current hash
-    current_hash = get_canister_wasm_hash(network, address)
+    try:
+        current_hash = get_canister_wasm_hash(network, address)
+    except CanisterDoesNotExistError:
+        log_message(f"Canister {address} does not exist - skipping", "WARNING")
+        return True, "does_not_exist"
 
     # Log current hash
     if current_hash:
@@ -1090,14 +1124,14 @@ def should_skip_upgrade(network: str, address: str, target_hash: Optional[str], 
 
     # If no target hash specified, don't skip
     if not target_hash:
-        return False
+        return False, None
 
     log_message(f"Target hash: {target_hash}", "INFO")
 
     # If hashes don't match, don't skip
     if current_hash != target_hash:
         log_message(f"Hash mismatch - upgrade needed", "INFO")
-        return False
+        return False, None
 
     # Hashes match - now check health
     log_message(f"Hash matches target - checking health before skipping", "INFO")
@@ -1105,10 +1139,10 @@ def should_skip_upgrade(network: str, address: str, target_hash: Optional[str], 
 
     if health_ok:
         log_message(f"Already upgraded to target hash and health check passed - skipping", "INFO")
-        return True
+        return True, None
     else:
         log_message(f"Hash matches but health check failed - will upgrade anyway", "WARNING")
-        return False
+        return False, None
 
 def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
                   dry_run: bool = False, canister_index: int = 0, deploy_with_yes: bool = False) -> bool:
@@ -1490,8 +1524,12 @@ def main():
                 # Check if upgrade should be skipped
                 address = mainer.get('address', '')
 
-                if should_skip_upgrade(args.network, address, args.target_hash, args.dry_run):
-                    update_mainer_status(address, MainerStatus.SKIPPED_ALREADY_UPGRADED, "Already at target hash and healthy")
+                should_skip, skip_reason = should_skip_upgrade(args.network, address, args.target_hash, args.dry_run)
+                if should_skip:
+                    if skip_reason == "does_not_exist":
+                        update_mainer_status(address, MainerStatus.SKIPPED_DOES_NOT_EXIST, "Canister does not exist")
+                    else:
+                        update_mainer_status(address, MainerStatus.SKIPPED_ALREADY_UPGRADED, "Already at target hash and healthy")
                     skipped += 1
                     continue
 
