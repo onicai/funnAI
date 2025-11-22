@@ -442,23 +442,37 @@ def update_mainer_rbac(network: str, mainer: Dict, principal: str, action: str, 
         # Step 3: Verify the role was assigned (if not dry run)
         if not dry_run:
             log_message(f"Step 3: Verifying role assignment...", "INFO")
-            time.sleep(2)  # Give canister a moment to process
 
-            admin_roles_after = get_admin_roles(network, address, dry_run)
+            # Retry verification with exponential backoff
+            max_verification_retries = 7
+            base_delay = 2.0
 
-            if admin_roles_after is None:
-                log_message(f"Failed to verify role assignment - could not get admin roles", "ERROR")
-                update_mainer_status(address, 'failed', "Could not verify role assignment")
-                return False
+            for attempt in range(1, max_verification_retries + 1):
+                delay = base_delay * (2 ** (attempt - 1))  # Exponential backoff: 2, 4, 8, 16, 32, 64, 128 seconds
+                time.sleep(delay)
 
-            if principal_has_role(admin_roles_after, principal):
-                log_message(f"Role assignment verified successfully", "SUCCESS")
-                update_mainer_status(address, 'success')
-                return True
-            else:
-                log_message(f"Role assignment verification failed - principal not found in admin roles", "ERROR")
-                update_mainer_status(address, 'failed', "Role not found after assignment")
-                return False
+                log_message(f"Verification attempt {attempt}/{max_verification_retries}...", "INFO")
+                admin_roles_after = get_admin_roles(network, address, dry_run)
+
+                if admin_roles_after is None:
+                    if attempt < max_verification_retries:
+                        log_message(f"Could not get admin roles (attempt {attempt}/{max_verification_retries}). Retrying in {delay}s...", "WARNING")
+                        continue
+                    else:
+                        log_message(f"Failed to verify role assignment - could not get admin roles after {max_verification_retries} attempts", "ERROR")
+                        update_mainer_status(address, 'failed', "Could not verify role assignment")
+                        return False
+
+                if principal_has_role(admin_roles_after, principal):
+                    log_message(f"Role assignment verified successfully on attempt {attempt}", "SUCCESS")
+                    update_mainer_status(address, 'success')
+                    return True
+                elif attempt < max_verification_retries:
+                    log_message(f"Principal not found in admin roles yet (attempt {attempt}/{max_verification_retries}). Retrying...", "WARNING")
+                else:
+                    log_message(f"Role assignment verification failed - principal not found in admin roles after {max_verification_retries} attempts", "ERROR")
+                    update_mainer_status(address, 'failed', "Role not found after assignment")
+                    return False
         else:
             update_mainer_status(address, 'success')
             return True
