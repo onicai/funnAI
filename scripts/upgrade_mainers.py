@@ -454,18 +454,65 @@ def get_mainers(network: str) -> List[Dict]:
         sys.exit(1)
 
 def get_canister_status(network: str, canister_id: str) -> Optional[str]:
-    """Get the status of a canister (Running, Stopping, or Stopped) with retry on transient network errors."""
-    try:
-        result = run_command([
-            "dfx", "canister", "--network", network, "status", canister_id
-        ], retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
-        for line in result.stdout.split('\n'):
-            if line.startswith('Status:'):
-                return line.split(':')[1].strip()
-        return None
-    except Exception as e:
-        log_message(f"Failed to get status for {canister_id}: {e}", "WARNING")
-        return None
+    """Get the status of a canister (Running, Stopping, or Stopped) with retry on transient network errors.
+
+    Handles out-of-cycles errors by automatically topping up the canister with cycles.
+    """
+    def is_out_of_cycles_error(error_text: str) -> bool:
+        """Check if error indicates canister is out of cycles."""
+        return "is out of cycles" in error_text and "IC0207" in error_text
+
+    max_attempts = 2  # Initial attempt + 1 retry after topping up
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            result = run_command([
+                "dfx", "canister", "--network", network, "status", canister_id
+            ], retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
+            for line in result.stdout.split('\n'):
+                if line.startswith('Status:'):
+                    return line.split(':')[1].strip()
+            return None
+        except subprocess.CalledProcessError as e:
+            error_text = ""
+            if hasattr(e, 'stderr') and e.stderr:
+                error_text = e.stderr
+            if hasattr(e, 'stdout') and e.stdout:
+                error_text += " " + e.stdout
+            error_text += " " + str(e)
+
+            # Check if this is an out-of-cycles error
+            if is_out_of_cycles_error(error_text) and attempt < max_attempts:
+                log_message(f"Canister {canister_id} is out of cycles", "WARNING")
+                log_message(f"Sending 500,000,000,000 cycles to canister...", "INFO")
+
+                try:
+                    # Send cycles using dfx wallet
+                    send_result = run_command([
+                        "dfx", "wallet", "--network", network, "send", canister_id, "500_000_000_000"
+                    ])
+                    log_message(f"Successfully sent cycles to {canister_id}", "SUCCESS")
+
+                    # Wait 10 seconds before retrying
+                    log_message(f"Waiting 10 seconds before retrying status check...", "INFO")
+                    time.sleep(10)
+
+                    # Loop will continue to retry
+                    continue
+                except Exception as send_error:
+                    log_message(f"Failed to send cycles to {canister_id}: {send_error}", "ERROR")
+                    return None
+            else:
+                # Not an out-of-cycles error, or we've exhausted retries
+                log_message(f"Failed to get status for {canister_id}: {e}", "WARNING")
+                return None
+        except Exception as e:
+            log_message(f"Failed to get status for {canister_id}: {e}", "WARNING")
+            return None
+
+    # If we get here, all attempts failed
+    log_message(f"Failed to get status for {canister_id} after {max_attempts} attempts", "ERROR")
+    return None
 
 def get_canister_wasm_hash(network: str, canister_id: str) -> Optional[str]:
     """Get the wasm hash of a canister with retry on transient network errors."""
@@ -682,7 +729,14 @@ def create_snapshot(network: str, canister_id: str, dry_run: bool = False) -> Op
         return None
 
 def upgrade_canister(network: str, canister_name: str, dry_run: bool = False, deploy_with_yes: bool = False) -> bool:
-    """Upgrade a canister with retry on transient network errors."""
+    """Upgrade a canister with retry on transient network errors.
+
+    Handles out-of-cycles errors by automatically topping up the canister with cycles.
+    """
+    def is_out_of_cycles_error(error_text: str) -> bool:
+        """Check if error indicates canister is out of cycles during installation."""
+        return "is out of cycles" in error_text and "IC0207" in error_text
+
     log_message(f"Upgrading {canister_name}...")
 
     command = [
@@ -695,24 +749,76 @@ def upgrade_canister(network: str, canister_name: str, dry_run: bool = False, de
         log_message(f"DRY RUN: Would execute (in {POAIW_MAINER_DIR}): {' '.join(command)}", "INFO")
         return True
 
+    # Get canister ID from canister_ids.json
     try:
-        # Run the command WITH retry on transient errors (including network timeouts)
-        # Capture output so we can detect transient errors for retry logic
-        # Max 5 retries with 10 second base delay for network operations
-        run_command(
-            command,
-            capture_output=True,
-            cwd=str(POAIW_MAINER_DIR),
-            retry_on_transient_errors=True,
-            max_retries=5,
-            retry_delay=10.0,
-            log_stdout=True  # Show deployment progress
-        )
-        log_message(f"Canister {canister_name} upgraded", "SUCCESS")
-        return True
+        with open(POAIW_CANISTER_IDS_PATH, 'r') as f:
+            canister_ids = json.load(f)
+        canister_id = canister_ids.get(canister_name, {}).get(network)
+        if not canister_id:
+            log_message(f"Could not find canister ID for {canister_name} on network {network}", "ERROR")
+            return False
     except Exception as e:
-        log_message(f"Failed to upgrade {canister_name}: {e}", "ERROR")
+        log_message(f"Failed to read canister_ids.json: {e}", "ERROR")
         return False
+
+    max_attempts = 2  # Initial attempt + 1 retry after topping up
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            # Run the command WITH retry on transient errors (including network timeouts)
+            # Capture output so we can detect transient errors for retry logic
+            # Max 5 retries with 10 second base delay for network operations
+            run_command(
+                command,
+                capture_output=True,
+                cwd=str(POAIW_MAINER_DIR),
+                retry_on_transient_errors=True,
+                max_retries=5,
+                retry_delay=10.0,
+                log_stdout=True  # Show deployment progress
+            )
+            log_message(f"Canister {canister_name} upgraded", "SUCCESS")
+            return True
+        except subprocess.CalledProcessError as e:
+            error_text = ""
+            if hasattr(e, 'stderr') and e.stderr:
+                error_text = e.stderr
+            if hasattr(e, 'stdout') and e.stdout:
+                error_text += " " + e.stdout
+            error_text += " " + str(e)
+
+            # Check if this is an out-of-cycles error
+            if is_out_of_cycles_error(error_text) and attempt < max_attempts:
+                log_message(f"Canister {canister_id} is out of cycles during installation", "WARNING")
+                log_message(f"Sending 500,000,000,000 cycles to canister...", "INFO")
+
+                try:
+                    # Send cycles using dfx wallet
+                    send_result = run_command([
+                        "dfx", "wallet", "--network", network, "send", canister_id, "500_000_000_000"
+                    ])
+                    log_message(f"Successfully sent cycles to {canister_id}", "SUCCESS")
+
+                    # Wait 10 seconds before retrying
+                    log_message(f"Waiting 10 seconds before retrying upgrade...", "INFO")
+                    time.sleep(10)
+
+                    # Loop will continue to retry
+                    continue
+                except Exception as send_error:
+                    log_message(f"Failed to send cycles to {canister_id}: {send_error}", "ERROR")
+                    return False
+            else:
+                # Not an out-of-cycles error, or we've exhausted retries
+                log_message(f"Failed to upgrade {canister_name}: {e}", "ERROR")
+                return False
+        except Exception as e:
+            log_message(f"Failed to upgrade {canister_name}: {e}", "ERROR")
+            return False
+
+    # If we get here, all attempts failed
+    log_message(f"Failed to upgrade {canister_name} after {max_attempts} attempts", "ERROR")
+    return False
 
 def check_health(network: str, canister_id: str, dry_run: bool = False) -> tuple[bool, str]:
     """Check the health of a canister.
