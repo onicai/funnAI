@@ -75,12 +75,14 @@ dfx canister --network $NETWORK stop $SUBNET_0_1_CHALLENGER
 dfx canister --network $NETWORK stop $SUBNET_0_1_JUDGE
 dfx canister --network $NETWORK stop $SUBNET_0_1_SHARE_SERVICE
 dfx canister --network $NETWORK stop $SUBNET_0_1_MAINER_CREATOR
+dfx canister --network $NETWORK stop $SUBNET_0_2_API
 
 dfx canister --network $NETWORK status $SUBNET_0_1_GAMESTATE     | grep Status
 dfx canister --network $NETWORK status $SUBNET_0_1_CHALLENGER    | grep Status
 dfx canister --network $NETWORK status $SUBNET_0_1_JUDGE         | grep Status
 dfx canister --network $NETWORK status $SUBNET_0_1_SHARE_SERVICE | grep Status
 dfx canister --network $NETWORK status $SUBNET_0_1_MAINER_CREATOR | grep Status
+dfx canister --network $NETWORK status $SUBNET_0_2_API            | grep Status
 ```
 
 # snapshot the protocol canisters
@@ -93,6 +95,7 @@ dfx canister --network $NETWORK snapshot create $SUBNET_0_1_CHALLENGER
 dfx canister --network $NETWORK snapshot create $SUBNET_0_1_JUDGE         
 dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
 dfx canister --network $NETWORK snapshot create $SUBNET_0_1_MAINER_CREATOR 
+dfx canister --network $NETWORK snapshot create $SUBNET_0_2_API 
 ```
 
 # upgrade the GameState
@@ -338,19 +341,33 @@ dfx canister --network $NETWORK start  $SUBNET_0_1_MAINER_CREATOR
 dfx canister --network $NETWORK status $SUBNET_0_1_MAINER_CREATOR     | grep Status
 dfx canister --network $NETWORK call   $SUBNET_0_1_MAINER_CREATOR health
 
-# ensure the correct wasm & did files are in this folder
+# ensure the correct wasm & did files are in this folder 
 # -> PoAIW/src/mAInerCreator/files
-#    Instructions in PoAIW/src/mAInerCreator/README.md
+#
+# If you just did a mAIner upgrade, you can do this:
+# From folder: PoAIW/src/mAIner
+shasum -a 256 .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.wasm # confirm it is the TARGET_HASH
+cp .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.did ../mAInerCreator/files/mainer_ctrlb_canister.did
+cp .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.wasm ../mAInerCreator/files/mainer_ctrlb_canister.wasm
+#
+# -> More details in PoAIW/src/mAInerCreator/README.md
 #
 # from folder: PoAIW/src/mAInerCreator
+#
 # (if changed) Upload the mainer controller canister wasm
+shasum -a 256 files/mainer_ctrlb_canister.wasm # verify
 python -m scripts.upload_mainer_controller_canister --network $NETWORK --canister mainer_creator_canister --wasm files/mainer_ctrlb_canister.wasm --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
+# -> Repeat for all networks, used to test mAInerCreator
 #
 # (if changed) Upload the mainer LLM canister wasm
+shasum -a 256 files/llama_cpp.wasm # verify
 python -m scripts.upload_mainer_llm_canister_wasm --network $NETWORK --canister mainer_creator_canister --wasm files/llama_cpp.wasm --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
+# -> Repeat for all networks, used to test mAInerCreator
 
 # (if changed) Upload the mainer LLM model file (gguf)
+shasum -a 256 files/qwen2.5-0.5b-instruct-q8_0.gguf # verify
 python -m scripts.upload_mainer_llm_canister_modelfile --network $NETWORK --canister mainer_creator_canister --chunksize 2000000 --wasm files/qwen2.5-0.5b-instruct-q8_0.gguf --hf-sha256 "ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e" --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
+# -> Repeat for all networks, used to test mAInerCreator
 
 # Verify the sha256 hashes of all uploaded files
 # Warning: do not run this while upload is in process. Wait till it is fully completed.
@@ -834,6 +851,7 @@ conda activate llama_cpp_canister
 MAINER=nkftb-zqaaa-aaaaa-qbbxa-cai
 scripts/upgrade_mainers.sh --network $NETWORK --mainer $MAINER --ask-before-upgrade [--dry-run]
 # -> It will print new wasm hash, which you set as the target hash for rest of deployment
+TARGET_HASH=0xe7304d5490b6ad190bbebe14a1da8988e7a6e064afc697bdee90ffce902e67bc  # Nov 22, 2025 (release-4)
 TARGET_HASH=0xad2c4545d533e4a01f81e9ec57c9bd16e1c5c358208ef8f9122f9c0e43ed547f  # Oct 25, 2025 (release-3)
 TARGET_HASH=0x55ab6af1cdaf08ddd34776e7404aecd3eacba3b86ba03eb9196ddfd8113d50c2  # Oct 23, 2025 (release-2)
 TARGET_HASH=0xf2a40400e1f0cc0896c976eb2efa7a902aff68266b69b4a6be0a077b022db819  # Oct 10, 2025 (release-1)
