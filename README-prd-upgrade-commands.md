@@ -421,9 +421,9 @@ git fetch --tags
 git tag -l --format='%(refname:short) -> %(if)%(*objectname)%(then)%(*objectname:short)%(else)%(objectname:short)%(end) %(contents:subject)'
 
 # add the tag, as in this example
-RELEASE_TAG=release-3    # increment
-RELEASE_SHA=c8295d6      # get with `git log --oneline -5`
-RELEASE_MESSAGE="Release 3: Phase out direct cycle topups - fee 90%"
+RELEASE_TAG=release-4    # increment
+RELEASE_SHA=dd7792e      # get with `git log --oneline -5`
+RELEASE_MESSAGE="Release 4: Admin RBAC for GameState, Api & mAIners"
 git tag -a $RELEASE_TAG $RELEASE_SHA -m "$RELEASE_MESSAGE"
 
 # push it to github
