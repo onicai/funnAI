@@ -815,7 +815,21 @@ export const createStore = ({
             (globalThis as any).__nfid_identity_kit__ = identityKit;
             (globalThis as any).__nfid_signer_client__ = signerClient;
             
-            await initNfid(identity);
+            const initSuccess = await initNfid(identity);
+            if (!initSuccess) {
+              console.warn("NFID session restore failed - delegation likely expired");
+              clearSessionInfo();
+              
+              notificationStore.add(
+                "Your session has expired. Please log in again.",
+                "warning",
+                5000
+              );
+              
+              update((prevState) => ({
+                ...defaultState,
+              }));
+            }
             return;
           } else {
             // Session expired or not found, user needs to login again
@@ -852,7 +866,10 @@ export const createStore = ({
         (globalThis as any).__nfid_identity_kit__ = identityKit;
         (globalThis as any).__nfid_signer_client__ = signerClient;
         
-        await initNfid(identity);
+        const initSuccess = await initNfid(identity);
+        if (!initSuccess) {
+          throw new Error("Failed to initialize NFID session - please try again");
+        }
       } else {
         throw new Error("SignerClient not available on IdentityKit");
       }
@@ -867,64 +884,70 @@ export const createStore = ({
     }
   };
 
-  const initNfid = async (identity: Identity) => {
-    const backendActor = await initBackendCanisterActor("nfid", identity);
+  const initNfid = async (identity: Identity): Promise<boolean> => {
+    try {
+      const backendActor = await initBackendCanisterActor("nfid", identity);
 
-    if (!backendActor) {
-      console.warn("couldn't create backend actor");
-      return;
-    };
+      if (!backendActor) {
+        console.warn("❌ Couldn't create backend actor - delegation may be expired");
+        return false;
+      };
 
-    await initUserSettings(backendActor);
+      await initUserSettings(backendActor);
 
-    const gameStateCanisterActor = await initGameStateCanisterActor("nfid", identity);
-    
-    if (!gameStateCanisterActor) {
-      console.warn("couldn't create Game State actor");
-      return;
-    };
+      const gameStateCanisterActor = await initGameStateCanisterActor("nfid", identity);
+      
+      if (!gameStateCanisterActor) {
+        console.warn("❌ Couldn't create Game State actor - delegation may be expired");
+        return false;
+      };
 
-    const apiCanisterActor = await initApiCanisterActor("nfid", identity);
-    
-    if (!apiCanisterActor) {
-      console.warn("couldn't create API canister actor");
-      return;
-    };
+      const apiCanisterActor = await initApiCanisterActor("nfid", identity);
+      
+      if (!apiCanisterActor) {
+        console.warn("❌ Couldn't create API canister actor - delegation may be expired");
+        return false;
+      };
 
-    // Initialize user's mAIner agent (controller) canisters
-    const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "nfid", identity);
-    const userMainerCanisterActors = mainerActors;
-    const userMainerAgentCanistersInfo = userCanisters;
+      // Initialize user's mAIner agent (controller) canisters
+      const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "nfid", identity);
+      const userMainerCanisterActors = mainerActors;
+      const userMainerAgentCanistersInfo = userCanisters;
 
-    //let accounts = JSON.parse(await identity.accounts());
+      //let accounts = JSON.parse(await identity.accounts());
 
-    // Calculate session expiry time (30 days from now in nanoseconds)
-    const sessionExpiry = BigInt(Date.now()) * BigInt(1000000) + days * hours * nanosecondsPerHour;
-    
-    // Store session information for persistence
-    storeSessionInfo("nfid", sessionExpiry);
+      // Calculate session expiry time (30 days from now in nanoseconds)
+      const sessionExpiry = BigInt(Date.now()) * BigInt(1000000) + days * hours * nanosecondsPerHour;
+      
+      // Store session information for persistence
+      storeSessionInfo("nfid", sessionExpiry);
 
-    update((state) => ({
-      ...state,
-      backendActor,
-      principal: identity.getPrincipal(),
-      //accountId: accounts[0].address, // we take the default account associated with the identity
-      accountId: null,
-      isAuthed: "nfid",
-      gameStateCanisterActor,
-      apiCanisterActor,
-      userMainerCanisterActors,
-      userMainerAgentCanistersInfo,
-      sessionExpiry
-    }));
+      update((state) => ({
+        ...state,
+        backendActor,
+        principal: identity.getPrincipal(),
+        //accountId: accounts[0].address, // we take the default account associated with the identity
+        accountId: null,
+        isAuthed: "nfid",
+        gameStateCanisterActor,
+        apiCanisterActor,
+        userMainerCanisterActors,
+        userMainerAgentCanistersInfo,
+        sessionExpiry
+      }));
 
-    // Start automatic session refresh timer
-    startSessionRefreshTimer();
+      // Start automatic session refresh timer
+      startSessionRefreshTimer();
 
-    // Restore mAIner creation state if it exists
-    restoreMainerCreationState();
+      // Restore mAIner creation state if it exists
+      restoreMainerCreationState();
 
-    console.info("nfid is authed");
+      console.info("✅ NFID authentication successful");
+      return true;
+    } catch (error) {
+      console.error("❌ Error during NFID initialization:", error);
+      return false;
+    }
   };
 
   const internetIdentityConnect = async () => {
@@ -1103,20 +1126,32 @@ export const createStore = ({
               const identity = identityKit.signerClient.getIdentity();
               if (identity) {
                 const principal = identity.getPrincipal().toString();
-                console.log("✅ Successfully restored NFID session for principal:", principal);
+                console.log("🔍 Found NFID identity for principal:", principal);
                 (globalThis as any).__nfid_identity_kit__ = identityKit;
                 (globalThis as any).__nfid_signer_client__ = identityKit.signerClient;
-                await initNfid(identity);
-                console.log("🎉 NFID session fully restored!");
                 
-                // Show welcome back notification
-                notificationStore.add(
-                  "Welcome back! Your session has been restored.",
-                  "success",
-                  4000
-                );
+                // Try to initialize NFID and load user data
+                const initSuccess = await initNfid(identity);
                 
-                return;
+                if (initSuccess) {
+                  console.log("🎉 NFID session fully restored!");
+                  
+                  // Show welcome back notification only if initialization succeeded
+                  notificationStore.add(
+                    "Welcome back! Your session has been restored.",
+                    "success",
+                    4000
+                  );
+                  
+                  return;
+                } else {
+                  console.warn("❌ NFID session restoration failed - delegation likely expired");
+                  notificationStore.add(
+                    "Your session has expired. Please log in again.",
+                    "warning",
+                    5000
+                  );
+                }
               } else {
                 console.warn("❌ NFID session could not be restored - no identity available");
               }
