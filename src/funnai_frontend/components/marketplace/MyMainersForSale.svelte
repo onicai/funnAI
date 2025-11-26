@@ -267,7 +267,7 @@
                       </p>
                       <p class="text-xs text-orange-600 dark:text-orange-400 mt-1">
                         Minimum 0.1T cycles required. Current: {formatCycles(mainer.cycleBalance)}. 
-                        <span class="font-medium">Burn FUNNAI to top up cycles.</span>
+                        <span class="font-medium">Top up your mAIner to list.</span>
                       </p>
                     </div>
                   {/if}

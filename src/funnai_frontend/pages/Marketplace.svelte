@@ -230,7 +230,7 @@
   }
 
   async function handleBuyMainer(listingId: string, mainerId: string, price: number) {
-    console.log("Starting buy process for mAIner:", mainerId);
+    console.log("Opening purchase confirmation for mAIner:", mainerId);
     
     // Check if user is authenticated
     if (!$store.isAuthed) {
@@ -243,157 +243,65 @@
       return;
     }
     
-    // Find the full listing object to pass to payment modal
-    // We'll trigger this from MarketplaceListings component with full listing
-    buyProcessStep = 'reserving';
-    isBuyingMainer = true;
-    buyProcessError = '';
+    // Convert price from ICP to e8s
+    const priceE8S = Math.round(price * 100_000_000);
     
-    try {
-      // Pre-check: Verify user doesn't have an existing reservation
-      console.log("🔍 Pre-check: Verifying no existing reservations...");
-      const preCheckResult = await MarketplaceService.getUserReservation();
-      console.log("🔍 Pre-check result:", preCheckResult);
-      
-      // Check if reservation exists (handle both null and empty array)
-      const hasReservation = preCheckResult.success && 
-                            preCheckResult.reservation && 
-                            !(Array.isArray(preCheckResult.reservation) && preCheckResult.reservation.length === 0);
-      
-      if (hasReservation) {
-        console.error("❌ User still has a reservation:", preCheckResult.reservation);
-        throw new Error('You already have a pending reservation. Please refresh the page or wait for it to expire.');
-      }
-      
-      console.log("✅ Pre-check passed, proceeding with reservation");
-      
-      // Step 1: Reserve the mAIner
-      console.log("Step 1: Reserving mAIner...");
-      const reserveResult = await MarketplaceService.reserveMainer(mainerId);
-      
-      if (!reserveResult.success || !reserveResult.listing) {
-        throw new Error(reserveResult.error || 'Failed to reserve mAIner');
-      }
-      
-      console.log("Step 1: mAIner reserved successfully");
-      
-      // Step 2: Show payment modal
-      console.log("Step 2: Opening payment modal...");
-      selectedListingForPurchase = {
-        ...reserveResult.listing,
-        mainerId: mainerId,
-        mainerName: `mAIner ${mainerId.slice(0, 5)}`,
-        seller: reserveResult.listing.listedBy,
-        priceE8S: Number(reserveResult.listing.priceE8S)
-      };
-      
-      buyProcessStep = 'payment';
-      showPaymentModal = true;
-      
-    } catch (error) {
-      console.error("Error in buy process:", error);
-      buyProcessStep = 'error';
-      buyProcessError = error.message || 'Failed to initiate purchase';
-      toastStore.error(`Failed to purchase mAIner: ${buyProcessError}`, 8000);
-      isBuyingMainer = false;
-      showPaymentModal = false; // Ensure modal doesn't open on error
-      selectedListingForPurchase = null; // Clear any partial state
-    }
-  }
-
-  async function handlePaymentSuccess(txId: bigint) {
-    console.log("Step 2: ICP approval successful, allowance:", txId.toString());
-    
-    if (!selectedListingForPurchase) {
-      console.error("No selected listing for purchase");
-      isBuyingMainer = false;
-      return;
-    }
-    
-    // Save listing info before it might get cleared by modal closing
-    const listingInfo = {
-      mainerId: selectedListingForPurchase.mainerId,
-      mainerName: selectedListingForPurchase.mainerName,
-      seller: selectedListingForPurchase.seller
+    // Just open the confirmation modal - NO reservation yet!
+    // Reservation will happen when user confirms the purchase
+    selectedListingForPurchase = {
+      listingId: listingId,
+      mainerId: mainerId,
+      mainerName: `mAIner ${mainerId.slice(0, 5)}`,
+      seller: '', // Will be filled when we have reservation info
+      priceE8S: priceE8S
     };
     
-    try {
-      // Step 3: Complete the purchase
-      console.log("Step 3: Completing purchase...");
-      buyProcessStep = 'completing';
-      
-      const completeResult = await MarketplaceService.completePurchase(
-        listingInfo.mainerId,
-        listingInfo.seller,
-        txId
-      );
-      
-      if (!completeResult.success) {
-        throw new Error(completeResult.error || 'Failed to complete purchase');
-      }
-      
-      console.log("Step 3: Purchase completed successfully!");
-      buyProcessStep = 'success';
-      
-      // Close the modal immediately after success
-      showPaymentModal = false;
-      
-      toastStore.success(
-        `Successfully purchased ${listingInfo.mainerName}! The mAIner has been transferred to your account.`,
-        8000
-      );
-      
-      // Refresh marketplace data and user's mAIner list
-      await loadMarketplaceStats();
-      await store.loadUserMainerCanisters();
-      
-    } catch (error) {
-      console.error("Error completing purchase:", error);
-      buyProcessStep = 'error';
-      buyProcessError = error.message || 'Failed to complete purchase';
-      
-      // Close modal on error too
-      showPaymentModal = false;
-      
-      toastStore.error(
-        `Failed to complete purchase: ${buyProcessError}. Your ICP was approved but not transferred. The approval will expire. Please try again or contact support.`,
-        12000
-      );
-    } finally {
-      isBuyingMainer = false;
-      selectedListingForPurchase = null;
-    }
+    // Reset state
+    buyProcessStep = 'idle';
+    buyProcessError = '';
+    
+    // Show the confirmation modal
+    showPaymentModal = true;
+  }
+
+  async function handlePurchaseComplete() {
+    // Called by the payment modal after successful purchase
+    // The modal handles the entire flow: reservation → approval → completion
+    console.log("✅ Purchase completed successfully!");
+    
+    const mainerName = selectedListingForPurchase?.mainerName || 'mAIner';
+    
+    toastStore.success(
+      `Successfully purchased ${mainerName}! The mAIner has been transferred to your account.`,
+      8000
+    );
+    
+    // Reset state
+    showPaymentModal = false;
+    selectedListingForPurchase = null;
+    isBuyingMainer = false;
+    buyProcessStep = 'idle';
+    
+    // Refresh marketplace data and user's mAIner list
+    await loadMarketplaceStats();
+    await store.loadUserMainerCanisters();
+    
+    // Trigger listings refresh
+    listingsRefreshKey++;
   }
 
   async function handlePaymentModalClose() {
-    // If user is closing the modal during payment step, cancel the reservation
-    if (buyProcessStep === 'payment' && selectedListingForPurchase) {
-      console.log("User canceled purchase, canceling reservation...");
-      isCancelingReservation = true;
-      
-      try {
-        await MarketplaceService.cancelReservation(selectedListingForPurchase.mainerId);
-        console.log("Reservation canceled successfully");
-        
-        // Refresh marketplace listings so the mAIner appears again
-        await loadMarketplaceStats();
-        
-        // Trigger a refresh of the MarketplaceListings component
-        // We'll do this by incrementing a reactive key
-        listingsRefreshKey++;
-        
-      } catch (error) {
-        console.error("Error canceling reservation:", error);
-        // Don't show error to user, just log it
-      } finally {
-        isCancelingReservation = false;
-      }
-    }
+    // The modal now handles reservations internally
+    // If user closes before confirming, no reservation was made
+    // If user closes during processing, the modal warns them first
     
     showPaymentModal = false;
     selectedListingForPurchase = null;
     isBuyingMainer = false;
     buyProcessStep = 'idle';
+    
+    // Refresh listings in case state changed
+    listingsRefreshKey++;
   }
 
   async function handleCancelListing(listingId: string, mainerId: string) {
@@ -599,7 +507,7 @@
   <MarketplacePaymentModal
     isOpen={showPaymentModal}
     onClose={handlePaymentModalClose}
-    onSuccess={handlePaymentSuccess}
+    onSuccess={handlePurchaseComplete}
     listing={selectedListingForPurchase}
     isCanceling={isCancelingReservation}
   />
