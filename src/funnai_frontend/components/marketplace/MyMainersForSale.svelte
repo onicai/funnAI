@@ -2,10 +2,13 @@
   import { store } from "../../stores/store";
   import { onMount } from "svelte";
   import { getMainerVisualIdentity } from "../../helpers/utils/mainerIdentity";
-  import { Check, X, ShoppingCart, Sparkles } from "lucide-svelte";
+  import { Check, ShoppingCart, Sparkles, AlertTriangle } from "lucide-svelte";
 
   export let onListToMarketplace: (mainerIds: string[], prices: Record<string, number>) => Promise<void>;
   export let listedMainers: string[] = []; // Array of already-listed mAIner addresses
+
+  // Minimum cycles required to list a mAIner (0.1T = 100 billion cycles)
+  const MIN_CYCLES_TO_LIST = 100_000_000_000;
 
   // State
   let myMainers: any[] = [];
@@ -48,19 +51,27 @@
         return shouldShow;
       })
       .map((canister, index) => {
+        const cycleBalance = canister.cycleBalance || 0;
         return {
           id: canister.address,
           name: `mAIner ${canister.address?.slice(0, 5)}`,
           status: canister.uiStatus || "active",
           createdAt: canister.creationTimestamp ? Number(canister.creationTimestamp / 1000000n) : null,
           burnedCycles: canister.burnedCycles || 0,
+          cycleBalance,
+          hasLowCycles: cycleBalance < MIN_CYCLES_TO_LIST,
         };
       });
     
     console.log(`  ✅ Showing ${myMainers.length} available mAIners for sale`);
   }
 
-  function toggleMainerSelection(mainerId: string) {
+  function toggleMainerSelection(mainerId: string, hasLowCycles: boolean) {
+    // Don't allow selection of mAIners with low cycles
+    if (hasLowCycles) {
+      return;
+    }
+    
     if (selectedMainer === mainerId) {
       selectedMainer = null;
       price = "";
@@ -124,6 +135,17 @@
       year: 'numeric'
     });
   }
+
+  function formatCycles(cycles: number): string {
+    const trillion = 1_000_000_000_000;
+    const billion = 1_000_000_000;
+    if (cycles >= trillion) {
+      return `${(cycles / trillion).toFixed(2)}T`;
+    } else if (cycles >= billion) {
+      return `${(cycles / billion).toFixed(2)}B`;
+    }
+    return `${cycles.toLocaleString()}`;
+  }
 </script>
 
 <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -164,32 +186,41 @@
         {#each myMainers as mainer, index}
           {@const identity = getMainerVisualIdentity(mainer.id)}
           {@const isSelected = selectedMainer === mainer.id}
+          {@const isDisabled = mainer.hasLowCycles}
           
           <div 
-            class="group relative overflow-hidden rounded-lg border-2 transition-all duration-300 cursor-pointer
-                   {isSelected 
-                     ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-lg' 
-                     : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 bg-white dark:bg-gray-800'}"
+            class="group relative overflow-hidden rounded-lg border-2 transition-all duration-300
+                   {isDisabled 
+                     ? 'border-orange-300 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/10 cursor-not-allowed opacity-75' 
+                     : isSelected 
+                       ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-lg cursor-pointer' 
+                       : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 bg-white dark:bg-gray-800 cursor-pointer'}"
             role="button"
-            tabindex="0"
-            on:click={() => toggleMainerSelection(mainer.id)}
-            on:keydown={(e) => e.key === 'Enter' || e.key === ' ' ? toggleMainerSelection(mainer.id) : null}
+            tabindex={isDisabled ? -1 : 0}
+            on:click={() => toggleMainerSelection(mainer.id, mainer.hasLowCycles)}
+            on:keydown={(e) => e.key === 'Enter' || e.key === ' ' ? toggleMainerSelection(mainer.id, mainer.hasLowCycles) : null}
           >
             <!-- Background gradient effect -->
             <div class="absolute inset-0 bg-gradient-to-br {identity.colors.bg} opacity-5"></div>
             
             <div class="relative p-4">
               <div class="flex items-start space-x-4">
-                <!-- Checkbox -->
+                <!-- Checkbox / Warning -->
                 <div class="flex-shrink-0 pt-1">
-                  <div class="w-6 h-6 rounded-md border-2 transition-all duration-200 flex items-center justify-center
-                              {isSelected 
-                                ? 'bg-purple-500 border-purple-500' 
-                                : 'border-gray-300 dark:border-gray-600 group-hover:border-purple-400'}">
-                    {#if isSelected}
-                      <Check class="w-4 h-4 text-white" />
-                    {/if}
-                  </div>
+                  {#if isDisabled}
+                    <div class="w-6 h-6 rounded-md border-2 border-orange-400 bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                      <AlertTriangle class="w-4 h-4 text-orange-500" />
+                    </div>
+                  {:else}
+                    <div class="w-6 h-6 rounded-md border-2 transition-all duration-200 flex items-center justify-center
+                                {isSelected 
+                                  ? 'bg-purple-500 border-purple-500' 
+                                  : 'border-gray-300 dark:border-gray-600 group-hover:border-purple-400'}">
+                      {#if isSelected}
+                        <Check class="w-4 h-4 text-white" />
+                      {/if}
+                    </div>
+                  {/if}
                 </div>
 
                 <!-- mAIner Avatar & Info -->
@@ -213,8 +244,8 @@
                       </div>
                     </div>
 
-                    <!-- Status Badge -->
-                    <div class="flex-shrink-0">
+                    <!-- Status & Cycles -->
+                    <div class="flex-shrink-0 flex flex-col items-end gap-1">
                       <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
                                    {mainer.status === 'active' 
                                      ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' 
@@ -222,8 +253,24 @@
                         <span class="w-1.5 h-1.5 rounded-full mr-1.5 {mainer.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}"></span>
                         {mainer.status}
                       </span>
+                      <span class="text-xs {isDisabled ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-gray-500 dark:text-gray-400'}">
+                        ⚡ {formatCycles(mainer.cycleBalance)}
+                      </span>
                     </div>
                   </div>
+
+                  <!-- Low Cycles Warning -->
+                  {#if isDisabled}
+                    <div class="mt-3 p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg border border-orange-200 dark:border-orange-800">
+                      <p class="text-sm text-orange-700 dark:text-orange-300 font-medium">
+                        ⚠️ Insufficient cycles to list
+                      </p>
+                      <p class="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                        Minimum 0.1T cycles required. Current: {formatCycles(mainer.cycleBalance)}. 
+                        <span class="font-medium">Burn FUNNAI to top up cycles.</span>
+                      </p>
+                    </div>
+                  {/if}
 
                   <!-- Price Input (shown when selected) -->
                   {#if isSelected}
@@ -308,4 +355,5 @@
     -moz-appearance: textfield;
   }
 </style>
+
 
