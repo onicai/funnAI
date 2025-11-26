@@ -7,15 +7,18 @@ from typing import Dict, List, Tuple
 def analyze_whitelist_criteria():
     """
     Analyze all funnai accounts to find accounts with no mainers and more than 10 ICP balance.
-    
+
     Target criteria:
     - 0 mAIners (mainer_analysis.mainer_count == 0)
     - More than 10 ICP maximum balance (max balance_icp from balance_history > 10)
     """
     print("=== Finding Accounts with 0 Mainers and >10 ICP Balance ===")
-    
+
+    # Get the directory where this script is located
+    SCRIPT_DIR = Path(__file__).parent
+
     # Path to the analysis files directory
-    analysis_dir = Path("funnai_accounts")
+    analysis_dir = SCRIPT_DIR / Path("funnai_accounts")
     
     if not analysis_dir.exists():
         print(f"ERROR: Analysis directory {analysis_dir} not found!")
@@ -163,9 +166,32 @@ def analyze_whitelist_criteria():
         print(f"  • Lowest max balance: {min(acc['max_balance_icp'] for acc in qualifying_accounts):.4f} ICP")
         print(f"  • Average max balance: {sum(acc['max_balance_icp'] for acc in qualifying_accounts) / len(qualifying_accounts):.4f} ICP")
         print(f"  • Average current balance: {sum(acc['current_icp_balance'] for acc in qualifying_accounts) / len(qualifying_accounts):.4f} ICP")
+
+        # Show detailed list of accounts with current balance > 10 ICP
+        accounts_over_10 = [acc for acc in qualifying_accounts if acc['current_icp_balance'] > 10.0]
+        if accounts_over_10:
+            print(f"\n💰 ACCOUNTS WITH CURRENT BALANCE > 10 ICP ({len(accounts_over_10)} accounts):")
+            print("="*80)
+
+            # Sort by current balance (highest first)
+            accounts_over_10.sort(key=lambda x: x['current_icp_balance'], reverse=True)
+
+            total_balance = sum(acc['current_icp_balance'] for acc in accounts_over_10)
+            print(f"  Total ICP in these accounts: {total_balance:.4f} ICP")
+            print()
+
+            # Print column headers
+            print(f"  {'#':>3} | {'Principal ID':<65} | {'Current Balance':>15}")
+            print(f"  {'-'*3}-+-{'-'*65}-+-{'-'*15}")
+
+            for i, account in enumerate(accounts_over_10, 1):
+                print(f"  {i:3d} | {account['principal']:<65} | {account['current_icp_balance']:>12.4f} ICP")
+
+            print(f"\n  Total: {total_balance:.4f} ICP across {len(accounts_over_10)} accounts")
+            print("="*80)
         
         # Export to file
-        output_file = "qualifying_accounts_0_mainers_10plus_icp.json"
+        output_file = SCRIPT_DIR / "qualifying_accounts_0_mainers_10plus_icp.json"
         with open(output_file, 'w') as f:
             json.dump({
                 "criteria": "0 mAIners and >10 ICP maximum balance",

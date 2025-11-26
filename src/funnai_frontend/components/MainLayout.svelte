@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { SvelteComponent } from 'svelte';
   import Router from "svelte-spa-router";
   import { store, theme } from "../stores/store";
   import NavigationMainLayout from "./funnai/NavigationMainLayout.svelte";
@@ -12,24 +11,29 @@
   import Brand from "../pages/Brand.svelte";
   import AppStore from "../pages/AppStore.svelte";
   import Marketplace from "../pages/Marketplace.svelte";
+  import NotificationToast from "./NotificationToast.svelte";
   import { onMount } from 'svelte';
   import { initializeChartJS } from '../helpers/chartSetup';
 
   // Initialize theme from localStorage on mount
-  onMount(() => {
+  onMount(async () => {
     // Initialize Chart.js components early
     initializeChartJS();
-    
+
     // Set dark mode as default if no preference is stored
     const savedTheme = localStorage.getItem("theme") || "dark";
     theme.set(savedTheme);
     applyTheme(savedTheme);
+
+    // Check login state - ensure this happens before the app renders
+    console.log("🚀 Starting app initialization...");
     try {
-      // Check login state
-      void store.checkExistingLoginAndConnect();      
+      await store.checkExistingLoginAndConnect();
+      console.log("✅ App initialization complete - session restored if available");
     } catch (error) {
-      console.warn("Error checking login state: ", error);      
-    };
+      console.error("❌ Error during app initialization:", error);
+      // Don't crash the app, just log the error
+    }
   });
   
   // React to theme changes
@@ -47,7 +51,7 @@
     }
   }
 
-  const routes: Record<string, typeof SvelteComponent> = {
+  const routes = {
     "/": Mainers,
     "/dashboard": Dashboard,
     "/chat": ChatLayout,
@@ -81,8 +85,11 @@
       </div>
     </header>
     <div class="flex-grow flex flex-col dark:bg-gray-900">
-      <Router {routes} />
-    </div>
+  <Router {routes} />
+</div>
+
+<!-- Global notification toast -->
+<NotificationToast />
   </main>
 </div> 
 

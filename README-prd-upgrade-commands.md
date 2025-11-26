@@ -2,9 +2,14 @@
 # Set NETWORK environment variable
 
 ```bash
+# The principal of funnAI Django running on aws-dev (same for all networks)
+FUNNAI_DJANGO_PRINCIPAL=bzqba-mwz5i-rq3oz-iie6i-gf7bi-kqr2x-tjuq4-nblmh-ephou-n27tl-xqe
+
 # One of these...
-NETWORK=prd       # CAREFUL - CAREFUL - CAREFUL
+NETWORK=prd
 NETWORK=testing
+NETWORK=demo
+NETWORK=development
 
 echo " "
 echo "Using network type: $NETWORK"
@@ -12,24 +17,23 @@ echo "Using network type: $NETWORK"
 source scripts/canister_ids-$NETWORK.env
 source scripts/canister_ids_mainers-$NETWORK.env
 
-echo " "
-echo "SUBNET_0_1_GAMESTATE          : $SUBNET_0_1_GAMESTATE"
-
-echo " "
-echo "SUBNET_0_1_CHALLENGER         : $SUBNET_0_1_CHALLENGER"
-echo "SUBNET_1_1_CHALLENGER_LLM_0   : $SUBNET_1_1_CHALLENGER_LLM_0"
-
-echo " "
-echo "SUBNET_0_1_JUDGE              : $SUBNET_0_1_JUDGE"
-echo "SUBNET_1_1_JUDGE_LLM_0        : $SUBNET_1_1_JUDGE_LLM_0"
-
-echo " "
-echo "SUBNET_0_1_SHARE_SERVICE      : $SUBNET_0_1_SHARE_SERVICE"
-echo "SUBNET_2_1_SHARE_SERVICE_LLM_0: $SUBNET_2_1_SHARE_SERVICE_LLM_0"
-
-echo " "
-source scripts/canister_ids_mainers-$NETWORK.env
-echo "MAINER_SHARE_AGENT_0001       : $MAINER_SHARE_AGENT_0001"
+# Check status of some canisters
+echo -n "SUBNET_0_1_GAMESTATE           = $SUBNET_0_1_GAMESTATE - "; dfx canister --network $NETWORK status $SUBNET_0_1_GAMESTATE | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_1_MAINER_CREATOR      = $SUBNET_0_1_MAINER_CREATOR - "; dfx canister --network $NETWORK status $SUBNET_0_1_MAINER_CREATOR | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_1_CHALLENGER          = $SUBNET_0_1_CHALLENGER - "; dfx canister --network $NETWORK status $SUBNET_0_1_CHALLENGER | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_1_JUDGE               = $SUBNET_0_1_JUDGE - "; dfx canister --network $NETWORK status $SUBNET_0_1_JUDGE | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_1_SHARE_SERVICE       = $SUBNET_0_1_SHARE_SERVICE - "; dfx canister --network $NETWORK status $SUBNET_0_1_SHARE_SERVICE | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_1_BACKEND             = $SUBNET_0_1_BACKEND - "; dfx canister --network $NETWORK status $SUBNET_0_1_BACKEND | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_1_FRONTEND            = $SUBNET_0_1_FRONTEND - "; dfx canister --network $NETWORK status $SUBNET_0_1_FRONTEND | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_2_API                 = $SUBNET_0_2_API - "; dfx canister --network $NETWORK status $SUBNET_0_2_API | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_1_1_CHALLENGER_LLM_0    = $SUBNET_1_1_CHALLENGER_LLM_0 - "; dfx canister --network $NETWORK status $SUBNET_1_1_CHALLENGER_LLM_0 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_1_1_JUDGE_LLM_0         = $SUBNET_1_1_JUDGE_LLM_0 - "; dfx canister --network $NETWORK status $SUBNET_1_1_JUDGE_LLM_0 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_1_1_JUDGE_LLM_1         = $SUBNET_1_1_JUDGE_LLM_1 - "; dfx canister --network $NETWORK status $SUBNET_1_1_JUDGE_LLM_1 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_1_2_JUDGE_LLM_2         = $SUBNET_1_2_JUDGE_LLM_2 - "; dfx canister --network $NETWORK status $SUBNET_1_2_JUDGE_LLM_2 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_2_1_SHARE_SERVICE_LLM_0 = $SUBNET_2_1_SHARE_SERVICE_LLM_0 - "; dfx canister --network $NETWORK status $SUBNET_2_1_SHARE_SERVICE_LLM_0 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_2_1_SHARE_SERVICE_LLM_1 = $SUBNET_2_1_SHARE_SERVICE_LLM_1 - "; dfx canister --network $NETWORK status $SUBNET_2_1_SHARE_SERVICE_LLM_1 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "MAINER_SHARE_AGENT_0000        = $MAINER_SHARE_AGENT_0000 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0000 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "MAINER_SHARE_AGENT_0001        = $MAINER_SHARE_AGENT_0001 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0001 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 ```
 
 # stop timers of protocol canisters
@@ -70,11 +74,15 @@ dfx canister --network $NETWORK stop $SUBNET_0_1_GAMESTATE
 dfx canister --network $NETWORK stop $SUBNET_0_1_CHALLENGER
 dfx canister --network $NETWORK stop $SUBNET_0_1_JUDGE
 dfx canister --network $NETWORK stop $SUBNET_0_1_SHARE_SERVICE
+dfx canister --network $NETWORK stop $SUBNET_0_1_MAINER_CREATOR
+dfx canister --network $NETWORK stop $SUBNET_0_2_API
 
 dfx canister --network $NETWORK status $SUBNET_0_1_GAMESTATE     | grep Status
 dfx canister --network $NETWORK status $SUBNET_0_1_CHALLENGER    | grep Status
 dfx canister --network $NETWORK status $SUBNET_0_1_JUDGE         | grep Status
 dfx canister --network $NETWORK status $SUBNET_0_1_SHARE_SERVICE | grep Status
+dfx canister --network $NETWORK status $SUBNET_0_1_MAINER_CREATOR | grep Status
+dfx canister --network $NETWORK status $SUBNET_0_2_API            | grep Status
 ```
 
 # snapshot the protocol canisters
@@ -85,7 +93,9 @@ echo $NETWORK
 dfx canister --network $NETWORK snapshot create $SUBNET_0_1_GAMESTATE
 dfx canister --network $NETWORK snapshot create $SUBNET_0_1_CHALLENGER    
 dfx canister --network $NETWORK snapshot create $SUBNET_0_1_JUDGE         
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE 
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_MAINER_CREATOR 
+dfx canister --network $NETWORK snapshot create $SUBNET_0_2_API 
 ```
 
 # upgrade the GameState
@@ -129,7 +139,7 @@ dfx canister --network $NETWORK call game_state_canister setGameStateThresholdsA
         thresholdArchiveClosedChallenges = 140 : nat;
         thresholdMaxOpenChallenges = 7 : nat;
         thresholdMaxOpenSubmissions = 140 : nat;
-        thresholdScoredResponsesPerChallenge = 33 : nat;
+        thresholdScoredResponsesPerChallenge = 27 : nat;
     }
 )'
 
@@ -138,12 +148,22 @@ dfx canister --network $NETWORK call game_state_canister setGameStateThresholdsA
 # - dailySubmissionsAllShare = dailyChallenges * thresholdScoredResponsesPerChallenge
 #                            = 144 * 33 = 4,752
 # - dailySubmissionsAllOwn = (TODO for PowerMainer)
-```bash
+
 # verify current settings
 dfx canister --network $NETWORK call game_state_canister getCyclesFlowAdmin | grep dailySubmissionsAllShare
 
 # set the values, which will trigger a recalculation
 dfx canister --network $NETWORK call game_state_canister setCyclesFlowAdmin '( record { dailySubmissionsAllShare = opt (4752 : nat);})'
+```
+
+## Update Admin RBAC for GameState
+
+```bash
+# verify funnAI_django principal has #AdminQuery permissions
+dfx canister --network $NETWORK call game_state_canister getAdminRoles
+dfx canister --network $NETWORK call game_state_canister assignAdminRole '( record { "principal" = "'$FUNNAI_DJANGO_PRINCIPAL'"; role = variant { AdminQuery }; note = "Grant AdminQuery access for funnai-django" } )'
+# if needed, this is how you revoke permissions for the previous principal
+dfx canister --network $NETWORK call game_state_canister revokeAdminRole '( "'$FUNNAI_DJANGO_PRINCIPAL'")'
 ```
 
 # upgrade the Challenger
@@ -199,6 +219,56 @@ dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE get_llm_canisters
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getTimerActionRegularityInSecondsAdmin
 ```
 
+## reinstall the ShareService
+
+```bash
+# Verify correct network !
+echo $NETWORK
+
+# from folder: PoAIW/src/mAIner
+dfx deploy --network $NETWORK mainer_service_canister --mode reinstall
+
+# start the ShareService canister back up
+echo "SUBNET_0_1_SHARE_SERVICE: $SUBNET_0_1_SHARE_SERVICE"
+dfx canister --network $NETWORK start  $SUBNET_0_1_SHARE_SERVICE
+dfx canister --network $NETWORK status $SUBNET_0_1_SHARE_SERVICE     | grep Status
+dfx canister --network $NETWORK call   $SUBNET_0_1_SHARE_SERVICE health
+
+# Verify timer setting
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getTimerActionRegularityInSecondsAdmin
+
+# register game state
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE setGameStateCanisterId '("'$SUBNET_0_1_GAMESTATE'")'
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getGameStateCanisterId
+
+# register the LLMs
+# from folder: PoAIW/src/mAIner
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE get_llm_canisters
+# register every LLM with the ShareService with this command
+CANISTER_ID_LLM=...
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE add_llm_canister '(record { canister_id = "'$CANISTER_ID_LLM'" })'
+
+# register all the ShareAgent mAIners, by upgrading them via GameState > mAInerCreator
+# -> This will take care of all proper registrations
+MAINER=...
+# snapshot
+dfx canister --network $NETWORK stop $MAINER
+dfx canister --network $NETWORK snapshot create $MAINER
+dfx canister --network $NETWORK start $MAINER
+# set correct type & register ShareAgent with ShareService
+dfx canister call --network $NETWORK $MAINER setMainerCanisterType '(variant {ShareAgent} )'
+dfx canister call --network $NETWORK $MAINER setShareServiceCanisterId '("'$SUBNET_0_1_SHARE_SERVICE'")'
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE upgradeMainerControllerAdmin "(record {canisterAddress = \"$MAINER\" })"
+# Note: it will fail if maintenance flag is on. Toggle it and retry
+dfx canister --network $NETWORK call $MAINER getMaintenanceFlag
+dfx canister --network $NETWORK call $MAINER toggleMaintenanceFlagAdmin # it must be off !
+# verify
+dfx canister call --network $NETWORK $MAINER getMainerCanisterType
+dfx canister --network $NETWORK call $MAINER getGameStateCanisterId 
+dfx canister --network $NETWORK call $MAINER health
+dfx canister --network $NETWORK call $MAINER getMaintenanceFlag
+```
+
 # upgrade the Judge
 
 ```bash
@@ -228,15 +298,88 @@ dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE setTimerActionRegularityI
 # reset the isProcessingSubmissions flag
 dfx canister --network $NETWORK call   $SUBNET_0_1_JUDGE resetIsProcessingSubmissionsAdmin
 
-# Test the new endpoints to manage the deployed LLMs
-# Get the LLMs currently in use > Remove > check > Add > check
+# Verify registered LLMs
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --output json
-echo "SUBNET_1_1_JUDGE_LLM_0: $SUBNET_1_1_JUDGE_LLM_0"
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    remove_llm_canister "(record {canister_id = \"$SUBNET_1_1_JUDGE_LLM_0\"})"
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    add_llm_canister    "(record {canister_id = \"$SUBNET_1_1_JUDGE_LLM_0\"})"
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters
 ```
+
+# upgrade the API canister
+
+```bash
+# Verify correct network !
+echo $NETWORK
+
+# from folder: PoAIW/src/Api
+dfx deploy --network $NETWORK api_canister --mode upgrade
+
+# start the API canister back up
+dfx canister --network $NETWORK start  $SUBNET_0_2_API
+```
+
+## Update Admin RBAC for API canister
+
+```bash
+# verify funnAI_django principal has #AdminUpdate permissions
+dfx canister --network $NETWORK call $SUBNET_0_2_API getAdminRoles
+dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$FUNNAI_DJANGO_PRINCIPAL'"; role = variant { AdminUpdate }; note = "Grant AdminUpdate access for funnai-django" } )'
+# if needed, this is how you revoke permissions for the previous principal
+dfx canister --network $NETWORK call SUBNET_0_2_API revokeAdminRole '( "'$FUNNAI_DJANGO_PRINCIPAL'")'
+```
+
+# upgrade the mAInerCreator
+
+```bash
+# Verify correct network !
+echo $NETWORK
+
+# from folder: PoAIW/src/mAInerCreator
+# Generate the bindings for the upload scripts and the frontend
+dfx generate mainer_creator_canister
+dfx deploy --network $NETWORK mainer_creator_canister --mode upgrade
+
+# start the mAInerCreator canister back up
+dfx canister --network $NETWORK start  $SUBNET_0_1_MAINER_CREATOR
+dfx canister --network $NETWORK status $SUBNET_0_1_MAINER_CREATOR     | grep Status
+dfx canister --network $NETWORK call   $SUBNET_0_1_MAINER_CREATOR health
+
+# ensure the correct wasm & did files are in this folder 
+# -> PoAIW/src/mAInerCreator/files
+#
+# If you just did a mAIner upgrade, you can do this:
+# From folder: PoAIW/src/mAIner
+shasum -a 256 .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.wasm # confirm it is the TARGET_HASH
+cp .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.did ../mAInerCreator/files/mainer_ctrlb_canister.did
+cp .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.wasm ../mAInerCreator/files/mainer_ctrlb_canister.wasm
+#
+# -> More details in PoAIW/src/mAInerCreator/README.md
+#
+# from folder: PoAIW/src/mAInerCreator
+#
+# (if changed) Upload the mainer controller canister wasm
+shasum -a 256 files/mainer_ctrlb_canister.wasm # verify
+python -m scripts.upload_mainer_controller_canister --network $NETWORK --canister mainer_creator_canister --wasm files/mainer_ctrlb_canister.wasm --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
+# -> Repeat for all networks, used to test mAInerCreator
+#
+# (if changed) Upload the mainer LLM canister wasm
+shasum -a 256 files/llama_cpp.wasm # verify
+python -m scripts.upload_mainer_llm_canister_wasm --network $NETWORK --canister mainer_creator_canister --wasm files/llama_cpp.wasm --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
+# -> Repeat for all networks, used to test mAInerCreator
+
+# (if changed) Upload the mainer LLM model file (gguf)
+shasum -a 256 files/qwen2.5-0.5b-instruct-q8_0.gguf # verify
+python -m scripts.upload_mainer_llm_canister_modelfile --network $NETWORK --canister mainer_creator_canister --chunksize 2000000 --wasm files/qwen2.5-0.5b-instruct-q8_0.gguf --hf-sha256 "ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e" --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
+# -> Repeat for all networks, used to test mAInerCreator
+
+# Verify the sha256 hashes of all uploaded files
+# Warning: do not run this while upload is in process. Wait till it is fully completed.
+#          It uses a lazy evaluation logic.
+dfx canister --network $NETWORK call mainer_creator_canister getSha256HashesAdmin
+```
+
+## Testing the mAInerCreator
+
+Final test must be done by creating a mAIner via the UI, but initial test you can do with dfx.
+
+Call the `spinUpMainerControllerCanisterForUserAdmin` endpoint as described in PoAIW/src/GameState/README.md 
 
 # un-pause protocol
 ```bash
@@ -271,14 +414,16 @@ Once deployed and confirmed it is OK, apply a tag:
 ```bash
 # From folder: PoAIW
 
+# Check out main branch
+
 # get all the current tags, with their commit sha & description
 git fetch --tags
 git tag -l --format='%(refname:short) -> %(if)%(*objectname)%(then)%(*objectname:short)%(else)%(objectname:short)%(end) %(contents:subject)'
 
 # add the tag, as in this example
-RELEASE_TAG=release-1    # increment
-RELEASE_SHA=6751193      # get with `git log --oneline -5`
-RELEASE_MESSAGE="Release 1: Submission Queue Performance Optimizations"
+RELEASE_TAG=release-4    # increment
+RELEASE_SHA=dd7792e      # get with `git log --oneline -5`
+RELEASE_MESSAGE="Release 4: Admin RBAC for GameState, Api & mAIners"
 git tag -a $RELEASE_TAG $RELEASE_SHA -m "$RELEASE_MESSAGE"
 
 # push it to github
@@ -330,6 +475,13 @@ dfx canister --network $NETWORK snapshot load $SUBNET_0_1_JUDGE         <snapsho
 --------------------------------------------------------
 
 # Deploy or Upgrade LLMs
+
+## IMPORTANT: Also upload wasm to mAInerCreator
+
+Even though we are not using the mAInerCreator to upgrade mAIners, it
+is important to keep the wasm file up to date.
+
+## Description
 
 Deploying or upgrading LLMs is done without pausing the protocol.
 
@@ -513,7 +665,7 @@ In these folders, the following files are used by dfx:
     dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numJudgeLlms = opt ($NUM_LLMS_DEPLOYED : nat);})" 
 ```
 
-## Upgrade an existing LLM, including offline cleaning
+## Upgrade an existing LLM
 
 ```bash
     # Takes the LLM offline, upgrades it, tests it, and puts it back online
@@ -525,7 +677,7 @@ In these folders, the following files are used by dfx:
 
 ## Using a daily task
 
-The cleaning of the LLMs is now done automatically via a periodic task.
+The cleaning of the LLMs is now done automatically via a periodic task in funnAI_django.
 
 ## Manually, while the LLM is still online
 
@@ -649,7 +801,7 @@ If you want to do it all manually, follow these steps:
 
 ```bash
     # We have a script to delete ALL snapshots for either ALL protocol canisters or a specified canister-id
-    scripts/delete_snapshots.sh --network $NETWORK [--canister-id <canister-id>]
+    scripts/delete_snapshots.sh --network $NETWORK --canister-types [all/protocol/mainers] [--canister-id <canister-id>] [--dry-run] [--workers N]
 
     # You can do it manually with:
     LLM="<canister-id>"
@@ -661,6 +813,8 @@ If you want to do it all manually, follow these steps:
 ```
 
 # Upgrade the mAIners
+
+## IMPORTANT: Also upload wasm to mAInerCreator
 
 ## Using script
 
@@ -687,31 +841,80 @@ Options:
   --skip-preparation      Optional. Skip Step 1 preparation
   --ask-before-upgrade    Optional. Ask for confirmation before upgrading each canister
   --reverse               Optional. Process mainers in reverse order
+  --deploy-with-yes       Optional. Will use: dfx deploy ... --yes
 
 # from the folder: funnAI
 conda activate llama_cpp_canister
 
-# Upgrade 1 mAIner of IConfucius on production networkm with confirmation prompt:
-USER=xijdk-rtoet-smgxl-a4apd-ahchq-bslha-ope4a-zlpaw-ldxat-prh6f-jqe
-scripts/upgrade_mainers.sh --network prd --user $USER --num 1 --ask-before-upgrade [--dry-run]
+# Option 1: Upgrade a specific mAIner of IConfucius
+# -> eg: nkftb-zqaaa-aaaaa-qbbxa-cai is running at VeryHigh
+MAINER=nkftb-zqaaa-aaaaa-qbbxa-cai
+scripts/upgrade_mainers.sh --network $NETWORK --mainer $MAINER --ask-before-upgrade [--dry-run]
 # -> It will print new wasm hash, which you set as the target hash for rest of deployment
-TARGET_HASH=0xf2a40400e1f0cc0896c976eb2efa7a902aff68266b69b4a6be0a077b022db819
+TARGET_HASH=0xe7304d5490b6ad190bbebe14a1da8988e7a6e064afc697bdee90ffce902e67bc  # Nov 22, 2025 (release-4)
+TARGET_HASH=0xad2c4545d533e4a01f81e9ec57c9bd16e1c5c358208ef8f9122f9c0e43ed547f  # Oct 25, 2025 (release-3)
+TARGET_HASH=0x55ab6af1cdaf08ddd34776e7404aecd3eacba3b86ba03eb9196ddfd8113d50c2  # Oct 23, 2025 (release-2)
+TARGET_HASH=0xf2a40400e1f0cc0896c976eb2efa7a902aff68266b69b4a6be0a077b022db819  # Oct 10, 2025 (release-1)
 # By providing the target hash, the script will skip upgrade for mAIners already at that hash and healthy
 
-# Upgrade 2 mAIner of IConfucius on production network, with confirmation prompt:
-scripts/upgrade_mainers.sh --network prd --user $USER --target-hash $TARGET_HASH --num 2 --ask-before-upgrade [--dry-run]
+# Upgrade 1 more mAIner of IConfucius on production network with confirmation prompt:
+USER=xijdk-rtoet-smgxl-a4apd-ahchq-bslha-ope4a-zlpaw-ldxat-prh6f-jqe
+scripts/upgrade_mainers.sh --network $NETWORK --user $USER --target-hash $TARGET_HASH --num 1 --ask-before-upgrade [--dry-run]
 
-# Upgrade ALL mAIners of IConfucius on production network confirmation prompt:
-scripts/upgrade_mainers.sh --network prd --user $USER --target-hash $TARGET_HASH --ask-before-upgrade [--dry-run]
+# Upgrade 2 more mAIners of IConfucius on production network, without confirmation prompt:
+scripts/upgrade_mainers.sh --network $NETWORK --user $USER --target-hash $TARGET_HASH --num 2 [--dry-run]
 
-# Upgrade 1 mAIner on production network, with confirmation prompt:
-scripts/upgrade_mainers.sh --network prd --num 1 --target-hash $TARGET_HASH --ask-before-upgrade [--dry-run]
+# Upgrade ALL mAIners of IConfucius on production network without confirmation prompt:
+scripts/upgrade_mainers.sh --network $NETWORK --user $USER --target-hash $TARGET_HASH [--dry-run]
+
+# Upgrade 1 other mAIner on production network, with confirmation prompt:
+scripts/upgrade_mainers.sh --network $NETWORK --num 1 --target-hash $TARGET_HASH [--dry-run]
 
 # Upgrade 100 mainers on production network with target hash and without confirmation prompt:
-scripts/upgrade_mainers.sh --network prd --num 100 --target-hash $TARGET_HASH [--dry-run]
+scripts/upgrade_mainers.sh --network $NETWORK --num 100 --target-hash $TARGET_HASH [--dry-run]
 
 # Upgrade ALL mainers on production network with target hash and without confirmation prompt:
-scripts/upgrade_mainers.sh --network prd --target-hash $TARGET_HASH [--dry-run]
+scripts/upgrade_mainers.sh --network $NETWORK --target-hash $TARGET_HASH [--dry-run]
+```
+
+### Update Admin RBAC for mAIners
+
+#### Using script
+
+```bash
+# To assign permissions
+scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $FUNNAI_DJANGO_PRINCIPAL [--action assign] [--dry-run]
+
+# To revoke permissions
+scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $FUNNAI_DJANGO_PRINCIPAL --action revoke [--dry-run]
+```
+
+#### Manual
+
+```bash
+MAINER=...
+# verify funnAI_django principal has #AdminQuery permissions
+dfx canister --network $NETWORK call $MAINER getAdminRoles
+dfx canister --network $NETWORK call $MAINER assignAdminRole '( record { "principal" = "'$FUNNAI_DJANGO_PRINCIPAL'"; role = variant { AdminQuery }; note = "Grant AdminQuery access for funnai-django" } )'
+# if needed, this is how you revoke permissions for the previous principal
+dfx canister --network $MAINER revokeAdminRole '( "'$FUNNAI_DJANGO_PRINCIPAL'")'
+```
+
+### Verify mAIners Health & Hash
+
+After upgrade is completed, verify every mAIner is healthy and has correct module hash:
+
+```bash
+TARGET_HASH=0x...
+scripts/get_mainers_health.sh --network $NETWORK --target-hash $TARGET_HASH
+```
+
+### Delete mAIners snapshots
+
+Delete snapshot of all the mAIners:
+
+```bash
+scripts/delete_snapshots.sh --network $NETWORK --canister-types mainers [--dry-run]
 ```
 
 ## Old approach

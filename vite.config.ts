@@ -1,13 +1,18 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import path from "path";
 import dfxJson from "./dfx.json";
 import fs from "fs";
 // PWA plugin removed to solve caching issues
 
-const isDev = process.env["DFX_NETWORK"] === "local";
-// Get the network name, or `local` by default.
-const networkName = process.env["DFX_NETWORK"] || "local";
+// Load environment variables from .env file
+const mode = process.env.NODE_ENV || 'development';
+const env = loadEnv(mode, process.cwd(), '');
+
+// Use DFX_NETWORK from environment, fallback to 'local'
+const dfxNetwork = env.DFX_NETWORK || process.env.DFX_NETWORK || "local";
+const isDev = dfxNetwork === "local";
+const networkName = dfxNetwork;
 
 type Network = "ic" | "development" | "testing" | "demo" | "prd" | "local";
 
@@ -16,16 +21,18 @@ interface CanisterIds {
 }
 
 let canisterIds: CanisterIds = {};
+const canisterIdsPath = isDev ? ".dfx/local/canister_ids.json" : "./canister_ids.json";
 try {
   canisterIds = JSON.parse(
-    fs
-      .readFileSync(
-        isDev ? ".dfx/local/canister_ids.json" : "./canister_ids.json",
-      )
-      .toString(),
+    fs.readFileSync(canisterIdsPath).toString(),
   );
+  console.log(`📋 Loaded canister IDs from: ${canisterIdsPath}`);
+  console.log(`🌐 Network: ${networkName}`);
 } catch (e) {
-  console.error("\n⚠️  Before starting the dev server run: dfx deploy\n\n");
+  console.error(`\n⚠️  Failed to load canister IDs from ${canisterIdsPath}`);
+  console.error("   Before starting the dev server, ensure:");
+  console.error("   - For local development: run 'dfx deploy'");
+  console.error("   - For network deployment: ensure canister_ids.json exists\n");
 }
 
 // List of all aliases for canisters
@@ -57,11 +64,17 @@ const aliases = Object.entries(dfxJson.canisters || {}).reduce(
 // Generate canister ids, required by the generated canister code in .dfx/local/canisters/*
 // This strange way of JSON.stringifying the value is required by vite
 const canisterDefinitions = Object.entries(canisterIds).reduce(
-  (acc, [key, val]) => ({
-    ...acc,
-    [`process.env.${key.toUpperCase()}_CANISTER_ID`]: JSON.stringify(val[networkName]),
-    [`process.env.CANISTER_ID_${key.toUpperCase()}`]: JSON.stringify(val[networkName]),
-  }),
+  (acc, [key, val]) => {
+    const canisterId = val[networkName];
+    if (!canisterId) {
+      console.warn(`⚠️  No canister ID found for '${key}' on network '${networkName}'`);
+    }
+    return {
+      ...acc,
+      [`process.env.${key.toUpperCase()}_CANISTER_ID`]: JSON.stringify(canisterId),
+      [`process.env.CANISTER_ID_${key.toUpperCase()}`]: JSON.stringify(canisterId),
+    };
+  },
   {},
 );
 
@@ -119,7 +132,7 @@ export default defineConfig({
     "process.env.NODE_ENV": JSON.stringify(
       isDev ? "development" : "production",
     ),
-    "process.env.DFX_NETWORK": JSON.stringify(process.env["DFX_NETWORK"]),
+    "process.env.DFX_NETWORK": JSON.stringify(dfxNetwork),
     global: process.env.NODE_ENV === "development" ? "globalThis" : "global",
   },
 });

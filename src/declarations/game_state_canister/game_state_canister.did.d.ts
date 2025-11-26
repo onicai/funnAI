@@ -484,6 +484,13 @@ export interface FinishUploadMainerPromptCacheInput {
 export interface FlagRecord { 'flag' : boolean }
 export type FlagResult = { 'Ok' : FlagRecord } |
   { 'Err' : ApiError };
+export interface MainerAuctionTimerInfo {
+  'lastUpdateNs' : bigint,
+  'intervalSeconds' : bigint,
+  'active' : boolean,
+}
+export type MainerAuctionTimerInfoResult = { 'Ok' : MainerAuctionTimerInfo } |
+  { 'Err' : ApiError };
 export interface GameStateCanister {
   'addChallenge' : ActorMethod<[NewChallengeInput], ChallengeAdditionResult>,
   'addChallengeTopic' : ActorMethod<
@@ -573,6 +580,10 @@ export interface GameStateCanister {
   'getIsMainerAuctionActive' : ActorMethod<[], FlagResult>,
   'getIsMigratingChallengesFlagAdmin' : ActorMethod<[], FlagResult>,
   'getIsWhitelistPhaseActive' : ActorMethod<[], FlagResult>,
+  'getIsMainerAuctionActive' : ActorMethod<[], FlagResult>,
+  'getMainerAuctionTimerInfo' : ActorMethod<[], MainerAuctionTimerInfoResult>,
+  'getNextMainerAuctionPriceDropAtNs' : ActorMethod<[], NatResult>,
+  'getAvailableMainers' : ActorMethod<[], NatResult>,
   'getJudgePromptInfo' : ActorMethod<[string], JudgePromptInfoResult>,
   'getLimitForCreatingMainerAdmin' : ActorMethod<[CheckMainerLimit], NatResult>,
   'getMainerAgentCanisterInfo' : ActorMethod<

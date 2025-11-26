@@ -3,7 +3,11 @@ import { Principal } from "@dfinity/principal";
 import type { Identity } from "@dfinity/agent";
 import { HttpAgent, Actor } from "@dfinity/agent";
 import { AuthClient } from "@dfinity/auth-client";
+import { Signer } from "@slide-computer/signer";
+import { PostMessageTransport } from "@slide-computer/signer-web";
+import { IdentityKit, NFIDW, IdentityKitAuthType, type IdentityKitDelegationSignerClient as DelegationSignerClient } from "@nfid/identitykit";
 import UAParser from 'ua-parser-js';
+import { notificationStore } from "./notificationStore";
 import {
   funnai_backend,
   createActor as createBackendCanisterActor,
@@ -34,6 +38,8 @@ import {
 
 import { ICRC2_IDL as icrc2IDL } from "../helpers/idls/icrc2.idl.js";
 import { idlFactory as icpIDL } from "../helpers/idls/icp.idl.js";
+import { idlFactory as swapPoolIDL } from "../helpers/idls/swappool.idl.js";
+import { idlFactory as cmcIDL } from "../helpers/idls/cmc.idl.js";
 
 // TODO: move this into a utils file
 const getCyclesBurnRateLabel = (cyclesBurnRate) => {
@@ -64,6 +70,8 @@ export const canisterIDLs = {
   icrc1: icrc2IDL,
   icrc2: icrc2IDL,
   ICP: icpIDL,
+  swapPool: swapPoolIDL,
+  cmc: cmcIDL,
 };
 
 //__________Local vs Mainnet Development____________
@@ -159,13 +167,13 @@ const STORAGE_KEYS = {
 
 type State = {
   isAuthed: "nfid" | "internetidentity" | null;
-  backendActor: typeof funnai_backend;
-  principal: Principal;
+  backendActor: typeof funnai_backend | null;
+  principal: Principal | null;
   accountId: string;
   error: string;
   isLoading: boolean;
-  gameStateCanisterActor: typeof game_state_canister;
-  mainerControllerCanisterActor: typeof mainer_ctrlb_canister;
+  gameStateCanisterActor: typeof game_state_canister | null;
+  mainerControllerCanisterActor: typeof mainer_ctrlb_canister | null;
   apiCanisterActor: typeof api_canister | null;
   userMainerCanisterActors: any[];
   userMainerAgentCanistersInfo: any[];
@@ -183,19 +191,19 @@ let defaultBackendCanisterId = backendCanisterId;
 
 const defaultState: State = {
   isAuthed: null,
-  backendActor: createBackendCanisterActor(defaultBackendCanisterId, {
+  backendActor: defaultBackendCanisterId ? createBackendCanisterActor(defaultBackendCanisterId, {
     agentOptions: { host: HOST },
-  }),
+  }) : null,
   principal: null,
   accountId: "",
   error: "",
   isLoading: false,
-  gameStateCanisterActor: createGameStateCanisterActor(gameStateCanisterId, {
+  gameStateCanisterActor: gameStateCanisterId ? createGameStateCanisterActor(gameStateCanisterId, {
     agentOptions: { host: HOST },
-  }),
-  mainerControllerCanisterActor: createMainerControllerCanisterActor(mainerControllerCanisterId, {
+  }) : null,
+  mainerControllerCanisterActor: mainerControllerCanisterId ? createMainerControllerCanisterActor(mainerControllerCanisterId, {
     agentOptions: { host: HOST },
-  }),
+  }) : null,
   apiCanisterActor: apiCanisterId ? createApiCanisterActor(apiCanisterId, {
     agentOptions: { host: HOST },
   }) : null,
@@ -261,6 +269,44 @@ export const toggleTheme = () => {
     
     return newTheme;
   });
+};
+
+// Pre-initialize NFID IdentityKit to avoid async operations in click handler
+let nfidIdentityKitPromise: Promise<any> | null = null;
+
+const getOrCreateNfidIdentityKit = async () => {
+  if (!nfidIdentityKitPromise) {
+    nfidIdentityKitPromise = (async () => {
+      const transport = new PostMessageTransport({
+        url: NFIDW.providerUrl,
+        windowOpenerFeatures:
+          `left=${window.screen.width / 2 - 525 / 2}, `+
+          `top=${window.screen.height / 2 - 705 / 2},` +
+          `toolbar=0,location=0,menubar=0,width=525,height=705`,
+      });
+      const signer = new Signer({ transport });
+
+      const identityKit = await IdentityKit.create({
+        signerClientOptions: {
+          signer,
+          maxTimeToLive: days * hours * nanosecondsPerHour,
+          idleOptions: {
+            idleTimeout: Number(days * hours) * 60 * 60 * 1000,
+            disableIdle: false,
+            disableDefaultIdleCallback: true,
+            onIdle: async () => {
+              console.log("Session expired due to inactivity");
+              // Will be set up properly when store is created
+            }
+          }
+        },
+        authType: IdentityKitAuthType.DELEGATION
+      });
+
+      return identityKit;
+    })();
+  }
+  return nfidIdentityKitPromise;
 };
 
 export const createStore = ({
@@ -466,6 +512,12 @@ export const createStore = ({
 
   const initBackendCanisterActor = async (loginType, identity: Identity) => {
     let canisterId = backendCanisterId;
+    
+    if (!canisterId) {
+      console.error("❌ Backend canister ID is undefined!");
+      return null;
+    }
+    
     let backendActor = createBackendCanisterActor(canisterId, {
       agentOptions: {
         identity,
@@ -505,6 +557,11 @@ export const createStore = ({
   const initGameStateCanisterActor = async (loginType, identity: Identity) => {
     let canisterId = gameStateCanisterId;
     
+    if (!canisterId) {
+      console.error("❌ Game State canister ID is undefined!");
+      return null;
+    }
+    
     let gameStateActor = createGameStateCanisterActor(canisterId, {
       agentOptions: {
         identity,
@@ -522,7 +579,7 @@ export const createStore = ({
       // Import canister IDs from the JSON file
       const canisterIds = {
         "demo": "p6pu7-5aaaa-aaaap-qqdfa-cai",
-        "prd": "bgm6p-5aaaa-aaaaf-qbzda-cai", 
+        "prd": "bgm6p-5aaaa-aaaaf-qbzda-cai",
         "testing": "nyxgs-uqaaa-aaaap-qqdia-cai",
         "development": "p6pu7-5aaaa-aaaap-qqdfa-cai",
         "ic": "bgm6p-5aaaa-aaaaf-qbzda-cai"
@@ -536,7 +593,7 @@ export const createStore = ({
     }
     
     if (!canisterId) {
-      console.error("No API canister ID found for current environment");
+      console.error("❌ No API canister ID found for current environment");
       return null;
     }
     
@@ -736,28 +793,90 @@ export const createStore = ({
     return { mainerActors, userCanisters: enrichedUserCanisters };
   };
 
-  const nfidConnect = async () => {
+  const nfidConnect = async (isSessionRestore = false) => {
     try {
-      authClient = await AuthClient.create();
-      if (await authClient.isAuthenticated()) {
-        const identity = await authClient.getIdentity();
-        await initNfid(identity);
+      // Get or create the IdentityKit (uses singleton pattern)
+      // This ensures IdentityKit is ready before we call login()
+      const identityKit = await getOrCreateNfidIdentityKit();
+      
+      if (identityKit.signerClient) {
+        const signerClient = identityKit.signerClient;
+        
+        // If this is a session restore (page refresh), check if already authenticated
+        if (isSessionRestore) {
+          // Try to get existing identity without opening popup
+          //@ts-ignore - isAuthenticated exists at runtime
+          const isAuthenticated = signerClient.isAuthenticated();
+          if (isAuthenticated) {
+            console.log("Restoring NFID session from existing delegation");
+            const identity = signerClient.getIdentity();
+            
+            // Store the identity kit instance for later use
+            (globalThis as any).__nfid_identity_kit__ = identityKit;
+            (globalThis as any).__nfid_signer_client__ = signerClient;
+            
+            const initSuccess = await initNfid(identity);
+            if (!initSuccess) {
+              console.warn("NFID session restore failed - delegation likely expired");
+              clearSessionInfo();
+              
+              notificationStore.add(
+                "Your session has expired. Please log in again.",
+                "warning",
+                5000
+              );
+              
+              update((prevState) => ({
+                ...defaultState,
+              }));
+            }
+            return;
+          } else {
+            // Session expired or not found, user needs to login again
+            console.warn("NFID session expired, user needs to login again");
+            clearSessionInfo();
+            
+            // Show user-friendly notification
+            notificationStore.add(
+              "Your session has expired. Please log in again to continue.",
+              "warning",
+              8000 // Show for 8 seconds
+            );
+            
+            // Reset to default logged out state
+            update((prevState) => {
+              return {
+                ...defaultState,
+              };
+            });
+            
+            return;
+          }
+        }
+        
+        // For new logins (user clicked button), open the popup
+        // CRITICAL: Call login() to open the popup - this should happen quickly
+        // since IdentityKit is already initialized
+        await signerClient.login();
+        
+        // Get the identity
+        const identity = signerClient.getIdentity();
+        
+        // Store the identity kit instance for later use
+        (globalThis as any).__nfid_identity_kit__ = identityKit;
+        (globalThis as any).__nfid_signer_client__ = signerClient;
+        
+        const initSuccess = await initNfid(identity);
+        if (!initSuccess) {
+          throw new Error("Failed to initialize NFID session - please try again");
+        }
       } else {
-        await authClient.login({
-          onSuccess: async () => {
-            const identity = await authClient.getIdentity();
-            await initNfid(identity);
-          },
-          identityProvider: "https://nfid.one" + AUTH_PATH,
-          maxTimeToLive: days * hours * nanosecondsPerHour,
-          windowOpenerFeatures:
-            `left=${window.screen.width / 2 - 525 / 2}, `+
-            `top=${window.screen.height / 2 - 705 / 2},` +
-            `toolbar=0,location=0,menubar=0,width=525,height=705`,
-        });
+        throw new Error("SignerClient not available on IdentityKit");
       }
     } catch (error) {
       console.error("Error in nfidConnect:", error);
+      // Reset the singleton so it can be retried
+      nfidIdentityKitPromise = null;
       update((state) => ({
         ...state,
         error: "Failed to connect with NFID"
@@ -765,64 +884,70 @@ export const createStore = ({
     }
   };
 
-  const initNfid = async (identity: Identity) => {
-    const backendActor = await initBackendCanisterActor("nfid", identity);
+  const initNfid = async (identity: Identity): Promise<boolean> => {
+    try {
+      const backendActor = await initBackendCanisterActor("nfid", identity);
 
-    if (!backendActor) {
-      console.warn("couldn't create backend actor");
-      return;
-    };
+      if (!backendActor) {
+        console.warn("❌ Couldn't create backend actor - delegation may be expired");
+        return false;
+      };
 
-    await initUserSettings(backendActor);
+      await initUserSettings(backendActor);
 
-    const gameStateCanisterActor = await initGameStateCanisterActor("nfid", identity);
-    
-    if (!gameStateCanisterActor) {
-      console.warn("couldn't create Game State actor");
-      return;
-    };
+      const gameStateCanisterActor = await initGameStateCanisterActor("nfid", identity);
+      
+      if (!gameStateCanisterActor) {
+        console.warn("❌ Couldn't create Game State actor - delegation may be expired");
+        return false;
+      };
 
-    const apiCanisterActor = await initApiCanisterActor("nfid", identity);
-    
-    if (!apiCanisterActor) {
-      console.warn("couldn't create API canister actor");
-      return;
-    };
+      const apiCanisterActor = await initApiCanisterActor("nfid", identity);
+      
+      if (!apiCanisterActor) {
+        console.warn("❌ Couldn't create API canister actor - delegation may be expired");
+        return false;
+      };
 
-    // Initialize user's mAIner agent (controller) canisters
-    const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "nfid", identity);
-    const userMainerCanisterActors = mainerActors;
-    const userMainerAgentCanistersInfo = userCanisters;
+      // Initialize user's mAIner agent (controller) canisters
+      const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "nfid", identity);
+      const userMainerCanisterActors = mainerActors;
+      const userMainerAgentCanistersInfo = userCanisters;
 
-    //let accounts = JSON.parse(await identity.accounts());
+      //let accounts = JSON.parse(await identity.accounts());
 
-    // Calculate session expiry time (30 days from now in nanoseconds)
-    const sessionExpiry = BigInt(Date.now()) * BigInt(1000000) + days * hours * nanosecondsPerHour;
-    
-    // Store session information for persistence
-    storeSessionInfo("nfid", sessionExpiry);
+      // Calculate session expiry time (30 days from now in nanoseconds)
+      const sessionExpiry = BigInt(Date.now()) * BigInt(1000000) + days * hours * nanosecondsPerHour;
+      
+      // Store session information for persistence
+      storeSessionInfo("nfid", sessionExpiry);
 
-    update((state) => ({
-      ...state,
-      backendActor,
-      principal: identity.getPrincipal(),
-      //accountId: accounts[0].address, // we take the default account associated with the identity
-      accountId: null,
-      isAuthed: "nfid",
-      gameStateCanisterActor,
-      apiCanisterActor,
-      userMainerCanisterActors,
-      userMainerAgentCanistersInfo,
-      sessionExpiry
-    }));
+      update((state) => ({
+        ...state,
+        backendActor,
+        principal: identity.getPrincipal(),
+        //accountId: accounts[0].address, // we take the default account associated with the identity
+        accountId: null,
+        isAuthed: "nfid",
+        gameStateCanisterActor,
+        apiCanisterActor,
+        userMainerCanisterActors,
+        userMainerAgentCanistersInfo,
+        sessionExpiry
+      }));
 
-    // Start automatic session refresh timer
-    startSessionRefreshTimer();
+      // Start automatic session refresh timer
+      startSessionRefreshTimer();
 
-    // Restore mAIner creation state if it exists
-    restoreMainerCreationState();
+      // Restore mAIner creation state if it exists
+      restoreMainerCreationState();
 
-    console.info("nfid is authed");
+      console.info("✅ NFID authentication successful");
+      return true;
+    } catch (error) {
+      console.error("❌ Error during NFID initialization:", error);
+      return false;
+    }
   };
 
   const internetIdentityConnect = async () => {
@@ -921,9 +1046,20 @@ export const createStore = ({
     // Check isAuthed to determine which method to use to disconnect
     if (globalState.isAuthed === "nfid") {
       try {
-        await authClient.logout();
+        // Use the new IdentityKit logout if available
+        const signerClient = (globalThis as any).__nfid_signer_client__;
+        if (signerClient) {
+          await signerClient.logout();
+          delete (globalThis as any).__nfid_identity_kit__;
+          delete (globalThis as any).__nfid_signer_client__;
+          // Reset the singleton so a fresh IdentityKit is created on next login
+          nfidIdentityKitPromise = null;
+        } else {
+          // Fallback to legacy AuthClient logout
+          await authClient.logout();
+        }
       } catch (error) {
-        console.error("NFid disconnect error: ", error);
+        console.error("NFID disconnect error: ", error);
       };
     } else if (globalState.isAuthed === "internetidentity") {
       try {
@@ -941,88 +1077,246 @@ export const createStore = ({
   };
 
   const checkExistingLoginAndConnect = async () => {
+    console.log("🔄 Checking for existing login session...");
+
     // Check login state if user is already logged in
     const sessionInfo = getStoredSessionInfo();
-    
+
     if (sessionInfo) {
-      const authClient = await AuthClient.create();
-      const isAuthenticated = await authClient.isAuthenticated();
-      
-      if (isAuthenticated) {
-        // Check if session is still valid
-        const now = BigInt(Date.now()) * BigInt(1000000); // Convert to nanoseconds
-        
-        if (sessionInfo.expiry > now) {
-          console.info(`${sessionInfo.loginType} connection detected and session is valid`);
-          
-          // Update the session expiry in state
-          update((state) => ({ ...state, sessionExpiry: sessionInfo.expiry }));
-          
-          if (sessionInfo.loginType === "nfid") {
-            await nfidConnect();
-          } else if (sessionInfo.loginType === "internetidentity") {
-            await internetIdentityConnect();
-          }
-        } else {
-          console.info("Stored session has expired, clearing session info");
+      console.log(`📋 Found stored session info for ${sessionInfo.loginType}`);
+
+      // IMPORTANT: For Internet Identity, check if AuthClient still has the delegation
+      // NFID uses its own delegation mechanism (SignerClient), so skip this check for NFID
+      if (sessionInfo.loginType === "internetidentity") {
+        const authClient = await AuthClient.create();
+        const isAuthenticated = await authClient.isAuthenticated();
+
+        if (!isAuthenticated) {
+          console.warn(`❌ Internet Identity delegation missing from AuthClient`);
+          console.warn(`🧹 Clearing stale Internet Identity session`);
           clearSessionInfo();
-          await authClient.logout();
+          
+          // Reset to default logged out state
+          update((prevState) => {
+            return {
+              ...defaultState,
+            };
+          });
+          return;
+        }
+      }
+
+      // Check if session is still valid (not expired)
+      const now = BigInt(Date.now()) * BigInt(1000000); // Convert to nanoseconds
+
+      if (sessionInfo.expiry > now) {
+        console.info(`✅ ${sessionInfo.loginType} session is valid (expires: ${new Date(Number(sessionInfo.expiry / BigInt(1000000))).toISOString()})`);
+
+        // Update the session expiry in state
+        update((state) => ({ ...state, sessionExpiry: sessionInfo.expiry }));
+
+        if (sessionInfo.loginType === "nfid") {
+          // For NFID, we need to restore the session properly
+          console.log("🔄 Restoring NFID session...");
+          try {
+            const identityKit = await getOrCreateNfidIdentityKit();
+
+            if (identityKit?.signerClient) {
+              // Try to get the identity directly - NFID should persist its session
+              const identity = identityKit.signerClient.getIdentity();
+              if (identity) {
+                const principal = identity.getPrincipal().toString();
+                console.log("🔍 Found NFID identity for principal:", principal);
+                (globalThis as any).__nfid_identity_kit__ = identityKit;
+                (globalThis as any).__nfid_signer_client__ = identityKit.signerClient;
+                
+                // Try to initialize NFID and load user data
+                const initSuccess = await initNfid(identity);
+                
+                if (initSuccess) {
+                  console.log("🎉 NFID session fully restored!");
+                  
+                  // Show welcome back notification only if initialization succeeded
+                  notificationStore.add(
+                    "Welcome back! Your session has been restored.",
+                    "success",
+                    4000
+                  );
+                  
+                  return;
+                } else {
+                  console.warn("❌ NFID session restoration failed - delegation likely expired");
+                  notificationStore.add(
+                    "Your session has expired. Please log in again.",
+                    "warning",
+                    5000
+                  );
+                }
+              } else {
+                console.warn("❌ NFID session could not be restored - no identity available");
+              }
+            } else {
+              console.warn("❌ NFID IdentityKit not available for session restoration");
+            }
+          } catch (nfidError) {
+            console.error("❌ Failed to restore NFID session:", nfidError);
+          }
+
+          // If restoration failed, clear the session and reset auth state
+          console.warn("🧹 Clearing invalid NFID session");
+          clearSessionInfo();
+          
+          // IMPORTANT: Also logout from AuthClient to clear the delegation from IndexedDB
+          try {
+            const authClient = await AuthClient.create();
+            await authClient.logout();
+            console.log("✅ AuthClient delegation cleared");
+          } catch (logoutError) {
+            console.warn("Failed to logout from AuthClient:", logoutError);
+          }
+          
+          // Reset to default logged out state
+          update((prevState) => {
+            return {
+              ...defaultState,
+            };
+          });
+        } else if (sessionInfo.loginType === "internetidentity") {
+          console.log("🔄 Restoring Internet Identity session...");
+          await internetIdentityConnect();
+          console.log("✅ Internet Identity session restored!");
         }
       } else {
-        console.info("AuthClient shows user is not authenticated, clearing session info");
+        console.info("⏰ Stored session has expired, clearing session info");
         clearSessionInfo();
+        
+        // Clear the delegation from AuthClient/IndexedDB
+        try {
+          await authClient.logout();
+          console.log("✅ Expired session delegation cleared");
+        } catch (logoutError) {
+          console.warn("Failed to logout expired session:", logoutError);
+        }
+
+        // Reset to default logged out state
+        update((prevState) => {
+          return {
+            ...defaultState,
+          };
+        });
       }
     } else {
+      console.log("📭 No stored session info found");
+
       // Fallback to old method for backward compatibility
       const isAuthed = localStorage.getItem('isAuthed');
       if (isAuthed) {
-        const authClient = await AuthClient.create();
-        if (await authClient.isAuthenticated()) {
-          if (isAuthed === "nfid") {
-            console.info("NFID connection detected (legacy)");
-            await nfidConnect();
-          } else if (isAuthed === "internetidentity") {
-            console.info("Internet Identity connection detected (legacy)");
+        console.log(`📋 Found legacy auth info for ${isAuthed}`);
+        
+        if (isAuthed === "nfid") {
+          // For NFID, don't check AuthClient - it uses its own delegation mechanism
+          console.info("🔄 NFID connection detected (legacy method)");
+          try {
+            await nfidConnect(true); // Pass true for session restore
+            console.log("✅ NFID session restored via legacy method!");
+          } catch (error) {
+            console.error("❌ Failed to restore NFID session via legacy method:", error);
+            clearSessionInfo();
+            
+            // Try to clean up AuthClient just in case
+            try {
+              const authClient = await AuthClient.create();
+              await authClient.logout();
+            } catch (logoutError) {
+              console.warn("Failed to logout after failed restore:", logoutError);
+            }
+            
+            // Reset to default logged out state
+            update((prevState) => {
+              return {
+                ...defaultState,
+              };
+            });
+          }
+        } else if (isAuthed === "internetidentity") {
+          // For Internet Identity, check AuthClient first
+          const authClient = await AuthClient.create();
+          if (await authClient.isAuthenticated()) {
+            console.info("🔄 Internet Identity connection detected (legacy method)");
             await internetIdentityConnect();
+            console.log("✅ Internet Identity session restored via legacy method!");
+          } else {
+            console.log("❌ Internet Identity delegation missing, clearing session");
+            clearSessionInfo();
+
+            // Reset to default logged out state
+            update((prevState) => {
+              return {
+                ...defaultState,
+              };
+            });
           }
         }
+      } else {
+        console.log("📭 No legacy auth info found either");
       }
     }
+
+    console.log("🏁 Session restoration check complete");
   };
 
   const loadUserMainerCanisters = async () => {
     try {
-      // Get current auth client and identity
-      authClient = await AuthClient.create();
-      if (await authClient.isAuthenticated()) {
-        const identity = await authClient.getIdentity();
-        
-        // Get current auth type from store
-        const isAuthed = globalState.isAuthed;
-        if (!isAuthed) {
-          console.warn("User not authenticated, cannot reload mAIner canisters");
-          return;
-        }
-        
-        // Get current game state canister actor
-        const gameStateCanisterActor = globalState.gameStateCanisterActor;
-        if (!gameStateCanisterActor) {
-          console.warn("Game state canister actor not available");
-          return;
-        }
-        
-        // Reload user's mAIner agent canisters
-        const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, isAuthed, identity);
-        
-        // Update the store with new data
-        update((state) => ({
-          ...state,
-          userMainerCanisterActors: mainerActors,
-          userMainerAgentCanistersInfo: userCanisters
-        }));
-        
-        console.log("User mAIner canisters reloaded successfully");
+      // Check authentication status from store first
+      const isAuthed = globalState.isAuthed;
+      if (!isAuthed) {
+        console.warn("User not authenticated, cannot reload mAIner canisters");
+        return;
       }
+      
+      // Get current game state canister actor
+      const gameStateCanisterActor = globalState.gameStateCanisterActor;
+      if (!gameStateCanisterActor) {
+        console.warn("Game state canister actor not available");
+        return;
+      }
+      
+      // Get identity based on auth type
+      let identity;
+      if (isAuthed === "nfid") {
+        // For NFID, try to get identity from stored signer client
+        const storedSignerClient = (globalThis as any).__nfid_signer_client__;
+        if (storedSignerClient && typeof storedSignerClient.getIdentity === 'function') {
+          identity = storedSignerClient.getIdentity();
+        } else {
+          console.warn("NFID signer client not available for reload");
+          return;
+        }
+      } else if (isAuthed === "internetidentity") {
+        // For Internet Identity, use AuthClient
+        authClient = await AuthClient.create();
+        if (await authClient.isAuthenticated()) {
+          identity = await authClient.getIdentity();
+        } else {
+          console.warn("Internet Identity not authenticated");
+          return;
+        }
+      } else {
+        console.warn("Unknown auth type:", isAuthed);
+        return;
+      }
+      
+      // Reload user's mAIner agent canisters
+      const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, isAuthed, identity);
+      
+      // Update the store with new data
+      update((state) => ({
+        ...state,
+        userMainerCanisterActors: mainerActors,
+        userMainerAgentCanistersInfo: userCanisters
+      }));
+      
+      console.log("User mAIner canisters reloaded successfully");
     } catch (error) {
       console.error("Error reloading user mAIner canisters:", error);
     }
@@ -1038,14 +1332,116 @@ export const createStore = ({
     if (!options.anon) {
       // Create an agent with the logged in user's identity (for authenticated calls)
       try {
-        authClient = await AuthClient.create();
-        if (await authClient.isAuthenticated()) {
-          const identity = await authClient.getIdentity();
-          agent = new HttpAgent({
-            identity,
-            host: HOST,
-          });
-        };
+        let identityFound = false;
+        
+        // Check if user is logged in with NFID first
+        // NFID uses a different authentication mechanism - try to restore the session
+        if (globalState?.isAuthed === "nfid") {
+          console.log(`Attempting to restore NFID identity for canister ${canisterId}`);
+
+          let identity = null;
+
+          // Method 1: Try to restore from stored signer client reference
+          const storedSignerClient = (globalThis as any).__nfid_signer_client__;
+          if (storedSignerClient && typeof storedSignerClient.getIdentity === 'function') {
+            try {
+              identity = storedSignerClient.getIdentity();
+              console.log(`✅ Got NFID identity from stored signer client for canister ${canisterId}`);
+            } catch (e) {
+              console.warn("Failed to get identity from stored signer client:", e);
+            }
+          }
+
+          // Method 2: If that didn't work, try to create a new IdentityKit and see if it can restore
+          if (!identity) {
+            try {
+              console.log("Trying to restore NFID session via IdentityKit...");
+              const nfidIdentityKit = await getOrCreateNfidIdentityKit();
+
+              if (nfidIdentityKit?.signerClient) {
+                // NFID Signer client might persist its own state
+                // Try to get identity directly - it should have the session if logged in
+                identity = nfidIdentityKit.signerClient.getIdentity();
+                console.log(`✅ Got NFID identity from fresh IdentityKit for canister ${canisterId}`);
+
+                // Store the reference for future use
+                (globalThis as any).__nfid_identity_kit__ = nfidIdentityKit;
+              }
+            } catch (restoreError) {
+              console.warn("Failed to restore NFID session via IdentityKit:", restoreError);
+            }
+          }
+
+          // Method 3: Last resort - check if NFID stores anything in localStorage
+          if (!identity) {
+            try {
+              // NFID might store delegation data in localStorage with specific keys
+              const nfidKeys = Object.keys(localStorage).filter(key => key.includes('nfid') || key.includes('NFID'));
+              console.log("NFID-related localStorage keys:", nfidKeys);
+
+              // If we find NFID keys, it might indicate an active session
+              if (nfidKeys.length > 0) {
+                console.log("Found NFID data in localStorage, trying alternative restoration...");
+
+                // Try one more time with a fresh IdentityKit
+                const freshKit = await getOrCreateNfidIdentityKit();
+                if (freshKit?.signerClient?.getIdentity) {
+                  identity = freshKit.signerClient.getIdentity();
+                  if (identity) {
+                    console.log(`✅ Got NFID identity from localStorage-based restoration for canister ${canisterId}`);
+                  }
+                }
+              }
+            } catch (lsError) {
+              console.warn("Failed to check localStorage for NFID data:", lsError);
+            }
+          }
+
+          // If we got an identity, use it
+          if (identity) {
+            const principal = identity.getPrincipal().toString();
+            console.log(`✅ Using NFID identity for canister ${canisterId}, principal:`, principal);
+
+            // Verify this matches the expected principal
+            if (globalState?.principal && principal !== globalState.principal.toString()) {
+              console.error(`❌ Principal mismatch! Expected ${globalState.principal.toString()}, got ${principal}`);
+            } else {
+              agent = new HttpAgent({
+                identity,
+                host: HOST,
+              });
+              identityFound = true;
+            }
+          } else {
+            console.warn("Could not restore NFID identity using any method");
+          }
+        }
+        
+        // Fallback to Internet Identity if NFID didn't work or if using II
+        if (!identityFound) {
+          authClient = await AuthClient.create();
+          if (await authClient.isAuthenticated()) {
+            const identity = await authClient.getIdentity();
+            const principal = identity.getPrincipal().toString();
+            console.log(`✅ Using Internet Identity for canister ${canisterId}, principal:`, principal);
+            
+            // Verify this matches the expected principal
+            if (globalState?.principal && principal !== globalState.principal.toString()) {
+              console.error(`❌ Principal mismatch! Expected ${globalState.principal.toString()}, got ${principal}`);
+            }
+            
+            agent = new HttpAgent({
+              identity,
+              host: HOST,
+            });
+            identityFound = true;
+          };
+        }
+        
+        if (!identityFound) {
+          console.error(`❌ No authenticated identity found for canister ${canisterId}. This will cause transfers to fail!`);
+          console.error(`Store state - isAuthed: ${globalState?.isAuthed}, principal: ${globalState?.principal?.toString()}`);
+        }
       } catch (error) {
         console.error("Error in getActor:", error);
         update((state) => ({
@@ -1136,7 +1532,7 @@ export const createStore = ({
         
         // Re-initialize the connection to extend the session
         if (sessionInfo.loginType === "nfid") {
-          await nfidConnect();
+          await nfidConnect(true); // Pass true for session restore
         } else if (sessionInfo.loginType === "internetidentity") {
           await internetIdentityConnect();
         }
@@ -1226,6 +1622,18 @@ export const createStore = ({
     clearStoredMainerCreationState();
   };
 
+  const preInitNfid = async () => {
+    // Start pre-initializing NFID IdentityKit in the background
+    // so it's ready when the user clicks the login button
+    try {
+      await getOrCreateNfidIdentityKit();
+      console.log("NFID IdentityKit pre-initialized successfully");
+    } catch (error) {
+      console.warn("Failed to pre-initialize NFID:", error);
+      throw error;
+    }
+  };
+
   const resetMainerCreationAfterOpen = () => {
     update((state) => ({
       ...state,
@@ -1237,6 +1645,7 @@ export const createStore = ({
     subscribe,
     update,
     nfidConnect,
+    preInitNfid,
     internetIdentityConnect,
     disconnect,
     checkExistingLoginAndConnect,

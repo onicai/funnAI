@@ -134,7 +134,20 @@
     }
     
     const availableAmount = parseFloat(selectedTransaction?.amount || '0');
-    if (sendForm.amount > availableAmount) {
+    
+    // Get token data to check fee
+    const tokenData = tokenDataMap.get(selectedTransaction?.symbol);
+    if (tokenData) {
+      // Calculate fee in token units (convert from smallest unit)
+      const feeAmount = Number(tokenData.fee_fixed) / Math.pow(10, tokenData.decimals);
+      const totalNeeded = sendForm.amount + feeAmount;
+      
+      if (totalNeeded > availableAmount) {
+        transactionError = `Insufficient balance. You need ${totalNeeded.toFixed(8)} ${selectedTransaction?.symbol} (${sendForm.amount.toFixed(8)} + ${feeAmount.toFixed(8)} fee)`;
+        return false;
+      }
+    } else if (sendForm.amount > availableAmount) {
+      // Fallback if token data not available
       transactionError = 'Insufficient balance';
       return false;
     }

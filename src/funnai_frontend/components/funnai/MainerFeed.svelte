@@ -567,11 +567,10 @@
 
 <div class="h-full dark:bg-gray-800 dark:text-white flex flex-col" style="overflow-y: auto; overflow-x: visible;">
 
-  {#if updating && $store.isAuthed}
-    <div class="flex justify-center py-2">
-      <div class="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent dark:border-blue-400"></div>
-    </div>
-  {/if}
+  <!-- Fixed space for loader to prevent UI jump -->
+  <div class="flex justify-center py-2 transition-opacity duration-300 {updating && $store.isAuthed ? 'opacity-100' : 'opacity-0 pointer-events-none'}">
+    <div class="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent dark:border-blue-400"></div>
+  </div>
   <!-- Info Panel - show when not authenticated or when authenticated but no content -->
   {#if (!$store.isAuthed) || (feedItems.length === 0 && !loading && !updating)}
     <div class="flex-1 flex flex-col justify-center items-center px-4 py-6">
