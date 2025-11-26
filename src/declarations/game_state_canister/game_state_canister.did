@@ -616,10 +616,6 @@ type GameStateCanister =
    getIsMainerAuctionActive: () -> (FlagResult) query;
    getIsMigratingChallengesFlagAdmin: () -> (FlagResult) query;
    getIsWhitelistPhaseActive: () -> (FlagResult) query;
-   getIsMainerAuctionActive: () -> (FlagResult) query;
-   getMainerAuctionTimerInfo: () -> (MainerAuctionTimerInfoResult) query;
-   getNextMainerAuctionPriceDropAtNs: () -> (NatResult) query;
-   getAvailableMainers: () -> (NatResult) query;
    getJudgePromptInfo: (text) -> (JudgePromptInfoResult) query;
    getLimitForCreatingMainerAdmin: (CheckMainerLimit) -> (NatResult) query;
    getMainerAgentCanisterInfo: (CanisterRetrieveInput) ->
@@ -811,17 +807,6 @@ type FlagResult =
    Ok: FlagRecord;
  };
 type FlagRecord = record {flag: bool;};
-type MainerAuctionTimerInfo = 
- record {
-   lastUpdateNs: nat;
-   intervalSeconds: nat;
-   active: bool;
- };
-type MainerAuctionTimerInfoResult = 
- variant {
-   Err: ApiError;
-   Ok: MainerAuctionTimerInfo;
- };
 type FinishUploadMainerPromptCacheInput = 
  record {
    mainerPromptId: text;
