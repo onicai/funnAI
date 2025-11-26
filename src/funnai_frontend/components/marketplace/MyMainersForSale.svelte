@@ -9,10 +9,10 @@
 
   // State
   let myMainers: any[] = [];
-  let selectedMainers = new Set<string>();
-  let prices: Record<string, string> = {};
+  let selectedMainer: string | null = null;
+  let price: string = "";
   let isSubmitting = false;
-  let validationErrors: Record<string, string> = {};
+  let priceError: string | null = null;
 
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
 
@@ -61,70 +61,57 @@
   }
 
   function toggleMainerSelection(mainerId: string) {
-    if (selectedMainers.has(mainerId)) {
-      selectedMainers.delete(mainerId);
-      delete prices[mainerId];
-      delete validationErrors[mainerId];
+    if (selectedMainer === mainerId) {
+      selectedMainer = null;
+      price = "";
+      priceError = null;
     } else {
-      selectedMainers.add(mainerId);
-      prices[mainerId] = "";
+      selectedMainer = mainerId;
+      price = "";
+      priceError = null;
     }
-    selectedMainers = selectedMainers;
-    prices = prices;
-    validationErrors = validationErrors;
   }
 
-  function handlePriceInput(mainerId: string, value: string) {
-    prices[mainerId] = value;
+  function handlePriceInput(value: string) {
+    price = value;
     
     // Validate price
     const numValue = parseFloat(value);
     if (!value || value.trim() === "") {
-      validationErrors[mainerId] = "Price is required";
+      priceError = "Price is required";
     } else if (isNaN(numValue) || numValue <= 0) {
-      validationErrors[mainerId] = "Price must be greater than 0";
+      priceError = "Price must be greater than 0";
     } else if (numValue < 0.01) {
-      validationErrors[mainerId] = "Minimum price is 0.01 ICP";
+      priceError = "Minimum price is 0.01 ICP";
     } else {
-      delete validationErrors[mainerId];
+      priceError = null;
     }
-    validationErrors = validationErrors;
   }
 
   async function handleListToMarketplace() {
-    if (selectedMainers.size === 0) {
+    if (!selectedMainer) {
       return;
     }
 
-    // Validate all selected mAIners have valid prices
-    let hasErrors = false;
-    selectedMainers.forEach(mainerId => {
-      if (!prices[mainerId] || validationErrors[mainerId]) {
-        hasErrors = true;
-      }
-    });
-
-    if (hasErrors) {
+    // Validate price
+    if (!price || priceError) {
       return;
     }
 
     isSubmitting = true;
     try {
-      const mainerIds = Array.from(selectedMainers);
-      const numericPrices: Record<string, number> = {};
-      mainerIds.forEach(id => {
-        numericPrices[id] = parseFloat(prices[id]);
-      });
+      const numericPrices: Record<string, number> = {
+        [selectedMainer]: parseFloat(price)
+      };
 
-      await onListToMarketplace(mainerIds, numericPrices);
+      await onListToMarketplace([selectedMainer], numericPrices);
 
       // Clear selection after successful listing
-      selectedMainers.clear();
-      prices = {};
-      validationErrors = {};
-      selectedMainers = selectedMainers;
+      selectedMainer = null;
+      price = "";
+      priceError = null;
     } catch (error) {
-      console.error("Error listing mAIners:", error);
+      console.error("Error listing mAIner:", error);
     } finally {
       isSubmitting = false;
     }
@@ -148,7 +135,7 @@
       </div>
       <div>
         <h2 class="text-xl font-bold text-white">My mAIners</h2>
-        <p class="text-sm text-white/80">Select mAIners to list on the marketplace</p>
+        <p class="text-sm text-white/80">Select a mAIner to list on the marketplace</p>
       </div>
     </div>
   </div>
@@ -176,14 +163,17 @@
       <div class="space-y-3 mb-6">
         {#each myMainers as mainer, index}
           {@const identity = getMainerVisualIdentity(mainer.id)}
-          {@const isSelected = selectedMainers.has(mainer.id)}
+          {@const isSelected = selectedMainer === mainer.id}
           
           <div 
             class="group relative overflow-hidden rounded-lg border-2 transition-all duration-300 cursor-pointer
                    {isSelected 
                      ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-lg' 
                      : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 bg-white dark:bg-gray-800'}"
+            role="button"
+            tabindex="0"
             on:click={() => toggleMainerSelection(mainer.id)}
+            on:keydown={(e) => e.key === 'Enter' || e.key === ' ' ? toggleMainerSelection(mainer.id) : null}
           >
             <!-- Background gradient effect -->
             <div class="absolute inset-0 bg-gradient-to-br {identity.colors.bg} opacity-5"></div>
@@ -237,27 +227,29 @@
 
                   <!-- Price Input (shown when selected) -->
                   {#if isSelected}
-                    <div class="mt-4 pl-12" on:click|stopPropagation>
-                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <!-- svelte-ignore a11y-no-static-element-interactions -->
+                    <div class="mt-4 pl-12" on:click|stopPropagation on:keydown|stopPropagation>
+                      <label for="price-input-{mainer.id}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Set Price (ICP)
                       </label>
                       <div class="flex items-center space-x-2">
                         <input
+                          id="price-input-{mainer.id}"
                           type="number"
                           step="0.01"
                           min="0.01"
                           placeholder="0.00"
-                          value={prices[mainer.id] || ""}
-                          on:input={(e) => handlePriceInput(mainer.id, e.currentTarget.value)}
+                          value={price}
+                          on:input={(e) => handlePriceInput(e.currentTarget.value)}
                           class="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent
                                  bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 
                                  text-gray-900 dark:text-white placeholder-gray-400
-                                 {validationErrors[mainer.id] ? 'border-red-500' : ''}"
+                                 {priceError ? 'border-red-500' : ''}"
                         />
                         <span class="text-sm font-medium text-gray-600 dark:text-gray-400">ICP</span>
                       </div>
-                      {#if validationErrors[mainer.id]}
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{validationErrors[mainer.id]}</p>
+                      {#if priceError}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{priceError}</p>
                       {/if}
                     </div>
                   {/if}
@@ -269,22 +261,22 @@
       </div>
 
       <!-- Action Button -->
-      {#if selectedMainers.size > 0}
+      {#if selectedMainer}
         <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
           <div class="flex items-center justify-between mb-4">
             <div>
               <p class="text-sm text-gray-600 dark:text-gray-400">
-                Selected: <span class="font-semibold text-gray-900 dark:text-white">{selectedMainers.size}</span> mAIner{selectedMainers.size > 1 ? 's' : ''}
+                Selected: <span class="font-semibold text-gray-900 dark:text-white">mAIner {selectedMainer.slice(0, 5)}</span>
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
-                Set prices for all selected mAIners to continue
+                Set a price to list on the marketplace
               </p>
             </div>
           </div>
           
           <button
             on:click={handleListToMarketplace}
-            disabled={isSubmitting || Object.keys(validationErrors).length > 0 || selectedMainers.size === 0}
+            disabled={isSubmitting || !!priceError || !price}
             class="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 
                    text-white font-semibold rounded-lg transition-all duration-200 
                    disabled:opacity-50 disabled:cursor-not-allowed
