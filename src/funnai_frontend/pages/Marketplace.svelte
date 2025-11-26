@@ -425,63 +425,53 @@
   <div class="container mx-auto px-4 py-8">
     <!-- Header Section -->
     <div class="mb-8">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-        <div class="flex items-center space-x-4">
-          <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl shadow-lg flex items-center justify-center">
-            <Store class="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h1 class="text-4xl font-bold text-gray-900 dark:text-white">mAIner Marketplace</h1>
-            <p class="text-lg text-gray-600 dark:text-gray-400">
-              Buy and sell funnAI mAIner agents on the Internet Computer
-            </p>
-          </div>
+      <!-- Header -->
+      <div class="flex items-center space-x-3 sm:space-x-4 mb-4">
+        <div class="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl sm:rounded-2xl shadow-lg flex items-center justify-center flex-shrink-0">
+          <Store class="w-5 h-5 sm:w-8 sm:h-8 text-white" />
         </div>
+        <div>
+          <h1 class="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">Marketplace</h1>
+          <p class="text-sm sm:text-lg text-gray-600 dark:text-gray-400 hidden sm:block">
+            Buy and sell funnAI mAIner agents
+          </p>
+        </div>
+      </div>
 
-        <!-- Tab Navigation - Primary Action -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-1.5 inline-flex gap-1 shadow-sm self-start sm:self-center">
-          <button
-            on:click={() => activeTab = 'buy'}
-            class="px-5 py-3 rounded-lg transition-all duration-200 flex items-center space-x-3
-                   {activeTab === 'buy' 
-                     ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md' 
-                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
-          >
-            <ShoppingCart class="w-5 h-5" />
-            <div class="text-left">
-              <span class="font-semibold block">Buy</span>
-              <span class="text-xs {activeTab === 'buy' ? 'text-white/80' : 'text-gray-500 dark:text-gray-500'}">Browse listings</span>
-            </div>
-          </button>
-          
-          <button
-            on:click={() => activeTab = 'sell'}
-            class="px-5 py-3 rounded-lg transition-all duration-200 flex items-center space-x-3
-                   {activeTab === 'sell' 
-                     ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md' 
-                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
-          >
-            <Tag class="w-5 h-5" />
-            <div class="text-left">
-              <span class="font-semibold block">Sell</span>
-              <span class="text-xs {activeTab === 'sell' ? 'text-white/80' : 'text-gray-500 dark:text-gray-500'}">List your mAIners</span>
-            </div>
-          </button>
-          
-          <button
-            on:click={() => activeTab = 'history'}
-            class="px-5 py-3 rounded-lg transition-all duration-200 flex items-center space-x-3
-                   {activeTab === 'history' 
-                     ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md' 
-                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
-          >
-            <History class="w-5 h-5" />
-            <div class="text-left">
-              <span class="font-semibold block">History</span>
-              <span class="text-xs {activeTab === 'history' ? 'text-white/80' : 'text-gray-500 dark:text-gray-500'}">Past transactions</span>
-            </div>
-          </button>
-        </div>
+      <!-- Tab Navigation -->
+      <div class="flex items-stretch gap-2 mb-4">
+        <button
+          on:click={() => activeTab = 'buy'}
+          class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border transition-all duration-200 flex items-center justify-center gap-2
+                 {activeTab === 'buy' 
+                   ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white border-transparent shadow-md' 
+                   : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
+        >
+          <ShoppingCart class="w-4 h-4" />
+          <span class="font-semibold text-sm">Buy</span>
+        </button>
+        
+        <button
+          on:click={() => activeTab = 'sell'}
+          class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border transition-all duration-200 flex items-center justify-center gap-2
+                 {activeTab === 'sell' 
+                   ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white border-transparent shadow-md' 
+                   : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
+        >
+          <Tag class="w-4 h-4" />
+          <span class="font-semibold text-sm">Sell</span>
+        </button>
+
+        <button
+          on:click={() => activeTab = 'history'}
+          class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border transition-all duration-200 flex items-center justify-center gap-2
+                 {activeTab === 'history' 
+                   ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-md' 
+                   : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
+        >
+          <History class="w-4 h-4" />
+          <span class="font-semibold text-sm">History</span>
+        </button>
       </div>
 
       <!-- Stale Reservation Warning Banner -->
