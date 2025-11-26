@@ -79,15 +79,15 @@ function handleThemeToggle() {
 
 <div class="sidebar-header font-fredoka flex flex-col h-lvh bg-white dark:bg-gray-800">    
     <!-- Header Section -->
-    <div class="flex flex-col items-center py-3">
+    <div class="flex flex-col items-start px-4 py-3">
       <h1 class="text-2xl font-semibold flex items-center gap-2">
         <a use:link href="/" on:dblclick={playLogoSound}>
           <!-- Reserve logo space to avoid CLS -->
-          <div class="w-40 h-16 relative">
+          <div class="w-44 h-16 relative ml-3">
             {#if $theme === 'dark'}
-              <img src={funnailogoWhite} alt="funnAI logo" class="absolute inset-0 w-full h-full object-contain" width="96" height="84" />
+              <img src={funnailogoWhite} alt="funnAI logo" class="absolute inset-0 w-full h-full object-contain object-left" width="96" height="84" />
             {:else}
-              <img src={funnailogo} alt="funnAI logo" class="absolute inset-0 w-full h-full object-contain" width="96" height="84" />
+              <img src={funnailogo} alt="funnAI logo" class="absolute inset-0 w-full h-full object-contain object-left" width="96" height="84" />
             {/if}
           </div>
         </a>
