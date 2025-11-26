@@ -7,7 +7,7 @@
   import MarketplaceListings from "../components/marketplace/MarketplaceListings.svelte";
   import MarketplacePaymentModal from "../components/marketplace/MarketplacePaymentModal.svelte";
   import ToastContainer from "../components/common/ToastContainer.svelte";
-  import { Store, TrendingUp, Users, Zap } from "lucide-svelte";
+  import { Store, TrendingUp, Users, Zap, ShoppingCart, Tag } from "lucide-svelte";
   import { MarketplaceService } from "../helpers/marketplaceService";
   import type { Principal } from '@dfinity/principal';
 
@@ -424,15 +424,48 @@
   <div class="container mx-auto px-4 py-8">
     <!-- Header Section -->
     <div class="mb-8">
-      <div class="flex items-center space-x-4 mb-4">
-        <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl shadow-lg flex items-center justify-center">
-          <Store class="w-8 h-8 text-white" />
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+        <div class="flex items-center space-x-4">
+          <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-blue-500 rounded-2xl shadow-lg flex items-center justify-center">
+            <Store class="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white">mAIner Marketplace</h1>
+            <p class="text-lg text-gray-600 dark:text-gray-400">
+              Buy and sell funnAI mAIner agents on the Internet Computer
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 class="text-4xl font-bold text-gray-900 dark:text-white">mAIner Marketplace</h1>
-          <p class="text-lg text-gray-600 dark:text-gray-400">
-            Buy and sell funnAI mAIner agents on the Internet Computer
-          </p>
+
+        <!-- Tab Navigation - Primary Action -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-1.5 inline-flex gap-1 shadow-sm self-start sm:self-center">
+          <button
+            on:click={() => activeTab = 'buy'}
+            class="px-5 py-3 rounded-lg transition-all duration-200 flex items-center space-x-3
+                   {activeTab === 'buy' 
+                     ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md' 
+                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
+          >
+            <ShoppingCart class="w-5 h-5" />
+            <div class="text-left">
+              <span class="font-semibold block">Buy</span>
+              <span class="text-xs {activeTab === 'buy' ? 'text-white/80' : 'text-gray-500 dark:text-gray-500'}">Browse listings</span>
+            </div>
+          </button>
+          
+          <button
+            on:click={() => activeTab = 'sell'}
+            class="px-5 py-3 rounded-lg transition-all duration-200 flex items-center space-x-3
+                   {activeTab === 'sell' 
+                     ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md' 
+                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
+          >
+            <Tag class="w-5 h-5" />
+            <div class="text-left">
+              <span class="font-semibold block">Sell</span>
+              <span class="text-xs {activeTab === 'sell' ? 'text-white/80' : 'text-gray-500 dark:text-gray-500'}">List your mAIners</span>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -534,33 +567,6 @@
         </div>
       </div>
     {:else}
-      <!-- Tab Navigation -->
-      <div class="mb-6">
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-1 inline-flex shadow-sm">
-          <button
-            on:click={() => activeTab = 'buy'}
-            class="px-6 py-2.5 rounded-lg font-semibold transition-all duration-200 flex items-center space-x-2
-                   {activeTab === 'buy' 
-                     ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md' 
-                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}"
-          >
-            <Store class="w-4 h-4" />
-            <span>Browse Marketplace</span>
-          </button>
-          
-          <button
-            on:click={() => activeTab = 'sell'}
-            class="px-6 py-2.5 rounded-lg font-semibold transition-all duration-200 flex items-center space-x-2
-                   {activeTab === 'sell' 
-                     ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md' 
-                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}"
-          >
-            <Zap class="w-4 h-4" />
-            <span>Sell My mAIners</span>
-          </button>
-        </div>
-      </div>
-
       <!-- Tab Content -->
       {#if activeTab === 'sell'}
         <MyMainersForSale 
