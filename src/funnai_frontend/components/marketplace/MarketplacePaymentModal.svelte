@@ -2,10 +2,11 @@
   import { onMount } from 'svelte';
   import Modal from "../CommonModal.svelte";
   import { ShoppingBag, Info, AlertCircle } from 'lucide-svelte';
-  import { store } from "../../stores/store";
+  import { store, canisterIds } from "../../stores/store";
   import { IcrcService } from "../../helpers/IcrcService";
   import BigNumber from "bignumber.js";
   import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
+  import { Principal } from "@dfinity/principal";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
@@ -142,35 +143,33 @@
     try {
       console.log("Processing payment for mAIner:", listing.mainerId);
       console.log("Payment amount:", priceE8s.toString(), "e8s");
-      console.log("Seller:", listing.seller);
+      console.log("Approving ICP to Game State canister:", canisterIds.gameStateCanisterId);
       
-      // Execute ICP transfer to seller using static method
-      const result: any = await IcrcService.transfer(
+      // Step 1: Approve ICP to Game State canister (not transfer to seller!)
+      // The Game State canister will handle: transferring ICP to itself, 
+      // transferring ownership, and paying the seller (minus fee)
+      const approveResult = await IcrcService.checkAndRequestIcrc2Allowances(
         ICP_TOKEN,
-        listing.seller, // Send to seller (Principal string)
-        priceE8s,
-        {
-          fee: ICP_FEE
-        }
+        totalWithFee, // Price + fee
+        canisterIds.gameStateCanisterId // Spender is the Game State canister
       );
       
-      if (result && 'Err' in result) {
-        console.error("Transfer error:", result.Err);
-        throw new Error(`Transfer failed: ${JSON.stringify(result.Err)}`);
+      if (approveResult === null) {
+        throw new Error('Failed to approve ICP allowance');
       }
       
-      const blockIndex = result.Ok as bigint;
-      console.log("Payment successful! Block index:", blockIndex.toString());
+      console.log("ICP approval successful! Allowance:", approveResult.toString());
       
-      // Call success callback with transaction ID
-      onSuccess(blockIndex);
+      // Call success callback - the parent will call completePurchase
+      // which triggers the game state to execute the purchase
+      onSuccess(approveResult);
       
       // Close modal
       onClose();
       
     } catch (error) {
-      console.error("Error processing payment:", error);
-      errorMessage = error.message || "Failed to process payment. Please try again.";
+      console.error("Error processing payment approval:", error);
+      errorMessage = error.message || "Failed to approve payment. Please try again.";
     } finally {
       isValidating = false;
     }
@@ -296,8 +295,8 @@
       <div class="flex items-start space-x-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
         <Info class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
         <div class="text-xs text-blue-700 dark:text-blue-300">
-          <p class="font-medium mb-1">Payment will be processed through the protocol</p>
-          <p>The protocol will handle the payment distribution and transfer ownership to you automatically.</p>
+          <p class="font-medium mb-1">Secure escrow purchase</p>
+          <p>You'll approve the ICP amount, then the protocol will securely transfer ICP, update ownership, and pay the seller (minus platform fee).</p>
         </div>
       </div>
 
@@ -349,10 +348,10 @@
         >
           {#if isValidating}
             <div class="spinner w-4 h-4 border-2 border-white/30 border-t-white rounded-full"></div>
-            <span>Processing...</span>
+            <span>Approving...</span>
           {:else}
             <ShoppingBag class="w-4 h-4" />
-            <span>Pay {priceICP.toFixed(4)} ICP</span>
+            <span>Approve {priceICP.toFixed(4)} ICP</span>
           {/if}
         </button>
       </div>

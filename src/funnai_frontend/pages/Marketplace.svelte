@@ -301,7 +301,7 @@
   }
 
   async function handlePaymentSuccess(txId: bigint) {
-    console.log("Step 2: Payment successful, transaction ID:", txId.toString());
+    console.log("Step 2: ICP approval successful, allowance:", txId.toString());
     
     if (!selectedListingForPurchase) {
       console.error("No selected listing for purchase");
@@ -355,7 +355,7 @@
       showPaymentModal = false;
       
       toastStore.error(
-        `Failed to complete purchase: ${buyProcessError}. Your payment was processed. Transaction ID: ${txId.toString().slice(0, 10)}... Please contact support.`,
+        `Failed to complete purchase: ${buyProcessError}. Your ICP was approved but not transferred. The approval will expire. Please try again or contact support.`,
         12000
       );
     } finally {

@@ -409,8 +409,11 @@ export class MarketplaceService {
   
   /**
    * Complete the mAIner purchase
-   * Step 3 of the buy process (after payment)
-   * Uses ICRC37 transfer_from with payment transaction ID as token_id
+   * Step 3 of the buy process (after ICP approval)
+   * Calls icrc37_transfer_from which triggers Game State to:
+   * - Transfer approved ICP to itself
+   * - Transfer mAIner ownership to buyer
+   * - Send ICP to seller (minus platform fee)
    */
   static async completePurchase(
     mainerAddress: string,
@@ -441,7 +444,7 @@ export class MarketplaceService {
           owner: $store.principal,
           subaccount: []
         },
-        token_id: paymentTxId, // Payment transaction block ID
+        token_id: paymentTxId, // ICP approval allowance amount
         memo: [mainerAddressBlob],
         created_at_time: []
       }];
