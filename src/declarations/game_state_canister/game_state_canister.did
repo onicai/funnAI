@@ -403,12 +403,30 @@ type NatResult =
    Err: ApiError;
    Ok: nat;
  };
+type MarketplaceTransactionHistoryResult = 
+ variant {
+   Err: ApiError;
+   Ok: MarketplaceTransactionHistory;
+ };
+type MarketplaceTransactionHistory = 
+ record {
+   purchases: vec MarketplaceSale;
+   sales: vec MarketplaceSale;
+ };
 type MarketplaceStats = 
  record {
    totalSales: nat;
    totalVolumeE8S: nat;
    uniqueBuyers: nat;
    uniqueSellers: nat;
+ };
+type MarketplaceSale = 
+ record {
+   buyer: principal;
+   mainerAddress: text;
+   priceE8S: nat;
+   saleTimestamp: nat64;
+   seller: principal;
  };
 type MainerctrlUpgradeInput = record {canisterAddress: CanisterAddress;};
 type MainerctrlReinstallInput = record {canisterAddress: CanisterAddress;};
@@ -667,6 +685,8 @@ type GameStateCanister =
    getUserMarketplaceMainerListings: () ->
     (MainerMarketplaceListingsResult) query;
    getUserMarketplaceReservation: () -> (opt MainerMarketplaceListing) query;
+   getUserMarketplaceTransactionHistory: () ->
+    (MarketplaceTransactionHistoryResult) query;
    getWhitelistPriceForOwnMainer: () -> (PriceResult) query;
    getWhitelistPriceForShareAgent: () -> (PriceResult) query;
    health: () -> (StatusCodeRecordResult) query;

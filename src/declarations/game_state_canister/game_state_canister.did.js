@@ -679,6 +679,21 @@ export const idlFactory = ({ IDL }) => {
     'subnetShareServiceLlm' : IDL.Text,
   });
   const SubnetIdsResult = IDL.Variant({ 'Ok' : SubnetIds, 'Err' : ApiError });
+  const MarketplaceSale = IDL.Record({
+    'mainerAddress' : IDL.Text,
+    'seller' : IDL.Principal,
+    'buyer' : IDL.Principal,
+    'saleTimestamp' : IDL.Nat64,
+    'priceE8S' : IDL.Nat,
+  });
+  const MarketplaceTransactionHistory = IDL.Record({
+    'sales' : IDL.Vec(MarketplaceSale),
+    'purchases' : IDL.Vec(MarketplaceSale),
+  });
+  const MarketplaceTransactionHistoryResult = IDL.Variant({
+    'Ok' : MarketplaceTransactionHistory,
+    'Err' : ApiError,
+  });
   const SupportedStandards = IDL.Vec(
     IDL.Record({ 'url' : IDL.Text, 'name' : IDL.Text })
   );
@@ -1289,6 +1304,11 @@ export const idlFactory = ({ IDL }) => {
     'getUserMarketplaceReservation' : IDL.Func(
         [],
         [IDL.Opt(MainerMarketplaceListing)],
+        ['query'],
+      ),
+    'getUserMarketplaceTransactionHistory' : IDL.Func(
+        [],
+        [MarketplaceTransactionHistoryResult],
         ['query'],
       ),
     'getWhitelistPriceForOwnMainer' : IDL.Func([], [PriceResult], ['query']),

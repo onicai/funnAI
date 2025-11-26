@@ -605,5 +605,65 @@ export class MarketplaceService {
       };
     }
   }
+
+  /**
+   * Get user's marketplace transaction history (buys and sells)
+   */
+  static async getUserTransactionHistory(): Promise<{
+    success: boolean;
+    purchases?: MarketplaceTransaction[];
+    sales?: MarketplaceTransaction[];
+    error?: string;
+  }> {
+    try {
+      const $store = get(store);
+      
+      if (!$store.gameStateCanisterActor) {
+        throw new Error('Game State canister not initialized');
+      }
+      
+      if (!$store.isAuthed) {
+        throw new Error('User not authenticated');
+      }
+      
+      const result = await $store.gameStateCanisterActor.getUserMarketplaceTransactionHistory();
+      
+      if ('Ok' in result) {
+        const mapTransaction = (sale: any): MarketplaceTransaction => ({
+          mainerAddress: sale.mainerAddress,
+          seller: sale.seller.toString(),
+          buyer: sale.buyer.toString(),
+          priceICP: Number(sale.priceE8S) / 100_000_000,
+          priceE8S: Number(sale.priceE8S),
+          timestamp: Number(sale.saleTimestamp) / 1_000_000 // Convert ns to ms
+        });
+        
+        return {
+          success: true,
+          purchases: result.Ok.purchases.map(mapTransaction),
+          sales: result.Ok.sales.map(mapTransaction)
+        };
+      } else {
+        throw new Error('Failed to get transaction history');
+      }
+      
+    } catch (error) {
+      console.error('Error getting user transaction history:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to get transaction history'
+      };
+    }
+  }
+}
+
+// Types for transaction history
+export interface MarketplaceTransaction {
+  mainerAddress: string;
+  seller: string;
+  buyer: string;
+  priceICP: number;
+  priceE8S: number;
+  timestamp: number;
 }
 

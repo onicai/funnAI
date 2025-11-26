@@ -6,13 +6,14 @@
   import MyMainersForSale from "../components/marketplace/MyMainersForSale.svelte";
   import MarketplaceListings from "../components/marketplace/MarketplaceListings.svelte";
   import MarketplacePaymentModal from "../components/marketplace/MarketplacePaymentModal.svelte";
+  import MarketplaceTransactionHistory from "../components/marketplace/MarketplaceTransactionHistory.svelte";
   import ToastContainer from "../components/common/ToastContainer.svelte";
-  import { Store, TrendingUp, Users, Zap, ShoppingCart, Tag } from "lucide-svelte";
+  import { Store, TrendingUp, Users, Zap, ShoppingCart, Tag, History } from "lucide-svelte";
   import { MarketplaceService } from "../helpers/marketplaceService";
   import type { Principal } from '@dfinity/principal';
 
   let isLoading = true;
-  let activeTab: 'sell' | 'buy' = 'buy';
+  let activeTab: 'sell' | 'buy' | 'history' = 'buy';
   let stats = {
     totalListings: 0,
     totalSales: 0,
@@ -466,6 +467,20 @@
               <span class="text-xs {activeTab === 'sell' ? 'text-white/80' : 'text-gray-500 dark:text-gray-500'}">List your mAIners</span>
             </div>
           </button>
+          
+          <button
+            on:click={() => activeTab = 'history'}
+            class="px-5 py-3 rounded-lg transition-all duration-200 flex items-center space-x-3
+                   {activeTab === 'history' 
+                     ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md' 
+                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
+          >
+            <History class="w-5 h-5" />
+            <div class="text-left">
+              <span class="font-semibold block">History</span>
+              <span class="text-xs {activeTab === 'history' ? 'text-white/80' : 'text-gray-500 dark:text-gray-500'}">Past transactions</span>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -573,6 +588,8 @@
           onListToMarketplace={handleListToMarketplace}
           listedMainers={userListedMainerAddresses}
         />
+      {:else if activeTab === 'history'}
+        <MarketplaceTransactionHistory />
       {:else}
         {#key listingsRefreshKey}
           <MarketplaceListings 

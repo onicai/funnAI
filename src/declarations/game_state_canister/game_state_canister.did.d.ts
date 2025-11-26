@@ -680,6 +680,10 @@ export interface GameStateCanister {
     [],
     [] | [MainerMarketplaceListing]
   >,
+  'getUserMarketplaceTransactionHistory' : ActorMethod<
+    [],
+    MarketplaceTransactionHistoryResult
+  >,
   'getWhitelistPriceForOwnMainer' : ActorMethod<[], PriceResult>,
   'getWhitelistPriceForShareAgent' : ActorMethod<[], PriceResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
@@ -970,12 +974,27 @@ export interface MainerctrlReinstallInput {
   'canisterAddress' : CanisterAddress,
 }
 export interface MainerctrlUpgradeInput { 'canisterAddress' : CanisterAddress }
+export interface MarketplaceSale {
+  'mainerAddress' : string,
+  'seller' : Principal,
+  'buyer' : Principal,
+  'saleTimestamp' : bigint,
+  'priceE8S' : bigint,
+}
 export interface MarketplaceStats {
   'uniqueBuyers' : bigint,
   'uniqueSellers' : bigint,
   'totalVolumeE8S' : bigint,
   'totalSales' : bigint,
 }
+export interface MarketplaceTransactionHistory {
+  'sales' : Array<MarketplaceSale>,
+  'purchases' : Array<MarketplaceSale>,
+}
+export type MarketplaceTransactionHistoryResult = {
+    'Ok' : MarketplaceTransactionHistory
+  } |
+  { 'Err' : ApiError };
 export type NatResult = { 'Ok' : bigint } |
   { 'Err' : ApiError };
 export interface NewChallengeInput {
