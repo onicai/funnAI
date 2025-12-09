@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import Modal from "../CommonModal.svelte";
   import { ShoppingBag, Info, AlertCircle, CheckCircle, Loader2 } from 'lucide-svelte';
   import { store, canisterIds } from "../../stores/store";
@@ -169,6 +169,7 @@
       // STEP 2: Reserve the mAIner
       console.log("Step 1/3: Reserving mAIner...");
       currentStep = 'reserving';
+      await tick(); // Force UI update before async operation
       
       const reserveResult = await MarketplaceService.reserveMainer(listing.mainerId);
       
@@ -189,6 +190,7 @@
       // STEP 3: Approve ICP to Game State canister
       console.log("Step 2/3: Approving ICP...");
       currentStep = 'approving';
+      await tick(); // Force UI update before async operation
       
       const approveResult = await IcrcService.checkAndRequestIcrc2Allowances(
         ICP_TOKEN,
@@ -205,6 +207,7 @@
       // STEP 4: Complete the purchase
       console.log("Step 3/3: Completing purchase...");
       currentStep = 'completing';
+      await tick(); // Force UI update before async operation
       
       const completeResult = await MarketplaceService.completePurchase(
         listing.mainerId,
@@ -219,6 +222,7 @@
       console.log("✅ Purchase completed successfully!");
       stopReservationTimer();
       currentStep = 'success';
+      await tick(); // Force UI update to show success state
       
       // Wait a moment to show success state
       setTimeout(() => {
