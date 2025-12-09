@@ -33,9 +33,65 @@
   let lastRefreshTime: number = Date.now();
   let isPageVisible = true;
 
+  // Pagination state
+  let currentPage = 1;
+  let itemsPerPage = 12;
+  const itemsPerPageOptions = [12, 24, 48, 96];
+  
+  // Sorting state
+  type SortOption = 'newest' | 'oldest' | 'price-low' | 'price-high';
+  let sortBy: SortOption = 'newest';
+
   const toggleModal = () => {
     modalIsOpen = !modalIsOpen;
   };
+
+  // Sort listings based on selected option
+  function sortListings(items: MarketplaceListing[]): MarketplaceListing[] {
+    return [...items].sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return b.listedAt - a.listedAt;
+        case 'oldest':
+          return a.listedAt - b.listedAt;
+        case 'price-low':
+          return a.price - b.price;
+        case 'price-high':
+          return b.price - a.price;
+        default:
+          return 0;
+      }
+    });
+  }
+
+  // Pagination helpers
+  function goToPage(page: number) {
+    currentPage = Math.max(1, Math.min(page, totalPages));
+  }
+
+  function nextPage() {
+    if (currentPage < totalPages) {
+      currentPage++;
+    }
+  }
+
+  function prevPage() {
+    if (currentPage > 1) {
+      currentPage--;
+    }
+  }
+
+  function handleItemsPerPageChange(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    itemsPerPage = parseInt(select.value);
+    currentPage = 1; // Reset to first page when changing items per page
+  }
+
+  function handleSortChange(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    sortBy = select.value as SortOption;
+    currentPage = 1; // Reset to first page when changing sort
+  }
 
   // Start auto-refresh polling
   function startAutoRefresh() {
@@ -323,6 +379,18 @@
 
   $: ownListings = listings.filter(l => l.isOwnListing);
   $: otherListings = listings.filter(l => !l.isOwnListing);
+  
+  // Apply sorting and pagination to other listings
+  $: sortedOtherListings = sortListings(otherListings);
+  $: totalPages = Math.ceil(sortedOtherListings.length / itemsPerPage);
+  $: startIndex = (currentPage - 1) * itemsPerPage;
+  $: endIndex = Math.min(startIndex + itemsPerPage, sortedOtherListings.length);
+  $: paginatedListings = sortedOtherListings.slice(startIndex, endIndex);
+  
+  // Reset to page 1 if current page exceeds total pages (e.g., after filtering)
+  $: if (currentPage > totalPages && totalPages > 0) {
+    currentPage = 1;
+  }
 </script>
 
 <div class="space-y-6">
@@ -455,6 +523,49 @@
       </div>
     </div>
 
+    <!-- Sorting & Pagination Controls -->
+    {#if !isLoading && otherListings.length > 0}
+      <div class="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <!-- Sort controls -->
+          <div class="flex items-center space-x-3">
+            <label for="sort-select" class="text-sm text-gray-600 dark:text-gray-400">Sort by:</label>
+            <select
+              id="sort-select"
+              value={sortBy}
+              on:change={handleSortChange}
+              class="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-white"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+            </select>
+          </div>
+          
+          <!-- Items per page -->
+          <div class="flex items-center space-x-3">
+            <label for="items-per-page" class="text-sm text-gray-600 dark:text-gray-400">Show:</label>
+            <select
+              id="items-per-page"
+              value={itemsPerPage}
+              on:change={handleItemsPerPageChange}
+              class="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-white"
+            >
+              {#each itemsPerPageOptions as option}
+                <option value={option}>{option} per page</option>
+              {/each}
+            </select>
+          </div>
+          
+          <!-- Page info -->
+          <div class="text-sm text-gray-600 dark:text-gray-400">
+            Showing <span class="font-semibold text-gray-900 dark:text-white">{startIndex + 1}-{endIndex}</span> of <span class="font-semibold text-gray-900 dark:text-white">{sortedOtherListings.length}</span>
+          </div>
+        </div>
+      </div>
+    {/if}
+
     <!-- Listings Content -->
     <div class="p-6">
       {#if isLoading}
@@ -472,7 +583,7 @@
       {:else}
         <!-- Listings Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {#each otherListings as listing}
+          {#each paginatedListings as listing}
             {@const identity = getMainerVisualIdentity(listing.mainerId)}
             
             <div class="group relative overflow-hidden rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-600 shadow-lg hover:shadow-xl transition-all duration-300">
@@ -546,6 +657,112 @@
             </div>
           {/each}
         </div>
+        
+        <!-- Pagination Controls -->
+        {#if totalPages > 1}
+          <div class="mt-8 flex flex-wrap items-center justify-center gap-2">
+            <!-- Previous Button -->
+            <button
+              on:click={prevPage}
+              disabled={currentPage === 1}
+              class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-1"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
+              <span>Previous</span>
+            </button>
+            
+            <!-- Page Numbers -->
+            <div class="flex items-center space-x-1">
+              {#if totalPages <= 7}
+                <!-- Show all pages if 7 or fewer -->
+                {#each Array(totalPages) as _, i}
+                  <button
+                    on:click={() => goToPage(i + 1)}
+                    class="w-10 h-10 rounded-lg font-medium transition-colors {currentPage === i + 1 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}"
+                  >
+                    {i + 1}
+                  </button>
+                {/each}
+              {:else}
+                <!-- Show abbreviated pagination for many pages -->
+                <!-- First page -->
+                <button
+                  on:click={() => goToPage(1)}
+                  class="w-10 h-10 rounded-lg font-medium transition-colors {currentPage === 1 
+                    ? 'bg-purple-600 text-white' 
+                    : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}"
+                >
+                  1
+                </button>
+                
+                {#if currentPage > 3}
+                  <span class="px-2 text-gray-500">...</span>
+                {/if}
+                
+                <!-- Pages around current -->
+                {#each Array(5) as _, i}
+                  {@const pageNum = Math.max(2, Math.min(currentPage - 2 + i, totalPages - 1))}
+                  {#if pageNum > 1 && pageNum < totalPages && (currentPage <= 3 ? pageNum <= 5 : currentPage >= totalPages - 2 ? pageNum >= totalPages - 4 : Math.abs(pageNum - currentPage) <= 2)}
+                    <button
+                      on:click={() => goToPage(pageNum)}
+                      class="w-10 h-10 rounded-lg font-medium transition-colors {currentPage === pageNum 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}"
+                    >
+                      {pageNum}
+                    </button>
+                  {/if}
+                {/each}
+                
+                {#if currentPage < totalPages - 2}
+                  <span class="px-2 text-gray-500">...</span>
+                {/if}
+                
+                <!-- Last page -->
+                <button
+                  on:click={() => goToPage(totalPages)}
+                  class="w-10 h-10 rounded-lg font-medium transition-colors {currentPage === totalPages 
+                    ? 'bg-purple-600 text-white' 
+                    : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}"
+                >
+                  {totalPages}
+                </button>
+              {/if}
+            </div>
+            
+            <!-- Next Button -->
+            <button
+              on:click={nextPage}
+              disabled={currentPage === totalPages}
+              class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-1"
+            >
+              <span>Next</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+          
+          <!-- Page Jump (for many pages) -->
+          {#if totalPages > 10}
+            <div class="mt-4 flex items-center justify-center space-x-2">
+              <span class="text-sm text-gray-600 dark:text-gray-400">Go to page:</span>
+              <input
+                type="number"
+                min="1"
+                max={totalPages}
+                value={currentPage}
+                on:change={(e) => goToPage(parseInt(e.currentTarget.value) || 1)}
+                class="w-20 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-white text-center"
+              />
+              <span class="text-sm text-gray-600 dark:text-gray-400">of {totalPages}</span>
+            </div>
+          {/if}
+        {/if}
       {/if}
     </div>
   </div>
