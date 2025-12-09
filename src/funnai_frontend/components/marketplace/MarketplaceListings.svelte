@@ -1,7 +1,7 @@
 <script lang="ts">
   import { store } from "../../stores/store";
   import { toastStore } from "../../stores/toastStore";
-  import { onMount, onDestroy } from "svelte";
+  import { onMount, onDestroy, tick, afterUpdate } from "svelte";
   import { getMainerVisualIdentity } from "../../helpers/utils/mainerIdentity";
   import { ShoppingBag, Crown, X, Eye, Tag, Clock, RefreshCw } from "lucide-svelte";
   import { MarketplaceService } from "../../helpers/marketplaceService";
@@ -40,8 +40,18 @@
   
   // Sorting state
   type SortOption = 'newest' | 'oldest' | 'price-low' | 'price-high';
-  let sortBy: SortOption = 'newest';
+  let sortBy: SortOption = 'price-low'; // Default to showing cheapest first
   let isSorting = false; // Visual indicator for sorting
+  let pendingSortComplete = false; // Flag to indicate we're waiting for render to complete
+  
+  // afterUpdate fires after every DOM update - use it to detect when sorting render is complete
+  afterUpdate(() => {
+    if (pendingSortComplete && isSorting) {
+      // The DOM has been updated after the sort - now hide the indicator
+      pendingSortComplete = false;
+      isSorting = false;
+    }
+  });
 
   const toggleModal = () => {
     modalIsOpen = !modalIsOpen;
@@ -95,17 +105,17 @@
     // Show sorting indicator immediately
     isSorting = true;
     
-    // Use requestAnimationFrame to ensure the UI updates before sorting
-    await new Promise(resolve => requestAnimationFrame(resolve));
+    // Wait for the indicator to be shown in the DOM
+    await tick();
     
-    // Apply the sort
+    // Apply the sort - this will trigger a re-render
     sortBy = newSortBy;
     currentPage = 1; // Reset to first page when changing sort
     
-    // Brief delay to show the indicator (minimum visible time)
-    await new Promise(resolve => setTimeout(resolve, 150));
+    // Set flag so afterUpdate knows to hide indicator when render completes
+    pendingSortComplete = true;
     
-    isSorting = false;
+    // Note: isSorting will be set to false by afterUpdate once the DOM is fully updated
   }
 
   // Start auto-refresh polling
@@ -409,92 +419,6 @@
 </script>
 
 <div class="space-y-6">
-  <!-- Own Listings Section (if any) -->
-  {#if ownListings.length > 0}
-    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-      <!-- Header -->
-      <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-            <Crown class="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h2 class="text-xl font-bold text-white">My Listings</h2>
-            <p class="text-sm text-white/80">Manage your mAIners on sale</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Own Listings Grid -->
-      <div class="p-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {#each ownListings as listing}
-            {@const identity = getMainerVisualIdentity(listing.mainerId)}
-            
-            <div class="group relative overflow-hidden rounded-xl border-2 border-amber-300 dark:border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 shadow-lg hover:shadow-xl transition-all duration-300">
-              <!-- Featured Badge -->
-              <div class="absolute top-3 right-3 z-10">
-                <div class="flex items-center space-x-1 px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
-                  <Crown class="w-3 h-3" />
-                  <span>YOURS</span>
-                </div>
-              </div>
-
-              <div class="p-4">
-                <!-- mAIner Avatar & Info -->
-                <div class="flex items-start space-x-3 mb-4">
-                  <div class="w-14 h-14 {identity.colors.accent} backdrop-blur-sm rounded-xl shadow-lg flex items-center justify-center border-2 border-white/20">
-                    <div class="w-7 h-7 {identity.colors.icon}">
-                      {@html identity.icon}
-                    </div>
-                  </div>
-                  
-                  <div class="flex-1 min-w-0">
-                    <h3 class="font-bold text-gray-900 dark:text-white truncate">🦜 {listing.mainerName}</h3>
-                  </div>
-                </div>
-
-                <!-- Stats -->
-                <div class="space-y-2 mb-4">
-                  <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Listed:</span>
-                    <span class="font-semibold text-gray-900 dark:text-white">
-                      {formatTimeAgo(listing.listedAt)}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Price & Actions -->
-                <div class="border-t border-amber-200 dark:border-amber-700 pt-4">
-                  <div class="flex items-center justify-between mb-3">
-                    <span class="text-sm text-gray-600 dark:text-gray-400">Price:</span>
-                    <span class="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                      {formatPrice(listing.price)} ICP
-                    </span>
-                  </div>
-                  
-                  <button
-                    on:click={() => handleCancelListing(listing)}
-                    disabled={isProcessing || cancelingListingId === listing.id}
-                    class="w-full px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                  >
-                    {#if cancelingListingId === listing.id}
-                      <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full spinner"></div>
-                      <span>Canceling...</span>
-                    {:else}
-                      <X class="w-4 h-4" />
-                      <span>Cancel Listing</span>
-                    {/if}
-                  </button>
-                </div>
-              </div>
-            </div>
-          {/each}
-        </div>
-      </div>
-    </div>
-  {/if}
-
   <!-- All Marketplace Listings -->
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
     <!-- Header -->
@@ -543,27 +467,30 @@
       <div class="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <!-- Sort controls -->
-          <div class="flex items-center space-x-3">
-            <label for="sort-select" class="text-sm text-gray-600 dark:text-gray-400">Sort by:</label>
-            <div class="relative">
-              <select
-                id="sort-select"
-                value={sortBy}
-                on:change={handleSortChange}
-                disabled={isSorting}
-                class="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-white disabled:opacity-70 disabled:cursor-wait pr-8"
-              >
-                <option value="newest">Newest First</option>
-                <option value="oldest">Oldest First</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-              </select>
-              {#if isSorting}
-                <div class="absolute right-2 top-1/2 -translate-y-1/2">
-                  <div class="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-                </div>
-              {/if}
+          <div class="flex flex-col">
+            <div class="flex items-center space-x-3">
+              <label for="sort-select" class="text-sm text-gray-600 dark:text-gray-400">Sort by:</label>
+              <div class="relative">
+                <select
+                  id="sort-select"
+                  value={sortBy}
+                  on:change={handleSortChange}
+                  disabled={isSorting}
+                  class="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-white disabled:opacity-70 disabled:cursor-wait pr-8"
+                >
+                  <option value="newest">Newest First</option>
+                  <option value="oldest">Oldest First</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                </select>
+                {#if isSorting}
+                  <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                    <div class="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                {/if}
+              </div>
             </div>
+            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">Sorting can take a while. Please be patient.</p>
           </div>
           
           <!-- Items per page -->
@@ -799,6 +726,92 @@
       {/if}
     </div>
   </div>
+
+  <!-- Own Listings Section (if any) -->
+  {#if ownListings.length > 0}
+    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+            <Crown class="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-white">My Listings</h2>
+            <p class="text-sm text-white/80">Manage your mAIners on sale</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Own Listings Grid -->
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {#each ownListings as listing}
+            {@const identity = getMainerVisualIdentity(listing.mainerId)}
+            
+            <div class="group relative overflow-hidden rounded-xl border-2 border-amber-300 dark:border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 shadow-lg hover:shadow-xl transition-all duration-300">
+              <!-- Featured Badge -->
+              <div class="absolute top-3 right-3 z-10">
+                <div class="flex items-center space-x-1 px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
+                  <Crown class="w-3 h-3" />
+                  <span>YOURS</span>
+                </div>
+              </div>
+
+              <div class="p-4">
+                <!-- mAIner Avatar & Info -->
+                <div class="flex items-start space-x-3 mb-4">
+                  <div class="w-14 h-14 {identity.colors.accent} backdrop-blur-sm rounded-xl shadow-lg flex items-center justify-center border-2 border-white/20">
+                    <div class="w-7 h-7 {identity.colors.icon}">
+                      {@html identity.icon}
+                    </div>
+                  </div>
+                  
+                  <div class="flex-1 min-w-0">
+                    <h3 class="font-bold text-gray-900 dark:text-white truncate">🦜 {listing.mainerName}</h3>
+                  </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="space-y-2 mb-4">
+                  <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-600 dark:text-gray-400">Listed:</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">
+                      {formatTimeAgo(listing.listedAt)}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Price & Actions -->
+                <div class="border-t border-amber-200 dark:border-amber-700 pt-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">Price:</span>
+                    <span class="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                      {formatPrice(listing.price)} ICP
+                    </span>
+                  </div>
+                  
+                  <button
+                    on:click={() => handleCancelListing(listing)}
+                    disabled={isProcessing || cancelingListingId === listing.id}
+                    class="w-full px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                  >
+                    {#if cancelingListingId === listing.id}
+                      <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full spinner"></div>
+                      <span>Canceling...</span>
+                    {:else}
+                      <X class="w-4 h-4" />
+                      <span>Cancel Listing</span>
+                    {/if}
+                  </button>
+                </div>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <!-- Details Modal -->
