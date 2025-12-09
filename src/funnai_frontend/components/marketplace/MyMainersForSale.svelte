@@ -263,13 +263,20 @@
 
                     <!-- Status & Cycles -->
                     <div class="flex-shrink-0 flex flex-col items-end gap-1">
-                      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
-                                   {mainer.status === 'active' 
-                                     ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' 
-                                     : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}">
-                        <span class="w-1.5 h-1.5 rounded-full mr-1.5 {mainer.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}"></span>
-                        {mainer.status}
-                      </span>
+                      {#if isDisabled}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300">
+                          <span class="w-1.5 h-1.5 rounded-full mr-1.5 bg-orange-500"></span>
+                          Please contact onicai team
+                        </span>
+                      {:else}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
+                                     {mainer.status === 'active' 
+                                       ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' 
+                                       : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}">
+                          <span class="w-1.5 h-1.5 rounded-full mr-1.5 {mainer.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}"></span>
+                          {mainer.status}
+                        </span>
+                      {/if}
                       <span class="text-xs {isDisabled ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-gray-500 dark:text-gray-400'}">
                         ⚡ {formatCycles(mainer.cycleBalance)}
                       </span>

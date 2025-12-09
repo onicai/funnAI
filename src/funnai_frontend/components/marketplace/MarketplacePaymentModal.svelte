@@ -273,6 +273,11 @@
     if (stepIndex === currentIndex) return 'active';
     return 'pending';
   }
+  
+  // Reactive step statuses - these will update when currentStep changes
+  $: reservingStatus = getStepStatus('reserving');
+  $: approvingStatus = getStepStatus('approving');
+  $: completingStatus = getStepStatus('completing');
 </script>
 
 <Modal
@@ -330,57 +335,57 @@
             <!-- Step 1: Reserving -->
             <div class="flex items-center gap-3">
               <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0
-                {getStepStatus('reserving') === 'complete' ? 'bg-green-500' : 
-                 getStepStatus('reserving') === 'active' ? 'bg-purple-500' : 
-                 getStepStatus('reserving') === 'error' ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'}">
-                {#if getStepStatus('reserving') === 'complete'}
+                {reservingStatus === 'complete' ? 'bg-green-500' : 
+                 reservingStatus === 'active' ? 'bg-purple-500' : 
+                 reservingStatus === 'error' ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'}">
+                {#if reservingStatus === 'complete'}
                   <CheckCircle class="w-4 h-4 text-white" />
-                {:else if getStepStatus('reserving') === 'active'}
+                {:else if reservingStatus === 'active'}
                   <div class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 {:else}
                   <span class="text-xs text-white font-bold">1</span>
                 {/if}
               </div>
-              <span class="text-sm {getStepStatus('reserving') === 'active' ? 'text-purple-600 dark:text-purple-400 font-medium' : 'text-gray-600 dark:text-gray-400'}">
-                {getStepStatus('reserving') === 'active' ? 'Reserving mAIner...' : 'Reserve mAIner'}
+              <span class="text-sm {reservingStatus === 'active' ? 'text-purple-600 dark:text-purple-400 font-medium' : 'text-gray-600 dark:text-gray-400'}">
+                {reservingStatus === 'active' ? 'Reserving mAIner...' : 'Reserve mAIner'}
               </span>
             </div>
             
             <!-- Step 2: Approving -->
             <div class="flex items-center gap-3">
               <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0
-                {getStepStatus('approving') === 'complete' ? 'bg-green-500' : 
-                 getStepStatus('approving') === 'active' ? 'bg-purple-500' : 
-                 getStepStatus('approving') === 'error' ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'}">
-                {#if getStepStatus('approving') === 'complete'}
+                {approvingStatus === 'complete' ? 'bg-green-500' : 
+                 approvingStatus === 'active' ? 'bg-purple-500' : 
+                 approvingStatus === 'error' ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'}">
+                {#if approvingStatus === 'complete'}
                   <CheckCircle class="w-4 h-4 text-white" />
-                {:else if getStepStatus('approving') === 'active'}
+                {:else if approvingStatus === 'active'}
                   <div class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 {:else}
                   <span class="text-xs text-white font-bold">2</span>
                 {/if}
               </div>
-              <span class="text-sm {getStepStatus('approving') === 'active' ? 'text-purple-600 dark:text-purple-400 font-medium' : 'text-gray-600 dark:text-gray-400'}">
-                {getStepStatus('approving') === 'active' ? 'Approving ICP...' : 'Approve ICP'}
+              <span class="text-sm {approvingStatus === 'active' ? 'text-purple-600 dark:text-purple-400 font-medium' : 'text-gray-600 dark:text-gray-400'}">
+                {approvingStatus === 'active' ? 'Approving ICP...' : 'Approve ICP'}
               </span>
             </div>
             
             <!-- Step 3: Completing -->
             <div class="flex items-center gap-3">
               <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0
-                {getStepStatus('completing') === 'complete' ? 'bg-green-500' : 
-                 getStepStatus('completing') === 'active' ? 'bg-purple-500' : 
-                 getStepStatus('completing') === 'error' ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'}">
-                {#if getStepStatus('completing') === 'complete'}
+                {completingStatus === 'complete' ? 'bg-green-500' : 
+                 completingStatus === 'active' ? 'bg-purple-500' : 
+                 completingStatus === 'error' ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'}">
+                {#if completingStatus === 'complete'}
                   <CheckCircle class="w-4 h-4 text-white" />
-                {:else if getStepStatus('completing') === 'active'}
+                {:else if completingStatus === 'active'}
                   <div class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 {:else}
                   <span class="text-xs text-white font-bold">3</span>
                 {/if}
               </div>
-              <span class="text-sm {getStepStatus('completing') === 'active' ? 'text-purple-600 dark:text-purple-400 font-medium' : 'text-gray-600 dark:text-gray-400'}">
-                {getStepStatus('completing') === 'active' ? 'Completing purchase...' : 'Complete purchase'}
+              <span class="text-sm {completingStatus === 'active' ? 'text-purple-600 dark:text-purple-400 font-medium' : 'text-gray-600 dark:text-gray-400'}">
+                {completingStatus === 'active' ? 'Completing purchase...' : 'Complete purchase'}
               </span>
             </div>
           </div>
