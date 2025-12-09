@@ -1,8 +1,9 @@
 <script lang="ts">
   import { store } from "../../stores/store";
-  import { onMount } from "svelte";
+  import { toastStore } from "../../stores/toastStore";
+  import { onMount, onDestroy } from "svelte";
   import { getMainerVisualIdentity } from "../../helpers/utils/mainerIdentity";
-  import { ShoppingBag, Crown, X, Eye, Tag, Clock } from "lucide-svelte";
+  import { ShoppingBag, Crown, X, Eye, Tag, Clock, RefreshCw } from "lucide-svelte";
   import { MarketplaceService } from "../../helpers/marketplaceService";
   import { Principal } from '@dfinity/principal';
   import LoginModal from "../login/LoginModal.svelte";
@@ -10,6 +11,11 @@
   export let onBuyMainer: (listingId: string, mainerId: string, price: number) => Promise<void>;
   export let onCancelListing: (listingId: string, mainerId: string) => Promise<void>;
   export let isProcessing: boolean = false;
+  
+  // Export refresh function so parent can trigger updates
+  export async function forceRefresh() {
+    await loadListings();
+  }
 
   let listings: MarketplaceListing[] = [];
   let isLoading = true;
@@ -20,9 +26,127 @@
   // Connect wallet modal state
   let modalIsOpen = false;
 
+  // Real-time update state
+  const REFRESH_INTERVAL_MS = 15000; // 15 seconds
+  let refreshInterval: ReturnType<typeof setInterval> | null = null;
+  let isRefreshing = false; // Background refresh indicator (different from initial load)
+  let lastRefreshTime: number = Date.now();
+  let isPageVisible = true;
+
   const toggleModal = () => {
     modalIsOpen = !modalIsOpen;
   };
+
+  // Start auto-refresh polling
+  function startAutoRefresh() {
+    if (refreshInterval) return; // Already running
+    
+    console.log('🔄 Starting marketplace auto-refresh (every 15s)');
+    refreshInterval = setInterval(async () => {
+      if (isPageVisible && !isProcessing && !isLoading) {
+        await refreshListings();
+      }
+    }, REFRESH_INTERVAL_MS);
+  }
+
+  // Stop auto-refresh polling
+  function stopAutoRefresh() {
+    if (refreshInterval) {
+      console.log('⏹️ Stopping marketplace auto-refresh');
+      clearInterval(refreshInterval);
+      refreshInterval = null;
+    }
+  }
+
+  // Handle visibility change (refresh when user returns to tab)
+  function handleVisibilityChange() {
+    isPageVisible = !document.hidden;
+    
+    if (isPageVisible) {
+      console.log('👁️ Page became visible, checking if refresh needed');
+      const timeSinceLastRefresh = Date.now() - lastRefreshTime;
+      
+      // If more than 10 seconds since last refresh, refresh immediately
+      if (timeSinceLastRefresh > 10000) {
+        refreshListings();
+      }
+    }
+  }
+
+  // Soft refresh (doesn't show loading spinner, just updates data)
+  async function refreshListings() {
+    if (isRefreshing || isLoading) return;
+    
+    isRefreshing = true;
+    console.log('🔄 Refreshing marketplace listings...');
+    
+    try {
+      const result = await MarketplaceService.getAllListings();
+      
+      if (result.success && result.listings) {
+        const newListings = result.listings.map(listing => {
+          const priceE8s = Number(listing.priceE8S);
+          const priceICP = parseFloat((priceE8s / 100_000_000).toFixed(8));
+          const isOwnListing = currentUserPrincipal && 
+            listing.listedBy.toString() === currentUserPrincipal;
+          const listedAtMs = Number(listing.listedTimestamp) / 1_000_000;
+          
+          return {
+            id: listing.address,
+            mainerId: listing.address,
+            mainerName: `mAIner ${listing.address.slice(0, 5)}`,
+            price: priceICP,
+            seller: listing.listedBy.toString(),
+            listedAt: listedAtMs,
+            status: 'active',
+            isOwnListing,
+            createdAt: null,
+            priceE8S: priceE8s
+          };
+        });
+        
+        // Check if listings changed
+        const oldIds = new Set(listings.map(l => l.id));
+        const newIds = new Set(newListings.map(l => l.id));
+        const addedCount = [...newIds].filter(id => !oldIds.has(id)).length;
+        const removedCount = [...oldIds].filter(id => !newIds.has(id)).length;
+        const hasChanges = addedCount > 0 || removedCount > 0;
+        
+        if (hasChanges) {
+          console.log('📊 Listings updated:', {
+            before: listings.length,
+            after: newListings.length,
+            added: addedCount,
+            removed: removedCount
+          });
+          
+          // Notify user of changes (only if not the initial load)
+          if (listings.length > 0) {
+            if (addedCount > 0 && removedCount > 0) {
+              toastStore.info(`Marketplace updated: ${addedCount} new, ${removedCount} sold/removed`, 3000);
+            } else if (addedCount > 0) {
+              toastStore.info(`${addedCount} new mAIner${addedCount > 1 ? 's' : ''} listed!`, 3000);
+            } else if (removedCount > 0) {
+              toastStore.info(`${removedCount} mAIner${removedCount > 1 ? 's' : ''} sold or removed`, 3000);
+            }
+          }
+        }
+        
+        listings = newListings;
+        lastRefreshTime = Date.now();
+      }
+    } catch (error) {
+      console.error('Error refreshing listings:', error);
+    } finally {
+      isRefreshing = false;
+    }
+  }
+
+  // Manual refresh (user clicks refresh button)
+  async function manualRefresh() {
+    if (isRefreshing || isLoading) return;
+    await refreshListings();
+  }
 
   interface MarketplaceListing {
     id: string;
@@ -40,6 +164,15 @@
 
   onMount(() => {
     loadListings();
+    startAutoRefresh();
+    
+    // Listen for visibility changes to refresh when user returns to tab
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+  });
+
+  onDestroy(() => {
+    stopAutoRefresh();
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
   });
 
   // Reload when user changes
@@ -116,12 +249,18 @@
   async function handleBuy(listing: MarketplaceListing) {
     if (isProcessing) return;
     
+    // Pause auto-refresh during purchase to avoid UI changes mid-transaction
+    stopAutoRefresh();
+    
     try {
       await onBuyMainer(listing.id, listing.mainerId, listing.price);
       closeDetailsModal();
       await loadListings(); // Refresh listings
     } catch (error) {
       console.error("Error buying mAIner:", error);
+    } finally {
+      // Resume auto-refresh after purchase attempt
+      startAutoRefresh();
     }
   }
 
@@ -288,9 +427,30 @@
           </div>
         </div>
         
-        <div class="text-right">
-          <p class="text-2xl font-bold text-white">{otherListings.length}</p>
-          <p class="text-xs text-white/80">Available</p>
+        <div class="flex items-center space-x-4">
+          <!-- Refresh Button & Status -->
+          <button
+            on:click={manualRefresh}
+            disabled={isRefreshing || isLoading}
+            class="flex items-center space-x-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Refresh listings"
+          >
+            <RefreshCw class="w-4 h-4 text-white {isRefreshing ? 'animate-spin' : ''}" />
+            <span class="text-xs text-white/90">
+              {isRefreshing ? 'Updating...' : 'Refresh'}
+            </span>
+          </button>
+          
+          <!-- Live indicator -->
+          <div class="flex items-center space-x-1.5" title="Auto-refreshes every 15 seconds">
+            <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span class="text-xs text-white/80">Live</span>
+          </div>
+          
+          <div class="text-right">
+            <p class="text-2xl font-bold text-white">{otherListings.length}</p>
+            <p class="text-xs text-white/80">Available</p>
+          </div>
         </div>
       </div>
     </div>
