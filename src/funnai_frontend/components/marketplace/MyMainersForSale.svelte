@@ -288,8 +288,9 @@
                           placeholder="0.00"
                           value={price}
                           on:input={(e) => handlePriceInput(e.currentTarget.value)}
+                          on:wheel={(e) => e.preventDefault()}
                           class="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent
-                                 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 
+                                 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600
                                  text-gray-900 dark:text-white placeholder-gray-400
                                  {priceError ? 'border-red-500' : ''}"
                         />
