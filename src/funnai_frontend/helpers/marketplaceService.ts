@@ -355,16 +355,50 @@ export class MarketplaceService {
       
       // First, verify the mAIner is actually listed
       const allListingsResult = await this.getAllListings();
+      let listing: MarketplaceListing | undefined;
       if (allListingsResult.success && allListingsResult.listings) {
-        const isListed = allListingsResult.listings.some(l => l.address === mainerAddress);
-        console.log('🔍 Is mAIner in listings?', isListed);
-        if (!isListed) {
+        listing = allListingsResult.listings.find(l => l.address === mainerAddress);
+        console.log('🔍 Is mAIner in listings?', !!listing);
+        if (!listing) {
           console.error('❌ mAIner not found in listings!');
-          throw new Error('mAIner is not currently available for purchase');
+          throw new Error('mAIner is not currently available for purchase. It may have already been sold.');
         }
-        
-        const listing = allListingsResult.listings.find(l => l.address === mainerAddress);
         console.log('📋 Listing details:', listing);
+      }
+      
+      // CRITICAL SECURITY CHECK: Verify the seller still owns the mAIner
+      // This prevents buying a mAIner that was already sold (stale listing data)
+      if (listing) {
+        try {
+          console.log('🔒 Verifying seller still owns the mAIner...');
+          const mainerInfoResult = await $store.gameStateCanisterActor.getMainerAgentCanisterInfo({
+            address: mainerAddress
+          });
+          
+          if ('Ok' in mainerInfoResult && mainerInfoResult.Ok) {
+            const currentOwner = mainerInfoResult.Ok.ownedBy.toString();
+            const listingSeller = listing.listedBy.toString();
+            
+            console.log('🔍 Current owner:', currentOwner);
+            console.log('🔍 Listing seller:', listingSeller);
+            
+            if (currentOwner !== listingSeller) {
+              console.error('❌ OWNERSHIP MISMATCH! mAIner was already sold.');
+              console.error(`   Current owner: ${currentOwner}`);
+              console.error(`   Listed seller: ${listingSeller}`);
+              throw new Error('This mAIner has already been sold to another buyer. Please refresh the page.');
+            }
+            console.log('✅ Ownership verified - seller still owns the mAIner');
+          } else {
+            console.warn('⚠️ Could not verify ownership, proceeding with caution');
+          }
+        } catch (ownershipErr: any) {
+          // If it's our ownership mismatch error, re-throw it
+          if (ownershipErr.message?.includes('already been sold')) {
+            throw ownershipErr;
+          }
+          console.warn('⚠️ Ownership verification failed (might be old backend):', ownershipErr.message);
+        }
       }
       
       // Check if mAIner is stuck in reserved storage (diagnostic)
@@ -375,7 +409,11 @@ export class MarketplaceService {
           console.error('❌ mAIner is stuck in reserved storage! This should not happen.');
           throw new Error('mAIner has a stale reservation. Please try again in 2 minutes or contact support.');
         }
-      } catch (err) {
+      } catch (err: any) {
+        // If it's our ownership error, re-throw it
+        if (err.message?.includes('already been sold')) {
+          throw err;
+        }
         console.log('⚠️ Could not check reserved storage (might be old backend):', err.message);
       }
       

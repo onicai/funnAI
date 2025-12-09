@@ -270,6 +270,7 @@
     console.log("✅ Purchase completed successfully!");
     
     const mainerName = selectedListingForPurchase?.mainerName || 'mAIner';
+    const purchasedMainerId = selectedListingForPurchase?.mainerId;
     
     toastStore.success(
       `Successfully purchased ${mainerName}! The mAIner has been transferred to your account.`,
@@ -282,12 +283,22 @@
     isBuyingMainer = false;
     buyProcessStep = 'idle';
     
+    // Small delay to ensure backend has finished all updates
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     // Refresh marketplace data and user's mAIner list
     await loadMarketplaceStats();
     await store.loadUserMainerCanisters();
     
-    // Trigger listings refresh
+    // Trigger listings refresh to get fresh data from backend
     listingsRefreshKey++;
+    
+    // Secondary refresh after a delay to catch any race conditions with backend timers
+    // This ensures stale listings are cleared even if there's a timing issue
+    setTimeout(() => {
+      console.log("🔄 Secondary marketplace refresh to clear any stale data");
+      listingsRefreshKey++;
+    }, 3000);
   }
 
   async function handlePaymentModalClose() {
