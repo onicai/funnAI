@@ -41,6 +41,7 @@
   // Sorting state
   type SortOption = 'newest' | 'oldest' | 'price-low' | 'price-high';
   let sortBy: SortOption = 'newest';
+  let isSorting = false; // Visual indicator for sorting
 
   const toggleModal = () => {
     modalIsOpen = !modalIsOpen;
@@ -87,10 +88,24 @@
     currentPage = 1; // Reset to first page when changing items per page
   }
 
-  function handleSortChange(event: Event) {
+  async function handleSortChange(event: Event) {
     const select = event.target as HTMLSelectElement;
-    sortBy = select.value as SortOption;
+    const newSortBy = select.value as SortOption;
+    
+    // Show sorting indicator immediately
+    isSorting = true;
+    
+    // Use requestAnimationFrame to ensure the UI updates before sorting
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    
+    // Apply the sort
+    sortBy = newSortBy;
     currentPage = 1; // Reset to first page when changing sort
+    
+    // Brief delay to show the indicator (minimum visible time)
+    await new Promise(resolve => setTimeout(resolve, 150));
+    
+    isSorting = false;
   }
 
   // Start auto-refresh polling
@@ -530,17 +545,25 @@
           <!-- Sort controls -->
           <div class="flex items-center space-x-3">
             <label for="sort-select" class="text-sm text-gray-600 dark:text-gray-400">Sort by:</label>
-            <select
-              id="sort-select"
-              value={sortBy}
-              on:change={handleSortChange}
-              class="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-white"
-            >
-              <option value="newest">Newest First</option>
-              <option value="oldest">Oldest First</option>
-              <option value="price-low">Price: Low to High</option>
-              <option value="price-high">Price: High to Low</option>
-            </select>
+            <div class="relative">
+              <select
+                id="sort-select"
+                value={sortBy}
+                on:change={handleSortChange}
+                disabled={isSorting}
+                class="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-white disabled:opacity-70 disabled:cursor-wait pr-8"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+              </select>
+              {#if isSorting}
+                <div class="absolute right-2 top-1/2 -translate-y-1/2">
+                  <div class="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              {/if}
+            </div>
           </div>
           
           <!-- Items per page -->
@@ -582,8 +605,17 @@
         </div>
       {:else}
         <!-- Listings Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {#each paginatedListings as listing}
+        <div class="relative">
+          {#if isSorting}
+            <div class="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-lg">
+              <div class="flex items-center space-x-2 bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                <div class="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Sorting...</span>
+              </div>
+            </div>
+          {/if}
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {#each paginatedListings as listing}
             {@const identity = getMainerVisualIdentity(listing.mainerId)}
             
             <div class="group relative overflow-hidden rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-600 shadow-lg hover:shadow-xl transition-all duration-300">
@@ -655,7 +687,8 @@
                 </div>
               </div>
             </div>
-          {/each}
+            {/each}
+          </div>
         </div>
         
         <!-- Pagination Controls -->

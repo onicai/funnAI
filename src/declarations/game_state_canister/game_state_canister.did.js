@@ -502,6 +502,7 @@ export const idlFactory = ({ IDL }) => {
   const MarketplaceStats = IDL.Record({
     'uniqueBuyers' : IDL.Nat,
     'uniqueSellers' : IDL.Nat,
+    'uniqueTraders' : IDL.Nat,
     'totalVolumeE8S' : IDL.Nat,
     'totalSales' : IDL.Nat,
   });

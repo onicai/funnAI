@@ -425,6 +425,7 @@ type MarketplaceStats =
    totalVolumeE8S: nat;
    uniqueBuyers: nat;
    uniqueSellers: nat;
+   uniqueTraders: nat;
  };
 type MarketplaceSale = 
  record {

@@ -1039,6 +1039,7 @@ export interface MarketplaceSale {
 export interface MarketplaceStats {
   'uniqueBuyers' : bigint,
   'uniqueSellers' : bigint,
+  'uniqueTraders' : bigint,
   'totalVolumeE8S' : bigint,
   'totalSales' : bigint,
 }
