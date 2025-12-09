@@ -347,7 +347,7 @@
       </div>
 
       <!-- Tab Navigation -->
-      <div class="flex items-stretch gap-2 mb-4">
+      <div class="flex justify-end gap-2 mb-4">
         <button
           on:click={() => activeTab = 'buy'}
           class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border transition-all duration-200 flex items-center justify-center gap-2
