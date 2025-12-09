@@ -307,6 +307,12 @@ type RevokeTokenApprovalArg =
    spender: opt Account__1;
    token_id: nat;
  };
+type ResolveMainerTransferFailureInput = 
+ record {
+   resolvedBy: principal;
+   resolvedNote: text;
+   transactionId: nat;
+ };
 type RedeemedTransactionBlocksResult = 
  variant {
    Err: ApiError;
@@ -430,6 +436,23 @@ type MarketplaceSale =
  };
 type MainerctrlUpgradeInput = record {canisterAddress: CanisterAddress;};
 type MainerctrlReinstallInput = record {canisterAddress: CanisterAddress;};
+type MainerTransferFailuresResult = 
+ variant {
+   Err: ApiError;
+   Ok: vec MainerTransferFailure;
+ };
+type MainerTransferFailure = 
+ record {
+   buyer: principal;
+   failureReason: text;
+   failureTimestamp: nat64;
+   mainerListing: MainerMarketplaceListing;
+   resolvedBy: opt principal;
+   resolvedNote: opt text;
+   resolvedTimestamp: opt nat64;
+   seller: principal;
+   transactionId: nat;
+ };
 type MainerPromptInfoResult = 
  variant {
    Err: ApiError;
@@ -570,6 +593,8 @@ type GameStateCanister =
    addOfficialCanister: (CanisterInput) -> (StatusCodeRecordResult);
    addScoredResponse: (ScoredResponseInput) -> (ScoredResponseResult);
    archiveSubmissionsAdmin: () -> (NatResult);
+   assignAdminRole: (AssignAdminRoleInputRecord) ->
+    (AdminRoleAssignmentResult);
    backupMainersAdmin: () -> (NatResult);
    cancelMarketplaceReservation: (MainerMarketplaceReservationInput) ->
     (StatusCodeRecordResult);
@@ -579,6 +604,8 @@ type GameStateCanister =
    cleanUnlockedMainerStoragesAdmin: () -> (AuthRecordResult);
    clearMarketplaceReservationsAdmin: () -> (AuthRecordResult);
    completeMainerSetupForUserAdmin: (OfficialMainerAgentCanister) ->
+    (MainerAgentCanisterResult);
+   completeTopUpCyclesForMainerAgentAdmin: (MainerAgentTopUpInput) ->
     (MainerAgentCanisterResult);
    confirmUserMarketplaceMainerReservation:
     (MainerMarketplaceReservationInput) ->
@@ -598,6 +625,7 @@ type GameStateCanister =
     (StatusCodeRecordResult);
    finishUploadMainerPromptCache: (FinishUploadMainerPromptCacheInput) ->
     (StatusCodeRecordResult);
+   getAdminRoles: () -> (AdminRoleAssignmentsResult) query;
    getArchivedChallengesAdmin: () -> (ChallengesResult) query;
    getAvailableMainers: () -> (NatResult) query;
    getBufferMainerCreation: () -> (NatResult) query;
@@ -627,6 +655,7 @@ type GameStateCanister =
    getMainerAuctionTimerInfo: () -> (MainerAuctionTimerInfoResult) query;
    getMainerCyclesUsedPerResponse: () -> (NatResult);
    getMainerPromptInfo: (text) -> (MainerPromptInfoResult) query;
+   getMainerTransferFailuresAdmin: () -> (MainerTransferFailuresResult) query;
    getMarketplaceMainerListings: () ->
     (MainerMarketplaceListingsResult) query;
    getMarketplaceSalesStats: () -> (MarketplaceStats) query;
@@ -672,6 +701,8 @@ type GameStateCanister =
    getRedeemedTransactionBlockAdmin: (PaymentTransactionBlockId) ->
     (RedeemedTransactionBlockResult);
    getRedeemedTransactionBlocksAdmin: () -> (RedeemedTransactionBlocksResult);
+   getResolvedMainerTransferFailuresAdmin: () ->
+    (MainerTransferFailuresResult) query;
    getRewardPerChallengeAdmin: () -> (RewardPerChallengeResult);
    getRoundRobinChallengeIndexAdmin: () -> (NatResult) query;
    getRoundRobinTopicIndexAdmin: () -> (NatResult) query;
@@ -735,6 +766,9 @@ type GameStateCanister =
    resetIsMigratingChallengesFlagAdmin: () -> (AuthRecordResult);
    resetRoundRobinChallengeIndexAdmin: () -> (StatusCodeRecordResult);
    resetRoundRobinTopicIndexAdmin: () -> (StatusCodeRecordResult);
+   resolveMainerTransferFailureAdmin: (ResolveMainerTransferFailureInput) ->
+    (bool) query;
+   revokeAdminRole: (text) -> (TextResult);
    setApiCanisterId: (text) -> (AuthRecordResult);
    setArchiveCanisterId: (text) -> (AuthRecordResult);
    setAuctionIntervalSecondsAdmin: (nat) -> (AuthRecordResult);
@@ -1321,6 +1355,12 @@ type AuthRecordResult =
    Ok: AuthRecord;
  };
 type AuthRecord = record {auth: text;};
+type AssignAdminRoleInputRecord = 
+ record {
+   note: text;
+   "principal": text;
+   role: AdminRole;
+ };
 type ApproveTokenResult = 
  variant {
    Err: ApproveTokenError;
@@ -1365,6 +1405,29 @@ type ApiError =
    StatusCode: StatusCode;
    Unauthorized;
    ZeroAddress;
+ };
+type AdminRoleAssignmentsResult = 
+ variant {
+   Err: ApiError;
+   Ok: vec AdminRoleAssignment;
+ };
+type AdminRoleAssignmentResult = 
+ variant {
+   Err: ApiError;
+   Ok: AdminRoleAssignment;
+ };
+type AdminRoleAssignment = 
+ record {
+   assignedAt: nat64;
+   assignedBy: text;
+   note: text;
+   "principal": text;
+   role: AdminRole;
+ };
+type AdminRole = 
+ variant {
+   AdminQuery;
+   AdminUpdate;
  };
 type AddCyclesResult = 
  variant {

@@ -13,6 +13,19 @@ export interface Account__1 {
 export interface AddCyclesRecord { 'added' : boolean, 'amount' : bigint }
 export type AddCyclesResult = { 'Ok' : AddCyclesRecord } |
   { 'Err' : ApiError };
+export type AdminRole = { 'AdminQuery' : null } |
+  { 'AdminUpdate' : null };
+export interface AdminRoleAssignment {
+  'principal' : string,
+  'assignedAt' : bigint,
+  'assignedBy' : string,
+  'note' : string,
+  'role' : AdminRole,
+}
+export type AdminRoleAssignmentResult = { 'Ok' : AdminRoleAssignment } |
+  { 'Err' : ApiError };
+export type AdminRoleAssignmentsResult = { 'Ok' : Array<AdminRoleAssignment> } |
+  { 'Err' : ApiError };
 export type ApiError = { 'FailedOperation' : null } |
   { 'InvalidId' : null } |
   { 'ZeroAddress' : null } |
@@ -43,6 +56,11 @@ export type ApproveTokenError = {
   { 'TooOld' : null };
 export type ApproveTokenResult = { 'Ok' : bigint } |
   { 'Err' : ApproveTokenError };
+export interface AssignAdminRoleInputRecord {
+  'principal' : string,
+  'note' : string,
+  'role' : AdminRole,
+}
 export interface AuthRecord { 'auth' : string }
 export type AuthRecordResult = { 'Ok' : AuthRecord } |
   { 'Err' : ApiError };
@@ -509,6 +527,10 @@ export interface GameStateCanister {
     ScoredResponseResult
   >,
   'archiveSubmissionsAdmin' : ActorMethod<[], NatResult>,
+  'assignAdminRole' : ActorMethod<
+    [AssignAdminRoleInputRecord],
+    AdminRoleAssignmentResult
+  >,
   'backupMainersAdmin' : ActorMethod<[], NatResult>,
   'cancelMarketplaceReservation' : ActorMethod<
     [MainerMarketplaceReservationInput],
@@ -521,6 +543,10 @@ export interface GameStateCanister {
   'clearMarketplaceReservationsAdmin' : ActorMethod<[], AuthRecordResult>,
   'completeMainerSetupForUserAdmin' : ActorMethod<
     [OfficialMainerAgentCanister],
+    MainerAgentCanisterResult
+  >,
+  'completeTopUpCyclesForMainerAgentAdmin' : ActorMethod<
+    [MainerAgentTopUpInput],
     MainerAgentCanisterResult
   >,
   'confirmUserMarketplaceMainerReservation' : ActorMethod<
@@ -552,6 +578,7 @@ export interface GameStateCanister {
     [FinishUploadMainerPromptCacheInput],
     StatusCodeRecordResult
   >,
+  'getAdminRoles' : ActorMethod<[], AdminRoleAssignmentsResult>,
   'getArchivedChallengesAdmin' : ActorMethod<[], ChallengesResult>,
   'getAvailableMainers' : ActorMethod<[], NatResult>,
   'getBufferMainerCreation' : ActorMethod<[], NatResult>,
@@ -591,6 +618,10 @@ export interface GameStateCanister {
   'getMainerAuctionTimerInfo' : ActorMethod<[], MainerAuctionTimerInfoResult>,
   'getMainerCyclesUsedPerResponse' : ActorMethod<[], NatResult>,
   'getMainerPromptInfo' : ActorMethod<[string], MainerPromptInfoResult>,
+  'getMainerTransferFailuresAdmin' : ActorMethod<
+    [],
+    MainerTransferFailuresResult
+  >,
   'getMarketplaceMainerListings' : ActorMethod<
     [],
     MainerMarketplaceListingsResult
@@ -656,6 +687,10 @@ export interface GameStateCanister {
   'getRedeemedTransactionBlocksAdmin' : ActorMethod<
     [],
     RedeemedTransactionBlocksResult
+  >,
+  'getResolvedMainerTransferFailuresAdmin' : ActorMethod<
+    [],
+    MainerTransferFailuresResult
   >,
   'getRewardPerChallengeAdmin' : ActorMethod<[], RewardPerChallengeResult>,
   'getRoundRobinChallengeIndexAdmin' : ActorMethod<[], NatResult>,
@@ -753,6 +788,11 @@ export interface GameStateCanister {
     StatusCodeRecordResult
   >,
   'resetRoundRobinTopicIndexAdmin' : ActorMethod<[], StatusCodeRecordResult>,
+  'resolveMainerTransferFailureAdmin' : ActorMethod<
+    [ResolveMainerTransferFailureInput],
+    boolean
+  >,
+  'revokeAdminRole' : ActorMethod<[string], TextResult>,
   'setApiCanisterId' : ActorMethod<[string], AuthRecordResult>,
   'setArchiveCanisterId' : ActorMethod<[string], AuthRecordResult>,
   'setAuctionIntervalSecondsAdmin' : ActorMethod<[bigint], AuthRecordResult>,
@@ -970,6 +1010,21 @@ export interface MainerPromptInfo {
 }
 export type MainerPromptInfoResult = { 'Ok' : MainerPromptInfo } |
   { 'Err' : ApiError };
+export interface MainerTransferFailure {
+  'failureReason' : string,
+  'resolvedTimestamp' : [] | [bigint],
+  'seller' : Principal,
+  'resolvedNote' : [] | [string],
+  'mainerListing' : MainerMarketplaceListing,
+  'failureTimestamp' : bigint,
+  'buyer' : Principal,
+  'resolvedBy' : [] | [Principal],
+  'transactionId' : bigint,
+}
+export type MainerTransferFailuresResult = {
+    'Ok' : Array<MainerTransferFailure>
+  } |
+  { 'Err' : ApiError };
 export interface MainerctrlReinstallInput {
   'canisterAddress' : CanisterAddress,
 }
@@ -1072,6 +1127,11 @@ export type RedeemedTransactionBlocksResult = {
     'Ok' : Array<RedeemedTransactionBlock>
   } |
   { 'Err' : ApiError };
+export interface ResolveMainerTransferFailureInput {
+  'resolvedNote' : string,
+  'resolvedBy' : Principal,
+  'transactionId' : bigint,
+}
 export interface RevokeTokenApprovalArg {
   'token_id' : bigint,
   'memo' : [] | [Uint8Array | number[]],

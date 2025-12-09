@@ -224,11 +224,35 @@ export const idlFactory = ({ IDL }) => {
     'Err' : ApiError,
   });
   const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
+  const AdminRole = IDL.Variant({
+    'AdminQuery' : IDL.Null,
+    'AdminUpdate' : IDL.Null,
+  });
+  const AssignAdminRoleInputRecord = IDL.Record({
+    'principal' : IDL.Text,
+    'note' : IDL.Text,
+    'role' : AdminRole,
+  });
+  const AdminRoleAssignment = IDL.Record({
+    'principal' : IDL.Text,
+    'assignedAt' : IDL.Nat64,
+    'assignedBy' : IDL.Text,
+    'note' : IDL.Text,
+    'role' : AdminRole,
+  });
+  const AdminRoleAssignmentResult = IDL.Variant({
+    'Ok' : AdminRoleAssignment,
+    'Err' : ApiError,
+  });
   const MainerMarketplaceReservationInput = IDL.Record({
     'address' : CanisterAddress,
   });
   const AuthRecord = IDL.Record({ 'auth' : IDL.Text });
   const AuthRecordResult = IDL.Variant({ 'Ok' : AuthRecord, 'Err' : ApiError });
+  const MainerAgentTopUpInput = IDL.Record({
+    'paymentTransactionBlockId' : IDL.Nat64,
+    'mainerAgent' : OfficialMainerAgentCanister,
+  });
   const MainerMarketplaceListing = IDL.Record({
     'listedTimestamp' : IDL.Nat64,
     'listedBy' : IDL.Principal,
@@ -298,6 +322,10 @@ export const idlFactory = ({ IDL }) => {
     'mainerPromptId' : IDL.Text,
     'promptText' : IDL.Text,
     'promptCacheSha256' : IDL.Text,
+  });
+  const AdminRoleAssignmentsResult = IDL.Variant({
+    'Ok' : IDL.Vec(AdminRoleAssignment),
+    'Err' : ApiError,
   });
   const ChallengesResult = IDL.Variant({
     'Ok' : IDL.Vec(Challenge),
@@ -450,6 +478,21 @@ export const idlFactory = ({ IDL }) => {
   });
   const MainerPromptInfoResult = IDL.Variant({
     'Ok' : MainerPromptInfo,
+    'Err' : ApiError,
+  });
+  const MainerTransferFailure = IDL.Record({
+    'failureReason' : IDL.Text,
+    'resolvedTimestamp' : IDL.Opt(IDL.Nat64),
+    'seller' : IDL.Principal,
+    'resolvedNote' : IDL.Opt(IDL.Text),
+    'mainerListing' : MainerMarketplaceListing,
+    'failureTimestamp' : IDL.Nat64,
+    'buyer' : IDL.Principal,
+    'resolvedBy' : IDL.Opt(IDL.Principal),
+    'transactionId' : IDL.Nat,
+  });
+  const MainerTransferFailuresResult = IDL.Variant({
+    'Ok' : IDL.Vec(MainerTransferFailure),
     'Err' : ApiError,
   });
   const MainerMarketplaceListingsResult = IDL.Variant({
@@ -814,6 +857,11 @@ export const idlFactory = ({ IDL }) => {
     'canisterAddress' : CanisterAddress,
   });
   const TextResult = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : ApiError });
+  const ResolveMainerTransferFailureInput = IDL.Record({
+    'resolvedNote' : IDL.Text,
+    'resolvedBy' : IDL.Principal,
+    'transactionId' : IDL.Nat,
+  });
   const SetCyclesBurnRateInput = IDL.Record({
     'cyclesBurnRate' : CyclesBurnRate,
     'cyclesBurnRateDefault' : CyclesBurnRateDefault,
@@ -966,10 +1014,6 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : ChallengeResponseSubmissionMetadata,
     'Err' : ApiError,
   });
-  const MainerAgentTopUpInput = IDL.Record({
-    'paymentTransactionBlockId' : IDL.Nat64,
-    'mainerAgent' : OfficialMainerAgentCanister,
-  });
   const MainerctrlUpgradeInput = IDL.Record({
     'canisterAddress' : CanisterAddress,
   });
@@ -1033,6 +1077,11 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'archiveSubmissionsAdmin' : IDL.Func([], [NatResult], []),
+    'assignAdminRole' : IDL.Func(
+        [AssignAdminRoleInputRecord],
+        [AdminRoleAssignmentResult],
+        [],
+      ),
     'backupMainersAdmin' : IDL.Func([], [NatResult], []),
     'cancelMarketplaceReservation' : IDL.Func(
         [MainerMarketplaceReservationInput],
@@ -1050,6 +1099,11 @@ export const idlFactory = ({ IDL }) => {
     'clearMarketplaceReservationsAdmin' : IDL.Func([], [AuthRecordResult], []),
     'completeMainerSetupForUserAdmin' : IDL.Func(
         [OfficialMainerAgentCanister],
+        [MainerAgentCanisterResult],
+        [],
+      ),
+    'completeTopUpCyclesForMainerAgentAdmin' : IDL.Func(
+        [MainerAgentTopUpInput],
         [MainerAgentCanisterResult],
         [],
       ),
@@ -1089,6 +1143,7 @@ export const idlFactory = ({ IDL }) => {
         [StatusCodeRecordResult],
         [],
       ),
+    'getAdminRoles' : IDL.Func([], [AdminRoleAssignmentsResult], ['query']),
     'getArchivedChallengesAdmin' : IDL.Func([], [ChallengesResult], ['query']),
     'getAvailableMainers' : IDL.Func([], [NatResult], ['query']),
     'getBufferMainerCreation' : IDL.Func([], [NatResult], ['query']),
@@ -1162,6 +1217,11 @@ export const idlFactory = ({ IDL }) => {
     'getMainerPromptInfo' : IDL.Func(
         [IDL.Text],
         [MainerPromptInfoResult],
+        ['query'],
+      ),
+    'getMainerTransferFailuresAdmin' : IDL.Func(
+        [],
+        [MainerTransferFailuresResult],
         ['query'],
       ),
     'getMarketplaceMainerListings' : IDL.Func(
@@ -1270,6 +1330,11 @@ export const idlFactory = ({ IDL }) => {
         [],
         [RedeemedTransactionBlocksResult],
         [],
+      ),
+    'getResolvedMainerTransferFailuresAdmin' : IDL.Func(
+        [],
+        [MainerTransferFailuresResult],
+        ['query'],
       ),
     'getRewardPerChallengeAdmin' : IDL.Func([], [RewardPerChallengeResult], []),
     'getRoundRobinChallengeIndexAdmin' : IDL.Func([], [NatResult], ['query']),
@@ -1424,6 +1489,12 @@ export const idlFactory = ({ IDL }) => {
         [StatusCodeRecordResult],
         [],
       ),
+    'resolveMainerTransferFailureAdmin' : IDL.Func(
+        [ResolveMainerTransferFailureInput],
+        [IDL.Bool],
+        ['query'],
+      ),
+    'revokeAdminRole' : IDL.Func([IDL.Text], [TextResult], []),
     'setApiCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
     'setArchiveCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
     'setAuctionIntervalSecondsAdmin' : IDL.Func(
