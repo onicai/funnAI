@@ -39,6 +39,7 @@
 
   let hasRunCleanup = false;
   let isCleaningReservation = false;
+  let reservationRefreshKey = 0; // Key to force re-check of reservation banner
 
   onMount(() => {
     initialize();
@@ -81,10 +82,13 @@
           console.log('✅ Verification passed - no reservation exists');
         }
         
-        // Refresh listings
+        // Refresh listings and banner
         listingsRefreshKey++;
+        reservationRefreshKey++;
       } else {
         console.log('✅ No stale reservations found on auth');
+        // Still refresh the banner in case there was a race condition
+        reservationRefreshKey++;
       }
     } catch (error) {
       console.error('❌ Error during cleanup:', error);
@@ -97,12 +101,60 @@
   // Manual cleanup function (for button)
   async function manualClearReservation() {
     console.log('🔧 Manual cleanup requested...');
-    hasRunCleanup = false; // Reset the flag to allow cleanup
-    await clearStaleReservationsOnAuth();
+    isCleaningReservation = true;
     
-    // Reload listings after manual cleanup
-    await loadMarketplaceStats();
-    listingsRefreshKey++;
+    try {
+      // Get the current reservation to show details
+      const reservationResult = await MarketplaceService.getUserReservation();
+      console.log('📋 Current reservation:', reservationResult);
+      
+      if (!reservationResult.reservation) {
+        console.log('✅ No reservation found to clear');
+        toastStore.success('No pending reservation found', 3000);
+        reservationRefreshKey++; // Force banner to re-check and hide
+        return;
+      }
+      
+      const mainerAddress = reservationResult.reservation.address;
+      console.log('🔧 Clearing reservation for mAIner:', mainerAddress);
+      
+      // Clear the reservation
+      const clearResult = await MarketplaceService.cancelReservation(mainerAddress);
+      
+      if (clearResult.success) {
+        if (clearResult.alreadyCleared) {
+          console.log('✅ Reservation was already cleared (sale may have completed)');
+          toastStore.success('Reservation was already cleared. The sale may have completed successfully!', 5000);
+        } else {
+          console.log('✅ Reservation cleared successfully');
+          toastStore.success('Reservation cleared! The mAIner has been returned to the marketplace.', 5000);
+        }
+        
+        // Wait for backend to process
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Verify it was cleared
+        const verifyResult = await MarketplaceService.getUserReservation();
+        if (verifyResult.reservation) {
+          console.error('❌ Verification failed - reservation still exists after clear');
+          toastStore.error('Reservation may not have been fully cleared. Please wait 2 minutes and try again.', 8000);
+        }
+      } else {
+        console.error('❌ Failed to clear reservation:', clearResult.error);
+        toastStore.error(`Failed to clear reservation: ${clearResult.error}`, 6000);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error clearing reservation:', error);
+      toastStore.error(`Error: ${error.message}`, 6000);
+    } finally {
+      isCleaningReservation = false;
+      // Force the banner to re-check
+      reservationRefreshKey++;
+      // Also refresh listings in case the mAIner was returned
+      await loadMarketplaceStats();
+      listingsRefreshKey++;
+    }
   }
 
   // Reactive: reload user listings when auth state changes
@@ -395,38 +447,48 @@
 
       <!-- Stale Reservation Warning Banner -->
       {#if $store.isAuthed}
-        {#await MarketplaceService.getUserReservation() then reservationCheck}
-          {#if reservationCheck.success && reservationCheck.reservation}
-            <div class="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg">
-              <div class="flex items-start space-x-3">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <div class="flex-1">
-                  <h3 class="text-lg font-semibold text-yellow-900 dark:text-yellow-200">Stale Reservation Detected</h3>
-                  <p class="text-sm text-yellow-800 dark:text-yellow-300 mt-1">
-                    You have a pending reservation from a previous session. This prevents you from purchasing other mAIners.
-                  </p>
-                  <button
-                    on:click={manualClearReservation}
-                    disabled={isCleaningReservation}
-                    class="mt-3 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                  >
-                    {#if isCleaningReservation}
-                      <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Clearing...</span>
-                    {:else}
-                      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      <span>Clear Reservation Now</span>
-                    {/if}
-                  </button>
+        {#key reservationRefreshKey}
+          {#await MarketplaceService.getUserReservation() then reservationCheck}
+            {#if reservationCheck.success && reservationCheck.reservation}
+              <div class="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg">
+                <div class="flex items-start space-x-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-yellow-900 dark:text-yellow-200">Stale Reservation Detected</h3>
+                    <p class="text-sm text-yellow-800 dark:text-yellow-300 mt-1">
+                      You have a pending reservation from a previous session. This prevents you from purchasing other mAIners.
+                    </p>
+                    <p class="text-xs text-yellow-700 dark:text-yellow-400 mt-1 font-mono bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded inline-block">
+                      mAIner: {reservationCheck.reservation.address?.slice(0, 15)}...
+                    </p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                      <button
+                        on:click={manualClearReservation}
+                        disabled={isCleaningReservation}
+                        class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                      >
+                        {#if isCleaningReservation}
+                          <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Clearing...</span>
+                        {:else}
+                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          <span>Clear Reservation & Return mAIner</span>
+                        {/if}
+                      </button>
+                      <p class="text-xs text-yellow-600 dark:text-yellow-400 self-center">
+                        (This will return the mAIner to the marketplace for others to buy)
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          {/if}
-        {/await}
+            {/if}
+          {/await}
+        {/key}
       {/if}
 
       <!-- Stats Cards -->

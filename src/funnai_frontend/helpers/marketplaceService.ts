@@ -135,7 +135,7 @@ export class MarketplaceService {
   /**
    * Cancel a reservation (for buyers who reserved but didn't complete purchase)
    */
-  static async cancelReservation(mainerAddress: string): Promise<{ success: boolean; error?: string }> {
+  static async cancelReservation(mainerAddress: string): Promise<{ success: boolean; alreadyCleared?: boolean; error?: string }> {
     try {
       const $store = get(store);
       
@@ -154,12 +154,21 @@ export class MarketplaceService {
       if ('Ok' in result) {
         return { success: true };
       } else if ('Err' in result) {
-        throw new Error(`Cancel reservation failed: ${JSON.stringify(result.Err)}`);
+        // Handle specific error cases
+        const errorStr = JSON.stringify(result.Err);
+        
+        // If Unauthorized, it usually means the reservation doesn't exist (already cleared or sale completed)
+        if (errorStr.includes('Unauthorized')) {
+          console.log('⚠️ Reservation not found or already cleared - treating as success');
+          return { success: true, alreadyCleared: true };
+        }
+        
+        throw new Error(`Cancel reservation failed: ${errorStr}`);
       } else {
         throw new Error('Unknown response format');
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error canceling reservation:', error);
       return {
         success: false,
