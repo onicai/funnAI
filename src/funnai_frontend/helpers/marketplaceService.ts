@@ -631,8 +631,9 @@ export class MarketplaceService {
       // Convert total volume from e8s to ICP
       const totalVolumeICP = (Number(salesStats.totalVolumeE8S) / 100_000_000).toFixed(2);
       
-      // Calculate total active traders (buyers + sellers, deduplicated)
-      const totalTraders = Number(salesStats.uniqueBuyers) + Number(salesStats.uniqueSellers);
+      // Use uniqueTraders which is properly deduplicated on the backend
+      // (users who are both buyers AND sellers are counted only once)
+      const totalTraders = Number(salesStats.uniqueTraders);
       
       return {
         success: true,
