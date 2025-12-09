@@ -3,6 +3,7 @@
   import { onMount } from "svelte";
   import { getMainerVisualIdentity } from "../../helpers/utils/mainerIdentity";
   import { Check, ShoppingCart, Sparkles, AlertTriangle } from "lucide-svelte";
+  import LoginModal from "../login/LoginModal.svelte";
 
   export let onListToMarketplace: (mainerIds: string[], prices: Record<string, number>) => Promise<void>;
   export let listedMainers: string[] = []; // Array of already-listed mAIner addresses
@@ -16,6 +17,13 @@
   let price: string = "";
   let isSubmitting = false;
   let priceError: string | null = null;
+
+  // Connect wallet modal state
+  let modalIsOpen = false;
+
+  const toggleModal = () => {
+    modalIsOpen = !modalIsOpen;
+  };
 
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
 
@@ -169,7 +177,16 @@
         <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
           <ShoppingCart class="w-8 h-8 text-gray-400" />
         </div>
-        <p class="text-gray-600 dark:text-gray-400 mb-2">Connect your wallet</p>
+        <button
+          type="button"
+          on:click={toggleModal}
+          class="flex items-center gap-2 px-4 py-2 mx-auto block rounded-lg bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-medium text-sm transition-all duration-200 shadow-md hover:shadow-lg mb-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+          </svg>
+          <span>Connect Wallet</span>
+        </button>
         <p class="text-sm text-gray-500 dark:text-gray-500">Sign in to view and sell your mAIners</p>
       </div>
     {:else if myMainers.length === 0}
@@ -343,6 +360,11 @@
       {/if}
     {/if}
   </div>
+
+  <!-- Connect Wallet Modal -->
+  {#if modalIsOpen}
+    <LoginModal {toggleModal} />
+  {/if}
 </div>
 
 <style>

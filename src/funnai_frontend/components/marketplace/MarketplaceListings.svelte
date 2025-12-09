@@ -5,6 +5,7 @@
   import { ShoppingBag, Crown, X, Eye, Tag, Clock } from "lucide-svelte";
   import { MarketplaceService } from "../../helpers/marketplaceService";
   import { Principal } from '@dfinity/principal';
+  import LoginModal from "../login/LoginModal.svelte";
 
   export let onBuyMainer: (listingId: string, mainerId: string, price: number) => Promise<void>;
   export let onCancelListing: (listingId: string, mainerId: string) => Promise<void>;
@@ -15,6 +16,13 @@
   let selectedListing: MarketplaceListing | null = null;
   let showDetailsModal = false;
   let cancelingListingId: string | null = null; // Track which listing is being canceled
+
+  // Connect wallet modal state
+  let modalIsOpen = false;
+
+  const toggleModal = () => {
+    modalIsOpen = !modalIsOpen;
+  };
 
   interface MarketplaceListing {
     id: string;
@@ -357,13 +365,20 @@
                     </button>
                     
                     <button
-                      on:click={() => handleBuy(listing)}
-                      disabled={isProcessing || !$store.isAuthed}
+                      on:click={() => $store.isAuthed ? handleBuy(listing) : toggleModal()}
+                      disabled={isProcessing}
                       class="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1.5"
                       title={!$store.isAuthed ? 'Please connect your wallet to purchase' : ''}
                     >
-                      <ShoppingBag class="w-4 h-4" />
-                      <span>{$store.isAuthed ? 'Buy' : 'Connect Wallet'}</span>
+                      {#if $store.isAuthed}
+                        <ShoppingBag class="w-4 h-4" />
+                        <span>Buy</span>
+                      {:else}
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                        </svg>
+                        <span>Connect Wallet</span>
+                      {/if}
                     </button>
                   </div>
                 </div>
@@ -485,6 +500,11 @@
       </div>
     </div>
   </div>
+{/if}
+
+<!-- Connect Wallet Modal -->
+{#if modalIsOpen}
+  <LoginModal {toggleModal} />
 {/if}
 
 <style>
