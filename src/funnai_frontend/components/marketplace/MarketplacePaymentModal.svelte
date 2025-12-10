@@ -169,7 +169,9 @@
       // STEP 2: Reserve the mAIner
       console.log("Step 1/3: Reserving mAIner...");
       currentStep = 'reserving';
+      console.log("🟣 currentStep is now:", currentStep, "reservingStatus should be active");
       await tick(); // Force UI update before async operation
+      console.log("🟣 After tick - reservingStatus:", reservingStatus);
       
       const reserveResult = await MarketplaceService.reserveMainer(listing.mainerId);
       
@@ -190,7 +192,9 @@
       // STEP 3: Approve ICP to Game State canister
       console.log("Step 2/3: Approving ICP...");
       currentStep = 'approving';
+      console.log("🟣 currentStep is now:", currentStep, "approvingStatus should be active");
       await tick(); // Force UI update before async operation
+      console.log("🟣 After tick - approvingStatus:", approvingStatus);
       
       const approveResult = await IcrcService.checkAndRequestIcrc2Allowances(
         ICP_TOKEN,
@@ -207,7 +211,9 @@
       // STEP 4: Complete the purchase
       console.log("Step 3/3: Completing purchase...");
       currentStep = 'completing';
+      console.log("🟣 currentStep is now:", currentStep, "completingStatus should be active");
       await tick(); // Force UI update before async operation
+      console.log("🟣 After tick - completingStatus:", completingStatus);
       
       const completeResult = await MarketplaceService.completePurchase(
         listing.mainerId,
@@ -260,10 +266,11 @@
     return (Number(e8s) / 100_000_000).toFixed(8);
   }
   
-  function getStepStatus(step: PurchaseStep): 'pending' | 'active' | 'complete' | 'error' {
+  // Reactive step statuses - must directly reference currentStep for Svelte to track the dependency
+  $: reservingStatus = (() => {
     const steps: PurchaseStep[] = ['reserving', 'approving', 'completing'];
     const currentIndex = steps.indexOf(currentStep);
-    const stepIndex = steps.indexOf(step);
+    const stepIndex = steps.indexOf('reserving');
     
     if (currentStep === 'error') return 'error';
     if (currentStep === 'success') return 'complete';
@@ -272,12 +279,38 @@
     if (stepIndex < currentIndex) return 'complete';
     if (stepIndex === currentIndex) return 'active';
     return 'pending';
-  }
+  })() as 'pending' | 'active' | 'complete' | 'error';
   
-  // Reactive step statuses - these will update when currentStep changes
-  $: reservingStatus = getStepStatus('reserving');
-  $: approvingStatus = getStepStatus('approving');
-  $: completingStatus = getStepStatus('completing');
+  $: approvingStatus = (() => {
+    const steps: PurchaseStep[] = ['reserving', 'approving', 'completing'];
+    const currentIndex = steps.indexOf(currentStep);
+    const stepIndex = steps.indexOf('approving');
+    
+    if (currentStep === 'error') return 'error';
+    if (currentStep === 'success') return 'complete';
+    if (currentStep === 'confirm') return 'pending';
+    
+    if (stepIndex < currentIndex) return 'complete';
+    if (stepIndex === currentIndex) return 'active';
+    return 'pending';
+  })() as 'pending' | 'active' | 'complete' | 'error';
+  
+  $: completingStatus = (() => {
+    const steps: PurchaseStep[] = ['reserving', 'approving', 'completing'];
+    const currentIndex = steps.indexOf(currentStep);
+    const stepIndex = steps.indexOf('completing');
+    
+    if (currentStep === 'error') return 'error';
+    if (currentStep === 'success') return 'complete';
+    if (currentStep === 'confirm') return 'pending';
+    
+    if (stepIndex < currentIndex) return 'complete';
+    if (stepIndex === currentIndex) return 'active';
+    return 'pending';
+  })() as 'pending' | 'active' | 'complete' | 'error';
+  
+  // Debug: Log status changes
+  $: console.log("📊 Step statuses updated:", { currentStep, reservingStatus, approvingStatus, completingStatus });
 </script>
 
 <Modal
