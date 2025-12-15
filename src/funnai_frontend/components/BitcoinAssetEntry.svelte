@@ -126,13 +126,16 @@
     }
   }
 
-  // Check if user is logged in with Bitcoin wallet
+  // Check if user is logged in with Bitcoin wallet (SIWB)
   $: isBitcoinUser = $store.isAuthed === "bitcoin";
-  $: hasBtcWallet = !!getWalletProvider();
+  
+  // Only check for active wallet connection if user logged in with Bitcoin
+  // Having an extension installed doesn't mean the user wants to use BTC features
+  $: hasBtcWallet = isBitcoinUser && !!getWalletProvider();
 
-  // Load wallet info when component mounts or Bitcoin user logs in
+  // Load wallet info only when user is authenticated via Bitcoin wallet
   onMount(() => {
-    if (isBitcoinUser || hasBtcWallet) {
+    if (isBitcoinUser) {
       loadWalletInfo();
     }
   });
@@ -142,9 +145,7 @@
   }
 </script>
 
-{#if isBitcoinUser || hasBtcWallet}
-
-  
+{#if isBitcoinUser}
   <div class="sm:grid sm:grid-cols-[2fr,1.5fr,1fr] sm:gap-4 sm:items-center p-4 hover:bg-zinc-800/30 transition-colors border-y border-gray-700">
     <!-- Mobile display -->
     <div class="flex flex-col gap-3 sm:hidden">
@@ -384,6 +385,7 @@
               step="0.00000001"
               bind:value={sendAmount}
               placeholder="0.00000000"
+              on:wheel={(e) => e.preventDefault()}
               class="w-full p-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             />
             <button

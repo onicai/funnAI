@@ -121,8 +121,9 @@
     return null;
   }
 
-  $: hasBtcWallet = !!getWalletProvider();
   $: isBitcoinUser = $store.isAuthed === "bitcoin";
+  // Only consider wallet available if user logged in via Bitcoin
+  $: hasBtcWallet = isBitcoinUser && !!getWalletProvider();
 
   // Load BTC deposit address and ckBTC balance on mount
   onMount(async () => {
@@ -603,6 +604,7 @@
               step="0.00001"
               bind:value={convertAmount}
               placeholder="0.001"
+              on:wheel={(e) => e.preventDefault()}
               class="w-full p-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
             {#if minterInfo}
@@ -638,28 +640,6 @@
     </div>
   {/if}
 
-  <!-- Status / Mint Section -->
-  {#if sendSuccess || updateBalanceResult}
-    <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800/50">
-      <div class="flex items-center justify-between mb-3">
-        <p class="text-sm text-gray-700 dark:text-gray-300">{updateBalanceResult}</p>
-      </div>
-      <button
-        on:click={handleUpdateBalance}
-        disabled={isUpdatingBalance}
-        class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-      >
-        {#if isUpdatingBalance}
-          <Loader2 class="w-5 h-5 animate-spin" />
-          Checking for deposits...
-        {:else}
-          <RefreshCw class="w-5 h-5" />
-          Check & Mint ckBTC
-        {/if}
-      </button>
-    </div>
-  {/if}
-
   <!-- Detailed Sections (collapsed by default for cleaner UI) -->
   <details class="group" open>
     <summary class="cursor-pointer text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 flex items-center gap-2">
@@ -667,101 +647,74 @@
       Manual Deposit Options
     </summary>
     
-    <div class="grid md:grid-cols-2 gap-6 mt-4">
-      <!-- Deposit Address -->
-      <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-        <div class="flex items-center gap-2 mb-3">
-          <ArrowDownToLine class="w-5 h-5 text-green-600 dark:text-green-400" />
-          <h3 class="font-medium text-gray-900 dark:text-white">Deposit Address</h3>
+    <!-- Deposit Address - Full Width -->
+    <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div class="flex items-center gap-2 mb-3">
+        <ArrowDownToLine class="w-5 h-5 text-green-600 dark:text-green-400" />
+        <h3 class="font-medium text-gray-900 dark:text-white">Deposit Address</h3>
+      </div>
+      
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        Send BTC from any wallet to this address.
+      </p>
+
+      {#if isLoadingAddress}
+        <div class="flex items-center justify-center py-4">
+          <LoadingIndicator text="Loading address..." size={20} />
         </div>
-        
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
-          Send BTC from any wallet to this address.
-        </p>
+      {:else if btcDepositAddress}
+        <div class="flex flex-col md:flex-row gap-6 items-start">
+          <!-- QR Code -->
+          {#if btcDepositAddressQr}
+            <div class="flex-shrink-0 mx-auto md:mx-0">
+              <img 
+                src={btcDepositAddressQr} 
+                alt="BTC Deposit Address QR" 
+                class="w-32 h-32 bg-white rounded-lg p-2"
+              />
+            </div>
+          {/if}
 
-        {#if isLoadingAddress}
-          <div class="flex items-center justify-center py-4">
-            <LoadingIndicator text="Loading address..." size={20} />
-          </div>
-        {:else if btcDepositAddress}
-          <div class="space-y-3">
-            <!-- QR Code -->
-            {#if btcDepositAddressQr}
-              <div class="flex justify-center">
-                <img 
-                  src={btcDepositAddressQr} 
-                  alt="BTC Deposit Address QR" 
-                  class="w-28 h-28 bg-white rounded-lg p-2"
-                />
-              </div>
-            {/if}
-
+          <!-- Address and Info -->
+          <div class="flex-1 space-y-3 w-full">
             <!-- Address -->
             <div class="relative">
-              <div class="p-2.5 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 font-mono text-xs break-all pr-10">
+              <div class="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 font-mono text-sm break-all pr-12">
                 {btcDepositAddress}
               </div>
               <button
                 on:click={() => copyToClipboard(btcDepositAddress)}
-                class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                class="absolute right-2 top-1/2 -translate-y-1/2 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                 use:tooltip={{ text: addressCopied ? "Copied!" : "Copy address", direction: "top" }}
               >
                 {#if addressCopied}
-                  <Check class="w-4 h-4 text-green-500" />
+                  <Check class="w-5 h-5 text-green-500" />
                 {:else}
-                  <Copy class="w-4 h-4 text-gray-500" />
+                  <Copy class="w-5 h-5 text-gray-500" />
                 {/if}
               </button>
             </div>
 
             <!-- Minter Info -->
             {#if minterInfo}
-              <div class="text-xs text-gray-500 dark:text-gray-400 space-y-1">
-                <p>Confirmations needed: {minterInfo.min_confirmations}</p>
-                <p>Fee: {formatBtcBalance(minterInfo.kyt_fee)} BTC</p>
+              <div class="space-y-2">
+                <div class="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium">Confirmations:</span>
+                    <span>{minterInfo.min_confirmations} (~{minterInfo.min_confirmations * 10} min)</span>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium">Fee:</span>
+                    <span>{formatBtcBalance(minterInfo.kyt_fee)} BTC</span>
+                  </div>
+                </div>
               </div>
             {/if}
           </div>
-        {:else}
-          <p class="text-sm text-gray-500">Unable to load deposit address</p>
-        {/if}
-      </div>
-
-      <!-- Mint ckBTC Section -->
-      <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-        <div class="flex items-center gap-2 mb-3">
-          <RefreshCw class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-          <h3 class="font-medium text-gray-900 dark:text-white">Claim ckBTC</h3>
         </div>
-        
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          After sending BTC, claim your ckBTC once confirmations complete.
-        </p>
-
-        <button
-          on:click={handleUpdateBalance}
-          disabled={isUpdatingBalance}
-          class="text-sm px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white font-medium rounded-lg transition-colors flex items-center gap-1"
-        >
-          {#if isUpdatingBalance}
-            <Loader2 class="w-5 h-5 animate-spin" />
-            Checking...
-          {:else}
-            <RefreshCw class="w-5 h-5" />
-            Check Status & Mint
-          {/if}
-        </button>
-
-        <!-- How it works -->
-        <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-          <h4 class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">How it works:</h4>
-          <ol class="text-xs text-gray-500 dark:text-gray-400 space-y-1 list-decimal list-inside">
-            <li>Send BTC to the deposit address</li>
-            <li>Wait for {minterInfo?.min_confirmations || 6} confirmations (~1 hour)</li>
-            <li>Click "Check & Mint" to receive ckBTC</li>
-          </ol>
-        </div>
-      </div>
+      {:else}
+        <p class="text-sm text-gray-500">Unable to load deposit address</p>
+      {/if}
     </div>
   </details>
 
