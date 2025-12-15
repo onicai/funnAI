@@ -41,6 +41,13 @@ import { idlFactory as icpIDL } from "../helpers/idls/icp.idl.js";
 import { idlFactory as swapPoolIDL } from "../helpers/idls/swappool.idl.js";
 import { idlFactory as cmcIDL } from "../helpers/idls/cmc.idl.js";
 
+import {
+  ic_siwb_provider,
+  createActor as createSiwbProviderActor,
+  canisterId as siwbProviderCanisterId,
+  idlFactory as siwbProviderIdlFactory,
+} from "../../declarations/ic_siwb_provider";
+
 // TODO: move this into a utils file
 const getCyclesBurnRateLabel = (cyclesBurnRate) => {
   const cycles = BigInt(cyclesBurnRate.cycles);
@@ -61,7 +68,8 @@ const getCyclesBurnRateLabel = (cyclesBurnRate) => {
 export const canisterIds = {
   backendCanisterId,
   gameStateCanisterId,
-  apiCanisterId
+  apiCanisterId,
+  siwbProviderCanisterId
 };
 
 export const canisterIDLs = {
@@ -166,7 +174,7 @@ const STORAGE_KEYS = {
 };
 
 type State = {
-  isAuthed: "nfid" | "internetidentity" | null;
+  isAuthed: "nfid" | "internetidentity" | "bitcoin" | null;
   backendActor: typeof funnai_backend | null;
   principal: Principal | null;
   accountId: string;
@@ -185,6 +193,8 @@ type State = {
   shouldOpenFirstMainerAfterCreation: boolean;
   // Add creation session ID to track unique creation sessions
   mainerCreationSessionId: string | null;
+  // Bitcoin wallet fields
+  btcAddress: string | null; // User's Bitcoin address from SIWB
 };
 
 let defaultBackendCanisterId = backendCanisterId;
@@ -216,6 +226,8 @@ const defaultState: State = {
   mainerCreationProgress: [],
   shouldOpenFirstMainerAfterCreation: false,
   mainerCreationSessionId: null,
+  // Bitcoin wallet fields
+  btcAddress: null,
 };
 
 // Add theme support
@@ -1036,6 +1048,276 @@ export const createStore = ({
     console.info("internetidentity is authed");
   };
 
+  // Bitcoin SIWB (Sign In With Bitcoin) authentication
+  let siwbClientPromise: Promise<any> | null = null;
+
+  const getSiwbProviderActor = async (identity?: Identity) => {
+    // Use the SIWB provider canister ID - either from env or hardcoded
+    // IMPORTANT: Deploy the ic_siwb_provider canister and set CANISTER_ID_IC_SIWB_PROVIDER
+    const providerCanisterId = siwbProviderCanisterId || process.env.CANISTER_ID_IC_SIWB_PROVIDER;
+    
+    if (!providerCanisterId) {
+      throw new Error(
+        "Bitcoin Sign-In is not configured. The SIWB provider canister needs to be deployed. " +
+        "Run: dfx deploy ic_siwb_provider --network <network> --argument '(record { domain = \"your-domain.com\"; uri = \"https://your-domain.com\"; salt = \"your-unique-salt\"; ... })'"
+      );
+    }
+
+    const agentOptions: any = { host: HOST };
+    if (identity) {
+      agentOptions.identity = identity;
+    }
+
+    return createSiwbProviderActor(providerCanisterId, { agentOptions });
+  };
+
+  /**
+   * Connect with Bitcoin wallet using SIWB (Sign In With Bitcoin)
+   * 
+   * This function can be called in two ways:
+   * 1. With identity and btcAddress - when the BitcoinWalletButton has already performed
+   *    the SIWB flow and created the identity
+   * 2. Without parameters - performs the full SIWB flow internally (legacy mode)
+   * 
+   * @param identityOrSessionRestore - Either an Identity object or boolean for session restore
+   * @param btcAddress - The Bitcoin address (required when identity is provided)
+   */
+  const siwbConnect = async (identityOrSessionRestore?: Identity | boolean, btcAddress?: string) => {
+    // Check if called with identity directly (from BitcoinWalletButton)
+    if (identityOrSessionRestore && typeof identityOrSessionRestore !== 'boolean' && btcAddress) {
+      console.log("🔗 SIWB connect called with pre-authenticated identity");
+      await initSiwb(identityOrSessionRestore as Identity, btcAddress);
+      return;
+    }
+
+    // Legacy mode: perform full SIWB flow internally (mainly for UniSat)
+    const isSessionRestore = typeof identityOrSessionRestore === 'boolean' ? identityOrSessionRestore : false;
+    
+    try {
+      console.log("🔗 Starting Bitcoin SIWB connection (legacy mode)...");
+      
+      // Check if UniSat wallet is available
+      const unisat = (window as any).unisat;
+      if (!unisat) {
+        throw new Error("No Bitcoin wallet found. Please install UniSat wallet or another compatible Bitcoin wallet.");
+      }
+
+      // Import identity modules early - we need session key before login
+      const { DelegationChain, DelegationIdentity, Ed25519KeyIdentity } = await import("@dfinity/identity");
+      
+      // Create session key FIRST - needed for siwb_login
+      const sessionKey = Ed25519KeyIdentity.generate();
+      const sessionPublicKey = sessionKey.getPublicKey().toDer();
+
+      // Request accounts from Bitcoin wallet
+      const accounts = await unisat.requestAccounts();
+      if (!accounts || accounts.length === 0) {
+        throw new Error("No Bitcoin accounts found");
+      }
+      const walletBtcAddress = accounts[0];
+      console.log("📋 Bitcoin address:", walletBtcAddress);
+
+      // Get public key from wallet
+      let publicKeyHex: string = '';
+      try {
+        publicKeyHex = await unisat.getPublicKey();
+        console.log("📋 Public key:", publicKeyHex.substring(0, 20) + "...");
+      } catch (e) {
+        console.warn("Could not get public key from wallet");
+      }
+
+      // Get SIWB provider actor (anonymous for prepare_login)
+      const siwbProvider = await getSiwbProviderActor();
+      
+      // Prepare login - returns a pre-formatted message string
+      console.log("📝 Preparing SIWB login message...");
+      const prepareResult = await siwbProvider.siwb_prepare_login(walletBtcAddress);
+      
+      if ('Err' in prepareResult) {
+        throw new Error(`Failed to prepare SIWB login: ${prepareResult.Err}`);
+      }
+      
+      // The message is already formatted by the canister
+      const messageToSign: string = prepareResult.Ok as string;
+      console.log("📋 SIWB message to sign:", messageToSign);
+
+      // Request signature from Bitcoin wallet
+      console.log("✍️ Requesting signature from Bitcoin wallet...");
+      const signature = await unisat.signMessage(messageToSign, "bip322-simple");
+      console.log("✅ Got signature from wallet");
+
+      // Login with SIWB - new interface takes 5 parameters
+      // siwb_login: (SiwbSignature, Address, PublickeyHex, SessionKey, SignMessageType)
+      console.log("🔐 Logging in with SIWB...");
+      const loginResult = await siwbProvider.siwb_login(
+        signature,                              // SiwbSignature (string)
+        walletBtcAddress,                       // Address
+        publicKeyHex,                           // PublickeyHex (wallet's public key)
+        new Uint8Array(sessionPublicKey),       // SessionKey (our session public key)
+        { 'Bip322Simple': null }                // SignMessageType
+      );
+      
+      if ('Err' in loginResult) {
+        throw new Error(`SIWB login failed: ${loginResult.Err}`);
+      }
+
+      const loginDetails = loginResult.Ok;
+      console.log("✅ SIWB login successful, getting delegation...");
+
+      // Get the delegation
+      const delegationResult = await siwbProvider.siwb_get_delegation(
+        walletBtcAddress,
+        new Uint8Array(sessionPublicKey),
+        loginDetails.expiration
+      );
+
+      if ('Err' in delegationResult) {
+        throw new Error(`Failed to get delegation: ${delegationResult.Err}`);
+      }
+
+      const signedDelegationResult = delegationResult.Ok;
+      console.log("✅ Got signed delegation");
+
+      // Convert to proper types for DelegationChain
+      // Ensure expiration is BigInt
+      const expiration = typeof signedDelegationResult.delegation.expiration === 'bigint' 
+        ? signedDelegationResult.delegation.expiration 
+        : BigInt(signedDelegationResult.delegation.expiration.toString());
+      
+      // Convert signature to Uint8Array if it isn't already
+      const delegationSignature = signedDelegationResult.signature instanceof Uint8Array
+        ? signedDelegationResult.signature
+        : new Uint8Array(signedDelegationResult.signature);
+      
+      const canisterPubkey = loginDetails.user_canister_pubkey instanceof Uint8Array
+        ? loginDetails.user_canister_pubkey
+        : new Uint8Array(loginDetails.user_canister_pubkey);
+
+      console.log("Creating delegation chain with:", {
+        expiration: expiration.toString(),
+        signatureLength: delegationSignature.length,
+        canisterPubkeyLength: canisterPubkey.length,
+        sessionPubkeyLength: sessionPublicKey.byteLength
+      });
+
+      // Import Delegation class for proper construction
+      const { Delegation } = await import("@dfinity/identity");
+      
+      // Create the Delegation object with proper types
+      // The delegation pubkey should be our session public key (the key being delegated TO)
+      const delegation = new Delegation(
+        sessionPublicKey,  // Use our session public key as the delegated key
+        expiration,
+        signedDelegationResult.delegation.targets?.length > 0 
+          ? signedDelegationResult.delegation.targets 
+          : undefined
+      );
+
+      // Create the signed delegation with proper ArrayBuffer types
+      const signedDelegationForChain = {
+        delegation,
+        signature: delegationSignature.buffer.slice(
+          delegationSignature.byteOffset,
+          delegationSignature.byteOffset + delegationSignature.byteLength
+        )
+      };
+
+      // Create delegation chain using fromDelegations
+      // Use type assertion to satisfy the strict Signature type
+      const delegationChain = DelegationChain.fromDelegations(
+        [signedDelegationForChain] as any,
+        canisterPubkey.buffer.slice(
+          canisterPubkey.byteOffset,
+          canisterPubkey.byteOffset + canisterPubkey.byteLength
+        )
+      );
+
+      // Create the delegated identity
+      const identity = DelegationIdentity.fromDelegation(sessionKey, delegationChain);
+      
+      console.log("✅ Created delegated identity with principal:", identity.getPrincipal().toString());
+
+      // Store SIWB session info - including the delegated identity for later use
+      (globalThis as any).__siwb_btc_address__ = walletBtcAddress;
+      (globalThis as any).__siwb_session_key__ = sessionKey;
+      (globalThis as any).__siwb_delegated_identity__ = identity;
+
+      // Initialize with the SIWB identity
+      await initSiwb(identity, walletBtcAddress);
+
+    } catch (error) {
+      console.error("❌ SIWB connection failed:", error);
+      update((state) => ({
+        ...state,
+        error: error instanceof Error ? error.message : "Failed to connect with Bitcoin wallet"
+      }));
+      throw error;
+    }
+  };
+
+  const initSiwb = async (identity: Identity, btcAddress: string) => {
+    try {
+      const backendActor = await initBackendCanisterActor("bitcoin", identity);
+
+      if (!backendActor) {
+        console.warn("❌ Couldn't create backend actor for SIWB");
+        return;
+      }
+
+      await initUserSettings(backendActor);
+
+      const gameStateCanisterActor = await initGameStateCanisterActor("bitcoin", identity);
+      
+      if (!gameStateCanisterActor) {
+        console.warn("❌ Couldn't create Game State actor for SIWB");
+        return;
+      }
+
+      const apiCanisterActor = await initApiCanisterActor("bitcoin", identity);
+      
+      if (!apiCanisterActor) {
+        console.warn("❌ Couldn't create API canister actor for SIWB");
+        return;
+      }
+
+      // Initialize user's mAIner agent (controller) canisters
+      const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "bitcoin", identity);
+      const userMainerCanisterActors = mainerActors;
+      const userMainerAgentCanistersInfo = userCanisters;
+
+      // Calculate session expiry time (30 days from now in nanoseconds)
+      const sessionExpiry = BigInt(Date.now()) * BigInt(1000000) + days * hours * nanosecondsPerHour;
+      
+      // Store session information for persistence
+      storeSessionInfo("bitcoin", sessionExpiry);
+
+      update((state) => ({
+        ...state,
+        backendActor,
+        principal: identity.getPrincipal(),
+        accountId: null,
+        isAuthed: "bitcoin",
+        btcAddress,
+        gameStateCanisterActor,
+        apiCanisterActor,
+        userMainerCanisterActors,
+        userMainerAgentCanistersInfo,
+        sessionExpiry
+      }));
+
+      // Start automatic session refresh timer
+      startSessionRefreshTimer();
+
+      // Restore mAIner creation state if it exists
+      restoreMainerCreationState();
+
+      console.info("✅ Bitcoin SIWB authentication successful");
+    } catch (error) {
+      console.error("❌ Error during SIWB initialization:", error);
+      throw error;
+    }
+  };
+
   const disconnect = async () => {
     // Stop the session refresh timer
     stopSessionRefreshTimer();
@@ -1066,6 +1348,16 @@ export const createStore = ({
         await authClient.logout();
       } catch (error) {
         console.error("Internet Identity disconnect error: ", error);
+      };
+    } else if (globalState.isAuthed === "bitcoin") {
+      try {
+        // Clean up SIWB session
+        delete (globalThis as any).__siwb_btc_address__;
+        delete (globalThis as any).__siwb_session_key__;
+        siwbClientPromise = null;
+        console.log("Bitcoin SIWB session cleared");
+      } catch (error) {
+        console.error("Bitcoin disconnect error: ", error);
       };
     };
 
@@ -1185,6 +1477,25 @@ export const createStore = ({
           console.log("🔄 Restoring Internet Identity session...");
           await internetIdentityConnect();
           console.log("✅ Internet Identity session restored!");
+        } else if (sessionInfo.loginType === "bitcoin") {
+          // Bitcoin SIWB sessions cannot be automatically restored
+          // The user needs to sign a new message with their wallet
+          console.log("🔄 Bitcoin session detected - requires manual re-authentication");
+          console.warn("🧹 Bitcoin sessions cannot be automatically restored");
+          clearSessionInfo();
+          
+          notificationStore.add(
+            "Your Bitcoin session has expired. Please sign in again with your wallet.",
+            "info",
+            5000
+          );
+          
+          // Reset to default logged out state
+          update((prevState) => {
+            return {
+              ...defaultState,
+            };
+          });
         }
       } else {
         console.info("⏰ Stored session has expired, clearing session info");
@@ -1299,6 +1610,18 @@ export const createStore = ({
           identity = await authClient.getIdentity();
         } else {
           console.warn("Internet Identity not authenticated");
+          return;
+        }
+      } else if (isAuthed === "bitcoin") {
+        // For Bitcoin SIWB, get identity from stored session
+        const storedSessionKey = (globalThis as any).__siwb_session_key__;
+        if (storedSessionKey) {
+          // The identity would need to be reconstructed or stored differently
+          // For now, we'll use the stored session key as is
+          console.warn("Bitcoin session reload requires re-authentication");
+          return;
+        } else {
+          console.warn("Bitcoin SIWB session key not available for reload");
           return;
         }
       } else {
@@ -1647,6 +1970,7 @@ export const createStore = ({
     nfidConnect,
     preInitNfid,
     internetIdentityConnect,
+    siwbConnect,
     disconnect,
     checkExistingLoginAndConnect,
     loadUserMainerCanisters,

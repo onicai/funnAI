@@ -35,6 +35,11 @@
     "cycles-ledger": {
       "type": "pull",
       "id": "um5iw-rqaaa-aaaaq-qaaba-cai"
+    },
+    "ic_siwb_provider": {
+      "type": "custom",
+      "candid": "ic_siwb_provider.did",
+      "wasm": "ic_siwb_provider.wasm"
     }
   },
   "defaults": {

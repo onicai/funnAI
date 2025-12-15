@@ -3,6 +3,7 @@
 
   import InternetIdentityButton from "./InternetIdentityButton.svelte";
   import NfidButton from "./NfidButton.svelte";
+  import BitcoinWalletButton from "./BitcoinWalletButton.svelte";
 
   export let toggleModal;
 
@@ -103,6 +104,7 @@
           <div class="space-y-4">
             <InternetIdentityButton bind:loading {toggleModal} />
             <NfidButton bind:loading {toggleModal} />
+            <BitcoinWalletButton bind:loading {toggleModal} />
           </div>
           
           <!-- Decorative elements -->

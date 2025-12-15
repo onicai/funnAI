@@ -1,4 +1,11 @@
 {
+  "api_canister": {
+    "demo": "p6pu7-5aaaa-aaaap-qqdfa-cai",
+    "development": "p6pu7-5aaaa-aaaap-qqdfa-cai",
+    "ic": "bgm6p-5aaaa-aaaaf-qbzda-cai",
+    "prd": "bgm6p-5aaaa-aaaaf-qbzda-cai",
+    "testing": "nyxgs-uqaaa-aaaap-qqdia-cai"
+  },
   "funnai_backend": {
     "backup": "",
     "demo": "dtxtp-ciaaa-aaaah-are5a-cai",
@@ -23,14 +30,10 @@
     "prd": "r5m5y-diaaa-aaaaa-qanaa-cai",
     "testing": "vpa37-giaaa-aaaam-qdxeq-cai"
   },
+  "ic_siwb_provider": {
+    "development": "k5kx4-jqaaa-aaaam-qevza-cai"
+  },
   "mainer_ctrlb_canister": {
     "ic": "x6o6k-kqaaa-aaaaj-az4pa-cai"
-  },
-  "api_canister": {
-    "demo": "p6pu7-5aaaa-aaaap-qqdfa-cai",
-    "prd": "bgm6p-5aaaa-aaaaf-qbzda-cai",
-    "testing": "nyxgs-uqaaa-aaaap-qqdia-cai",
-    "development": "p6pu7-5aaaa-aaaap-qqdfa-cai",
-    "ic": "bgm6p-5aaaa-aaaaf-qbzda-cai"
   }
 }

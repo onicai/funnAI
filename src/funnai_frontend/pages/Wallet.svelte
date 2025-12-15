@@ -6,6 +6,8 @@
   import WalletStatus from '../components/funnai/WalletStatus.svelte';
   import LoginModal from '../components/login/LoginModal.svelte';
   import WalletTokenList from "../components/WalletTokenList.svelte";
+  import BitcoinWalletSection from "../components/BitcoinWalletSection.svelte";
+  import BitcoinAssetEntry from "../components/BitcoinAssetEntry.svelte";
   import TokenListSkeleton from "../components/TokenListSkeleton.svelte";
   import LoadingIndicator from "../components/LoadingIndicator.svelte";
   import LoadingEllipsis from "../components/LoadingEllipsis.svelte";
@@ -123,6 +125,7 @@
         
         <div class="flex flex-col justify-center">
             <WalletStatus />
+            
             <div class="w-full bg-white dark:bg-gray-800 p-6 rounded-lg shadow mt-5">
                 <h2 class="text-xl font-semibold mb-4 dark:text-white">Your Assets</h2>
                 {#if $store.isAuthed}
@@ -159,6 +162,8 @@
                                     isLoading={isDataLoading}
                                 />
                             {/key}
+                            <!-- Native Bitcoin Entry (shown when BTC wallet is connected) -->
+                            <BitcoinAssetEntry />
                         {/if}
                     </div>
 
@@ -178,6 +183,13 @@
                     </div>
                 {/if}
             </div>
+
+            <!-- Bitcoin/ckBTC Section - Available for all authenticated users -->
+            {#if $store.isAuthed}
+              <div class="mt-5">
+                <BitcoinWalletSection />
+              </div>
+            {/if}
 
           <!-- Transaction History Section -->
           <div class="grid grid-cols-1 mt-6">

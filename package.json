@@ -23,6 +23,9 @@
     "stop": "dfx stop"
   },
   "dependencies": {
+    "@aspect-dev/ic-siwb-js": "^0.1.0",
+    "@omnisat/lasereyes": "^0.0.66",
+    "ic-siwb-lasereyes-connector": "^0.0.11",
     "@dfinity/agent": "^2.4.1",
     "@dfinity/auth-client": "^2.4.1",
     "@dfinity/authentication": "^0.14.2",
