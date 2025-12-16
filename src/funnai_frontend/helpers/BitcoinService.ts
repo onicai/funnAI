@@ -134,6 +134,16 @@ export interface WithdrawalFee {
   bitcoin_fee: bigint;
 }
 
+export interface RetrieveBtcStatus {
+  Signing?: null;
+  Confirmed?: { txid: Uint8Array };
+  Sending?: { txid: Uint8Array };
+  AmountTooLow?: null;
+  Unknown?: null;
+  Submitted?: { txid: Uint8Array };
+  Pending?: null;
+}
+
 /**
  * BitcoinService - Service for ckBTC and Bitcoin-related operations
  * 
@@ -180,8 +190,19 @@ export class BitcoinService {
   /**
    * Create an actor for the ckBTC ledger canister
    */
-  private static async getCkbtcLedgerActor() {
-    const agent = new HttpAgent({ host: HOST });
+  private static async getCkbtcLedgerActor(useAuthenticatedIdentity = false) {
+    let agent: HttpAgent;
+    
+    if (useAuthenticatedIdentity) {
+      const identity = await getAuthenticatedIdentity();
+      if (!identity) {
+        throw new Error("No authenticated identity available for ledger operation");
+      }
+      agent = new HttpAgent({ host: HOST, identity });
+      console.log("Using authenticated identity for ckBTC ledger");
+    } else {
+      agent = new HttpAgent({ host: HOST });
+    }
     
     // Fetch root key for local development
     if (process.env.DFX_NETWORK !== "ic" && process.env.NODE_ENV === "development") {
@@ -301,8 +322,63 @@ export class BitcoinService {
     amount: bigint
   ): Promise<RetrieveBtcResult> {
     try {
-      const minterActor = await this.getCkbtcMinterActor();
+      // Log the identity being used for debugging
+      const identity = await getAuthenticatedIdentity();
+      if (identity) {
+        const principal = identity.getPrincipal();
+        console.log("retrieve_btc using identity with principal:", principal.toString());
+      } else {
+        console.warn("retrieve_btc: No authenticated identity found!");
+        throw new Error("No authenticated identity - please log in again");
+      }
       
+      // Step 1: Get the withdrawal account from the minter
+      console.log("Step 1: Getting withdrawal account...");
+      const minterActor = await this.getCkbtcMinterActor(true);
+      const withdrawalAccount = await minterActor.get_withdrawal_account();
+      console.log("Withdrawal account:", withdrawalAccount);
+      
+      // Step 2: Transfer ckBTC to the withdrawal account
+      console.log("Step 2: Transferring ckBTC to withdrawal account...");
+      const ledgerActor = await this.getCkbtcLedgerActor(true);
+      
+      // ckBTC has 8 decimals, ledger fee is 10 satoshis
+      const LEDGER_FEE = BigInt(10);
+      
+      const transferArgs = {
+        to: {
+          owner: withdrawalAccount.owner,
+          subaccount: withdrawalAccount.subaccount,
+        },
+        fee: [LEDGER_FEE],
+        memo: [],
+        from_subaccount: [],
+        created_at_time: [],
+        amount: amount,
+      };
+      
+      console.log("Transfer args:", JSON.stringify(transferArgs, (k, v) => typeof v === 'bigint' ? v.toString() : v));
+      
+      const transferResult = await ledgerActor.icrc1_transfer(transferArgs);
+      console.log("Transfer result:", transferResult);
+      
+      if ('Err' in transferResult) {
+        const err = transferResult.Err;
+        let errorMsg = "Transfer failed: ";
+        if ('InsufficientFunds' in err) {
+          errorMsg += `Insufficient funds. Balance: ${err.InsufficientFunds.balance}`;
+        } else if ('BadFee' in err) {
+          errorMsg += `Bad fee. Expected: ${err.BadFee.expected_fee}`;
+        } else {
+          errorMsg += JSON.stringify(err);
+        }
+        throw new Error(errorMsg);
+      }
+      
+      console.log("Transfer successful! Block index:", transferResult.Ok);
+      
+      // Step 3: Call retrieve_btc
+      console.log("Step 3: Calling retrieve_btc...");
       const args = {
         address: btcAddress,
         amount: amount,
@@ -397,6 +473,27 @@ export class BitcoinService {
         error instanceof Error 
           ? `Failed to get deposit fee: ${error.message}` 
           : "Failed to get deposit fee"
+      );
+    }
+  }
+
+  /**
+   * Get the status of a BTC retrieval (withdrawal)
+   * 
+   * @param blockIndex - The block index returned from retrieve_btc
+   * @returns The status of the withdrawal
+   */
+  public static async retrieveBtcStatus(blockIndex: bigint): Promise<RetrieveBtcStatus> {
+    try {
+      const minterActor = await this.getCkbtcMinterActor();
+      const status = await minterActor.retrieve_btc_status({ block_index: blockIndex });
+      return status as RetrieveBtcStatus;
+    } catch (error) {
+      console.error("Error getting retrieve BTC status:", error);
+      throw new Error(
+        error instanceof Error 
+          ? `Failed to get withdrawal status: ${error.message}` 
+          : "Failed to get withdrawal status"
       );
     }
   }

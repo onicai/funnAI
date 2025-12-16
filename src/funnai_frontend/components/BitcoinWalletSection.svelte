@@ -48,6 +48,44 @@
   let currentConfirmations: number = 0;
   let isCheckingPending: boolean = false;
 
+  // Withdrawal (ckBTC -> BTC) state
+  let withdrawAddress = "";
+  let withdrawAmount = "";
+  let isWithdrawing = false;
+  let withdrawError: string | null = null;
+  let withdrawSuccess: string | null = null;
+  let withdrawBlockIndex: bigint | null = null;
+  let withdrawStatus: string | null = null;
+  let withdrawTxId: string | null = null;
+  let withdrawalFee: { minter_fee: bigint; bitcoin_fee: bigint } | null = null;
+  let isEstimatingFee = false;
+  let showWithdrawFlow = false;
+
+  /**
+   * Validate Bitcoin address format (mainnet only)
+   * Supports: P2PKH (1...), P2SH (3...), Bech32/SegWit (bc1q...), Bech32m/Taproot (bc1p...)
+   */
+  function isValidBitcoinAddress(address: string): boolean {
+    if (!address) return false;
+    
+    // P2PKH - Legacy addresses starting with '1'
+    const p2pkhRegex = /^1[a-km-zA-HJ-NP-Z1-9]{25,34}$/;
+    
+    // P2SH - Script hash addresses starting with '3'
+    const p2shRegex = /^3[a-km-zA-HJ-NP-Z1-9]{25,34}$/;
+    
+    // Bech32 - Native SegWit addresses starting with 'bc1q'
+    const bech32Regex = /^bc1q[a-z0-9]{38,58}$/;
+    
+    // Bech32m - Taproot addresses starting with 'bc1p'
+    const bech32mRegex = /^bc1p[a-z0-9]{38,58}$/;
+    
+    return p2pkhRegex.test(address) || 
+           p2shRegex.test(address) || 
+           bech32Regex.test(address) || 
+           bech32mRegex.test(address);
+  }
+
   // Load pending transaction from localStorage on mount
   function loadPendingTx() {
     try {
@@ -125,6 +163,199 @@
   // Only consider wallet available if user logged in via Bitcoin
   $: hasBtcWallet = isBitcoinUser && !!getWalletProvider();
 
+  // Auto-fill withdraw address for Bitcoin wallet users
+  async function loadUserBtcAddress() {
+    if (!isBitcoinUser) return;
+    
+    const wallet = getWalletProvider();
+    if (!wallet) return;
+
+    try {
+      const accounts = await wallet.provider.getAccounts();
+      if (accounts && accounts.length > 0) {
+        withdrawAddress = accounts[0];
+      }
+    } catch (err) {
+      console.warn("Could not auto-fill BTC address:", err);
+    }
+  }
+
+  // Estimate withdrawal fee when amount changes
+  async function estimateWithdrawalFee() {
+    if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
+      withdrawalFee = null;
+      return;
+    }
+
+    try {
+      isEstimatingFee = true;
+      const amountSatoshis = BigInt(Math.floor(parseFloat(withdrawAmount) * 100000000));
+      const fee = await BitcoinService.estimateWithdrawalFee(amountSatoshis);
+      withdrawalFee = fee;
+    } catch (err) {
+      console.error("Error estimating withdrawal fee:", err);
+      withdrawalFee = null;
+    } finally {
+      isEstimatingFee = false;
+    }
+  }
+
+  // Debounce fee estimation
+  let feeEstimationTimeout: ReturnType<typeof setTimeout> | null = null;
+  function debouncedEstimateFee() {
+    if (feeEstimationTimeout) clearTimeout(feeEstimationTimeout);
+    feeEstimationTimeout = setTimeout(() => {
+      estimateWithdrawalFee();
+    }, 500);
+  }
+
+  // Handle withdrawal (ckBTC -> BTC)
+  async function handleWithdraw() {
+    withdrawError = null;
+    withdrawSuccess = null;
+
+    // Debug: Log the principal from the store
+    console.log("handleWithdraw - Store principal:", $store.principal?.toString());
+    console.log("handleWithdraw - Auth type:", $store.isAuthed);
+    console.log("handleWithdraw - ckBTC balance shown:", ckbtcBalance.toString());
+
+    // Validate address
+    if (!withdrawAddress) {
+      withdrawError = "Please enter a Bitcoin address";
+      return;
+    }
+
+    if (!isValidBitcoinAddress(withdrawAddress)) {
+      withdrawError = "Invalid Bitcoin address format. Must be a valid mainnet address (starting with 1, 3, bc1q, or bc1p)";
+      return;
+    }
+
+    // Validate amount
+    if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
+      withdrawError = "Please enter a valid amount";
+      return;
+    }
+
+    const amountSatoshis = BigInt(Math.floor(parseFloat(withdrawAmount) * 100000000));
+
+    // Check minimum amount
+    if (minterInfo && amountSatoshis < minterInfo.retrieve_btc_min_amount) {
+      withdrawError = `Minimum withdrawal amount is ${formatBtcBalance(minterInfo.retrieve_btc_min_amount)} BTC`;
+      return;
+    }
+
+    // Check balance
+    if (amountSatoshis > ckbtcBalance) {
+      withdrawError = `Insufficient ckBTC balance. You have ${formatBtcBalance(ckbtcBalance)} ckBTC`;
+      return;
+    }
+
+    try {
+      isWithdrawing = true;
+      withdrawStatus = "Initiating withdrawal...";
+
+      const result = await BitcoinService.retrieveBtc(withdrawAddress, amountSatoshis);
+
+      if ('Ok' in result) {
+        withdrawBlockIndex = result.Ok.block_index;
+        withdrawSuccess = `Withdrawal initiated! Block index: ${withdrawBlockIndex}`;
+        withdrawStatus = "Pending";
+        
+        // Start polling for status
+        pollWithdrawStatus();
+        
+        // Refresh balance
+        await loadCkbtcBalance();
+        
+        // Reset form
+        withdrawAmount = "";
+      } else if ('Err' in result) {
+        const err = result.Err;
+        if ('MalformedAddress' in err) {
+          withdrawError = `Invalid address: ${err.MalformedAddress}`;
+        } else if ('AmountTooLow' in err) {
+          withdrawError = `Amount too low. Minimum: ${formatBtcBalance(err.AmountTooLow)} BTC`;
+        } else if ('InsufficientFunds' in err) {
+          withdrawError = `Insufficient funds. Balance: ${formatBtcBalance(err.InsufficientFunds.balance)} ckBTC`;
+        } else if ('TemporarilyUnavailable' in err) {
+          withdrawError = `Service temporarily unavailable: ${err.TemporarilyUnavailable}`;
+        } else if ('AlreadyProcessing' in err) {
+          withdrawError = "A withdrawal is already being processed. Please wait.";
+        } else if ('GenericError' in err) {
+          withdrawError = `Error: ${err.GenericError.error_message}`;
+        } else {
+          withdrawError = "Unknown error occurred";
+        }
+      }
+    } catch (err) {
+      console.error("Withdrawal error:", err);
+      withdrawError = err instanceof Error ? err.message : "Failed to process withdrawal";
+    } finally {
+      isWithdrawing = false;
+    }
+  }
+
+  // Poll for withdrawal status
+  let withdrawStatusInterval: ReturnType<typeof setInterval> | null = null;
+  async function pollWithdrawStatus() {
+    if (!withdrawBlockIndex) return;
+
+    // Clear any existing interval
+    if (withdrawStatusInterval) {
+      clearInterval(withdrawStatusInterval);
+    }
+
+    // Check status immediately
+    await checkWithdrawStatus();
+
+    // Then poll every 30 seconds
+    withdrawStatusInterval = setInterval(async () => {
+      await checkWithdrawStatus();
+    }, 30000);
+  }
+
+  async function checkWithdrawStatus() {
+    if (!withdrawBlockIndex) return;
+
+    try {
+      const status = await BitcoinService.retrieveBtcStatus(withdrawBlockIndex);
+      
+      if ('Pending' in status) {
+        withdrawStatus = "Pending - Waiting for processing";
+      } else if ('Signing' in status) {
+        withdrawStatus = "Signing - Creating Bitcoin transaction";
+      } else if ('Sending' in status) {
+        withdrawStatus = "Sending - Broadcasting to Bitcoin network";
+        withdrawTxId = bytesToHex(status.Sending.txid);
+        withdrawSuccess = `Transaction is being broadcast to the Bitcoin network`;
+      } else if ('Submitted' in status) {
+        withdrawStatus = "Submitted - Waiting for confirmations";
+        withdrawTxId = bytesToHex(status.Submitted.txid);
+        withdrawSuccess = `Transaction submitted to Bitcoin network`;
+      } else if ('Confirmed' in status) {
+        withdrawStatus = "Confirmed - Withdrawal complete!";
+        withdrawTxId = bytesToHex(status.Confirmed.txid);
+        withdrawSuccess = `Withdrawal confirmed on Bitcoin network`;
+        // Stop polling
+        if (withdrawStatusInterval) {
+          clearInterval(withdrawStatusInterval);
+          withdrawStatusInterval = null;
+        }
+      } else if ('AmountTooLow' in status) {
+        withdrawStatus = "Failed - Amount too low";
+        withdrawError = "Withdrawal failed: Amount too low";
+        if (withdrawStatusInterval) {
+          clearInterval(withdrawStatusInterval);
+          withdrawStatusInterval = null;
+        }
+      } else if ('Unknown' in status) {
+        withdrawStatus = "Unknown status";
+      }
+    } catch (err) {
+      console.error("Error checking withdrawal status:", err);
+    }
+  }
+
   // Load BTC deposit address and ckBTC balance on mount
   onMount(async () => {
     if ($store.principal) {
@@ -134,6 +365,8 @@
       await loadMinterInfo();
       // Proactively check for any pending deposits from the minter
       await checkForPendingDeposits();
+      // Auto-fill withdraw address for Bitcoin wallet users
+      await loadUserBtcAddress();
     }
   });
 
@@ -351,8 +584,54 @@
     try {
       isSendingBtc = true;
       error = null;
-      
+
+      // First, ensure wallet is connected by requesting accounts
+      // This will prompt the user to connect if not already connected
+      let connectedAccounts: string[] = [];
+      try {
+        connectedAccounts = await wallet.provider.requestAccounts();
+        console.log("Wallet connected, accounts:", connectedAccounts);
+        if (!connectedAccounts || connectedAccounts.length === 0) {
+          error = "Please connect your wallet first";
+          isSendingBtc = false;
+          return;
+        }
+      } catch (connectErr: any) {
+        console.error("Wallet connection error:", connectErr);
+        if (connectErr?.message?.includes("rejected") || connectErr?.message?.includes("cancelled")) {
+          error = "Wallet connection cancelled";
+        } else {
+          error = "Please unlock and connect your wallet";
+        }
+        isSendingBtc = false;
+        return;
+      }
+
+      // Check wallet balance and network
+      try {
+        const balance = await wallet.provider.getBalance();
+        const network = await wallet.provider.getNetwork();
+        console.log("Wallet balance:", balance);
+        console.log("Wallet network:", network);
+        console.log("Sending to:", btcDepositAddress);
+        console.log("Amount in satoshis:", amountSatoshis);
+        
+        // Check if balance is sufficient (add buffer for network fees ~1000 satoshis)
+        const totalBalance = (balance?.confirmed || 0) + (balance?.unconfirmed || 0);
+        const feeBuffer = 1000; // Rough estimate for network fee
+        if (totalBalance < amountSatoshis + feeBuffer) {
+          const availableBtc = (totalBalance / 100000000).toFixed(8);
+          const requestedBtc = (amountSatoshis / 100000000).toFixed(8);
+          error = `Insufficient balance. You have ${availableBtc} BTC but trying to send ${requestedBtc} BTC (plus network fees)`;
+          isSendingBtc = false;
+          return;
+        }
+      } catch (balanceErr) {
+        console.warn("Could not check balance:", balanceErr);
+      }
+
       // Use wallet's sendBitcoin function
+      console.log("Calling sendBitcoin with:", { address: btcDepositAddress, satoshis: amountSatoshis });
       const txid = await wallet.provider.sendBitcoin(btcDepositAddress, amountSatoshis);
       
       console.log("BTC sent! TxID:", txid);
@@ -424,7 +703,18 @@
   <div class="mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-800/50">
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Your ckBTC Balance</p>
+        <div class="flex items-center gap-2 mb-1">
+          <p class="text-sm text-gray-600 dark:text-gray-400">Your ckBTC Balance</p>
+          <span class="text-xs px-2 py-0.5 rounded-full {
+            $store.isAuthed === 'bitcoin' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300' :
+            $store.isAuthed === 'nfid' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' :
+            'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300'
+          }">
+            {$store.isAuthed === 'bitcoin' ? '🔸 Bitcoin Wallet' : 
+             $store.isAuthed === 'nfid' ? '🔷 NFID' : 
+             '🔮 Internet Identity'}
+          </span>
+        </div>
         <div class="flex items-center gap-2">
           {#if isLoadingBalance}
             <Loader2 class="w-5 h-5 animate-spin text-orange-500" />
@@ -448,6 +738,11 @@
         </span>
       </button>
     </div>
+    
+    <!-- Identity info tooltip -->
+    <p class="text-xs text-gray-400 dark:text-gray-500 mt-2 border-t border-purple-200 dark:border-purple-800/50 pt-2">
+      💡 ckBTC is tied to your login method. Deposit and withdraw using the same identity.
+    </p>
   </div>
 
   <!-- Checking for pending deposits indicator -->
@@ -455,6 +750,101 @@
     <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center gap-2">
       <Loader2 class="w-4 h-4 animate-spin text-blue-600" />
       <span class="text-sm text-blue-700 dark:text-blue-300">Checking for pending BTC deposits...</span>
+    </div>
+  {/if}
+
+  <!-- User-initiated Pending Transaction (from "Send from Wallet") -->
+  {#if pendingTx}
+    <div class="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border-2 border-green-300 dark:border-green-700 animate-pulse-slow">
+      <div class="flex items-start gap-3">
+        <div class="p-2 bg-green-100 dark:bg-green-900/50 rounded-full">
+          <Clock class="w-6 h-6 text-green-600 dark:text-green-400" />
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <h3 class="font-semibold text-gray-900 dark:text-white">
+              ✅ BTC Transaction Sent!
+            </h3>
+            <span class="text-xs bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 px-2 py-0.5 rounded-full">
+              {pendingTx.confirmations || 0}/{minterInfo?.min_confirmations || 6} confirmations
+            </span>
+          </div>
+          
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+            Your <strong>{pendingTx.amount} BTC</strong> is being confirmed on the Bitcoin network.
+            Estimated time: <strong>{getEstimatedTimeRemaining()}</strong>
+          </p>
+
+          <!-- Progress bar -->
+          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-3">
+            <div 
+              class="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-500"
+              style="width: {Math.min(100, ((pendingTx.confirmations || 0) / (minterInfo?.min_confirmations || 6)) * 100)}%"
+            ></div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- View on Explorer -->
+            <a
+              href="https://mempool.space/tx/{pendingTx.txId}"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+            >
+              <ExternalLink class="w-4 h-4" />
+              View on Mempool.space
+            </a>
+
+            <!-- Check Status Button -->
+            <button
+              on:click={handleUpdateBalance}
+              disabled={isUpdatingBalance}
+              class="text-sm px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium rounded-lg transition-colors flex items-center gap-1"
+            >
+              {#if isUpdatingBalance}
+                <Loader2 class="w-4 h-4 animate-spin" />
+              {:else}
+                <RefreshCw class="w-4 h-4" />
+              {/if}
+              Check Status & Mint
+            </button>
+
+            <!-- Dismiss -->
+            <button
+              on:click={clearPendingTx}
+              class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            >
+              Dismiss
+            </button>
+          </div>
+
+          {#if lastChecked}
+            <p class="text-xs text-gray-400 mt-2">
+              Last checked: {lastChecked.toLocaleTimeString()}
+              {#if autoRefreshInterval}
+                <span class="ml-2 text-green-600 dark:text-green-400">• Auto-refreshing every 2 min</span>
+              {/if}
+            </p>
+          {/if}
+
+          {#if updateBalanceResult}
+            <div class="mt-3 p-2 bg-white/50 dark:bg-gray-800/50 rounded text-sm text-gray-700 dark:text-gray-300">
+              {updateBalanceResult}
+            </div>
+          {/if}
+        </div>
+      </div>
+
+      <!-- Helpful tips -->
+      <div class="mt-4 pt-3 border-t border-green-200 dark:border-green-800/50">
+        <div class="flex items-start gap-2">
+          <AlertCircle class="w-4 h-4 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
+          <p class="text-xs text-gray-600 dark:text-gray-400">
+            <strong>Your transaction is on the way!</strong> Bitcoin transactions need {minterInfo?.min_confirmations || 6} confirmations (~{(minterInfo?.min_confirmations || 6) * 10} minutes). 
+            Once confirmed, your ckBTC will be minted automatically.
+          </p>
+        </div>
+      </div>
     </div>
   {/if}
 
@@ -652,10 +1042,23 @@
       <div class="flex items-center gap-2 mb-3">
         <ArrowDownToLine class="w-5 h-5 text-green-600 dark:text-green-400" />
         <h3 class="font-medium text-gray-900 dark:text-white">Deposit Address</h3>
+        <span class="text-xs px-2 py-0.5 rounded-full {
+          $store.isAuthed === 'bitcoin' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300' :
+          $store.isAuthed === 'nfid' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300' :
+          'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300'
+        }">
+          {$store.isAuthed === 'bitcoin' ? 'Bitcoin Wallet' : 
+           $store.isAuthed === 'nfid' ? 'NFID' : 
+           'Internet Identity'}
+        </span>
       </div>
       
-      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-        Send BTC from any wallet to this address.
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+        Send BTC from any wallet to this address. The ckBTC will be credited to your <strong>current identity</strong>.
+      </p>
+      <p class="text-xs text-amber-600 dark:text-amber-400 mb-4 flex items-center gap-1">
+        <AlertCircle class="w-3 h-3" />
+        To withdraw later, log in with the same method you used to deposit.
       </p>
 
       {#if isLoadingAddress}
@@ -718,16 +1121,201 @@
     </div>
   </details>
 
-  <!-- Withdraw BTC Section (Future enhancement) -->
-  <div class="mt-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg opacity-60">
-    <div class="flex items-center gap-2 mb-2">
+  <!-- Withdraw BTC Section -->
+  <div class="mt-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+    <div class="flex items-center gap-2 mb-3">
       <ArrowUpFromLine class="w-5 h-5 text-orange-600 dark:text-orange-400" />
       <h3 class="font-medium text-gray-900 dark:text-white">Convert ckBTC to BTC</h3>
-      <span class="text-xs bg-orange-100 dark:bg-orange-900/50 text-gray-700 dark:text-gray-100 px-2 py-0.5 rounded">Coming Soon</span>
     </div>
-    <p class="text-sm text-gray-500 dark:text-gray-400">
-      Convert your ckBTC back to BTC on the Bitcoin network.
-    </p>
+
+    {#if !showWithdrawFlow && !withdrawSuccess}
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+        Convert your ckBTC back to native BTC on the Bitcoin network.
+      </p>
+      <button
+        on:click={() => showWithdrawFlow = true}
+        disabled={ckbtcBalance <= BigInt(0)}
+        class="w-full py-2.5 px-4 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+      >
+        <ArrowUpFromLine class="w-5 h-5" />
+        Withdraw to BTC
+      </button>
+      {#if ckbtcBalance <= BigInt(0)}
+        <p class="text-xs text-gray-500 mt-2">You need ckBTC to withdraw</p>
+      {/if}
+    {:else if withdrawSuccess}
+      <!-- Withdrawal in progress / success -->
+      <div class="space-y-4">
+        <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+          <p class="text-sm text-green-700 dark:text-green-300 font-medium mb-2">{withdrawSuccess}</p>
+          
+          {#if withdrawTxId}
+            <a
+              href="https://mempool.space/tx/{withdrawTxId}"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              <ExternalLink class="w-3 h-3" />
+              View on Mempool.space
+            </a>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 font-mono break-all">
+              TxID: {withdrawTxId}
+            </p>
+          {/if}
+        </div>
+
+        {#if withdrawStatus}
+          <div class="flex items-center gap-2">
+            {#if withdrawStatus === "Confirmed - Withdrawal complete!"}
+              <Check class="w-4 h-4 text-green-500" />
+            {:else}
+              <Loader2 class="w-4 h-4 animate-spin text-orange-500" />
+            {/if}
+            <span class="text-sm text-gray-600 dark:text-gray-400">Status: {withdrawStatus}</span>
+          </div>
+        {/if}
+
+        {#if withdrawStatus === "Confirmed - Withdrawal complete!"}
+          <button
+            on:click={() => {
+              withdrawSuccess = null;
+              withdrawStatus = null;
+              withdrawBlockIndex = null;
+              withdrawTxId = null;
+              showWithdrawFlow = false;
+            }}
+            class="w-full py-2 px-4 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 font-medium rounded-lg transition-colors"
+          >
+            Done
+          </button>
+        {/if}
+      </div>
+    {:else}
+      <!-- Withdrawal form -->
+      <div class="space-y-4">
+        <!-- Error display -->
+        {#if withdrawError}
+          <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+            <p class="text-sm text-red-700 dark:text-red-300">{withdrawError}</p>
+          </div>
+        {/if}
+
+        <!-- BTC Address Input -->
+        <div>
+          <label for="withdraw-address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Bitcoin Address
+          </label>
+          <input
+            id="withdraw-address"
+            type="text"
+            bind:value={withdrawAddress}
+            placeholder="bc1q... or 1... or 3..."
+            class="w-full p-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:border-transparent font-mono text-sm"
+          />
+          {#if withdrawAddress && !isValidBitcoinAddress(withdrawAddress)}
+            <p class="text-xs text-red-500 mt-1">Invalid Bitcoin address format</p>
+          {:else if isBitcoinUser && withdrawAddress}
+            <p class="text-xs text-green-600 dark:text-green-400 mt-1">✓ Using your connected wallet address</p>
+          {:else}
+            <p class="text-xs text-gray-500 mt-1">Enter a Bitcoin mainnet address</p>
+          {/if}
+        </div>
+
+        <!-- Amount Input -->
+        <div>
+          <label for="withdraw-amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Amount (ckBTC)
+          </label>
+          <div class="relative">
+            <input
+              id="withdraw-amount"
+              type="number"
+              step="0.00000001"
+              bind:value={withdrawAmount}
+              on:input={debouncedEstimateFee}
+              on:wheel={(e) => e.preventDefault()}
+              placeholder="0.00000000"
+              class="w-full p-2.5 pr-16 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            />
+            <button
+              type="button"
+              on:click={() => {
+                withdrawAmount = formatBtcBalance(ckbtcBalance);
+                debouncedEstimateFee();
+              }}
+              class="absolute right-2 top-1/2 -translate-y-1/2 text-xs px-2 py-1 bg-orange-100 hover:bg-orange-200 dark:bg-orange-900/50 dark:hover:bg-orange-800/50 text-orange-700 dark:text-orange-300 rounded transition-colors"
+            >
+              MAX
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">
+            Available: {formatBtcBalance(ckbtcBalance)} ckBTC
+            {#if minterInfo}
+              | Min: {formatBtcBalance(minterInfo.retrieve_btc_min_amount)} ckBTC
+            {/if}
+          </p>
+        </div>
+
+        <!-- Fee Estimation -->
+        {#if isEstimatingFee}
+          <div class="flex items-center gap-2 text-sm text-gray-500">
+            <Loader2 class="w-4 h-4 animate-spin" />
+            Estimating fees...
+          </div>
+        {:else if withdrawalFee && withdrawAmount}
+          <div class="p-3 bg-gray-100 dark:bg-gray-600/50 rounded-lg space-y-1">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600 dark:text-gray-400">Bitcoin network fee:</span>
+              <span class="text-gray-900 dark:text-white">{formatBtcBalance(withdrawalFee.bitcoin_fee)} BTC</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600 dark:text-gray-400">Minter fee:</span>
+              <span class="text-gray-900 dark:text-white">{formatBtcBalance(withdrawalFee.minter_fee)} BTC</span>
+            </div>
+            <div class="flex justify-between text-sm font-medium pt-1 border-t border-gray-200 dark:border-gray-500">
+              <span class="text-gray-700 dark:text-gray-300">You'll receive:</span>
+              <span class="text-green-600 dark:text-green-400">
+                ~{formatBtcBalance(BigInt(Math.floor(parseFloat(withdrawAmount) * 100000000)) - withdrawalFee.bitcoin_fee - withdrawalFee.minter_fee)} BTC
+              </span>
+            </div>
+          </div>
+        {/if}
+
+        <!-- Action Buttons -->
+        <div class="flex gap-2">
+          <button
+            on:click={handleWithdraw}
+            disabled={isWithdrawing || !withdrawAddress || !withdrawAmount || !isValidBitcoinAddress(withdrawAddress)}
+            class="flex-1 py-2.5 px-4 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
+            {#if isWithdrawing}
+              <Loader2 class="w-5 h-5 animate-spin" />
+              Processing...
+            {:else}
+              <ArrowUpFromLine class="w-5 h-5" />
+              Withdraw
+            {/if}
+          </button>
+          <button
+            on:click={() => {
+              showWithdrawFlow = false;
+              withdrawAmount = "";
+              withdrawError = null;
+              withdrawalFee = null;
+            }}
+            class="px-4 py-2.5 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 font-medium rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+
+        <!-- Info -->
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          Withdrawals are processed by the ckBTC minter. The BTC will be sent to your address once the transaction is confirmed on the Bitcoin network.
+        </p>
+      </div>
+    {/if}
   </div>
 </div>
 
