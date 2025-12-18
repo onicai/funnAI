@@ -160,3 +160,6 @@ scripts/upgrade_mainers_status.json
 scripts/upgrade_mainers_status.md
 scripts/upgrade_mainers.logs
 scripts/logs-mainer-analysis/
+
+# lp_holders list (generated output)
+scripts/lp_holders/
