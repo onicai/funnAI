@@ -255,7 +255,7 @@
       
         <div class="text-xl font-bold text-red-600 dark:text-red-400 mt-4">
           <Countdown 
-            targetDate={new Date("2026-03-29T12:00:00-07:00")} 
+            targetDate={new Date("2026-03-29T12:00:00-08:00")} 
             format="detailed"
             className="text-red-600 dark:text-red-400"
           />
