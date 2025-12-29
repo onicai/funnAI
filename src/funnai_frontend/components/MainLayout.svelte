@@ -3,7 +3,6 @@
   import { store, theme } from "../stores/store";
   import NavigationMainLayout from "./funnai/NavigationMainLayout.svelte";
   import SidebarMainLayout from "./funnai/SidebarMainLayout.svelte";
-  import ChatLayout from "./chat/ChatLayout.svelte";
   import Mainers from "../pages/Mainers.svelte";
   import Dashboard from "../pages/Dashboard.svelte";
   import Wallet from "../pages/Wallet.svelte";
@@ -54,8 +53,6 @@
   const routes = {
     "/": Mainers,
     "/dashboard": Dashboard,
-    "/chat": ChatLayout,
-    "/chat/*": ChatLayout,
     "/wallet": Wallet,
     "/marketplace": Marketplace,
     "/lottery": Lottery,
