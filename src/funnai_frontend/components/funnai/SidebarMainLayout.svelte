@@ -193,7 +193,7 @@ function handleThemeToggle() {
         
         <!-- funnAI Whitepaper -->
         <a href="https://www.onicai.com/files/funnAI_Whitepaper.pdf" target="_blank" rel="noopener noreferrer" class="block mb-2 group/whitepaper" on:click={closeSidebar}>
-          <button class="w-full px-4 py-2 text-left bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 rounded-xl transition-all duration-300 flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50 hover:border-amber-300/40 dark:hover:border-amber-500/30 hover:from-amber-50/30 hover:to-orange-50/20 dark:hover:from-amber-900/10 dark:hover:to-orange-900/5">
+          <button class="w-full px-2 py-2 text-left bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 rounded-xl transition-all duration-300 flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50 hover:border-amber-300/40 dark:hover:border-amber-500/30 hover:from-amber-50/30 hover:to-orange-50/20 dark:hover:from-amber-900/10 dark:hover:to-orange-900/5">
             <!-- Document icon with sparkles -->
             <div class="relative w-6 h-6 flex-shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 absolute top-0.5 left-0.5" viewBox="0 0 24 24" fill="none">
@@ -219,6 +219,39 @@ function handleThemeToggle() {
             <span class="font-medium transition-colors duration-300 group-hover/whitepaper:text-amber-700 dark:group-hover/whitepaper:text-amber-400">funnAI Whitepaper</span>
             <!-- External link arrow -->
             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 ml-auto text-gray-400 dark:text-gray-500 transition-colors duration-300 group-hover/whitepaper:text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </button>
+        </a>
+
+        <!-- onicai SNS Whitepaper -->
+        <a href="https://www.onicai.com/files/onicai_SNS_Whitepaper.pdf" target="_blank" rel="noopener noreferrer" class="block mb-2 group/sns-whitepaper" on:click={closeSidebar}>
+          <button class="w-full px-2 py-2 text-left bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 rounded-xl transition-all duration-300 flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300 border border-gray-200/50 dark:border-gray-700/50 hover:border-blue-300/40 dark:hover:border-blue-500/30 hover:from-blue-50/30 hover:to-cyan-50/20 dark:hover:from-blue-900/10 dark:hover:to-cyan-900/5">
+            <!-- Document icon with sparkles -->
+            <div class="relative w-6 h-6 flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 absolute top-0.5 left-0.5" viewBox="0 0 24 24" fill="none">
+                <defs>
+                  <linearGradient id="docGradientBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#3b82f6" />
+                    <stop offset="100%" style="stop-color:#06b6d4" />
+                  </linearGradient>
+                </defs>
+                <!-- Document body -->
+                <path d="M7 3a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8.414a1 1 0 00-.293-.707l-4.414-4.414A1 1 0 0013.586 3H7z" fill="url(#docGradientBlue)" opacity="0.12"/>
+                <path d="M7 3a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8.414a1 1 0 00-.293-.707l-4.414-4.414A1 1 0 0013.586 3H7z" stroke="url(#docGradientBlue)" stroke-width="1.5" fill="none"/>
+                <!-- Folded corner -->
+                <path d="M13 3v4a2 2 0 002 2h4" stroke="url(#docGradientBlue)" stroke-width="1.5" stroke-linecap="round"/>
+                <!-- Text lines -->
+                <path d="M9 12h6M9 15h4" stroke="url(#docGradientBlue)" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              <!-- Subtle sparkles -->
+              <span class="absolute -top-0.5 -right-0.5 w-1 h-1 bg-blue-400 rounded-full animate-[pulse_2s_ease-in-out_infinite]"></span>
+              <span class="absolute top-1 right-0 w-0.5 h-0.5 bg-cyan-300 rounded-full animate-[pulse_2.5s_ease-in-out_0.5s_infinite]"></span>
+              <span class="absolute -top-0.5 right-1 w-0.5 h-0.5 bg-sky-300 rounded-full animate-[pulse_3s_ease-in-out_1s_infinite]"></span>
+            </div>
+            <span class="font-medium transition-colors duration-300 group-hover/sns-whitepaper:text-blue-700 dark:group-hover/sns-whitepaper:text-blue-400">onicai SNS Whitepaper</span>
+            <!-- External link arrow -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 ml-auto text-gray-400 dark:text-gray-500 transition-colors duration-300 group-hover/sns-whitepaper:text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
           </button>
