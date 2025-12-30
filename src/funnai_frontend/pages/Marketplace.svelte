@@ -398,11 +398,13 @@
     <div class="mb-8">
       <!-- Header -->
       <div class="flex items-center space-x-3 sm:space-x-4 mb-4">
-        <div class="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl sm:rounded-2xl shadow-lg flex items-center justify-center flex-shrink-0">
-          <Store class="w-5 h-5 sm:w-8 sm:h-8 text-white" />
-        </div>
         <div>
-          <h1 class="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">Marketplace</h1>
+          <div class="flex items-center gap-2 sm:gap-3">
+            <h1 class="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">Marketplace</h1>
+            <span class="px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm font-semibold bg-gradient-to-r from-yellow-500 to-orange-500 text-black rounded-full shadow-md">
+              Beta
+            </span>
+          </div>
           <p class="text-sm sm:text-lg text-gray-600 dark:text-gray-400 hidden sm:block">
             Buy and sell funnAI mAIner agents
           </p>
