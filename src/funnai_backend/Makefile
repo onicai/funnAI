@@ -20,9 +20,6 @@ help:
 smoketest:
 	dfx stop
 	dfx start --clean --background
-	dfx deploy --argument "$$(cat <<EOF
-( principal "$$(dfx identity get-principal)" )
-EOF
-)" funnai_backend
+	dfx deploy --argument "( principal \"$$(dfx identity get-principal)\" )" funnai_backend
 	pytest -vv --exitfirst test/test_funnai_backend_canister.py
 	dfx stop
