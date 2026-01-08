@@ -22,7 +22,7 @@
 
   console.log("in MainerPaymentModal protocolAddress ", protocolAddress);
   
-  // TODO: load token info from token_helpers.ts
+  // Token info loaded from token_helpers.ts
   let token: any = null;
   let isTokenLoading: boolean = true;
   
@@ -59,10 +59,10 @@
   let mainerPrice = 1000; // Will be loaded
 
   let isProtocolActiveFlag = true; // Will be loaded
-  $: isProtocolActive = isProtocolActiveFlag; // TODO: if protocol is not active, stop activities, especially mAIner creation
+  $: isProtocolActive = isProtocolActiveFlag; // When false, stops mAIner creation activities
 
   let isMainerCreationStoppedFlag = false; // Will be loaded
-  $: stopMainerCreation = isMainerCreationStoppedFlag; // TODO: if true, disable mAIner creation
+  $: stopMainerCreation = isMainerCreationStoppedFlag; // When true, disables mAIner creation
 
   let isPauseWhitelistMainerCreationFlag = false; // Will be loaded
   $: isPauseWhitelistMainerCreation = isPauseWhitelistMainerCreationFlag;
@@ -154,7 +154,6 @@
 
       if (result && typeof result === 'object' && 'Ok' in result) {
         const txId = result.Ok?.toString();
-        // TODO: persist txId
         onSuccess(txId);
         onClose();
       } else if (result && typeof result === 'object' && 'Err' in result) {

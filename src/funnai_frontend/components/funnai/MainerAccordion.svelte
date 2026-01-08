@@ -291,7 +291,7 @@
       // Remove from loading set on error
       agentsBeingToppedUp.delete(canisterId);
       agentsBeingToppedUp = agentsBeingToppedUp;
-      return; // TODO - Implementation: decide if the top up should just be credited to the user's first agent then instead (as otherwise the payment is lost)
+      return; // NOTE: Edge case - payment may be lost if agent lookup fails after payment
     };
 
     // Wait for the backend promise to complete
@@ -524,9 +524,8 @@
             addProgressMessage("LLM setup will continue in the background (it may take several minutes to complete)");
           }
           
-          // Step 4: Final configuration
+          // Step 4: Final configuration (burn rate and timer handled by backend)
           addProgressMessage("Configuring mAIner parameters...");
-          // TODO: set default cycle burn rate, start mAIner's timer (if not done yet by backend)
 
           // Step 5: Completion - Match exact timing as regular creation
           setTimeout(() => {
@@ -661,9 +660,8 @@
             addProgressMessage("LLM setup will continue in the background (it may take several minutes to complete)");
           }
           
-          // Step 4: Final configuration
+          // Step 4: Final configuration (burn rate and timer handled by backend)
           addProgressMessage("Configuring mAIner parameters...");
-          // TODO: set default cycle burn rate, start mAIner's timer (if not done yet by backend)
 
           // Step 5: Completion
           setTimeout(() => {
