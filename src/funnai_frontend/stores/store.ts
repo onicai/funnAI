@@ -74,12 +74,6 @@ export const canisterIDLs = {
   cmc: cmcIDL,
 };
 
-//__________Local vs Mainnet Development____________
-/* export const HOST =
-  backendCanisterId === "vee64-zyaaa-aaaai-acpta-cai"
-    ? "https://ic0.app" // Use in Production (on Mainnet)
-    : "http://localhost:4943"; // to be used with http://localhost:4943/?canisterId=ryjl3-tyaaa-aaaaa-aaaba-cai#/testroom */
-
 export const HOST =
   process.env.NODE_ENV !== "development"
     ? "https://ic0.app"
