@@ -325,7 +325,6 @@ export class IcrcService {
       return result.Ok;
     } catch (error) {
       console.error("ICRC2 approve error: ", error);
-      //toastStore.error(`Failed to approve ${token.symbol}: ${error.message}`);
       throw error;
     }
   }

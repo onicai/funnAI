@@ -15,7 +15,6 @@
   import { tooltip } from "../helpers/utils/tooltip";
   import { store } from "../stores/store";
   import { IcrcService } from "../helpers/IcrcService";
-  //import { toastStore } from "$lib/stores/toastStore";
   import BigNumber from "bignumber.js";
   import { 
     calculateMaxAmount, 
@@ -147,8 +146,6 @@
         QrScanner = module.default;
       }
       showScanner = true;
-    } else {
-      //toastStore.warning("No camera detected on your device");
     }
   }
 
@@ -161,7 +158,6 @@
       }
     } catch (err) {
       console.error("Failed to read clipboard:", err);
-      //toastStore.error("Failed to access clipboard");
     }
   }
 
@@ -229,19 +225,11 @@
         new BigNumber(amount).times(new BigNumber(10).pow(decimals)).toString()
       );
 
-      //toastStore.info(`Sending ${amount} ${token.symbol}...`);
-
       // Ensure auth is properly initialized
       if (!$store.isAuthed) {
         throw new Error("Authentication not initialized");
       }
 
-      // Always use main account (no fromSubaccount)
-      console.log("in handleConfirmationConfirm token ", token);
-      console.log("in handleConfirmationConfirm recipientAddress ", recipientAddress);
-      console.log("in handleConfirmationConfirm tokenFee ", tokenFee);
-      console.log("in handleConfirmationConfirm token.fee_fixed ", token.fee_fixed);
-      console.log("in handleConfirmationConfirm BigInt(token.fee_fixed) ", BigInt(token.fee_fixed));
       const result = await IcrcService.transfer(
         token,
         recipientAddress,
@@ -268,8 +256,6 @@
           // Continue with success flow even if balance refresh fails
         }
         
-        // Show success message and trigger callbacks
-        //toastStore.success(`Successfully sent ${token.symbol}`);
         //@ts-ignore
         onSuccess(txId);
         
@@ -285,14 +271,12 @@
             //@ts-ignore
             : String(result.Err);
         errorMessage = `Transfer failed: ${errMsg}`;
-        //toastStore.error(errorMessage);
         //@ts-ignore
         console.error("Transfer error details:", result.Err);
       }
     } catch (err) {
       console.error("Transfer error:", err);
       errorMessage = err.message || "Transfer failed";
-      //toastStore.error(errorMessage);
     } finally {
       isValidating = false;
     }
