@@ -27,24 +27,6 @@ scripts/monitor_gamestate_logs.sh --network $NETWORK
 scripts/monitor_memory.sh --network $NETWORK --canister-types [all|protocol|mainers]
 scripts/monitor_balance.sh --network $NETWORK --canister-types [all|protocol|mainers]
 
-
-# ----------------------------------------------------------------
-# TODO - evaluate these scripts if up to date & usefull
-# scripts/list_controllers.sh --network $NETWORK --canister-types [all|protocol|mainers]
-# scripts/add_controllers.sh --network $NETWORK --canister-types [all|protocol|mainers]
-# scripts/start_timers.sh --network $NETWORK --canister-types [all|protocol|mainers]
-# scripts/stop_timers.sh --network $NETWORK --canister-types [all|protocol|mainers]
-# # Carefull with these ones -> FOR TESTING ONLY
-# scripts/update_mainer_burnrates.sh --network $NETWORK --burnrate [Low|Mid|High|VeryHigh]
-# scripts/topup.sh --network $NETWORK --canister-types [all|protocol|mainers] --tc <TCycles>
-
-# # Admin Maintenance scripts
-# # See PoAIW/src/ArchivedChallenges/README.md how to migrate Archived challenges
-# # Then, after each migration, run this script to cleanup the prompt cache files from the LLMs
-# scripts/cleanup_llm_promptcache.sh --network $NETWORK --llm-type judge
-# scripts/cleanup_llm_promptcache.sh --network $NETWORK --llm-type share_service
-# ----------------------------------------------------------------
-
 # When running local
 # We are using dfx deps for:
 # - internet-identity

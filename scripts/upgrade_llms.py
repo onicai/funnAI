@@ -113,7 +113,7 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
         
         print(" ")
         print(f"- Setting max_tokens for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "set_max_tokens", '(record { max_tokens_query = 13 : nat64; max_tokens_update = 13 : nat64 })']
+        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "set_max_tokens", '(record { max_tokens_query = 12 : nat64; max_tokens_update = 12 : nat64 })']
         run_this_cmd(cmd, llm_cwd, confirm=False)
         
         print(" ")
@@ -125,7 +125,46 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
         print(f"- Pausing db_chats for LLM {canister_name} ({canister_id})")
         cmd = ["dfx", "canister", "--network", network, "call", canister_id, "chats_pause"]
         run_this_cmd(cmd, llm_cwd, confirm=False)
-        
+
+        print(" ")
+        print(f"- Assigning admin role to controller canister for LLM {canister_name} ({canister_id})")
+        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "assignAdminRole", f'(record {{ "principal" = "{ctrlb_canister_id}"; role = variant {{ AdminUpdate }}; note = "{llm_type.capitalize()} controller canister" }})']
+        run_this_cmd(cmd, llm_cwd, confirm=False)
+
+        print(" ")
+        print(f"- Assigning admin role to funnai-django-aws-dev for LLM {canister_name} ({canister_id})")
+        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "assignAdminRole", '(record { "principal" = "bzqba-mwz5i-rq3oz-iie6i-gf7bi-kqr2x-tjuq4-nblmh-ephou-n27tl-xqe"; role = variant { AdminUpdate }; note = "funnai-django-aws-dev" })']
+        run_this_cmd(cmd, llm_cwd, confirm=False)
+
+        print(" ")
+        print(f"- Assigning admin role to maintainer for LLM {canister_name} ({canister_id})")
+        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "assignAdminRole", '(record { "principal" = "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"; role = variant { AdminUpdate }; note = "maintainer" })']
+        run_this_cmd(cmd, llm_cwd, confirm=False)
+
+        print(" ")
+        print(f"- Assigning admin role to maintainer for LLM {canister_name} ({canister_id})")
+        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "assignAdminRole", '(record { "principal" = "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"; role = variant { AdminUpdate }; note = "maintainer" })']
+        run_this_cmd(cmd, llm_cwd, confirm=False)
+
+        print(" ")
+        print(f"- Removing controller canister as controller for LLM {canister_name} ({canister_id})")
+        cmd = ["dfx", "canister", "update-settings", canister_id, "--remove-controller", ctrlb_canister_id, "--network", network]
+        run_this_cmd(cmd, llm_cwd, confirm=False)
+
+        print(" ")
+        print(f"- Adding log viewers for LLM {canister_name} ({canister_id})")
+        cmd = ["dfx", "canister", "update-settings", canister_id,
+               "--add-log-viewer", "bzqba-mwz5i-rq3oz-iie6i-gf7bi-kqr2x-tjuq4-nblmh-ephou-n27tl-xqe",
+               "--add-log-viewer", "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae",
+               "--add-log-viewer", "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe",
+               "--network", network]
+        run_this_cmd(cmd, llm_cwd, confirm=False)
+
+        print(" ")
+        print(f"- Adding NNS Root Canister as controller for LLM {canister_name} ({canister_id})")
+        cmd = ["dfx", "sns", "prepare-canisters", "--network", "ic", "add-nns-root", canister_id]
+        run_this_cmd(cmd, llm_cwd, confirm=False)
+
         print(" ")
         print(f"- Testing LLM {canister_name} ({canister_id})")
         cmd = ["dfx", "canister", "--network", network, "call", canister_id, "new_chat", '(record { args = vec { "--prompt-cache"; "prompt.cache"; "--cache-type-k"; "q8_0"; }})']

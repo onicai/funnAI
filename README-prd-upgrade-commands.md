@@ -105,7 +105,7 @@ dfx canister --network $NETWORK snapshot create $SUBNET_0_2_API
 echo $NETWORK
 
 # from folder: funnAI
-dfx deploy --network $NETWORK game_state_canister --mode upgrade
+dfx deploy --network $NETWORK game_state_canister --mode upgrade [--wasm-memory-persistence keep]
 
 # start the GameState canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_1_GAMESTATE
@@ -173,7 +173,7 @@ dfx canister --network $NETWORK call game_state_canister revokeAdminRole '( "'$F
 echo $NETWORK
 
 # from folder: PoAIW/src/Challenger
-dfx deploy --network $NETWORK challenger_ctrlb_canister --mode upgrade
+dfx deploy --network $NETWORK challenger_ctrlb_canister --mode upgrade [--wasm-memory-persistence keep]
 
 # start the Challenger canister back up
 # Important
@@ -204,7 +204,7 @@ dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getTimerActionRegula
 echo $NETWORK
 
 # from folder: PoAIW/src/mAIner
-dfx deploy --network $NETWORK mainer_service_canister --mode upgrade
+dfx deploy --network $NETWORK mainer_service_canister --mode upgrade [--wasm-memory-persistence keep]
 
 # start the ShareService canister back up
 echo "SUBNET_0_1_SHARE_SERVICE: $SUBNET_0_1_SHARE_SERVICE"
@@ -276,7 +276,7 @@ dfx canister --network $NETWORK call $MAINER getMaintenanceFlag
 echo $NETWORK
 
 # from folder: PoAIW/src/Judge
-dfx deploy --network $NETWORK judge_ctrlb_canister --mode upgrade
+dfx deploy --network $NETWORK judge_ctrlb_canister --mode upgrade [--wasm-memory-persistence keep]
 
 # Upgrade failed, so we did a reinstall
 # -> WHEN REINSTALLING, THE LMMs need to be registered again! See step below
@@ -309,7 +309,7 @@ dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --ou
 echo $NETWORK
 
 # from folder: PoAIW/src/Api
-dfx deploy --network $NETWORK api_canister --mode upgrade
+dfx deploy --network $NETWORK api_canister --mode upgrade [--wasm-memory-persistence keep]
 
 # start the API canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_2_API
@@ -334,7 +334,7 @@ echo $NETWORK
 # from folder: PoAIW/src/mAInerCreator
 # Generate the bindings for the upload scripts and the frontend
 dfx generate mainer_creator_canister
-dfx deploy --network $NETWORK mainer_creator_canister --mode upgrade
+dfx deploy --network $NETWORK mainer_creator_canister --mode upgrade [--wasm-memory-persistence keep]
 
 # start the mAInerCreator canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_1_MAINER_CREATOR
