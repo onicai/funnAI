@@ -110,10 +110,6 @@ scripts/deploy-all.sh --mode install --network $NETWORK
 # # To increase limit of ShareAgent mAIners
 # dfx canister --network prd call game_state_canister setLimitForCreatingMainerAdmin '(record {mainerType = variant { ShareAgent } ; newLimit = 450 : nat;} )'
 
-# -----------------------------------------
-# Deploy mAIners of type #Own
-# TODO - fix the script
-# scripts/scripts-gamestate/deploy-mainers-Own-via-gamestate.sh --mode install --network $NETWORK
 
 # #########################################################################
 # Admin functions to clean up redeemed payments in case the creation failed.
