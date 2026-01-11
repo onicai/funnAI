@@ -95,17 +95,30 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
         cmd = ["dfx", "canister", "--network", network, "start", canister_id]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         
-        print(" ")
-        print(f"- Cleaning prompt caches in LLM {canister_name} ({canister_id})")
-        cmd = ["scripts/cleanup_llm_promptcache.sh", "--network", network, "--canister-id", canister_id]
-        run_this_cmd(cmd, FUNNAI_DIR, confirm=False)
+        # We can now skip this. Cleaning is done constantly while in production.
+        # print(" ")
+        # print(f"- Cleaning prompt caches in LLM {canister_name} ({canister_id})")
+        # cmd = ["scripts/cleanup_llm_promptcache.sh", "--network", network, "--canister-id", canister_id]
+        # run_this_cmd(cmd, FUNNAI_DIR, confirm=False)
         
         print(" ")
         print(f"- Checking health for LLM {canister_name} ({canister_id})")
         cmd = ["dfx", "canister", "--network", network, "call", canister_id, "health"]
         print(f"Command: {' '.join(cmd)} \n-> from directory: {llm_cwd}")
-        run_this_cmd(cmd, llm_cwd, confirm=False)
-        
+        max_retries = 3
+        retry_delay = 10
+        for attempt in range(1, max_retries + 1):
+            try:
+                run_this_cmd(cmd, llm_cwd, confirm=False)
+                break  # Success, exit loop
+            except subprocess.CalledProcessError as e:
+                if attempt < max_retries:
+                    print(f"Health check failed (attempt {attempt}/{max_retries}). Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                else:
+                    print(f"Health check failed after {max_retries} attempts")
+                    raise
+
         print(" ")
         print(f"- Loading model for LLM {canister_name} ({canister_id})")
         cmd = ["dfx", "canister", "--network", network, "call", canister_id, "load_model", '(record { args = vec {"--model"; "models/model.gguf"} })']
