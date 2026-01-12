@@ -4,14 +4,13 @@
   import { fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import Portal from "svelte-portal";
-  import { tick } from "svelte";
   import { X } from "lucide-svelte";
   import { modalStack } from "../stores/modalStore";
 
   // Props
   export let isOpen: boolean = false;
   export let modalKey: string = Math.random().toString(36).substr(2, 9);
-  export let title: string | HTMLElement = "";
+  export let title: string = "";  // Plain text only (HTML disabled for XSS protection)
   export let variant: "solid" | "transparent" = "solid";
   export let width: string = "600px";
   export let height: string = "auto";
@@ -93,19 +92,8 @@
     }
   });
 
-  // Handle HTML title when title is HTML string
-  $ : (() => {
-    if (isOpen && title && typeof title === "string" && title.includes("<")) {
-      tick().then(() => {
-        const titleElements = document.querySelectorAll('.modal-title');
-        titleElements.forEach(element => {
-          if (element) {
-            element.innerHTML = title;
-          }
-        });
-      });
-    }
-  });
+  // Note: HTML title support removed for security (XSS prevention)
+  // All titles are now rendered as plain text using Svelte's safe text interpolation
 
   // Cleanup when component is destroyed
   $ : (() => {
@@ -251,11 +239,11 @@
             <header
               class="flex justify-between items-center flex-shrink-0 pb-4"
             >
-              <!-- Check for all title rendering options -->
+              <!-- Title rendering - all titles rendered as safe text (XSS protection) -->
               <div class="flex-grow">
                 <slot name="title">
                   <h2 class="text-lg font-semibold modal-title text-gray-900 dark:text-gray-100">
-                    {#if typeof title === "string" && !title.includes("<")}
+                    {#if typeof title === "string"}
                       {title}
                     {/if}
                   </h2>
