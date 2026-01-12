@@ -60,45 +60,11 @@ scripts/deploy-all.sh --mode install --network $NETWORK
 #            for canister monitoring, management & logging purposes
 #
 # Follow instructions of README-prd-upgrade-commands.md
-#
-# TODO: We no longer deploy ShareService via GameState
-#       These scripts & descriptions are no longer used
-# # Deploy a mAIner of type #ShareService, since this is a protocol canister
-# # Set environment variables for the subnets.
-# # Option 1: source the file for the environment & verify things are set
-# source scripts/canister_ids-$NETWORK.env
-# SUBNETSACTRL=$SUBNET_0_1
-# SUBNETSSCTRL=$SUBNET_0_1
-# SUBNETSSLLM=$SUBNET_2_1
-# # Option 2: set them manually
-# SUBNETSACTRL=...
-# SUBNETSSCTRL=...
-# SUBNETSSLLM=...
-# # Set the SubnetIds in the GameState canister
-# dfx canister --network $NETWORK call game_state_canister setSubnetsAdmin "(record {subnetShareAgentCtrl = \"$SUBNETSACTRL\"; subnetShareServiceCtrl = \"$SUBNETSSCTRL\"; subnetShareServiceLlm = \"$SUBNETSSLLM\" })"
-# # Verify the subnets are set correctly
-# dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
-# # Now install the ShareService Controller
-# scripts/scripts-gamestate/deploy-mainers-ShareService-Controller-via-gamestate.sh --mode install --network $NETWORK
-
-# # Install the first LLM to the correct subnet
-# # Verify the subnets are set correctly
-# dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
-# # If Ok, install the first Ssllm
-# scripts/scripts-gamestate/deploy-mainers-ShareService-FirstLLM-via-gamestate.sh --mode install --network $NETWORK
-
-# # Install the next LLMs to the correct subnet
-# # Set the SubnetIds in the GameState canister as explained above
-# # Verify the subnets are set correctly
-# dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
-# # Now install the Ssllm to the correct subnet
-# scripts/scripts-gamestate/deploy-mainers-ShareService-AddLLM-via-gamestate.sh --mode install --network $NETWORK
 
 # -----------------------------------------
 # Deploy mAIners of type #ShareAgent
 #
-# TODO: This is still possible, but there are other options now.
-#       Evaluate if we need to clean this up
+# This is still possible, but there are other options now.
 #
 # # Verify that 'subnetShareAgentCtrl' is set correctly in GameState
 # dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
@@ -171,7 +137,7 @@ dfx canister call game_state_canister getNumClosedChallengesAdmin --output json 
 dfx canister call game_state_canister getRecentChallengeWinners --output json --network $NETWORK
 dfx canister call game_state_canister getRecentProtocolActivity --output json --network $NETWORK
 
-# Deploy funnai backend (used mainly for chat):
+# Deploy funnai backend:
 dfx generate funnai_backend
 dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_backend --network $NETWORK
 
@@ -210,13 +176,6 @@ dfx canister call game_state_canister resetCurrentChallengesAdmin --network $NET
 
 # test a single Challenge Generation by the Challenger
 scripts/scripts-testing/generate-a-challenge.sh --network $NETWORK
-
-# This has been deactivated
-## test a single Response Generation by your first mAIner of type #ShareAgent
-## scripts/scripts-testing/generate-a-response-ShareAgent.sh --network $NETWORK
-
-# test a single Response Generation by your first mAIner of type #Own
-# TODO UPDATE SCRIPT scripts/scripts-testing/generate-a-response-Own.sh --network $NETWORK
 
 # test a single Score Generation by the Judge
 scripts/scripts-testing/generate-a-score-Judge.sh --network $NETWORK
