@@ -1,5 +1,5 @@
 import { writable } from "svelte/store";
-import { STORAGE_KEYS, createNamespacedStore } from '../helpers/config/localForage.config'; // TODO: https://github.com/KongSwap/kong/blob/main/src/kong_svelte/src/lib/config/localForage.config.ts
+import { STORAGE_KEYS, createNamespacedStore } from '../helpers/config/localForage.config';
 import { get } from 'svelte/store';
 // Import auth directly to avoid circular references since we've moved initialization to an explicit method
 import { store, browser } from './store';

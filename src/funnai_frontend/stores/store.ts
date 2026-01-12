@@ -41,10 +41,10 @@ import { idlFactory as icpIDL } from "../helpers/idls/icp.idl.js";
 import { idlFactory as swapPoolIDL } from "../helpers/idls/swappool.idl.js";
 import { idlFactory as cmcIDL } from "../helpers/idls/cmc.idl.js";
 
-// TODO: move this into a utils file
+// Helper function to convert cycles burn rate to a human-readable label
 const getCyclesBurnRateLabel = (cyclesBurnRate) => {
   const cycles = BigInt(cyclesBurnRate.cycles);
-  // TODO: these ranges need to be kept up to date with the backend (Game State: mAIner Burn Rates)
+  // NOTE: These ranges must match the backend Game State mAIner Burn Rates
   if (cycles === 1_000_000_000_000n) {
     return "Low";
   } else if (cycles === 2_000_000_000_000n) {
@@ -73,12 +73,6 @@ export const canisterIDLs = {
   swapPool: swapPoolIDL,
   cmc: cmcIDL,
 };
-
-//__________Local vs Mainnet Development____________
-/* export const HOST =
-  backendCanisterId === "vee64-zyaaa-aaaai-acpta-cai"
-    ? "https://ic0.app" // Use in Production (on Mainnet)
-    : "http://localhost:4943"; // to be used with http://localhost:4943/?canisterId=ryjl3-tyaaa-aaaaa-aaaba-cai#/testroom */
 
 export const HOST =
   process.env.NODE_ENV !== "development"
@@ -146,7 +140,6 @@ export let installAppDeferredPrompt = writable(null); // the installAppDeferredP
 let authClient : AuthClient;
 const APPLICATION_NAME = "funnai";
 const APPLICATION_LOGO_URL = "https://onicai.com/images/poaiw/coin.webp";
-//TODO: double check
 const AUTH_PATH = "/authenticate/?applicationName="+APPLICATION_NAME+"&applicationLogo="+APPLICATION_LOGO_URL+"#authorize";
 
 export const MEMO_PAYMENT_PROTOCOL : number[] = [173];

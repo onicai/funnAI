@@ -1,7 +1,7 @@
 <script lang="ts">
   import { store } from "../../stores/store";
   import { toastStore } from "../../stores/toastStore";
-  import { onMount, onDestroy, tick, afterUpdate } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { getMainerVisualIdentity } from "../../helpers/utils/mainerIdentity";
   import { ShoppingBag, Crown, X, Eye, Tag, Clock, RefreshCw } from "lucide-svelte";
   import { MarketplaceService } from "../../helpers/marketplaceService";
@@ -37,43 +37,10 @@
   let currentPage = 1;
   let itemsPerPage = 12;
   const itemsPerPageOptions = [12, 24, 48, 96];
-  
-  // Sorting state - commented out
-  // type SortOption = 'newest' | 'oldest' | 'price-low' | 'price-high';
-  // let sortBy: SortOption = 'price-low'; // Default to showing cheapest first
-  // let isSorting = false; // Visual indicator for sorting
-  // let pendingSortComplete = false; // Flag to indicate we're waiting for render to complete
-
-  // afterUpdate fires after every DOM update - use it to detect when sorting render is complete
-  // afterUpdate(() => {
-  //   if (pendingSortComplete && isSorting) {
-  //     // The DOM has been updated after the sort - now hide the indicator
-  //     pendingSortComplete = false;
-  //     isSorting = false;
-  //   }
-  // });
 
   const toggleModal = () => {
     modalIsOpen = !modalIsOpen;
   };
-
-  // Sort listings based on selected option - commented out
-  // function sortListings(items: MarketplaceListing[]): MarketplaceListing[] {
-  //   return [...items].sort((a, b) => {
-  //     switch (sortBy) {
-  //       case 'newest':
-  //         return b.listedAt - a.listedAt;
-  //       case 'oldest':
-  //         return a.listedAt - b.listedAt;
-  //       case 'price-low':
-  //         return a.price - b.price;
-  //       case 'price-high':
-  //         return b.price - a.price;
-  //       default:
-  //         return 0;
-  //     }
-  //   });
-  // }
 
   // Pagination helpers
   function goToPage(page: number) {
@@ -97,26 +64,6 @@
     itemsPerPage = parseInt(select.value);
     currentPage = 1; // Reset to first page when changing items per page
   }
-
-  // async function handleSortChange(event: Event) {
-  //   const select = event.target as HTMLSelectElement;
-  //   const newSortBy = select.value as SortOption;
-
-  //   // Show sorting indicator immediately
-  //   isSorting = true;
-
-  //   // Wait for the indicator to be shown in the DOM
-  //   await tick();
-
-  //   // Apply the sort - this will trigger a re-render
-  //   sortBy = newSortBy;
-  //   currentPage = 1; // Reset to first page when changing sort
-
-  //   // Set flag so afterUpdate knows to hide indicator when render completes
-  //   pendingSortComplete = true;
-
-  //   // Note: isSorting will be set to false by afterUpdate once the DOM is fully updated
-  // }
 
   // Start auto-refresh polling
   function startAutoRefresh() {
