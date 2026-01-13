@@ -11,6 +11,26 @@ export const idlFactory = ({ IDL }) => {
     'InsuffientCycles' : IDL.Nat,
   });
   const AuthRecordResult = IDL.Variant({ 'Ok' : AuthRecord, 'Err' : ApiError });
+  const AdminRole = IDL.Variant({
+    'AdminQuery' : IDL.Null,
+    'AdminUpdate' : IDL.Null,
+  });
+  const AssignAdminRoleInputRecord = IDL.Record({
+    'principal' : IDL.Text,
+    'note' : IDL.Text,
+    'role' : AdminRole,
+  });
+  const AdminRoleAssignment = IDL.Record({
+    'principal' : IDL.Text,
+    'assignedAt' : IDL.Nat64,
+    'assignedBy' : IDL.Text,
+    'note' : IDL.Text,
+    'role' : AdminRole,
+  });
+  const AdminRoleAssignmentResult = IDL.Variant({
+    'Ok' : AdminRoleAssignment,
+    'Err' : ApiError,
+  });
   const DailyMetricInput = IDL.Record({
     'total_paused_mainers' : IDL.Nat,
     'date' : IDL.Text,
@@ -84,6 +104,10 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : DailyMetric,
     'Err' : ApiError,
   });
+  const AdminRoleAssignmentsResult = IDL.Variant({
+    'Ok' : IDL.Vec(AdminRoleAssignment),
+    'Err' : ApiError,
+  });
   const DailyMetricsQuery = IDL.Record({
     'end_date' : IDL.Opt(IDL.Text),
     'limit' : IDL.Opt(IDL.Nat),
@@ -133,6 +157,7 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : StatusCodeRecord,
     'Err' : ApiError,
   });
+  const TextResult = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : ApiError });
   const DailyMetricUpdateInput = IDL.Record({
     'total_paused_mainers' : IDL.Opt(IDL.Nat),
     'paused_very_high_burn_rate_mainers' : IDL.Opt(IDL.Nat),
@@ -158,6 +183,11 @@ export const idlFactory = ({ IDL }) => {
   });
   const ApiCanister = IDL.Service({
     'amiController' : IDL.Func([], [AuthRecordResult], ['query']),
+    'assignAdminRole' : IDL.Func(
+        [AssignAdminRoleInputRecord],
+        [AdminRoleAssignmentResult],
+        [],
+      ),
     'bulkCreateDailyMetricsAdmin' : IDL.Func(
         [IDL.Vec(DailyMetricInput)],
         [NatResult],
@@ -169,6 +199,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'deleteDailyMetricAdmin' : IDL.Func([IDL.Text], [NatResult], []),
+    'getAdminRoles' : IDL.Func([], [AdminRoleAssignmentsResult], ['query']),
     'getDailyMetricByDate' : IDL.Func(
         [IDL.Text],
         [DailyMetricResult],
@@ -186,6 +217,7 @@ export const idlFactory = ({ IDL }) => {
     'getTokenRewardsData' : IDL.Func([], [TokenRewardsDataResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
     'resetDailyMetricsAdmin' : IDL.Func([], [NatResult], []),
+    'revokeAdminRole' : IDL.Func([IDL.Text], [TextResult], []),
     'setMasterCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
     'updateDailyMetricAdmin' : IDL.Func(
         [UpdateDailyMetricAdminInput],

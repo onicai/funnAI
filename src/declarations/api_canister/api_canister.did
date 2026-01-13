@@ -33,6 +33,11 @@ type TokenRewardsData =
    data: vec TokenRewardsEntry;
    metadata: TokenRewardsMetadata;
  };
+type TextResult = 
+ variant {
+   Err: ApiError;
+   Ok: text;
+ };
 type SystemMetrics = 
  record {
    daily_burn_rate: DailyBurnRate;
@@ -179,6 +184,12 @@ type AuthRecordResult =
    Ok: AuthRecord;
  };
 type AuthRecord = record {auth: text;};
+type AssignAdminRoleInputRecord = 
+ record {
+   note: text;
+   "principal": text;
+   role: AdminRole;
+ };
 type ApiError = 
  variant {
    FailedOperation;
@@ -192,22 +203,49 @@ type ApiError =
 type ApiCanister = 
  service {
    amiController: () -> (AuthRecordResult) query;
+   assignAdminRole: (input: AssignAdminRoleInputRecord) ->
+    (AdminRoleAssignmentResult);
    bulkCreateDailyMetricsAdmin: (inputs: vec DailyMetricInput) -> (NatResult);
    createDailyMetricAdmin: (input: DailyMetricInput) -> (DailyMetricResult);
    deleteDailyMetricAdmin: (date: text) -> (NatResult);
+   getAdminRoles: () -> (AdminRoleAssignmentsResult) query;
    getDailyMetricByDate: (date: text) -> (DailyMetricResult) query;
    getDailyMetrics: (dailyMetricsQuery: opt DailyMetricsQuery) ->
     (DailyMetricsResult) query;
    getDailyMetricsAdmin: () -> (DailyMetricsResult) query;
    getLatestDailyMetric: () -> (DailyMetricResult) query;
-  getMasterCanisterId: () -> (AuthRecordResult) query;
-  getNumDailyMetrics: () -> (NatResult) query;
-  getTokenRewardsData: () -> (TokenRewardsDataResult) query;
-  health: () -> (StatusCodeRecordResult) query;
+   getMasterCanisterId: () -> (AuthRecordResult) query;
+   getNumDailyMetrics: () -> (NatResult) query;
+   getTokenRewardsData: () -> (TokenRewardsDataResult) query;
+   health: () -> (StatusCodeRecordResult) query;
    resetDailyMetricsAdmin: () -> (NatResult);
+   revokeAdminRole: ("principal": text) -> (TextResult);
    setMasterCanisterId: (newMasterCanisterId: text) -> (AuthRecordResult);
    updateDailyMetricAdmin: (params: UpdateDailyMetricAdminInput) ->
     (DailyMetricResult);
    whoami: () -> (principal) query;
+ };
+type AdminRoleAssignmentsResult = 
+ variant {
+   Err: ApiError;
+   Ok: vec AdminRoleAssignment;
+ };
+type AdminRoleAssignmentResult = 
+ variant {
+   Err: ApiError;
+   Ok: AdminRoleAssignment;
+ };
+type AdminRoleAssignment = 
+ record {
+   assignedAt: nat64;
+   assignedBy: text;
+   note: text;
+   "principal": text;
+   role: AdminRole;
+ };
+type AdminRole = 
+ variant {
+   AdminQuery;
+   AdminUpdate;
  };
 service : () -> ApiCanister
