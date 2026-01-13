@@ -331,7 +331,7 @@ dfx canister --network $NETWORK call SUBNET_0_2_API revokeAdminRole '( "'$FUNNAI
 # Verify correct network !
 echo $NETWORK
 
-# from folder: PoAIW/src/Api
+# from folder: PoAIW/src/ArchiveChallenges
 dfx canister --network $NETWORK stop $SUBNET_0_2_ARCHIVE
 dfx canister --network $NETWORK snapshot create $SUBNET_0_2_ARCHIVE 
 #
@@ -340,7 +340,7 @@ mops install
 #
 dfx deploy --network $NETWORK archive_challenges_canister --mode upgrade --wasm-memory-persistence keep
 
-# start the API canister back up
+# start the Archive canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_2_ARCHIVE
 ```
 
@@ -350,7 +350,7 @@ dfx canister --network $NETWORK start  $SUBNET_0_2_ARCHIVE
 # Verify correct network !
 echo $NETWORK
 
-# from folder: PoAIW/src/Api
+# from folder: PoAIW/src/Treasury
 dfx canister --network $NETWORK stop $SUBNET_0_1_TREASURY
 dfx canister --network $NETWORK snapshot create $SUBNET_0_1_TREASURY 
 #
@@ -361,7 +361,7 @@ dfx generate funnai_treasury_canister
 #
 dfx deploy --network $NETWORK funnai_treasury_canister --mode upgrade --wasm-memory-persistence keep
 
-# start the API canister back up
+# start the Treasury canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_1_TREASURY
 ```
 
