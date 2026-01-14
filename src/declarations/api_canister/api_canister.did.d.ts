@@ -2,14 +2,32 @@ import type { Principal } from '@dfinity/principal';
 import type { ActorMethod } from '@dfinity/agent';
 import type { IDL } from '@dfinity/candid';
 
+export type AdminRole = { 'AdminQuery' : null } |
+  { 'AdminUpdate' : null };
+export interface AdminRoleAssignment {
+  'principal' : string,
+  'assignedAt' : bigint,
+  'assignedBy' : string,
+  'note' : string,
+  'role' : AdminRole,
+}
+export type AdminRoleAssignmentResult = { 'Ok' : AdminRoleAssignment } |
+  { 'Err' : ApiError };
+export type AdminRoleAssignmentsResult = { 'Ok' : Array<AdminRoleAssignment> } |
+  { 'Err' : ApiError };
 export interface ApiCanister {
   'amiController' : ActorMethod<[], AuthRecordResult>,
+  'assignAdminRole' : ActorMethod<
+    [AssignAdminRoleInputRecord],
+    AdminRoleAssignmentResult
+  >,
   'bulkCreateDailyMetricsAdmin' : ActorMethod<
     [Array<DailyMetricInput>],
     NatResult
   >,
   'createDailyMetricAdmin' : ActorMethod<[DailyMetricInput], DailyMetricResult>,
   'deleteDailyMetricAdmin' : ActorMethod<[string], NatResult>,
+  'getAdminRoles' : ActorMethod<[], AdminRoleAssignmentsResult>,
   'getDailyMetricByDate' : ActorMethod<[string], DailyMetricResult>,
   'getDailyMetrics' : ActorMethod<
     [[] | [DailyMetricsQuery]],
@@ -22,6 +40,7 @@ export interface ApiCanister {
   'getTokenRewardsData' : ActorMethod<[], TokenRewardsDataResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
   'resetDailyMetricsAdmin' : ActorMethod<[], NatResult>,
+  'revokeAdminRole' : ActorMethod<[string], TextResult>,
   'setMasterCanisterId' : ActorMethod<[string], AuthRecordResult>,
   'updateDailyMetricAdmin' : ActorMethod<
     [UpdateDailyMetricAdminInput],
@@ -36,6 +55,11 @@ export type ApiError = { 'FailedOperation' : null } |
   { 'StatusCode' : StatusCode } |
   { 'Other' : string } |
   { 'InsuffientCycles' : bigint };
+export interface AssignAdminRoleInputRecord {
+  'principal' : string,
+  'note' : string,
+  'role' : AdminRole,
+}
 export interface AuthRecord { 'auth' : string }
 export type AuthRecordResult = { 'Ok' : AuthRecord } |
   { 'Err' : ApiError };
@@ -150,6 +174,8 @@ export interface SystemMetrics {
   'funnai_index' : number,
   'daily_burn_rate' : DailyBurnRate,
 }
+export type TextResult = { 'Ok' : string } |
+  { 'Err' : ApiError };
 export interface TokenRewardsData {
   'metadata' : TokenRewardsMetadata,
   'data' : Array<TokenRewardsEntry>,

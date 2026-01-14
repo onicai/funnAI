@@ -9,23 +9,8 @@ export { idlFactory } from "./funnai_backend.did.js";
  * process.env.CANISTER_ID_<CANISTER_NAME_UPPERCASE>
  * beginning in dfx 0.15.0
  */
-
-// Fallback canister IDs based on network
-const CANISTER_IDS = {
-  ic: "yekds-uqaaa-aaaaj-az5la-cai",
-  prd: "6wp2z-paaaa-aaaaa-qau7q-cai",
-  demo: "dtxtp-ciaaa-aaaah-are5a-cai",
-  testing: "62vhh-cyaaa-aaaam-qd2wq-cai",
-  development: "bom4f-cyaaa-aaaah-qqa2a-cai",
-  local: ""
-};
-
-// Determine network - check NODE_ENV and DFX_NETWORK
-const network = process.env.DFX_NETWORK || (process.env.NODE_ENV === "production" ? "ic" : "local");
-const fallbackId = CANISTER_IDS[network] || CANISTER_IDS.ic;
-
 export const canisterId =
-  process.env.CANISTER_ID_FUNNAI_BACKEND || fallbackId;
+  process.env.CANISTER_ID_FUNNAI_BACKEND;
 
 export const createActor = (canisterId, options = {}) => {
   const agent = options.agent || new HttpAgent({ ...options.agentOptions });

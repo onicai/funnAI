@@ -9,23 +9,8 @@ export { idlFactory } from "./api_canister.did.js";
  * process.env.CANISTER_ID_<CANISTER_NAME_UPPERCASE>
  * beginning in dfx 0.15.0
  */
-
-// Fallback canister IDs based on network
-const CANISTER_IDS = {
-  ic: "bgm6p-5aaaa-aaaaf-qbzda-cai",
-  prd: "bgm6p-5aaaa-aaaaf-qbzda-cai",
-  demo: "p6pu7-5aaaa-aaaap-qqdfa-cai",
-  testing: "nyxgs-uqaaa-aaaap-qqdia-cai",
-  development: "p6pu7-5aaaa-aaaap-qqdfa-cai",
-  local: ""
-};
-
-// Determine network - check NODE_ENV and DFX_NETWORK
-const network = process.env.DFX_NETWORK || (process.env.NODE_ENV === "production" ? "ic" : "local");
-const fallbackId = CANISTER_IDS[network] || CANISTER_IDS.ic;
-
 export const canisterId =
-  process.env.CANISTER_ID_API_CANISTER || fallbackId;
+  process.env.CANISTER_ID_API_CANISTER;
 
 export const createActor = (canisterId, options = {}) => {
   const agent = options.agent || new HttpAgent({ ...options.agentOptions });

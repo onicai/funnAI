@@ -138,7 +138,6 @@ src/arcmindvectordb/target/**
 canister_ids_mainers-*.env
 !canister_ids_mainers-demo.env
 !canister_ids_mainers-testing.env
-!canister_ids_mainers-prd.env
 secret/
 
 # whitelist analysis output (contains sensitive user data)
