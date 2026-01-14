@@ -34,6 +34,12 @@ echo -n "SUBNET_2_1_SHARE_SERVICE_LLM_0 = $SUBNET_2_1_SHARE_SERVICE_LLM_0 - "; d
 echo -n "SUBNET_2_1_SHARE_SERVICE_LLM_1 = $SUBNET_2_1_SHARE_SERVICE_LLM_1 - "; dfx canister --network $NETWORK status $SUBNET_2_1_SHARE_SERVICE_LLM_1 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "MAINER_SHARE_AGENT_0000        = $MAINER_SHARE_AGENT_0000 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0000 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "MAINER_SHARE_AGENT_0001        = $MAINER_SHARE_AGENT_0001 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0001 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "MAINER_SHARE_AGENT_0002        = $MAINER_SHARE_AGENT_0002 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0002 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "MAINER_SHARE_AGENT_0003        = $MAINER_SHARE_AGENT_0003 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0003 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "MAINER_SHARE_AGENT_0004        = $MAINER_SHARE_AGENT_0004 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0004 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "MAINER_SHARE_AGENT_0005        = $MAINER_SHARE_AGENT_0005 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0005 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "MAINER_SHARE_AGENT_0006        = $MAINER_SHARE_AGENT_0006 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0006 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "MAINER_SHARE_AGENT_0007        = $MAINER_SHARE_AGENT_0007 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0007 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 ```
 
 # stop timers of protocol canisters
