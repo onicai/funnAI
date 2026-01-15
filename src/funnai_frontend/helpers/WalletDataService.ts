@@ -66,9 +66,9 @@ export class WalletDataService {
    * This loads both tokens and balances if available
    */
   public static async initializeWallet(principalId: string): Promise<void> {
-    // IMPORTANT: Check for anonymous principal (2vxsx-fae) to prevent
-    // operations with the wrong identity
-    if (isAnonymousPrincipal(principalId)) {
+    // IMPORTANT: Check for missing principal OR anonymous principal (2vxsx-fae)
+    // to prevent operations with the wrong identity
+    if (!principalId || isAnonymousPrincipal(principalId)) {
       console.log('No principal ID or anonymous user - clearing wallet state');
       walletDataStore.update(state => ({
         ...state,
@@ -210,8 +210,8 @@ export class WalletDataService {
     const currentState = get(walletDataStore);
     const principalId = currentState.currentWallet;
     
-    if (isAnonymousPrincipal(principalId)) {
-      console.log('No wallet to refresh balances for (anonymous or null principal)');
+    if (!principalId || isAnonymousPrincipal(principalId)) {
+      console.log('No wallet to refresh balances for (missing or anonymous principal)');
       return;
     }
     
@@ -368,7 +368,7 @@ export class WalletDataService {
     tokens: FE.Token[],
     options = { forceRefresh: false }
   ): Promise<Record<string, TokenBalance>> {
-    if (isAnonymousPrincipal(principalId)) {
+    if (!principalId || isAnonymousPrincipal(principalId)) {
       console.log('No wallet ID or anonymous user (including 2vxsx-fae)');
       return {};
     }
