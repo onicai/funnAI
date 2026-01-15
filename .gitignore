@@ -5,7 +5,8 @@ PoAIW
 .vscode/
 
 # Logs
-logs
+logs/
+logs-*/
 *.log
 *.logs
 npm-debug.log*
