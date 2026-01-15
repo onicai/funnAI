@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { store } from '../../stores/store';
   import { TransactionService, type ProcessedTransaction } from '../../helpers/TransactionService';
+  import { isAnonymousPrincipal } from '../../helpers/utils/accountUtils';
   
   export let title: string = "My $FUNNAI Ledger";
   export let refreshInterval: number = 30000; // 30 seconds
@@ -31,12 +32,14 @@
     console.log("TransactionHistory: Principal changed from", userPrincipal, "to", newPrincipal);
     if (newPrincipal !== userPrincipal) {
       userPrincipal = newPrincipal;
-      if (userPrincipal && userPrincipal !== "anonymous") {
+      // IMPORTANT: Check for anonymous principal (2vxsx-fae) to prevent
+      // displaying data for the wrong identity
+      if (!isAnonymousPrincipal(userPrincipal)) {
         console.log("TransactionHistory: Loading transactions for principal:", userPrincipal);
         currentPage = 1;
         loadTransactions(1);
       } else {
-        console.log("TransactionHistory: No valid principal, clearing transactions");
+        console.log("TransactionHistory: No valid principal (anonymous or null), clearing transactions");
         transactions = [];
         loading = false;
         error = "";
@@ -46,7 +49,7 @@
   });
 
   async function loadTransactions(page: number = 1) {
-    if (!userPrincipal || userPrincipal === "anonymous") {
+    if (isAnonymousPrincipal(userPrincipal)) {
       transactions = [];
       loading = false;
       return;

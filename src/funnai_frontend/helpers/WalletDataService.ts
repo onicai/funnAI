@@ -3,6 +3,7 @@ import { fetchTokens } from "./token_helpers";
 import { Principal } from "@dfinity/principal";
 import { IcrcService } from "./IcrcService";
 import { formatBalance } from "./utils/numberFormatUtils";
+import { isAnonymousPrincipal } from "./utils/accountUtils";
 
 // Define types
 export interface TokenBalance {
@@ -65,8 +66,10 @@ export class WalletDataService {
    * This loads both tokens and balances if available
    */
   public static async initializeWallet(principalId: string): Promise<void> {
-    if (!principalId || principalId === "anonymous") {
-      console.log('No principal ID or anonymous user');
+    // IMPORTANT: Check for missing principal OR anonymous principal (2vxsx-fae)
+    // to prevent operations with the wrong identity
+    if (!principalId || isAnonymousPrincipal(principalId)) {
+      console.log('No principal ID or anonymous user - clearing wallet state');
       walletDataStore.update(state => ({
         ...state,
         tokens: [],
@@ -207,8 +210,8 @@ export class WalletDataService {
     const currentState = get(walletDataStore);
     const principalId = currentState.currentWallet;
     
-    if (!principalId || principalId === "anonymous") {
-      console.log('No wallet to refresh balances for');
+    if (!principalId || isAnonymousPrincipal(principalId)) {
+      console.log('No wallet to refresh balances for (missing or anonymous principal)');
       return;
     }
     
@@ -365,8 +368,8 @@ export class WalletDataService {
     tokens: FE.Token[],
     options = { forceRefresh: false }
   ): Promise<Record<string, TokenBalance>> {
-    if (!principalId || principalId === "anonymous") {
-      console.log('No wallet ID or anonymous user');
+    if (!principalId || isAnonymousPrincipal(principalId)) {
+      console.log('No wallet ID or anonymous user (including 2vxsx-fae)');
       return {};
     }
 
