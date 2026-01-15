@@ -168,6 +168,13 @@
   // Reactive: reload when switching to sell tab
   $: if (activeTab === 'sell' && $store.isAuthed) {
     loadUserListings();
+    // Also refresh user's mAIner canisters to catch any that were sold
+    store.loadUserMainerCanisters();
+  }
+
+  // Reactive: refresh stats when switching tabs (keeps numbers up-to-date)
+  $: if (activeTab) {
+    loadMarketplaceStats();
   }
 
   async function initialize() {
@@ -266,10 +273,11 @@
           );
         }
         
-        // Refresh marketplace data and user listings
+        // Refresh marketplace data, user listings, and mAIner canisters
         await Promise.all([
           loadMarketplaceStats(),
-          loadUserListings()
+          loadUserListings(),
+          store.loadUserMainerCanisters()
         ]);
       } else {
         throw new Error(`Failed to list all mAIners. ${errors.join('; ')}`);
