@@ -172,6 +172,11 @@
     store.loadUserMainerCanisters();
   }
 
+  // Reactive: refresh stats when switching tabs (keeps numbers up-to-date)
+  $: if (activeTab) {
+    loadMarketplaceStats();
+  }
+
   async function initialize() {
     isLoading = true;
     
