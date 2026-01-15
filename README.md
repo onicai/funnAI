@@ -1,3 +1,5 @@
+[![funnAI](https://github.com/onicai/funnAI/actions/workflows/cicd-mac.yml/badge.svg)](https://github.com/onicai/funnAI/actions/workflows/cicd-mac.yml)
+
 # funnAI
 
 The code for https://funnai.onicai.com/
