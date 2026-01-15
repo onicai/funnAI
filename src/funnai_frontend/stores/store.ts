@@ -41,10 +41,52 @@ import { idlFactory as icpIDL } from "../helpers/idls/icp.idl.js";
 import { idlFactory as swapPoolIDL } from "../helpers/idls/swappool.idl.js";
 import { idlFactory as cmcIDL } from "../helpers/idls/cmc.idl.js";
 
-// TODO: move this into a utils file
+/**
+ * The anonymous principal on the Internet Computer.
+ * This is returned when authentication fails or there's no valid identity.
+ * CRITICAL: We should NEVER accept this as a valid user principal.
+ */
+const ANONYMOUS_PRINCIPAL = "2vxsx-fae";
+
+/**
+ * Validates that an identity has a real (non-anonymous) principal.
+ * This is crucial for detecting authentication failures - if we get an anonymous
+ * principal, it means the login/session restoration did NOT succeed.
+ * 
+ * @param identity - The identity to validate
+ * @returns true if the identity has a valid non-anonymous principal
+ */
+const isValidAuthenticatedIdentity = (identity: Identity | null | undefined): boolean => {
+  if (!identity) {
+    console.warn("🔒 Auth validation: No identity provided");
+    return false;
+  }
+  
+  try {
+    const principal = identity.getPrincipal();
+    if (!principal) {
+      console.warn("🔒 Auth validation: Identity has no principal");
+      return false;
+    }
+    
+    // Check if this is the anonymous principal
+    if (principal.isAnonymous() || principal.toString() === ANONYMOUS_PRINCIPAL) {
+      console.warn("🔒 Auth validation FAILED: Identity has anonymous principal (2vxsx-fae)");
+      console.warn("   This indicates that login was NOT successful or session was NOT properly restored");
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("🔒 Auth validation error:", error);
+    return false;
+  }
+};
+
+// Helper function to convert cycles burn rate to a human-readable label
 const getCyclesBurnRateLabel = (cyclesBurnRate) => {
   const cycles = BigInt(cyclesBurnRate.cycles);
-  // TODO: these ranges need to be kept up to date with the backend (Game State: mAIner Burn Rates)
+  // NOTE: These ranges must match the backend Game State mAIner Burn Rates
   if (cycles === 1_000_000_000_000n) {
     return "Low";
   } else if (cycles === 2_000_000_000_000n) {
@@ -73,12 +115,6 @@ export const canisterIDLs = {
   swapPool: swapPoolIDL,
   cmc: cmcIDL,
 };
-
-//__________Local vs Mainnet Development____________
-/* export const HOST =
-  backendCanisterId === "vee64-zyaaa-aaaai-acpta-cai"
-    ? "https://ic0.app" // Use in Production (on Mainnet)
-    : "http://localhost:4943"; // to be used with http://localhost:4943/?canisterId=ryjl3-tyaaa-aaaaa-aaaba-cai#/testroom */
 
 export const HOST =
   process.env.NODE_ENV !== "development"
@@ -146,7 +182,6 @@ export let installAppDeferredPrompt = writable(null); // the installAppDeferredP
 let authClient : AuthClient;
 const APPLICATION_NAME = "funnai";
 const APPLICATION_LOGO_URL = "https://onicai.com/images/poaiw/coin.webp";
-//TODO: double check
 const AUTH_PATH = "/authenticate/?applicationName="+APPLICATION_NAME+"&applicationLogo="+APPLICATION_LOGO_URL+"#authorize";
 
 export const MEMO_PAYMENT_PROTOCOL : number[] = [173];
@@ -886,6 +921,26 @@ export const createStore = ({
 
   const initNfid = async (identity: Identity): Promise<boolean> => {
     try {
+      // CRITICAL: Validate identity FIRST before any other operations
+      // If the identity has an anonymous principal, authentication did NOT succeed
+      if (!isValidAuthenticatedIdentity(identity)) {
+        console.error("❌ NFID authentication failed: Identity validation failed");
+        console.error("   The identity appears to be anonymous or invalid.");
+        console.error("   This is likely due to: expired delegation, failed login, or session not properly restored.");
+        
+        // Show user notification about the failed authentication
+        notificationStore.add(
+          "Authentication failed. Please try logging in again.",
+          "error",
+          5000
+        );
+        
+        return false;
+      }
+      
+      const principalStr = identity.getPrincipal().toString();
+      console.log(`🔐 NFID identity validated successfully for principal: ${principalStr.slice(0, 10)}...`);
+
       const backendActor = await initBackendCanisterActor("nfid", identity);
 
       if (!backendActor) {
@@ -976,6 +1031,26 @@ export const createStore = ({
   };
 
   const initInternetIdentity = async (identity: Identity) => {
+    // CRITICAL: Validate identity FIRST before any other operations
+    // If the identity has an anonymous principal, authentication did NOT succeed
+    if (!isValidAuthenticatedIdentity(identity)) {
+      console.error("❌ Internet Identity authentication failed: Identity validation failed");
+      console.error("   The identity appears to be anonymous or invalid.");
+      console.error("   This is likely due to: expired delegation, failed login, or session not properly restored.");
+      
+      // Show user notification about the failed authentication
+      notificationStore.add(
+        "Authentication failed. Please try logging in again.",
+        "error",
+        5000
+      );
+      
+      return;
+    }
+    
+    const principalStr = identity.getPrincipal().toString();
+    console.log(`🔐 Internet Identity validated successfully for principal: ${principalStr.slice(0, 10)}...`);
+
     const backendActor = await initBackendCanisterActor("internetidentity", identity);
 
     if (!backendActor) {
@@ -1397,23 +1472,32 @@ export const createStore = ({
             }
           }
 
-          // If we got an identity, use it
+          // If we got an identity, validate and use it
           if (identity) {
-            const principal = identity.getPrincipal().toString();
-            console.log(`✅ Using NFID identity for canister ${canisterId}, principal:`, principal);
-
-            // Verify this matches the expected principal
-            if (globalState?.principal && principal !== globalState.principal.toString()) {
-              console.error(`❌ Principal mismatch! Expected ${globalState.principal.toString()}, got ${principal}`);
+            // CRITICAL: Check if identity is anonymous - this indicates auth failure
+            if (!isValidAuthenticatedIdentity(identity)) {
+              console.error(`❌ NFID identity is anonymous for canister ${canisterId} - authentication not valid`);
+              console.error("   This should not happen - user should be logged out");
+              identity = null; // Clear the invalid identity
             } else {
-              agent = new HttpAgent({
-                identity,
-                host: HOST,
-              });
-              identityFound = true;
+              const principal = identity.getPrincipal().toString();
+              console.log(`✅ Using NFID identity for canister ${canisterId}, principal:`, principal);
+
+              // Verify this matches the expected principal
+              if (globalState?.principal && principal !== globalState.principal.toString()) {
+                console.error(`❌ Principal mismatch! Expected ${globalState.principal.toString()}, got ${principal}`);
+              } else {
+                agent = new HttpAgent({
+                  identity,
+                  host: HOST,
+                });
+                identityFound = true;
+              }
             }
-          } else {
-            console.warn("Could not restore NFID identity using any method");
+          }
+          
+          if (!identity) {
+            console.warn("Could not restore valid NFID identity using any method");
           }
         }
         
@@ -1422,19 +1506,26 @@ export const createStore = ({
           authClient = await AuthClient.create();
           if (await authClient.isAuthenticated()) {
             const identity = await authClient.getIdentity();
-            const principal = identity.getPrincipal().toString();
-            console.log(`✅ Using Internet Identity for canister ${canisterId}, principal:`, principal);
             
-            // Verify this matches the expected principal
-            if (globalState?.principal && principal !== globalState.principal.toString()) {
-              console.error(`❌ Principal mismatch! Expected ${globalState.principal.toString()}, got ${principal}`);
+            // CRITICAL: Check if identity is anonymous - this indicates auth failure
+            if (!isValidAuthenticatedIdentity(identity)) {
+              console.error(`❌ Internet Identity is anonymous for canister ${canisterId} - authentication not valid`);
+              console.error("   This should not happen - session may have expired");
+            } else {
+              const principal = identity.getPrincipal().toString();
+              console.log(`✅ Using Internet Identity for canister ${canisterId}, principal:`, principal);
+              
+              // Verify this matches the expected principal
+              if (globalState?.principal && principal !== globalState.principal.toString()) {
+                console.error(`❌ Principal mismatch! Expected ${globalState.principal.toString()}, got ${principal}`);
+              }
+              
+              agent = new HttpAgent({
+                identity,
+                host: HOST,
+              });
+              identityFound = true;
             }
-            
-            agent = new HttpAgent({
-              identity,
-              host: HOST,
-            });
-            identityFound = true;
           };
         }
         

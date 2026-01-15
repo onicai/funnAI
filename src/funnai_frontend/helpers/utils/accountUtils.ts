@@ -77,4 +77,52 @@ function convertToSubaccount(raw: any): SubAccount | undefined {
 
 export function getPrincipalString(principal: string | Principal): string {
   return typeof principal === "string" ? principal : principal?.toText?.() || "";
+}
+
+/**
+ * The anonymous principal on the Internet Computer (2vxsx-fae).
+ * This is the default principal when not authenticated.
+ */
+export const ANONYMOUS_PRINCIPAL_TEXT = "2vxsx-fae";
+
+/**
+ * Checks if a principal is the anonymous principal (2vxsx-fae).
+ * IMPORTANT: Never display the anonymous principal as a user's address,
+ * as users might accidentally send funds to it.
+ * 
+ * @param principal - A Principal object or string representation
+ * @returns true if the principal is anonymous, false otherwise
+ */
+export function isAnonymousPrincipal(principal: string | Principal | null | undefined): boolean {
+  if (!principal) return true; // null/undefined treated as anonymous
+  
+  try {
+    if (typeof principal === "string") {
+      // Check for common anonymous identifiers
+      if (principal === "" || principal === "anonymous" || principal === ANONYMOUS_PRINCIPAL_TEXT) {
+        return true;
+      }
+      // Try to parse and use the built-in isAnonymous check
+      const principalObj = Principal.fromText(principal);
+      return principalObj.isAnonymous();
+    }
+    
+    // Principal object - use built-in method
+    return principal.isAnonymous();
+  } catch (error) {
+    // If parsing fails, consider it anonymous (don't display invalid principals)
+    console.warn("Error checking if principal is anonymous:", error);
+    return true;
+  }
+}
+
+/**
+ * Checks if a principal is valid (non-null, non-anonymous, and properly formatted).
+ * Use this before displaying any principal to users.
+ * 
+ * @param principal - A Principal object or string representation
+ * @returns true if the principal is valid for display, false otherwise
+ */
+export function isValidUserPrincipal(principal: string | Principal | null | undefined): boolean {
+  return !isAnonymousPrincipal(principal);
 } 
