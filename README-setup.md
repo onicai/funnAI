@@ -1,6 +1,4 @@
-# funnAI
-
-# Setup instructions
+# funnAI Setup instructions
 
 First follow all instructions of PoAIW/README.md
 
