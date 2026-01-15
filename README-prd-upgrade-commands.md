@@ -34,6 +34,12 @@ echo -n "SUBNET_2_1_SHARE_SERVICE_LLM_0 = $SUBNET_2_1_SHARE_SERVICE_LLM_0 - "; d
 echo -n "SUBNET_2_1_SHARE_SERVICE_LLM_1 = $SUBNET_2_1_SHARE_SERVICE_LLM_1 - "; dfx canister --network $NETWORK status $SUBNET_2_1_SHARE_SERVICE_LLM_1 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "MAINER_SHARE_AGENT_0000        = $MAINER_SHARE_AGENT_0000 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0000 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "MAINER_SHARE_AGENT_0001        = $MAINER_SHARE_AGENT_0001 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0001 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "MAINER_SHARE_AGENT_0002        = $MAINER_SHARE_AGENT_0002 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0002 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "MAINER_SHARE_AGENT_0003        = $MAINER_SHARE_AGENT_0003 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0003 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "MAINER_SHARE_AGENT_0004        = $MAINER_SHARE_AGENT_0004 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0004 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "MAINER_SHARE_AGENT_0005        = $MAINER_SHARE_AGENT_0005 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0005 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "MAINER_SHARE_AGENT_0006        = $MAINER_SHARE_AGENT_0006 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0006 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "MAINER_SHARE_AGENT_0007        = $MAINER_SHARE_AGENT_0007 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0007 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 ```
 
 # stop timers of protocol canisters
@@ -48,7 +54,8 @@ dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    stopTimerExecutio
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE stopTimerExecutionAdmin
 # wait a couple of minutes..
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         stopTimerExecutionAdmin
-# wait a couple of minutes.. -> pause is next step
+# Wait until ShareService has nothing left in it's queue.
+# -> pause is next step
 ```
 
 # pause protocol
@@ -63,41 +70,6 @@ dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getPauseProtocolFlag
 dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE togglePauseProtocolFlagAdmin
 ```
 
-Wait until ShareService has nothing left in it's queue.
-
-# stop protocol canisters
-
-```bash
-# Verify correct network !
-echo $NETWORK
-dfx canister --network $NETWORK stop $SUBNET_0_1_GAMESTATE
-dfx canister --network $NETWORK stop $SUBNET_0_1_CHALLENGER
-dfx canister --network $NETWORK stop $SUBNET_0_1_JUDGE
-dfx canister --network $NETWORK stop $SUBNET_0_1_SHARE_SERVICE
-dfx canister --network $NETWORK stop $SUBNET_0_1_MAINER_CREATOR
-dfx canister --network $NETWORK stop $SUBNET_0_2_API
-
-dfx canister --network $NETWORK status $SUBNET_0_1_GAMESTATE     | grep Status
-dfx canister --network $NETWORK status $SUBNET_0_1_CHALLENGER    | grep Status
-dfx canister --network $NETWORK status $SUBNET_0_1_JUDGE         | grep Status
-dfx canister --network $NETWORK status $SUBNET_0_1_SHARE_SERVICE | grep Status
-dfx canister --network $NETWORK status $SUBNET_0_1_MAINER_CREATOR | grep Status
-dfx canister --network $NETWORK status $SUBNET_0_2_API            | grep Status
-```
-
-# snapshot the protocol canisters
-
-```bash
-# Verify correct network !
-echo $NETWORK
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_GAMESTATE
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_CHALLENGER    
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_JUDGE         
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_MAINER_CREATOR 
-dfx canister --network $NETWORK snapshot create $SUBNET_0_2_API 
-```
-
 # upgrade the GameState
 
 ```bash
@@ -105,7 +77,13 @@ dfx canister --network $NETWORK snapshot create $SUBNET_0_2_API
 echo $NETWORK
 
 # from folder: funnAI
-dfx deploy --network $NETWORK game_state_canister --mode upgrade
+dfx canister --network $NETWORK stop $SUBNET_0_1_GAMESTATE
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_GAMESTATE
+#
+rm -rf .mops
+mops install
+#
+dfx deploy --network $NETWORK game_state_canister --mode upgrade --wasm-memory-persistence keep
 
 # start the GameState canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_1_GAMESTATE
@@ -173,7 +151,13 @@ dfx canister --network $NETWORK call game_state_canister revokeAdminRole '( "'$F
 echo $NETWORK
 
 # from folder: PoAIW/src/Challenger
-dfx deploy --network $NETWORK challenger_ctrlb_canister --mode upgrade
+dfx canister --network $NETWORK stop $SUBNET_0_1_CHALLENGER
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_CHALLENGER 
+#
+rm -rf .mops
+mops install
+#
+dfx deploy --network $NETWORK challenger_ctrlb_canister --mode upgrade --wasm-memory-persistence keep
 
 # start the Challenger canister back up
 # Important
@@ -204,7 +188,13 @@ dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getTimerActionRegula
 echo $NETWORK
 
 # from folder: PoAIW/src/mAIner
-dfx deploy --network $NETWORK mainer_service_canister --mode upgrade
+dfx canister --network $NETWORK stop $SUBNET_0_1_SHARE_SERVICE
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
+#
+rm -rf .mops
+mops install
+#
+dfx deploy --network $NETWORK mainer_service_canister --mode upgrade --wasm-memory-persistence keep
 
 # start the ShareService canister back up
 echo "SUBNET_0_1_SHARE_SERVICE: $SUBNET_0_1_SHARE_SERVICE"
@@ -226,6 +216,10 @@ dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getTimerActionReg
 echo $NETWORK
 
 # from folder: PoAIW/src/mAIner
+#
+rm -rf .mops
+mops install
+#
 dfx deploy --network $NETWORK mainer_service_canister --mode reinstall
 
 # start the ShareService canister back up
@@ -276,7 +270,13 @@ dfx canister --network $NETWORK call $MAINER getMaintenanceFlag
 echo $NETWORK
 
 # from folder: PoAIW/src/Judge
-dfx deploy --network $NETWORK judge_ctrlb_canister --mode upgrade
+dfx canister --network $NETWORK stop $SUBNET_0_1_JUDGE
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_JUDGE 
+#
+rm -rf .mops
+mops install
+#
+dfx deploy --network $NETWORK judge_ctrlb_canister --mode upgrade --wasm-memory-persistence keep
 
 # Upgrade failed, so we did a reinstall
 # -> WHEN REINSTALLING, THE LMMs need to be registered again! See step below
@@ -309,7 +309,13 @@ dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --ou
 echo $NETWORK
 
 # from folder: PoAIW/src/Api
-dfx deploy --network $NETWORK api_canister --mode upgrade
+dfx canister --network $NETWORK stop $SUBNET_0_2_API
+dfx canister --network $NETWORK snapshot create $SUBNET_0_2_API 
+#
+rm -rf .mops
+mops install
+#
+dfx deploy --network $NETWORK api_canister --mode upgrade --wasm-memory-persistence keep
 
 # start the API canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_2_API
@@ -325,6 +331,46 @@ dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record {
 dfx canister --network $NETWORK call SUBNET_0_2_API revokeAdminRole '( "'$FUNNAI_DJANGO_PRINCIPAL'")'
 ```
 
+# upgrade the Archive canister
+
+```bash
+# Verify correct network !
+echo $NETWORK
+
+# from folder: PoAIW/src/ArchiveChallenges
+dfx canister --network $NETWORK stop $SUBNET_0_2_ARCHIVE
+dfx canister --network $NETWORK snapshot create $SUBNET_0_2_ARCHIVE 
+#
+rm -rf .mops
+mops install
+#
+dfx deploy --network $NETWORK archive_challenges_canister --mode upgrade --wasm-memory-persistence keep
+
+# start the Archive canister back up
+dfx canister --network $NETWORK start  $SUBNET_0_2_ARCHIVE
+```
+
+# upgrade the Treasury canister
+
+```bash
+# Verify correct network !
+echo $NETWORK
+
+# from folder: PoAIW/src/Treasury
+dfx canister --network $NETWORK stop $SUBNET_0_1_TREASURY
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_TREASURY 
+#
+rm -rf .mops
+mops install
+#
+dfx generate funnai_treasury_canister
+#
+dfx deploy --network $NETWORK funnai_treasury_canister --mode upgrade --wasm-memory-persistence keep
+
+# start the Treasury canister back up
+dfx canister --network $NETWORK start  $SUBNET_0_1_TREASURY
+```
+
 # upgrade the mAInerCreator
 
 ```bash
@@ -332,9 +378,15 @@ dfx canister --network $NETWORK call SUBNET_0_2_API revokeAdminRole '( "'$FUNNAI
 echo $NETWORK
 
 # from folder: PoAIW/src/mAInerCreator
+dfx canister --network $NETWORK stop $SUBNET_0_1_MAINER_CREATOR
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_MAINER_CREATOR 
 # Generate the bindings for the upload scripts and the frontend
 dfx generate mainer_creator_canister
-dfx deploy --network $NETWORK mainer_creator_canister --mode upgrade
+#
+rm -rf .mops
+mops install
+#
+dfx deploy --network $NETWORK mainer_creator_canister --mode upgrade --wasm-memory-persistence keep
 
 # start the mAInerCreator canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_1_MAINER_CREATOR

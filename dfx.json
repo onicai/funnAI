@@ -2,7 +2,8 @@
   "canisters": {
     "funnai_backend": {
       "main": "src/funnai_backend/main.mo",
-      "type": "motoko"
+      "type": "motoko",
+      "args": "--enhanced-orthogonal-persistence"
     },
     "funnai_frontend": {
       "dependencies": [
@@ -18,15 +19,18 @@
     },
     "game_state_canister": {
       "main": "PoAIW/src/GameState/src/Main.mo",
-      "type": "motoko"
+      "type": "motoko",
+      "args": "--enhanced-orthogonal-persistence"
     },
     "api_canister": {
       "main": "PoAIW/src/Api/src/Main.mo",
-      "type": "motoko"
+      "type": "motoko",
+      "args": "--enhanced-orthogonal-persistence"
     },
     "mainer_ctrlb_canister": {
       "main": "PoAIW/src/mAIner/src/Main.mo",
-      "type": "motoko"
+      "type": "motoko",
+      "args": "--enhanced-orthogonal-persistence"
     },
     "internet-identity": {
       "type": "pull",

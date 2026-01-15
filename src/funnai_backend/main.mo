@@ -12,22 +12,22 @@ import Utils "./Utils";
 
 import Types "./Types";
 
-shared actor class FunnAIBackend(custodian: Principal) = Self {
-  stable var custodians = List.make<Principal>(custodian);
+shared persistent actor class FunnAIBackend(custodian: Principal) = Self {
+  var custodians = List.make<Principal>(custodian);
 
   // https://forum.dfinity.org/t/is-there-any-address-0-equivalent-at-dfinity-motoko/5445/3
-  let null_address : Principal = Principal.fromText("aaaaa-aa");
+  transient let null_address : Principal = Principal.fromText("aaaaa-aa");
 
 // Project-specific functions
-  stable var userChatsStorageStable : [(Principal, List.List<Text>)] = [];
-  var userChatsStorage : HashMap.HashMap<Principal, List.List<Text>> = HashMap.HashMap(0, Principal.equal, Principal.hash);
-  stable var userChatSettingsStorageStable : [(Principal, Types.UserChatSettings)] = [];
-  var userChatSettingsStorage : HashMap.HashMap<Principal, Types.UserChatSettings> = HashMap.HashMap(0, Principal.equal, Principal.hash);
-  stable var chatsStorageStable : [(Text, Types.Chat)] = [];
-  var chatsStorage : HashMap.HashMap<Text, Types.Chat> = HashMap.HashMap(0, Text.equal, Text.hash);
+  var userChatsStorageStable : [(Principal, List.List<Text>)] = [];
+  transient var userChatsStorage : HashMap.HashMap<Principal, List.List<Text>> = HashMap.HashMap(0, Principal.equal, Principal.hash);
+  var userChatSettingsStorageStable : [(Principal, Types.UserChatSettings)] = [];
+  transient var userChatSettingsStorage : HashMap.HashMap<Principal, Types.UserChatSettings> = HashMap.HashMap(0, Principal.equal, Principal.hash);
+  var chatsStorageStable : [(Text, Types.Chat)] = [];
+  transient var chatsStorage : HashMap.HashMap<Text, Types.Chat> = HashMap.HashMap(0, Text.equal, Text.hash);
 
-  stable var userInfoStorageStable : [(Principal, Types.UserInfo)] = [];
-  var userInfoStorage : HashMap.HashMap<Principal, Types.UserInfo> = HashMap.HashMap(0, Principal.equal, Principal.hash);
+  var userInfoStorageStable : [(Principal, Types.UserInfo)] = [];
+  transient var userInfoStorage : HashMap.HashMap<Principal, Types.UserInfo> = HashMap.HashMap(0, Principal.equal, Principal.hash);
 
   /**
    * Simple function to store a chat in the database. There are no protections so this function should only
@@ -402,8 +402,8 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
 // Logins
-  stable var userToLoginsStorageStable : [(Principal, List.List<Types.LoginEvent>)] = [];
-  var userToLoginsStorage : HashMap.HashMap<Principal, List.List<Types.LoginEvent>> = HashMap.HashMap(0, Principal.equal, Principal.hash);
+  var userToLoginsStorageStable : [(Principal, List.List<Types.LoginEvent>)] = [];
+  transient var userToLoginsStorage : HashMap.HashMap<Principal, List.List<Types.LoginEvent>> = HashMap.HashMap(0, Principal.equal, Principal.hash);
 
   // Log a login event for the caller
   public shared (msg) func logLogin() : async Types.UpdateUserInfoResult {
@@ -513,7 +513,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
 // Max mAIner topups
-  stable var maxMainerTopups : List.List<Types.TopUpRecord> = List.nil<Types.TopUpRecord>();
+  var maxMainerTopups : List.List<Types.TopUpRecord> = List.nil<Types.TopUpRecord>();
 
   private func putMaxMainerTopup(topupEntry : Types.TopUpRecord) : Bool {
       maxMainerTopups := List.push<Types.TopUpRecord>(topupEntry, maxMainerTopups);
@@ -579,7 +579,7 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
   // Max topups archive
-  stable var archivedMaxMainerTopups : List.List<Types.TopUpRecord> = List.nil<Types.TopUpRecord>();
+  var archivedMaxMainerTopups : List.List<Types.TopUpRecord> = List.nil<Types.TopUpRecord>();
 
   private func getArchivedMaxMainerTopups() : [Types.TopUpRecord] {
       return List.toArray<Types.TopUpRecord>(archivedMaxMainerTopups);
@@ -640,8 +640,8 @@ shared actor class FunnAIBackend(custodian: Principal) = Self {
   };
 
 // Email Signups from Website
-  stable var emailSubscribersStorageStable : [(Text, Types.EmailSubscriber)] = [];
-  var emailSubscribersStorage : HashMap.HashMap<Text, Types.EmailSubscriber> = HashMap.HashMap(0, Text.equal, Text.hash);
+  var emailSubscribersStorageStable : [(Text, Types.EmailSubscriber)] = [];
+  transient var emailSubscribersStorage : HashMap.HashMap<Text, Types.EmailSubscriber> = HashMap.HashMap(0, Text.equal, Text.hash);
 
   // Add a user as new email subscriber
   private func putEmailSubscriber(emailSubscriber : Types.EmailSubscriber) : Text {

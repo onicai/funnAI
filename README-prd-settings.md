@@ -61,7 +61,19 @@ dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
 
 # The CyclesFlow variables (Fees & Costs)
 
-todo
+```bash
+# Update the CyclesFlow variables if needed: 
+# - dailySubmissionsAllShare = 6 * 24 = 144  (6 per hour)
+# - dailySubmissionsAllShare = dailyChallenges * thresholdScoredResponsesPerChallenge
+#                            = 144 * 33 = 4,752
+# - dailySubmissionsAllOwn = (TODO for PowerMainer)
+
+# verify current settings
+dfx canister --network $NETWORK call game_state_canister getCyclesFlowAdmin | grep dailySubmissionsAllShare
+
+# set the values, which will trigger a recalculation
+dfx canister --network $NETWORK call game_state_canister setCyclesFlowAdmin '( record { dailySubmissionsAllShare = opt (4752 : nat);})'
+```
 
 # mAIner burn rates
 
@@ -127,14 +139,9 @@ dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         startTimerExecuti
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE startTimerExecutionAdmin
 ```
 
-# Max Number of unscored resposes
-
-todo
-
-
 # Max number of mAIners & Whitelisting
 
-todo - finish these...
+Also see GameState's Readme.
 
 ```bash
 dfx canister --network $NETWORK call game_state_canister getPauseProtocolFlag

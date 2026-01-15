@@ -846,14 +846,6 @@ export const idlFactory = ({ IDL }) => {
       'Array' : IDL.Vec(Value__1),
     })
   );
-  const Value = IDL.Variant({
-    'Int' : IDL.Int,
-    'Map' : IDL.Vec(IDL.Tuple(IDL.Text, Value__1)),
-    'Nat' : IDL.Nat,
-    'Blob' : IDL.Vec(IDL.Nat8),
-    'Text' : IDL.Text,
-    'Array' : IDL.Vec(Value__1),
-  });
   const MainerctrlReinstallInput = IDL.Record({
     'canisterAddress' : CanisterAddress,
   });
@@ -1160,7 +1152,7 @@ export const idlFactory = ({ IDL }) => {
     'getCyclesBurnRate' : IDL.Func(
         [CyclesBurnRateDefault],
         [CyclesBurnRateResult],
-        [],
+        ['query'],
       ),
     'getCyclesFlowAdmin' : IDL.Func([], [CyclesFlowResult], []),
     'getCyclesTransactionsAdmin' : IDL.Func(
@@ -1407,7 +1399,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'icrc7_collection_metadata' : IDL.Func(
         [],
-        [IDL.Vec(IDL.Tuple(IDL.Text, Value))],
+        [IDL.Vec(IDL.Tuple(IDL.Text, Value__1))],
         ['query'],
       ),
     'icrc7_description' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
@@ -1417,7 +1409,7 @@ export const idlFactory = ({ IDL }) => {
     'icrc7_symbol' : IDL.Func([], [IDL.Text], ['query']),
     'icrc7_token_metadata' : IDL.Func(
         [IDL.Vec(IDL.Nat)],
-        [IDL.Vec(IDL.Opt(IDL.Vec(IDL.Tuple(IDL.Text, Value))))],
+        [IDL.Vec(IDL.Opt(IDL.Vec(IDL.Tuple(IDL.Text, Value__1))))],
         ['query'],
       ),
     'icrc7_tokens' : IDL.Func(
@@ -1625,7 +1617,6 @@ export const idlFactory = ({ IDL }) => {
       ),
     'testDisbursementToTreasuryAdmin' : IDL.Func([], [AuthRecordResult], []),
     'testMainerCodeIntegrityAdmin' : IDL.Func([], [AuthRecordResult], []),
-    'testTokenMintingAdmin' : IDL.Func([], [AuthRecordResult], []),
     'toggleDisburseFundsToTreasuryFlagAdmin' : IDL.Func(
         [],
         [AuthRecordResult],

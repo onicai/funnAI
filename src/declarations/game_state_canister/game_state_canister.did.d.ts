@@ -736,7 +736,7 @@ export interface GameStateCanister {
     Array<[] | [TransferFromResult]>
   >,
   'icrc7_balance_of' : ActorMethod<[Array<Account>], Array<bigint>>,
-  'icrc7_collection_metadata' : ActorMethod<[], Array<[string, Value]>>,
+  'icrc7_collection_metadata' : ActorMethod<[], Array<[string, Value__1]>>,
   'icrc7_description' : ActorMethod<[], [] | [string]>,
   'icrc7_logo' : ActorMethod<[], [] | [string]>,
   'icrc7_name' : ActorMethod<[], string>,
@@ -744,7 +744,7 @@ export interface GameStateCanister {
   'icrc7_symbol' : ActorMethod<[], string>,
   'icrc7_token_metadata' : ActorMethod<
     [Array<bigint>],
-    Array<[] | [Array<[string, Value]>]>
+    Array<[] | [Array<[string, Value__1]>]>
   >,
   'icrc7_tokens' : ActorMethod<[[] | [bigint], [] | [bigint]], Array<bigint>>,
   'icrc7_total_supply' : ActorMethod<[], bigint>,
@@ -884,7 +884,6 @@ export interface GameStateCanister {
   >,
   'testDisbursementToTreasuryAdmin' : ActorMethod<[], AuthRecordResult>,
   'testMainerCodeIntegrityAdmin' : ActorMethod<[], AuthRecordResult>,
-  'testTokenMintingAdmin' : ActorMethod<[], AuthRecordResult>,
   'toggleDisburseFundsToTreasuryFlagAdmin' : ActorMethod<[], AuthRecordResult>,
   'togglePauseProtocolFlagAdmin' : ActorMethod<[], AuthRecordResult>,
   'togglePauseWhitelistMainerCreationFlagAdmin' : ActorMethod<
@@ -1341,12 +1340,6 @@ export interface UploadMainerPromptCacheBytesChunkInput {
   'chunkID' : bigint,
   'bytesChunk' : Uint8Array | number[],
 }
-export type Value = { 'Int' : bigint } |
-  { 'Map' : Array<[string, Value__1]> } |
-  { 'Nat' : bigint } |
-  { 'Blob' : Uint8Array | number[] } |
-  { 'Text' : string } |
-  { 'Array' : Array<Value__1> };
 export type Value__1 = { 'Int' : bigint } |
   { 'Map' : Array<[string, Value__1]> } |
   { 'Nat' : bigint } |
