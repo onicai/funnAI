@@ -4,6 +4,7 @@
   import { formatFunnaiAmount, formatLargeNumber, formatBalance } from "../../helpers/utils/numberFormatUtils";
   import { FUNNAI_CANISTER_ID } from "../../helpers/token_helpers";
   import { walletDataStore, WalletDataService } from "../../helpers/WalletDataService";
+  import { isAnonymousPrincipal } from "../../helpers/utils/accountUtils";
 
   export let title: string = "My mAIners leaderboard";
   export let maxItems: number = 10;
@@ -37,7 +38,9 @@
   }
 
   async function initializeWalletIfNeeded(): Promise<void> {
-    if (walletInitialized || !$store.principal || $store.principal.toString() === "anonymous") {
+    // IMPORTANT: Check for anonymous principal (2vxsx-fae) to prevent
+    // operations with the wrong identity
+    if (walletInitialized || isAnonymousPrincipal($store.principal)) {
       return;
     }
 
