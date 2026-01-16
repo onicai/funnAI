@@ -327,6 +327,10 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : IDL.Vec(AdminRoleAssignment),
     'Err' : ApiError,
   });
+  const MainerAgentCanistersResult = IDL.Variant({
+    'Ok' : IDL.Vec(OfficialMainerAgentCanister),
+    'Err' : ApiError,
+  });
   const ChallengesResult = IDL.Variant({
     'Ok' : IDL.Vec(Challenge),
     'Err' : ApiError,
@@ -457,10 +461,6 @@ export const idlFactory = ({ IDL }) => {
     'mainerType' : MainerAgentCanisterType,
   });
   const CanisterRetrieveInput = IDL.Record({ 'address' : CanisterAddress });
-  const MainerAgentCanistersResult = IDL.Variant({
-    'Ok' : IDL.Vec(OfficialMainerAgentCanister),
-    'Err' : ApiError,
-  });
   const MainerAuctionTimerInfoRecord = IDL.Record({
     'active' : IDL.Bool,
     'intervalSeconds' : IDL.Nat,
@@ -497,6 +497,17 @@ export const idlFactory = ({ IDL }) => {
   });
   const MainerMarketplaceListingsResult = IDL.Variant({
     'Ok' : IDL.Vec(MainerMarketplaceListing),
+    'Err' : ApiError,
+  });
+  const MarketplaceSale = IDL.Record({
+    'mainerAddress' : IDL.Text,
+    'seller' : IDL.Principal,
+    'buyer' : IDL.Principal,
+    'saleTimestamp' : IDL.Nat64,
+    'priceE8S' : IDL.Nat,
+  });
+  const MarketplaceTransactionsResult = IDL.Variant({
+    'Ok' : IDL.Vec(MarketplaceSale),
     'Err' : ApiError,
   });
   const MarketplaceStats = IDL.Record({
@@ -723,13 +734,6 @@ export const idlFactory = ({ IDL }) => {
     'subnetShareServiceLlm' : IDL.Text,
   });
   const SubnetIdsResult = IDL.Variant({ 'Ok' : SubnetIds, 'Err' : ApiError });
-  const MarketplaceSale = IDL.Record({
-    'mainerAddress' : IDL.Text,
-    'seller' : IDL.Principal,
-    'buyer' : IDL.Principal,
-    'saleTimestamp' : IDL.Nat64,
-    'priceE8S' : IDL.Nat,
-  });
   const MarketplaceTransactionHistory = IDL.Record({
     'sales' : IDL.Vec(MarketplaceSale),
     'purchases' : IDL.Vec(MarketplaceSale),
@@ -1137,6 +1141,11 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'getAdminRoles' : IDL.Func([], [AdminRoleAssignmentsResult], ['query']),
+    'getAllMainerAgentsAdmin' : IDL.Func(
+        [],
+        [MainerAgentCanistersResult],
+        ['query'],
+      ),
     'getArchivedChallengesAdmin' : IDL.Func([], [ChallengesResult], ['query']),
     'getAvailableMainers' : IDL.Func([], [NatResult], ['query']),
     'getBufferMainerCreation' : IDL.Func([], [NatResult], ['query']),
@@ -1220,6 +1229,11 @@ export const idlFactory = ({ IDL }) => {
     'getMarketplaceMainerListings' : IDL.Func(
         [],
         [MainerMarketplaceListingsResult],
+        ['query'],
+      ),
+    'getMarketplaceSalesAdmin' : IDL.Func(
+        [],
+        [MarketplaceTransactionsResult],
         ['query'],
       ),
     'getMarketplaceSalesStats' : IDL.Func([], [MarketplaceStats], ['query']),
@@ -1440,6 +1454,7 @@ export const idlFactory = ({ IDL }) => {
         [AuthRecordResult],
         [],
       ),
+    'rebuildUserMainerMappingAdmin' : IDL.Func([], [AuthRecordResult], []),
     'reinstallMainerControllerAdmin' : IDL.Func(
         [MainerctrlReinstallInput],
         [MainerAgentCanisterResult],
