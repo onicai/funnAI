@@ -222,9 +222,6 @@
               <div class="font-bold text-lg {transaction.type === 'purchase' ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}">
                 {transaction.type === 'purchase' ? '-' : '+'}{formatPrice(transaction.priceICP)} ICP
               </div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">
-                ≈ ${(transaction.priceICP * 12).toFixed(2)} USD
-              </div>
             </div>
           </div>
         {/each}
