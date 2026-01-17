@@ -463,6 +463,39 @@ def get_mainers(network: str) -> List[Dict]:
         log_message(f"Failed to get mAIners: {e}", "ERROR")
         sys.exit(1)
 
+def get_cycles_balance(network: str, canister_id: str) -> Optional[int]:
+    """Get the cycles balance of a canister.
+
+    Returns:
+        Cycles balance as integer, or None if unable to retrieve.
+    """
+    try:
+        result = run_command([
+            "dfx", "canister", "--network", network, "status", canister_id
+        ], retry_on_transient_errors=True, max_retries=3, retry_delay=5.0)
+        for line in result.stdout.split('\n'):
+            if 'Balance:' in line:
+                # Parse line like "Balance: 3_000_000_000_000 Cycles"
+                balance_str = line.split(':')[1].strip().split()[0]
+                # Remove underscores and convert to int
+                balance = int(balance_str.replace('_', ''))
+                return balance
+        return None
+    except Exception as e:
+        log_message(f"Failed to get cycles balance for {canister_id}: {e}", "WARNING")
+        return None
+
+def format_cycles(cycles: int) -> str:
+    """Format cycles balance in a human-readable way (e.g., 3.5T, 500B)."""
+    if cycles >= 1_000_000_000_000:
+        return f"{cycles / 1_000_000_000_000:.2f}T"
+    elif cycles >= 1_000_000_000:
+        return f"{cycles / 1_000_000_000:.2f}B"
+    elif cycles >= 1_000_000:
+        return f"{cycles / 1_000_000:.2f}M"
+    else:
+        return str(cycles)
+
 def get_canister_status(network: str, canister_id: str) -> Optional[str]:
     """Get the status of a canister (Running, Stopping, or Stopped) with retry on transient network errors.
 
@@ -769,7 +802,7 @@ def upgrade_canister(network: str, canister_name: str, dry_run: bool = False, de
     log_message(f"Upgrading {canister_name}...")
 
     command = [
-        "dfx", "deploy", "--network", network, canister_name, "--mode", "upgrade"
+        "dfx", "deploy", "--network", network, canister_name, "--mode", "upgrade", "--wasm-memory-persistence", "keep"
     ]
     if deploy_with_yes:
         command.append("--yes")
@@ -1176,6 +1209,13 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
     # Check canister status before proceeding
     initial_status = get_canister_status(network, address)
     log_message(f"Canister initial status: {initial_status}", "INFO")
+
+    # Check cycles balance before upgrade
+    cycles_balance = get_cycles_balance(network, address)
+    if cycles_balance is not None:
+        log_message(f"Canister cycles balance: {format_cycles(cycles_balance)}", "INFO")
+    else:
+        log_message(f"Canister cycles balance: Unable to retrieve", "WARNING")
 
     if initial_status == "Stopped":
         log_message("Canister is already stopped, skipping steps 2b-2e", "INFO")
