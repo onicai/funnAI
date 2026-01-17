@@ -579,6 +579,7 @@ export interface GameStateCanister {
     StatusCodeRecordResult
   >,
   'getAdminRoles' : ActorMethod<[], AdminRoleAssignmentsResult>,
+  'getAllMainerAgentsAdmin' : ActorMethod<[], MainerAgentCanistersResult>,
   'getArchivedChallengesAdmin' : ActorMethod<[], ChallengesResult>,
   'getAvailableMainers' : ActorMethod<[], NatResult>,
   'getBufferMainerCreation' : ActorMethod<[], NatResult>,
@@ -626,6 +627,7 @@ export interface GameStateCanister {
     [],
     MainerMarketplaceListingsResult
   >,
+  'getMarketplaceSalesAdmin' : ActorMethod<[], MarketplaceTransactionsResult>,
   'getMarketplaceSalesStats' : ActorMethod<[], MarketplaceStats>,
   'getMaxFunnaiTopupCyclesAmount' : ActorMethod<[], NatResult>,
   'getMaxFunnaiTopupCyclesAmountAdmin' : ActorMethod<[], NatResult>,
@@ -760,6 +762,7 @@ export interface GameStateCanister {
     [Array<string>],
     AuthRecordResult
   >,
+  'rebuildUserMainerMappingAdmin' : ActorMethod<[], AuthRecordResult>,
   'reinstallMainerControllerAdmin' : ActorMethod<
     [MainerctrlReinstallInput],
     MainerAgentCanisterResult
@@ -1049,6 +1052,8 @@ export interface MarketplaceTransactionHistory {
 export type MarketplaceTransactionHistoryResult = {
     'Ok' : MarketplaceTransactionHistory
   } |
+  { 'Err' : ApiError };
+export type MarketplaceTransactionsResult = { 'Ok' : Array<MarketplaceSale> } |
   { 'Err' : ApiError };
 export type NatResult = { 'Ok' : bigint } |
   { 'Err' : ApiError };

@@ -397,6 +397,11 @@ type NatResult =
    Err: ApiError;
    Ok: nat;
  };
+type MarketplaceTransactionsResult = 
+ variant {
+   Err: ApiError;
+   Ok: vec MarketplaceSale;
+ };
 type MarketplaceTransactionHistoryResult = 
  variant {
    Err: ApiError;
@@ -621,6 +626,7 @@ type GameStateCanister =
    finishUploadMainerPromptCache: (finishUploadMainerPromptCacheInput:
     FinishUploadMainerPromptCacheInput) -> (StatusCodeRecordResult);
    getAdminRoles: () -> (AdminRoleAssignmentsResult) query;
+   getAllMainerAgentsAdmin: () -> (MainerAgentCanistersResult) query;
    getArchivedChallengesAdmin: () -> (ChallengesResult) query;
    getAvailableMainers: () -> (NatResult) query;
    getBufferMainerCreation: () -> (NatResult) query;
@@ -656,6 +662,7 @@ type GameStateCanister =
    getMainerTransferFailuresAdmin: () -> (MainerTransferFailuresResult) query;
    getMarketplaceMainerListings: () ->
     (MainerMarketplaceListingsResult) query;
+   getMarketplaceSalesAdmin: () -> (MarketplaceTransactionsResult) query;
    getMarketplaceSalesStats: () -> (MarketplaceStats) query;
    getMaxFunnaiTopupCyclesAmount: () -> (NatResult) query;
    getMaxFunnaiTopupCyclesAmountAdmin: () -> (NatResult) query;
@@ -752,6 +759,7 @@ type GameStateCanister =
    migrateSubmissionsAdmin: () -> (AuthRecordResult);
    migrateWinnerDeclarationsAdmin: (challengeIdsToMigrate: vec text) ->
     (AuthRecordResult);
+   rebuildUserMainerMappingAdmin: () -> (AuthRecordResult);
    reinstallMainerControllerAdmin: (mainerctrlReinstallInput:
     MainerctrlReinstallInput) -> (MainerAgentCanisterResult);
    removeRedeemedFunnaiTransactionBlockAdmin: (paymentTransactionBlockId:
