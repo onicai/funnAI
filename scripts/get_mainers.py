@@ -170,7 +170,11 @@ def update_poaiw_files(mainers, network):
     for i, address in enumerate(share_agent_mainers):
         canister_name = f"mainer_ctrlb_canister_{i}"
         if canister_name not in dfx_config['canisters']:
-            dfx_config['canisters'][canister_name] = {"main": "src/Main.mo"}
+            dfx_config['canisters'][canister_name] = {
+                "main": "src/Main.mo",
+                "type": "motoko",
+                "args": "--enhanced-orthogonal-persistence"
+            }
 
     with open(POAIW_DFX_JSON_PATH, 'w') as f:
         json.dump(dfx_config, f, indent=2)
