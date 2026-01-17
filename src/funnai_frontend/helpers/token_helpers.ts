@@ -145,6 +145,29 @@ const availableTokens: FE.Token[] = [
     token_id: 6,
     chain: 'IC',
     total_24h_volume: '0'
+  },
+  { 
+    canister_id: "pcj6u-uaaaa-aaaak-aewnq-cai",
+    name: "CLOUD",
+    symbol: "CLOUD",
+    decimals: 8,
+    address: "pcj6u-uaaaa-aaaak-aewnq-cai",
+    fee: 0.00000001,
+    fee_fixed: "1",
+    token: "pcj6u-uaaaa-aaaak-aewnq-cai",
+    icrc1: true,
+    icrc2: true,
+    icrc3: true,
+    pool_symbol: "",
+    pools: [],
+    timestamp: Date.now(),
+    metrics: null,
+    balance: '0',
+    logo_url: "/cloud.jpg",
+    token_type: 'IC',
+    token_id: 7,
+    chain: 'IC',
+    total_24h_volume: '0'
   }
 ];
 
