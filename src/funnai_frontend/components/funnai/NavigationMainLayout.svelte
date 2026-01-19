@@ -3,9 +3,11 @@
   import { store, theme } from "../../stores/store";
   import { link, location } from 'svelte-spa-router';
   import LoginModal from '../login/LoginModal.svelte';
+  import WheelSpinModal from './WheelSpinModal.svelte';
 
   let visibleInstallAppToast = false;
   let navigationDropdownOpen = false;
+  let wheelModalIsOpen = false;
 
   const showInstallAppToast = () => {
     visibleInstallAppToast = true;
@@ -19,6 +21,10 @@
 
   const toggleModal = () => {
     modalIsOpen = !modalIsOpen;
+  };
+
+  const toggleWheelModal = () => {
+    wheelModalIsOpen = !wheelModalIsOpen;
   };
 
   const toggleNavigationDropdown = (event: Event) => {
@@ -80,6 +86,24 @@
       </svg>
       <span>Buy mAIner</span>
     </a>
+
+    <!-- Wheel of Fortune Button - Only visible for logged-in users -->
+    {#if $store.isAuthed}
+      <button
+        type="button"
+        on:click={toggleWheelModal}
+        class="wheel-btn flex items-center justify-center h-[40px] w-[40px] rounded-full p-[2px] bg-gradient-to-br from-amber-400 via-yellow-500 to-orange-500 transition-all duration-200 hover:scale-110 hover:shadow-lg hover:shadow-amber-500/30"
+        title="Spin Aira's Wheel of Fortune"
+      >
+        <span class="flex items-center justify-center w-full h-full rounded-full bg-white dark:bg-gray-900">
+          <img 
+            src="/wheel_icon.webp" 
+            alt="Spin the Wheel" 
+            class="w-7 h-7 drop-shadow-md transition-transform duration-500 hover:rotate-180" 
+          />
+        </span>
+      </button>
+    {/if}
 
     <!-- Navigation Dropdown -->
     {#if $store.isAuthed}
@@ -157,10 +181,18 @@
   </div>
 </div>
 
-<!-- Main modal -->
+<!-- Login modal -->
 <div class={modalIsOpen ? "" : "hidden"}>
   <LoginModal {toggleModal} />
 </div>
+
+<!-- Wheel of Fortune modal -->
+{#if wheelModalIsOpen}
+  <WheelSpinModal 
+    isOpen={wheelModalIsOpen}
+    onClose={toggleWheelModal}
+  />
+{/if}
 
 <style>
   @keyframes slideDown {
