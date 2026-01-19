@@ -857,6 +857,13 @@ type GameStateCanister =
     UploadMainerPromptCacheBytesChunkInput) -> (StatusCodeRecordResult);
    whitelistCreateUserMainerAgent: (mainerCreationInput:
     WhitelistMainerCreationInput) -> (MainerAgentCanisterResult);
+   // Wheel of Fortune methods
+   canUserSpinWheel: () -> (CanUserSpinResult) query;
+   spinWheel: (spinInput: WheelSpinInput) -> (WheelSpinResult);
+   getWheelFunnaiCost: () -> (NatResult) query;
+   getWheelEnabled: () -> (FlagResult) query;
+   setWheelEnabledAdmin: (enabled: bool) -> (AuthRecordResult);
+   setWheelFunnaiCostAdmin: (cost: nat) -> (AuthRecordResult);
  };
 type FlagResult = 
  variant {
@@ -1418,6 +1425,38 @@ type ApprovalInfo =
    from_subaccount: opt blob;
    memo: opt blob;
    spender: Account__1;
+ };
+type WheelSpinInput = 
+ record {
+   paymentTransactionBlockId: nat64;
+ };
+type WheelOutcome = 
+ variant {
+   Cycles: record { amount: nat; mainerAddress: text };
+   Funnai: record { amount: nat };
+   Nothing;
+ };
+type WheelSpinRecord = 
+ record {
+   outcome: WheelOutcome;
+   timestamp: nat64;
+ };
+type WheelSpinResult = 
+ variant {
+   Err: ApiError;
+   Ok: WheelSpinRecord;
+ };
+type CanUserSpinRecord = 
+ record {
+   canSpin: bool;
+   reason: opt text;
+   requiredFunnai: nat;
+   nextSpinAvailableAt: opt nat64;
+ };
+type CanUserSpinResult = 
+ variant {
+   Err: ApiError;
+   Ok: CanUserSpinRecord;
  };
 type ApiError = 
  variant {

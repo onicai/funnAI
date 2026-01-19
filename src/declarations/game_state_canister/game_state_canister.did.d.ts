@@ -33,6 +33,24 @@ export type ApiError = { 'FailedOperation' : null } |
   { 'StatusCode' : StatusCode } |
   { 'Other' : string } |
   { 'InsuffientCycles' : bigint };
+export interface WheelSpinInput { 'paymentTransactionBlockId' : bigint }
+export type WheelOutcome = { 'Cycles' : { 'amount' : bigint, 'mainerAddress' : string } } |
+  { 'Funnai' : { 'amount' : bigint } } |
+  { 'Nothing' : null };
+export interface WheelSpinRecord {
+  'outcome' : WheelOutcome,
+  'timestamp' : bigint,
+}
+export type WheelSpinResult = { 'Ok' : WheelSpinRecord } |
+  { 'Err' : ApiError };
+export interface CanUserSpinRecord {
+  'canSpin' : boolean,
+  'reason' : [] | [string],
+  'requiredFunnai' : bigint,
+  'nextSpinAvailableAt' : [] | [bigint],
+}
+export type CanUserSpinResult = { 'Ok' : CanUserSpinRecord } |
+  { 'Err' : ApiError };
 export interface ApprovalInfo {
   'memo' : [] | [Uint8Array | number[]],
   'from_subaccount' : [] | [Uint8Array | number[]],
@@ -922,6 +940,13 @@ export interface GameStateCanister {
     [WhitelistMainerCreationInput],
     MainerAgentCanisterResult
   >,
+  // Wheel of Fortune methods
+  'canUserSpinWheel' : ActorMethod<[], CanUserSpinResult>,
+  'spinWheel' : ActorMethod<[WheelSpinInput], WheelSpinResult>,
+  'getWheelFunnaiCost' : ActorMethod<[], NatResult>,
+  'getWheelEnabled' : ActorMethod<[], FlagResult>,
+  'setWheelEnabledAdmin' : ActorMethod<[boolean], AuthRecordResult>,
+  'setWheelFunnaiCostAdmin' : ActorMethod<[bigint], AuthRecordResult>,
 }
 export interface GameStateTresholds {
   'thresholdMaxOpenSubmissions' : bigint,

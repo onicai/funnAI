@@ -437,6 +437,25 @@ export const idlFactory = ({ IDL }) => {
   });
   const FlagRecord = IDL.Record({ 'flag' : IDL.Bool });
   const FlagResult = IDL.Variant({ 'Ok' : FlagRecord, 'Err' : ApiError });
+  // Wheel of Fortune types
+  const WheelSpinInput = IDL.Record({ 'paymentTransactionBlockId' : IDL.Nat64 });
+  const WheelOutcome = IDL.Variant({
+    'Cycles' : IDL.Record({ 'amount' : IDL.Nat, 'mainerAddress' : IDL.Text }),
+    'Funnai' : IDL.Record({ 'amount' : IDL.Nat }),
+    'Nothing' : IDL.Null,
+  });
+  const WheelSpinRecord = IDL.Record({
+    'outcome' : WheelOutcome,
+    'timestamp' : IDL.Nat64,
+  });
+  const WheelSpinResult = IDL.Variant({ 'Ok' : WheelSpinRecord, 'Err' : ApiError });
+  const CanUserSpinRecord = IDL.Record({
+    'canSpin' : IDL.Bool,
+    'reason' : IDL.Opt(IDL.Text),
+    'requiredFunnai' : IDL.Nat,
+    'nextSpinAvailableAt' : IDL.Opt(IDL.Nat64),
+  });
+  const CanUserSpinResult = IDL.Variant({ 'Ok' : CanUserSpinRecord, 'Err' : ApiError });
   const GameStateTresholds = IDL.Record({
     'thresholdMaxOpenSubmissions' : IDL.Nat,
     'thresholdMaxOpenChallenges' : IDL.Nat,
@@ -1683,6 +1702,13 @@ export const idlFactory = ({ IDL }) => {
         [MainerAgentCanisterResult],
         [],
       ),
+    // Wheel of Fortune methods
+    'canUserSpinWheel' : IDL.Func([], [CanUserSpinResult], ['query']),
+    'spinWheel' : IDL.Func([WheelSpinInput], [WheelSpinResult], []),
+    'getWheelFunnaiCost' : IDL.Func([], [NatResult], ['query']),
+    'getWheelEnabled' : IDL.Func([], [FlagResult], ['query']),
+    'setWheelEnabledAdmin' : IDL.Func([IDL.Bool], [AuthRecordResult], []),
+    'setWheelFunnaiCostAdmin' : IDL.Func([IDL.Nat], [AuthRecordResult], []),
   });
   return GameStateCanister;
 };
