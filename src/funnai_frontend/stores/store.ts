@@ -185,6 +185,7 @@ const APPLICATION_LOGO_URL = "https://onicai.com/images/poaiw/coin.webp";
 const AUTH_PATH = "/authenticate/?applicationName="+APPLICATION_NAME+"&applicationLogo="+APPLICATION_LOGO_URL+"#authorize";
 
 export const MEMO_PAYMENT_PROTOCOL : number[] = [173];
+export const MEMO_WHEEL_SPIN : number[] = [87, 72, 69, 69, 76]; // "WHEEL" in ASCII
 
 const days = BigInt(30);
 const hours = BigInt(24);
