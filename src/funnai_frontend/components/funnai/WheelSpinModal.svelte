@@ -6,12 +6,13 @@
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
   import { fetchTokens, protocolConfig, FUNNAI_CANISTER_ID } from "../../helpers/token_helpers";
   import { WHEEL_CONFIG, getSegmentIndexForOutcome, type WheelOutcome } from "../../helpers/config/wheelConfig";
-  import { Info, Gift, Zap, Coins, AlertCircle, CheckCircle, ChevronDown, ChevronUp, HelpCircle } from 'lucide-svelte';
+  import { Info, Gift, Zap, Coins, AlertCircle, CheckCircle, ChevronDown, ChevronUp, HelpCircle, Shield } from 'lucide-svelte';
 
   export let isOpen: boolean = false;
   
   // Info panel state
   let showInfo: boolean = false;
+  let showFairness: boolean = false;
   export let onClose: () => void = () => {};
 
   // State
@@ -475,6 +476,7 @@
     errorMessage = "";
     successMessage = "";
     showInfo = false;
+    showFairness = false;
     onClose();
   }
   
@@ -695,6 +697,42 @@
                 <!-- Note -->
                 <p class="text-xs text-gray-500 dark:text-gray-500 italic">
                   Randomness is secured by the Internet Computer's cryptographic random beacon.
+                </p>
+              </div>
+            {/if}
+            
+            <!-- Provably Fair Toggle -->
+            <button
+              type="button"
+              on:click={() => showFairness = !showFairness}
+              class="w-full flex items-center justify-between p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+            >
+              <span class="flex items-center gap-2 text-sm font-medium">
+                <Shield class="w-4 h-4" />
+                Provably Fair 🎰
+              </span>
+              {#if showFairness}
+                <ChevronUp class="w-4 h-4" />
+              {:else}
+                <ChevronDown class="w-4 h-4" />
+              {/if}
+            </button>
+            
+            {#if showFairness}
+              <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-700 text-sm space-y-3">
+                <p class="text-gray-700 dark:text-gray-300">
+                  🎡 <strong>Aira's Wheel of Fortune</strong> runs on <a href="https://internetcomputer.org" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">DFINITY's Internet Computer</a> - where randomness isn't just "random", it's cryptographically <strong>GUARANTEED</strong> fair.
+                </p>
+                
+                <div class="bg-blue-50 dark:bg-blue-900/20 p-2.5 rounded-lg border border-blue-100 dark:border-blue-800/30">
+                  <p class="text-gray-700 dark:text-gray-300 font-medium mb-1.5">How does it work?</p>
+                  <p class="text-gray-600 dark:text-gray-400 text-xs">
+                    The IC uses <strong>threshold BLS signatures</strong>: multiple nodes each contribute a piece, and <strong>NO ONE</strong> knows the outcome until they're combined.
+                  </p>
+                </div>
+                
+                <p class="text-gray-600 dark:text-gray-400 text-center font-medium">
+                  No single party can predict or manipulate the spin. Ever. 🎰✨
                 </p>
               </div>
             {/if}
