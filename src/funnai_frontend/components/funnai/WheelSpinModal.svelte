@@ -15,6 +15,8 @@
   let isLoading: boolean = true;
   let isSpinning: boolean = false;
   let isBurning: boolean = false;
+  let isProcessing: boolean = false;
+  let statusMessage: string = "";
   let errorMessage: string = "";
   let successMessage: string = "";
   
@@ -43,7 +45,7 @@
   
   // Computed
   $: hasEnoughBalance = funnaiBalance >= requiredFunnai;
-  $: canSubmit = hasEnoughBalance && canSpin && !isSpinning && !isBurning;
+  $: canSubmit = hasEnoughBalance && canSpin && !isSpinning && !isBurning && !isProcessing;
   $: formattedBalance = funnaiToken ? formatBalance(funnaiBalance.toString(), funnaiToken.decimals) : '0';
   $: formattedRequired = funnaiToken ? formatBalance(requiredFunnai.toString(), funnaiToken.decimals) : '0';
   
@@ -148,7 +150,9 @@
     if (!canSubmit || !funnaiToken) return;
     
     errorMessage = "";
+    statusMessage = "Processing payment...";
     isBurning = true;
+    isProcessing = true;
     
     try {
       // Step 1: Burn FUNNAI by transferring to protocol
@@ -181,16 +185,9 @@
       console.log("Burn transaction successful, txId:", txId);
       
       isBurning = false;
-      isSpinning = true;
-      wheelPhase = 'spinning';
+      statusMessage = "Verifying payment...";
       
-      // Start spin animation (wheel is already visible)
-      startSpinAnimation();
-      
-      // Wait for the ledger to index the transaction
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Step 2: Call backend to spin the wheel with timeout
+      // Step 2: Call backend to spin the wheel - get result first
       if (!$store.gameStateCanisterActor) {
         throw new Error("Game state canister not available");
       }
@@ -199,7 +196,7 @@
         $store.gameStateCanisterActor.spinWheel({ 
           paymentTransactionBlockId: BigInt(txId as bigint) 
         }),
-        45000, // 45 second timeout
+        45000,
         "Spin request timed out. Your FUNNAI was burned but the spin didn't complete. Please contact support."
       );
       
@@ -207,7 +204,6 @@
         const errorResult = spinResultResponse as { Err?: Record<string, unknown> };
         let errMsg = "Spin failed";
         if (errorResult?.Err && typeof errorResult.Err === 'object') {
-          // Extract the error type and message from the Candid variant
           const errKey = Object.keys(errorResult.Err)[0];
           const errValue = errorResult.Err[errKey];
           errMsg = typeof errValue === 'string' ? errValue : errKey;
@@ -215,24 +211,43 @@
         throw new Error(errMsg);
       }
       
-      // Parse the outcome
+      // Parse the outcome - we have the result!
       const outcome = spinResultResponse.Ok.outcome;
       spinResult = parseOutcome(outcome);
       
-      // Calculate target angle based on outcome
+      // NOW start the spin animation with the known outcome
+      isProcessing = false;
+      isSpinning = true;
+      wheelPhase = 'spinning';
+      statusMessage = "";
+      
+      // Calculate target angle and spin to it
       const segmentIndex = getSegmentIndexForOutcome(spinResult);
-      stopSpinAtSegment(segmentIndex);
+      spinToSegment(segmentIndex);
       
     } catch (error) {
       console.error("Spin error:", error);
       errorMessage = error instanceof Error ? error.message : "Spin failed";
       isBurning = false;
       isSpinning = false;
-      isAnimating = false; // Stop the animation loop
+      isProcessing = false;
+      isAnimating = false;
+      statusMessage = "";
       wheelPhase = 'info';
-      // Redraw wheel at rest position
       if (ctx) drawWheel();
     }
+  }
+  
+  // New function: spin directly to a segment (result already known)
+  function spinToSegment(segmentIndex: number) {
+    const segmentAngle = 2 * Math.PI / segments.length;
+    const minRotations = WHEEL_CONFIG.MIN_ROTATIONS;
+    
+    // Target the center of the segment, accounting for the pointer being on the right
+    const segmentCenterAngle = segmentIndex * segmentAngle + segmentAngle / 2;
+    targetAngle = currentAngle + (minRotations * 2 * Math.PI) + (2 * Math.PI - segmentCenterAngle);
+    
+    animateToTarget();
   }
   
   function parseOutcome(outcome: any): WheelOutcome {
@@ -447,6 +462,8 @@
     spinResult = null;
     isSpinning = false;
     isBurning = false;
+    isProcessing = false;
+    statusMessage = "";
     errorMessage = "";
     successMessage = "";
     onClose();
@@ -455,6 +472,9 @@
   function handleSpinAgain() {
     wheelPhase = 'info';
     spinResult = null;
+    isProcessing = false;
+    statusMessage = "";
+    errorMessage = "";
     loadData();
   }
   
@@ -533,10 +553,10 @@
         {#if wheelPhase === 'spinning'}
           <div class="text-center space-y-2">
             <p class="text-lg font-semibold text-amber-600 dark:text-amber-400 animate-pulse">
-              {isBurning ? 'Processing payment...' : 'Spinning...'}
+              Spinning...
             </p>
             <p class="text-xs text-gray-500 dark:text-gray-400">
-              {isBurning ? 'Burning FUNNAI tokens' : 'Waiting for result...'}
+              Good luck!
             </p>
           </div>
         {:else if wheelPhase === 'result' && spinResult}
@@ -642,9 +662,9 @@
                        ? 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 shadow-lg hover:shadow-xl' 
                        : 'bg-gray-400 dark:bg-gray-700 cursor-not-allowed'}"
             >
-              {#if isBurning}
+              {#if isProcessing}
                 <span class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                Burning FUNNAI...
+                {statusMessage || 'Processing...'}
               {:else}
                 <Gift class="w-5 h-5" />
                 Spin the Wheel ({formattedRequired} FUNNAI)
@@ -652,7 +672,7 @@
             </button>
             
             <p class="text-xs text-center text-gray-500 dark:text-gray-400">
-              Spin once every 24 hours for a chance to win Cycles or FUNNAI!
+              Spin for a chance to win Cycles or FUNNAI!
             </p>
           </div>
         {/if}
