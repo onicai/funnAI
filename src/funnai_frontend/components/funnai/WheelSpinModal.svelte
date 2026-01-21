@@ -66,10 +66,15 @@
     }, 100);
   });
   
-  // Re-draw wheel when canvas becomes available
-  $: if (canvas && !ctx) {
-    ctx = canvas.getContext('2d')!;
-    drawWheel();
+  // Re-draw wheel when canvas becomes available or when loading finishes
+  $: if (canvas && !isLoading) {
+    // Ensure context is set and wheel is drawn
+    setTimeout(() => {
+      if (canvas) {
+        ctx = canvas.getContext('2d')!;
+        drawWheel();
+      }
+    }, 50);
   }
   
   async function loadData() {
@@ -473,9 +478,20 @@
     wheelPhase = 'info';
     spinResult = null;
     isProcessing = false;
+    isSpinning = false;
+    isAnimating = false;
     statusMessage = "";
     errorMessage = "";
-    loadData();
+    currentAngle = 0; // Reset wheel position
+    loadData().then(() => {
+      // Re-initialize canvas after data loads
+      setTimeout(() => {
+        if (canvas) {
+          ctx = canvas.getContext('2d')!;
+          drawWheel();
+        }
+      }, 100);
+    });
   }
   
   function getResultMessage(): string {
