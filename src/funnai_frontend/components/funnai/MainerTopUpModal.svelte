@@ -700,11 +700,38 @@
             }
           };
           
+          // Helper to check if result is an error (Err variant)
+          const isErrorResult = (result: any): boolean => {
+            return result && typeof result === 'object' && 'Err' in result;
+          };
+          
+          // Helper to get error from result
+          const getError = (result: any): any => {
+            return result?.Err;
+          };
+
           try {
             const result = await makeTopupCall();
+            
+            // Check if result is an Err variant - if so, retry
+            if (isErrorResult(result)) {
+              console.warn("First backend topup call returned Err, retrying in 2 seconds...", getError(result));
+              
+              // Wait 2 seconds before retry
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              
+              const retryResult = await makeTopupCall();
+              if (isErrorResult(retryResult)) {
+                console.error("Backend topup retry also returned Err", getError(retryResult));
+              } else {
+                console.log("Backend topup retry succeeded");
+              }
+              return retryResult;
+            }
+            
             return result;
           } catch (firstError) {
-            console.warn("First backend topup call failed, retrying in 2 seconds...", firstError);
+            console.warn("First backend topup call threw exception, retrying in 2 seconds...", firstError);
             
             // Wait 2 seconds before retry
             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -712,10 +739,14 @@
             // Retry once
             try {
               const retryResult = await makeTopupCall();
-              console.log("Backend topup retry succeeded");
+              if (isErrorResult(retryResult)) {
+                console.error("Backend topup retry returned Err after exception", getError(retryResult));
+              } else {
+                console.log("Backend topup retry succeeded");
+              }
               return retryResult;
             } catch (retryError) {
-              console.error("Backend topup retry also failed", retryError);
+              console.error("Backend topup retry also threw exception", retryError);
               throw retryError;
             }
           }
