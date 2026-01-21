@@ -721,7 +721,7 @@
             {#if showFairness}
               <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-700 text-sm space-y-3">
                 <p class="text-gray-700 dark:text-gray-300">
-                  🎡 <strong>Aira's Wheel of Fortune</strong> runs on <a href="https://internetcomputer.org" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline">DFINITY's Internet Computer</a> - where randomness isn't just "random", it's cryptographically <strong>GUARANTEED</strong> fair.
+                  Aira's Wheel of Fortune runs on the Internet Computer - where randomness is cryptographically <strong>GUARANTEED</strong> fair.
                 </p>
                 
                 <div class="bg-blue-50 dark:bg-blue-900/20 p-2.5 rounded-lg border border-blue-100 dark:border-blue-800/30">
