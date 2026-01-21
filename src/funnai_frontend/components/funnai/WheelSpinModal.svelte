@@ -6,9 +6,12 @@
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
   import { fetchTokens, protocolConfig, FUNNAI_CANISTER_ID } from "../../helpers/token_helpers";
   import { WHEEL_CONFIG, getSegmentIndexForOutcome, type WheelOutcome } from "../../helpers/config/wheelConfig";
-  import { Info, Gift, Zap, Coins, AlertCircle, CheckCircle } from 'lucide-svelte';
+  import { Info, Gift, Zap, Coins, AlertCircle, CheckCircle, ChevronDown, ChevronUp, HelpCircle } from 'lucide-svelte';
 
   export let isOpen: boolean = false;
+  
+  // Info panel state
+  let showInfo: boolean = false;
   export let onClose: () => void = () => {};
 
   // State
@@ -471,6 +474,7 @@
     statusMessage = "";
     errorMessage = "";
     successMessage = "";
+    showInfo = false;
     onClose();
   }
   
@@ -621,6 +625,80 @@
         {:else}
           <!-- Info Phase (wheel visible above) -->
           <div class="w-full flex flex-col gap-3">
+            <!-- How to Play Toggle -->
+            <button
+              type="button"
+              on:click={() => showInfo = !showInfo}
+              class="w-full flex items-center justify-between p-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/30 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+            >
+              <span class="flex items-center gap-2 text-sm font-medium">
+                <HelpCircle class="w-4 h-4" />
+                How to Play & Prizes
+              </span>
+              {#if showInfo}
+                <ChevronUp class="w-4 h-4" />
+              {:else}
+                <ChevronDown class="w-4 h-4" />
+              {/if}
+            </button>
+            
+            {#if showInfo}
+              <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-700 text-sm space-y-3">
+                <!-- How to Play -->
+                <div>
+                  <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-1.5 flex items-center gap-1.5">
+                    <Gift class="w-4 h-4 text-amber-500" />
+                    How to Play
+                  </h4>
+                  <ol class="list-decimal list-inside text-gray-600 dark:text-gray-400 space-y-1 text-xs">
+                    <li>Make sure you have enough FUNNAI tokens</li>
+                    <li>Click "Spin the Wheel" to pay and spin</li>
+                    <li>Watch the wheel spin and land on your prize!</li>
+                    <li>Cycle prizes are sent directly to your mAIner</li>
+                  </ol>
+                </div>
+                
+                <!-- Prizes -->
+                <div>
+                  <h4 class="font-semibold text-gray-800 dark:text-gray-200 mb-1.5 flex items-center gap-1.5">
+                    <Coins class="w-4 h-4 text-yellow-500" />
+                    Prizes
+                  </h4>
+                  <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                      <span class="text-gray-600 dark:text-gray-400">1T Cycles</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full bg-green-600"></span>
+                      <span class="text-gray-600 dark:text-gray-400">10T Cycles</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full bg-teal-500"></span>
+                      <span class="text-gray-600 dark:text-gray-400">100T Cycles</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                      <span class="text-gray-600 dark:text-gray-400">10 FUNNAI</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                      <span class="text-gray-600 dark:text-gray-400">100 FUNNAI</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                      <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+                      <span class="text-gray-600 dark:text-gray-400">1000 FUNNAI</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Note -->
+                <p class="text-xs text-gray-500 dark:text-gray-500 italic">
+                  Randomness is secured by the Internet Computer's cryptographic random beacon.
+                </p>
+              </div>
+            {/if}
+            
             <!-- Cost & Balance Info -->
             <div class="p-3 rounded-lg bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
               <div class="flex justify-between items-center mb-2">
