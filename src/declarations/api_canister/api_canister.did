@@ -42,6 +42,8 @@ type SystemMetrics =
  record {
    daily_burn_rate: DailyBurnRate;
    funnai_index: float64;
+   total_cycles_protocol: nat;
+   total_cycles_protocol_usd: float64;
  };
 type StatusCodeRecordResult = 
  variant {

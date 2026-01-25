@@ -47,6 +47,8 @@ export interface DailyMetricsData {
       usd: number;
       cycles: number;
     };
+    total_cycles_protocol: number;
+    total_cycles_protocol_usd: number;
   };
 }
 
@@ -206,7 +208,9 @@ export class DailyMetricsService {
             daily_burn_rate: {
               usd: Number(metric.system_metrics.daily_burn_rate.usd),
               cycles: Number(metric.system_metrics.daily_burn_rate.cycles)
-            }
+            },
+            total_cycles_protocol: Number(metric.system_metrics.total_cycles_protocol || 0),
+            total_cycles_protocol_usd: Number(metric.system_metrics.total_cycles_protocol_usd || 0)
           }
         }));
 
@@ -325,7 +329,9 @@ export class DailyMetricsService {
             daily_burn_rate: {
               usd: Number(metric.system_metrics.daily_burn_rate.usd),
               cycles: Number(metric.system_metrics.daily_burn_rate.cycles)
-            }
+            },
+            total_cycles_protocol: Number(metric.system_metrics.total_cycles_protocol || 0),
+            total_cycles_protocol_usd: Number(metric.system_metrics.total_cycles_protocol_usd || 0)
           }
         };
 

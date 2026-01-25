@@ -93,6 +93,8 @@ export const idlFactory = ({ IDL }) => {
   const SystemMetrics = IDL.Record({
     'funnai_index' : IDL.Float64,
     'daily_burn_rate' : DailyBurnRate,
+    'total_cycles_protocol' : IDL.Nat,
+    'total_cycles_protocol_usd' : IDL.Float64,
   });
   const DailyMetric = IDL.Record({
     'derived_metrics' : DerivedMetrics,

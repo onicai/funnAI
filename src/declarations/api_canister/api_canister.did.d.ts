@@ -173,6 +173,8 @@ export type StatusCodeRecordResult = { 'Ok' : StatusCodeRecord } |
 export interface SystemMetrics {
   'funnai_index' : number,
   'daily_burn_rate' : DailyBurnRate,
+  'total_cycles_protocol' : bigint,
+  'total_cycles_protocol_usd' : number,
 }
 export type TextResult = { 'Ok' : string } |
   { 'Err' : ApiError };
