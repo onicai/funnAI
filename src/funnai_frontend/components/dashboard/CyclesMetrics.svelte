@@ -23,14 +23,21 @@
   const CYCLES_TO_USD_RATE = 1.3713;
 
   /**
-   * Format cycles in trillions with appropriate suffix
+   * Format cycles with appropriate suffix
+   * Note: Backend stores cycles in trillions, so value is already in T
    */
   function formatTrillionCycles(cycles: number): string {
-    const trillions = cycles / 1_000_000_000_000;
-    if (trillions >= 1000) {
-      return `${(trillions / 1000).toLocaleString("en-US", { maximumFractionDigits: 2 })}Q`;
+    // Backend already stores values in trillions
+    if (cycles >= 1_000_000) {
+      // Quadrillions (1000+ trillion)
+      return `${(cycles / 1000).toLocaleString("en-US", { maximumFractionDigits: 0 })}Q`;
     }
-    return `${trillions.toLocaleString("en-US", { maximumFractionDigits: 0 })}T`;
+    if (cycles >= 1000) {
+      // Thousands of trillions, show with comma
+      return `${cycles.toLocaleString("en-US", { maximumFractionDigits: 0 })}T`;
+    }
+    // Less than 1000 trillion
+    return `${cycles.toLocaleString("en-US", { maximumFractionDigits: 0 })}T`;
   }
 
   /**
@@ -48,10 +55,10 @@
 
   /**
    * Calculate USD value from cycles if not provided
+   * Note: cycles value is already in trillions from the backend
    */
-  function calculateUsdFromCycles(cycles: number): number {
-    const trillions = cycles / 1_000_000_000_000;
-    return trillions * CYCLES_TO_USD_RATE;
+  function calculateUsdFromCycles(cyclesInTrillions: number): number {
+    return cyclesInTrillions * CYCLES_TO_USD_RATE;
   }
 
   async function loadMetrics() {
