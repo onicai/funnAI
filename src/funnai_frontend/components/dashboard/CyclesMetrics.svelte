@@ -172,6 +172,33 @@
 
   <!-- Metrics Grid -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Daily Burn Rate -->
+    <div class="relative overflow-hidden bg-gradient-to-br from-orange-50 to-red-100 dark:from-orange-900/20 dark:to-red-800/20 rounded-xl p-4 border border-orange-200 dark:border-orange-700/50">
+      <div class="absolute top-0 right-0 w-20 h-20 bg-orange-200/30 dark:bg-orange-700/20 rounded-full -mr-6 -mt-6"></div>
+      <div class="relative">
+        <div class="flex items-center gap-2 mb-2">
+          <svg class="w-4 h-4 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
+          </svg>
+          <span class="text-xs font-medium text-orange-700 dark:text-orange-300 uppercase tracking-wide">Daily Burn</span>
+        </div>
+        {#if loading}
+          <div class="animate-pulse">
+            <div class="h-7 bg-orange-200 dark:bg-orange-700/50 rounded w-24 mb-1"></div>
+            <div class="h-4 bg-orange-200 dark:bg-orange-700/50 rounded w-20"></div>
+          </div>
+        {:else}
+          <div class="text-2xl font-bold text-orange-800 dark:text-orange-200">
+            {formatTrillionCycles(dailyBurnRateCycles)}/day
+          </div>
+          <div class="text-sm text-orange-600 dark:text-orange-400 font-medium">
+            {formatUsd(dailyBurnRateUsd)}/day
+          </div>
+        {/if}
+      </div>
+    </div>
+    
     <!-- Total Cycles All Mainers -->
     <div class="relative overflow-hidden bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-4 border border-purple-200 dark:border-purple-700/50">
       <div class="absolute top-0 right-0 w-20 h-20 bg-purple-200/30 dark:bg-purple-700/20 rounded-full -mr-6 -mt-6"></div>
@@ -250,32 +277,7 @@
       </div>
     </div>
 
-    <!-- Daily Burn Rate -->
-    <div class="relative overflow-hidden bg-gradient-to-br from-orange-50 to-red-100 dark:from-orange-900/20 dark:to-red-800/20 rounded-xl p-4 border border-orange-200 dark:border-orange-700/50">
-      <div class="absolute top-0 right-0 w-20 h-20 bg-orange-200/30 dark:bg-orange-700/20 rounded-full -mr-6 -mt-6"></div>
-      <div class="relative">
-        <div class="flex items-center gap-2 mb-2">
-          <svg class="w-4 h-4 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
-          </svg>
-          <span class="text-xs font-medium text-orange-700 dark:text-orange-300 uppercase tracking-wide">Daily Burn</span>
-        </div>
-        {#if loading}
-          <div class="animate-pulse">
-            <div class="h-7 bg-orange-200 dark:bg-orange-700/50 rounded w-24 mb-1"></div>
-            <div class="h-4 bg-orange-200 dark:bg-orange-700/50 rounded w-20"></div>
-          </div>
-        {:else}
-          <div class="text-2xl font-bold text-orange-800 dark:text-orange-200">
-            {formatTrillionCycles(dailyBurnRateCycles)}/day
-          </div>
-          <div class="text-sm text-orange-600 dark:text-orange-400 font-medium">
-            {formatUsd(dailyBurnRateUsd)}/day
-          </div>
-        {/if}
-      </div>
-    </div>
+    
   </div>
 
   <!-- Summary Footer -->
