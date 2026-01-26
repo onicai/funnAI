@@ -47,8 +47,11 @@ export interface DailyMetricsData {
       usd: number;
       cycles: number;
     };
-    total_cycles_protocol: number;
-    total_cycles_protocol_usd: number;
+    total_cycles?: {
+      all: { cycles: number; usd: number };
+      mainers: { cycles: number; usd: number };
+      protocol: { cycles: number; usd: number };
+    };
   };
 }
 
@@ -209,8 +212,21 @@ export class DailyMetricsService {
               usd: Number(metric.system_metrics.daily_burn_rate.usd),
               cycles: Number(metric.system_metrics.daily_burn_rate.cycles)
             },
-            total_cycles_protocol: Number(metric.system_metrics.total_cycles_protocol || 0),
-            total_cycles_protocol_usd: Number(metric.system_metrics.total_cycles_protocol_usd || 0)
+            // Handle optional total_cycles field (array with 0 or 1 elements in Candid)
+            total_cycles: metric.system_metrics.total_cycles?.[0] ? {
+              all: {
+                cycles: Number(metric.system_metrics.total_cycles[0].all.cycles),
+                usd: Number(metric.system_metrics.total_cycles[0].all.usd)
+              },
+              mainers: {
+                cycles: Number(metric.system_metrics.total_cycles[0].mainers.cycles),
+                usd: Number(metric.system_metrics.total_cycles[0].mainers.usd)
+              },
+              protocol: {
+                cycles: Number(metric.system_metrics.total_cycles[0].protocol.cycles),
+                usd: Number(metric.system_metrics.total_cycles[0].protocol.usd)
+              }
+            } : undefined
           }
         }));
 
@@ -283,6 +299,12 @@ export class DailyMetricsService {
       if ("Ok" in result) {
         const metric = result.Ok;
         
+        // Debug: Log the raw system_metrics to understand the structure
+        console.log("Raw system_metrics from API:", JSON.stringify(metric.system_metrics, (key, value) =>
+          typeof value === 'bigint' ? value.toString() : value
+        , 2));
+        console.log("total_cycles field:", metric.system_metrics.total_cycles);
+        
         // Transform the single metric to match our interface
         const transformedMetric: DailyMetricsData = {
           metadata: {
@@ -330,8 +352,21 @@ export class DailyMetricsService {
               usd: Number(metric.system_metrics.daily_burn_rate.usd),
               cycles: Number(metric.system_metrics.daily_burn_rate.cycles)
             },
-            total_cycles_protocol: Number(metric.system_metrics.total_cycles_protocol || 0),
-            total_cycles_protocol_usd: Number(metric.system_metrics.total_cycles_protocol_usd || 0)
+            // Handle optional total_cycles field (array with 0 or 1 elements in Candid)
+            total_cycles: metric.system_metrics.total_cycles?.[0] ? {
+              all: {
+                cycles: Number(metric.system_metrics.total_cycles[0].all.cycles),
+                usd: Number(metric.system_metrics.total_cycles[0].all.usd)
+              },
+              mainers: {
+                cycles: Number(metric.system_metrics.total_cycles[0].mainers.cycles),
+                usd: Number(metric.system_metrics.total_cycles[0].mainers.usd)
+              },
+              protocol: {
+                cycles: Number(metric.system_metrics.total_cycles[0].protocol.cycles),
+                usd: Number(metric.system_metrics.total_cycles[0].protocol.usd)
+              }
+            } : undefined
           }
         };
 

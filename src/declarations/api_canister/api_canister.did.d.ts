@@ -170,11 +170,19 @@ export type StatusCode = number;
 export interface StatusCodeRecord { 'status_code' : StatusCode }
 export type StatusCodeRecordResult = { 'Ok' : StatusCodeRecord } |
   { 'Err' : ApiError };
+export interface CyclesWithUsd {
+  'cycles' : bigint,
+  'usd' : number,
+}
+export interface TotalCyclesBreakdown {
+  'all' : CyclesWithUsd,
+  'mainers' : CyclesWithUsd,
+  'protocol' : CyclesWithUsd,
+}
 export interface SystemMetrics {
   'funnai_index' : number,
   'daily_burn_rate' : DailyBurnRate,
-  'total_cycles_protocol' : bigint,
-  'total_cycles_protocol_usd' : number,
+  'total_cycles' : [] | [TotalCyclesBreakdown],
 }
 export type TextResult = { 'Ok' : string } |
   { 'Err' : ApiError };

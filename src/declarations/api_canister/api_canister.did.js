@@ -90,11 +90,19 @@ export const idlFactory = ({ IDL }) => {
     'created_at' : IDL.Text,
   });
   const DailyBurnRate = IDL.Record({ 'usd' : IDL.Float64, 'cycles' : IDL.Nat });
+  const CyclesWithUsd = IDL.Record({
+    'usd' : IDL.Float64,
+    'cycles' : IDL.Nat,
+  });
+  const TotalCyclesBreakdown = IDL.Record({
+    'all' : CyclesWithUsd,
+    'mainers' : CyclesWithUsd,
+    'protocol' : CyclesWithUsd,
+  });
   const SystemMetrics = IDL.Record({
+    'total_cycles' : IDL.Opt(TotalCyclesBreakdown),
     'funnai_index' : IDL.Float64,
     'daily_burn_rate' : DailyBurnRate,
-    'total_cycles_protocol' : IDL.Nat,
-    'total_cycles_protocol_usd' : IDL.Float64,
   });
   const DailyMetric = IDL.Record({
     'derived_metrics' : DerivedMetrics,

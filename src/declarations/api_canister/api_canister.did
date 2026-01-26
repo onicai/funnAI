@@ -38,12 +38,22 @@ type TextResult =
    Err: ApiError;
    Ok: text;
  };
+type CyclesWithUsd = 
+ record {
+   cycles: nat;
+   usd: float64;
+ };
+type TotalCyclesBreakdown = 
+ record {
+   all: CyclesWithUsd;
+   mainers: CyclesWithUsd;
+   protocol: CyclesWithUsd;
+ };
 type SystemMetrics = 
  record {
    daily_burn_rate: DailyBurnRate;
    funnai_index: float64;
-   total_cycles_protocol: nat;
-   total_cycles_protocol_usd: float64;
+   total_cycles: opt TotalCyclesBreakdown;
  };
 type StatusCodeRecordResult = 
  variant {

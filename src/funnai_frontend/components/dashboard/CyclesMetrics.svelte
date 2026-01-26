@@ -62,18 +62,34 @@
       const latestMetric = await DailyMetricsService.getLatestMetrics();
       
       if (latestMetric) {
-        // Total cycles from all mainers
-        totalCyclesAllMainers = latestMetric.mainers.totals.total_cycles;
-        totalCyclesAllMainersUsd = calculateUsdFromCycles(totalCyclesAllMainers);
+        // Check if total_cycles breakdown is available from the API
+        const totalCyclesData = latestMetric.system_metrics.total_cycles;
+        
+        if (totalCyclesData) {
+          // Use the new API structure with breakdown
+          totalCyclesAllMainers = totalCyclesData.mainers.cycles;
+          totalCyclesAllMainersUsd = totalCyclesData.mainers.usd;
 
-        // Total cycles from protocol (if available from API, otherwise use 0)
-        totalCyclesProtocol = latestMetric.system_metrics.total_cycles_protocol || 0;
-        totalCyclesProtocolUsd = latestMetric.system_metrics.total_cycles_protocol_usd || 
-                                  calculateUsdFromCycles(totalCyclesProtocol);
+          totalCyclesProtocol = totalCyclesData.protocol.cycles;
+          totalCyclesProtocolUsd = totalCyclesData.protocol.usd;
 
-        // Total cycles (mainers + protocol)
-        totalCyclesAll = totalCyclesAllMainers + totalCyclesProtocol;
-        totalCyclesAllUsd = totalCyclesAllMainersUsd + totalCyclesProtocolUsd;
+          totalCyclesAll = totalCyclesData.all.cycles;
+          totalCyclesAllUsd = totalCyclesData.all.usd;
+        } else {
+          // Fallback: total_cycles not available from API
+          // Use mainers.totals.total_cycles as fallback for mainer cycles
+          totalCyclesAllMainers = latestMetric.mainers.totals.total_cycles;
+          totalCyclesAllMainersUsd = calculateUsdFromCycles(totalCyclesAllMainers);
+
+          // Protocol cycles not available without the total_cycles field
+          totalCyclesProtocol = 0;
+          totalCyclesProtocolUsd = 0;
+
+          totalCyclesAll = totalCyclesAllMainers;
+          totalCyclesAllUsd = totalCyclesAllMainersUsd;
+          
+          console.log("total_cycles not available from API, using fallback. Mainers cycles:", totalCyclesAllMainers);
+        }
 
         // Daily burn rate
         dailyBurnRateCycles = latestMetric.system_metrics.daily_burn_rate.cycles;
