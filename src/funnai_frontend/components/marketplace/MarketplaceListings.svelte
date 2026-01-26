@@ -367,6 +367,54 @@
   $: if (currentPage > totalPages && totalPages > 0) {
     currentPage = 1;
   }
+
+  // Generate page numbers for pagination (simple, no duplicates)
+  function getPageNumbers(current: number, total: number): (number | 'ellipsis')[] {
+    if (total <= 7) {
+      // Show all pages if 7 or fewer
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    const pages: (number | 'ellipsis')[] = [];
+    
+    // Always show first page
+    pages.push(1);
+    
+    // Calculate range around current page
+    let rangeStart = Math.max(2, current - 1);
+    let rangeEnd = Math.min(total - 1, current + 1);
+    
+    // Adjust range to always show 3 middle numbers when possible
+    if (current <= 3) {
+      rangeStart = 2;
+      rangeEnd = Math.min(total - 1, 4);
+    } else if (current >= total - 2) {
+      rangeStart = Math.max(2, total - 3);
+      rangeEnd = total - 1;
+    }
+    
+    // Add ellipsis before range if needed
+    if (rangeStart > 2) {
+      pages.push('ellipsis');
+    }
+    
+    // Add range pages
+    for (let i = rangeStart; i <= rangeEnd; i++) {
+      pages.push(i);
+    }
+    
+    // Add ellipsis after range if needed
+    if (rangeEnd < total - 1) {
+      pages.push('ellipsis');
+    }
+    
+    // Always show last page
+    pages.push(total);
+    
+    return pages;
+  }
+
+  $: pageNumbers = getPageNumbers(currentPage, totalPages);
 </script>
 
 <div class="space-y-6">
@@ -640,63 +688,20 @@
             
             <!-- Page Numbers -->
             <div class="flex items-center space-x-1">
-              {#if totalPages <= 7}
-                <!-- Show all pages if 7 or fewer -->
-                {#each Array(totalPages) as _, i}
+              {#each pageNumbers as item}
+                {#if item === 'ellipsis'}
+                  <span class="px-2 text-gray-500">...</span>
+                {:else}
                   <button
-                    on:click={() => goToPage(i + 1)}
-                    class="w-10 h-10 rounded-lg font-medium transition-colors {currentPage === i + 1 
+                    on:click={() => goToPage(item)}
+                    class="w-10 h-10 rounded-lg font-medium transition-colors {currentPage === item 
                       ? 'bg-purple-600 text-white' 
                       : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}"
                   >
-                    {i + 1}
+                    {item}
                   </button>
-                {/each}
-              {:else}
-                <!-- Show abbreviated pagination for many pages -->
-                <!-- First page -->
-                <button
-                  on:click={() => goToPage(1)}
-                  class="w-10 h-10 rounded-lg font-medium transition-colors {currentPage === 1 
-                    ? 'bg-purple-600 text-white' 
-                    : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}"
-                >
-                  1
-                </button>
-                
-                {#if currentPage > 3}
-                  <span class="px-2 text-gray-500">...</span>
                 {/if}
-                
-                <!-- Pages around current -->
-                {#each Array(5) as _, i}
-                  {@const pageNum = Math.max(2, Math.min(currentPage - 2 + i, totalPages - 1))}
-                  {#if pageNum > 1 && pageNum < totalPages && (currentPage <= 3 ? pageNum <= 5 : currentPage >= totalPages - 2 ? pageNum >= totalPages - 4 : Math.abs(pageNum - currentPage) <= 2)}
-                    <button
-                      on:click={() => goToPage(pageNum)}
-                      class="w-10 h-10 rounded-lg font-medium transition-colors {currentPage === pageNum 
-                        ? 'bg-purple-600 text-white' 
-                        : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}"
-                    >
-                      {pageNum}
-                    </button>
-                  {/if}
-                {/each}
-                
-                {#if currentPage < totalPages - 2}
-                  <span class="px-2 text-gray-500">...</span>
-                {/if}
-                
-                <!-- Last page -->
-                <button
-                  on:click={() => goToPage(totalPages)}
-                  class="w-10 h-10 rounded-lg font-medium transition-colors {currentPage === totalPages 
-                    ? 'bg-purple-600 text-white' 
-                    : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}"
-                >
-                  {totalPages}
-                </button>
-              {/if}
+              {/each}
             </div>
             
             <!-- Next Button -->
