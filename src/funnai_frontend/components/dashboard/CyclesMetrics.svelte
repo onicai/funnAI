@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { DailyMetricsService, type DailyMetricsData } from "../../helpers/DailyMetricsService";
+  import { DailyMetricsService } from "../../helpers/DailyMetricsService";
+  import { CyclesRateService } from "../../helpers/CyclesRateService";
 
   export let title: string = "Cycles Overview";
 
@@ -19,8 +20,8 @@
   let dailyBurnRateUsd = 0;
   let lastUpdated = "";
 
-  // Cycles to USD conversion rate (approximately $1.37 per trillion cycles based on ICP/Cycles exchange)
-  const CYCLES_TO_USD_RATE = 1.3713;
+  // Dynamic cycles to USD conversion rate (fetched from CMC)
+  let cyclesUsdRate = 1.37; // Default fallback
 
   /**
    * Format cycles with appropriate suffix
@@ -58,7 +59,18 @@
    * Note: cycles value is already in trillions from the backend
    */
   function calculateUsdFromCycles(cyclesInTrillions: number): number {
-    return cyclesInTrillions * CYCLES_TO_USD_RATE;
+    return cyclesInTrillions * cyclesUsdRate;
+  }
+
+  /**
+   * Fetch the dynamic cycles to USD conversion rate
+   */
+  async function loadCyclesRate() {
+    try {
+      cyclesUsdRate = await CyclesRateService.getCyclesToUsdRate();
+    } catch (err) {
+      // Use default fallback rate
+    }
   }
 
   async function loadMetrics() {
@@ -94,8 +106,6 @@
 
           totalCyclesAll = totalCyclesAllMainers;
           totalCyclesAllUsd = totalCyclesAllMainersUsd;
-          
-          console.log("total_cycles not available from API, using fallback. Mainers cycles:", totalCyclesAllMainers);
         }
 
         // Daily burn rate
@@ -115,6 +125,9 @@
   }
 
   onMount(async () => {
+    // First fetch the dynamic conversion rate
+    await loadCyclesRate();
+    // Then load metrics
     await loadMetrics();
     // Update metrics every 5 minutes
     updateInterval = setInterval(loadMetrics, 5 * 60 * 1000);

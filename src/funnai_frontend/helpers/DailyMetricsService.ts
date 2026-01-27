@@ -139,7 +139,6 @@ export class DailyMetricsService {
     if (this.isCacheValid(cacheKey)) {
       const cached = this.cache.get(cacheKey);
       if (cached) {
-        console.log("Returning cached daily metrics for", cacheKey);
         return cached;
       }
     }
@@ -150,7 +149,6 @@ export class DailyMetricsService {
         throw new Error("API canister actor not available");
       }
 
-      console.log("Fetching daily metrics with query:", query);
       
       // Prepare the query parameters
       const queryParam = {
@@ -234,7 +232,6 @@ export class DailyMetricsService {
         this.cache.set(cacheKey, transformedMetrics);
         this.cacheTimestamps.set(cacheKey, Date.now());
         
-        console.log(`Fetched ${transformedMetrics.length} daily metrics entries`);
         return transformedMetrics;
       } else {
         console.error("Error fetching daily metrics:", result.Err);
@@ -282,7 +279,6 @@ export class DailyMetricsService {
   static async getLatestMetrics(): Promise<DailyMetricsData | null> {
     // Check cache first
     if (this.isLatestCacheValid() && this.latestMetricCache) {
-      console.log("Returning cached latest metric");
       return this.latestMetricCache;
     }
 
@@ -292,18 +288,10 @@ export class DailyMetricsService {
         throw new Error("API canister actor not available");
       }
 
-      console.log("Fetching latest daily metric using getLatestDailyMetric");
-      
       const result = await storeValue.apiCanisterActor.getLatestDailyMetric();
       
       if ("Ok" in result) {
         const metric = result.Ok;
-        
-        // Debug: Log the raw system_metrics to understand the structure
-        console.log("Raw system_metrics from API:", JSON.stringify(metric.system_metrics, (key, value) =>
-          typeof value === 'bigint' ? value.toString() : value
-        , 2));
-        console.log("total_cycles field:", metric.system_metrics.total_cycles);
         
         // Transform the single metric to match our interface
         const transformedMetric: DailyMetricsData = {
@@ -374,7 +362,6 @@ export class DailyMetricsService {
         this.latestMetricCache = transformedMetric;
         this.latestMetricTimestamp = Date.now();
         
-        console.log(`Fetched latest daily metric for date: ${transformedMetric.metadata.date}`);
         return transformedMetric;
       } else {
         console.error("Error fetching latest daily metric:", result.Err);
