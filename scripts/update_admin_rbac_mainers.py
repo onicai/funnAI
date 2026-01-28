@@ -281,8 +281,10 @@ def get_mainers(network: str) -> List[Dict]:
         log_message(f"Failed to get mAIners: {e}", "ERROR")
         sys.exit(1)
 
-def get_admin_roles(network: str, canister_id: str, dry_run: bool = False) -> Optional[List[Dict]]:
+def get_admin_roles(network: str, canister_id: str) -> Optional[List[Dict]]:
     """Get the admin roles for a canister.
+
+    This is a query call (read-only) and is always executed, even in dry-run mode.
 
     Returns:
         List of admin role assignments, or None if the call fails
@@ -291,10 +293,6 @@ def get_admin_roles(network: str, canister_id: str, dry_run: bool = False) -> Op
         "dfx", "canister", "--network", network, "call",
         canister_id, "getAdminRoles", "--output", "json"
     ]
-
-    if dry_run:
-        log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
-        return []
 
     try:
         result = run_command(command, retry_on_transient_errors=True, max_retries=3, retry_delay=2.0)
@@ -414,9 +412,9 @@ def update_mainer_rbac(network: str, mainer: Dict, principal: str, action: str, 
     log_message(f"{'='*60}", "INFO")
     log_message(f"Processing mAIner: {address}", "INFO")
 
-    # Step 1: Get current admin roles
+    # Step 1: Get current admin roles (query call - always executed even in dry-run)
     log_message(f"Step 1: Getting current admin roles...", "INFO")
-    admin_roles = get_admin_roles(network, address, dry_run)
+    admin_roles = get_admin_roles(network, address)
 
     if admin_roles is None:
         log_message(f"Skipping {address} - method not available or error occurred", "WARNING")
@@ -452,7 +450,7 @@ def update_mainer_rbac(network: str, mainer: Dict, principal: str, action: str, 
                 time.sleep(delay)
 
                 log_message(f"Verification attempt {attempt}/{max_verification_retries}...", "INFO")
-                admin_roles_after = get_admin_roles(network, address, dry_run)
+                admin_roles_after = get_admin_roles(network, address)
 
                 if admin_roles_after is None:
                     if attempt < max_verification_retries:
@@ -496,7 +494,7 @@ def update_mainer_rbac(network: str, mainer: Dict, principal: str, action: str, 
             log_message(f"Step 3: Verifying role revocation...", "INFO")
             time.sleep(2)  # Give canister a moment to process
 
-            admin_roles_after = get_admin_roles(network, address, dry_run)
+            admin_roles_after = get_admin_roles(network, address)
 
             if admin_roles_after is None:
                 log_message(f"Failed to verify role revocation - could not get admin roles", "ERROR")

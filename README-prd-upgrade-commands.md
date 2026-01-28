@@ -5,10 +5,9 @@
 # The principal of funnAI Django running on aws-dev (same for all networks)
 FUNNAI_DJANGO_PRINCIPAL=bzqba-mwz5i-rq3oz-iie6i-gf7bi-kqr2x-tjuq4-nblmh-ephou-n27tl-xqe
 
-# One of these...
+# One of these... (note: it does not work for 'demo')
 NETWORK=prd
 NETWORK=testing
-NETWORK=demo
 NETWORK=development
 
 echo " "
@@ -310,7 +309,7 @@ echo $NETWORK
 
 # from folder: PoAIW/src/Api
 dfx canister --network $NETWORK stop $SUBNET_0_2_API
-dfx canister --network $NETWORK snapshot create $SUBNET_0_2_API 
+dfx canister --network $NETWORK snapshot create $SUBNET_0_2_API
 #
 rm -rf .mops
 mops install
@@ -319,6 +318,40 @@ dfx deploy --network $NETWORK api_canister --mode upgrade --wasm-memory-persiste
 
 # start the API canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_2_API
+
+# run a few tests to confirm data was preserved
+dfx canister --network $NETWORK call $SUBNET_0_2_API getLatestDailyMetric --output json
+dfx canister --network $NETWORK call $SUBNET_0_2_API getDailyMetrics '(opt record { start_date = opt "2025-12-21"; end_date = opt "2026-01-21"; limit = null })' --output json
+
+# -------------------------------------------------------------------------
+# Start the Activity Feed sync timer
+# -------------------------------------------------------------------------
+# The timer syncs winners and challenges from GameState every 300 seconds (default)
+
+# Check current sync interval (should be 300 seconds / 5 minutes)
+dfx canister --network $NETWORK call $SUBNET_0_2_API getActivityFeedSyncIntervalAdmin
+
+# Optional: Change the sync interval (in seconds) if needed
+# dfx canister --network $NETWORK call $SUBNET_0_2_API setActivityFeedSyncIntervalAdmin '(600)'
+
+# Start the timer (will sync 5 seconds after starting, then every syncInterval seconds)
+dfx canister --network $NETWORK call $SUBNET_0_2_API startActivityFeedTimerAdmin
+
+# Wait ~10 seconds for first sync, then verify cache is populated
+dfx canister --network $NETWORK call $SUBNET_0_2_API getActivityFeedCacheStatus --output json
+
+# -------------------------------------------------------------------------
+# Test the Activity Feed endpoints
+# -------------------------------------------------------------------------
+
+# Get activity feed with default pagination (20 winners, 20 challenges)
+dfx canister --network $NETWORK call $SUBNET_0_2_API getActivityFeed '(record { winnersLimit = null; winnersOffset = null; challengesLimit = null; challengesOffset = null; sinceTimestamp = null })' --output json
+
+# Get activity feed with custom pagination
+dfx canister --network $NETWORK call $SUBNET_0_2_API getActivityFeed '(record { winnersLimit = opt 5; winnersOffset = opt 0; challengesLimit = opt 3; challengesOffset = opt 0; sinceTimestamp = null })' --output json
+
+# Get open challenges from cache
+dfx canister --network $NETWORK call $SUBNET_0_2_API getOpenChallengesFromCache --output json
 ```
 
 ## Update Admin RBAC for API canister
