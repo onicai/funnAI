@@ -678,21 +678,82 @@
           mainerAgent: cleanMainerAgent,
         };
 
-        // Create the backend promise based on token type
-        let backendPromise: Promise<any>;
-        if (selectedTokenSymbol === 'FUNNAI') {
-          // For FUNNAI, use the FUNNAI-specific endpoint
-          if (!$store.gameStateCanisterActor) {
-            throw new Error("Game state canister not available");
+        // Helper function to call the backend topup with retry
+        async function callBackendTopupWithRetry(topUpInput: any, tokenSymbol: string): Promise<any> {
+          const DELAY_BEFORE_TOPUP_MS = 3000; // 3 second delay to ensure ledger transaction is queryable
+          
+          // Wait before calling the backend to ensure the ledger transaction is queryable
+          console.log(`Waiting ${DELAY_BEFORE_TOPUP_MS}ms before calling backend topup...`);
+          await new Promise(resolve => setTimeout(resolve, DELAY_BEFORE_TOPUP_MS));
+          
+          const makeTopupCall = () => {
+            if (tokenSymbol === 'FUNNAI') {
+              if (!$store.gameStateCanisterActor) {
+                throw new Error("Game state canister not available");
+              }
+              return $store.gameStateCanisterActor.topUpCyclesForMainerAgentWithFunnai(topUpInput);
+            } else {
+              if (!$store.gameStateCanisterActor) {
+                throw new Error("Game state canister not available");
+              }
+              return $store.gameStateCanisterActor.topUpCyclesForMainerAgent(topUpInput);
+            }
           };
-          backendPromise = $store.gameStateCanisterActor.topUpCyclesForMainerAgentWithFunnai(topUpInput);
-        } else {
-          // For ICP, BOB, and ckBTC, use the standard ICP endpoint
-          if (!$store.gameStateCanisterActor) {
-            throw new Error("Game state canister not available");
+          
+          // Helper to check if result is an error (Err variant)
+          const isErrorResult = (result: any): boolean => {
+            return result && typeof result === 'object' && 'Err' in result;
           };
-          backendPromise = $store.gameStateCanisterActor.topUpCyclesForMainerAgent(topUpInput);
+          
+          // Helper to get error from result
+          const getError = (result: any): any => {
+            return result?.Err;
+          };
+
+          try {
+            const result = await makeTopupCall();
+            
+            // Check if result is an Err variant - if so, retry
+            if (isErrorResult(result)) {
+              console.warn("First backend topup call returned Err, retrying in 2 seconds...", getError(result));
+              
+              // Wait 2 seconds before retry
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              
+              const retryResult = await makeTopupCall();
+              if (isErrorResult(retryResult)) {
+                console.error("Backend topup retry also returned Err", getError(retryResult));
+              } else {
+                console.log("Backend topup retry succeeded");
+              }
+              return retryResult;
+            }
+            
+            return result;
+          } catch (firstError) {
+            console.warn("First backend topup call threw exception, retrying in 2 seconds...", firstError);
+            
+            // Wait 2 seconds before retry
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Retry once
+            try {
+              const retryResult = await makeTopupCall();
+              if (isErrorResult(retryResult)) {
+                console.error("Backend topup retry returned Err after exception", getError(retryResult));
+              } else {
+                console.log("Backend topup retry succeeded");
+              }
+              return retryResult;
+            } catch (retryError) {
+              console.error("Backend topup retry also threw exception", retryError);
+              throw retryError;
+            }
+          }
         }
+
+        // Create the backend promise with delay and retry logic
+        let backendPromise: Promise<any> = callBackendTopupWithRetry(topUpInput, selectedTokenSymbol);
 
         // Handle celebration for max amounts (only for ICP)
         const shouldCelebrate = isMaxAmount && CELEBRATION_ENABLED && selectedTokenSymbol === 'ICP';
