@@ -12,6 +12,7 @@
   import MetricsDashboard from "../components/dashboard/MetricsDashboard.svelte";
   import TokenInfo from "../components/dashboard/TokenInfo.svelte";
   import TokenRewardsChart from "../components/dashboard/TokenRewardsChart.svelte";
+  import CyclesMetrics from "../components/dashboard/CyclesMetrics.svelte";
   
   // Import services for fetching token data
   import { IcrcService } from "../helpers/IcrcService";
@@ -171,6 +172,11 @@
 
     <!-- Dashboard Components Grid -->
     <div class="space-y-6">
+      <!-- Cycles Overview Section -->
+      <div class="grid grid-cols-1">
+        <CyclesMetrics title="Cycles Overview" />
+      </div>
+
       <!-- Token Information Section -->
       <div class="grid grid-cols-1">
         <TokenInfo />

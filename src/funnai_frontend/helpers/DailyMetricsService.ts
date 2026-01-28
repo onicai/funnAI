@@ -47,6 +47,11 @@ export interface DailyMetricsData {
       usd: number;
       cycles: number;
     };
+    total_cycles?: {
+      all: { cycles: number; usd: number };
+      mainers: { cycles: number; usd: number };
+      protocol: { cycles: number; usd: number };
+    };
   };
 }
 
@@ -134,7 +139,6 @@ export class DailyMetricsService {
     if (this.isCacheValid(cacheKey)) {
       const cached = this.cache.get(cacheKey);
       if (cached) {
-        console.log("Returning cached daily metrics for", cacheKey);
         return cached;
       }
     }
@@ -145,7 +149,6 @@ export class DailyMetricsService {
         throw new Error("API canister actor not available");
       }
 
-      console.log("Fetching daily metrics with query:", query);
       
       // Prepare the query parameters
       const queryParam = {
@@ -206,7 +209,22 @@ export class DailyMetricsService {
             daily_burn_rate: {
               usd: Number(metric.system_metrics.daily_burn_rate.usd),
               cycles: Number(metric.system_metrics.daily_burn_rate.cycles)
-            }
+            },
+            // Handle optional total_cycles field (array with 0 or 1 elements in Candid)
+            total_cycles: metric.system_metrics.total_cycles?.[0] ? {
+              all: {
+                cycles: Number(metric.system_metrics.total_cycles[0].all.cycles),
+                usd: Number(metric.system_metrics.total_cycles[0].all.usd)
+              },
+              mainers: {
+                cycles: Number(metric.system_metrics.total_cycles[0].mainers.cycles),
+                usd: Number(metric.system_metrics.total_cycles[0].mainers.usd)
+              },
+              protocol: {
+                cycles: Number(metric.system_metrics.total_cycles[0].protocol.cycles),
+                usd: Number(metric.system_metrics.total_cycles[0].protocol.usd)
+              }
+            } : undefined
           }
         }));
 
@@ -214,7 +232,6 @@ export class DailyMetricsService {
         this.cache.set(cacheKey, transformedMetrics);
         this.cacheTimestamps.set(cacheKey, Date.now());
         
-        console.log(`Fetched ${transformedMetrics.length} daily metrics entries`);
         return transformedMetrics;
       } else {
         console.error("Error fetching daily metrics:", result.Err);
@@ -262,7 +279,6 @@ export class DailyMetricsService {
   static async getLatestMetrics(): Promise<DailyMetricsData | null> {
     // Check cache first
     if (this.isLatestCacheValid() && this.latestMetricCache) {
-      console.log("Returning cached latest metric");
       return this.latestMetricCache;
     }
 
@@ -272,8 +288,6 @@ export class DailyMetricsService {
         throw new Error("API canister actor not available");
       }
 
-      console.log("Fetching latest daily metric using getLatestDailyMetric");
-      
       const result = await storeValue.apiCanisterActor.getLatestDailyMetric();
       
       if ("Ok" in result) {
@@ -325,7 +339,22 @@ export class DailyMetricsService {
             daily_burn_rate: {
               usd: Number(metric.system_metrics.daily_burn_rate.usd),
               cycles: Number(metric.system_metrics.daily_burn_rate.cycles)
-            }
+            },
+            // Handle optional total_cycles field (array with 0 or 1 elements in Candid)
+            total_cycles: metric.system_metrics.total_cycles?.[0] ? {
+              all: {
+                cycles: Number(metric.system_metrics.total_cycles[0].all.cycles),
+                usd: Number(metric.system_metrics.total_cycles[0].all.usd)
+              },
+              mainers: {
+                cycles: Number(metric.system_metrics.total_cycles[0].mainers.cycles),
+                usd: Number(metric.system_metrics.total_cycles[0].mainers.usd)
+              },
+              protocol: {
+                cycles: Number(metric.system_metrics.total_cycles[0].protocol.cycles),
+                usd: Number(metric.system_metrics.total_cycles[0].protocol.usd)
+              }
+            } : undefined
           }
         };
 
@@ -333,7 +362,6 @@ export class DailyMetricsService {
         this.latestMetricCache = transformedMetric;
         this.latestMetricTimestamp = Date.now();
         
-        console.log(`Fetched latest daily metric for date: ${transformedMetric.metadata.date}`);
         return transformedMetric;
       } else {
         console.error("Error fetching latest daily metric:", result.Err);
