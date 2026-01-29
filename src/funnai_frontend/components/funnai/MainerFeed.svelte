@@ -296,14 +296,23 @@
                   New challenge: <span class="font-medium text-gray-800 dark:text-gray-200">{item.challengeQuestion}</span>
                 </p>
               {:else if isWinnerType(item.type)}
-                <div class="text-center">
-                  <p class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 to-amber-600 dark:from-yellow-400 dark:to-amber-400 mb-2">
-                    🎉 CONGRATULATIONS! 🎉
-                  </p>
+                <div class="{showAllEvents ? '' : 'text-center'}">
+                  {#if !showAllEvents}
+                    <!-- Personal congratulations for My Mainers tab -->
+                    <p class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 to-amber-600 dark:from-yellow-400 dark:to-amber-400 mb-2">
+                      🎉 CONGRATULATIONS! 🎉
+                    </p>
+                  {/if}
                   <p class="text-slate-700 dark:text-slate-200">
-                    Achieved <span class="font-bold text-lg {item.type === 'winner' ? 'text-yellow-600 dark:text-yellow-400' : item.type === 'second_place' ? 'text-gray-600 dark:text-gray-400' : 'text-orange-600 dark:text-orange-400'}">{getPlacementText(item.type)}</span>
+                    {#if showAllEvents}
+                      <!-- Neutral announcement for All Events tab -->
+                      Won <span class="font-bold {item.type === 'winner' ? 'text-yellow-600 dark:text-yellow-400' : item.type === 'second_place' ? 'text-gray-600 dark:text-gray-400' : 'text-orange-600 dark:text-orange-400'}">{getPlacementText(item.type)}</span>{#if item.reward} and earned <span class="font-semibold text-green-600 dark:text-green-400">{formatFunnaiAmount(item.reward.toString())} FUNNAI</span>{/if}
+                    {:else}
+                      <!-- Personal message for My Mainers tab -->
+                      Achieved <span class="font-bold text-lg {item.type === 'winner' ? 'text-yellow-600 dark:text-yellow-400' : item.type === 'second_place' ? 'text-gray-600 dark:text-gray-400' : 'text-orange-600 dark:text-orange-400'}">{getPlacementText(item.type)}</span>
+                    {/if}
                   </p>
-                  {#if item.reward}
+                  {#if !showAllEvents && item.reward}
                     <p class="text-slate-700 dark:text-slate-200">
                       and earned <span class="font-bold text-lg text-green-600 dark:text-green-400">{formatFunnaiAmount(item.reward.toString())} FUNNAI</span>
                     </p>
