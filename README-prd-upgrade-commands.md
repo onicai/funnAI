@@ -310,11 +310,20 @@ echo $NETWORK
 # from folder: PoAIW/src/Api
 dfx canister --network $NETWORK stop $SUBNET_0_2_API
 dfx canister --network $NETWORK snapshot create $SUBNET_0_2_API
-#
-rm -rf .mops
-mops install
-#
-dfx deploy --network $NETWORK api_canister --mode upgrade --wasm-memory-persistence keep
+
+# Build wasm with Docker (reproducible build)
+# The base image is shared across all canisters. Once built, it can be reused — no rebuild needed.
+make docker-build-base
+make docker-build-wasm
+
+# Deploy the pre-built wasm
+# Note: Post-SNS, this step is replaced with SNS governed deployment.
+# The wasm will be uploaded to the SNS and a deploy proposal will be created
+# for the community to vote on. Once the proposal passes, the SNS automatically
+# upgrades the canister.
+dfx canister install --wasm out/api_canister.wasm \
+    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
+    api_canister
 
 # start the API canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_2_API
@@ -324,7 +333,7 @@ dfx canister --network $NETWORK call $SUBNET_0_2_API getLatestDailyMetric --outp
 dfx canister --network $NETWORK call $SUBNET_0_2_API getDailyMetrics '(opt record { start_date = opt "2025-12-21"; end_date = opt "2026-01-21"; limit = null })' --output json
 
 # -------------------------------------------------------------------------
-# Start the Activity Feed sync timer
+# Start the Activity Feed sync timer (Monitor Api canister logs to follow along)
 # -------------------------------------------------------------------------
 # The timer syncs winners and challenges from GameState every 300 seconds (default)
 

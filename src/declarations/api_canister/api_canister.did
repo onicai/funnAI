@@ -3,6 +3,12 @@ type UpdateDailyMetricAdminInput =
    date: text;
    input: DailyMetricUpdateInput;
  };
+type TotalCycles = 
+ record {
+   all: CycleAmount;
+   mainers: CycleAmount;
+   protocol: CycleAmount;
+ };
 type TokenRewardsMetadata = 
  record {
    dataset: text;
@@ -38,22 +44,11 @@ type TextResult =
    Err: ApiError;
    Ok: text;
  };
-type CyclesWithUsd = 
- record {
-   cycles: nat;
-   usd: float64;
- };
-type TotalCyclesBreakdown = 
- record {
-   all: CyclesWithUsd;
-   mainers: CyclesWithUsd;
-   protocol: CyclesWithUsd;
- };
 type SystemMetrics = 
  record {
    daily_burn_rate: DailyBurnRate;
    funnai_index: float64;
-   total_cycles: opt TotalCyclesBreakdown;
+   total_cycles: opt TotalCycles;
  };
 type StatusCodeRecordResult = 
  variant {
@@ -62,6 +57,14 @@ type StatusCodeRecordResult =
  };
 type StatusCodeRecord = record {status_code: StatusCode;};
 type StatusCode = nat16;
+type RewardType = 
+ variant {
+   Coupon: text;
+   Cycles;
+   ICP;
+   MainerToken;
+   Other: text;
+ };
 type PeriodInfo = 
  record {
    end_date: text;
@@ -142,7 +145,12 @@ type DailyMetricUpdateInput =
    paused_medium_burn_rate_mainers: opt nat;
    paused_very_high_burn_rate_mainers: opt nat;
    total_active_mainers: opt nat;
+   total_cycles_all: opt nat;
    total_cycles_all_mainers: opt nat;
+   total_cycles_all_usd: opt float64;
+   total_cycles_mainers_usd: opt float64;
+   total_cycles_protocol: opt nat;
+   total_cycles_protocol_usd: opt float64;
    total_mainers_created: opt nat;
    total_paused_mainers: opt nat;
  };
@@ -174,7 +182,12 @@ type DailyMetricInput =
    paused_medium_burn_rate_mainers: nat;
    paused_very_high_burn_rate_mainers: nat;
    total_active_mainers: nat;
+   total_cycles_all: opt nat;
    total_cycles_all_mainers: nat;
+   total_cycles_all_usd: opt float64;
+   total_cycles_mainers_usd: opt float64;
+   total_cycles_protocol: opt nat;
+   total_cycles_protocol_usd: opt float64;
    total_mainers_created: nat;
    total_paused_mainers: nat;
  };
@@ -189,6 +202,106 @@ type DailyBurnRate =
  record {
    cycles: nat;
    usd: float64;
+ };
+type CycleAmount = 
+ record {
+   cycles: nat;
+   usd: float64;
+ };
+type ChallengesResult = 
+ variant {
+   Err: ApiError;
+   Ok: vec Challenge;
+ };
+type ChallengeWinnerReward = 
+ record {
+   amount: nat;
+   distributed: bool;
+   distributedTimestamp: opt nat64;
+   rewardDetails: text;
+   rewardType: RewardType;
+ };
+type ChallengeWinnerDeclarationArray = 
+ record {
+   challengeId: text;
+   finalizedTimestamp: nat64;
+   participants: vec ChallengeParticipantEntry;
+   secondPlace: ChallengeParticipantEntry;
+   thirdPlace: ChallengeParticipantEntry;
+   winner: ChallengeParticipantEntry;
+ };
+type ChallengeTopicStatus = 
+ variant {
+   Archived;
+   Closed;
+   Open;
+   Other: text;
+ };
+type ChallengeStatus = 
+ variant {
+   Archived;
+   Closed;
+   Open;
+   Other: text;
+ };
+type ChallengeParticipationResult = 
+ variant {
+   Other: text;
+   Participated;
+   SecondPlace;
+   ThirdPlace;
+   Winner;
+ };
+type ChallengeParticipantEntry = 
+ record {
+   ownedBy: principal;
+   result: ChallengeParticipationResult;
+   reward: ChallengeWinnerReward;
+   submissionId: text;
+   submittedBy: principal;
+ };
+type Challenge = 
+ record {
+   challengeClosedTimestamp: opt nat64;
+   challengeCreatedBy: CanisterAddress;
+   challengeCreationTimestamp: nat64;
+   challengeId: text;
+   challengeQuestion: text;
+   challengeQuestionSeed: nat32;
+   challengeStatus: ChallengeStatus;
+   challengeTopic: text;
+   challengeTopicCreationTimestamp: nat64;
+   challengeTopicId: text;
+   challengeTopicStatus: ChallengeTopicStatus;
+   cyclesGenerateChallengeChctrlChllm: nat;
+   cyclesGenerateChallengeGsChctrl: nat;
+   cyclesGenerateResponseOwnctrlGs: nat;
+   cyclesGenerateResponseOwnctrlOwnllmHIGH: nat;
+   cyclesGenerateResponseOwnctrlOwnllmLOW: nat;
+   cyclesGenerateResponseOwnctrlOwnllmMEDIUM: nat;
+   cyclesGenerateResponseSactrlSsctrl: nat;
+   cyclesGenerateResponseSsctrlGs: nat;
+   cyclesGenerateResponseSsctrlSsllm: nat;
+   cyclesSubmitResponse: nat;
+   judgePromptId: text;
+   mainerMaxContinueLoopCount: nat;
+   mainerNumTokens: nat64;
+   mainerPromptId: text;
+   mainerTemp: float64;
+   protocolOperationFeesCut: nat;
+ };
+type CanisterAddress = text;
+type CacheStatusResult = 
+ variant {
+   Err: ApiError;
+   Ok: CacheStatus;
+ };
+type CacheStatus = 
+ record {
+   cachedChallengesCount: nat;
+   cachedWinnersCount: nat;
+   lastSyncTimestamp: nat64;
+   syncIntervalSeconds: nat;
  };
 type AuthRecordResult = 
  variant {
@@ -220,6 +333,11 @@ type ApiCanister =
    bulkCreateDailyMetricsAdmin: (inputs: vec DailyMetricInput) -> (NatResult);
    createDailyMetricAdmin: (input: DailyMetricInput) -> (DailyMetricResult);
    deleteDailyMetricAdmin: (date: text) -> (NatResult);
+   /// Get recent protocol activity with independent pagination
+   getActivityFeed: (input: ActivityFeedQuery) -> (ActivityFeedResult) query;
+   /// Get cache status for monitoring
+   getActivityFeedCacheStatus: () -> (CacheStatusResult) query;
+   getActivityFeedSyncIntervalAdmin: () -> (NatResult) query;
    getAdminRoles: () -> (AdminRoleAssignmentsResult) query;
    getDailyMetricByDate: (date: text) -> (DailyMetricResult) query;
    getDailyMetrics: (dailyMetricsQuery: opt DailyMetricsQuery) ->
@@ -228,11 +346,17 @@ type ApiCanister =
    getLatestDailyMetric: () -> (DailyMetricResult) query;
    getMasterCanisterId: () -> (AuthRecordResult) query;
    getNumDailyMetrics: () -> (NatResult) query;
+   /// Get current open challenges from cache
+   getOpenChallengesFromCache: () -> (ChallengesResult) query;
    getTokenRewardsData: () -> (TokenRewardsDataResult) query;
    health: () -> (StatusCodeRecordResult) query;
    resetDailyMetricsAdmin: () -> (NatResult);
    revokeAdminRole: ("principal": text) -> (TextResult);
+   setActivityFeedSyncIntervalAdmin: (_syncIntervalInSeconds: nat) ->
+    (StatusCodeRecordResult);
    setMasterCanisterId: (newMasterCanisterId: text) -> (AuthRecordResult);
+   startActivityFeedTimerAdmin: () -> (AuthRecordResult);
+   stopActivityFeedTimerAdmin: () -> (AuthRecordResult);
    updateDailyMetricAdmin: (params: UpdateDailyMetricAdminInput) ->
     (DailyMetricResult);
    whoami: () -> (principal) query;
@@ -259,5 +383,26 @@ type AdminRole =
  variant {
    AdminQuery;
    AdminUpdate;
+ };
+type ActivityFeedResult = 
+ variant {
+   Err: ApiError;
+   Ok: ActivityFeedResponse;
+ };
+type ActivityFeedResponse = 
+ record {
+   cacheTimestamp: nat64;
+   challenges: vec Challenge;
+   totalChallenges: nat;
+   totalWinners: nat;
+   winners: vec ChallengeWinnerDeclarationArray;
+ };
+type ActivityFeedQuery = 
+ record {
+   challengesLimit: opt nat;
+   challengesOffset: opt nat;
+   sinceTimestamp: opt nat64;
+   winnersLimit: opt nat;
+   winnersOffset: opt nat;
  };
 service : () -> ApiCanister
