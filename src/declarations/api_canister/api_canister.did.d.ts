@@ -27,6 +27,9 @@ export interface ApiCanister {
   >,
   'createDailyMetricAdmin' : ActorMethod<[DailyMetricInput], DailyMetricResult>,
   'deleteDailyMetricAdmin' : ActorMethod<[string], NatResult>,
+  'getActivityFeed' : ActorMethod<[ActivityFeedQuery], ActivityFeedResult>,
+  'getActivityFeedCacheStatus' : ActorMethod<[], CacheStatusResult>,
+  'getActivityFeedSyncIntervalAdmin' : ActorMethod<[], NatResult>,
   'getAdminRoles' : ActorMethod<[], AdminRoleAssignmentsResult>,
   'getDailyMetricByDate' : ActorMethod<[string], DailyMetricResult>,
   'getDailyMetrics' : ActorMethod<
@@ -37,11 +40,15 @@ export interface ApiCanister {
   'getLatestDailyMetric' : ActorMethod<[], DailyMetricResult>,
   'getMasterCanisterId' : ActorMethod<[], AuthRecordResult>,
   'getNumDailyMetrics' : ActorMethod<[], NatResult>,
+  'getOpenChallengesFromCache' : ActorMethod<[], ChallengesResult>,
   'getTokenRewardsData' : ActorMethod<[], TokenRewardsDataResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
   'resetDailyMetricsAdmin' : ActorMethod<[], NatResult>,
   'revokeAdminRole' : ActorMethod<[string], TextResult>,
+  'setActivityFeedSyncIntervalAdmin' : ActorMethod<[bigint], StatusCodeRecordResult>,
   'setMasterCanisterId' : ActorMethod<[string], AuthRecordResult>,
+  'startActivityFeedTimerAdmin' : ActorMethod<[], AuthRecordResult>,
+  'stopActivityFeedTimerAdmin' : ActorMethod<[], AuthRecordResult>,
   'updateDailyMetricAdmin' : ActorMethod<
     [UpdateDailyMetricAdminInput],
     DailyMetricResult
@@ -55,6 +62,80 @@ export type ApiError = { 'FailedOperation' : null } |
   { 'StatusCode' : StatusCode } |
   { 'Other' : string } |
   { 'InsuffientCycles' : bigint };
+
+// Activity Feed Types
+export interface ActivityFeedQuery {
+  'winnersLimit' : [] | [bigint],
+  'winnersOffset' : [] | [bigint],
+  'challengesLimit' : [] | [bigint],
+  'challengesOffset' : [] | [bigint],
+  'sinceTimestamp' : [] | [bigint],
+}
+export interface ChallengeParticipantEntry {
+  'submissionId' : string,
+  'submittedBy' : Principal,
+  'ownedBy' : Principal,
+  'result' : ChallengeParticipationResult,
+  'reward' : ChallengeWinnerReward,
+}
+export type ChallengeParticipationResult = { 'Winner' : null } |
+  { 'SecondPlace' : null } |
+  { 'ThirdPlace' : null } |
+  { 'Participated' : null } |
+  { 'Other' : string };
+export interface ChallengeWinnerReward {
+  'amount' : bigint,
+  'rewardType' : RewardType,
+  'rewardDetails' : string,
+  'distributed' : boolean,
+  'distributedTimestamp' : [] | [bigint],
+}
+export type RewardType = { 'MainerToken' : null } |
+  { 'Cycles' : null } |
+  { 'ICP' : null } |
+  { 'Coupon' : string } |
+  { 'Other' : string };
+export interface ChallengeWinnerDeclarationArray {
+  'challengeId' : string,
+  'finalizedTimestamp' : bigint,
+  'winner' : ChallengeParticipantEntry,
+  'secondPlace' : ChallengeParticipantEntry,
+  'thirdPlace' : ChallengeParticipantEntry,
+  'participants' : Array<ChallengeParticipantEntry>,
+}
+export type ChallengeStatus = { 'Open' : null } |
+  { 'Closed' : null } |
+  { 'Archived' : null } |
+  { 'Other' : string };
+export interface Challenge {
+  'challengeId' : string,
+  'challengeQuestion' : string,
+  'challengeTopic' : string,
+  'challengeCreationTimestamp' : bigint,
+  'challengeCreatedBy' : string,
+  'challengeStatus' : ChallengeStatus,
+  'challengeClosedTimestamp' : [] | [bigint],
+}
+export interface ActivityFeedResponse {
+  'winners' : Array<ChallengeWinnerDeclarationArray>,
+  'challenges' : Array<Challenge>,
+  'totalWinners' : bigint,
+  'totalChallenges' : bigint,
+  'cacheTimestamp' : bigint,
+}
+export type ActivityFeedResult = { 'Ok' : ActivityFeedResponse } |
+  { 'Err' : ApiError };
+export interface CacheStatus {
+  'lastSyncTimestamp' : bigint,
+  'cachedWinnersCount' : bigint,
+  'cachedChallengesCount' : bigint,
+  'syncIntervalSeconds' : bigint,
+}
+export type CacheStatusResult = { 'Ok' : CacheStatus } |
+  { 'Err' : ApiError };
+export type ChallengesResult = { 'Ok' : Array<Challenge> } |
+  { 'Err' : ApiError };
+
 export interface AssignAdminRoleInputRecord {
   'principal' : string,
   'note' : string,

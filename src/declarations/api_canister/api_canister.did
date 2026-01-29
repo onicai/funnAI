@@ -212,6 +212,71 @@ type ApiError =
    Unauthorized;
    ZeroAddress;
  };
+// Activity Feed Types
+type ActivityFeedQuery = 
+ record {
+   page: opt nat;
+   limit: opt nat;
+ };
+type ActivityFeedChallenge = 
+ record {
+   challengeId: text;
+   challengeQuestion: text;
+   challengeTopic: text;
+   challengeCreationTimestamp: nat64;
+   challengeStatus: variant { Open; Closed; Archived; };
+ };
+type ActivityFeedParticipant = 
+ record {
+   submittedBy: principal;
+   submissionId: text;
+   ownedBy: principal;
+   reward: record {
+     amount: nat;
+     rewardType: variant { MainerToken; Cycles; ICP; };
+     distributed: bool;
+   };
+   result: variant { Winner; SecondPlace; ThirdPlace; Participated; };
+ };
+type ActivityFeedWinner = 
+ record {
+   challengeId: text;
+   challengeQuestion: text;
+   finalizedTimestamp: nat64;
+   winner: ActivityFeedParticipant;
+   secondPlace: ActivityFeedParticipant;
+   thirdPlace: opt ActivityFeedParticipant;
+ };
+type ActivityFeedResponse = 
+ record {
+   open_challenges: vec ActivityFeedChallenge;
+   winners: vec ActivityFeedWinner;
+   has_more: bool;
+   total_count: nat;
+ };
+type ActivityFeedResult = 
+ variant {
+   Err: ApiError;
+   Ok: ActivityFeedResponse;
+ };
+type ActivityFeedCacheStatus = 
+ record {
+   last_updated: nat64;
+   total_items: nat;
+   open_challenges_count: nat;
+   winners_count: nat;
+ };
+type ActivityFeedCacheStatusResult = 
+ variant {
+   Err: ApiError;
+   Ok: ActivityFeedCacheStatus;
+ };
+type OpenChallengesResult = 
+ variant {
+   Err: ApiError;
+   Ok: vec ActivityFeedChallenge;
+ };
+
 type ApiCanister = 
  service {
    amiController: () -> (AuthRecordResult) query;
@@ -220,6 +285,8 @@ type ApiCanister =
    bulkCreateDailyMetricsAdmin: (inputs: vec DailyMetricInput) -> (NatResult);
    createDailyMetricAdmin: (input: DailyMetricInput) -> (DailyMetricResult);
    deleteDailyMetricAdmin: (date: text) -> (NatResult);
+   getActivityFeed: (query: ActivityFeedQuery) -> (ActivityFeedResult) query;
+   getActivityFeedCacheStatus: () -> (ActivityFeedCacheStatusResult) query;
    getAdminRoles: () -> (AdminRoleAssignmentsResult) query;
    getDailyMetricByDate: (date: text) -> (DailyMetricResult) query;
    getDailyMetrics: (dailyMetricsQuery: opt DailyMetricsQuery) ->
@@ -228,6 +295,7 @@ type ApiCanister =
    getLatestDailyMetric: () -> (DailyMetricResult) query;
    getMasterCanisterId: () -> (AuthRecordResult) query;
    getNumDailyMetrics: () -> (NatResult) query;
+   getOpenChallengesFromCache: () -> (OpenChallengesResult) query;
    getTokenRewardsData: () -> (TokenRewardsDataResult) query;
    health: () -> (StatusCodeRecordResult) query;
    resetDailyMetricsAdmin: () -> (NatResult);

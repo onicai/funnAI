@@ -114,6 +114,92 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : DailyMetric,
     'Err' : ApiError,
   });
+
+  // Activity Feed Types
+  const ActivityFeedQuery = IDL.Record({
+    'winnersLimit' : IDL.Opt(IDL.Nat),
+    'winnersOffset' : IDL.Opt(IDL.Nat),
+    'challengesLimit' : IDL.Opt(IDL.Nat),
+    'challengesOffset' : IDL.Opt(IDL.Nat),
+    'sinceTimestamp' : IDL.Opt(IDL.Nat64),
+  });
+  const ChallengeParticipationResult = IDL.Variant({
+    'Winner' : IDL.Null,
+    'SecondPlace' : IDL.Null,
+    'ThirdPlace' : IDL.Null,
+    'Participated' : IDL.Null,
+    'Other' : IDL.Text,
+  });
+  const RewardType = IDL.Variant({
+    'MainerToken' : IDL.Null,
+    'Cycles' : IDL.Null,
+    'ICP' : IDL.Null,
+    'Coupon' : IDL.Text,
+    'Other' : IDL.Text,
+  });
+  const ChallengeWinnerReward = IDL.Record({
+    'amount' : IDL.Nat,
+    'rewardType' : RewardType,
+    'rewardDetails' : IDL.Text,
+    'distributed' : IDL.Bool,
+    'distributedTimestamp' : IDL.Opt(IDL.Nat64),
+  });
+  const ChallengeParticipantEntry = IDL.Record({
+    'submissionId' : IDL.Text,
+    'submittedBy' : IDL.Principal,
+    'ownedBy' : IDL.Principal,
+    'result' : ChallengeParticipationResult,
+    'reward' : ChallengeWinnerReward,
+  });
+  const ChallengeWinnerDeclarationArray = IDL.Record({
+    'challengeId' : IDL.Text,
+    'finalizedTimestamp' : IDL.Nat64,
+    'winner' : ChallengeParticipantEntry,
+    'secondPlace' : ChallengeParticipantEntry,
+    'thirdPlace' : ChallengeParticipantEntry,
+    'participants' : IDL.Vec(ChallengeParticipantEntry),
+  });
+  const ChallengeStatus = IDL.Variant({
+    'Open' : IDL.Null,
+    'Closed' : IDL.Null,
+    'Archived' : IDL.Null,
+    'Other' : IDL.Text,
+  });
+  const Challenge = IDL.Record({
+    'challengeId' : IDL.Text,
+    'challengeQuestion' : IDL.Text,
+    'challengeTopic' : IDL.Text,
+    'challengeCreationTimestamp' : IDL.Nat64,
+    'challengeCreatedBy' : IDL.Text,
+    'challengeStatus' : ChallengeStatus,
+    'challengeClosedTimestamp' : IDL.Opt(IDL.Nat64),
+  });
+  const ActivityFeedResponse = IDL.Record({
+    'winners' : IDL.Vec(ChallengeWinnerDeclarationArray),
+    'challenges' : IDL.Vec(Challenge),
+    'totalWinners' : IDL.Nat,
+    'totalChallenges' : IDL.Nat,
+    'cacheTimestamp' : IDL.Nat64,
+  });
+  const ActivityFeedResult = IDL.Variant({
+    'Ok' : ActivityFeedResponse,
+    'Err' : ApiError,
+  });
+  const CacheStatus = IDL.Record({
+    'lastSyncTimestamp' : IDL.Nat64,
+    'cachedWinnersCount' : IDL.Nat,
+    'cachedChallengesCount' : IDL.Nat,
+    'syncIntervalSeconds' : IDL.Nat,
+  });
+  const CacheStatusResult = IDL.Variant({
+    'Ok' : CacheStatus,
+    'Err' : ApiError,
+  });
+  const ChallengesResult = IDL.Variant({
+    'Ok' : IDL.Vec(Challenge),
+    'Err' : ApiError,
+  });
+
   const AdminRoleAssignmentsResult = IDL.Variant({
     'Ok' : IDL.Vec(AdminRoleAssignment),
     'Err' : ApiError,
@@ -209,6 +295,9 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'deleteDailyMetricAdmin' : IDL.Func([IDL.Text], [NatResult], []),
+    'getActivityFeed' : IDL.Func([ActivityFeedQuery], [ActivityFeedResult], ['query']),
+    'getActivityFeedCacheStatus' : IDL.Func([], [CacheStatusResult], ['query']),
+    'getActivityFeedSyncIntervalAdmin' : IDL.Func([], [NatResult], ['query']),
     'getAdminRoles' : IDL.Func([], [AdminRoleAssignmentsResult], ['query']),
     'getDailyMetricByDate' : IDL.Func(
         [IDL.Text],
@@ -224,11 +313,15 @@ export const idlFactory = ({ IDL }) => {
     'getLatestDailyMetric' : IDL.Func([], [DailyMetricResult], ['query']),
     'getMasterCanisterId' : IDL.Func([], [AuthRecordResult], ['query']),
     'getNumDailyMetrics' : IDL.Func([], [NatResult], ['query']),
+    'getOpenChallengesFromCache' : IDL.Func([], [ChallengesResult], ['query']),
     'getTokenRewardsData' : IDL.Func([], [TokenRewardsDataResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
     'resetDailyMetricsAdmin' : IDL.Func([], [NatResult], []),
     'revokeAdminRole' : IDL.Func([IDL.Text], [TextResult], []),
+    'setActivityFeedSyncIntervalAdmin' : IDL.Func([IDL.Nat], [StatusCodeRecordResult], []),
     'setMasterCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
+    'startActivityFeedTimerAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'stopActivityFeedTimerAdmin' : IDL.Func([], [AuthRecordResult], []),
     'updateDailyMetricAdmin' : IDL.Func(
         [UpdateDailyMetricAdminInput],
         [DailyMetricResult],
