@@ -306,10 +306,10 @@
                   <p class="text-slate-700 dark:text-slate-200">
                     {#if showAllEvents}
                       <!-- Neutral announcement for All Events tab -->
-                      Won <span class="font-bold {item.type === 'winner' ? 'text-yellow-600 dark:text-yellow-400' : item.type === 'second_place' ? 'text-gray-600 dark:text-gray-400' : 'text-orange-600 dark:text-orange-400'}">{getPlacementText(item.type)}</span>{#if item.reward} and earned <span class="font-semibold text-green-600 dark:text-green-400">{formatFunnaiAmount(item.reward.toString())} FUNNAI</span>{/if}
+                      Won <span class="font-bold {item.type === 'winner' ? 'text-yellow-600 dark:text-yellow-400' : item.type === 'second_place' ? 'text-gray-600 dark:text-gray-400' : 'text-orange-600 dark:text-orange-400'}">{getPlacementText(item.type)}</span> {#if item.reward}and earned <span class="font-semibold text-green-600 dark:text-green-400">{formatFunnaiAmount(item.reward.toString())} FUNNAI</span>{/if}
                     {:else}
                       <!-- Personal message for My Mainers tab -->
-                      Achieved <span class="font-bold text-lg {item.type === 'winner' ? 'text-yellow-600 dark:text-yellow-400' : item.type === 'second_place' ? 'text-gray-600 dark:text-gray-400' : 'text-orange-600 dark:text-orange-400'}">{getPlacementText(item.type)}</span>
+                      Achieved <span class="font-bold text-lg {item.type === 'winner' ? 'text-yellow-600 dark:text-yellow-400' : item.type === 'second_place' ? 'text-gray-600 dark:text-gray-400' : 'text-orange-600 dark:text-orange-400'}">{getPlacementText(item.type)} </span>
                     {/if}
                   </p>
                   {#if !showAllEvents && item.reward}
