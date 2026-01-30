@@ -135,9 +135,8 @@ dfx canister call game_state_canister getNumClosedChallengesAdmin --output json 
 dfx canister call game_state_canister getRecentChallengeWinners --output json --network $NETWORK
 dfx canister call game_state_canister getRecentProtocolActivity --output json --network $NETWORK
 
-# Deploy funnai backend:
-dfx generate funnai_backend
-dfx deploy --argument "( principal \"$(dfx identity get-principal)\" )" funnai_backend --network $NETWORK
+# Deploy funnai backend (reproducible build):
+# See README-prd-upgrade-commands.md for build, deploy and verify instructions
 
 # Deploy funnai frontend:
 ## ensure you have the latest from the PoAIW repo

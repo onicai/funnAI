@@ -3,7 +3,8 @@
   "canisters": {
     "funnai_backend": {
       "main": "main.mo",
-      "type": "motoko"
+      "type": "motoko",
+      "args": "--enhanced-orthogonal-persistence"
     }
   },
   "output_env_file": ".env",

@@ -1,0 +1,192 @@
+type UserInfoResult = 
+ variant {
+   Err: ApiError;
+   Ok: UserInfo;
+ };
+type UserInfoInput = record {emailAddress: opt text;};
+type UserInfo = 
+ record {
+   createdAt: nat64;
+   emailAddress: opt text;
+   isPremiumAccount: bool;
+ };
+type UserChatSettingsResult = 
+ variant {
+   Err: ApiError;
+   Ok: UserChatSettings;
+ };
+type UserChatSettings = 
+ record {
+   responseLength: text;
+   saveChats: bool;
+   selectedAiModelId: text;
+   systemPrompt: text;
+   temperature: float64;
+ };
+type UpdateUserInfoResult = 
+ variant {
+   Err: ApiError;
+   Ok: bool;
+ };
+type UpdateUserChatSettingsResult = 
+ variant {
+   Err: ApiError;
+   Ok: bool;
+ };
+type UpdateChatObject = 
+ record {
+   chatTitle: text;
+   id: text;
+ };
+type TopUpRecord = 
+ record {
+   amount: nat;
+   caller: text;
+   paymentTransactionBlockId: nat64;
+   timestamp: nat64;
+   toppedUpMainerId: text;
+ };
+type SignUpFormInput = 
+ record {
+   emailAddress: text;
+   pageSubmittedFrom: text;
+ };
+type PaymentInfoInput = record {block_index: nat64;};
+type NatResult = 
+ variant {
+   Err: ApiError;
+   Ok: nat;
+ };
+type Message = 
+ record {
+   content: text;
+   sender: text;
+ };
+type MaxMainerTopUpsResult = 
+ variant {
+   Err: ApiError;
+   Ok: vec TopUpRecord;
+ };
+type MaxMainerTopUpStorageResult = 
+ variant {
+   Err: ApiError;
+   Ok: MaxMainerTopUpStorageResponse;
+ };
+type MaxMainerTopUpStorageResponse = record {stored: bool;};
+type MaxMainerTopUpInput = 
+ record {
+   amount: nat;
+   paymentTransactionBlockId: nat64;
+   toppedUpMainerId: text;
+ };
+type LoginEventsResult = 
+ variant {
+   Err: ApiError;
+   Ok: vec LoginEvent;
+ };
+type LoginEvent = 
+ record {
+   "principal": text;
+   timestamp: nat64;
+ };
+type GetUsersResult = 
+ variant {
+   Err: ApiError;
+   Ok: vec text;
+ };
+type FunnAIBackend = 
+ service {
+   addMaxMainerTopup: (maxTopUpInput: MaxMainerTopUpInput) ->
+    (MaxMainerTopUpStorageResult);
+   archiveMaxMainerTopupsAdmin: () -> (BoolResult);
+   create_chat: (messages: vec Message) -> (ChatCreationResult);
+   delete_chat: (chatId: text) -> (ChatResult);
+   delete_email_subscriber: (emailAddress: text) -> (bool);
+   getArchivedMaxMainerTopupsAdmin: () -> (MaxMainerTopUpsResult) query;
+   getLoginEventsAdmin: (user: text) -> (LoginEventsResult) query;
+   getMaxMainerTopupsAdmin: () -> (MaxMainerTopUpsResult) query;
+   getNumArchivedMaxMainerTopupsAdmin: () -> (NatResult) query;
+   getUsersAdmin: () -> (GetUsersResult) query;
+   get_caller_chat_history: () -> (ChatsPreviewResult) query;
+   get_caller_chat_settings: () -> (UserChatSettingsResult) query;
+   get_caller_chats: () -> (ChatsResult) query;
+   get_caller_user_info: () -> (UserInfoResult) query;
+   get_chat: (chatId: text) -> (ChatResult) query;
+   get_email_subscribers: () -> (vec record {
+                                       text;
+                                       EmailSubscriber;
+                                     }) query;
+   get_user_info_admin: (user: text) -> (UserInfoResult) query;
+   logLogin: () -> (UpdateUserInfoResult);
+   make_caller_account_premium: (paymentInfoObject: PaymentInfoInput) ->
+    (UpdateUserInfoResult);
+   submit_signup_form: (submittedSignUpForm: SignUpFormInput) -> (text);
+   update_caller_chat_settings: (updatedSettingsObject: UserChatSettings) ->
+    (UpdateUserChatSettingsResult);
+   update_caller_user_info: (updatedInfoObject: UserInfoInput) ->
+    (UpdateUserInfoResult);
+   update_chat_messages: (chatId: text, updatedMessages: vec Message) ->
+    (ChatIdResult);
+   update_chat_metadata: (updateChatObject: UpdateChatObject) ->
+    (ChatIdResult);
+ };
+type EmailSubscriber = 
+ record {
+   emailAddress: text;
+   pageSubmittedFrom: text;
+   subscribedAt: nat64;
+ };
+type ChatsResult = 
+ variant {
+   Err: ApiError;
+   Ok: vec Chat;
+ };
+type ChatsPreviewResult = 
+ variant {
+   Err: ApiError;
+   Ok: vec ChatPreview;
+ };
+type ChatResult = 
+ variant {
+   Err: ApiError;
+   Ok: Chat;
+ };
+type ChatPreview = 
+ record {
+   chatTitle: text;
+   creationTime: nat64;
+   firstMessagePreview: text;
+   id: text;
+ };
+type ChatIdResult = 
+ variant {
+   Err: ApiError;
+   Ok: text;
+ };
+type ChatCreationResult = 
+ variant {
+   Err: ApiError;
+   Ok: text;
+ };
+type Chat = 
+ record {
+   chatTitle: text;
+   creationTime: nat64;
+   firstMessagePreview: text;
+   id: text;
+   messages: vec Message;
+   owner: principal;
+ };
+type BoolResult = 
+ variant {
+   Err: ApiError;
+   Ok: bool;
+ };
+type ApiError = 
+ variant {
+   InvalidId;
+   Other: text;
+   Unauthorized;
+   ZeroAddress;
+ };
+service : (custodian: principal) -> FunnAIBackend

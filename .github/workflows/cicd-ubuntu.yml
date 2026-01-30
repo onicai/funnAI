@@ -1,31 +1,51 @@
-name: cicd-mac
+name: cicd-ubuntu
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - ".github/workflows/cicd-mac.yml"
+      - ".github/workflows/cicd-ubuntu.yml"
       - ".github/workflows/trigger.txt"
       # Keep in sync with matrix.canister below
       - "src/funnai_backend/**"
+      - "src/docker/**"
 
 env:
   DFX_VERSION: "0.29.2"
+  DFX_WARNING: "-mainnet_plaintext_identity"
 
 jobs:
-  smoketest:
-    name: smoketest ${{ matrix.canister }}
-    runs-on: macos-latest
+  reproducible-build:
+    name: reproducible-build ${{ matrix.canister }}
+    runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         # Keep in sync with on.push.paths above
-        canister: [funnai_backend]
+        include:
+          - canister: funnai_backend
+            canister_name: funnai_backend
 
     steps:
       - name: checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: docker versions
+        run: |
+          echo "Runner OS   : $RUNNER_OS"
+          echo "Architecture: $(uname -m)"
+          echo "OS version  : $(lsb_release -d 2>/dev/null | cut -f2)"
+          echo "Docker      : $(docker --version)"
+
+      - name: build Docker base image
+        working-directory: src/${{ matrix.canister }}
+        run: make docker-build-base
+
+      - name: build wasm with Docker (reproducible build)
+        working-directory: src/${{ matrix.canister }}
+        run: make docker-build-wasm
 
       - name: setup python
         uses: actions/setup-python@v5
@@ -40,9 +60,9 @@ jobs:
         run: |
           set -euo pipefail
           DFXVM_INIT_YES=true sh -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
-          source "$HOME/Library/Application Support/org.dfinity.dfx/env"
+          source "$HOME/.local/share/dfx/env"
+          echo "$HOME/.local/share/dfx/bin" >> $GITHUB_PATH
           dfxvm default $DFX_VERSION
-          echo "$HOME/Library/Application Support/org.dfinity.dfx/bin" >> $GITHUB_PATH
 
       - name: install python dependencies
         run: |
@@ -53,7 +73,7 @@ jobs:
       - name: install mops to manage motoko dependencies
         run: npm install -g ic-mops
 
-      - name: versions
+      - name: smoketest versions
         run: |
           echo "dfx version   : $(dfx --version)"
           echo "pip version   : $(pip --version)"

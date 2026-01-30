@@ -119,6 +119,9 @@ dist
 
 .dfx
 
+# Docker reproducible build output
+src/funnai_backend/out/
+
 .DS_Store
 dist-ssr
 *.local
