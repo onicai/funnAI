@@ -156,13 +156,26 @@ echo $NETWORK
 echo $SUBNET_0_1_CHALLENGER
 
 # from folder: PoAIW/src/Challenger
-dfx canister --network $NETWORK stop $SUBNET_0_1_CHALLENGER
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_CHALLENGER 
-#
+
+# mops.toml was updated in latest PR
 rm -rf .mops
 mops install
-#
-dfx deploy --network $NETWORK challenger_ctrlb_canister --mode upgrade --wasm-memory-persistence keep
+
+# Build wasm with Docker (reproducible build)
+make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
+make docker-build-wasm
+
+dfx canister --network $NETWORK stop $SUBNET_0_1_CHALLENGER
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_CHALLENGER
+
+# Deploy the pre-built wasm
+# Note: Post-SNS, this step is replaced with SNS governed deployment.
+# The wasm will be uploaded to the SNS and a deploy proposal will be created
+# for the community to vote on. Once the proposal passes, the SNS automatically
+# upgrades the canister.
+dfx canister install --wasm out/challenger_ctrlb_canister.wasm \
+    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
+    challenger_ctrlb_canister
 
 # start the Challenger canister back up
 # Important
