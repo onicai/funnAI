@@ -46,8 +46,11 @@ echo -n "MAINER_SHARE_AGENT_0007        = $MAINER_SHARE_AGENT_0007 - "; dfx cani
 In this order:
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_CHALLENGER
+echo $SUBNET_0_1_SHARE_SERVICE
+echo $SUBNET_0_1_JUDGE
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    stopTimerExecutionAdmin
 # wait a couple of minutes..
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE stopTimerExecutionAdmin
@@ -60,8 +63,9 @@ dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         stopTimerExecutio
 # pause protocol
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_GAMESTATE
 # check if it is already paused
 dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getPauseProtocolFlag
 
@@ -72,8 +76,9 @@ dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE togglePauseProtocolFl
 # upgrade the GameState
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_GAMESTATE
 
 # from folder: funnAI
 dfx canister --network $NETWORK stop $SUBNET_0_1_GAMESTATE
@@ -146,8 +151,9 @@ dfx canister --network $NETWORK call game_state_canister revokeAdminRole '( "'$F
 # upgrade the Challenger
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_CHALLENGER
 
 # from folder: PoAIW/src/Challenger
 dfx canister --network $NETWORK stop $SUBNET_0_1_CHALLENGER
@@ -183,8 +189,9 @@ dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getTimerActionRegula
 # upgrade the ShareService
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_SHARE_SERVICE
 
 # from folder: PoAIW/src/mAIner
 dfx canister --network $NETWORK stop $SUBNET_0_1_SHARE_SERVICE
@@ -211,8 +218,9 @@ dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getTimerActionReg
 ## reinstall the ShareService
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_SHARE_SERVICE
 
 # from folder: PoAIW/src/mAIner
 #
@@ -265,8 +273,9 @@ dfx canister --network $NETWORK call $MAINER getMaintenanceFlag
 # upgrade the Judge
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_JUDGE
 
 # from folder: PoAIW/src/Judge
 dfx canister --network $NETWORK stop $SUBNET_0_1_JUDGE
@@ -304,17 +313,22 @@ dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --ou
 # upgrade the API canister
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_2_API
 
 # from folder: PoAIW/src/Api
-dfx canister --network $NETWORK stop $SUBNET_0_2_API
-dfx canister --network $NETWORK snapshot create $SUBNET_0_2_API
+
+# mops.toml was updated in latest PR
+rm -rf .mops
+mops install
 
 # Build wasm with Docker (reproducible build)
-# The base image is shared across all canisters. Once built, it can be reused — no rebuild needed.
-make docker-build-base
+make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
 make docker-build-wasm
+
+dfx canister --network $NETWORK stop $SUBNET_0_2_API
+dfx canister --network $NETWORK snapshot create $SUBNET_0_2_API
 
 # Deploy the pre-built wasm
 # Note: Post-SNS, this step is replaced with SNS governed deployment.
@@ -376,8 +390,9 @@ dfx canister --network $NETWORK call SUBNET_0_2_API revokeAdminRole '( "'$FUNNAI
 # upgrade the Archive canister
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_2_ARCHIVE
 
 # from folder: PoAIW/src/ArchiveChallenges
 dfx canister --network $NETWORK stop $SUBNET_0_2_ARCHIVE
@@ -395,8 +410,9 @@ dfx canister --network $NETWORK start  $SUBNET_0_2_ARCHIVE
 # upgrade the Treasury canister
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_TREASURY
 
 # from folder: PoAIW/src/Treasury
 dfx canister --network $NETWORK stop $SUBNET_0_1_TREASURY
@@ -416,19 +432,33 @@ dfx canister --network $NETWORK start  $SUBNET_0_1_TREASURY
 # upgrade the mAInerCreator
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_MAINER_CREATOR
 
 # from folder: PoAIW/src/mAInerCreator
-dfx canister --network $NETWORK stop $SUBNET_0_1_MAINER_CREATOR
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_MAINER_CREATOR 
 # Generate the bindings for the upload scripts and the frontend
 dfx generate mainer_creator_canister
-#
+
+# mops.toml was updated in latest PR
 rm -rf .mops
 mops install
-#
-dfx deploy --network $NETWORK mainer_creator_canister --mode upgrade --wasm-memory-persistence keep
+
+# Build wasm with Docker (reproducible build)
+make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
+make docker-build-wasm
+
+dfx canister --network $NETWORK stop $SUBNET_0_1_MAINER_CREATOR
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_MAINER_CREATOR
+
+# Deploy the pre-built wasm
+# Note: Post-SNS, this step is replaced with SNS governed deployment.
+# The wasm will be uploaded to the SNS and a deploy proposal will be created
+# for the community to vote on. Once the proposal passes, the SNS automatically
+# upgrades the canister.
+dfx canister install --wasm out/mainer_creator_canister.wasm \
+    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
+    mainer_creator_canister
 
 # start the mAInerCreator canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_1_MAINER_CREATOR
