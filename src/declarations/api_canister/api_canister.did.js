@@ -33,6 +33,9 @@ export const idlFactory = ({ IDL }) => {
   });
   const DailyMetricInput = IDL.Record({
     'total_paused_mainers' : IDL.Nat,
+    'total_cycles_all_usd' : IDL.Opt(IDL.Float64),
+    'total_cycles_protocol' : IDL.Opt(IDL.Nat),
+    'total_cycles_mainers_usd' : IDL.Opt(IDL.Float64),
     'date' : IDL.Text,
     'paused_very_high_burn_rate_mainers' : IDL.Nat,
     'paused_medium_burn_rate_mainers' : IDL.Nat,
@@ -45,11 +48,13 @@ export const idlFactory = ({ IDL }) => {
     'daily_burn_rate_usd' : IDL.Float64,
     'paused_high_burn_rate_mainers' : IDL.Nat,
     'total_active_mainers' : IDL.Nat,
+    'total_cycles_all' : IDL.Opt(IDL.Nat),
     'active_medium_burn_rate_mainers' : IDL.Nat,
     'active_custom_burn_rate_mainers' : IDL.Nat,
     'daily_burn_rate_cycles' : IDL.Nat,
     'funnai_index' : IDL.Float64,
     'total_mainers_created' : IDL.Nat,
+    'total_cycles_protocol_usd' : IDL.Opt(IDL.Float64),
   });
   const NatResult = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : ApiError });
   const DerivedMetrics = IDL.Record({
@@ -89,18 +94,15 @@ export const idlFactory = ({ IDL }) => {
     'date' : IDL.Text,
     'created_at' : IDL.Text,
   });
+  const CycleAmount = IDL.Record({ 'usd' : IDL.Float64, 'cycles' : IDL.Nat });
+  const TotalCycles = IDL.Record({
+    'all' : CycleAmount,
+    'protocol' : CycleAmount,
+    'mainers' : CycleAmount,
+  });
   const DailyBurnRate = IDL.Record({ 'usd' : IDL.Float64, 'cycles' : IDL.Nat });
-  const CyclesWithUsd = IDL.Record({
-    'usd' : IDL.Float64,
-    'cycles' : IDL.Nat,
-  });
-  const TotalCyclesBreakdown = IDL.Record({
-    'all' : CyclesWithUsd,
-    'mainers' : CyclesWithUsd,
-    'protocol' : CyclesWithUsd,
-  });
   const SystemMetrics = IDL.Record({
-    'total_cycles' : IDL.Opt(TotalCyclesBreakdown),
+    'total_cycles' : IDL.Opt(TotalCycles),
     'funnai_index' : IDL.Float64,
     'daily_burn_rate' : DailyBurnRate,
   });
@@ -112,6 +114,112 @@ export const idlFactory = ({ IDL }) => {
   });
   const DailyMetricResult = IDL.Variant({
     'Ok' : DailyMetric,
+    'Err' : ApiError,
+  });
+  const ActivityFeedQuery = IDL.Record({
+    'challengesLimit' : IDL.Opt(IDL.Nat),
+    'sinceTimestamp' : IDL.Opt(IDL.Nat64),
+    'winnersOffset' : IDL.Opt(IDL.Nat),
+    'challengesOffset' : IDL.Opt(IDL.Nat),
+    'winnersLimit' : IDL.Opt(IDL.Nat),
+  });
+  const ChallengeTopicStatus = IDL.Variant({
+    'Open' : IDL.Null,
+    'Closed' : IDL.Null,
+    'Archived' : IDL.Null,
+    'Other' : IDL.Text,
+  });
+  const CanisterAddress = IDL.Text;
+  const ChallengeStatus = IDL.Variant({
+    'Open' : IDL.Null,
+    'Closed' : IDL.Null,
+    'Archived' : IDL.Null,
+    'Other' : IDL.Text,
+  });
+  const Challenge = IDL.Record({
+    'challengeClosedTimestamp' : IDL.Opt(IDL.Nat64),
+    'challengeTopicStatus' : ChallengeTopicStatus,
+    'cyclesGenerateResponseOwnctrlOwnllmMEDIUM' : IDL.Nat,
+    'protocolOperationFeesCut' : IDL.Nat,
+    'challengeTopicCreationTimestamp' : IDL.Nat64,
+    'challengeCreationTimestamp' : IDL.Nat64,
+    'challengeCreatedBy' : CanisterAddress,
+    'challengeTopicId' : IDL.Text,
+    'cyclesGenerateResponseOwnctrlOwnllmHIGH' : IDL.Nat,
+    'cyclesGenerateResponseOwnctrlOwnllmLOW' : IDL.Nat,
+    'mainerPromptId' : IDL.Text,
+    'cyclesGenerateResponseSsctrlSsllm' : IDL.Nat,
+    'mainerMaxContinueLoopCount' : IDL.Nat,
+    'mainerTemp' : IDL.Float64,
+    'challengeStatus' : ChallengeStatus,
+    'cyclesGenerateResponseOwnctrlGs' : IDL.Nat,
+    'challengeQuestionSeed' : IDL.Nat32,
+    'mainerNumTokens' : IDL.Nat64,
+    'challengeQuestion' : IDL.Text,
+    'challengeId' : IDL.Text,
+    'challengeTopic' : IDL.Text,
+    'cyclesGenerateChallengeChctrlChllm' : IDL.Nat,
+    'cyclesGenerateResponseSactrlSsctrl' : IDL.Nat,
+    'judgePromptId' : IDL.Text,
+    'cyclesSubmitResponse' : IDL.Nat,
+    'cyclesGenerateChallengeGsChctrl' : IDL.Nat,
+    'cyclesGenerateResponseSsctrlGs' : IDL.Nat,
+  });
+  const ChallengeParticipationResult = IDL.Variant({
+    'ThirdPlace' : IDL.Null,
+    'SecondPlace' : IDL.Null,
+    'Winner' : IDL.Null,
+    'Other' : IDL.Text,
+    'Participated' : IDL.Null,
+  });
+  const RewardType = IDL.Variant({
+    'ICP' : IDL.Null,
+    'Coupon' : IDL.Text,
+    'MainerToken' : IDL.Null,
+    'Cycles' : IDL.Null,
+    'Other' : IDL.Text,
+  });
+  const ChallengeWinnerReward = IDL.Record({
+    'distributed' : IDL.Bool,
+    'rewardDetails' : IDL.Text,
+    'rewardType' : RewardType,
+    'amount' : IDL.Nat,
+    'distributedTimestamp' : IDL.Opt(IDL.Nat64),
+  });
+  const ChallengeParticipantEntry = IDL.Record({
+    'result' : ChallengeParticipationResult,
+    'reward' : ChallengeWinnerReward,
+    'ownedBy' : IDL.Principal,
+    'submittedBy' : IDL.Principal,
+    'submissionId' : IDL.Text,
+  });
+  const ChallengeWinnerDeclarationArray = IDL.Record({
+    'participants' : IDL.Vec(ChallengeParticipantEntry),
+    'thirdPlace' : ChallengeParticipantEntry,
+    'winner' : ChallengeParticipantEntry,
+    'secondPlace' : ChallengeParticipantEntry,
+    'finalizedTimestamp' : IDL.Nat64,
+    'challengeId' : IDL.Text,
+  });
+  const ActivityFeedResponse = IDL.Record({
+    'totalWinners' : IDL.Nat,
+    'cacheTimestamp' : IDL.Nat64,
+    'totalChallenges' : IDL.Nat,
+    'challenges' : IDL.Vec(Challenge),
+    'winners' : IDL.Vec(ChallengeWinnerDeclarationArray),
+  });
+  const ActivityFeedResult = IDL.Variant({
+    'Ok' : ActivityFeedResponse,
+    'Err' : ApiError,
+  });
+  const CacheStatus = IDL.Record({
+    'syncIntervalSeconds' : IDL.Nat,
+    'cachedChallengesCount' : IDL.Nat,
+    'lastSyncTimestamp' : IDL.Nat64,
+    'cachedWinnersCount' : IDL.Nat,
+  });
+  const CacheStatusResult = IDL.Variant({
+    'Ok' : CacheStatus,
     'Err' : ApiError,
   });
   const AdminRoleAssignmentsResult = IDL.Variant({
@@ -134,6 +242,10 @@ export const idlFactory = ({ IDL }) => {
   });
   const DailyMetricsResult = IDL.Variant({
     'Ok' : DailyMetricsResponse,
+    'Err' : ApiError,
+  });
+  const ChallengesResult = IDL.Variant({
+    'Ok' : IDL.Vec(Challenge),
     'Err' : ApiError,
   });
   const TokenRewardsMetadata = IDL.Record({
@@ -170,6 +282,9 @@ export const idlFactory = ({ IDL }) => {
   const TextResult = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : ApiError });
   const DailyMetricUpdateInput = IDL.Record({
     'total_paused_mainers' : IDL.Opt(IDL.Nat),
+    'total_cycles_all_usd' : IDL.Opt(IDL.Float64),
+    'total_cycles_protocol' : IDL.Opt(IDL.Nat),
+    'total_cycles_mainers_usd' : IDL.Opt(IDL.Float64),
     'paused_very_high_burn_rate_mainers' : IDL.Opt(IDL.Nat),
     'paused_medium_burn_rate_mainers' : IDL.Opt(IDL.Nat),
     'total_cycles_all_mainers' : IDL.Opt(IDL.Nat),
@@ -181,11 +296,13 @@ export const idlFactory = ({ IDL }) => {
     'daily_burn_rate_usd' : IDL.Opt(IDL.Float64),
     'paused_high_burn_rate_mainers' : IDL.Opt(IDL.Nat),
     'total_active_mainers' : IDL.Opt(IDL.Nat),
+    'total_cycles_all' : IDL.Opt(IDL.Nat),
     'active_medium_burn_rate_mainers' : IDL.Opt(IDL.Nat),
     'active_custom_burn_rate_mainers' : IDL.Opt(IDL.Nat),
     'daily_burn_rate_cycles' : IDL.Opt(IDL.Nat),
     'funnai_index' : IDL.Opt(IDL.Float64),
     'total_mainers_created' : IDL.Opt(IDL.Nat),
+    'total_cycles_protocol_usd' : IDL.Opt(IDL.Float64),
   });
   const UpdateDailyMetricAdminInput = IDL.Record({
     'date' : IDL.Text,
@@ -209,6 +326,13 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'deleteDailyMetricAdmin' : IDL.Func([IDL.Text], [NatResult], []),
+    'getActivityFeed' : IDL.Func(
+        [ActivityFeedQuery],
+        [ActivityFeedResult],
+        ['query'],
+      ),
+    'getActivityFeedCacheStatus' : IDL.Func([], [CacheStatusResult], ['query']),
+    'getActivityFeedSyncIntervalAdmin' : IDL.Func([], [NatResult], ['query']),
     'getAdminRoles' : IDL.Func([], [AdminRoleAssignmentsResult], ['query']),
     'getDailyMetricByDate' : IDL.Func(
         [IDL.Text],
@@ -224,11 +348,19 @@ export const idlFactory = ({ IDL }) => {
     'getLatestDailyMetric' : IDL.Func([], [DailyMetricResult], ['query']),
     'getMasterCanisterId' : IDL.Func([], [AuthRecordResult], ['query']),
     'getNumDailyMetrics' : IDL.Func([], [NatResult], ['query']),
+    'getOpenChallengesFromCache' : IDL.Func([], [ChallengesResult], ['query']),
     'getTokenRewardsData' : IDL.Func([], [TokenRewardsDataResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
     'resetDailyMetricsAdmin' : IDL.Func([], [NatResult], []),
     'revokeAdminRole' : IDL.Func([IDL.Text], [TextResult], []),
+    'setActivityFeedSyncIntervalAdmin' : IDL.Func(
+        [IDL.Nat],
+        [StatusCodeRecordResult],
+        [],
+      ),
     'setMasterCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
+    'startActivityFeedTimerAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'stopActivityFeedTimerAdmin' : IDL.Func([], [AuthRecordResult], []),
     'updateDailyMetricAdmin' : IDL.Func(
         [UpdateDailyMetricAdminInput],
         [DailyMetricResult],
