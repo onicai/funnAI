@@ -387,7 +387,7 @@ dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record {
 dfx canister --network $NETWORK call SUBNET_0_2_API revokeAdminRole '( "'$FUNNAI_DJANGO_PRINCIPAL'")'
 ```
 
-# upgrade the Archive canister
+# upgrade the ArchiveChallenges canister
 
 ```bash
 # Verify correct network & canister settings !
@@ -395,13 +395,26 @@ echo $NETWORK
 echo $SUBNET_0_2_ARCHIVE
 
 # from folder: PoAIW/src/ArchiveChallenges
-dfx canister --network $NETWORK stop $SUBNET_0_2_ARCHIVE
-dfx canister --network $NETWORK snapshot create $SUBNET_0_2_ARCHIVE 
-#
+
+# mops.toml was updated in latest PR
 rm -rf .mops
 mops install
-#
-dfx deploy --network $NETWORK archive_challenges_canister --mode upgrade --wasm-memory-persistence keep
+
+# Build wasm with Docker (reproducible build)
+make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
+make docker-build-wasm
+
+dfx canister --network $NETWORK stop $SUBNET_0_2_ARCHIVE
+dfx canister --network $NETWORK snapshot create $SUBNET_0_2_ARCHIVE
+
+# Deploy the pre-built wasm
+# Note: Post-SNS, this step is replaced with SNS governed deployment.
+# The wasm will be uploaded to the SNS and a deploy proposal will be created
+# for the community to vote on. Once the proposal passes, the SNS automatically
+# upgrades the canister.
+dfx canister install --wasm out/archive_challenges_canister.wasm \
+    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
+    archive_challenges_canister
 
 # start the Archive canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_2_ARCHIVE
