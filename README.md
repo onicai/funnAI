@@ -1,4 +1,4 @@
-[![funnAI](https://github.com/onicai/funnAI/actions/workflows/cicd-mac.yml/badge.svg)](https://github.com/onicai/funnAI/actions/workflows/cicd-mac.yml)
+[![funnAI](https://github.com/onicai/funnAI/actions/workflows/cicd-ubuntu.yml/badge.svg)](https://github.com/onicai/funnAI/actions/workflows/cicd-ubuntu.yml)
 
 # funnAI
 
