@@ -100,7 +100,10 @@ dfx canister --network $NETWORK snapshot create $SUBNET_0_1_GAMESTATE
 # upgrades the canister.
 dfx canister install --wasm out/game_state_canister.wasm \
     --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    game_state_canister
+    $SUBNET_0_1_GAMESTATE
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the GameState canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_1_GAMESTATE
@@ -188,7 +191,10 @@ dfx canister --network $NETWORK snapshot create $SUBNET_0_1_CHALLENGER
 # upgrades the canister.
 dfx canister install --wasm out/challenger_ctrlb_canister.wasm \
     --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    challenger_ctrlb_canister
+    $SUBNET_0_1_CHALLENGER
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the Challenger canister back up
 # Important
@@ -239,7 +245,10 @@ dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
 # upgrades the canister.
 dfx canister install --wasm out/mainer_service_canister.wasm \
     --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    mainer_service_canister
+    $SUBNET_0_1_SHARE_SERVICE
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the ShareService canister back up
 echo "SUBNET_0_1_SHARE_SERVICE: $SUBNET_0_1_SHARE_SERVICE"
@@ -266,7 +275,19 @@ echo $SUBNET_0_1_SHARE_SERVICE
 rm -rf .mops
 mops install
 #
-dfx deploy --network $NETWORK mainer_service_canister --mode reinstall
+# Build wasm with Docker (reproducible build)
+make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
+make docker-build-wasm
+
+dfx canister --network $NETWORK stop $SUBNET_0_1_SHARE_SERVICE
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
+#
+dfx canister install --wasm out/mainer_service_canister.wasm \
+    --network $NETWORK --mode reinstall --wasm-memory-persistence keep \
+    $SUBNET_0_1_SHARE_SERVICE
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the ShareService canister back up
 echo "SUBNET_0_1_SHARE_SERVICE: $SUBNET_0_1_SHARE_SERVICE"
@@ -336,11 +357,16 @@ dfx canister --network $NETWORK snapshot create $SUBNET_0_1_JUDGE
 # upgrades the canister.
 dfx canister install --wasm out/judge_ctrlb_canister.wasm \
     --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    judge_ctrlb_canister
+    $SUBNET_0_1_JUDGE
 
 # When upgrade fails, do a reinstall
 # -> WHEN REINSTALLING, THE LMMs need to be registered again! See step below
-# dfx deploy --network $NETWORK judge_ctrlb_canister --mode reinstall
+# dfx canister install --wasm out/judge_ctrlb_canister.wasm \
+#   --network $NETWORK --mode reinstall --wasm-memory-persistence keep \
+#    $SUBNET_0_1_JUDGE
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the Judge canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_1_JUDGE
@@ -389,7 +415,10 @@ dfx canister --network $NETWORK snapshot create $SUBNET_0_2_API
 # upgrades the canister.
 dfx canister install --wasm out/api_canister.wasm \
     --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    api_canister
+    $SUBNET_0_2_API
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the API canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_2_API
@@ -466,7 +495,10 @@ dfx canister --network $NETWORK snapshot create $SUBNET_0_2_ARCHIVE
 # upgrades the canister.
 dfx canister install --wasm out/archive_challenges_canister.wasm \
     --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    archive_challenges_canister
+    $SUBNET_0_2_ARCHIVE
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the Archive canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_2_ARCHIVE
@@ -501,7 +533,10 @@ dfx canister --network $NETWORK snapshot create $SUBNET_0_1_TREASURY
 # upgrades the canister.
 dfx canister install --wasm out/funnai_treasury_canister.wasm \
     --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    funnai_treasury_canister
+    $SUBNET_0_1_TREASURY
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the Treasury canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_1_TREASURY
@@ -536,7 +571,10 @@ dfx canister --network $NETWORK snapshot create $SUBNET_0_1_MAINER_CREATOR
 # upgrades the canister.
 dfx canister install --wasm out/mainer_creator_canister.wasm \
     --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    mainer_creator_canister
+    $SUBNET_0_1_MAINER_CREATOR
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the mAInerCreator canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_1_MAINER_CREATOR
@@ -619,6 +657,11 @@ dfx canister install --wasm out/funnai_backend.wasm \
     --argument "( principal \"$(dfx identity get-principal)\" )" \
     --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
     funnai_backend
+
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
+
 dfx canister --network $NETWORK start funnai_backend
 ```
 
