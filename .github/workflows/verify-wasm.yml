@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       network:
-        description: "Network to verify against "
+        description: "Network to verify against"
         type: choice
         options:
           - prd

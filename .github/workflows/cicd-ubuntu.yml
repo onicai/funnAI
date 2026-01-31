@@ -6,7 +6,7 @@ on:
     paths:
       - ".github/workflows/cicd-ubuntu.yml"
       - ".github/workflows/trigger.txt"
-      # Keep in sync with matrix.canister beloww
+      # Keep in sync with matrix.canister below
       - "src/funnai_backend/**"
       - "src/docker/**"
 

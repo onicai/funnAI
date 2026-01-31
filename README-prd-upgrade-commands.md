@@ -46,8 +46,11 @@ echo -n "MAINER_SHARE_AGENT_0007        = $MAINER_SHARE_AGENT_0007 - "; dfx cani
 In this order:
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_CHALLENGER
+echo $SUBNET_0_1_SHARE_SERVICE
+echo $SUBNET_0_1_JUDGE
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    stopTimerExecutionAdmin
 # wait a couple of minutes..
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE stopTimerExecutionAdmin
@@ -60,8 +63,9 @@ dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         stopTimerExecutio
 # pause protocol
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_GAMESTATE
 # check if it is already paused
 dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getPauseProtocolFlag
 
@@ -72,17 +76,34 @@ dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE togglePauseProtocolFl
 # upgrade the GameState
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_GAMESTATE
 
-# from folder: funnAI
-dfx canister --network $NETWORK stop $SUBNET_0_1_GAMESTATE
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_GAMESTATE
-#
+# from folder: PoAIW/src/GameState
+
+# mops.toml was updated in latest PR
 rm -rf .mops
 mops install
-#
-dfx deploy --network $NETWORK game_state_canister --mode upgrade --wasm-memory-persistence keep
+
+# Build wasm with Docker (reproducible build)
+make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
+make docker-build-wasm
+
+dfx canister --network $NETWORK stop $SUBNET_0_1_GAMESTATE
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_GAMESTATE
+
+# Deploy the pre-built wasm
+# Note: Post-SNS, this step is replaced with SNS governed deployment.
+# The wasm will be uploaded to the SNS and a deploy proposal will be created
+# for the community to vote on. Once the proposal passes, the SNS automatically
+# upgrades the canister.
+dfx canister install --wasm out/game_state_canister.wasm \
+    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
+    $SUBNET_0_1_GAMESTATE
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the GameState canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_1_GAMESTATE
@@ -146,17 +167,34 @@ dfx canister --network $NETWORK call game_state_canister revokeAdminRole '( "'$F
 # upgrade the Challenger
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_CHALLENGER
 
 # from folder: PoAIW/src/Challenger
-dfx canister --network $NETWORK stop $SUBNET_0_1_CHALLENGER
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_CHALLENGER 
-#
+
+# mops.toml was updated in latest PR
 rm -rf .mops
 mops install
-#
-dfx deploy --network $NETWORK challenger_ctrlb_canister --mode upgrade --wasm-memory-persistence keep
+
+# Build wasm with Docker (reproducible build)
+make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
+make docker-build-wasm
+
+dfx canister --network $NETWORK stop $SUBNET_0_1_CHALLENGER
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_CHALLENGER
+
+# Deploy the pre-built wasm
+# Note: Post-SNS, this step is replaced with SNS governed deployment.
+# The wasm will be uploaded to the SNS and a deploy proposal will be created
+# for the community to vote on. Once the proposal passes, the SNS automatically
+# upgrades the canister.
+dfx canister install --wasm out/challenger_ctrlb_canister.wasm \
+    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
+    $SUBNET_0_1_CHALLENGER
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the Challenger canister back up
 # Important
@@ -183,17 +221,34 @@ dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getTimerActionRegula
 # upgrade the ShareService
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_SHARE_SERVICE
 
 # from folder: PoAIW/src/mAIner
-dfx canister --network $NETWORK stop $SUBNET_0_1_SHARE_SERVICE
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
-#
+
+# mops.toml was updated in latest PR
 rm -rf .mops
 mops install
-#
-dfx deploy --network $NETWORK mainer_service_canister --mode upgrade --wasm-memory-persistence keep
+
+# Build wasm with Docker (reproducible build)
+make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
+make docker-build-wasm
+
+dfx canister --network $NETWORK stop $SUBNET_0_1_SHARE_SERVICE
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
+
+# Deploy the pre-built wasm
+# Note: Post-SNS, this step is replaced with SNS governed deployment.
+# The wasm will be uploaded to the SNS and a deploy proposal will be created
+# for the community to vote on. Once the proposal passes, the SNS automatically
+# upgrades the canister.
+dfx canister install --wasm out/mainer_service_canister.wasm \
+    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
+    $SUBNET_0_1_SHARE_SERVICE
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the ShareService canister back up
 echo "SUBNET_0_1_SHARE_SERVICE: $SUBNET_0_1_SHARE_SERVICE"
@@ -211,15 +266,28 @@ dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getTimerActionReg
 ## reinstall the ShareService
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_SHARE_SERVICE
 
 # from folder: PoAIW/src/mAIner
 #
 rm -rf .mops
 mops install
 #
-dfx deploy --network $NETWORK mainer_service_canister --mode reinstall
+# Build wasm with Docker (reproducible build)
+make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
+make docker-build-wasm
+
+dfx canister --network $NETWORK stop $SUBNET_0_1_SHARE_SERVICE
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
+#
+dfx canister install --wasm out/mainer_service_canister.wasm \
+    --network $NETWORK --mode reinstall --wasm-memory-persistence keep \
+    $SUBNET_0_1_SHARE_SERVICE
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the ShareService canister back up
 echo "SUBNET_0_1_SHARE_SERVICE: $SUBNET_0_1_SHARE_SERVICE"
@@ -265,30 +333,49 @@ dfx canister --network $NETWORK call $MAINER getMaintenanceFlag
 # upgrade the Judge
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_JUDGE
 
 # from folder: PoAIW/src/Judge
-dfx canister --network $NETWORK stop $SUBNET_0_1_JUDGE
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_JUDGE 
-#
+
+# mops.toml was updated in latest PR
 rm -rf .mops
 mops install
-#
-dfx deploy --network $NETWORK judge_ctrlb_canister --mode upgrade --wasm-memory-persistence keep
 
-# Upgrade failed, so we did a reinstall
+# Build wasm with Docker (reproducible build)
+make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
+make docker-build-wasm
+
+dfx canister --network $NETWORK stop $SUBNET_0_1_JUDGE
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_JUDGE
+
+# Deploy the pre-built wasm
+# Note: Post-SNS, this step is replaced with SNS governed deployment.
+# The wasm will be uploaded to the SNS and a deploy proposal will be created
+# for the community to vote on. Once the proposal passes, the SNS automatically
+# upgrades the canister.
+dfx canister install --wasm out/judge_ctrlb_canister.wasm \
+    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
+    $SUBNET_0_1_JUDGE
+
+# When upgrade fails, do a reinstall
 # -> WHEN REINSTALLING, THE LMMs need to be registered again! See step below
-dfx deploy --network $NETWORK judge_ctrlb_canister --mode reinstall
+# dfx canister install --wasm out/judge_ctrlb_canister.wasm \
+#   --network $NETWORK --mode reinstall --wasm-memory-persistence keep \
+#    $SUBNET_0_1_JUDGE
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the Judge canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_1_JUDGE
 dfx canister --network $NETWORK status $SUBNET_0_1_JUDGE     | grep Status
 dfx canister --network $NETWORK call   $SUBNET_0_1_JUDGE health
 
-# THE JUDGE CURRENTLY MUST BE REINSTALLED, so issue these commands:
+# When reinstalled, issue these commands:
 # re-register the LLMs, from PoAIW/src/Judge folder
-scripts/register-llms.sh --network $NETWORK
+# scripts/register-llms.sh --network $NETWORK
 
 # set the timer
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE getTimerActionRegularityInSecondsAdmin
@@ -304,17 +391,22 @@ dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --ou
 # upgrade the API canister
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_2_API
 
 # from folder: PoAIW/src/Api
-dfx canister --network $NETWORK stop $SUBNET_0_2_API
-dfx canister --network $NETWORK snapshot create $SUBNET_0_2_API
+
+# mops.toml was updated in latest PR
+rm -rf .mops
+mops install
 
 # Build wasm with Docker (reproducible build)
-# The base image is shared across all canisters. Once built, it can be reused — no rebuild needed.
-make docker-build-base
+make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
 make docker-build-wasm
+
+dfx canister --network $NETWORK stop $SUBNET_0_2_API
+dfx canister --network $NETWORK snapshot create $SUBNET_0_2_API
 
 # Deploy the pre-built wasm
 # Note: Post-SNS, this step is replaced with SNS governed deployment.
@@ -323,7 +415,10 @@ make docker-build-wasm
 # upgrades the canister.
 dfx canister install --wasm out/api_canister.wasm \
     --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    api_canister
+    $SUBNET_0_2_API
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the API canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_2_API
@@ -373,20 +468,37 @@ dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record {
 dfx canister --network $NETWORK call SUBNET_0_2_API revokeAdminRole '( "'$FUNNAI_DJANGO_PRINCIPAL'")'
 ```
 
-# upgrade the Archive canister
+# upgrade the ArchiveChallenges canister
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_2_ARCHIVE
 
 # from folder: PoAIW/src/ArchiveChallenges
-dfx canister --network $NETWORK stop $SUBNET_0_2_ARCHIVE
-dfx canister --network $NETWORK snapshot create $SUBNET_0_2_ARCHIVE 
-#
+
+# mops.toml was updated in latest PR
 rm -rf .mops
 mops install
-#
-dfx deploy --network $NETWORK archive_challenges_canister --mode upgrade --wasm-memory-persistence keep
+
+# Build wasm with Docker (reproducible build)
+make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
+make docker-build-wasm
+
+dfx canister --network $NETWORK stop $SUBNET_0_2_ARCHIVE
+dfx canister --network $NETWORK snapshot create $SUBNET_0_2_ARCHIVE
+
+# Deploy the pre-built wasm
+# Note: Post-SNS, this step is replaced with SNS governed deployment.
+# The wasm will be uploaded to the SNS and a deploy proposal will be created
+# for the community to vote on. Once the proposal passes, the SNS automatically
+# upgrades the canister.
+dfx canister install --wasm out/archive_challenges_canister.wasm \
+    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
+    $SUBNET_0_2_ARCHIVE
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the Archive canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_2_ARCHIVE
@@ -395,19 +507,36 @@ dfx canister --network $NETWORK start  $SUBNET_0_2_ARCHIVE
 # upgrade the Treasury canister
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_TREASURY
 
 # from folder: PoAIW/src/Treasury
-dfx canister --network $NETWORK stop $SUBNET_0_1_TREASURY
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_TREASURY 
-#
+
+# mops.toml was updated in latest PR
 rm -rf .mops
 mops install
-#
+
 dfx generate funnai_treasury_canister
-#
-dfx deploy --network $NETWORK funnai_treasury_canister --mode upgrade --wasm-memory-persistence keep
+
+# Build wasm with Docker (reproducible build)
+make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
+make docker-build-wasm
+
+dfx canister --network $NETWORK stop $SUBNET_0_1_TREASURY
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_TREASURY
+
+# Deploy the pre-built wasm
+# Note: Post-SNS, this step is replaced with SNS governed deployment.
+# The wasm will be uploaded to the SNS and a deploy proposal will be created
+# for the community to vote on. Once the proposal passes, the SNS automatically
+# upgrades the canister.
+dfx canister install --wasm out/funnai_treasury_canister.wasm \
+    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
+    $SUBNET_0_1_TREASURY
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the Treasury canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_1_TREASURY
@@ -416,19 +545,36 @@ dfx canister --network $NETWORK start  $SUBNET_0_1_TREASURY
 # upgrade the mAInerCreator
 
 ```bash
-# Verify correct network !
+# Verify correct network & canister settings !
 echo $NETWORK
+echo $SUBNET_0_1_MAINER_CREATOR
 
 # from folder: PoAIW/src/mAInerCreator
-dfx canister --network $NETWORK stop $SUBNET_0_1_MAINER_CREATOR
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_MAINER_CREATOR 
 # Generate the bindings for the upload scripts and the frontend
 dfx generate mainer_creator_canister
-#
+
+# mops.toml was updated in latest PR
 rm -rf .mops
 mops install
-#
-dfx deploy --network $NETWORK mainer_creator_canister --mode upgrade --wasm-memory-persistence keep
+
+# Build wasm with Docker (reproducible build)
+make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
+make docker-build-wasm
+
+dfx canister --network $NETWORK stop $SUBNET_0_1_MAINER_CREATOR
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_MAINER_CREATOR
+
+# Deploy the pre-built wasm
+# Note: Post-SNS, this step is replaced with SNS governed deployment.
+# The wasm will be uploaded to the SNS and a deploy proposal will be created
+# for the community to vote on. Once the proposal passes, the SNS automatically
+# upgrades the canister.
+dfx canister install --wasm out/mainer_creator_canister.wasm \
+    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
+    $SUBNET_0_1_MAINER_CREATOR
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the mAInerCreator canister back up
 dfx canister --network $NETWORK start  $SUBNET_0_1_MAINER_CREATOR
@@ -479,6 +625,45 @@ dfx canister --network $NETWORK call mainer_creator_canister getSha256HashesAdmi
 Final test must be done by creating a mAIner via the UI, but initial test you can do with dfx.
 
 Call the `spinUpMainerControllerCanisterForUserAdmin` endpoint as described in PoAIW/src/GameState/README.md 
+
+# upgrade the funnai_backend
+
+```bash
+# Verify correct network & canister settings !
+echo $NETWORK
+
+# from folder: funnAI/src/funnai_backend
+
+# mops.toml was updated in latest PR
+rm -rf .mops
+mops install
+
+# Build wasm with Docker (reproducible build)
+# The base image is shared across all canisters of the funnAI repo.
+# Once built, it can be reused. (The PoAIW repo has its own, separate base image.)
+make docker-build-base
+make docker-build-wasm
+
+dfx generate funnai_backend
+dfx canister --network $NETWORK stop funnai_backend
+dfx canister --network $NETWORK snapshot create funnai_backend
+
+# Deploy the pre-built wasm
+# Note: Post-SNS, this step is replaced with SNS governed deployment.
+# The wasm will be uploaded to the SNS and a deploy proposal will be created
+# for the community to vote on. Once the proposal passes, the SNS automatically
+# upgrades the canister.
+dfx canister install --wasm out/funnai_backend.wasm \
+    --argument "( principal \"$(dfx identity get-principal)\" )" \
+    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
+    funnai_backend
+
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
+
+dfx canister --network $NETWORK start funnai_backend
+```
 
 # un-pause protocol
 ```bash
