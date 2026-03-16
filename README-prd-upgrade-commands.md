@@ -604,19 +604,18 @@ dfx canister --network $NETWORK call ck_signer_canister health
 # Verify Treasury -> go to Configure Treasury section if wrong
 dfx canister --network $NETWORK call ck_signer_canister getTreasury
 
-# Verify fee token configuration -> go to Configure Fee Tokens sections if wrong
+# Verify fee token configuration
 dfx canister --network $NETWORK call ck_signer_canister getFeeTokens
 
-# Verify signing is functional
-# getPublicKey — should return an x-only public key and P2TR bitcoin address
-dfx canister --network $NETWORK call ck_signer_canister getPublicKey '(record { botName = "testbot" })'
-
-# sign — should return a 64-byte Schnorr signature
-# (the argument is a 32-byte message hash, hex-encoded as a blob)
-dfx canister --network $NETWORK call ck_signer_canister sign '(record { botName = "testbot"; message = blob "\00\01\02\03\04\05\06\07\08\09\0a\0b\0c\0d\0e\0f\10\11\12\13\14\15\16\17\18\19\1a\1b\1c\1d\1e\1f"; payment = null })'
-
-# Verify that different botNames produce different keys
-dfx canister --network $NETWORK call ck_signer_canister getPublicKey '(record { botName = "testbot2" })'
+# If "Accepted tokens" is empty (e.g. after reinstall), add ckBTC:
+#
+# | Token | Ledger Canister ID          | Fee        |
+# | ----- | --------------------------- | ---------- |
+# | ckBTC | mxzaz-hqaaa-aaaar-qaada-cai | 100 (sats) |
+#
+dfx canister --network $NETWORK call ck_signer_canister addFeeToken \
+    '(record { tokenName = "ckBTC"; tokenLedger = principal "mxzaz-hqaaa-aaaar-qaada-cai"; fee = 100 : nat })'
+dfx canister --network $NETWORK call ck_signer_canister getFeeTokens
 ```
 
 ## Configure ckSigner treasury
@@ -630,15 +629,8 @@ echo "Using network: $NETWORK"
 # Check current treasury
 dfx canister --network $NETWORK call ck_signer_canister getTreasury
 
-## Treasury Configuration
-#
-# | Environment | Treasury Name               | Treasury Principal          |
-# | ----------- | --------------------------- | --------------------------- |
-# | prd         | funnAI Treasury Canister     | qbhxa-ziaaa-aaaaa-qbqza-cai |
-# | testing     | funnAI Treasury Canister Dev | pu2lc-nyaaa-aaaag-au65q-cai  |
-
 # Set treasury (only needed if default is wrong, e.g. for testing network)
-# dfx canister --network $NETWORK call ck_signer_canister setTreasury  '(record { treasuryName = "funnAI Treasury Canister Dev"; treasuryPrincipal = principal "pu2lc-nyaaa-aaaag-au65q-cai" })'
+# dfx canister --network $NETWORK call ck_signer_canister setTreasury  '(record { treasuryName = "<description>"; treasuryPrincipal = principal "<principal>" })'
 ```
 
 ## Configure ckSigner fee tokens
