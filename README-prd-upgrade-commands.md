@@ -542,6 +542,128 @@ make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 dfx canister --network $NETWORK start  $SUBNET_0_1_TREASURY
 ```
 
+# upgrade the ckSigner canister
+
+The ckSigner canister requires a Schnorr key name in addition to the network.
+
+Schnorr Key Names
+
+| Schnorr Key Name | dfx network                 | Signing Cost | Subnet used for signing    |
+| ---------------- | --------------------------- | ------------ | -------------------------- |
+| `key_1`          | IC mainnet (prd)            | ~26B cycles  | 34-node fiduciary subnet   |
+| `test_key_1`     | IC mainnet (testing)        | ~10B cycles  | 13-node application subnet |
+| `dfx_test_key`   | Local replica (`dfx start`) | Free         | Local test subnet          |
+
+```bash
+# Set SCHNORR_KEY_NAME to match your NETWORK
+# NETWORK=prd         -> SCHNORR_KEY_NAME="key_1"
+# NETWORK=testing     -> SCHNORR_KEY_NAME="test_key_1"
+# NETWORK=local       -> SCHNORR_KEY_NAME="dfx_test_key"
+SCHNORR_KEY_NAME="key_1"
+
+# Verify correct network & signing key!
+echo "NETWORK=$NETWORK"
+echo "SCHNORR_KEY_NAME=$SCHNORR_KEY_NAME"
+
+# from folder: PoAIW/src/ckSigner
+
+# Build wasm with Docker (reproducible build)
+make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
+make docker-build-wasm
+
+dfx canister --network $NETWORK stop ck_signer_canister
+dfx canister --network $NETWORK snapshot create ck_signer_canister
+
+# ---------------------------------------------
+# To upgrade
+dfx canister install ck_signer_canister \
+    --mode upgrade \
+    --network $NETWORK \
+    --wasm out/ck_signer_canister.wasm \
+    --argument "(\"$SCHNORR_KEY_NAME\")" \
+    --wasm-memory-persistence keep
+
+# To reinstall
+# When reinstalling, make sure the redo the steps of the section:
+# "Configure fee tokens"
+#
+dfx canister install ck_signer_canister \
+    --mode reinstall \
+    --network $NETWORK \
+    --wasm out/ck_signer_canister.wasm \
+    --argument "(\"$SCHNORR_KEY_NAME\")"
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
+
+# Start the canister back up
+dfx canister --network $NETWORK start ck_signer_canister
+dfx canister --network $NETWORK status ck_signer_canister | grep Status
+dfx canister --network $NETWORK call ck_signer_canister health
+
+# Verify Treasury -> go to Configure Treasury section if wrong
+dfx canister --network $NETWORK call ck_signer_canister getTreasury
+
+# Verify fee token configuration
+dfx canister --network $NETWORK call ck_signer_canister getFeeTokens
+
+# If "Accepted tokens" is empty (e.g. after reinstall), add ckBTC:
+#
+# | Token | Ledger Canister ID          | Fee        |
+# | ----- | --------------------------- | ---------- |
+# | ckBTC | mxzaz-hqaaa-aaaar-qaada-cai | 100 (sats) |
+#
+dfx canister --network $NETWORK call ck_signer_canister addFeeToken \
+    '(record { tokenName = "ckBTC"; tokenLedger = principal "mxzaz-hqaaa-aaaar-qaada-cai"; fee = 100 : nat })'
+dfx canister --network $NETWORK call ck_signer_canister getFeeTokens
+```
+
+## Configure ckSigner treasury
+
+The treasury is where all signing fees are sent. Default: funnAI Treasury Canister (prd).
+After a reinstall, verify the treasury is correct. For testing, set it to the testing treasury.
+
+```bash
+echo "Using network: $NETWORK"
+
+# Check current treasury
+dfx canister --network $NETWORK call ck_signer_canister getTreasury
+
+# Set treasury (only needed if default is wrong, e.g. for testing network)
+# dfx canister --network $NETWORK call ck_signer_canister setTreasury  '(record { treasuryName = "<description>"; treasuryPrincipal = principal "<principal>" })'
+```
+
+## Configure ckSigner fee tokens
+
+After upgrade, configure the accepted ICRC-2 fee tokens.
+
+```bash
+echo "Using network: $NETWORK"
+
+# Check current fee token configuration
+dfx canister --network $NETWORK call ck_signer_canister getFeeTokens
+
+## Fee Token Configuration
+#
+# | Token | Ledger Canister ID          | Fee        |
+# | ----- | --------------------------- | ---------- |
+# | ckBTC | mxzaz-hqaaa-aaaar-qaada-cai | 100 (sats) |
+
+dfx canister --network $NETWORK call ck_signer_canister addFeeToken \
+    '(record { tokenName = "ckBTC"; tokenLedger = principal "mxzaz-hqaaa-aaaar-qaada-cai"; fee = 100 : nat })'
+
+# Verify fee tokens are configured
+dfx canister --network $NETWORK call ck_signer_canister getFeeTokens
+
+# Verify sign rejects without payment (should return "Fee payment required" error)
+dfx canister --network $NETWORK call ck_signer_canister sign \
+    '(record { botName = "testbot"; message = blob "\00\01\02\03\04\05\06\07\08\09\0a\0b\0c\0d\0e\0f\10\11\12\13\14\15\16\17\18\19\1a\1b\1c\1d\1e\1f"; payment = null })'
+
+# To remove a fee token (if needed):
+# dfx canister --network $NETWORK call ck_signer_canister removeFeeToken \
+#     '(record { tokenLedger = principal "mxzaz-hqaaa-aaaar-qaada-cai" })'
+```
+
 # upgrade the mAInerCreator
 
 ```bash
@@ -729,8 +851,11 @@ dfx canister --network $NETWORK snapshot delete $SUBNET_0_1_CHALLENGER    <snaps
 dfx canister --network $NETWORK snapshot list   $SUBNET_0_1_SHARE_SERVICE 
 dfx canister --network $NETWORK snapshot delete $SUBNET_0_1_SHARE_SERVICE <snapshot-id>
 
-dfx canister --network $NETWORK snapshot list   $SUBNET_0_1_JUDGE         
-dfx canister --network $NETWORK snapshot delete $SUBNET_0_1_JUDGE         <snapshot-id> 
+dfx canister --network $NETWORK snapshot list   $SUBNET_0_1_JUDGE
+dfx canister --network $NETWORK snapshot delete $SUBNET_0_1_JUDGE         <snapshot-id>
+
+dfx canister --network $NETWORK snapshot list   ck_signer_canister
+dfx canister --network $NETWORK snapshot delete  ck_signer_canister <snapshot-id>
 ```
 
 # Load a snapshot to ROLL BACK
@@ -750,8 +875,14 @@ dfx canister --network $NETWORK snapshot load $SUBNET_0_1_CHALLENGER    <snapsho
 dfx canister --network $NETWORK snapshot list $SUBNET_0_1_SHARE_SERVICE 
 dfx canister --network $NETWORK snapshot load $SUBNET_0_1_SHARE_SERVICE <snapshot-id>
 
-dfx canister --network $NETWORK snapshot list $SUBNET_0_1_JUDGE         
-dfx canister --network $NETWORK snapshot load $SUBNET_0_1_JUDGE         <snapshot-id> 
+dfx canister --network $NETWORK snapshot list $SUBNET_0_1_JUDGE
+dfx canister --network $NETWORK snapshot load $SUBNET_0_1_JUDGE         <snapshot-id>
+
+dfx canister --network $NETWORK stop ck_signer_canister
+dfx canister --network $NETWORK snapshot list ck_signer_canister
+dfx canister --network $NETWORK snapshot load ck_signer_canister <snapshot-id>
+dfx canister --network $NETWORK start ck_signer_canister
+dfx canister --network $NETWORK call ck_signer_canister health
 
 # start canisters > start timers > unpause, as described above
 ```
