@@ -912,6 +912,41 @@ In these folders, the following files are used by dfx:
 
 ## Deploy a new LLM
 
+### Using script (recommended)
+
+The `deploy_llm.sh` script automates the full deployment of a new LLM canister:
+creates it on a subnet, uploads the model, configures controllers, admin roles,
+log viewers, and tests the LLM.
+
+```bash
+# from folder: funnAI
+# Activate the conda environment
+conda activate llama_cpp_canister
+
+# Dry run first to see what will happen
+scripts/deploy_llm.sh --network $NETWORK --llm-type <challenger|judge|share_service> [--subnet <subnet-id>] --dry-run
+
+# Deploy for real
+scripts/deploy_llm.sh --network $NETWORK --llm-type <challenger|judge|share_service> [--subnet <subnet-id>]
+```
+
+The script will:
+1. Find the next available `llm_N` index in `canister_ids.json`
+2. Ensure the entry exists in `dfx.json`
+3. Auto-select a subnet with < 3 LLMs (or use `--subnet` to override)
+4. Deploy, health-check, verify subnet, configure controllers & admin roles
+5. Upload and load the model, set max_tokens, pause logs/chats
+6. Add log viewers, test the LLM
+7. Update `canister_ids.json` and `canister_ids-{network}.env`
+
+If deployment fails partway through, the script prints the canister ID and
+a `delete_llm.sh` command to clean up.
+
+**Next step: add the LLM to the protocol**
+- See section below: "Add new LLM to the protocol"
+
+### Manually using dfx commands
+
 - Select a new subnet, if needed, and record it in our tracking spreadsheet:
     https://docs.google.com/spreadsheets/d/1KeyylEYVs3cQvYXOc9RS0q5eWd_vWIW1UVycfDEIkBk/edit?gid=0#gid=0
 
@@ -938,7 +973,7 @@ In these folders, the following files are used by dfx:
 
 - Add ctrlb_canister as a controller
 
-    ```bash        
+    ```bash
         NETWORK=prd
 
         # from folder: funnAI
@@ -949,17 +984,17 @@ In these folders, the following files are used by dfx:
         echo "SUBNET_0_1_CHALLENGER   : $SUBNET_0_1_CHALLENGER"
         echo "SUBNET_0_1_SHARE_SERVICE: $SUBNET_0_1_SHARE_SERVICE"
         echo "SUBNET_0_1_JUDGE        : $SUBNET_0_1_JUDGE"
-        
+
         # from folder: PoAIW/llms/xxx
 
         # For Challenger LLM
-        dfx canister --network $NETWORK update-settings llm_<#> --add-controller $SUBNET_0_1_CHALLENGER 
+        dfx canister --network $NETWORK update-settings llm_<#> --add-controller $SUBNET_0_1_CHALLENGER
 
         # For ShareService LLM
-        dfx canister --network $NETWORK update-settings llm_<#> --add-controller $SUBNET_0_1_SHARE_SERVICE 
+        dfx canister --network $NETWORK update-settings llm_<#> --add-controller $SUBNET_0_1_SHARE_SERVICE
 
         # For Judge LLM
-        dfx canister --network $NETWORK update-settings llm_<#> --add-controller $SUBNET_0_1_JUDGE 
+        dfx canister --network $NETWORK update-settings llm_<#> --add-controller $SUBNET_0_1_JUDGE
 
     ```
 
@@ -969,8 +1004,8 @@ In these folders, the following files are used by dfx:
         NETWORK=prd
         PATRICK="cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"
         ARJAAN="chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"
-        dfx canister --network $NETWORK update-settings $llm --add-controller $PATRICK 
-        dfx canister --network $NETWORK update-settings $llm --add-controller $ARJAAN 
+        dfx canister --network $NETWORK update-settings $llm --add-controller $PATRICK
+        dfx canister --network $NETWORK update-settings $llm --add-controller $ARJAAN
     ```
 
 - Register the canister with CycleOps
@@ -1029,7 +1064,7 @@ In these folders, the following files are used by dfx:
         ```
 
     - Update `PoAIW/src/xxx/scripts/register-llms.sh` for the Controller:
-    
+
         ```bash
         if [ "$NETWORK_TYPE" = "prd" ]; then
             NUM_LLMS_DEPLOYED=...
@@ -1039,7 +1074,39 @@ In these folders, the following files are used by dfx:
 
 ## Add new LLM to the protocol
 
-### For Challenger
+### Using script (recommended)
+
+The `add_llm.sh` script adds a deployed LLM to the protocol by registering it
+with the controller canister and updating the GameState LLM count.
+
+```bash
+# from folder: funnAI
+
+# Dry run first
+scripts/add_llm.sh --network $NETWORK --canister-id <canister-id> --dry-run
+
+# Add for real
+scripts/add_llm.sh --network $NETWORK --canister-id <canister-id>
+```
+
+The script will:
+1. Show current LLMs registered in the controller
+2. Call `add_llm_canister` on the controller
+3. Verify the LLM count increased
+4. Update GameState via `setCyclesFlowAdmin` (`numChallengerLlms` / `numJudgeLlms` / `numShareServiceLlms`)
+
+**Manual step after add_llm.sh:**
+- Register the new canister in funnAI_django's `CanisterRegistry`
+  Required for cache cleanup tasks to include the new LLM.
+- Register the canister with CycleOps (adds controller `2daxo-giaaa-aaaap-anvca-cai`)
+- Record the new subnet (if new) in the tracking spreadsheet:
+  https://docs.google.com/spreadsheets/d/1KeyylEYVs3cQvYXOc9RS0q5eWd_vWIW1UVycfDEIkBk/edit?gid=0#gid=0
+
+
+
+### Manually using dfx commands
+
+#### For Challenger
 ```bash
     LLM="<canister-id>"
     # Add it to the Challenger ctrlb canister
@@ -1050,10 +1117,10 @@ In these folders, the following files are used by dfx:
     # update GameState cycle cost calculations
     dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numChallengerLlms
     NUM_LLMS_DEPLOYED=....
-    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numChallengerLlms = opt ($NUM_LLMS_DEPLOYED : nat);})" 
+    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numChallengerLlms = opt ($NUM_LLMS_DEPLOYED : nat);})"
 ```
 
-### For ShareService
+#### For ShareService
 ```bash
     LLM="<canister-id>"
     # Add it to the ShareService ctrlb canister
@@ -1064,10 +1131,10 @@ In these folders, the following files are used by dfx:
     # update GameState cycle cost calculations
     dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numShareServiceLlms
     NUM_LLMS_DEPLOYED=....
-    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numShareServiceLlms = opt ($NUM_LLMS_DEPLOYED : nat);})" 
+    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numShareServiceLlms = opt ($NUM_LLMS_DEPLOYED : nat);})"
 ```
 
-### For Judge
+#### For Judge
 ```bash
     LLM="<canister-id>"
     # Add it to the Judge ctrlb canister
@@ -1077,8 +1144,93 @@ In these folders, the following files are used by dfx:
     # update GameState cycle cost calculations
     dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numJudgeLlms
     NUM_LLMS_DEPLOYED=...
-    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numJudgeLlms = opt ($NUM_LLMS_DEPLOYED : nat);})" 
+    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numJudgeLlms = opt ($NUM_LLMS_DEPLOYED : nat);})"
 ```
+
+**Manual step after adding:**
+- Register the new canister in funnAI_django's `CanisterRegistry`
+  (see `funnAI_django/src/apps/canisters/management/commands/import_canister_ids.py`).
+  Required for cache cleanup tasks to include the new LLM.
+
+
+## Delete an LLM
+
+### Using script (recommended)
+
+The `delete_llm.sh` script removes an LLM from the protocol, deletes the canister
+(returning cycles to the wallet), and cleans up `canister_ids.json` and the env file.
+
+```bash
+# from folder: funnAI
+
+# Dry run first
+scripts/delete_llm.sh --network $NETWORK --canister-id <canister-id> --dry-run
+
+# Delete for real
+scripts/delete_llm.sh --network $NETWORK --canister-id <canister-id>
+```
+
+The script will:
+1. Check cycles balance
+2. Remove the LLM from the controller canister
+3. Wait 180 seconds for in-flight requests to complete
+4. Delete the canister (cycles returned to wallet)
+5. Remove entry from `canister_ids.json`
+6. Remove entry from `canister_ids-{network}.env`
+
+**Manual step after delete_llm.sh:**
+- Remove the LLM canister from funnAI_django's `CanisterRegistry`
+  (see `funnAI_django/src/apps/canisters/management/commands/import_canister_ids.py`).
+  Required so cache cleanup tasks stop referencing the deleted canister.
+
+### Manually using dfx commands
+
+```bash
+    NETWORK=prd
+    source scripts/canister_ids-$NETWORK.env
+    LLM="<canister-id>"
+
+    # Remove from controller (pick the right one for your LLM type)
+    # For Challenger
+    dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    remove_llm_canister "(record {canister_id = \"$LLM\"})"
+    # For ShareService
+    dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE remove_llm_canister "(record {canister_id = \"$LLM\"})"
+    # For Judge
+    dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         remove_llm_canister "(record {canister_id = \"$LLM\"})"
+
+    # Wait for in-flight requests (180 seconds recommended)
+    sleep 180
+
+    # Delete the canister (cycles returned to wallet)
+    dfx canister --network $NETWORK delete $LLM
+
+    # Manually clean up:
+    # - Remove entry from canister_ids.json in the LLM directory
+    # - Remove entry from funnAI/scripts/canister_ids-{network}.env
+    # - Remove from funnAI_django CanisterRegistry
+```
+
+
+## Replace an LLM (delete + deploy + add)
+
+To replace an existing LLM (e.g. moving it to a different subnet):
+
+```bash
+# 1. Delete the old LLM
+scripts/delete_llm.sh --network $NETWORK --canister-id <old-canister-id>
+
+# 2. Deploy a new LLM
+scripts/deploy_llm.sh --network $NETWORK --llm-type <challenger|judge|share_service> [--subnet <subnet-id>]
+
+# 3. Add the new LLM to the protocol
+scripts/add_llm.sh --network $NETWORK --canister-id <new-canister-id>
+
+# 4. Manual steps:
+#    - Remove old canister from funnAI_django CanisterRegistry
+#    - Register new canister in funnAI_django CanisterRegistry
+#    - Register new canister with CycleOps
+```
+
 
 ## Upgrade an existing LLM
 
