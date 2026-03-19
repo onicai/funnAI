@@ -184,7 +184,7 @@
   {/if}
 
   <!-- Metrics Grid -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
     <!-- Daily Burn Rate -->
     <div class="relative overflow-hidden bg-gradient-to-br from-orange-50 to-red-100 dark:from-orange-900/20 dark:to-red-800/20 rounded-xl p-4 border border-orange-200 dark:border-orange-700/50">
       <div class="absolute top-0 right-0 w-20 h-20 bg-orange-200/30 dark:bg-orange-700/20 rounded-full -mr-6 -mt-6"></div>
@@ -238,7 +238,7 @@
       </div>
     </div>
 
-    <!-- Total Cycles Protocol -->
+    <!-- Total Cycles Protocol 
     <div class="relative overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-4 border border-blue-200 dark:border-blue-700/50">
       <div class="absolute top-0 right-0 w-20 h-20 bg-blue-200/30 dark:bg-blue-700/20 rounded-full -mr-6 -mt-6"></div>
       <div class="relative">
@@ -263,8 +263,9 @@
         {/if}
       </div>
     </div>
+    -->
 
-    <!-- Total Cycles All -->
+    <!-- Total Cycles All 
     <div class="relative overflow-hidden bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-900/20 dark:to-cyan-800/20 rounded-xl p-4 border border-cyan-200 dark:border-cyan-700/50">
       <div class="absolute top-0 right-0 w-20 h-20 bg-cyan-200/30 dark:bg-cyan-700/20 rounded-full -mr-6 -mt-6"></div>
       <div class="relative">
@@ -289,6 +290,7 @@
         {/if}
       </div>
     </div>
+    -->
 
     
   </div>
@@ -301,10 +303,12 @@
           <span class="w-2 h-2 rounded-full bg-purple-500"></span>
           mAIners cycles
         </span>
+        <!-- Summary Footer 
         <span class="flex items-center gap-1">
           <span class="w-2 h-2 rounded-full bg-blue-500"></span>
           Protocol cycles
         </span>
+        -->
       </div>
       <span>Values shown in trillion cycles (T)</span>
     </div>
