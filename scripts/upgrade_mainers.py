@@ -630,9 +630,9 @@ def start_timer(network: str, canister_id: str, dry_run: bool = False) -> bool:
 
     try:
         result = run_command(command, retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
-        # Check for the exact expected response
-        expected_response = '(variant { Ok = record { auth = "You started the timers:  1, " } })'
-        if expected_response in result.stdout:
+        # Check if the response indicates success (Ok variant)
+        # dfx sometimes returns hash keys (17_724 for Ok, 1_081_532_264 for auth)
+        if 'variant { Ok' in result.stdout or 'variant { 17_724' in result.stdout:
             log_message(f"Timer started for {canister_id}", "SUCCESS")
             return True
         else:
@@ -1216,6 +1216,25 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
         log_message(f"Canister cycles balance: {format_cycles(cycles_balance)}", "INFO")
     else:
         log_message(f"Canister cycles balance: Unable to retrieve", "WARNING")
+
+    # Proactively top up if balance is low (below 300B)
+    # Low balance can cause IC0406 errors on self-calls like stopTimerExecutionAdmin
+    MIN_CYCLES_BALANCE = 300_000_000_000  # 300B
+    TOPUP_CYCLES_AMOUNT = "500_000_000_000"  # 500B, same as elsewhere
+    if cycles_balance is not None and cycles_balance < MIN_CYCLES_BALANCE:
+        log_message(f"Cycles balance ({format_cycles(cycles_balance)}) is below {format_cycles(MIN_CYCLES_BALANCE)} threshold", "WARNING")
+        log_message(f"Sending {TOPUP_CYCLES_AMOUNT} cycles to canister...", "INFO")
+        if not dry_run:
+            try:
+                run_command([
+                    "dfx", "wallet", "--network", network, "send", address, TOPUP_CYCLES_AMOUNT
+                ])
+                log_message(f"Successfully sent cycles to {address}", "SUCCESS")
+                time.sleep(10)
+            except Exception as e:
+                log_message(f"Failed to send cycles to {address}: {e}", "ERROR")
+                update_mainer_status(address, MainerStatus.FAILED_OTHER, "Could not top up cycles")
+                return False
 
     if initial_status == "Stopped":
         log_message("Canister is already stopped, skipping steps 2b-2e", "INFO")

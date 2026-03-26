@@ -1418,7 +1418,8 @@ conda activate llama_cpp_canister
 MAINER=nkftb-zqaaa-aaaaa-qbbxa-cai
 scripts/upgrade_mainers.sh --network $NETWORK --mainer $MAINER --ask-before-upgrade [--dry-run]
 # -> It will print new wasm hash, which you set as the target hash for rest of deployment
-TARGET_HASH=0xf20306cea7159e1fe5a023e2a3b3b1b4acb795341b5a6f0cd3de0526866f649e  # Jan 15, 2025 (release-8; SNS)
+TARGET_HASH=0x2dbae383acd69e45ee48c35d71c1af87ac8261876daa458beb62e46547ed587d  # Mar 22, 2026 (AdminRBAC for ChallengeQueue endpoints)
+TARGET_HASH=0xf20306cea7159e1fe5a023e2a3b3b1b4acb795341b5a6f0cd3de0526866f649e  # Jan 15, 2026 (release-8; SNS)
 TARGET_HASH=0xe7304d5490b6ad190bbebe14a1da8988e7a6e064afc697bdee90ffce902e67bc  # Nov 22, 2025 (release-4)
 TARGET_HASH=0xad2c4545d533e4a01f81e9ec57c9bd16e1c5c358208ef8f9122f9c0e43ed547f  # Oct 25, 2025 (release-3)
 TARGET_HASH=0x55ab6af1cdaf08ddd34776e7404aecd3eacba3b86ba03eb9196ddfd8113d50c2  # Oct 23, 2025 (release-2)
