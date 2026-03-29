@@ -251,11 +251,11 @@
       
     <div class="text-center p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
       <div class="flex flex-col items-center space-y-2">
-        <div class="text-sm text-gray-500 dark:text-gray-500 mt-1">Mar 29th, 2026 at 12pm PT / 9pm CET</div>
+        <div class="text-sm text-gray-500 dark:text-gray-500 mt-1">Jun 29th, 2026 at 12pm PT / 9pm CET</div>
       
         <div class="text-xl font-bold text-red-600 dark:text-red-400 mt-4">
           <Countdown 
-            targetDate={new Date("2026-03-29T12:00:00-08:00")} 
+            targetDate={new Date("2026-06-29T12:00:00-08:00")} 
             format="detailed"
             className="text-red-600 dark:text-red-400"
           />
