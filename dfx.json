@@ -6,9 +6,6 @@
       "args": "--enhanced-orthogonal-persistence"
     },
     "funnai_frontend": {
-      "dependencies": [
-        "funnai_backend"
-      ],
       "frontend": {
         "entrypoint": "dist/index.html"
       },
