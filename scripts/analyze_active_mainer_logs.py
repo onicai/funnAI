@@ -220,15 +220,16 @@ def write_markdown_report(analysis_results, network, md_path):
     verdict_width = 23
     lines.append("## All Active mAIners")
     lines.append("")
-    lines.append(f"| {'#':<4} | {'Canister ID':<{cid_width}} | {'Burn Rate':<9} | {'Verdict':<{verdict_width}} | {'Triggers':<8} | {'Pulls':<5} | {'Interval':<8} | {'Last Activity':<25} |")
-    lines.append(f"|{'-'*6}|{'-'*(cid_width+2)}|{'-'*11}|{'-'*(verdict_width+2)}|{'-'*10}|{'-'*7}|{'-'*10}|{'-'*27}|")
+    lines.append(f"| {'#':<4} | {'Canister ID':<{cid_width}} | {'Burn Rate':<9} | {'Verdict':<{verdict_width}} | {'Triggers':<8} | {'Pulls':<5} | {'Interval':<8} | {'Days Left':<9} | {'Last Activity':<25} |")
+    lines.append(f"|{'-'*6}|{'-'*(cid_width+2)}|{'-'*11}|{'-'*(verdict_width+2)}|{'-'*10}|{'-'*7}|{'-'*10}|{'-'*11}|{'-'*27}|")
 
-    # Sort: problems first
+    # Sort: problems first, then by days_until_freeze ascending
     verdict_order = {"UNREACHABLE": 0, "NO_TIMERS": 1, "STUCK_AT_CHALLENGE_PULL": 2, "TIMER_ONLY": 3, "UNKNOWN": 4, "OK": 5}
-    sorted_results = sorted(analysis_results, key=lambda r: verdict_order.get(r["verdict"], 99))
+    sorted_results = sorted(analysis_results, key=lambda r: (verdict_order.get(r["verdict"], 99), r.get("days_until_freeze") if r.get("days_until_freeze") is not None else 9999))
 
     for idx, r in enumerate(sorted_results, 1):
         interval = f"{r['timer_interval_hours']}h" if r["timer_interval_hours"] else ""
+        days_left = f"{r['days_until_freeze']:.1f}" if r.get("days_until_freeze") is not None else ""
         lines.append(
             f"| {idx:<4} "
             f"| {r['canister_id']:<{cid_width}} "
@@ -237,6 +238,7 @@ def write_markdown_report(analysis_results, network, md_path):
             f"| {r['recurring_triggers']:<8} "
             f"| {r['pull_challenge_count']:<5} "
             f"| {interval:<8} "
+            f"| {days_left:>9} "
             f"| {r['last_activity']:<25} |"
         )
     lines.append("")
@@ -281,13 +283,14 @@ def main(network, workers=10):
 
     print(f"Loaded status data from {status_data['timestamp']} ({status_data['summary']['total_share_agents']} total mAIners)")
 
-    # Step 2: Extract active mAIners with burn rates
+    # Step 2: Extract active mAIners with burn rates and freeze prediction
     active_mainers = []
     for m in status_data["mainers"]:
         if m.get("active") is True and m.get("burn_rate", ""):
             active_mainers.append({
                 "canister_id": m["canister_id"],
                 "burn_rate": m["burn_rate"],
+                "days_until_freeze": m.get("days_until_freeze"),
             })
 
     if not active_mainers:
@@ -325,6 +328,7 @@ def main(network, workers=10):
         cid = m["canister_id"]
         result = analyze_canister_logs(cid, logs_map.get(cid))
         result["burn_rate"] = m["burn_rate"]
+        result["days_until_freeze"] = m.get("days_until_freeze")
         analysis_results.append(result)
 
     # Step 5: Print summary

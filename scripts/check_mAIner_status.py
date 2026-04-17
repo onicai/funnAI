@@ -147,6 +147,27 @@ def check_health(network: str, canister_id: str) -> tuple[str, Optional[str]]:
     return (STATUS_UNAVAILABLE, "Max retries exceeded")
 
 
+def calculate_freeze_prediction(memory_bytes, cycles_balance):
+    """Calculate freeze prediction based on memory idle cost.
+
+    Returns:
+        (daily_drain, freeze_threshold, days_until_freeze) or (None, None, None)
+    """
+    if memory_bytes is None or cycles_balance is None or memory_bytes == 0:
+        return (None, None, None)
+    # 317,500 cycles per GiB per second on 13-node subnets
+    # (was 127,000, increased 2.5x by NNS Proposal 140538 / Mission70)
+    # Verified: dfx canister status shows idle_cycles_burned_per_day = 10.6B for 416MB,
+    # which matches 317,500 rate (127,000 rate would give only 4.3B)
+    daily_drain = int(memory_bytes * 317_500 / (1024 ** 3) * 86_400)
+    freeze_threshold = daily_drain * 30  # 30 days = default freezing threshold
+    if daily_drain > 0:
+        days_until_freeze = round((cycles_balance - freeze_threshold) / daily_drain, 1)
+    else:
+        days_until_freeze = None
+    return (daily_drain, freeze_threshold, days_until_freeze)
+
+
 def get_canister_resources(network: str, canister_id: str) -> tuple[Optional[int], Optional[int]]:
     """Get memory size and cycle balance via dfx canister status.
 
@@ -201,6 +222,9 @@ def check_canister_status(network: str, canister_id: str, owner: str,
         "burn_rate": "",
         "memory_bytes": None,
         "cycles_balance": None,
+        "daily_drain": None,
+        "freeze_threshold": None,
+        "days_until_freeze": None,
     }
 
     # Step 1: Check module hash via dfx canister info
@@ -248,15 +272,22 @@ def check_canister_status(network: str, canister_id: str, owner: str,
     result["memory_bytes"] = memory
     result["cycles_balance"] = balance
 
+    # Step 5: Calculate freeze prediction
+    daily_drain, freeze_thresh, days_left = calculate_freeze_prediction(memory, balance)
+    result["daily_drain"] = daily_drain
+    result["freeze_threshold"] = freeze_thresh
+    result["days_until_freeze"] = days_left
+
     mem_mb = f"{memory / 1_000_000:.1f}MB" if memory else "?"
     bal_t = f"{balance / 1_000_000_000_000:.2f}T" if balance else "?"
+    days_str = f"{days_left}d" if days_left is not None else "?"
 
     if is_active:
-        log_message(f"{canister_id} — {STATUS_HEALTHY} (Active, {result['burn_rate']}, {mem_mb}, {bal_t})", "SUCCESS", index, total)
+        log_message(f"{canister_id} — {STATUS_HEALTHY} (Active, {result['burn_rate']}, {mem_mb}, {bal_t}, {days_str})", "SUCCESS", index, total)
     elif is_active is False:
-        log_message(f"{canister_id} — {STATUS_HEALTHY} (Paused, {mem_mb}, {bal_t})", "SUCCESS", index, total)
+        log_message(f"{canister_id} — {STATUS_HEALTHY} (Paused, {mem_mb}, {bal_t}, {days_str})", "SUCCESS", index, total)
     else:
-        log_message(f"{canister_id} — {STATUS_HEALTHY} (unknown, {mem_mb}, {bal_t})", "SUCCESS", index, total)
+        log_message(f"{canister_id} — {STATUS_HEALTHY} (unknown, {mem_mb}, {bal_t}, {days_str})", "SUCCESS", index, total)
 
     return result
 
@@ -337,6 +368,15 @@ def write_markdown_report(results: dict, md_path: str) -> None:
             lines.append(f"| Min Cycles Balance  | {min_bal:>8.2f} T  |")
             lines.append(f"| Max Cycles Balance  | {max_bal:>8.2f} T  |")
         lines.append("")
+        # At-risk section
+        lines.append("### Freeze Risk (Healthy mAIners)")
+        lines.append("")
+        lines.append("| Risk Window          | Count |")
+        lines.append("|----------------------|-------|")
+        lines.append(f"| Freeze in < 7 days   | {summary.get('at_risk_7_days', 0):>5} |")
+        lines.append(f"| Freeze in < 14 days  | {summary.get('at_risk_14_days', 0):>5} |")
+        lines.append(f"| Freeze in < 30 days  | {summary.get('at_risk_30_days', 0):>5} |")
+        lines.append("")
 
     # Determine the majority module hash
     hash_counts = {}
@@ -359,15 +399,19 @@ def write_markdown_report(results: dict, md_path: str) -> None:
     status_width = max(len(STATUS_UNINSTALLED), 6)  # widest status label
     hash_col_width = 11  # "Module Hash" header width
 
-    active_col_width = 7   # "Active" + padding
-    burn_col_width = 9     # "Burn Rate" header
-    mem_col_width = 10     # "Memory MB" header
-    cyc_col_width = 10     # "Cycles (T)" header
+    active_col_width = 6
+    burn_col_width = 9
+    mem_col_width = 9
+    cyc_col_width = 10
+    drain_col_width = 10
+    freeze_col_width = 10
+    days_col_width = 9
+    hash_col_width = 11
 
     def table_header():
         return [
-            f"| {'#':<4} | {'Canister ID':<{cid_width}} | {'Status':<{status_width}} | {'Active':<{active_col_width}} | {'Burn Rate':<{burn_col_width}} | {'Memory MB':<{mem_col_width}} | {'Cycles (T)':<{cyc_col_width}} | {'Module Hash':<{hash_col_width}} |",
-            f"|{'-' * 6}|{'-' * (cid_width + 2)}|{'-' * (status_width + 2)}|{'-' * (active_col_width + 2)}|{'-' * (burn_col_width + 2)}|{'-' * (mem_col_width + 2)}|{'-' * (cyc_col_width + 2)}|{'-' * (hash_col_width + 2)}|",
+            f"| {'#':<4} | {'Canister ID':<{cid_width}} | {'Status':<{status_width}} | {'Active':<{active_col_width}} | {'Burn Rate':<{burn_col_width}} | {'Mem (MB)':<{mem_col_width}} | {'Cycles (T)':<{cyc_col_width}} | {'Drain/D(B)':<{drain_col_width}} | {'FreezeAt(T)':<{freeze_col_width}} | {'Days Left':<{days_col_width}} | {'Hash':<{hash_col_width}} |",
+            f"|{'-' * 6}|{'-' * (cid_width + 2)}|{'-' * (status_width + 2)}|{'-' * (active_col_width + 2)}|{'-' * (burn_col_width + 2)}|{'-' * (mem_col_width + 2)}|{'-' * (cyc_col_width + 2)}|{'-' * (drain_col_width + 2)}|{'-' * (freeze_col_width + 2)}|{'-' * (days_col_width + 2)}|{'-' * (hash_col_width + 2)}|",
         ]
 
     def active_display(m):
@@ -390,8 +434,38 @@ def write_markdown_report(results: dict, md_path: str) -> None:
             return f"{bal / 1_000_000_000_000:.2f}"
         return ""
 
+    def drain_display(m):
+        d = m.get("daily_drain")
+        if d is not None:
+            return f"{d / 1_000_000_000:.1f}"
+        return ""
+
+    def freeze_at_display(m):
+        ft = m.get("freeze_threshold")
+        if ft is not None:
+            return f"{ft / 1_000_000_000_000:.2f}"
+        return ""
+
+    def days_display(m):
+        d = m.get("days_until_freeze")
+        if d is not None:
+            return f"{d:.1f}"
+        return ""
+
     def table_row(idx, m):
-        return f"| {idx:<4} | {m['canister_id']:<{cid_width}} | {m['status']:<{status_width}} | {active_display(m):<{active_col_width}} | {m.get('burn_rate', ''):<{burn_col_width}} | {mem_display(m):>{mem_col_width}} | {cycles_display(m):>{cyc_col_width}} | {module_hash_status(m):<{hash_col_width}} |"
+        return (
+            f"| {idx:<4} "
+            f"| {m['canister_id']:<{cid_width}} "
+            f"| {m['status']:<{status_width}} "
+            f"| {active_display(m):<{active_col_width}} "
+            f"| {m.get('burn_rate', ''):<{burn_col_width}} "
+            f"| {mem_display(m):>{mem_col_width}} "
+            f"| {cycles_display(m):>{cyc_col_width}} "
+            f"| {drain_display(m):>{drain_col_width}} "
+            f"| {freeze_at_display(m):>{freeze_col_width}} "
+            f"| {days_display(m):>{days_col_width}} "
+            f"| {module_hash_status(m):<{hash_col_width}} |"
+        )
 
     # Sort: non-healthy first (Frozen, Uninstalled, Stopped, Maintenance, Unavailable, Healthy)
     status_order = {
@@ -492,6 +566,9 @@ def main(network, workers=10, limit=None):
                     "burn_rate": "",
                     "memory_bytes": None,
                     "cycles_balance": None,
+                    "daily_drain": None,
+                    "freeze_threshold": None,
+                    "days_until_freeze": None,
                 })
 
     # Step 5: Aggregate results
@@ -507,6 +584,10 @@ def main(network, workers=10, limit=None):
     paused_count = 0
     burn_rate_counts = {"Low": 0, "Medium": 0, "High": 0, "VeryHigh": 0, "Other": 0}
 
+    at_risk_7 = 0
+    at_risk_14 = 0
+    at_risk_30 = 0
+
     for r in all_results:
         counts[r["status"]] = counts.get(r["status"], 0) + 1
         if r["status"] == STATUS_HEALTHY:
@@ -519,6 +600,15 @@ def main(network, workers=10, limit=None):
                     burn_rate_counts["Other"] += 1
             elif r.get("active") is False:
                 paused_count += 1
+            # At-risk tracking
+            d = r.get("days_until_freeze")
+            if d is not None:
+                if d < 7:
+                    at_risk_7 += 1
+                if d < 14:
+                    at_risk_14 += 1
+                if d < 30:
+                    at_risk_30 += 1
 
     # Step 6: Print summary
     log_message("")
@@ -541,6 +631,11 @@ def main(network, workers=10, limit=None):
         for br_name in ["Low", "Medium", "High", "VeryHigh", "Other"]:
             if burn_rate_counts[br_name] > 0:
                 log_message(f"    {br_name:<10}: {burn_rate_counts[br_name]}")
+        log_message("")
+        log_message(f"Freeze risk (healthy mAIners):")
+        log_message(f"  Freeze in < 7 days : {at_risk_7}", "ERROR" if at_risk_7 > 0 else "INFO")
+        log_message(f"  Freeze in < 14 days: {at_risk_14}", "ERROR" if at_risk_14 > 0 else "INFO")
+        log_message(f"  Freeze in < 30 days: {at_risk_30}", "ERROR" if at_risk_30 > 0 else "INFO")
         log_message("")
 
     # Print non-healthy canisters
@@ -580,6 +675,9 @@ def main(network, workers=10, limit=None):
             "frozen": counts[STATUS_FROZEN],
             "uninstalled": counts[STATUS_UNINSTALLED],
             "unavailable": counts[STATUS_UNAVAILABLE],
+            "at_risk_7_days": at_risk_7,
+            "at_risk_14_days": at_risk_14,
+            "at_risk_30_days": at_risk_30,
         },
         "mainers": sorted(all_results, key=lambda r: r["canister_id"]),
     }
