@@ -11,6 +11,7 @@ SKIP_PREPARATION=""
 ASK_BEFORE_UPGRADE=""
 REVERSE=""
 DEPLOY_WITH_YES=""
+REINSTALL=""
 
 # Parse command line arguments
 while [ $# -gt 0 ]; do
@@ -65,9 +66,13 @@ while [ $# -gt 0 ]; do
             DEPLOY_WITH_YES="--deploy-with-yes"
             shift
             ;;
+        --reinstall)
+            REINSTALL="--reinstall"
+            shift
+            ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--target-hash HASH] [--num NUM] [--mainer CANISTER_ID] [--user PRINCIPAL] [--dry-run] [--skip-preparation] [--ask-before-upgrade] [--reverse] [--deploy-with-yes]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--target-hash HASH] [--num NUM] [--mainer CANISTER_ID] [--user PRINCIPAL] [--dry-run] [--skip-preparation] [--ask-before-upgrade] [--reverse] [--deploy-with-yes] [--reinstall]"
             echo ""
             echo "Options:"
             echo "  --network NETWORK       Required. Network to upgrade mainers on"
@@ -80,6 +85,7 @@ while [ $# -gt 0 ]; do
             echo "  --ask-before-upgrade    Optional. Ask for confirmation before upgrading each canister"
             echo "  --reverse               Optional. Process mainers in reverse order"
             echo "  --deploy-with-yes       Optional. Use 'dfx deploy --yes' to skip confirmation prompts"
+            echo "  --reinstall             Optional. Reinstall (--mode reinstall) instead of upgrade. WIPES all stable state."
             exit 1
             ;;
     esac
@@ -129,6 +135,10 @@ fi
 
 if [ ! -z "$DEPLOY_WITH_YES" ]; then
     PYTHON_CMD="$PYTHON_CMD $DEPLOY_WITH_YES"
+fi
+
+if [ ! -z "$REINSTALL" ]; then
+    PYTHON_CMD="$PYTHON_CMD $REINSTALL"
 fi
 
 echo "Executing: $PYTHON_CMD"

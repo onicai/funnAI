@@ -54,6 +54,9 @@ SCRIPT_DIR = Path(__file__).parent.resolve()
 POAIW_MAINER_DIR = (SCRIPT_DIR / "../PoAIW/src/mAIner").resolve()
 POAIW_DFX_JSON_PATH = (POAIW_MAINER_DIR / "dfx.json").resolve()
 POAIW_CANISTER_IDS_PATH = (POAIW_MAINER_DIR / "canister_ids.json").resolve()
+GAME_STATE_CANISTER_IDS_PATH = (
+    SCRIPT_DIR / "../PoAIW/src/GameState/canister_ids.json"
+).resolve()
 
 # Log file path
 LOG_FILE_PATH = SCRIPT_DIR / "upgrade_mainers.logs"
@@ -97,6 +100,15 @@ class MainerStatus(Enum):
 # Global dictionary to track status of each mAIner
 # Key: canister address, Value: dict with status, timestamp, and optional error message
 mainer_status_tracker: Dict[str, Dict] = {}
+
+# Per-canister previous cycle-state sample, for drift detection.
+# Keyed by canister address. Tracks the last observed (officialCyclesBalance,
+# cycleBalance) pair so sample_cycle_state() can flag when Cycles.balance()
+# rose between two consecutive samples — cycles should only rise via
+# addCycles() (which updates officialCyclesBalance in lockstep), so any step
+# where current rises without official rising is an unattributed deposit
+# worth investigating.
+_prev_cycle_state: Dict[str, Dict[str, int]] = {}
 
 def update_mainer_status(address: str, status: MainerStatus, error_msg: Optional[str] = None):
     """
@@ -496,6 +508,151 @@ def format_cycles(cycles: int) -> str:
     else:
         return str(cycles)
 
+
+# Module-level previous wallet sample. The wallet is per-identity, not
+# per-canister, so we track it as a single global value across the run.
+_prev_wallet_balance_cycles: Optional[int] = None
+
+
+def get_wallet_balance(network: str) -> Optional[int]:
+    """Query `dfx wallet --network <network> balance` and return the amount in cycles.
+
+    Output format examples:
+        "25,427.884 TC (trillion cycles)."
+        "1,234.56 BC (billion cycles)."
+        "999,999 MC (million cycles)."
+
+    Returns None on failure or unrecognized unit.
+    """
+    try:
+        result = run_command(
+            ["dfx", "wallet", "--network", network, "balance"],
+            retry_on_transient_errors=True,
+            max_retries=3,
+            retry_delay=5.0,
+        )
+        line = result.stdout.strip().split("\n")[0].strip()
+        parts = line.split()
+        if len(parts) < 2:
+            log_message(f"Unexpected wallet balance output (too few tokens): {line!r}", "WARNING")
+            return None
+        amount_str = parts[0].replace(",", "")
+        unit = parts[1].upper()
+        amount = float(amount_str)
+        unit_multipliers = {
+            "C":  1,
+            "KC": 10 ** 3,
+            "MC": 10 ** 6,
+            "BC": 10 ** 9,
+            "TC": 10 ** 12,
+        }
+        multiplier = unit_multipliers.get(unit)
+        if multiplier is None:
+            log_message(f"Unrecognized wallet balance unit: {unit!r}", "WARNING")
+            return None
+        return int(amount * multiplier)
+    except Exception as e:
+        log_message(f"Failed to fetch wallet balance: {e}", "WARNING")
+        return None
+
+
+def sample_cycle_state(
+    network: str,
+    canister_id: str,
+    label: str,
+    dry_run: bool = False,
+) -> Optional[Tuple[int, int]]:
+    """Query officialCyclesBalance + Cycles.balance() via getOfficialCyclesBalanceAdmin
+    and log a status line. If Cycles.balance() rose vs the previous sample for
+    this canister (which should only happen via addCycles()), log a WARNING
+    (yellow) pointing at the step that caused the rise.
+
+    Returns (official, current) or None on failure / dry_run.
+    """
+    if dry_run:
+        log_message(f"[CYCLES][{label}] DRY RUN: skipping cycle state sample for {canister_id}", "INFO")
+        return None
+
+    # Single query returns both fields atomically (consistent snapshot).
+    try:
+        result = run_command(
+            [
+                "dfx", "canister", "--network", network, "call",
+                canister_id, "getOfficialCyclesBalanceAdmin", "--output", "json",
+            ],
+            retry_on_transient_errors=True,
+            max_retries=3,
+            retry_delay=5.0,
+        )
+        payload = json.loads(result.stdout)
+        if "Ok" not in payload:
+            log_message(
+                f"[CYCLES][{label}] getOfficialCyclesBalanceAdmin returned non-Ok: {payload}",
+                "WARNING",
+            )
+            return None
+        ok = payload["Ok"]
+        official = int(ok["officialCyclesBalance"])
+        current = int(ok["cycleBalance"])
+    except Exception as e:
+        log_message(f"[CYCLES][{label}] Failed to fetch cycle state for {canister_id}: {e}", "ERROR")
+        return None
+
+    diff = current - official
+    prev = _prev_cycle_state.get(canister_id)
+    rose = prev is not None and current > prev["current"]
+
+    line = (
+        f"[CYCLES][{label}] official={official:,} current={current:,} "
+        f"diff(current-official)={diff:+,}"
+    )
+    if prev is not None:
+        delta_current = current - prev["current"]
+        delta_official = official - prev["official"]
+        line += f" | since prev: Δcurrent={delta_current:+,} Δofficial={delta_official:+,}"
+
+    log_message(line, "WARNING" if rose else "INFO")
+    if rose:
+        delta_current = current - prev["current"]
+        log_message(
+            f"[CYCLES][{label}] WARNING: Cycles.balance() ROSE by {delta_current:,} "
+            f"since previous sample. Cycles should only rise via addCycles(). "
+            f"Investigate: is this a late refund, auto-topup, or other unattributed deposit?",
+            "WARNING",
+        )
+
+    _prev_cycle_state[canister_id] = {"official": official, "current": current}
+
+    # Sample wallet balance too. If wallet drops while the canister's current
+    # rises (or even stays flat after install/snapshot operations), it means
+    # dfx is silently funding the canister via wallet → that is the
+    # most likely source of the +N B "extra" cycles we keep observing
+    # post-reinstall.
+    global _prev_wallet_balance_cycles
+    wallet = get_wallet_balance(network)
+    if wallet is not None:
+        wallet_line = f"[WALLET][{label}] balance={wallet:,}"
+        wallet_dropped_significantly = False
+        if _prev_wallet_balance_cycles is not None:
+            delta_wallet = wallet - _prev_wallet_balance_cycles
+            wallet_line += f" Δwallet={delta_wallet:+,}"
+            # >100M cycles drop in one step is significant (normal query/update
+            # cost is single digits of millions); flag it so we can correlate
+            # with the canister's current-balance change at the same step.
+            if delta_wallet < -100_000_000:
+                wallet_dropped_significantly = True
+        log_message(wallet_line, "WARNING" if wallet_dropped_significantly else "INFO")
+        if wallet_dropped_significantly:
+            log_message(
+                f"[WALLET][{label}] WARNING: wallet dropped by {-delta_wallet:,} cycles "
+                f"between samples (>100M). dfx may have silently sent cycles to the "
+                f"canister or another IC entity during this step.",
+                "WARNING",
+            )
+        _prev_wallet_balance_cycles = wallet
+
+    return (official, current)
+
 def get_canister_status(network: str, canister_id: str) -> Optional[str]:
     """Get the status of a canister (Running, Stopping, or Stopped) with retry on transient network errors.
 
@@ -641,6 +798,215 @@ def start_timer(network: str, canister_id: str, dry_run: bool = False) -> bool:
     except Exception as e:
         log_message(f"Failed to start timer for {canister_id}: {e}", "ERROR")
         return False
+
+def get_game_state_id(network: str) -> str:
+    """Read the game_state_canister principal for `network` directly from
+    PoAIW/src/GameState/canister_ids.json. Same source dfx uses to resolve
+    the `game_state_canister` alias. Raises KeyError if the network entry
+    is missing — we cannot re-configure a mAIner without it.
+    """
+    with open(GAME_STATE_CANISTER_IDS_PATH, 'r') as f:
+        ids = json.load(f)
+    return ids["game_state_canister"][network]
+
+
+def get_share_service_id(network: str) -> str:
+    """Read the mainer_service_canister principal for `network` directly from
+    PoAIW/src/mAIner/canister_ids.json. Raises KeyError if the network entry
+    is missing and ValueError if the entry is empty — we cannot re-link a
+    reinstalled ShareAgent without it.
+    """
+    with open(POAIW_CANISTER_IDS_PATH, 'r') as f:
+        ids = json.load(f)
+    value = ids["mainer_service_canister"][network]
+    if not value:
+        raise ValueError(
+            f"mainer_service_canister['{network}'] is empty in {POAIW_CANISTER_IDS_PATH}"
+        )
+    return value
+
+
+def set_game_state_canister_id(network: str, canister_id: str, gs_principal: str, dry_run: bool = False) -> bool:
+    """Re-apply setGameStateCanisterId on a freshly-reinstalled mAIner."""
+    log_message(f"Setting GameState canister id on {canister_id} -> {gs_principal}...")
+    command = [
+        "dfx", "canister", "--network", network, "call",
+        canister_id, "setGameStateCanisterId", f'("{gs_principal}")'
+    ]
+    if dry_run:
+        log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
+        return True
+    try:
+        result = run_command(command, retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
+        if 'variant { Ok' in result.stdout or 'variant { 17_724' in result.stdout:
+            log_message(f"GameState canister id set on {canister_id}", "SUCCESS")
+            return True
+        log_message(f"Unexpected response from setGameStateCanisterId: {result.stdout}", "ERROR")
+        return False
+    except Exception as e:
+        log_message(f"Failed to set GameState canister id on {canister_id}: {e}", "ERROR")
+        return False
+
+
+def set_mainer_canister_type(network: str, canister_id: str, subtype: str, dry_run: bool = False) -> bool:
+    """Re-apply setMainerCanisterType on a freshly-reinstalled mAIner.
+
+    subtype must be one of: "Own", "ShareAgent", "ShareService", "NA".
+    """
+    VALID_SUBTYPES = {"Own", "ShareAgent", "ShareService", "NA"}
+    if subtype not in VALID_SUBTYPES:
+        log_message(f"Invalid mAIner subtype '{subtype}' (expected one of {VALID_SUBTYPES})", "ERROR")
+        return False
+    log_message(f"Setting mAIner canister type on {canister_id} -> variant {{ {subtype} }}...")
+    command = [
+        "dfx", "canister", "--network", network, "call",
+        canister_id, "setMainerCanisterType", f"(variant {{ {subtype} }})"
+    ]
+    if dry_run:
+        log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
+        return True
+    try:
+        result = run_command(command, retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
+        if 'variant { Ok' in result.stdout or 'variant { 17_724' in result.stdout:
+            log_message(f"mAIner canister type set on {canister_id}", "SUCCESS")
+            return True
+        log_message(f"Unexpected response from setMainerCanisterType: {result.stdout}", "ERROR")
+        return False
+    except Exception as e:
+        log_message(f"Failed to set mAIner canister type on {canister_id}: {e}", "ERROR")
+        return False
+
+
+def get_burn_rate_setting(network: str, canister_id: str) -> Optional[str]:
+    """Query the mAIner's current burn-rate setting. Returns the setter
+    variant name ("Low" | "Mid" | "High" | "VeryHigh") or None if the
+    endpoint fails, the canister is stopped, or the tier is non-standard.
+
+    Note: the mAIner type uses variant `#Mid` where the UI shows "Medium".
+    """
+    log_message(f"Capturing burn-rate setting from {canister_id}...")
+    try:
+        result = run_command(
+            [
+                "dfx", "canister", "--network", network, "call",
+                canister_id, "getMainerStatisticsAdmin", "--output", "json",
+            ],
+            retry_on_transient_errors=True,
+            max_retries=3,
+            retry_delay=5.0,
+        )
+        data = json.loads(result.stdout)
+        cycles_burn_rate = data.get("Ok", {}).get("cyclesBurnRate", {}).get("cycles")
+        mapping = {
+            "1_000_000_000_000": "Low",
+            "2_000_000_000_000": "Mid",
+            "4_000_000_000_000": "High",
+            "6_000_000_000_000": "VeryHigh",
+        }
+        variant = mapping.get(cycles_burn_rate)
+        if variant is None:
+            log_message(
+                f"Burn-rate cycles '{cycles_burn_rate}' does not map to a standard "
+                f"tier; will not re-apply (canister will default after reinstall).",
+                "WARNING",
+            )
+            return None
+        log_message(f"Captured burn-rate setting: {variant}", "SUCCESS")
+        return variant
+    except Exception as e:
+        log_message(f"Failed to read burn-rate setting from {canister_id}: {e}", "WARNING")
+        return None
+
+
+def set_burn_rate_setting(network: str, canister_id: str, variant: str, dry_run: bool = False) -> bool:
+    """Re-apply the burn-rate setting via updateAgentSettings.
+
+    updateAgentSettings stops and restarts the mAIner's timers internally,
+    so call this AFTER the explicit start_timer step. On a freshly-reinstalled
+    canister the 24h cooldown is inactive (no previous settings), so the call
+    always succeeds on the first attempt.
+    """
+    VALID = {"Low", "Mid", "High", "VeryHigh"}
+    if variant not in VALID:
+        log_message(f"Invalid burn-rate variant '{variant}' (expected one of {VALID})", "ERROR")
+        return False
+    log_message(f"Re-applying burn-rate setting on {canister_id} -> variant {{ {variant} }}...")
+    command = [
+        "dfx", "canister", "--network", network, "call",
+        canister_id, "updateAgentSettings",
+        f"(record {{ cyclesBurnRate = variant {{ {variant} }} }})",
+    ]
+    if dry_run:
+        log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
+        return True
+    try:
+        result = run_command(command, retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
+        if 'variant { Ok' in result.stdout or 'variant { 17_724' in result.stdout:
+            log_message(f"Burn-rate setting applied on {canister_id}", "SUCCESS")
+            return True
+        log_message(f"Unexpected response from updateAgentSettings: {result.stdout}", "ERROR")
+        return False
+    except Exception as e:
+        log_message(f"Failed to set burn-rate on {canister_id}: {e}", "ERROR")
+        return False
+
+
+def set_share_service_canister_id(network: str, canister_id: str, ss_principal: str, dry_run: bool = False) -> bool:
+    """Re-apply setShareServiceCanisterId on a freshly-reinstalled ShareAgent mAIner."""
+    log_message(f"Setting ShareService canister id on {canister_id} -> {ss_principal}...")
+    command = [
+        "dfx", "canister", "--network", network, "call",
+        canister_id, "setShareServiceCanisterId", f'("{ss_principal}")'
+    ]
+    if dry_run:
+        log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
+        return True
+    try:
+        result = run_command(command, retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
+        if 'variant { Ok' in result.stdout or 'variant { 17_724' in result.stdout:
+            log_message(f"ShareService canister id set on {canister_id}", "SUCCESS")
+            return True
+        log_message(f"Unexpected response from setShareServiceCanisterId: {result.stdout}", "ERROR")
+        return False
+    except Exception as e:
+        log_message(f"Failed to set ShareService canister id on {canister_id}: {e}", "ERROR")
+        return False
+
+
+def reapply_post_reinstall_config(network: str, mainer: Dict, dry_run: bool = False) -> bool:
+    """Re-apply the 3 mAIner-local setters that mAInerCreator.reinstallMainerctrl
+    performs after a reinstall wipes stable state. Idempotent; safe to call twice.
+    Mirrors PoAIW/src/mAInerCreator/src/Main.mo:1687-1738 (minimum-viable subset).
+    """
+    address = mainer["address"]
+    try:
+        subtype = list(mainer["canisterType"]["MainerAgent"].keys())[0]
+    except (KeyError, IndexError, TypeError):
+        log_message(f"{address}: could not determine MainerAgent subtype from mainer record", "ERROR")
+        return False
+
+    try:
+        gs_principal = get_game_state_id(network)
+    except (KeyError, FileNotFoundError, json.JSONDecodeError) as e:
+        log_message(f"Could not resolve GameState principal for network '{network}': {e}", "ERROR")
+        return False
+
+    if not set_game_state_canister_id(network, address, gs_principal, dry_run):
+        return False
+    if not set_mainer_canister_type(network, address, subtype, dry_run):
+        return False
+
+    if subtype == "ShareAgent":
+        try:
+            ss_principal = get_share_service_id(network)
+        except (KeyError, ValueError, FileNotFoundError, json.JSONDecodeError) as e:
+            log_message(f"Could not resolve ShareService principal for network '{network}': {e}", "ERROR")
+            return False
+        if not set_share_service_canister_id(network, address, ss_principal, dry_run):
+            return False
+
+    return True
+
 
 def check_queue(network: str, canister_id: str) -> Tuple[bool, Optional[datetime]]:
     """Check the queue for a canister and return status and last entry time."""
@@ -790,21 +1156,31 @@ def create_snapshot(network: str, canister_id: str, dry_run: bool = False) -> Op
         log_message(f"Failed to create snapshot for {canister_id}: {e}", "ERROR")
         return None
 
-def upgrade_canister(network: str, canister_name: str, dry_run: bool = False, deploy_with_yes: bool = False) -> bool:
-    """Upgrade a canister with retry on transient network errors.
+def upgrade_canister(network: str, canister_name: str, dry_run: bool = False, deploy_with_yes: bool = False, reinstall: bool = False) -> bool:
+    """Upgrade (or reinstall) a canister with retry on transient network errors.
 
     Handles out-of-cycles errors by automatically topping up the canister with cycles.
+
+    When reinstall=True, the canister is reinstalled (--mode reinstall), wiping all
+    stable state. Use only when the goal is to reset accumulated memory.
     """
     def is_out_of_cycles_error(error_text: str) -> bool:
         """Check if error indicates canister is out of cycles during installation."""
         return "is out of cycles" in error_text and "IC0207" in error_text
 
-    log_message(f"Upgrading {canister_name}...")
+    install_mode = "reinstall" if reinstall else "upgrade"
+    log_message(f"{'Reinstalling' if reinstall else 'Upgrading'} {canister_name} (--mode {install_mode})...")
 
     command = [
-        "dfx", "deploy", "--network", network, canister_name, "--mode", "upgrade", "--wasm-memory-persistence", "keep"
+        "dfx", "deploy", "--network", network, canister_name, "--mode", install_mode
     ]
-    if deploy_with_yes:
+    # --wasm-memory-persistence is only valid with mode 'upgrade' or 'auto'
+    if not reinstall:
+        command.extend(["--wasm-memory-persistence", "keep"])
+    # dfx reinstall prompts interactively ("YOU WILL LOSE ALL DATA...") which
+    # would hang the non-interactive subprocess. The user has already confirmed
+    # the reinstall at the top of this script, so always pass --yes for reinstall.
+    if deploy_with_yes or reinstall:
         command.append("--yes")
 
     if dry_run:
@@ -1124,19 +1500,25 @@ def get_canister_name_from_address(address: str, network: str) -> Optional[str]:
         log_message(f"Failed to find canister name for {address}: {e}", "ERROR")
         return None
 
-def should_skip_upgrade(network: str, address: str, target_hash: Optional[str], dry_run: bool = False) -> tuple[bool, Optional[str]]:
+def should_skip_upgrade(network: str, address: str, target_hash: Optional[str], dry_run: bool = False, reinstall: bool = False) -> tuple[bool, Optional[str]]:
     """
-    Determine if upgrade should be skipped.
+    Determine if upgrade (or reinstall) should be skipped.
 
-    Skip upgrade only if:
+    Skip only if:
     1. target_hash is provided AND current_hash matches target_hash
     2. AND health check passes
+
+    This applies to both --upgrade and --reinstall: if the canister is already
+    running the target hash and is healthy, there is no reason to redeploy and
+    disturb its state — the caller can drop --target-hash to force a reinstall
+    for its state-wipe side effect alone. Canister-does-not-exist still skips.
 
     Args:
         network: Network name (e.g., 'testing', 'ic')
         address: Canister address
         target_hash: Target wasm hash (optional)
         dry_run: If True, simulates checks without making actual calls
+        reinstall: Unused for skip-decision purposes; kept for signature parity
 
     Returns:
         Tuple of (should_skip: bool, skip_reason: Optional[str])
@@ -1178,8 +1560,15 @@ def should_skip_upgrade(network: str, address: str, target_hash: Optional[str], 
         return False, None
 
 def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
-                  dry_run: bool = False, canister_index: int = 0, deploy_with_yes: bool = False) -> bool:
-    """Upgrade a single mAIner through all steps."""
+                  dry_run: bool = False, canister_index: int = 0, deploy_with_yes: bool = False,
+                  reinstall: bool = False) -> bool:
+    """Upgrade (or reinstall) a single mAIner through all steps.
+
+    When reinstall=True, the canister is reinstalled instead of upgraded. Stable
+    state is wiped, the post-deploy "hash unchanged" sanity check is skipped (a
+    same-wasm reinstall produces the same hash), and the hash-match guard against
+    target_hash is also skipped.
+    """
     address = mainer.get('address', '')
 
     log_message(f"{'='*60}", "INFO")
@@ -1217,10 +1606,16 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
     else:
         log_message(f"Canister cycles balance: Unable to retrieve", "WARNING")
 
-    # Proactively top up if balance is low (below 300B)
-    # Low balance can cause IC0406 errors on self-calls like stopTimerExecutionAdmin
-    MIN_CYCLES_BALANCE = 300_000_000_000  # 300B
-    TOPUP_CYCLES_AMOUNT = "500_000_000_000"  # 500B, same as elsewhere
+    # Cycle-state baseline: query both Cycles.balance() and officialCyclesBalance
+    # via getOfficialCyclesBalanceAdmin. Each subsequent sample compares against
+    # the previous one and warns (yellow) if Cycles.balance() rose without an
+    # addCycles() in between — the signature of an unattributed deposit.
+    sample_cycle_state(network, address, "entry", dry_run)
+
+    # Proactively top up if balance is low. Covers both IC0406 on self-calls
+    # (upgrade path) and the freezing-threshold + install-code cost of reinstall.
+    MIN_CYCLES_BALANCE = 500_000_000_000  # 500B
+    TOPUP_CYCLES_AMOUNT = "500_000_000_000"  # 500B
     if cycles_balance is not None and cycles_balance < MIN_CYCLES_BALANCE:
         log_message(f"Cycles balance ({format_cycles(cycles_balance)}) is below {format_cycles(MIN_CYCLES_BALANCE)} threshold", "WARNING")
         log_message(f"Sending {TOPUP_CYCLES_AMOUNT} cycles to canister...", "INFO")
@@ -1231,10 +1626,37 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
                 ])
                 log_message(f"Successfully sent cycles to {address}", "SUCCESS")
                 time.sleep(10)
+                sample_cycle_state(network, address, "after pre-topup", dry_run)
             except Exception as e:
                 log_message(f"Failed to send cycles to {address}: {e}", "ERROR")
                 update_mainer_status(address, MainerStatus.FAILED_OTHER, "Could not top up cycles")
                 return False
+
+    # If we're reinstalling and the canister is currently Stopped, start it
+    # first so pre-reinstall capture queries (burn rate) can succeed. Queries
+    # against a stopped canister return IC0508. The normal flow will stop the
+    # canister again at Step 2e before the actual reinstall.
+    if reinstall and not dry_run and initial_status == "Stopped":
+        log_message(
+            f"Canister is Stopped but reinstall needs to read its state first; "
+            f"starting it for pre-reinstall capture...",
+            "WARNING",
+        )
+        if not start_canister(network, address, dry_run):
+            log_message(f"Failed to start stopped canister for pre-reinstall capture", "ERROR")
+            update_mainer_status(address, MainerStatus.FAILED_OTHER, "Could not start stopped canister for capture")
+            return False
+        time.sleep(30)  # give the state transition and timer warm-up a moment
+        initial_status = get_canister_status(network, address)
+        log_message(f"Canister status after start: {initial_status}", "INFO")
+
+    # Capture user-configured settings BEFORE reinstall wipes stable state.
+    # Can only succeed while the canister is Running; queries against a stopped
+    # canister return IC0508. If capture fails, we let the mAIner fall back to
+    # its default burn rate after reinstall.
+    pre_reinstall_burn_rate = None
+    if reinstall and not dry_run and initial_status != "Stopped":
+        pre_reinstall_burn_rate = get_burn_rate_setting(network, address)
 
     if initial_status == "Stopped":
         log_message("Canister is already stopped, skipping steps 2b-2e", "INFO")
@@ -1283,11 +1705,11 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
         update_mainer_status(address, MainerStatus.FAILED_SNAPSHOT, "Could not create snapshot")
         return False
 
-    # Step 2g: Deploy upgrade
-    if not upgrade_canister(network, canister_name, dry_run, deploy_with_yes):
-        log_message(f"Failed to upgrade canister. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+    # Step 2g: Deploy upgrade (or reinstall)
+    if not upgrade_canister(network, canister_name, dry_run, deploy_with_yes, reinstall):
+        log_message(f"Failed to {'reinstall' if reinstall else 'upgrade'} canister. Snapshot ID for rollback: {snapshot_id}", "ERROR")
         # Don't auto-rollback, let admin decide
-        update_mainer_status(address, MainerStatus.FAILED_UPGRADE, f"Upgrade failed. Snapshot: {snapshot_id}")
+        update_mainer_status(address, MainerStatus.FAILED_UPGRADE, f"{'Reinstall' if reinstall else 'Upgrade'} failed. Snapshot: {snapshot_id}")
         return False
 
     # Step 2h: Start canister
@@ -1295,6 +1717,48 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
         log_message(f"Failed to start canister. Snapshot ID for rollback: {snapshot_id}", "ERROR")
         update_mainer_status(address, MainerStatus.FAILED_START, f"Could not start canister. Snapshot: {snapshot_id}")
         return False
+
+    # First sample after the canister is Running again (post stop+snapshot+reinstall).
+    # The Δcurrent here is dominated by the install_code prepay/refund (~300 B
+    # added) plus snapshot create refund (~130 B added) — see Main.mo
+    # INSTALL_CODE_REFUND_BUFFER comment.
+    sample_cycle_state(network, address, "after dfx start (post-reinstall)", dry_run)
+
+    # Step 2h.1: Immediately ensure the maintenance flag is ON. After --mode
+    # reinstall, stable state is wiped and the flag defaults to OFF — without
+    # this the mAIner could accept/process challenges during the brief window
+    # before we re-apply configuration. After --mode upgrade the flag should
+    # already be ON from Step 2b; turn_on_maintenance_flag is idempotent
+    # (checks current state, toggles only when OFF) so it's a no-op then.
+    if not turn_on_maintenance_flag(network, address, dry_run):
+        log_message(
+            f"Failed to turn on maintenance flag immediately after restart. Snapshot: {snapshot_id}",
+            "ERROR",
+        )
+        update_mainer_status(
+            address,
+            MainerStatus.FAILED_MAINTENANCE,
+            f"Could not turn on maintenance flag after restart. Snapshot: {snapshot_id}",
+        )
+        return False
+
+    # Step 2h.5: Re-apply configuration that --mode reinstall wiped.
+    # Mirrors the minimum-viable subset of mAInerCreator.reinstallMainerctrl
+    # (setGameStateCanisterId, setMainerCanisterType, setShareServiceCanisterId).
+    # No-op for plain upgrades (stable state persists).
+    if reinstall and not dry_run:
+        if not reapply_post_reinstall_config(network, mainer, dry_run):
+            log_message(
+                f"Failed to re-apply post-reinstall configuration. Snapshot: {snapshot_id}",
+                "ERROR",
+            )
+            update_mainer_status(
+                address,
+                MainerStatus.FAILED_OTHER,
+                f"Post-reinstall config failed. Snapshot: {snapshot_id}",
+            )
+            return False
+        sample_cycle_state(network, address, "after reapply_post_reinstall_config", dry_run)
 
     # Step 2i: Check maintenance flag (endpoint must now be available and return true)
     # Retry logic: canister may need time to fully initialize after upgrade
@@ -1337,6 +1801,20 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
             log_message(f"Failed to start timer. Canister upgraded but timer not running!", "ERROR")
             update_mainer_status(address, MainerStatus.FAILED_START_TIMER, f"Could not start timer. Snapshot: {snapshot_id}")
             return False
+    sample_cycle_state(network, address, "after start_timer", dry_run)
+
+    # Step 2j.5: Restore pre-reinstall burn-rate setting (reinstall only).
+    # updateAgentSettings internally stops and restarts the timers so the new
+    # setting takes effect. Non-fatal on failure — the canister just runs at
+    # the default tier instead of the captured one.
+    if reinstall and not dry_run and pre_reinstall_burn_rate:
+        if not set_burn_rate_setting(network, address, pre_reinstall_burn_rate, dry_run):
+            log_message(
+                f"Could not restore burn-rate '{pre_reinstall_burn_rate}'; "
+                f"canister will run at default tier. Snapshot: {snapshot_id}",
+                "WARNING",
+            )
+        sample_cycle_state(network, address, "after set_burn_rate_setting (updateAgentSettings)", dry_run)
 
     # Step 2k: Turn off maintenance flag
     if not turn_off_maintenance_flag(network, address, dry_run):
@@ -1344,6 +1822,7 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
             log_message(f"Failed to turn off maintenance flag. Canister upgraded but maintenance flag may still be ON!", "ERROR")
             update_mainer_status(address, MainerStatus.FAILED_MAINTENANCE, f"Could not turn off maintenance flag. Snapshot: {snapshot_id}")
             return False
+    sample_cycle_state(network, address, "after turn_off_maintenance_flag", dry_run)
 
     # Step 2i: Check health (must now return 200 OK)
     # Give canister time for maintenance flag to fully propagate
@@ -1385,6 +1864,8 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
             update_mainer_status(address, MainerStatus.FAILED_HEALTH, f"Health check failed. Snapshot: {snapshot_id}")
             return False
 
+    sample_cycle_state(network, address, "after health check (final)", dry_run)
+
     # Step 2l: Verify the hash after upgrade
     if not dry_run:
         log_message(f"Verifying module hash after upgrade...", "INFO")
@@ -1402,19 +1883,20 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
         if target_hash:
             # If target hash provided, verify it matches
             if post_upgrade_hash != target_hash:
-                log_message(f"Hash mismatch after upgrade! Expected: {target_hash}, Got: {post_upgrade_hash}. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+                log_message(f"Hash mismatch after deploy! Expected: {target_hash}, Got: {post_upgrade_hash}. Snapshot ID for rollback: {snapshot_id}", "ERROR")
                 update_mainer_status(address, MainerStatus.FAILED_OTHER, f"Hash verification failed. Expected: {target_hash}, Got: {post_upgrade_hash}. Snapshot: {snapshot_id}")
                 return False
             log_message(f"Hash verification passed: matches target hash", "SUCCESS")
-        else:
-            # If no target hash, verify that hash actually changed
+        elif not reinstall:
+            # If no target hash, verify that hash actually changed (upgrade only;
+            # a same-wasm reinstall legitimately leaves the hash unchanged).
             if pre_upgrade_hash and post_upgrade_hash == pre_upgrade_hash:
                 log_message(f"Hash did not change after upgrade! Hash: {post_upgrade_hash}. Snapshot ID for rollback: {snapshot_id}", "ERROR")
                 update_mainer_status(address, MainerStatus.FAILED_OTHER, f"Hash unchanged after upgrade: {post_upgrade_hash}. Snapshot: {snapshot_id}")
                 return False
             log_message(f"Hash verification passed: hash changed from {pre_upgrade_hash} to {post_upgrade_hash}", "SUCCESS")
 
-    log_message(f"Successfully upgraded mAIner {canister_index}: {address}", "SUCCESS")
+    log_message(f"Successfully {'reinstalled' if reinstall else 'upgraded'} mAIner {canister_index}: {address}", "SUCCESS")
     update_mainer_status(address, MainerStatus.SUCCESS)
     return True
 
@@ -1470,6 +1952,12 @@ def main():
         action="store_true",
         help="Use 'dfx deploy --yes' to skip confirmation prompts"
     )
+    parser.add_argument(
+        "--reinstall",
+        action="store_true",
+        help="Reinstall instead of upgrade. WIPES all stable state on each canister. "
+             "Use to reset accumulated memory after capping unbounded stable lists."
+    )
 
     args = parser.parse_args()
 
@@ -1492,12 +1980,15 @@ def main():
         log_message(f"User: {args.user or 'All'}", "INFO")
         log_message(f"Dry Run: {args.dry_run}", "INFO")
         log_message(f"Ask Before Upgrade: {args.ask_before_upgrade}", "INFO")
+        log_message(f"Mode: {'REINSTALL (wipes stable state)' if args.reinstall else 'upgrade'}", "INFO")
         log_message(f"{'='*60}", "INFO")
 
         if args.dry_run:
             log_message("RUNNING IN DRY-RUN MODE - NO ACTUAL CHANGES WILL BE MADE", "WARNING")
             input("Press Enter to continue...")
         else:
+            if args.reinstall:
+                log_message("REINSTALL MODE: every selected canister will have its STABLE STATE WIPED", "WARNING")
             log_message("THIS IS A LIVE RUN - CHANGES WILL BE MADE TO CANISTERS", "WARNING")
             confirm = input("Type 'yes' to continue: ")
             if confirm.lower() != 'yes':
@@ -1583,7 +2074,7 @@ def main():
                 # Check if upgrade should be skipped
                 address = mainer.get('address', '')
 
-                should_skip, skip_reason = should_skip_upgrade(args.network, address, args.target_hash, args.dry_run)
+                should_skip, skip_reason = should_skip_upgrade(args.network, address, args.target_hash, args.dry_run, args.reinstall)
                 if should_skip:
                     if skip_reason == "does_not_exist":
                         update_mainer_status(address, MainerStatus.SKIPPED_DOES_NOT_EXIST, "Canister does not exist")
@@ -1623,7 +2114,7 @@ def main():
                         continue
 
                 # Proceed with upgrade
-                if upgrade_mainer(args.network, mainer, args.target_hash, args.dry_run, i, args.deploy_with_yes):
+                if upgrade_mainer(args.network, mainer, args.target_hash, args.dry_run, i, args.deploy_with_yes, args.reinstall):
                     successful += 1
                 else:
                     failed += 1
