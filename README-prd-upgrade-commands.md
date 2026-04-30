@@ -1396,7 +1396,7 @@ The only errors seen so far is when the IC timed out.
 The script has been made robust against this using retry logic.
 
 ```bash
-scripts/upgrade_mainers.sh --network [local|ic|testing|development|demo|prd] [--target-hash HASH] [--num NUM] [--mainer CANISTER_ID] [--user PRINCIPAL] [--dry-run] [--skip-preparation] [--ask-before-upgrade] [--reverse]
+scripts/upgrade_mainers.sh --network [local|ic|testing|development|demo|prd] [--target-hash HASH] [--num NUM] [--mainer CANISTER_ID] [--user PRINCIPAL] [--dry-run] [--skip-preparation] [--ask-before-upgrade] [--reverse] [--deploy-with-yes] [--reinstall]
 
 Options:
   --network NETWORK       Required. Network to upgrade mainers on
@@ -1409,6 +1409,15 @@ Options:
   --ask-before-upgrade    Optional. Ask for confirmation before upgrading each canister
   --reverse               Optional. Process mainers in reverse order
   --deploy-with-yes       Optional. Will use: dfx deploy ... --yes
+  --reinstall             Optional. Reinstall (`--mode reinstall`) instead of upgrade. WIPES all stable
+                          state on each canister. Use after capping unbounded stable lists to reset
+                          accumulated memory back to baseline. Mutually exclusive with `--target-hash`.
+
+# Reinstall ONE mAIner first to verify, then roll out in batches:
+scripts/upgrade_mainers.sh --network $NETWORK --reinstall --mainer $MAINER --dry-run
+scripts/upgrade_mainers.sh --network $NETWORK --reinstall --mainer $MAINER
+scripts/upgrade_mainers.sh --network $NETWORK --reinstall --num 10
+# (Top-up of low-balance canisters happens automatically before each (re)install.)
 
 # from the folder: funnAI
 conda activate llama_cpp_canister

@@ -2,10 +2,8 @@
 
 # Default network type is local
 NETWORK_TYPE="local"
-CANISTER_TYPES="protocol"
 WORKERS=""
 LIMIT=""
-DRY_RUN=""
 
 # Parse command line arguments for network type
 while [ $# -gt 0 ]; do
@@ -20,16 +18,6 @@ while [ $# -gt 0 ]; do
             fi
             shift
             ;;
-        --canister-types)
-            shift
-            if [ "$1" = "all" ] || [ "$1" = "protocol" ] || [ "$1" = "mainers" ]; then
-                CANISTER_TYPES=$1
-            else
-                echo "Invalid canister type: $1. Use 'all' or 'protocol' or 'mainers'."
-                exit 1
-            fi
-            shift
-            ;;
         --workers)
             shift
             WORKERS="--workers $1"
@@ -40,13 +28,9 @@ while [ $# -gt 0 ]; do
             LIMIT="--limit $1"
             shift
             ;;
-        --dry-run)
-            DRY_RUN="--dry-run"
-            shift
-            ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --canister-types [all|protocol|mainers] [--workers N] [--limit N] [--dry-run]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--workers N] [--limit N]"
             exit 1
             ;;
     esac
@@ -54,4 +38,4 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 
-python -m scripts.start_timers --network $NETWORK_TYPE --canister-types $CANISTER_TYPES $WORKERS $LIMIT $DRY_RUN
+python -m scripts.check_mAIner_status --network $NETWORK_TYPE $WORKERS $LIMIT

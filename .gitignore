@@ -149,6 +149,7 @@ funnai_accounts/
 
 # claude code
 CLAUDE.md
+.claude/
 
 scripts/burned_tokens_cache.json
 
