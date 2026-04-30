@@ -1381,6 +1381,8 @@ If you want to do it all manually, follow these steps:
 
 # Upgrade the mAIners
 
+> **dfx version note (2026-04-16):** the ShareAgent mAIners were last upgraded/reinstalled on 2026-04-16 with **dfx 0.31.0**. All other canisters (frontend, backend, and PoAIW protocol canisters) are still on **dfx 0.29.2** (pinned in `PoAIW/src/GameState/docker/docker-compose.yml`). Keep this mismatch in mind when regenerating declarations or reproducing wasm hashes — newer dfx versions emit different JS codegen (e.g. importing from `@icp-sdk/core/agent` instead of `@dfinity/agent`), which can break the frontend build if regenerated wholesale.
+
 ## IMPORTANT: Also upload wasm to mAInerCreator
 
 ## Using script
