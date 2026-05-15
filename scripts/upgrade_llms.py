@@ -192,7 +192,14 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
         print(f"- Testing LLM {canister_name} ({canister_id})")
         cmd = ["dfx", "canister", "--network", network, "call", canister_id, "remove_prompt_cache", '(record { args = vec { "--prompt-cache"; "prompt.cache" }})']
         run_this_cmd(cmd, llm_cwd, confirm=False)
-        
+
+        # Timer is in-memory only and does not survive an upgrade, so it
+        # must be explicitly re-armed here before traffic resumes.
+        print(" ")
+        print(f"- Starting prompt-cache cleanup timer for LLM {canister_name} ({canister_id})")
+        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "cache_cleanup_start_timer"]
+        run_this_cmd(cmd, llm_cwd, confirm=False)
+
         print(" ")
         print(f"- Adding LLM to controller canister {canister_name} ({ctrlb_canister_id})")
         cmd = ["dfx", "canister", "--network", network, "call", ctrlb_canister_id, "add_llm_canister", f"(record {{canister_id = \"{canister_id}\"}})"]

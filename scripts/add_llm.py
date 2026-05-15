@@ -279,10 +279,11 @@ def add_llm(ctrlb_canister_id, gamestate_canister_id, llm_type, canister_id, net
     print(f"  GameState {field_name}: {new_count}")
     print("=" * 80)
     print("\nManual step required:")
-    print(f"  Register the new LLM canister in funnAI_django's CanisterRegistry.")
-    print(f"  See: funnAI_django/src/apps/canisters/management/commands/import_canister_ids.py")
-    print(f"  The canister must be registered for cache cleanup tasks to include it.")
-    print(f"  (used by funnAI_django/src/apps/celery_tasks/tasks/cache_cleanup_tasks.py)")
+    print(f"  Register the new LLM canister with CycleOps")
+    print(f"  (adds controller 2daxo-giaaa-aaaap-anvca-cai).")
+    print("\nVerify on-chain prompt-cache cleanup is active:")
+    print(f"  dfx canister --network {network} call {canister_id} get_cache_cleanup_stats '()'")
+    print(f"  Look for is_running = true, and runs > 0 after one period (default 600s).")
 
 
 def main(network, canister_id_, llm_type, dry_run=False):

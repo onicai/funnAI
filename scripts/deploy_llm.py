@@ -17,6 +17,11 @@ FUNNAI_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../"))
 # Model to upload (relative to PoAIW/llms/ dir)
 MODEL = "models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf"
 
+# Cycles to deposit into a freshly-deployed LLM canister so it can grow its
+# wasm heap to fit the model (~670 MB) and have operating headroom before
+# CycleOps takes over the lifecycle.
+INITIAL_TOPUP_CYCLES = 3_000_000_000_000  # 3 T cycles
+
 # LLM type -> (llm_cwd relative to SCRIPT_DIR, env key pattern)
 LLM_TYPE_CONFIG = {
     "challenger": {
@@ -223,14 +228,16 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         print(f"   2. Health check (3 retries)")
         print(f"   3. Verify correct subnet")
         print(f"   4. Add admin controllers (Patrick, Arjaan)")
-        print(f"   5. Upload model: {MODEL}")
-        print(f"   6. Load model")
-        print(f"   7. Set max_tokens (12/12)")
-        print(f"   8. Pause logs and chats")
-        print(f"   9. Assign admin roles (4 principals)")
-        print(f"  10. Add log viewers (3 principals)")
-        print(f"  11. Test LLM (new_chat, run_update, remove_prompt_cache)")
-        print(f"  12. Update canister_ids.json")
+        print(f"   5. Deposit {INITIAL_TOPUP_CYCLES // 10**12} T cycles into canister")
+        print(f"   6. Upload model: {MODEL}")
+        print(f"   7. Load model")
+        print(f"   8. Set max_tokens (12/12)")
+        print(f"   9. Pause logs and chats")
+        print(f"  10. Assign admin roles (4 principals)")
+        print(f"  11. Add log viewers (3 principals)")
+        print(f"  12. Test LLM (new_chat, run_update, remove_prompt_cache)")
+        print(f"  13. Start prompt-cache cleanup timer")
+        print(f"  14. Update canister_ids.json")
         print("-" * 80)
         print("DRY RUN complete — nothing was changed.")
         return
@@ -337,6 +344,19 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         ]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Add admin controllers (Patrick, Arjaan)")
+
+        # Deposit cycles before the model is loaded into the wasm heap.
+        # load_model needs to grow the heap by ~670 MB, which requires ~135 B
+        # cycles for the memory allocation alone, on top of operating costs.
+        # The canister is not registered with CycleOps yet at this point.
+        topup_tc = INITIAL_TOPUP_CYCLES // 10**12
+        print(f"\n- Depositing {topup_tc} T cycles into {llm_name} ({canister_id})")
+        cmd = [
+            "dfx", "canister", "--network", network, "deposit-cycles",
+            str(INITIAL_TOPUP_CYCLES), canister_id,
+        ]
+        run_this_cmd(cmd, llm_cwd, confirm=False)
+        completed_steps.append(f"Deposit {topup_tc} T cycles")
 
         # Upload model
         # The upload script (llama_cpp_canister/scripts/upload.py) uses
@@ -473,6 +493,17 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         ]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Test LLM")
+
+        # Start prompt-cache cleanup timer
+        # Timer is in-memory only and is NOT auto-armed on install/upgrade,
+        # so it must be explicitly started here.
+        print(f"\n- Starting prompt-cache cleanup timer for {llm_name} ({canister_id})")
+        cmd = [
+            "dfx", "canister", "--network", network, "call", canister_id,
+            "cache_cleanup_start_timer",
+        ]
+        run_this_cmd(cmd, llm_cwd, confirm=False)
+        completed_steps.append("Start prompt-cache cleanup timer")
 
         # Update canister_ids.json
         print(f"\n- Updating canister_ids.json")

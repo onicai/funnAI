@@ -13,8 +13,31 @@ from .monitor_common import get_canisters, run_this_cmd, get_balance
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 FUNNAI_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../"))
 
+# LLM type -> setCyclesFlowAdmin field name (mirrors scripts/add_llm.py)
+GAMESTATE_FIELD = {
+    "challenger": "numChallengerLlms",
+    "judge": "numJudgeLlms",
+    "share_service": "numShareServiceLlms",
+}
 
-def delete_llm(challenger_canister_id, judge_canister_id, share_service_canister_id, canister_name, canister_id, network, dry_run=False):
+
+def parse_llm_count(json_output):
+    """Parse the LLM count from get_llm_canisters JSON output.
+
+    Expected format: {"Ok": {"llmCanisterIds": [...], ...}}
+    Returns (count, canister_ids_list) or (None, []) on parse failure.
+    """
+    try:
+        data = json.loads(json_output)
+        if isinstance(data, dict) and "Ok" in data:
+            ids = data["Ok"].get("llmCanisterIds", [])
+            return len(ids), ids
+    except (json.JSONDecodeError, KeyError, TypeError):
+        pass
+    return None, []
+
+
+def delete_llm(challenger_canister_id, judge_canister_id, share_service_canister_id, gamestate_canister_id, canister_name, canister_id, network, dry_run=False):
     """Delete an LLM canister from the protocol and reclaim its cycles."""
     try:
         ctrlb_canister_id = None
@@ -35,6 +58,8 @@ def delete_llm(challenger_canister_id, judge_canister_id, share_service_canister
         else:
             print(f"Unknown llm type for canister {canister_name}. Aborting.")
             return
+
+        field_name = GAMESTATE_FIELD[llm_type]
 
         if dry_run:
             print(" ")
@@ -86,16 +111,17 @@ def delete_llm(challenger_canister_id, judge_canister_id, share_service_canister
             print("-" * 80)
             print("Actions that WOULD be performed:")
             print(f"  1. Remove LLM from controller canister ({ctrlb_canister_id})")
-            print(f"  2. Wait 180s grace period for in-flight requests")
-            print(f"  3. Delete canister {canister_id} (cycles returned to wallet)")
+            print(f"  2. Update GameState: {field_name} = (controller count after remove)")
+            print(f"  3. Wait 180s grace period for in-flight requests")
+            print(f"  4. Delete canister {canister_id} (cycles returned to wallet)")
             if json_key_to_remove:
-                print(f"  4. Remove '{json_key_to_remove}' ({network}) from {canister_ids_path}")
+                print(f"  5. Remove '{json_key_to_remove}' ({network}) from {canister_ids_path}")
             else:
-                print(f"  4. canister_ids.json: no matching entry found")
+                print(f"  5. canister_ids.json: no matching entry found")
             if env_line_to_remove:
-                print(f"  5. Remove from {env_path}: {env_line_to_remove}")
+                print(f"  6. Remove from {env_path}: {env_line_to_remove}")
             else:
-                print(f"  5. canister_ids-{network}.env: no matching entry found")
+                print(f"  6. canister_ids-{network}.env: no matching entry found")
             print("-" * 80)
             print("DRY RUN complete — nothing was changed.")
             return
@@ -113,12 +139,33 @@ def delete_llm(challenger_canister_id, judge_canister_id, share_service_canister
         cmd = ["dfx", "canister", "--network", network, "call", ctrlb_canister_id, "remove_llm_canister", f"(record {{canister_id = \"{canister_id}\"}})"]
         run_this_cmd(cmd, llm_cwd, confirm=False)
 
+        # Step 7: Capture controller's current count for GameState reconciliation
         print(" ")
         print(f"- Verifying LLMs registered in controller canister ({ctrlb_canister_id})")
         cmd = ["dfx", "canister", "--network", network, "call", ctrlb_canister_id, "get_llm_canisters", "--output", "json"]
-        run_this_cmd(cmd, llm_cwd, confirm=False)
+        print(f"  {' '.join(cmd)} \n  -> from directory: {llm_cwd}")
+        result = subprocess.check_output(cmd, text=True, cwd=llm_cwd)
+        print(result)
 
-        # Step 7: Wait for in-flight requests
+        new_count, _verified_ids = parse_llm_count(result)
+        if new_count is None:
+            print(f"  WARNING: Could not parse LLM count — skipping GameState update")
+        else:
+            # Step 8: Reconcile GameState with controller's actual count.
+            # This also self-heals any pre-existing drift (e.g. from past
+            # deletes that didn't update GameState). If remove_llm_canister
+            # was a no-op (404, canister already gone from controller),
+            # GameState is still set to whatever the controller actually has.
+            print(" ")
+            print(f"- Updating GameState: {field_name} = {new_count}")
+            cmd = [
+                "dfx", "canister", "--network", network, "call",
+                gamestate_canister_id, "setCyclesFlowAdmin",
+                f"(record {{{field_name} = opt ({new_count} : nat);}})",
+            ]
+            run_this_cmd(cmd, llm_cwd, confirm=False)
+
+        # Step 9: Wait for in-flight requests
         DELAY = 180
         print(" ")
         print(f"- Waiting for {DELAY} seconds to allow protocol to finish possible use of the LLM canister...")
@@ -132,13 +179,13 @@ def delete_llm(challenger_canister_id, judge_canister_id, share_service_canister
                 print("---> Starting delay.")
                 time.sleep(DELAY)
 
-        # Step 8: Delete the canister (cycles returned to wallet)
+        # Step 10: Delete the canister (cycles returned to wallet)
         print(" ")
         print(f"- Deleting canister {canister_name} ({canister_id})")
         cmd = ["dfx", "canister", "--network", network, "delete", canister_id]
         run_this_cmd(cmd, llm_cwd, confirm=False)
 
-        # Step 9: Remove entry from canister_ids.json
+        # Step 11: Remove entry from canister_ids.json
         print(" ")
         print(f"- Removing entry from canister_ids.json")
         if json_key_to_remove and canister_ids_data:
@@ -152,7 +199,7 @@ def delete_llm(challenger_canister_id, judge_canister_id, share_service_canister
         else:
             print(f"  WARNING: Canister {canister_id} not found in {canister_ids_path}")
 
-        # Step 10: Remove entry from canister_ids-{network}.env
+        # Step 12: Remove entry from canister_ids-{network}.env
         print(" ")
         print(f"- Removing entry from canister_ids-{network}.env")
         try:
@@ -176,7 +223,7 @@ def delete_llm(challenger_canister_id, judge_canister_id, share_service_canister
         except FileNotFoundError:
             print(f"  WARNING: {env_path} not found")
 
-        # Step 11: Summary
+        # Step 13: Summary
         print(" ")
         print("=" * 80)
         print(f"Successfully deleted {canister_name} ({canister_id}) on '{network}'.")
@@ -184,10 +231,6 @@ def delete_llm(challenger_canister_id, judge_canister_id, share_service_canister
             print(f"Cycles balance at time of deletion: {balance:,}")
         print("Remaining cycles have been returned to the cycles wallet.")
         print("=" * 80)
-        print("\nManual step required:")
-        print(f"  Remove the LLM canister from funnAI_django's CanisterRegistry.")
-        print(f"  See: funnAI_django/src/apps/canisters/management/commands/import_canister_ids.py")
-        print(f"  (used by funnAI_django/src/apps/celery_tasks/tasks/cache_cleanup_tasks.py)")
 
     except subprocess.CalledProcessError:
         print(f"ERROR: Unable to delete LLM canister {canister_id} on network {network}")
@@ -202,6 +245,7 @@ def main(network, canister_id_, dry_run=False):
     judge_canister_id = None
     share_service_name = None
     share_service_canister_id = None
+    gamestate_canister_id = None
     for name, id in CANISTERS.items():
         if "LLM" in name.upper():
             continue  # Skip LLM canisters in this loop
@@ -214,9 +258,8 @@ def main(network, canister_id_, dry_run=False):
         elif "SERVICE" in name.upper():
             share_service_name = name
             share_service_canister_id = id
-
-        if challenger_name and judge_name and share_service_name:
-            break
+        elif "GAMESTATE" in name.upper():
+            gamestate_canister_id = id
 
     if not challenger_canister_id:
         print(f"No CHALLENGER canister found in canisters-{network}.env")
@@ -226,6 +269,9 @@ def main(network, canister_id_, dry_run=False):
         return
     if not share_service_canister_id:
         print(f"No SHARE_SERVICE canister found in canisters-{network}.env")
+        return
+    if not gamestate_canister_id:
+        print(f"No GAMESTATE canister found in canister_ids-{network}.env")
         return
 
     # Find the target canister
@@ -248,7 +294,7 @@ def main(network, canister_id_, dry_run=False):
     print(f"Target: {target_name} ({target_id}) on network '{network}'")
     print("=" * 80)
 
-    delete_llm(challenger_canister_id, judge_canister_id, share_service_canister_id, target_name, target_id, network, dry_run=dry_run)
+    delete_llm(challenger_canister_id, judge_canister_id, share_service_canister_id, gamestate_canister_id, target_name, target_id, network, dry_run=dry_run)
 
 
 if __name__ == "__main__":
