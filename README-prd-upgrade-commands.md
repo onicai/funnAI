@@ -896,6 +896,11 @@ dfx canister --network $NETWORK call ck_signer_canister health
 Even though we are not using the mAInerCreator to upgrade mAIners, it
 is important to keep the wasm file up to date.
 
+## Get latest llama_cpp_canister release
+
+Store latest release in the folder PoAIW/llms/llama_cpp_canister
+Follow instructions of PoAIW/llms/llama_cpp_canister/README-instructions.md
+
 ## Description
 
 Deploying or upgrading LLMs is done without pausing the protocol.

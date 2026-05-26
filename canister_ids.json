@@ -1,36 +1,22 @@
 {
+  "api_canister": {
+    "development": "p6pu7-5aaaa-aaaap-qqdfa-cai",
+    "prd": "bgm6p-5aaaa-aaaaf-qbzda-cai",
+    "testing": "nyxgs-uqaaa-aaaap-qqdia-cai"
+  },
   "funnai_backend": {
-    "backup": "",
-    "demo": "dtxtp-ciaaa-aaaah-are5a-cai",
     "development": "bom4f-cyaaa-aaaah-qqa2a-cai",
-    "ic": "yekds-uqaaa-aaaaj-az5la-cai",
     "prd": "6wp2z-paaaa-aaaaa-qau7q-cai",
     "testing": "62vhh-cyaaa-aaaam-qd2wq-cai"
   },
   "funnai_frontend": {
-    "backup": "",
-    "demo": "l556b-uaaaa-aaaai-q3xta-cai",
     "development": "zlbtt-2yaaa-aaaak-qufwa-cai",
-    "ic": "ydlfg-ziaaa-aaaaj-az5lq-cai",
     "prd": "vizih-uiaaa-aaaaa-qavaa-cai",
     "testing": "6twm3-uqaaa-aaaam-qd2xa-cai"
   },
   "game_state_canister": {
-    "demo": "4tr6r-mqaaa-aaaae-qfcta-cai",
     "development": "ciqqv-4iaaa-aaaag-auara-cai",
-    "ic": "xzpy6-hiaaa-aaaaj-az4pq-cai",
-    "local": "",
     "prd": "r5m5y-diaaa-aaaaa-qanaa-cai",
     "testing": "vpa37-giaaa-aaaam-qdxeq-cai"
-  },
-  "mainer_ctrlb_canister": {
-    "ic": "x6o6k-kqaaa-aaaaj-az4pa-cai"
-  },
-  "api_canister": {
-    "demo": "p6pu7-5aaaa-aaaap-qqdfa-cai",
-    "prd": "bgm6p-5aaaa-aaaaf-qbzda-cai",
-    "testing": "nyxgs-uqaaa-aaaap-qqdia-cai",
-    "development": "p6pu7-5aaaa-aaaap-qqdfa-cai",
-    "ic": "bgm6p-5aaaa-aaaaf-qbzda-cai"
   }
 }
