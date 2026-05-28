@@ -39,6 +39,17 @@ type TokenRewardsData =
    data: vec TokenRewardsEntry;
    metadata: TokenRewardsMetadata;
  };
+type TotalBurnedRecord = 
+ record {
+   lastScannedBlock: nat;
+   lastScanTimestampNs: nat64;
+   totalBurnedE8s: nat;
+ };
+type TotalBurnedResult = 
+ variant {
+   Err: ApiError;
+   Ok: TotalBurnedRecord;
+ };
 type TextResult = 
  variant {
    Err: ApiError;
@@ -349,6 +360,7 @@ type ApiCanister =
    /// Get current open challenges from cache
    getOpenChallengesFromCache: () -> (ChallengesResult) query;
    getTokenRewardsData: () -> (TokenRewardsDataResult) query;
+   getTotalBurned: () -> (TotalBurnedResult) query;
    health: () -> (StatusCodeRecordResult) query;
    resetDailyMetricsAdmin: () -> (NatResult);
    revokeAdminRole: ("principal": text) -> (TextResult);
@@ -356,7 +368,10 @@ type ApiCanister =
     (StatusCodeRecordResult);
    setMasterCanisterId: (newMasterCanisterId: text) -> (AuthRecordResult);
    startActivityFeedTimerAdmin: () -> (AuthRecordResult);
+   startBurnScanTimerAdmin: () -> (AuthRecordResult);
    stopActivityFeedTimerAdmin: () -> (AuthRecordResult);
+   stopBurnScanTimerAdmin: () -> (AuthRecordResult);
+   triggerBurnScanAdmin: () -> (AuthRecordResult);
    updateDailyMetricAdmin: (params: UpdateDailyMetricAdminInput) ->
     (DailyMetricResult);
    whoami: () -> (principal) query;

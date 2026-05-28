@@ -18,6 +18,7 @@
   import { IcrcService } from "../helpers/IcrcService";
   import { fetchTokens } from "../helpers/token_helpers";
   import { formatBalance, formatLargeNumber } from "../helpers/utils/numberFormatUtils";
+  import { BurnService } from "../helpers/BurnService";
   import BigNumber from "bignumber.js";
 
   // Sample data 
@@ -32,6 +33,11 @@
   let totalSupply = "210,992"; // Default fallback value
   let isLoadingSupply = true;
   let supplyError = "";
+
+  // Total burned state
+  let totalBurned = "—";
+  let isLoadingBurned = true;
+  let burnedError = "";
   
   // Format total supply properly (convert from smallest units to whole tokens)
   function formatTotalSupply(rawAmount: bigint, decimals: number): string {
@@ -71,16 +77,31 @@
       
     } catch (error) {
       console.error("Error loading total supply:", error);
-      supplyError = error.message || "Failed to load supply";
+      supplyError = (error as Error).message || "Failed to load supply";
       // Keep the fallback value
     } finally {
       isLoadingSupply = false;
     }
   }
   
+  async function loadTotalBurned() {
+    try {
+      isLoadingBurned = true;
+      burnedError = "";
+      const data = await BurnService.getTotalBurned();
+      totalBurned = data.totalBurnedFunnai;
+    } catch (error) {
+      console.error("Error loading total burned:", error);
+      burnedError = (error as Error).message || "Failed to load";
+    } finally {
+      isLoadingBurned = false;
+    }
+  }
+
   // Load total supply on mount
   onMount(() => {
     loadTotalSupply();
+    loadTotalBurned();
   });
 </script>
 
@@ -93,7 +114,7 @@
     </div>
 
     <!-- Quick Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
       <!-- Current Supply Card -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
         <div class="flex items-center justify-between">
@@ -161,6 +182,50 @@
         <div class="mt-2">
           <p class="text-xs text-gray-500 dark:text-gray-400">June 29th, 2033</p>
         </div>
+      </div>
+
+      <!-- Total Burned Card -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total burned</p>
+            <div class="flex items-center space-x-2">
+              {#if isLoadingBurned}
+                <div class="animate-pulse flex items-center space-x-2">
+                  <div class="h-6 bg-gray-300 dark:bg-gray-600 rounded w-16"></div>
+                  <span class="text-xs text-red-500 dark:text-red-400">FUNNAI</span>
+                </div>
+              {:else if burnedError}
+                <p class="text-lg font-semibold text-gray-400 dark:text-gray-500" title={burnedError}>
+                  —
+                  <span class="text-xs text-red-500 dark:text-red-400 ml-1">$FUNNAI</span>
+                </p>
+              {:else}
+                <p class="text-lg font-semibold text-gray-900 dark:text-white">
+                  {totalBurned}
+                  <span class="text-xs text-red-500 dark:text-red-400 ml-1">$FUNNAI</span>
+                </p>
+              {/if}
+            </div>
+          </div>
+          <div class="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
+            <svg class="w-6 h-6 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"></path>
+            </svg>
+          </div>
+        </div>
+        {#if !isLoadingBurned}
+          <div class="mt-2 h-4">
+            <button
+              on:click={loadTotalBurned}
+              class="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              title={burnedError ? burnedError : "Refresh burned count from canister"}
+            >
+              {burnedError ? "Retry" : "Refresh"}
+            </button>
+          </div>
+        {/if}
       </div>
 
       <!-- System Status Card -->
