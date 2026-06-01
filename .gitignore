@@ -167,3 +167,9 @@ scripts/logs-mainer-analysis/
 
 # lp_holders list (generated output)
 scripts/lp_holders/
+
+scripts/burn_tokens_cache.json
+
+scripts/burn_tokens_prd.json
+
+scripts/mint_tokens_ic.json
