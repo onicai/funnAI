@@ -308,6 +308,15 @@ export const idlFactory = ({ IDL }) => {
     'date' : IDL.Text,
     'input' : DailyMetricUpdateInput,
   });
+  const TotalBurnedRecord = IDL.Record({
+    'totalBurnedE8s' : IDL.Nat,
+    'lastScannedBlock' : IDL.Nat,
+    'lastScanTimestampNs' : IDL.Nat64,
+  });
+  const TotalBurnedResult = IDL.Variant({
+    'Ok' : TotalBurnedRecord,
+    'Err' : ApiError,
+  });
   const ApiCanister = IDL.Service({
     'amiController' : IDL.Func([], [AuthRecordResult], ['query']),
     'assignAdminRole' : IDL.Func(
@@ -350,6 +359,7 @@ export const idlFactory = ({ IDL }) => {
     'getNumDailyMetrics' : IDL.Func([], [NatResult], ['query']),
     'getOpenChallengesFromCache' : IDL.Func([], [ChallengesResult], ['query']),
     'getTokenRewardsData' : IDL.Func([], [TokenRewardsDataResult], ['query']),
+    'getTotalBurned' : IDL.Func([], [TotalBurnedResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
     'resetDailyMetricsAdmin' : IDL.Func([], [NatResult], []),
     'revokeAdminRole' : IDL.Func([IDL.Text], [TextResult], []),
@@ -360,7 +370,10 @@ export const idlFactory = ({ IDL }) => {
       ),
     'setMasterCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
     'startActivityFeedTimerAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'startBurnScanTimerAdmin' : IDL.Func([], [AuthRecordResult], []),
     'stopActivityFeedTimerAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'stopBurnScanTimerAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'triggerBurnScanAdmin' : IDL.Func([], [AuthRecordResult], []),
     'updateDailyMetricAdmin' : IDL.Func(
         [UpdateDailyMetricAdminInput],
         [DailyMetricResult],

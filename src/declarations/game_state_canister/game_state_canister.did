@@ -71,6 +71,16 @@ type TransferFromArg =
    to: Account__1;
    token_id: nat;
  };
+type TopUpResult = 
+ variant {
+   Err: ApiError;
+   Ok: TopUpRecord;
+ };
+type TopUpRecord = 
+ record {
+   cyclesAdded: nat;
+   mainerAgentAddress: text;
+ };
 type TimeInterval = variant {Daily;};
 type TextResult = 
  variant {
@@ -514,6 +524,11 @@ type MainerAgentTopUpInput =
    mainerAgent: OfficialMainerAgentCanister;
    paymentTransactionBlockId: nat64;
  };
+type MainerAgentTopUpByAddressInput = 
+ record {
+   mainerAgentAddress: text;
+   paymentTransactionBlockId: nat64;
+ };
 type MainerAgentCanistersResult = 
  variant {
    Err: ApiError;
@@ -639,6 +654,7 @@ type GameStateCanister =
     (CyclesBurnRateResult) query;
    getCyclesFlowAdmin: () -> (CyclesFlowResult);
    getCyclesTransactionsAdmin: () -> (CyclesTransactionsResult) query;
+   getDisburseFundsToTeamFlag: () -> (FlagResult) query;
    getDisburseFundsToTreasuryFlag: () -> (FlagResult) query;
    getFunnaiCyclesPrice: () -> (NatResult) query;
    getFunnaiCyclesPriceAdmin: () -> (NatResult) query;
@@ -838,10 +854,13 @@ type GameStateCanister =
     (ChallengeResponseSubmissionMetadataResult);
    testDisbursementToTreasuryAdmin: () -> (AuthRecordResult);
    testMainerCodeIntegrityAdmin: () -> (AuthRecordResult);
+   toggleDisburseFundsToTeamFlagAdmin: () -> (AuthRecordResult);
    toggleDisburseFundsToTreasuryFlagAdmin: () -> (AuthRecordResult);
    togglePauseProtocolFlagAdmin: () -> (AuthRecordResult);
    togglePauseWhitelistMainerCreationFlagAdmin: () -> (AuthRecordResult);
    toggleWhitelistPhaseActiveFlagAdmin: () -> (AuthRecordResult);
+   topUpCyclesForAnyMainerAgent: (mainerTopUpInfo:
+    MainerAgentTopUpByAddressInput) -> (TopUpResult);
    topUpCyclesForMainerAgent: (mainerTopUpInfo: MainerAgentTopUpInput) ->
     (MainerAgentCanisterResult);
    topUpCyclesForMainerAgentWithFunnai: (mainerTopUpInfo:

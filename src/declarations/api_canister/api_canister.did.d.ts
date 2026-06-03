@@ -67,6 +67,7 @@ export interface ApiCanister {
    */
   'getOpenChallengesFromCache' : ActorMethod<[], ChallengesResult>,
   'getTokenRewardsData' : ActorMethod<[], TokenRewardsDataResult>,
+  'getTotalBurned' : ActorMethod<[], TotalBurnedResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
   'resetDailyMetricsAdmin' : ActorMethod<[], NatResult>,
   'revokeAdminRole' : ActorMethod<[string], TextResult>,
@@ -76,7 +77,10 @@ export interface ApiCanister {
   >,
   'setMasterCanisterId' : ActorMethod<[string], AuthRecordResult>,
   'startActivityFeedTimerAdmin' : ActorMethod<[], AuthRecordResult>,
+  'startBurnScanTimerAdmin' : ActorMethod<[], AuthRecordResult>,
   'stopActivityFeedTimerAdmin' : ActorMethod<[], AuthRecordResult>,
+  'stopBurnScanTimerAdmin' : ActorMethod<[], AuthRecordResult>,
+  'triggerBurnScanAdmin' : ActorMethod<[], AuthRecordResult>,
   'updateDailyMetricAdmin' : ActorMethod<
     [UpdateDailyMetricAdminInput],
     DailyMetricResult
@@ -302,6 +306,13 @@ export interface SystemMetrics {
   'daily_burn_rate' : DailyBurnRate,
 }
 export type TextResult = { 'Ok' : string } |
+  { 'Err' : ApiError };
+export interface TotalBurnedRecord {
+  'totalBurnedE8s' : bigint,
+  'lastScannedBlock' : bigint,
+  'lastScanTimestampNs' : bigint,
+}
+export type TotalBurnedResult = { 'Ok' : TotalBurnedRecord } |
   { 'Err' : ApiError };
 export interface TokenRewardsData {
   'metadata' : TokenRewardsMetadata,

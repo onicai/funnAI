@@ -594,6 +594,7 @@ export interface GameStateCanister {
   >,
   'getCyclesFlowAdmin' : ActorMethod<[], CyclesFlowResult>,
   'getCyclesTransactionsAdmin' : ActorMethod<[], CyclesTransactionsResult>,
+  'getDisburseFundsToTeamFlag' : ActorMethod<[], FlagResult>,
   'getDisburseFundsToTreasuryFlag' : ActorMethod<[], FlagResult>,
   'getFunnaiCyclesPrice' : ActorMethod<[], NatResult>,
   'getFunnaiCyclesPriceAdmin' : ActorMethod<[], NatResult>,
@@ -887,6 +888,7 @@ export interface GameStateCanister {
   >,
   'testDisbursementToTreasuryAdmin' : ActorMethod<[], AuthRecordResult>,
   'testMainerCodeIntegrityAdmin' : ActorMethod<[], AuthRecordResult>,
+  'toggleDisburseFundsToTeamFlagAdmin' : ActorMethod<[], AuthRecordResult>,
   'toggleDisburseFundsToTreasuryFlagAdmin' : ActorMethod<[], AuthRecordResult>,
   'togglePauseProtocolFlagAdmin' : ActorMethod<[], AuthRecordResult>,
   'togglePauseWhitelistMainerCreationFlagAdmin' : ActorMethod<
@@ -894,6 +896,10 @@ export interface GameStateCanister {
     AuthRecordResult
   >,
   'toggleWhitelistPhaseActiveFlagAdmin' : ActorMethod<[], AuthRecordResult>,
+  'topUpCyclesForAnyMainerAgent' : ActorMethod<
+    [MainerAgentTopUpByAddressInput],
+    TopUpResult
+  >,
   'topUpCyclesForMainerAgent' : ActorMethod<
     [MainerAgentTopUpInput],
     MainerAgentCanisterResult
@@ -956,6 +962,10 @@ export type MainerAgentCanistersResult = {
     'Ok' : Array<OfficialMainerAgentCanister>
   } |
   { 'Err' : ApiError };
+export interface MainerAgentTopUpByAddressInput {
+  'paymentTransactionBlockId' : bigint,
+  'mainerAgentAddress' : string,
+}
 export interface MainerAgentTopUpInput {
   'paymentTransactionBlockId' : bigint,
   'mainerAgent' : OfficialMainerAgentCanister,
@@ -1311,6 +1321,12 @@ export type SupportedStandards = Array<{ 'url' : string, 'name' : string }>;
 export type TextResult = { 'Ok' : string } |
   { 'Err' : ApiError };
 export type TimeInterval = { 'Daily' : null };
+export interface TopUpRecord {
+  'mainerAgentAddress' : string,
+  'cyclesAdded' : bigint,
+}
+export type TopUpResult = { 'Ok' : TopUpRecord } |
+  { 'Err' : ApiError };
 export interface TransferFromArg {
   'to' : Account__1,
   'spender_subaccount' : [] | [Uint8Array | number[]],

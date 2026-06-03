@@ -1011,6 +1011,15 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : ChallengeResponseSubmissionMetadata,
     'Err' : ApiError,
   });
+  const MainerAgentTopUpByAddressInput = IDL.Record({
+    'paymentTransactionBlockId' : IDL.Nat64,
+    'mainerAgentAddress' : IDL.Text,
+  });
+  const TopUpRecord = IDL.Record({
+    'mainerAgentAddress' : IDL.Text,
+    'cyclesAdded' : IDL.Nat,
+  });
+  const TopUpResult = IDL.Variant({ 'Ok' : TopUpRecord, 'Err' : ApiError });
   const MainerctrlUpgradeInput = IDL.Record({
     'canisterAddress' : CanisterAddress,
   });
@@ -1169,6 +1178,7 @@ export const idlFactory = ({ IDL }) => {
         [CyclesTransactionsResult],
         ['query'],
       ),
+    'getDisburseFundsToTeamFlag' : IDL.Func([], [FlagResult], ['query']),
     'getDisburseFundsToTreasuryFlag' : IDL.Func([], [FlagResult], ['query']),
     'getFunnaiCyclesPrice' : IDL.Func([], [NatResult], ['query']),
     'getFunnaiCyclesPriceAdmin' : IDL.Func([], [NatResult], ['query']),
@@ -1632,6 +1642,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'testDisbursementToTreasuryAdmin' : IDL.Func([], [AuthRecordResult], []),
     'testMainerCodeIntegrityAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'toggleDisburseFundsToTeamFlagAdmin' : IDL.Func([], [AuthRecordResult], []),
     'toggleDisburseFundsToTreasuryFlagAdmin' : IDL.Func(
         [],
         [AuthRecordResult],
@@ -1646,6 +1657,11 @@ export const idlFactory = ({ IDL }) => {
     'toggleWhitelistPhaseActiveFlagAdmin' : IDL.Func(
         [],
         [AuthRecordResult],
+        [],
+      ),
+    'topUpCyclesForAnyMainerAgent' : IDL.Func(
+        [MainerAgentTopUpByAddressInput],
+        [TopUpResult],
         [],
       ),
     'topUpCyclesForMainerAgent' : IDL.Func(
