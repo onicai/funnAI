@@ -131,7 +131,7 @@ export function createGradient(ctx: CanvasRenderingContext2D, color: string, alp
  * Format date for chart labels
  */
 export function formatDateLabel(dateString: string, format: 'short' | 'medium' | 'long' = 'medium'): string {
-  const date = new Date(dateString);
+  const date = new Date(dateString + 'T00:00:00');
   
   switch (format) {
     case 'short':

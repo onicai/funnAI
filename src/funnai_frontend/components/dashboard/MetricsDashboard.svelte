@@ -76,7 +76,7 @@
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Current Metrics</h3>
           <div class="text-sm text-gray-600 dark:text-gray-400">
-            Latest data from {new Date(displayMetrics.metadata.date).toLocaleDateString()}
+            Latest data from {new Date(displayMetrics.metadata.date + 'T00:00:00').toLocaleDateString()}
           </div>
         </div>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -140,7 +140,7 @@
             Latest data
           </div>
           <span class="text-sm text-gray-500 dark:text-gray-400">
-            as of {new Date(displayMetrics.metadata.date).toLocaleDateString()}
+            as of {new Date(displayMetrics.metadata.date + 'T00:00:00').toLocaleDateString()}
           </span>
         </div>
       </div>
