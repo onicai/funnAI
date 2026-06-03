@@ -1134,23 +1134,28 @@ def create_snapshot(network: str, canister_id: str, dry_run: bool = False) -> Op
 
     try:
         result = run_command(command, retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
-        # The snapshot creation output goes to stderr, not stdout
         # Expected format: "Created a new snapshot of canister xxx. Snapshot ID: yyy"
-        if result.returncode == 0 and result.stdout == '':
-            for line in result.stderr.split('\n'):
-                if 'Snapshot ID:' in line:
-                    # Extract the ID after "Snapshot ID: "
-                    parts = line.split('Snapshot ID:')
+        # Older dfx wrote this to stderr; dfx 0.30+ writes it to stdout. Scan both.
+        if result.returncode == 0:
+            combined = (result.stdout or "") + "\n" + (result.stderr or "")
+            for line in combined.split("\n"):
+                if "Snapshot ID:" in line:
+                    parts = line.split("Snapshot ID:")
                     if len(parts) >= 2:
                         snapshot_id = parts[1].strip()
                         log_message(f"Snapshot created: {snapshot_id}", "SUCCESS")
                         return snapshot_id
 
-            # If we can't parse but command succeeded, return a marker
-            log_message(f"Snapshot created but ID not parsed from stderr: {result.stderr}", "WARNING")
+            log_message(
+                f"Snapshot created but ID not parsed. stdout={result.stdout!r} stderr={result.stderr!r}",
+                "WARNING",
+            )
             return "created-but-not-parsed"
         else:
-            log_message(f"Unexpected snapshot creation response: stdout={result.stdout}", "WARNING")
+            log_message(
+                f"Snapshot command failed (returncode={result.returncode}). stdout={result.stdout!r} stderr={result.stderr!r}",
+                "ERROR",
+            )
             return None
     except Exception as e:
         log_message(f"Failed to create snapshot for {canister_id}: {e}", "ERROR")

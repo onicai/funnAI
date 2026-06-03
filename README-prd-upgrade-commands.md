@@ -27,18 +27,9 @@ echo -n "SUBNET_0_1_FRONTEND            = $SUBNET_0_1_FRONTEND - "; dfx canister
 echo -n "SUBNET_0_2_API                 = $SUBNET_0_2_API - "; dfx canister --network $NETWORK status $SUBNET_0_2_API | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "SUBNET_1_1_CHALLENGER_LLM_0    = $SUBNET_1_1_CHALLENGER_LLM_0 - "; dfx canister --network $NETWORK status $SUBNET_1_1_CHALLENGER_LLM_0 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "SUBNET_1_1_JUDGE_LLM_0         = $SUBNET_1_1_JUDGE_LLM_0 - "; dfx canister --network $NETWORK status $SUBNET_1_1_JUDGE_LLM_0 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "SUBNET_1_1_JUDGE_LLM_1         = $SUBNET_1_1_JUDGE_LLM_1 - "; dfx canister --network $NETWORK status $SUBNET_1_1_JUDGE_LLM_1 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "SUBNET_1_2_JUDGE_LLM_2         = $SUBNET_1_2_JUDGE_LLM_2 - "; dfx canister --network $NETWORK status $SUBNET_1_2_JUDGE_LLM_2 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "SUBNET_2_1_SHARE_SERVICE_LLM_0 = $SUBNET_2_1_SHARE_SERVICE_LLM_0 - "; dfx canister --network $NETWORK status $SUBNET_2_1_SHARE_SERVICE_LLM_0 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "SUBNET_2_1_SHARE_SERVICE_LLM_1 = $SUBNET_2_1_SHARE_SERVICE_LLM_1 - "; dfx canister --network $NETWORK status $SUBNET_2_1_SHARE_SERVICE_LLM_1 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "MAINER_SHARE_AGENT_0000        = $MAINER_SHARE_AGENT_0000 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0000 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "MAINER_SHARE_AGENT_0001        = $MAINER_SHARE_AGENT_0001 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0001 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "MAINER_SHARE_AGENT_0002        = $MAINER_SHARE_AGENT_0002 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0002 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "MAINER_SHARE_AGENT_0003        = $MAINER_SHARE_AGENT_0003 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0003 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "MAINER_SHARE_AGENT_0004        = $MAINER_SHARE_AGENT_0004 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0004 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "MAINER_SHARE_AGENT_0005        = $MAINER_SHARE_AGENT_0005 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0005 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "MAINER_SHARE_AGENT_0006        = $MAINER_SHARE_AGENT_0006 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0006 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "MAINER_SHARE_AGENT_0007        = $MAINER_SHARE_AGENT_0007 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0007 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 ```
 
 # stop timers of protocol canisters
@@ -220,6 +211,27 @@ dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getTimerActionRegula
 
 # upgrade the ShareService
 
+> **One-shot EOP migration on the on-chain-daily-metric PR.** The ShareService
+> source carries a `(with migration = ...)` block at the top of
+> `PoAIW/src/mAIner/src/Main.mo` that bridges the deployed pre-#143 stable
+> shape to the new shape. It transparently:
+> 1. drops `officialCycleTopUpsStorage` and `generatedResponses` (PR #143),
+> 2. produces the new `let` constants
+>    (`CHALLENGE_QUEUE_RESET_LENGTH_THRESHOLD`, `CHALLENGE_QUEUE_STALENESS_NANOS`,
+>    `INSTALL_CODE_REFUND_BUFFER`, `MAX_SUBMITTED_RESPONSES`) and the new
+>    `shareAgentActivityStorageStable` var so EOP doesn't trap looking for them
+>    in old memory,
+> 3. re-casts `shareServiceCanisterActor` to its new actor type (the
+>    `addChallengeToShareServiceQueue` method gained a trailing
+>    `?ShareAgentStatus` parameter).
+>
+> No operator action required — just run the normal `--mode upgrade` below.
+>
+> **TODO:** after every network's ShareService has been upgraded past this PR
+> (i.e. once both prd and any other live ShareServices show the new wasm
+> hash), delete the migration block in `Main.mo`. It's idempotent — leaving
+> it in works but it's dead weight on subsequent upgrades.
+
 ```bash
 # Verify correct network & canister settings !
 echo $NETWORK
@@ -261,6 +273,28 @@ dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE get_llm_canisters
 
 # Verify timer setting
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getTimerActionRegularityInSecondsAdmin
+```
+
+## Update Admin RBAC for ShareService
+
+Grant the Api canister `#AdminQuery` so it can pull the ShareAgent
+registry+activity snapshot via `getShareAgentRegistryWithActivityAdmin`.
+Required for the on-chain daily-metrics aggregation. One-time per network —
+the role assignment persists across upgrades.
+
+```bash
+# verify which principals already have admin roles
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getAdminRoles
+
+# grant #AdminQuery to the Api canister
+echo "$SUBNET_0_2_API"
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$SUBNET_0_2_API'"; role = variant { AdminQuery }; note = "Daily metrics pull from Api canister" } )'
+
+# verify
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getAdminRoles
+
+# if needed, revoke
+# dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE revokeAdminRole '( "'$SUBNET_0_2_API'")'
 ```
 
 ## reinstall the ShareService
@@ -466,6 +500,118 @@ dfx canister --network $NETWORK call $SUBNET_0_2_API getAdminRoles
 dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$FUNNAI_DJANGO_PRINCIPAL'"; role = variant { AdminUpdate }; note = "Grant AdminUpdate access for funnai-django" } )'
 # if needed, this is how you revoke permissions for the previous principal
 dfx canister --network $NETWORK call SUBNET_0_2_API revokeAdminRole '( "'$FUNNAI_DJANGO_PRINCIPAL'")'
+```
+
+## On-chain Daily Metrics setup for the API canister
+
+After every API canister upgrade, point it at this network's ShareService
+(`SHARE_SERVICE_CANISTER_ID` defaults to the prd canister id), then start the
+pricing timer. Both timers (pricing + daily-metrics) are `transient` — they
+do **not** auto-restart on upgrade.
+
+```bash
+# Verify the current ShareService canister id on the API canister
+dfx canister --network $NETWORK call $SUBNET_0_2_API getShareServiceCanisterIdAdmin
+
+# Set it to this network's ShareService (idempotent — safe to run on prd too)
+dfx canister --network $NETWORK call $SUBNET_0_2_API setShareServiceCanisterIdAdmin '("'$SUBNET_0_1_SHARE_SERVICE'")'
+
+# Start the pricing timer (HTTPS outcalls Coinbase + IC API every hour; refreshes immediately on start)
+dfx canister --network $NETWORK call $SUBNET_0_2_API startPricingTimerAdmin
+
+# Verify the pricing cache populated with real upstream values
+dfx canister --network $NETWORK call $SUBNET_0_2_API getPricingCacheAdmin
+```
+
+## Daily Metrics admin smoke tests for the API canister
+
+Verifies the inter-canister read of the ShareService snapshot, the
+aggregation path, and the pricing enrichment — **without writing** anything
+into the canister's `dailyMetrics` storage. Safe to run any time, including
+during the rollout window when Django is still the authoritative writer.
+
+```bash
+# Cross-canister read of ShareService (requires the #AdminQuery grant — see ShareService section)
+dfx canister --network $NETWORK call $SUBNET_0_2_API pullShareServiceSnapshotAdmin
+
+# Run-status: expect timerActive = false right after upgrade
+dfx canister --network $NETWORK call $SUBNET_0_2_API getDailyMetricsRunStatusAdmin
+
+# Compute the metric for yesterday WITHOUT storing it. Inspect the returned
+# record to verify the aggregation, pricing, and date look right.
+dfx canister --network $NETWORK call $SUBNET_0_2_API previewDailyMetricsAggregationAdmin
+```
+
+> When you are ready to start writing the row to canister storage, use
+> `triggerDailyMetricsAggregationAdmin` instead — that one writes via
+> `storeDailyMetric` (last-writer-wins against any Django write for the same
+> date).
+
+## Start the Daily Metrics recurring timer
+
+> ⚠️ Only start AFTER all ShareAgent mAIners have been upgraded AND the
+> activity registry has had at least 25 hours to warm up. Before that, the
+> recurring timer would write wrong numbers over Django's authoritative row
+> every 24 h.
+
+```bash
+# Verify the warm-up: activity list should be close to registry size (≥80%)
+dfx canister --network $NETWORK call $SUBNET_0_2_API pullShareServiceSnapshotAdmin
+
+# Start the daily-metrics timer (anchored to 00:00 UTC; recurring every 24h)
+dfx canister --network $NETWORK call $SUBNET_0_2_API startDailyMetricsTimerAdmin
+
+# Verify
+dfx canister --network $NETWORK call $SUBNET_0_2_API getDailyMetricsRunStatusAdmin
+```
+
+To stop the daily-metrics timer (e.g. rolling back to the Django writer):
+
+```bash
+dfx canister --network $NETWORK call $SUBNET_0_2_API stopDailyMetricsTimerAdmin
+```
+
+## Burn-scan setup for the API canister
+
+The burn-scan timer walks the FUNNAI `TokenIndex` canister (ICRC-3 blocks)
+and accumulates the running total of burned tokens into `totalBurnedE8s`.
+Like every other timer on the Api canister, it does **not** auto-restart
+across upgrades and must be started explicitly after every upgrade.
+
+On the first start after upgrading from a build that didn't have this
+feature, the scanner starts at block 0 and self-schedules 5-second
+follow-ups until it catches up to the head of `TokenIndex`. Expect ~6
+hours of catch-up time and non-trivial cycle consumption (each batch
+fetches ~250 KB of inter-canister data). After catch-up, the recurring
+hourly tick just processes whatever new blocks accumulated in the last
+hour.
+
+```bash
+# Verify the TokenIndex canister id the Api canister will scan.
+# Default points at prd; non-prd networks must override (next command).
+dfx canister --network $NETWORK call $SUBNET_0_2_API getTokenIndexCanisterIdAdmin
+
+# Set it for this network (idempotent — safe to run on prd too)
+TOKEN_INDEX="<this-network's-token-index-canister-id>"
+dfx canister --network $NETWORK call $SUBNET_0_2_API setTokenIndexCanisterIdAdmin "(\"$TOKEN_INDEX\")"
+
+# Start the burn-scan timer (runs one scan immediately, then every hour)
+dfx canister --network $NETWORK call $SUBNET_0_2_API startBurnScanTimerAdmin
+
+# Read the current running total + scan cursor
+dfx canister --network $NETWORK call --query $SUBNET_0_2_API getTotalBurned
+```
+
+To stop the timer (e.g. before a planned upgrade or for ops investigation):
+
+```bash
+dfx canister --network $NETWORK call $SUBNET_0_2_API stopBurnScanTimerAdmin
+```
+
+To force a one-shot scan without touching the recurring timer:
+
+```bash
+dfx canister --network $NETWORK call $SUBNET_0_2_API triggerBurnScanAdmin
 ```
 
 # upgrade the ArchiveChallenges canister
@@ -741,6 +887,37 @@ python -m scripts.upload_mainer_llm_canister_modelfile --network $NETWORK --cani
 #          It uses a lazy evaluation logic.
 dfx canister --network $NETWORK call mainer_creator_canister getSha256HashesAdmin
 ```
+
+## Post-reinstall configuration (mAInerCreator)
+
+`--mode reinstall` wipes the mAInerCreator's stable state. The wasm/model
+uploads above re-populate the canister files, but `MASTER_CANISTER_ID`
+resets to its hard-coded **prd** default (`r5m5y-diaaa-aaaaa-qanaa-cai`).
+That default is wrong on every other network and **will silently break
+mAIner marketplace purchases** — `addControllerToMainerCanister` checks
+that the caller equals `MASTER_CANISTER_ID`, so calls from a non-prd
+GameState are rejected as `#Unauthorized`. The buyer's ICP is refunded
+and the user sees:
+
+```
+Purchase completion failed: {"GenericError":{"message":"Controller update failed, ICP refunded","error_code":2}}
+```
+
+Set the master canister id to the current network's GameState after every
+reinstall (no-op on prd, since the default already matches):
+
+```bash
+# verify current value
+dfx canister --network $NETWORK call $SUBNET_0_1_MAINER_CREATOR getMasterCanisterIdAdmin
+
+# set it to this network's GameState
+dfx canister --network $NETWORK call $SUBNET_0_1_MAINER_CREATOR setMasterCanisterId '("'$SUBNET_0_1_GAMESTATE'")'
+
+# verify
+dfx canister --network $NETWORK call $SUBNET_0_1_MAINER_CREATOR getMasterCanisterIdAdmin
+```
+
+Regular `--mode upgrade` preserves stable state and does not need this step.
 
 ## Testing the mAInerCreator
 
@@ -1387,6 +1564,18 @@ If you want to do it all manually, follow these steps:
 # Upgrade the mAIners
 
 > **dfx version note (2026-04-16):** the ShareAgent mAIners were last upgraded/reinstalled on 2026-04-16 with **dfx 0.31.0**. All other canisters (frontend, backend, and PoAIW protocol canisters) are still on **dfx 0.29.2** (pinned in `PoAIW/src/GameState/docker/docker-compose.yml`). Keep this mismatch in mind when regenerating declarations or reproducing wasm hashes — newer dfx versions emit different JS codegen (e.g. importing from `@icp-sdk/core/agent` instead of `@dfinity/agent`), which can break the frontend build if regenerated wholesale.
+>
+> **EOP migration block in `PoAIW/src/mAIner/src/Main.mo` — on-chain-daily-metric PR.**
+> ShareAgents and ShareService share the same source file, so the migration block applies to both, but their **deployed starting points differ**:
+> - ShareService was last deployed pre-#143 → needs the full migration when it was upgraded for this PR (already done).
+> - ShareAgents were already reinstalled post-#143 on 2026-04-16 → their deployed memory does **not** contain `officialCycleTopUpsStorage` or `generatedResponses`, and already contains the four `let` constants added in #143.
+>
+> Before rebuilding the wasm for the ShareAgent rollout of this PR:
+> 1. **Remove the `in var officialCycleTopUpsStorage` and `in var generatedResponses` fields from the migration input** — they're not in ShareAgents' memory and declaring them would make EOP fail to construct the input record.
+> 2. **Leave the `shareServiceCanisterActor` actor-type transform in place** — ShareAgents still have the old 1-arg `addChallengeToShareServiceQueue` signature stored, and the upgrade flips it to the 2-arg version.
+> 3. **Leave the new-field outputs** (`shareAgentActivityStorageStable` plus, for safety, the four `let` constants) in place. The four `let` constants are already in ShareAgents' memory; producing them in the migration output rewrites them with the same value, which is a no-op.
+>
+> Once **both** the ShareService and every ShareAgent on every network is on a post-this-PR build, delete the entire migration block from `Main.mo`. It's idempotent — leaving it in works but it's dead weight on subsequent upgrades.
 
 ## IMPORTANT: Also upload wasm to mAInerCreator
 
