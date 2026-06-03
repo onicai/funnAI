@@ -59,6 +59,7 @@ export interface ApiCanister {
     DailyMetricsResult
   >,
   'getDailyMetricsAdmin' : ActorMethod<[], DailyMetricsResult>,
+  'getDailyMetricsRunStatusAdmin' : ActorMethod<[], Result>,
   'getLatestDailyMetric' : ActorMethod<[], DailyMetricResult>,
   'getMasterCanisterId' : ActorMethod<[], AuthRecordResult>,
   'getNumDailyMetrics' : ActorMethod<[], NatResult>,
@@ -66,9 +67,22 @@ export interface ApiCanister {
    * / Get current open challenges from cache
    */
   'getOpenChallengesFromCache' : ActorMethod<[], ChallengesResult>,
+  'getPricingCacheAdmin' : ActorMethod<[], PricingCacheResult>,
+  'getShareServiceCanisterIdAdmin' : ActorMethod<[], AuthRecordResult>,
+  'getTokenIndexCanisterIdAdmin' : ActorMethod<[], AuthRecordResult>,
   'getTokenRewardsData' : ActorMethod<[], TokenRewardsDataResult>,
   'getTotalBurned' : ActorMethod<[], TotalBurnedResult>,
   'health' : ActorMethod<[], StatusCodeRecordResult>,
+  'previewDailyMetricsAggregationAdmin' : ActorMethod<[], DailyMetricResult>,
+  'previewIsoDateAdmin' : ActorMethod<[bigint], TextResult>,
+  'pricingTransform' : ActorMethod<
+    [{ 'context' : Uint8Array | number[], 'response' : http_request_result }],
+    http_request_result
+  >,
+  'pullShareServiceSnapshotAdmin' : ActorMethod<
+    [],
+    ShareAgentRegistryWithActivityResult
+  >,
   'resetDailyMetricsAdmin' : ActorMethod<[], NatResult>,
   'revokeAdminRole' : ActorMethod<[string], TextResult>,
   'setActivityFeedSyncIntervalAdmin' : ActorMethod<
@@ -76,11 +90,18 @@ export interface ApiCanister {
     StatusCodeRecordResult
   >,
   'setMasterCanisterId' : ActorMethod<[string], AuthRecordResult>,
+  'setShareServiceCanisterIdAdmin' : ActorMethod<[string], AuthRecordResult>,
+  'setTokenIndexCanisterIdAdmin' : ActorMethod<[string], AuthRecordResult>,
   'startActivityFeedTimerAdmin' : ActorMethod<[], AuthRecordResult>,
   'startBurnScanTimerAdmin' : ActorMethod<[], AuthRecordResult>,
+  'startDailyMetricsTimerAdmin' : ActorMethod<[], AuthRecordResult>,
+  'startPricingTimerAdmin' : ActorMethod<[], AuthRecordResult>,
   'stopActivityFeedTimerAdmin' : ActorMethod<[], AuthRecordResult>,
   'stopBurnScanTimerAdmin' : ActorMethod<[], AuthRecordResult>,
+  'stopDailyMetricsTimerAdmin' : ActorMethod<[], AuthRecordResult>,
+  'stopPricingTimerAdmin' : ActorMethod<[], AuthRecordResult>,
   'triggerBurnScanAdmin' : ActorMethod<[], AuthRecordResult>,
+  'triggerDailyMetricsAggregationAdmin' : ActorMethod<[], DailyMetricResult>,
   'updateDailyMetricAdmin' : ActorMethod<
     [UpdateDailyMetricAdminInput],
     DailyMetricResult
@@ -111,6 +132,15 @@ export interface CacheStatus {
 export type CacheStatusResult = { 'Ok' : CacheStatus } |
   { 'Err' : ApiError };
 export type CanisterAddress = string;
+export type CanisterStatus = { 'Paused' : null } |
+  { 'Paid' : null } |
+  { 'Unlocked' : null } |
+  { 'LlmSetupFinished' : null } |
+  { 'ControllerCreated' : null } |
+  { 'LlmSetupInProgress' : LlmSetupStatus } |
+  { 'Running' : null } |
+  { 'Other' : string } |
+  { 'ControllerCreationInProgress' : null };
 export interface Challenge {
   'challengeClosedTimestamp' : [] | [bigint],
   'challengeTopicStatus' : ChallengeTopicStatus,
@@ -178,6 +208,15 @@ export interface ChallengeWinnerReward {
 export type ChallengesResult = { 'Ok' : Array<Challenge> } |
   { 'Err' : ApiError };
 export interface CycleAmount { 'usd' : number, 'cycles' : bigint }
+export interface CyclesBurnRate {
+  'cycles' : bigint,
+  'timeInterval' : TimeInterval,
+}
+export type CyclesBurnRateDefault = { 'Low' : null } |
+  { 'Mid' : null } |
+  { 'VeryHigh' : null } |
+  { 'High' : null } |
+  { 'Custom' : CyclesBurnRate };
 export interface DailyBurnRate { 'usd' : number, 'cycles' : bigint }
 export interface DailyMetric {
   'derived_metrics' : DerivedMetrics,
@@ -252,6 +291,11 @@ export interface DailyMetricsResponse {
 }
 export type DailyMetricsResult = { 'Ok' : DailyMetricsResponse } |
   { 'Err' : ApiError };
+export interface DailyMetricsRunStatus {
+  'lastFailureMessage' : [] | [string],
+  'timerActive' : boolean,
+  'lastSuccessfulMetricDate' : [] | [string],
+}
 export interface DerivedMetrics {
   'avg_cycles_per_mainer' : number,
   'paused_percentage' : number,
@@ -264,6 +308,22 @@ export interface DerivedMetrics {
   },
   'burn_rate_per_active_mainer' : number,
   'active_percentage' : number,
+}
+export type LlmSetupStatus = { 'CodeInstallInProgress' : null } |
+  { 'CanisterCreated' : null } |
+  { 'ConfigurationInProgress' : null } |
+  { 'CanisterCreationInProgress' : null } |
+  { 'ModelUploadProgress' : number };
+export type MainerAgentCanisterType = { 'NA' : null } |
+  { 'Own' : null } |
+  { 'ShareAgent' : null } |
+  { 'ShareService' : null };
+export interface MainerConfigurationInput {
+  'selectedLLM' : [] | [SelectableMainerLLMs],
+  'subnetLlm' : string,
+  'mainerAgentCanisterType' : MainerAgentCanisterType,
+  'cyclesForMainer' : bigint,
+  'subnetCtrl' : string,
 }
 export interface MainersMetrics {
   'totals' : {
@@ -286,16 +346,57 @@ export interface MainersTierBreakdown {
 }
 export type NatResult = { 'Ok' : bigint } |
   { 'Err' : ApiError };
+export interface OfficialMainerAgentCanister {
+  'status' : CanisterStatus,
+  'canisterType' : ProtocolCanisterType,
+  'ownedBy' : Principal,
+  'creationTimestamp' : bigint,
+  'createdBy' : Principal,
+  'mainerConfig' : MainerConfigurationInput,
+  'subnet' : string,
+  'address' : CanisterAddress,
+}
 export interface PeriodInfo {
   'end_date' : string,
   'total_days' : bigint,
   'start_date' : string,
 }
+export interface PricingCache {
+  'xdrPermyriadPerIcp' : bigint,
+  'lastUpdatedNs' : bigint,
+  'icApiTcycleBurnRatePerDay' : number,
+  'usdPerComputedXdr' : number,
+}
+export type PricingCacheResult = { 'Ok' : PricingCache } |
+  { 'Err' : ApiError };
+export type ProtocolCanisterType = { 'MainerAgent' : MainerAgentCanisterType } |
+  { 'MainerLlm' : null } |
+  { 'Challenger' : null } |
+  { 'Judge' : null } |
+  { 'Verifier' : null } |
+  { 'MainerCreator' : null };
+export type Result = { 'Ok' : DailyMetricsRunStatus } |
+  { 'Err' : ApiError };
 export type RewardType = { 'ICP' : null } |
   { 'Coupon' : string } |
   { 'MainerToken' : null } |
   { 'Cycles' : null } |
   { 'Other' : string };
+export type SelectableMainerLLMs = { 'Qwen2_5_500M' : null };
+export interface ShareAgentActivity {
+  'cycleBalance' : bigint,
+  'cyclesBurnRate' : CyclesBurnRateDefault,
+  'address' : string,
+  'lastChallengeRequestTimestamp' : bigint,
+}
+export interface ShareAgentRegistryWithActivity {
+  'registry' : Array<OfficialMainerAgentCanister>,
+  'activity' : Array<ShareAgentActivity>,
+}
+export type ShareAgentRegistryWithActivityResult = {
+    'Ok' : ShareAgentRegistryWithActivity
+  } |
+  { 'Err' : ApiError };
 export type StatusCode = number;
 export interface StatusCodeRecord { 'status_code' : StatusCode }
 export type StatusCodeRecordResult = { 'Ok' : StatusCodeRecord } |
@@ -307,13 +408,7 @@ export interface SystemMetrics {
 }
 export type TextResult = { 'Ok' : string } |
   { 'Err' : ApiError };
-export interface TotalBurnedRecord {
-  'totalBurnedE8s' : bigint,
-  'lastScannedBlock' : bigint,
-  'lastScanTimestampNs' : bigint,
-}
-export type TotalBurnedResult = { 'Ok' : TotalBurnedRecord } |
-  { 'Err' : ApiError };
+export type TimeInterval = { 'Daily' : null };
 export interface TokenRewardsData {
   'metadata' : TokenRewardsMetadata,
   'data' : Array<TokenRewardsEntry>,
@@ -335,6 +430,13 @@ export interface TokenRewardsMetadata {
   'version' : string,
   'units' : { 'rewards_per_challenge' : string, 'total_minted' : string },
 }
+export interface TotalBurnedRecord {
+  'lastScanTimestampNs' : bigint,
+  'lastScannedBlock' : bigint,
+  'totalBurnedE8s' : bigint,
+}
+export type TotalBurnedResult = { 'Ok' : TotalBurnedRecord } |
+  { 'Err' : ApiError };
 export interface TotalCycles {
   'all' : CycleAmount,
   'protocol' : CycleAmount,
@@ -343,6 +445,12 @@ export interface TotalCycles {
 export interface UpdateDailyMetricAdminInput {
   'date' : string,
   'input' : DailyMetricUpdateInput,
+}
+export interface http_header { 'value' : string, 'name' : string }
+export interface http_request_result {
+  'status' : bigint,
+  'body' : Uint8Array | number[],
+  'headers' : Array<http_header>,
 }
 export interface _SERVICE extends ApiCanister {}
 export declare const idlFactory: IDL.InterfaceFactory;

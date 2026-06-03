@@ -244,8 +244,27 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : DailyMetricsResponse,
     'Err' : ApiError,
   });
+  const DailyMetricsRunStatus = IDL.Record({
+    'lastFailureMessage' : IDL.Opt(IDL.Text),
+    'timerActive' : IDL.Bool,
+    'lastSuccessfulMetricDate' : IDL.Opt(IDL.Text),
+  });
+  const Result = IDL.Variant({
+    'Ok' : DailyMetricsRunStatus,
+    'Err' : ApiError,
+  });
   const ChallengesResult = IDL.Variant({
     'Ok' : IDL.Vec(Challenge),
+    'Err' : ApiError,
+  });
+  const PricingCache = IDL.Record({
+    'xdrPermyriadPerIcp' : IDL.Nat64,
+    'lastUpdatedNs' : IDL.Nat64,
+    'icApiTcycleBurnRatePerDay' : IDL.Float64,
+    'usdPerComputedXdr' : IDL.Float64,
+  });
+  const PricingCacheResult = IDL.Variant({
+    'Ok' : PricingCache,
     'Err' : ApiError,
   });
   const TokenRewardsMetadata = IDL.Record({
@@ -274,12 +293,103 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : TokenRewardsData,
     'Err' : ApiError,
   });
+  const TotalBurnedRecord = IDL.Record({
+    'lastScanTimestampNs' : IDL.Nat64,
+    'lastScannedBlock' : IDL.Nat,
+    'totalBurnedE8s' : IDL.Nat,
+  });
+  const TotalBurnedResult = IDL.Variant({
+    'Ok' : TotalBurnedRecord,
+    'Err' : ApiError,
+  });
   const StatusCodeRecord = IDL.Record({ 'status_code' : StatusCode });
   const StatusCodeRecordResult = IDL.Variant({
     'Ok' : StatusCodeRecord,
     'Err' : ApiError,
   });
   const TextResult = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : ApiError });
+  const http_header = IDL.Record({ 'value' : IDL.Text, 'name' : IDL.Text });
+  const http_request_result = IDL.Record({
+    'status' : IDL.Nat,
+    'body' : IDL.Vec(IDL.Nat8),
+    'headers' : IDL.Vec(http_header),
+  });
+  const LlmSetupStatus = IDL.Variant({
+    'CodeInstallInProgress' : IDL.Null,
+    'CanisterCreated' : IDL.Null,
+    'ConfigurationInProgress' : IDL.Null,
+    'CanisterCreationInProgress' : IDL.Null,
+    'ModelUploadProgress' : IDL.Nat8,
+  });
+  const CanisterStatus = IDL.Variant({
+    'Paused' : IDL.Null,
+    'Paid' : IDL.Null,
+    'Unlocked' : IDL.Null,
+    'LlmSetupFinished' : IDL.Null,
+    'ControllerCreated' : IDL.Null,
+    'LlmSetupInProgress' : LlmSetupStatus,
+    'Running' : IDL.Null,
+    'Other' : IDL.Text,
+    'ControllerCreationInProgress' : IDL.Null,
+  });
+  const MainerAgentCanisterType = IDL.Variant({
+    'NA' : IDL.Null,
+    'Own' : IDL.Null,
+    'ShareAgent' : IDL.Null,
+    'ShareService' : IDL.Null,
+  });
+  const ProtocolCanisterType = IDL.Variant({
+    'MainerAgent' : MainerAgentCanisterType,
+    'MainerLlm' : IDL.Null,
+    'Challenger' : IDL.Null,
+    'Judge' : IDL.Null,
+    'Verifier' : IDL.Null,
+    'MainerCreator' : IDL.Null,
+  });
+  const SelectableMainerLLMs = IDL.Variant({ 'Qwen2_5_500M' : IDL.Null });
+  const MainerConfigurationInput = IDL.Record({
+    'selectedLLM' : IDL.Opt(SelectableMainerLLMs),
+    'subnetLlm' : IDL.Text,
+    'mainerAgentCanisterType' : MainerAgentCanisterType,
+    'cyclesForMainer' : IDL.Nat,
+    'subnetCtrl' : IDL.Text,
+  });
+  const OfficialMainerAgentCanister = IDL.Record({
+    'status' : CanisterStatus,
+    'canisterType' : ProtocolCanisterType,
+    'ownedBy' : IDL.Principal,
+    'creationTimestamp' : IDL.Nat64,
+    'createdBy' : IDL.Principal,
+    'mainerConfig' : MainerConfigurationInput,
+    'subnet' : IDL.Text,
+    'address' : CanisterAddress,
+  });
+  const TimeInterval = IDL.Variant({ 'Daily' : IDL.Null });
+  const CyclesBurnRate = IDL.Record({
+    'cycles' : IDL.Nat,
+    'timeInterval' : TimeInterval,
+  });
+  const CyclesBurnRateDefault = IDL.Variant({
+    'Low' : IDL.Null,
+    'Mid' : IDL.Null,
+    'VeryHigh' : IDL.Null,
+    'High' : IDL.Null,
+    'Custom' : CyclesBurnRate,
+  });
+  const ShareAgentActivity = IDL.Record({
+    'cycleBalance' : IDL.Nat,
+    'cyclesBurnRate' : CyclesBurnRateDefault,
+    'address' : IDL.Text,
+    'lastChallengeRequestTimestamp' : IDL.Nat64,
+  });
+  const ShareAgentRegistryWithActivity = IDL.Record({
+    'registry' : IDL.Vec(OfficialMainerAgentCanister),
+    'activity' : IDL.Vec(ShareAgentActivity),
+  });
+  const ShareAgentRegistryWithActivityResult = IDL.Variant({
+    'Ok' : ShareAgentRegistryWithActivity,
+    'Err' : ApiError,
+  });
   const DailyMetricUpdateInput = IDL.Record({
     'total_paused_mainers' : IDL.Opt(IDL.Nat),
     'total_cycles_all_usd' : IDL.Opt(IDL.Float64),
@@ -307,15 +417,6 @@ export const idlFactory = ({ IDL }) => {
   const UpdateDailyMetricAdminInput = IDL.Record({
     'date' : IDL.Text,
     'input' : DailyMetricUpdateInput,
-  });
-  const TotalBurnedRecord = IDL.Record({
-    'totalBurnedE8s' : IDL.Nat,
-    'lastScannedBlock' : IDL.Nat,
-    'lastScanTimestampNs' : IDL.Nat64,
-  });
-  const TotalBurnedResult = IDL.Variant({
-    'Ok' : TotalBurnedRecord,
-    'Err' : ApiError,
   });
   const ApiCanister = IDL.Service({
     'amiController' : IDL.Func([], [AuthRecordResult], ['query']),
@@ -354,13 +455,46 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getDailyMetricsAdmin' : IDL.Func([], [DailyMetricsResult], ['query']),
+    'getDailyMetricsRunStatusAdmin' : IDL.Func([], [Result], ['query']),
     'getLatestDailyMetric' : IDL.Func([], [DailyMetricResult], ['query']),
     'getMasterCanisterId' : IDL.Func([], [AuthRecordResult], ['query']),
     'getNumDailyMetrics' : IDL.Func([], [NatResult], ['query']),
     'getOpenChallengesFromCache' : IDL.Func([], [ChallengesResult], ['query']),
+    'getPricingCacheAdmin' : IDL.Func([], [PricingCacheResult], ['query']),
+    'getShareServiceCanisterIdAdmin' : IDL.Func(
+        [],
+        [AuthRecordResult],
+        ['query'],
+      ),
+    'getTokenIndexCanisterIdAdmin' : IDL.Func(
+        [],
+        [AuthRecordResult],
+        ['query'],
+      ),
     'getTokenRewardsData' : IDL.Func([], [TokenRewardsDataResult], ['query']),
     'getTotalBurned' : IDL.Func([], [TotalBurnedResult], ['query']),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
+    'previewDailyMetricsAggregationAdmin' : IDL.Func(
+        [],
+        [DailyMetricResult],
+        [],
+      ),
+    'previewIsoDateAdmin' : IDL.Func([IDL.Int], [TextResult], ['query']),
+    'pricingTransform' : IDL.Func(
+        [
+          IDL.Record({
+            'context' : IDL.Vec(IDL.Nat8),
+            'response' : http_request_result,
+          }),
+        ],
+        [http_request_result],
+        ['query'],
+      ),
+    'pullShareServiceSnapshotAdmin' : IDL.Func(
+        [],
+        [ShareAgentRegistryWithActivityResult],
+        [],
+      ),
     'resetDailyMetricsAdmin' : IDL.Func([], [NatResult], []),
     'revokeAdminRole' : IDL.Func([IDL.Text], [TextResult], []),
     'setActivityFeedSyncIntervalAdmin' : IDL.Func(
@@ -369,11 +503,30 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'setMasterCanisterId' : IDL.Func([IDL.Text], [AuthRecordResult], []),
+    'setShareServiceCanisterIdAdmin' : IDL.Func(
+        [IDL.Text],
+        [AuthRecordResult],
+        [],
+      ),
+    'setTokenIndexCanisterIdAdmin' : IDL.Func(
+        [IDL.Text],
+        [AuthRecordResult],
+        [],
+      ),
     'startActivityFeedTimerAdmin' : IDL.Func([], [AuthRecordResult], []),
     'startBurnScanTimerAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'startDailyMetricsTimerAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'startPricingTimerAdmin' : IDL.Func([], [AuthRecordResult], []),
     'stopActivityFeedTimerAdmin' : IDL.Func([], [AuthRecordResult], []),
     'stopBurnScanTimerAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'stopDailyMetricsTimerAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'stopPricingTimerAdmin' : IDL.Func([], [AuthRecordResult], []),
     'triggerBurnScanAdmin' : IDL.Func([], [AuthRecordResult], []),
+    'triggerDailyMetricsAggregationAdmin' : IDL.Func(
+        [],
+        [DailyMetricResult],
+        [],
+      ),
     'updateDailyMetricAdmin' : IDL.Func(
         [UpdateDailyMetricAdminInput],
         [DailyMetricResult],

@@ -1,3 +1,14 @@
+type http_request_result = 
+ record {
+   body: blob;
+   headers: vec http_header;
+   status: nat;
+ };
+type http_header = 
+ record {
+   name: text;
+   value: text;
+ };
 type UpdateDailyMetricAdminInput = 
  record {
    date: text;
@@ -8,6 +19,17 @@ type TotalCycles =
    all: CycleAmount;
    mainers: CycleAmount;
    protocol: CycleAmount;
+ };
+type TotalBurnedResult = 
+ variant {
+   Err: ApiError;
+   Ok: TotalBurnedRecord;
+ };
+type TotalBurnedRecord = 
+ record {
+   lastScanTimestampNs: nat64;
+   lastScannedBlock: nat;
+   totalBurnedE8s: nat;
  };
 type TokenRewardsMetadata = 
  record {
@@ -39,17 +61,7 @@ type TokenRewardsData =
    data: vec TokenRewardsEntry;
    metadata: TokenRewardsMetadata;
  };
-type TotalBurnedRecord = 
- record {
-   lastScannedBlock: nat;
-   lastScanTimestampNs: nat64;
-   totalBurnedE8s: nat;
- };
-type TotalBurnedResult = 
- variant {
-   Err: ApiError;
-   Ok: TotalBurnedRecord;
- };
+type TimeInterval = variant {Daily;};
 type TextResult = 
  variant {
    Err: ApiError;
@@ -68,6 +80,24 @@ type StatusCodeRecordResult =
  };
 type StatusCodeRecord = record {status_code: StatusCode;};
 type StatusCode = nat16;
+type ShareAgentRegistryWithActivityResult = 
+ variant {
+   Err: ApiError;
+   Ok: ShareAgentRegistryWithActivity;
+ };
+type ShareAgentRegistryWithActivity = 
+ record {
+   activity: vec ShareAgentActivity;
+   registry: vec OfficialMainerAgentCanister;
+ };
+type ShareAgentActivity = 
+ record {
+   address: text;
+   cycleBalance: nat;
+   cyclesBurnRate: CyclesBurnRateDefault;
+   lastChallengeRequestTimestamp: nat64;
+ };
+type SelectableMainerLLMs = variant {Qwen2_5_500M;};
 type RewardType = 
  variant {
    Coupon: text;
@@ -76,11 +106,48 @@ type RewardType =
    MainerToken;
    Other: text;
  };
+type Result = 
+ variant {
+   Err: ApiError;
+   Ok: DailyMetricsRunStatus;
+ };
+type ProtocolCanisterType = 
+ variant {
+   Challenger;
+   Judge;
+   MainerAgent: MainerAgentCanisterType;
+   MainerCreator;
+   MainerLlm;
+   Verifier;
+ };
+type PricingCacheResult = 
+ variant {
+   Err: ApiError;
+   Ok: PricingCache;
+ };
+type PricingCache = 
+ record {
+   icApiTcycleBurnRatePerDay: float64;
+   lastUpdatedNs: nat64;
+   usdPerComputedXdr: float64;
+   xdrPermyriadPerIcp: nat64;
+ };
 type PeriodInfo = 
  record {
    end_date: text;
    start_date: text;
    total_days: nat;
+ };
+type OfficialMainerAgentCanister = 
+ record {
+   address: CanisterAddress;
+   canisterType: ProtocolCanisterType;
+   createdBy: principal;
+   creationTimestamp: nat64;
+   mainerConfig: MainerConfigurationInput;
+   ownedBy: principal;
+   status: CanisterStatus;
+   subnet: text;
  };
 type NatResult = 
  variant {
@@ -109,6 +176,29 @@ type MainersMetrics =
              total_cycles: nat;
            };
  };
+type MainerConfigurationInput = 
+ record {
+   cyclesForMainer: nat;
+   mainerAgentCanisterType: MainerAgentCanisterType;
+   selectedLLM: opt SelectableMainerLLMs;
+   subnetCtrl: text;
+   subnetLlm: text;
+ };
+type MainerAgentCanisterType = 
+ variant {
+   NA;
+   Own;
+   ShareAgent;
+   ShareService;
+ };
+type LlmSetupStatus = 
+ variant {
+   CanisterCreated;
+   CanisterCreationInProgress;
+   CodeInstallInProgress;
+   ConfigurationInProgress;
+   ModelUploadProgress: nat8;
+ };
 type DerivedMetrics = 
  record {
    active_percentage: float64;
@@ -123,6 +213,12 @@ type DerivedMetrics =
       medium: float64;
       very_high: float64;
     };
+ };
+type DailyMetricsRunStatus = 
+ record {
+   lastFailureMessage: opt text;
+   lastSuccessfulMetricDate: opt text;
+   timerActive: bool;
  };
 type DailyMetricsResult = 
  variant {
@@ -214,6 +310,19 @@ type DailyBurnRate =
    cycles: nat;
    usd: float64;
  };
+type CyclesBurnRateDefault = 
+ variant {
+   Custom: CyclesBurnRate;
+   High;
+   Low;
+   Mid;
+   VeryHigh;
+ };
+type CyclesBurnRate = 
+ record {
+   cycles: nat;
+   timeInterval: TimeInterval;
+ };
 type CycleAmount = 
  record {
    cycles: nat;
@@ -301,6 +410,18 @@ type Challenge =
    mainerTemp: float64;
    protocolOperationFeesCut: nat;
  };
+type CanisterStatus = 
+ variant {
+   ControllerCreated;
+   ControllerCreationInProgress;
+   LlmSetupFinished;
+   LlmSetupInProgress: LlmSetupStatus;
+   Other: text;
+   Paid;
+   Paused;
+   Running;
+   Unlocked;
+ };
 type CanisterAddress = text;
 type CacheStatusResult = 
  variant {
@@ -354,24 +475,46 @@ type ApiCanister =
    getDailyMetrics: (dailyMetricsQuery: opt DailyMetricsQuery) ->
     (DailyMetricsResult) query;
    getDailyMetricsAdmin: () -> (DailyMetricsResult) query;
+   getDailyMetricsRunStatusAdmin: () -> (Result) query;
    getLatestDailyMetric: () -> (DailyMetricResult) query;
    getMasterCanisterId: () -> (AuthRecordResult) query;
    getNumDailyMetrics: () -> (NatResult) query;
    /// Get current open challenges from cache
    getOpenChallengesFromCache: () -> (ChallengesResult) query;
+   getPricingCacheAdmin: () -> (PricingCacheResult) query;
+   getShareServiceCanisterIdAdmin: () -> (AuthRecordResult) query;
+   getTokenIndexCanisterIdAdmin: () -> (AuthRecordResult) query;
    getTokenRewardsData: () -> (TokenRewardsDataResult) query;
    getTotalBurned: () -> (TotalBurnedResult) query;
    health: () -> (StatusCodeRecordResult) query;
+   previewDailyMetricsAggregationAdmin: () -> (DailyMetricResult);
+   previewIsoDateAdmin: (nanos: int) -> (TextResult) query;
+   pricingTransform: (args:
+    record {
+      context: blob;
+      response: http_request_result;
+    }) -> (http_request_result) query;
+   pullShareServiceSnapshotAdmin: () ->
+    (ShareAgentRegistryWithActivityResult);
    resetDailyMetricsAdmin: () -> (NatResult);
    revokeAdminRole: ("principal": text) -> (TextResult);
    setActivityFeedSyncIntervalAdmin: (_syncIntervalInSeconds: nat) ->
     (StatusCodeRecordResult);
    setMasterCanisterId: (newMasterCanisterId: text) -> (AuthRecordResult);
+   setShareServiceCanisterIdAdmin: (newShareServiceCanisterId: text) ->
+    (AuthRecordResult);
+   setTokenIndexCanisterIdAdmin: (newTokenIndexCanisterId: text) ->
+    (AuthRecordResult);
    startActivityFeedTimerAdmin: () -> (AuthRecordResult);
    startBurnScanTimerAdmin: () -> (AuthRecordResult);
+   startDailyMetricsTimerAdmin: () -> (AuthRecordResult);
+   startPricingTimerAdmin: () -> (AuthRecordResult);
    stopActivityFeedTimerAdmin: () -> (AuthRecordResult);
    stopBurnScanTimerAdmin: () -> (AuthRecordResult);
+   stopDailyMetricsTimerAdmin: () -> (AuthRecordResult);
+   stopPricingTimerAdmin: () -> (AuthRecordResult);
    triggerBurnScanAdmin: () -> (AuthRecordResult);
+   triggerDailyMetricsAggregationAdmin: () -> (DailyMetricResult);
    updateDailyMetricAdmin: (params: UpdateDailyMetricAdminInput) ->
     (DailyMetricResult);
    whoami: () -> (principal) query;

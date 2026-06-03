@@ -181,6 +181,12 @@ export type ChallengeTopicStatus = { 'Open' : null } |
   { 'Closed' : null } |
   { 'Archived' : null } |
   { 'Other' : string };
+export interface CycleBalanceRecord {
+  'cycleBalance' : bigint,
+  'officialCyclesBalance' : bigint,
+}
+export type CycleBalanceResult = { 'Ok' : CycleBalanceRecord } |
+  { 'Err' : ApiError };
 export interface CyclesBurnRate {
   'cycles' : bigint,
   'timeInterval' : TimeInterval,
@@ -222,7 +228,7 @@ export interface MainerAgentCtrlbCanister {
     StatusCodeRecordResult
   >,
   'addChallengeToShareServiceQueue' : ActorMethod<
-    [ChallengeQueueInput],
+    [ChallengeQueueInput, [] | [ShareAgentStatus]],
     ChallengeQueueInputResult
   >,
   'addCycles' : ActorMethod<[], AddCyclesResult>,
@@ -254,11 +260,16 @@ export interface MainerAgentCtrlbCanister {
   'getMainerCanisterType' : ActorMethod<[], MainerAgentCanisterTypeResult>,
   'getMainerStatisticsAdmin' : ActorMethod<[], StatisticsRetrievalResult>,
   'getMaintenanceFlag' : ActorMethod<[], FlagResult>,
+  'getOfficialCyclesBalanceAdmin' : ActorMethod<[], CycleBalanceResult>,
   'getRecentSubmittedResponsesAdmin' : ActorMethod<
     [],
     ChallengeResponseSubmissionsResult
   >,
   'getRoundRobinCanister' : ActorMethod<[], CanisterIDRecordResult>,
+  'getShareAgentRegistryWithActivityAdmin' : ActorMethod<
+    [],
+    ShareAgentRegistryWithActivityResult
+  >,
   'getShareServiceCanisterId' : ActorMethod<[], string>,
   'getSubmittedResponsesAdmin' : ActorMethod<
     [],
@@ -281,6 +292,10 @@ export interface MainerAgentCtrlbCanister {
   'resetRoundRobinLLMs' : ActorMethod<[], StatusCodeRecordResult>,
   'reset_llm_canisters' : ActorMethod<[], StatusCodeRecordResult>,
   'revokeAdminRole' : ActorMethod<[string], TextResult>,
+  'setActivityTimestampAdmin' : ActorMethod<
+    [string, bigint],
+    StatusCodeRecordResult
+  >,
   'setGameStateCanisterId' : ActorMethod<[string], StatusCodeRecordResult>,
   'setMainerCanisterType' : ActorMethod<
     [MainerAgentCanisterType],
@@ -371,6 +386,24 @@ export type ProtocolCanisterType = { 'MainerAgent' : MainerAgentCanisterType } |
   { 'Verifier' : null } |
   { 'MainerCreator' : null };
 export type SelectableMainerLLMs = { 'Qwen2_5_500M' : null };
+export interface ShareAgentActivity {
+  'cycleBalance' : bigint,
+  'cyclesBurnRate' : CyclesBurnRateDefault,
+  'address' : string,
+  'lastChallengeRequestTimestamp' : bigint,
+}
+export interface ShareAgentRegistryWithActivity {
+  'registry' : Array<OfficialMainerAgentCanister>,
+  'activity' : Array<ShareAgentActivity>,
+}
+export type ShareAgentRegistryWithActivityResult = {
+    'Ok' : ShareAgentRegistryWithActivity
+  } |
+  { 'Err' : ApiError };
+export interface ShareAgentStatus {
+  'cycleBalance' : bigint,
+  'cyclesBurnRate' : CyclesBurnRateDefault,
+}
 export interface StatisticsRecord {
   'cycleBalance' : bigint,
   'totalCyclesBurnt' : bigint,

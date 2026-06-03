@@ -96,6 +96,22 @@ export const idlFactory = ({ IDL }) => {
     'cyclesGenerateChallengeGsChctrl' : IDL.Nat,
     'cyclesGenerateResponseSsctrlGs' : IDL.Nat,
   });
+  const TimeInterval = IDL.Variant({ 'Daily' : IDL.Null });
+  const CyclesBurnRate = IDL.Record({
+    'cycles' : IDL.Nat,
+    'timeInterval' : TimeInterval,
+  });
+  const CyclesBurnRateDefault = IDL.Variant({
+    'Low' : IDL.Null,
+    'Mid' : IDL.Null,
+    'VeryHigh' : IDL.Null,
+    'High' : IDL.Null,
+    'Custom' : CyclesBurnRate,
+  });
+  const ShareAgentStatus = IDL.Record({
+    'cycleBalance' : IDL.Nat,
+    'cyclesBurnRate' : CyclesBurnRateDefault,
+  });
   const ChallengeQueueInputResult = IDL.Variant({
     'Ok' : ChallengeQueueInput,
     'Err' : ApiError,
@@ -187,18 +203,6 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : IDL.Vec(AdminRoleAssignment),
     'Err' : ApiError,
   });
-  const TimeInterval = IDL.Variant({ 'Daily' : IDL.Null });
-  const CyclesBurnRate = IDL.Record({
-    'cycles' : IDL.Nat,
-    'timeInterval' : TimeInterval,
-  });
-  const CyclesBurnRateDefault = IDL.Variant({
-    'Low' : IDL.Null,
-    'Mid' : IDL.Null,
-    'VeryHigh' : IDL.Null,
-    'High' : IDL.Null,
-    'Custom' : CyclesBurnRate,
-  });
   const MainerAgentSettings = IDL.Record({
     'creationTimestamp' : IDL.Nat64,
     'createdBy' : IDL.Principal,
@@ -259,6 +263,14 @@ export const idlFactory = ({ IDL }) => {
   });
   const FlagRecord = IDL.Record({ 'flag' : IDL.Bool });
   const FlagResult = IDL.Variant({ 'Ok' : FlagRecord, 'Err' : ApiError });
+  const CycleBalanceRecord = IDL.Record({
+    'cycleBalance' : IDL.Nat,
+    'officialCyclesBalance' : IDL.Nat,
+  });
+  const CycleBalanceResult = IDL.Variant({
+    'Ok' : CycleBalanceRecord,
+    'Err' : ApiError,
+  });
   const ChallengeResponseSubmissionStatus = IDL.Variant({
     'Judged' : IDL.Null,
     'FailedSubmission' : IDL.Null,
@@ -317,6 +329,20 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : CanisterIDRecord,
     'Err' : ApiError,
   });
+  const ShareAgentActivity = IDL.Record({
+    'cycleBalance' : IDL.Nat,
+    'cyclesBurnRate' : CyclesBurnRateDefault,
+    'address' : IDL.Text,
+    'lastChallengeRequestTimestamp' : IDL.Nat64,
+  });
+  const ShareAgentRegistryWithActivity = IDL.Record({
+    'registry' : IDL.Vec(OfficialMainerAgentCanister),
+    'activity' : IDL.Vec(ShareAgentActivity),
+  });
+  const ShareAgentRegistryWithActivityResult = IDL.Variant({
+    'Ok' : ShareAgentRegistryWithActivity,
+    'Err' : ApiError,
+  });
   const MainerTimers = IDL.Record({
     'action2RegularityInSeconds' : IDL.Nat,
     'action1RegularityInSeconds' : IDL.Nat,
@@ -356,7 +382,7 @@ export const idlFactory = ({ IDL }) => {
         [],
       ),
     'addChallengeToShareServiceQueue' : IDL.Func(
-        [ChallengeQueueInput],
+        [ChallengeQueueInput, IDL.Opt(ShareAgentStatus)],
         [ChallengeQueueInputResult],
         [],
       ),
@@ -424,12 +450,22 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getMaintenanceFlag' : IDL.Func([], [FlagResult], ['query']),
+    'getOfficialCyclesBalanceAdmin' : IDL.Func(
+        [],
+        [CycleBalanceResult],
+        ['query'],
+      ),
     'getRecentSubmittedResponsesAdmin' : IDL.Func(
         [],
         [ChallengeResponseSubmissionsResult],
         ['query'],
       ),
     'getRoundRobinCanister' : IDL.Func([], [CanisterIDRecordResult], ['query']),
+    'getShareAgentRegistryWithActivityAdmin' : IDL.Func(
+        [],
+        [ShareAgentRegistryWithActivityResult],
+        ['query'],
+      ),
     'getShareServiceCanisterId' : IDL.Func([], [IDL.Text], ['query']),
     'getSubmittedResponsesAdmin' : IDL.Func(
         [],
@@ -459,6 +495,11 @@ export const idlFactory = ({ IDL }) => {
     'resetRoundRobinLLMs' : IDL.Func([], [StatusCodeRecordResult], []),
     'reset_llm_canisters' : IDL.Func([], [StatusCodeRecordResult], []),
     'revokeAdminRole' : IDL.Func([IDL.Text], [TextResult], []),
+    'setActivityTimestampAdmin' : IDL.Func(
+        [IDL.Text, IDL.Nat64],
+        [StatusCodeRecordResult],
+        [],
+      ),
     'setGameStateCanisterId' : IDL.Func(
         [IDL.Text],
         [StatusCodeRecordResult],
