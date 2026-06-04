@@ -194,7 +194,7 @@
       </h3>
       {#if latestMetrics}
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Data from {new Date(latestMetrics.metadata.date).toLocaleDateString()}
+          Data from {new Date(latestMetrics.metadata.date + 'T00:00:00').toLocaleDateString()}
         </p>
       {/if}
     </div>
