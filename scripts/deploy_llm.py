@@ -233,11 +233,12 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         print(f"   7. Load model")
         print(f"   8. Set max_tokens (12/12)")
         print(f"   9. Pause logs and chats")
-        print(f"  10. Assign admin roles (4 principals)")
-        print(f"  11. Add log viewers (3 principals)")
+        print(f"  10. Assign admin roles (3 principals)")
+        print(f"  11. Add log viewers (2 principals)")
         print(f"  12. Test LLM (new_chat, run_update, remove_prompt_cache)")
         print(f"  13. Start prompt-cache cleanup timer")
-        print(f"  14. Update canister_ids.json")
+        print(f"  14. Start cycle-balance tracking timer")
+        print(f"  15. Update canister_ids.json")
         print("-" * 80)
         print("DRY RUN complete — nothing was changed.")
         return
@@ -431,14 +432,6 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         ]
         run_this_cmd(cmd, llm_cwd, confirm=False)
 
-        print(f"\n- Assigning admin role to funnai-django-aws-dev for {llm_name} ({canister_id})")
-        cmd = [
-            "dfx", "canister", "--network", network, "call", canister_id,
-            "assignAdminRole",
-            '(record { "principal" = "bzqba-mwz5i-rq3oz-iie6i-gf7bi-kqr2x-tjuq4-nblmh-ephou-n27tl-xqe"; role = variant { AdminUpdate }; note = "funnai-django-aws-dev" })',
-        ]
-        run_this_cmd(cmd, llm_cwd, confirm=False)
-
         print(f"\n- Assigning admin role to maintainer (Arjaan) for {llm_name} ({canister_id})")
         cmd = [
             "dfx", "canister", "--network", network, "call", canister_id,
@@ -460,7 +453,6 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         print(f"\n- Adding log viewers for {llm_name} ({canister_id})")
         cmd = [
             "dfx", "canister", "update-settings", canister_id,
-            "--add-log-viewer", "bzqba-mwz5i-rq3oz-iie6i-gf7bi-kqr2x-tjuq4-nblmh-ephou-n27tl-xqe",
             "--add-log-viewer", "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae",
             "--add-log-viewer", "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe",
             "--network", network,
@@ -504,6 +496,18 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         ]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Start prompt-cache cleanup timer")
+
+        # Cycle-balance tracking timer (llama_cpp_canister >= v0.11.0).
+        # In-memory only and NOT auto-armed on install/upgrade, so it must be
+        # started explicitly. Without it, get_cycle_balance returns an error
+        # instead of a cached balance.
+        print(f"\n- Starting cycle-balance tracking timer for {llm_name} ({canister_id})")
+        cmd = [
+            "dfx", "canister", "--network", network, "call", canister_id,
+            "cycle_balance_start_timer",
+        ]
+        run_this_cmd(cmd, llm_cwd, confirm=False)
+        completed_steps.append("Start cycle-balance tracking timer")
 
         # Update canister_ids.json
         print(f"\n- Updating canister_ids.json")
