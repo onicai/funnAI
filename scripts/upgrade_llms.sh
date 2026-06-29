@@ -3,6 +3,7 @@
 # Default network type is local
 NETWORK_TYPE="local"
 CANISTER_ID="all"
+DRY_RUN=""
 
 # Parse command line arguments for network type
 while [ $# -gt 0 ]; do
@@ -22,9 +23,13 @@ while [ $# -gt 0 ]; do
             CANISTER_ID=$1
             shift
             ;;
+        --dry-run)
+            DRY_RUN="--dry-run"
+            shift
+            ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --canister-id [CANISTER_ID/all]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --canister-id [CANISTER_ID/all] [--dry-run]"
             exit 1
             ;;
     esac
@@ -32,5 +37,8 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 echo "Using canister ID : $CANISTER_ID"
+if [ -n "$DRY_RUN" ]; then
+    echo "Dry-run          : enabled (no commands will be executed)"
+fi
 
-python -m scripts.upgrade_llms --network $NETWORK_TYPE --canister-id $CANISTER_ID
+python -m scripts.upgrade_llms --network $NETWORK_TYPE --canister-id $CANISTER_ID $DRY_RUN

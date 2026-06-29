@@ -1543,6 +1543,14 @@ If you want to do it all manually, follow these steps:
     dfx canister --network $NETWORK call $llm filesystem_remove '(record {filename = ".canister_cache"})'
     dfx canister --network $NETWORK call $llm recursive_dir_content_query  '(record {dir = ".canister_cache"; max_entries = 0 : nat64})' --output json
 
+    # Re-arm the in-memory timers (REQUIRED after every upgrade).
+    # Both timers are in-memory only and are NOT auto-armed on upgrade.
+    # (The upgrade_llms.sh / deploy_llm.sh scripts do this automatically.)
+    # - cache_cleanup_start_timer : recurring prompt-cache cleanup
+    # - cycle_balance_start_timer : recurring cycle-balance tracking
+    #   (llama_cpp_canister >= v0.11.0). Without it, get_cycle_balance errors.
+    dfx canister --network $NETWORK call $llm cache_cleanup_start_timer
+    dfx canister --network $NETWORK call $llm cycle_balance_start_timer
 ```
 
 
@@ -1563,7 +1571,7 @@ If you want to do it all manually, follow these steps:
 
 # Upgrade the mAIners
 
-> **dfx version note (2026-04-16):** the ShareAgent mAIners were last upgraded/reinstalled on 2026-04-16 with **dfx 0.31.0**. All other canisters (frontend, backend, and PoAIW protocol canisters) are still on **dfx 0.29.2** (pinned in `PoAIW/src/GameState/docker/docker-compose.yml`). Keep this mismatch in mind when regenerating declarations or reproducing wasm hashes — newer dfx versions emit different JS codegen (e.g. importing from `@icp-sdk/core/agent` instead of `@dfinity/agent`), which can break the frontend build if regenerated wholesale.
+> **dfx version note (2026-06-29):** the LLMs and ShareAgent mAIners now use **dfx 0.32.0** (pinned via `DFX_VERSION='0.32.0'` in each `PoAIW/llms/<x>/.env`); this is the version for the llama_cpp_canister v0.11.0 LLM upgrade. (They were previously on dfx 0.31.0 as of the 2026-04-16 mAIner upgrade/reinstall.) All other canisters (frontend, backend, and PoAIW protocol canisters) are still on **dfx 0.29.2** (pinned in `PoAIW/src/GameState/docker/docker-compose.yml`). Keep this mismatch in mind when regenerating declarations or reproducing wasm hashes — newer dfx versions emit different JS codegen (e.g. importing from `@icp-sdk/core/agent` instead of `@dfinity/agent`), which can break the frontend build if regenerated wholesale.
 >
 > **EOP migration block in `PoAIW/src/mAIner/src/Main.mo` — on-chain-daily-metric PR.**
 > ShareAgents and ShareService share the same source file, so the migration block applies to both, but their **deployed starting points differ**:

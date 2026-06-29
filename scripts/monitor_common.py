@@ -38,8 +38,11 @@ def get_balance(canister_id, network):
         print("Output:\n", e.output)
         return None
 
-def run_this_cmd(cmd, cwd, confirm=False):
+def run_this_cmd(cmd, cwd, confirm=False, dry_run=False):
     print(f"  {' '.join(cmd)} \n  -> from directory: {cwd}")
+    if dry_run:
+        print("  [DRY-RUN] command not executed.")
+        return
     if not confirm:
         subprocess.run(cmd, check=True,text=True, cwd=cwd)
     else:
