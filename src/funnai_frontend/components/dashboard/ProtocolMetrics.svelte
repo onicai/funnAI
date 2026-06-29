@@ -201,7 +201,7 @@
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
       <div class="text-center p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg">
         <div class="text-2xl font-bold text-pink-600 dark:text-pink-400">
-          88.51
+          73.21
         </div>
         <div class="text-sm text-gray-600 dark:text-gray-400">FUNNAI</div>
         <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Reward per challenge</div>
@@ -251,11 +251,11 @@
       
     <div class="text-center p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
       <div class="flex flex-col items-center space-y-2">
-        <div class="text-sm text-gray-500 dark:text-gray-500 mt-1">Jun 29th, 2026 at 12pm PT / 9pm CET</div>
+        <div class="text-sm text-gray-500 dark:text-gray-500 mt-1">Sept 29th, 2026 at 12pm PT / 9pm CET</div>
       
         <div class="text-xl font-bold text-red-600 dark:text-red-400 mt-4">
           <Countdown 
-            targetDate={new Date("2026-06-29T12:00:00-08:00")} 
+            targetDate={new Date("2026-09-29T12:00:00-08:00")} 
             format="detailed"
             className="text-red-600 dark:text-red-400"
           />
