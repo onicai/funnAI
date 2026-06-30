@@ -164,6 +164,13 @@ dfx canister --network $NETWORK call game_state_canister assignAdminRole '( reco
 
 # upgrade the Challenger
 
+> **After upgrade, re-arm both transient timers** (both are cleared by every
+> upgrade): `startTimerExecutionAdmin` (recurring action) and
+> `startSendCyclesTimerAdmin` (send-cycles drain). In a full-protocol upgrade
+> these are started in the batch sections near the end of this doc — see
+> `# start timers of protocol canisters` and
+> `# Cycle capping: start the send-cycles drain timers`.
+
 ```bash
 # Verify correct network & canister settings !
 echo $NETWORK
@@ -236,26 +243,12 @@ dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getAdminRoles
 
 # upgrade the ShareService
 
-> **One-shot EOP migration on the on-chain-daily-metric PR.** The ShareService
-> source carries a `(with migration = ...)` block at the top of
-> `PoAIW/src/mAIner/src/Main.mo` that bridges the deployed pre-#143 stable
-> shape to the new shape. It transparently:
-> 1. drops `officialCycleTopUpsStorage` and `generatedResponses` (PR #143),
-> 2. produces the new `let` constants
->    (`CHALLENGE_QUEUE_RESET_LENGTH_THRESHOLD`, `CHALLENGE_QUEUE_STALENESS_NANOS`,
->    `INSTALL_CODE_REFUND_BUFFER`, `MAX_SUBMITTED_RESPONSES`) and the new
->    `shareAgentActivityStorageStable` var so EOP doesn't trap looking for them
->    in old memory,
-> 3. re-casts `shareServiceCanisterActor` to its new actor type (the
->    `addChallengeToShareServiceQueue` method gained a trailing
->    `?ShareAgentStatus` parameter).
->
-> No operator action required — just run the normal `--mode upgrade` below.
->
-> **TODO:** after every network's ShareService has been upgraded past this PR
-> (i.e. once both prd and any other live ShareServices show the new wasm
-> hash), delete the migration block in `Main.mo`. It's idempotent — leaving
-> it in works but it's dead weight on subsequent upgrades.
+> **After upgrade, re-arm both transient timers** (both are cleared by every
+> upgrade): `startTimerExecutionAdmin` (recurring action) and
+> `startSendCyclesTimerAdmin` (send-cycles drain). In a full-protocol upgrade
+> these are started in the batch sections near the end of this doc — see
+> `# start timers of protocol canisters` and
+> `# Cycle capping: start the send-cycles drain timers`.
 
 ```bash
 # Verify correct network & canister settings !
@@ -394,6 +387,13 @@ dfx canister --network $NETWORK call $MAINER getMaintenanceFlag
 ```
 
 # upgrade the Judge
+
+> **After upgrade, re-arm both transient timers** (both are cleared by every
+> upgrade): `startTimerExecutionAdmin` (recurring action) and
+> `startSendCyclesTimerAdmin` (send-cycles drain). In a full-protocol upgrade
+> these are started in the batch sections near the end of this doc — see
+> `# start timers of protocol canisters` and
+> `# Cycle capping: start the send-cycles drain timers`.
 
 ```bash
 # Verify correct network & canister settings !
