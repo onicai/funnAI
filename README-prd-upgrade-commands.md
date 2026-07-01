@@ -2,8 +2,11 @@
 # Set NETWORK environment variable
 
 ```bash
-# The principal of funnAI Django running on aws-dev (same for all networks)
-FUNNAI_DJANGO_PRINCIPAL=bzqba-mwz5i-rq3oz-iie6i-gf7bi-kqr2x-tjuq4-nblmh-ephou-n27tl-xqe
+# Maintainer development principals (same for all networks). Needed for admin
+# access post-SNS, when the controller (isController) route belongs only to
+# NNS/SNS root and AdminRBAC is the remaining maintenance path.
+ARJAAN=chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
+PATRICK=cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe
 
 # One of these... (note: it does not work for 'demo')
 NETWORK=prd
@@ -147,15 +150,26 @@ dfx canister --network $NETWORK call game_state_canister setCyclesFlowAdmin '( r
 
 ## Update Admin RBAC for GameState
 
+Grant the maintainer principals `#AdminUpdate` so they keep admin access post-SNS.
+
 ```bash
-# verify funnAI_django principal has #AdminQuery permissions
+# verify which principals already have admin roles
 dfx canister --network $NETWORK call game_state_canister getAdminRoles
-dfx canister --network $NETWORK call game_state_canister assignAdminRole '( record { "principal" = "'$FUNNAI_DJANGO_PRINCIPAL'"; role = variant { AdminQuery }; note = "Grant AdminQuery access for funnai-django" } )'
-# if needed, this is how you revoke permissions for the previous principal
-dfx canister --network $NETWORK call game_state_canister revokeAdminRole '( "'$FUNNAI_DJANGO_PRINCIPAL'")'
+# grant #AdminUpdate to the maintainer principals (arjaan, patrick)
+dfx canister --network $NETWORK call game_state_canister assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
+dfx canister --network $NETWORK call game_state_canister assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# if needed, this is how you revoke permissions for a principal
+# dfx canister --network $NETWORK call game_state_canister revokeAdminRole '( "'$ARJAAN'")'
 ```
 
 # upgrade the Challenger
+
+> **After upgrade, re-arm both transient timers** (both are cleared by every
+> upgrade): `startTimerExecutionAdmin` (recurring action) and
+> `startSendCyclesTimerAdmin` (send-cycles drain). In a full-protocol upgrade
+> these are started in the batch sections near the end of this doc — see
+> `# start timers of protocol canisters` and
+> `# Cycle capping: start the send-cycles drain timers`.
 
 ```bash
 # Verify correct network & canister settings !
@@ -209,28 +223,32 @@ dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    get_llm_canisters
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getTimerActionRegularityInSecondsAdmin
 ```
 
+## Update Admin RBAC for Challenger
+
+Grant the maintainer principals `#AdminUpdate` so they retain admin access
+post-SNS (after decentralization the `isController` path belongs only to
+NNS/SNS root). One-time per network — the role assignment persists across upgrades.
+
+```bash
+# verify which principals already have admin roles
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getAdminRoles
+# grant #AdminUpdate to the maintainer principals (arjaan, patrick)
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# verify
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getAdminRoles
+# if needed, revoke
+# dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER revokeAdminRole '( "'$ARJAAN'")'
+```
+
 # upgrade the ShareService
 
-> **One-shot EOP migration on the on-chain-daily-metric PR.** The ShareService
-> source carries a `(with migration = ...)` block at the top of
-> `PoAIW/src/mAIner/src/Main.mo` that bridges the deployed pre-#143 stable
-> shape to the new shape. It transparently:
-> 1. drops `officialCycleTopUpsStorage` and `generatedResponses` (PR #143),
-> 2. produces the new `let` constants
->    (`CHALLENGE_QUEUE_RESET_LENGTH_THRESHOLD`, `CHALLENGE_QUEUE_STALENESS_NANOS`,
->    `INSTALL_CODE_REFUND_BUFFER`, `MAX_SUBMITTED_RESPONSES`) and the new
->    `shareAgentActivityStorageStable` var so EOP doesn't trap looking for them
->    in old memory,
-> 3. re-casts `shareServiceCanisterActor` to its new actor type (the
->    `addChallengeToShareServiceQueue` method gained a trailing
->    `?ShareAgentStatus` parameter).
->
-> No operator action required — just run the normal `--mode upgrade` below.
->
-> **TODO:** after every network's ShareService has been upgraded past this PR
-> (i.e. once both prd and any other live ShareServices show the new wasm
-> hash), delete the migration block in `Main.mo`. It's idempotent — leaving
-> it in works but it's dead weight on subsequent upgrades.
+> **After upgrade, re-arm both transient timers** (both are cleared by every
+> upgrade): `startTimerExecutionAdmin` (recurring action) and
+> `startSendCyclesTimerAdmin` (send-cycles drain). In a full-protocol upgrade
+> these are started in the batch sections near the end of this doc — see
+> `# start timers of protocol canisters` and
+> `# Cycle capping: start the send-cycles drain timers`.
 
 ```bash
 # Verify correct network & canister settings !
@@ -289,6 +307,10 @@ dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getAdminRoles
 # grant #AdminQuery to the Api canister
 echo "$SUBNET_0_2_API"
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$SUBNET_0_2_API'"; role = variant { AdminQuery }; note = "Daily metrics pull from Api canister" } )'
+
+# grant #AdminUpdate to the maintainer principals (arjaan, patrick) for maintenance (post-SNS)
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
 
 # verify
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getAdminRoles
@@ -366,6 +388,13 @@ dfx canister --network $NETWORK call $MAINER getMaintenanceFlag
 
 # upgrade the Judge
 
+> **After upgrade, re-arm both transient timers** (both are cleared by every
+> upgrade): `startTimerExecutionAdmin` (recurring action) and
+> `startSendCyclesTimerAdmin` (send-cycles drain). In a full-protocol upgrade
+> these are started in the batch sections near the end of this doc — see
+> `# start timers of protocol canisters` and
+> `# Cycle capping: start the send-cycles drain timers`.
+
 ```bash
 # Verify correct network & canister settings !
 echo $NETWORK
@@ -420,6 +449,24 @@ dfx canister --network $NETWORK call   $SUBNET_0_1_JUDGE resetIsProcessingSubmis
 
 # Verify registered LLMs
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --output json
+```
+
+## Update Admin RBAC for Judge
+
+Grant the maintainer principals `#AdminUpdate` so they retain admin access
+post-SNS (after decentralization the `isController` path belongs only to
+NNS/SNS root). One-time per network — the role assignment persists across upgrades.
+
+```bash
+# verify which principals already have admin roles
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE getAdminRoles
+# grant #AdminUpdate to the maintainer principals (arjaan, patrick)
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# verify
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE getAdminRoles
+# if needed, revoke
+# dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE revokeAdminRole '( "'$ARJAAN'")'
 ```
 
 # upgrade the API canister
@@ -495,11 +542,13 @@ dfx canister --network $NETWORK call $SUBNET_0_2_API getOpenChallengesFromCache 
 ## Update Admin RBAC for API canister
 
 ```bash
-# verify funnAI_django principal has #AdminUpdate permissions
+# verify which principals already have admin roles
 dfx canister --network $NETWORK call $SUBNET_0_2_API getAdminRoles
-dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$FUNNAI_DJANGO_PRINCIPAL'"; role = variant { AdminUpdate }; note = "Grant AdminUpdate access for funnai-django" } )'
-# if needed, this is how you revoke permissions for the previous principal
-dfx canister --network $NETWORK call SUBNET_0_2_API revokeAdminRole '( "'$FUNNAI_DJANGO_PRINCIPAL'")'
+# grant #AdminUpdate to the maintainer principals (arjaan, patrick)
+dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
+dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# if needed, this is how you revoke permissions for a principal
+# dfx canister --network $NETWORK call $SUBNET_0_2_API revokeAdminRole '( "'$ARJAAN'")'
 ```
 
 ## On-chain Daily Metrics setup for the API canister
@@ -990,6 +1039,46 @@ dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    startTimerExecuti
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER setTimerActionRegularityInSecondsAdmin '(420)'
 ```
 
+# Cycle capping: start the send-cycles drain timers
+
+Each controller (Challenger, ShareService, Judge) has a recurring **send-cycles
+timer** that drains excess cycles down to GameState via the existing fixed-chunk
+`sendCyclesToGameStateCanister` logic. The timer is **transient (in-memory) and
+does NOT survive an upgrade** — re-arm it after every controller upgrade.
+
+```bash
+# From folder: funnAI  (run after upgrading each controller)
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    startSendCyclesTimerAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE startSendCyclesTimerAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         startSendCyclesTimerAdmin
+
+# Period defaults to 3600s (1 hour). To change (per controller):
+# dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER setSendCyclesPeriodInSecondsAdmin '(3600)'
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    getSendCyclesPeriodInSecondsAdmin
+
+# To stop a drain timer:
+# dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER stopSendCyclesTimerAdmin
+```
+
+The drain keeps `MIN_CYCLES_BALANCE` (30T default) and sends the fixed
+`CYCLES_AMOUNT_TO_GAME_STATE_CANISTER` (10T default) per tick when the balance
+allows. Both are admin-tunable via the existing
+`setMinCyclesBalanceAdmin` / `setCyclesToSendToGameStateAdmin` (now also on the
+ShareService/mAIner canister).
+
+## LLM cycles cap
+
+Each controller also skips funding its LLM when the LLM's cached cycle balance
+(read via the v0.11.0 `get_cycle_balance` query) is above the **same
+`MIN_CYCLES_BALANCE`** threshold — there is no separate LLM-cap endpoint.
+Fail-open: if the balance can't be read, it funds anyway. Tune via
+`setMinCyclesBalanceAdmin` (≥20T guard).
+
+> **mAIner / ShareService note:** the LLM cap and the send-cycles drain are
+> active **only on the `#ShareService` role**; `#Own`/`#ShareAgent` mAIners are
+> unaffected. The ShareService admin endpoints are role-gated (`#AdminUpdate`),
+> not controller-gated.
+
 # Add a `release-#` tag to PoAIW git repo
 
 Once deployed and confirmed it is OK, apply a tag:
@@ -1278,8 +1367,6 @@ The script will:
 4. Update GameState via `setCyclesFlowAdmin` (`numChallengerLlms` / `numJudgeLlms` / `numShareServiceLlms`)
 
 **Manual step after add_llm.sh:**
-- Register the new canister in funnAI_django's `CanisterRegistry`
-  Required for cache cleanup tasks to include the new LLM.
 - Register the canister with CycleOps (adds controller `2daxo-giaaa-aaaap-anvca-cai`)
 - Record the new subnet (if new) in the tracking spreadsheet:
   https://docs.google.com/spreadsheets/d/1KeyylEYVs3cQvYXOc9RS0q5eWd_vWIW1UVycfDEIkBk/edit?gid=0#gid=0
@@ -1329,12 +1416,6 @@ The script will:
     dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numJudgeLlms = opt ($NUM_LLMS_DEPLOYED : nat);})"
 ```
 
-**Manual step after adding:**
-- Register the new canister in funnAI_django's `CanisterRegistry`
-  (see `funnAI_django/src/apps/canisters/management/commands/import_canister_ids.py`).
-  Required for cache cleanup tasks to include the new LLM.
-
-
 ## Delete an LLM
 
 ### Using script (recommended)
@@ -1360,11 +1441,6 @@ The script will:
 5. Remove entry from `canister_ids.json`
 6. Remove entry from `canister_ids-{network}.env`
 
-**Manual step after delete_llm.sh:**
-- Remove the LLM canister from funnAI_django's `CanisterRegistry`
-  (see `funnAI_django/src/apps/canisters/management/commands/import_canister_ids.py`).
-  Required so cache cleanup tasks stop referencing the deleted canister.
-
 ### Manually using dfx commands
 
 ```bash
@@ -1389,7 +1465,6 @@ The script will:
     # Manually clean up:
     # - Remove entry from canister_ids.json in the LLM directory
     # - Remove entry from funnAI/scripts/canister_ids-{network}.env
-    # - Remove from funnAI_django CanisterRegistry
 ```
 
 
@@ -1408,8 +1483,6 @@ scripts/deploy_llm.sh --network $NETWORK --llm-type <challenger|judge|share_serv
 scripts/add_llm.sh --network $NETWORK --canister-id <new-canister-id>
 
 # 4. Manual steps:
-#    - Remove old canister from funnAI_django CanisterRegistry
-#    - Register new canister in funnAI_django CanisterRegistry
 #    - Register new canister with CycleOps
 ```
 
@@ -1426,7 +1499,8 @@ scripts/add_llm.sh --network $NETWORK --canister-id <new-canister-id>
 
 ## Using a daily task
 
-The cleaning of the LLMs is now done automatically via a periodic task in funnAI_django.
+The cleaning of the LLMs is now done automatically on-chain by each LLM canister's
+recurring prompt-cache cleanup timer (`cache_cleanup_start_timer`, armed after every upgrade).
 
 ## Manually, while the LLM is still online
 
@@ -1664,22 +1738,25 @@ scripts/upgrade_mainers.sh --network $NETWORK --target-hash $TARGET_HASH [--dry-
 #### Using script
 
 ```bash
-# To assign permissions
-scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $FUNNAI_DJANGO_PRINCIPAL [--action assign] [--dry-run]
+# To assign permissions (run for each maintainer principal)
+scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $ARJAAN [--action assign] [--dry-run]
+scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $PATRICK [--action assign] [--dry-run]
 
 # To revoke permissions
-scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $FUNNAI_DJANGO_PRINCIPAL --action revoke [--dry-run]
+scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $ARJAAN --action revoke [--dry-run]
 ```
 
 #### Manual
 
 ```bash
 MAINER=...
-# verify funnAI_django principal has #AdminQuery permissions
+# verify which principals already have admin roles
 dfx canister --network $NETWORK call $MAINER getAdminRoles
-dfx canister --network $NETWORK call $MAINER assignAdminRole '( record { "principal" = "'$FUNNAI_DJANGO_PRINCIPAL'"; role = variant { AdminQuery }; note = "Grant AdminQuery access for funnai-django" } )'
-# if needed, this is how you revoke permissions for the previous principal
-dfx canister --network $MAINER revokeAdminRole '( "'$FUNNAI_DJANGO_PRINCIPAL'")'
+# grant #AdminUpdate to the maintainer principals (arjaan, patrick)
+dfx canister --network $NETWORK call $MAINER assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
+dfx canister --network $NETWORK call $MAINER assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# if needed, this is how you revoke permissions for a principal
+# dfx canister --network $NETWORK call $MAINER revokeAdminRole '( "'$ARJAAN'")'
 ```
 
 ### Verify mAIners Health & Hash
