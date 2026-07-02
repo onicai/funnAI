@@ -37,4 +37,4 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 
-python -m scripts.monitor_balance --network $NETWORK_TYPE --canister-types $CANISTER_TYPES
+python -m scripts.monitor_balance --network $NETWORK_TYPE --canister-types $CANISTER_TYPES --interval-seconds 3600

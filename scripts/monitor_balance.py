@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
-def main(network, canister_types):
+def main(network, canister_types, interval_seconds):
     (CANISTERS, CANISTER_COLORS, RESET_COLOR) = get_canisters(network, canister_types)
 
     # Log directory (also relative to script location)
@@ -33,7 +33,7 @@ def main(network, canister_types):
     balances = {name: None for name in CANISTERS.keys()} 
     initial_balances = {name: None for name in CANISTERS.keys()} 
     max_name_length = max(len(name) for name in CANISTERS.keys())
-    delay = 24 * 60 * 60  # 24 hours
+    delay = interval_seconds
     first = True
     while True:
         total_cycles = 0
@@ -88,5 +88,11 @@ if __name__ == "__main__":
         default="protocol",
         help="Specify the network to use (default: local)",
     )
+    parser.add_argument(
+        "--interval-seconds",
+        type=int,
+        default=24 * 60 * 60,
+        help="Seconds between balance checks (default: 86400 = 24 hours)",
+    )
     args = parser.parse_args()
-    main(args.network, args.canister_types)
+    main(args.network, args.canister_types, args.interval_seconds)
