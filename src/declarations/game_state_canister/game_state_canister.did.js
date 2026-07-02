@@ -1157,6 +1157,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getArchivedChallengesAdmin' : IDL.Func([], [ChallengesResult], ['query']),
     'getAvailableMainers' : IDL.Func([], [NatResult], ['query']),
+    'getBonusCyclesTopupInPercent' : IDL.Func([], [NatResult], ['query']),
     'getBufferMainerCreation' : IDL.Func([], [NatResult], ['query']),
     'getCanisterPrincipal' : IDL.Func([], [IDL.Text], ['query']),
     'getClosedChallengesAdmin' : IDL.Func([], [ChallengesResult], ['query']),
@@ -1522,6 +1523,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'setAuctionPricesAdmin' : IDL.Func(
         [IDL.Vec(IDL.Nat64)],
+        [AuthRecordResult],
+        [],
+      ),
+    'setBonusCyclesTopupInPercent' : IDL.Func(
+        [IDL.Nat],
         [AuthRecordResult],
         [],
       ),

@@ -102,6 +102,10 @@
   // FUNNAI limits - loaded dynamically from backend
   let funnaiMaxAmount: number = 0;
   let isLoadingFunnaiLimits: boolean = false;
+
+  // Top-up bonus percent for non-FUNNAI tokens (loaded from backend)
+  let bonusCyclesTopupInPercent: number = 10;
+  let isLoadingBonusPercent: boolean = false;
   
   // FUNNAI constants
   const FUNNAI_MIN_CYCLES = new BigNumber("1000000000000"); // 1T cycles (hardcoded)
@@ -182,14 +186,16 @@
     ? BigInt(new BigNumber(amount).times(new BigNumber(10).pow(selectedToken.decimals)).toString())
     : BigInt(0);
   $: hasEnoughBalance = isValidAmount && balance >= (amountBigInt + tokenFee);
+  $: showTopupBonus = selectedTokenSymbol !== 'FUNNAI' && bonusCyclesTopupInPercent > 0;
+  $: bonusMultiplier = 1 + bonusCyclesTopupInPercent / 100;
   $: isFunnaiUnavailable = selectedTokenSymbol === 'FUNNAI' && (!conversionRate || conversionRate.isZero() || currentMaxAmount === 0);
   $: canSubmit = hasEnoughBalance && !isValidating && selectedToken && !isFunnaiUnavailable;
   $: if (selectedToken) {
     tokenFee = BigInt(selectedToken.fee_fixed);
   }
   
-  // Reactive statement to automatically calculate cycles when amount, conversion rate, or token changes
-  $: if (conversionRate && amount && selectedToken) {
+  // Reactive statement to automatically calculate cycles when amount, conversion rate, bonus, or token changes
+  $: if (conversionRate && amount && selectedToken && bonusCyclesTopupInPercent >= 0) {
     calculateCycles();
   }
   
@@ -227,6 +233,32 @@
       };
     } catch (error) {
       console.error("Error loading balance: ", error);
+    }
+  }
+
+  // Function to load top-up bonus percent from backend
+  async function loadBonusCyclesTopupPercent() {
+    isLoadingBonusPercent = true;
+
+    try {
+      if (!$store.gameStateCanisterActor) {
+        throw new Error("Game state canister not available");
+      }
+
+      const bonusResult = await $store.gameStateCanisterActor.getBonusCyclesTopupInPercent();
+
+      if (bonusResult && 'Ok' in bonusResult) {
+        bonusCyclesTopupInPercent = Number(bonusResult.Ok);
+        console.log("Top-up bonus percent loaded from backend:", bonusCyclesTopupInPercent, "%");
+      } else {
+        console.warn("Failed to load top-up bonus percent, using default 10%");
+        bonusCyclesTopupInPercent = 10;
+      }
+    } catch (error) {
+      console.error("Error loading top-up bonus percent:", error);
+      bonusCyclesTopupInPercent = 10;
+    } finally {
+      isLoadingBonusPercent = false;
     }
   }
 
@@ -453,10 +485,12 @@
       const smallestUnitToCycleRatio = conversionRate.div(E8S_PER_TOKEN);
       
       // Calculate cycles
-      const cycles = smallestUnitAmount.times(smallestUnitToCycleRatio);
-      
-      // Validate cycles amount doesn't exceed limits
-      const cyclesTrillion = cycles.div(new BigNumber("1000000000000"));
+      let cycles = smallestUnitAmount.times(smallestUnitToCycleRatio);
+
+      // Apply protocol top-up bonus for non-FUNNAI tokens
+      if (selectedTokenSymbol !== 'FUNNAI' && bonusCyclesTopupInPercent > 0) {
+        cycles = cycles.times(bonusMultiplier);
+      }
       
       // Use formatLargeNumber to format trillions
       cyclesAmount = formatLargeNumber(cycles.toNumber() / 1_000_000_000_000, 4, false);
@@ -741,6 +775,7 @@
     await loadTokenData();
     loadBalance();
     loadConversionRate();
+    loadBonusCyclesTopupPercent();
   });
 </script>
 
@@ -778,6 +813,9 @@
               <div class="flex flex-col min-w-0 flex-1 text-left">
                 <div class="font-medium text-xs truncate">{token.symbol}</div>
                 <div class="text-xs opacity-60 truncate">{token.name}</div>
+                {#if token.symbol !== 'FUNNAI' && bonusCyclesTopupInPercent > 0}
+                  <div class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 truncate">+{bonusCyclesTopupInPercent}% bonus</div>
+                {/if}
               </div>
               {#if selectedToken?.symbol === token.symbol}
                 <Check size={14} class="text-purple-600 dark:text-purple-400 flex-shrink-0" />
@@ -859,6 +897,9 @@
           </div>
           <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
             Protocol fees included
+            {#if showTopupBonus}
+              <span class="text-emerald-600 dark:text-emerald-400"> · +{bonusCyclesTopupInPercent}% bonus cycles included</span>
+            {/if}
           </div>
           {#if isBelowMinimum}
             <div class="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
@@ -893,6 +934,11 @@
               <span class="truncate">{amount || '0'} {selectedToken?.symbol || 'Token'}</span>
               <span class="font-medium text-right flex-shrink-0">≈ {cyclesAmount} Trillion Cycles</span>
             </div>
+            {#if showTopupBonus}
+              <div class="text-emerald-700 dark:text-emerald-300 text-xs">
+                Includes +{bonusCyclesTopupInPercent}% bonus cycles on {selectedToken?.symbol || 'token'} top-ups
+              </div>
+            {/if}
           {:else}
             <div class="text-blue-600/70 dark:text-blue-300/70">Loading conversion rate...</div>
           {/if}

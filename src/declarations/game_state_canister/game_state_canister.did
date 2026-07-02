@@ -644,6 +644,7 @@ type GameStateCanister =
    getAllMainerAgentsAdmin: () -> (MainerAgentCanistersResult) query;
    getArchivedChallengesAdmin: () -> (ChallengesResult) query;
    getAvailableMainers: () -> (NatResult) query;
+   getBonusCyclesTopupInPercent: () -> (NatResult) query;
    getBufferMainerCreation: () -> (NatResult) query;
    getCanisterPrincipal: () -> (text) query;
    getClosedChallengesAdmin: () -> (ChallengesResult) query;
@@ -799,6 +800,7 @@ type GameStateCanister =
    setArchiveCanisterId: (archive_canister_id: text) -> (AuthRecordResult);
    setAuctionIntervalSecondsAdmin: (interval: nat) -> (AuthRecordResult);
    setAuctionPricesAdmin: (pricesInOrder: vec nat64) -> (AuthRecordResult);
+   setBonusCyclesTopupInPercent: (newPercent: nat) -> (AuthRecordResult);
    setBufferMainerCreation: (newBuffer: nat) -> (AuthRecordResult);
    setCyclesBalanceThresholdFunnaiTopups: (newThresholdInTrillionCycles:
     nat) -> (AuthRecordResult);
