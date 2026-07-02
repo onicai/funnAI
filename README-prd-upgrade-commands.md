@@ -1066,6 +1066,43 @@ allows. Both are admin-tunable via the existing
 `setMinCyclesBalanceAdmin` / `setCyclesToSendToGameStateAdmin` (now also on the
 ShareService/mAIner canister).
 
+## Cycle capping: verify the drain thresholds
+
+The drain only fires when `balance >= CYCLES_AMOUNT_TO_GAME_STATE_CANISTER +
+MIN_CYCLES_BALANCE` (send chunk + keep floor). The intended prd values are the
+code defaults: **30T floor / 10T chunk** (drains when balance >= 40T). If they
+are set higher than the controller's steady-state balance, the drain will never
+fire and the log shows `#Ok({added = false; amount = 0})` on every tick.
+
+Verify (all three controllers):
+
+```bash
+# From folder: funnAI  (prd)
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    getMinCyclesBalanceAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    getCyclesToSendToGameStateAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getMinCyclesBalanceAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getCyclesToSendToGameStateAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         getMinCyclesBalanceAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         getCyclesToSendToGameStateAdmin
+```
+
+Each `getMinCyclesBalanceAdmin` should return `30_000_000_000_000` and each
+`getCyclesToSendToGameStateAdmin` should return `10_000_000_000_000`. Fix any
+that differ:
+
+```bash
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    setMinCyclesBalanceAdmin        '(30_000_000_000_000)'
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    setCyclesToSendToGameStateAdmin '(10_000_000_000_000)'
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE setMinCyclesBalanceAdmin        '(30_000_000_000_000)'
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE setCyclesToSendToGameStateAdmin '(10_000_000_000_000)'
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         setMinCyclesBalanceAdmin        '(30_000_000_000_000)'
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         setCyclesToSendToGameStateAdmin '(10_000_000_000_000)'
+```
+
+Note: `MIN_CYCLES_BALANCE` also sets the LLM funding cap (LLMs are topped up only
+when below this threshold), so keep it at 30T for both purposes. These are stable
+vars and survive upgrades — only re-check them if you suspect they were changed.
+
 ## LLM cycles cap
 
 Each controller also skips funding its LLM when the LLM's cached cycle balance
