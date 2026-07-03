@@ -104,7 +104,7 @@
   let isLoadingFunnaiLimits: boolean = false;
 
   // Top-up bonus percent for non-FUNNAI tokens (loaded from backend)
-  let bonusCyclesTopupInPercent: number = 10;
+  let bonusCyclesTopupInPercent: number = 0;
   let isLoadingBonusPercent: boolean = false;
   
   // FUNNAI constants
@@ -251,12 +251,12 @@
         bonusCyclesTopupInPercent = Number(bonusResult.Ok);
         console.log("Top-up bonus percent loaded from backend:", bonusCyclesTopupInPercent, "%");
       } else {
-        console.warn("Failed to load top-up bonus percent, using default 10%");
-        bonusCyclesTopupInPercent = 10;
+        console.warn("Failed to load top-up bonus percent, using default 0%");
+        bonusCyclesTopupInPercent = 0;
       }
     } catch (error) {
       console.error("Error loading top-up bonus percent:", error);
-      bonusCyclesTopupInPercent = 10;
+      bonusCyclesTopupInPercent = 0;
     } finally {
       isLoadingBonusPercent = false;
     }
