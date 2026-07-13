@@ -9,6 +9,7 @@
   import BigNumber from "bignumber.js";
   import { formatBalance, formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
   import { fetchTokens, protocolConfig } from "../../helpers/token_helpers";
+  import { getBonusCyclesTopupInPercent } from "../../helpers/gameState";
   import { createAnonymousActorHelper } from "../../helpers/utils/actorUtils";
   import { MIN_AMOUNT, MAX_AMOUNT, CELEBRATION_DURATION, CELEBRATION_ENABLED } from "../../helpers/config/topUpConfig";
   import { getIsProtocolActive } from "../../helpers/gameState";
@@ -241,18 +242,9 @@
     isLoadingBonusPercent = true;
 
     try {
-      if (!$store.gameStateCanisterActor) {
-        throw new Error("Game state canister not available");
-      }
-
-      const bonusResult = await $store.gameStateCanisterActor.getBonusCyclesTopupInPercent();
-
-      if (bonusResult && 'Ok' in bonusResult) {
-        bonusCyclesTopupInPercent = Number(bonusResult.Ok);
+      bonusCyclesTopupInPercent = await getBonusCyclesTopupInPercent();
+      if (bonusCyclesTopupInPercent > 0) {
         console.log("Top-up bonus percent loaded from backend:", bonusCyclesTopupInPercent, "%");
-      } else {
-        console.warn("Failed to load top-up bonus percent, using default 0%");
-        bonusCyclesTopupInPercent = 0;
       }
     } catch (error) {
       console.error("Error loading top-up bonus percent:", error);

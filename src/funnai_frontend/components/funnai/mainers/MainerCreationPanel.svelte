@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { tooltip } from "../../../helpers/utils/tooltip";
+  import { getBonusCyclesTopupInPercent } from "../../../helpers/gameState";
+  import { store } from "../../../stores/store";
   import NetworkCapacityPanel from './NetworkCapacityPanel.svelte';
 
   // Props
@@ -23,6 +25,16 @@
   
   // Internal state for accordion
   let isOpen = false;
+  let bonusCyclesTopupInPercent = 0;
+  $: showCreationBonus = bonusCyclesTopupInPercent > 0;
+
+  async function loadBonusPercent() {
+    bonusCyclesTopupInPercent = await getBonusCyclesTopupInPercent();
+  }
+
+  $: if (isAuthenticated && $store.gameStateCanisterActor) {
+    loadBonusPercent();
+  }
   
   function toggleAccordion() {
     isOpen = !isOpen;
@@ -142,6 +154,9 @@
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
                             </svg>
                             <span class="font-semibold text-gray-700 dark:text-gray-300">{mainerPrice} ICP</span>
+                            {#if showCreationBonus}
+                              <span class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">+{bonusCyclesTopupInPercent}% bonus</span>
+                            {/if}
                           </div>
                         {:else}
                           <a href="#/marketplace" class="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium transition-all duration-200 shadow-md hover:shadow-lg no-underline">
@@ -158,6 +173,15 @@
                           </svg>
                           <span class="font-semibold text-gray-700 dark:text-gray-300">Instant deploy</span>
                         </div>
+
+                        {#if showCreationBonus}
+                          <div class="flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-50/80 dark:bg-emerald-900/20 backdrop-blur-sm rounded-lg border border-emerald-200/60 dark:border-emerald-700/60">
+                            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/>
+                            </svg>
+                            <span class="font-semibold text-emerald-700 dark:text-emerald-300">+{bonusCyclesTopupInPercent}% bonus cycles</span>
+                          </div>
+                        {/if}
                       </div>
                     </div>
                   </div>

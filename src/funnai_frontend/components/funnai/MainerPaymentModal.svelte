@@ -8,7 +8,7 @@
   import BigNumber from "bignumber.js";
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
   import { fetchTokens, protocolConfig } from "../../helpers/token_helpers";
-  import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped, getWhitelistAgentPrice, getPauseWhitelistMainerCreationFlag } from "../../helpers/gameState";
+  import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped, getWhitelistAgentPrice, getPauseWhitelistMainerCreationFlag, getBonusCyclesTopupInPercent } from "../../helpers/gameState";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
@@ -64,6 +64,9 @@
 
   let isPauseWhitelistMainerCreationFlag = false; // Will be loaded
   $: isPauseWhitelistMainerCreation = isPauseWhitelistMainerCreationFlag;
+
+  let bonusCyclesTopupInPercent = 0;
+  $: showCreationBonus = bonusCyclesTopupInPercent > 0;
   
   // Determine payment amount based on model type
   $: paymentAmount = mainerPrice;
@@ -187,12 +190,21 @@
     };
   };
 
+  async function loadBonusPercent() {
+    bonusCyclesTopupInPercent = await getBonusCyclesTopupInPercent();
+  };
+
   onMount(async () => {
     await loadTokenData();
     loadBalance();
     await loadProtocolFlags();
     mainerPrice = await getMainerPrice();
+    await loadBonusPercent();
   });
+
+  $: if (isOpen) {
+    loadBonusPercent();
+  }
 </script>
 
 <Modal
@@ -224,6 +236,9 @@
         <div class="flex flex-col min-w-0 flex-1">
           <div class="text-gray-900 font-medium dark:text-gray-100 text-sm sm:text-base truncate">{token.name}</div>
           <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Balance: {formatBalance(balance.toString(), token.decimals)} {token.symbol}</div>
+          {#if showCreationBonus}
+            <div class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 truncate">+{bonusCyclesTopupInPercent}% bonus cycles</div>
+          {/if}
         </div>
       </div>
 
@@ -267,6 +282,9 @@
           </div>
           <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
             Protocol fees included
+            {#if showCreationBonus}
+              <span class="text-emerald-600 dark:text-emerald-400"> · +{bonusCyclesTopupInPercent}% bonus cycles included</span>
+            {/if}
           </div>
         </div>
         
@@ -276,6 +294,11 @@
             This whitelist payment ({totalPaymentAmount} {token.symbol} total including network fees) allows you to finish the set up of your pre-unlocked mAIner at a special discounted price. Once payment is complete, your mAIner will be created automatically.
           {:else}
             This payment ({totalPaymentAmount} {token.symbol} total including network fees) is used to create your mAIner. Once payment is complete, your mAIner will be created automatically.
+          {/if}
+          {#if showCreationBonus}
+            <div class="mt-2 text-emerald-700 dark:text-emerald-300">
+              Includes +{bonusCyclesTopupInPercent}% bonus cycles on ICP payments
+            </div>
           {/if}
         </div>
 

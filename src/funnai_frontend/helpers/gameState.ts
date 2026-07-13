@@ -265,3 +265,22 @@ export const getAvailableMainers = async () => {
     return 0;
   }
 };
+
+export const getBonusCyclesTopupInPercent = async (): Promise<number> => {
+  try {
+    if (!storeState.gameStateCanisterActor?.getBonusCyclesTopupInPercent) {
+      return 0;
+    }
+
+    const response = await storeState.gameStateCanisterActor.getBonusCyclesTopupInPercent();
+
+    if ('Ok' in response) {
+      return Number(response.Ok);
+    }
+
+    return 0;
+  } catch (error) {
+    console.error("Failed to getBonusCyclesTopupInPercent:", error);
+    return 0;
+  }
+};
