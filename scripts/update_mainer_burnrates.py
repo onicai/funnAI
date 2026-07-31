@@ -17,8 +17,7 @@ def update_mainer_burnrate(canister_id, network, burnrate):
     try:    
         print(f"Updating burnrate to {burnrate} for canister {canister_id} on network {network}...")
         subprocess.run(
-            ["dfx", "canister", "--network", network, "call", canister_id, "updateAgentSettings", 
-             f"(record {{cyclesBurnRate = variant {{\"{burnrate}\"}}; }})"],
+            ["icp", "canister", "call", canister_id, "updateAgentSettings", f"(record {{cyclesBurnRate = variant {{\"{burnrate}\"}}; }})", "-e", network],
             check=True,
             text=True
         )

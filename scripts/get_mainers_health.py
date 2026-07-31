@@ -110,9 +110,7 @@ def log_message(message: str, level: str = "INFO", current: int = None, total: i
 
 def get_canister_wasm_hash(network: str, canister_id: str) -> Optional[str]:
     """Get the wasm hash of a canister with retry on transient network errors."""
-    cmd = [
-        "dfx", "canister", "--network", network, "info", canister_id
-    ]
+    cmd = ["icp", "canister", "status", canister_id, "-e", network, "-p"]
     result = run_command_with_retry(cmd, timeout=10, max_retries=5, retry_delay=10.0)
 
     if not result:
@@ -130,10 +128,7 @@ def check_health_quiet(network: str, canister_id: str) -> bool:
     Based on check_health from upgrade_mainers.py but simplified for health checks.
     Uses retry logic for transient errors.
     """
-    cmd = [
-        "dfx", "canister", "--network", network, "call",
-        canister_id, "health"
-    ]
+    cmd = ["icp", "canister", "call", canister_id, "health", "()", "--query", "-e", network]
     result = run_command_with_retry(cmd, timeout=10, max_retries=5, retry_delay=10.0)
 
     if not result:

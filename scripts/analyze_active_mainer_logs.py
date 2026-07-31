@@ -58,7 +58,7 @@ def get_logs(canister_id, network):
     for attempt in range(3):
         try:
             output = subprocess.check_output(
-                ["dfx", "canister", "logs", canister_id, "--network", network],
+                ["icp", "canister", "logs", canister_id, "-e", network],
                 stderr=subprocess.DEVNULL,
                 text=True,
                 timeout=30,

@@ -17,7 +17,7 @@ def get_memory(canister_id, network):
     """Fetch memory using dfx for a given canister."""
     try:
         output = subprocess.check_output(
-            ["dfx", "canister", "status", canister_id, "--network", network],
+            ["icp", "canister", "status", canister_id, "-e", network],
             stderr=subprocess.DEVNULL,
             text=True
         )

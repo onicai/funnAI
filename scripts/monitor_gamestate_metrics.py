@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 import subprocess
 import time
 import argparse
@@ -10,6 +11,11 @@ import json
 
 from .monitor_common import get_canisters, ensure_log_dir
 from datetime import datetime, timezone
+
+# Shared icp-cli helpers: `icp canister call` cannot decode a Candid response the way
+# `dfx ... --output json` did, so decoding happens here via icp-py-core.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import icp_helpers  # noqa: E402
 
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -36,12 +42,12 @@ def get_data(canister_id, network):
                 print("Temporarily skipping getScoredChallengesAdmin, until we fixed the Error due to too large a response")
                 get_data.skip_message_shown = True
         else:
-            result = subprocess.check_output(
-                ["dfx", "canister", "call", canister_id, "getScoredChallengesAdmin", "--output", "json", "--network", network],
-                stderr=subprocess.DEVNULL,
-                text=True
+            data = icp_helpers.call(
+                canister_id,
+                "getScoredChallengesAdmin",
+                env=network,
+                allow_mainnet=True,
             )
-            data = json.loads(result)
             numJudgedResponses = 0
             max_depth = 100
             for challenge in data.get('Ok', []):
@@ -76,12 +82,7 @@ def get_data(canister_id, network):
         ]
 
         for method, label in methods:
-            result = subprocess.check_output(
-                ["dfx", "canister", "call", canister_id, method, "--output", "json", "--network", network],
-                stderr=subprocess.DEVNULL,
-                text=True
-            )
-            data = json.loads(result)
+            data = icp_helpers.call_argv(["icp", "canister", "call", canister_id, method, "()", "-e", network])
             val = data.get('Ok')
             if should_include(label, val):
                 output += f"- {method:<45} = {val} \n"

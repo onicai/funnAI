@@ -233,7 +233,7 @@ def call(
     """
     if not is_query and not allow_mainnet:
         guard_write(env, f"call update method '{method}' on {target}")
-    canister = Canister(agent=_agent(env, identity), canister_id=target, candid=candid_of(target, env))
+    canister = Canister(agent=_agent(env, identity), canister_id=target, candid_str=candid_of(target, env))
     return extract_value(getattr(canister, method)(*args))
 
 
@@ -318,3 +318,35 @@ def wallet_send(target: str, amount: int, env: str = "local", identity: str = DE
 def wallet_balance(env: str = "local", identity: str = DEFAULT_IDENTITY) -> Optional[str]:
     """Replacement for `dfx wallet balance` (a query, so it is not guarded)."""
     return call_text(CYCLES_WALLET, "wallet_balance", "()", env=env, query=True, identity=identity)
+
+
+def call_argv(cmd: list[str], identity: str = DEFAULT_IDENTITY, allow_mainnet: bool = True) -> Any:
+    """Decode an `icp canister call` argv list into Python objects.
+
+    A drop-in for the `subprocess.run(cmd) + json.loads(result.stdout)` idiom these scripts
+    inherited from `dfx ... --output json`. icp-cli cannot do that decode, so it happens
+    here via icp-py-core.
+
+        cmd = ["icp", "canister", "call", cid, method, "()", "-e", network]
+        data = icp_helpers.call_argv(cmd)      # was: json.loads(subprocess...stdout)
+
+    Only no-argument calls are supported. icp-py-core takes Python values rather than
+    Candid text, so a call that passes a real Candid argument needs a considered
+    translation instead of a mechanical one -- hence the explicit error rather than a
+    silently wrong result.
+    """
+    if len(cmd) < 5 or cmd[:3] != ["icp", "canister", "call"]:
+        raise ValueError(f"not an `icp canister call` argv: {cmd}")
+    target, method = cmd[3], cmd[4]
+    env = "local"
+    for i, tok in enumerate(cmd):
+        if tok in ("-e", "--environment") and i + 1 < len(cmd):
+            env = cmd[i + 1]
+    candid_args = [t for t in cmd[5:] if not t.startswith("-")]
+    candid_args = [t for t in candid_args if t not in (env,)]
+    if any(a.strip() not in ("", "()") for a in candid_args):
+        raise NotImplementedError(
+            f"call_argv only handles no-argument calls; {method} was given {candid_args!r}. "
+            "Call icp_helpers.call(target, method, <python args>, env=...) instead."
+        )
+    return call(target, method, env=env, identity=identity, allow_mainnet=allow_mainnet)

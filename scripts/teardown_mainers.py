@@ -17,14 +17,14 @@ def teardown_mainer(canister_id, network):
     try:    
         print(f"Stopping canister {canister_id} on network {network}...")
         subprocess.run(
-            ["dfx", "canister", "--network", network, "stop", canister_id],
+            ["icp", "canister", "stop", canister_id, "-e", network],
             check=True,
             text=True
         )
 
         print(f"Deleting canister {canister_id} on network {network}...")
         subprocess.run(
-            ["dfx", "canister", "--network", network, "delete", canister_id],
+            ["icp", "canister", "delete", canister_id, "-e", network],
             check=True,
             text=True
         )

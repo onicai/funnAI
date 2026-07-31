@@ -9,6 +9,11 @@ import re
 
 from .monitor_common import get_canisters, run_this_cmd
 
+# Shared icp-cli helpers: unlike `dfx ... --output json`, icp-cli cannot decode a Candid
+# response, so decoding happens here via icp-py-core.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import icp_helpers  # noqa: E402
+
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 FUNNAI_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../"))
@@ -37,18 +42,19 @@ LLM_TYPE_CONFIG = {
 }
 
 
-def parse_llm_count(json_output):
-    """Parse the LLM count from get_llm_canisters JSON output.
+def parse_llm_count(data):
+    """Parse the LLM count from a decoded get_llm_canisters response.
 
-    Expected format: {"Ok": {"llmCanisterIds": [...], ...}}
+    Takes the DECODED response ({"Ok": {"llmCanisterIds": [...], ...}}) rather than a JSON
+    string: icp-cli cannot emit JSON the way `dfx ... --output json` did, so the decoding
+    now happens in icp_helpers.call() and this function receives real Python objects.
     Returns (count, canister_ids_list).
     """
     try:
-        data = json.loads(json_output)
         if isinstance(data, dict) and "Ok" in data:
             ids = data["Ok"].get("llmCanisterIds", [])
             return len(ids), ids
-    except json.JSONDecodeError:
+    except (AttributeError, TypeError):
         pass
     return None, []
 
@@ -155,12 +161,9 @@ def add_llm(ctrlb_canister_id, gamestate_canister_id, llm_type, canister_id, net
 
     # Step 1: Show current LLMs in controller
     print(f"\n- Current LLMs in controller canister ({ctrlb_canister_id})")
-    cmd = [
-        "dfx", "canister", "--network", network, "call",
-        ctrlb_canister_id, "get_llm_canisters", "--output", "json",
-    ]
+    cmd = ["icp", "canister", "call", ctrlb_canister_id, "get_llm_canisters", "()", "-e", network]
     print(f"  {' '.join(cmd)} \n  -> from directory: {llm_cwd}")
-    result = subprocess.check_output(cmd, text=True, cwd=llm_cwd)
+    result = icp_helpers.call_argv(cmd)
     print(result)
 
     current_count, current_ids = parse_llm_count(result)
@@ -213,21 +216,14 @@ def add_llm(ctrlb_canister_id, gamestate_canister_id, llm_type, canister_id, net
 
     # Step 4: Add LLM to controller
     print(f"\n- Adding LLM to controller canister ({ctrlb_canister_id})")
-    cmd = [
-        "dfx", "canister", "--network", network, "call",
-        ctrlb_canister_id, "add_llm_canister",
-        f'(record {{canister_id = "{canister_id}"}})',
-    ]
+    cmd = ["icp", "canister", "call", ctrlb_canister_id, "add_llm_canister", f'(record {{canister_id = "{canister_id}"}})', "-e", network]
     run_this_cmd(cmd, llm_cwd, confirm=False)
 
     # Step 5: Verify addition
     print(f"\n- Verifying LLMs registered in controller canister ({ctrlb_canister_id})")
-    cmd = [
-        "dfx", "canister", "--network", network, "call",
-        ctrlb_canister_id, "get_llm_canisters", "--output", "json",
-    ]
+    cmd = ["icp", "canister", "call", ctrlb_canister_id, "get_llm_canisters", "()", "-e", network]
     print(f"  {' '.join(cmd)} \n  -> from directory: {llm_cwd}")
-    result = subprocess.check_output(cmd, text=True, cwd=llm_cwd)
+    result = icp_helpers.call_argv(cmd)
     print(result)
 
     verified_count, verified_ids = parse_llm_count(result)
@@ -246,19 +242,12 @@ def add_llm(ctrlb_canister_id, gamestate_canister_id, llm_type, canister_id, net
 
     # Step 6: Get current GameState cycle config
     print(f"\n- Getting current GameState cycle config")
-    cmd = [
-        "dfx", "canister", "--network", network, "call",
-        gamestate_canister_id, "getCyclesFlowAdmin",
-    ]
+    cmd = ["icp", "canister", "call", gamestate_canister_id, "getCyclesFlowAdmin", "()", "-e", network]
     run_this_cmd(cmd, llm_cwd, confirm=False)
 
     # Step 7: Update GameState LLM count
     print(f"\n- Updating GameState: {field_name} = {new_count}")
-    cmd = [
-        "dfx", "canister", "--network", network, "call",
-        gamestate_canister_id, "setCyclesFlowAdmin",
-        f"(record {{{field_name} = opt ({new_count} : nat);}})",
-    ]
+    cmd = ["icp", "canister", "call", gamestate_canister_id, "setCyclesFlowAdmin", f"(record {{{field_name} = opt ({new_count} : nat);}})", "-e", network]
     run_this_cmd(cmd, llm_cwd, confirm=False)
 
     # Step 8: Update canister_ids-{network}.env

@@ -1,3 +1,5 @@
+import sys
+import os
 import json
 import subprocess
 from pathlib import Path
@@ -13,6 +15,11 @@ from .ic_py_canister import get_canister, run_dfx_command
 
 import hashlib
 import binascii
+
+# Shared icp-cli helpers: unlike `dfx ... --output json`, icp-cli cannot decode a Candid
+# response, so decoding happens here via icp-py-core.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "lib"))
+import icp_helpers  # noqa: E402
 
 def get_icp_balance(principal_str: str) -> float:
     """
@@ -51,20 +58,13 @@ def get_icp_transactions(principal_str: str, max_results: int = 1000) -> dict:
     icp_index_canister_id = "qhbym-qaaaa-aaaaa-aaafq-cai" 
 
     # Run the dfx canister call command
-    cmd = [
-        "dfx", "canister", "call", 
-        "--network", "ic",
-        "--output", "json",
+    response_json = icp_helpers.call(
         icp_index_canister_id,
         "get_account_transactions",
-        f'(record{{account=record {{owner = principal "{principal_str}"}}; max_results={max_results}:nat}})'
-    ]
-    
-    print(f"Running command: {' '.join(cmd)}")
-    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-    
-    # Parse the JSON response
-    response_json = json.loads(result.stdout)
+        {"account": {"owner": Principal.from_str(principal_str)}, "max_results": max_results},
+        env="ic",
+        allow_mainnet=True,
+    )
 
     return response_json.get('Ok', {})
 

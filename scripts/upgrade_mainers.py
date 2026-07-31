@@ -38,6 +38,7 @@ To run unit tests:
     pytest scripts/test/test_upgrade_mainers.py -v
 """
 
+import os
 import subprocess
 import time
 import argparse
@@ -48,6 +49,11 @@ from typing import List, Dict, Optional, Tuple
 import signal
 from pathlib import Path
 from enum import Enum
+
+# Shared icp-cli helpers: unlike `dfx ... --output json`, icp-cli cannot decode a Candid
+# response, so decoding happens here via icp-py-core.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import icp_helpers  # noqa: E402
 
 # Get the directory of this script
 SCRIPT_DIR = Path(__file__).parent.resolve()
@@ -462,12 +468,7 @@ def get_mainers(network: str) -> List[Dict]:
     """Get all mainers from game state canister."""
     log_message(f"Getting all mAIners from game_state_canister on network {network}...")
     try:
-        result = run_command([
-            "dfx", "canister", "--network", network, "call",
-            "game_state_canister", "getMainerAgentCanistersAdmin",
-            "--output", "json"
-        ])
-        data = json.loads(result.stdout)
+        data = icp_helpers.call_argv(["icp", "canister", "call", "game_state_canister", "getMainerAgentCanistersAdmin", "()", "-e", network])
         mainers = data.get('Ok', [])
         log_message(f"Found {len(mainers)} total mAIners (Unfiltered, still includes empty address + ShareService)", "INFO")
         return mainers
@@ -482,9 +483,7 @@ def get_cycles_balance(network: str, canister_id: str) -> Optional[int]:
         Cycles balance as integer, or None if unable to retrieve.
     """
     try:
-        result = run_command([
-            "dfx", "canister", "--network", network, "status", canister_id
-        ], retry_on_transient_errors=True, max_retries=3, retry_delay=5.0)
+        result = run_command(["icp", "canister", "status", canister_id, "-e", network], retry_on_transient_errors=True, max_retries=3, retry_delay=5.0)
         for line in result.stdout.split('\n'):
             if 'Balance:' in line:
                 # Parse line like "Balance: 3_000_000_000_000 Cycles"
@@ -575,16 +574,9 @@ def sample_cycle_state(
 
     # Single query returns both fields atomically (consistent snapshot).
     try:
-        result = run_command(
-            [
-                "dfx", "canister", "--network", network, "call",
-                canister_id, "getOfficialCyclesBalanceAdmin", "--output", "json",
-            ],
-            retry_on_transient_errors=True,
-            max_retries=3,
-            retry_delay=5.0,
+        payload = icp_helpers.call_argv(
+            ["icp", "canister", "call", canister_id, "getOfficialCyclesBalanceAdmin", "()", "-e", network]
         )
-        payload = json.loads(result.stdout)
         if "Ok" not in payload:
             log_message(
                 f"[CYCLES][{label}] getOfficialCyclesBalanceAdmin returned non-Ok: {payload}",
@@ -666,9 +658,7 @@ def get_canister_status(network: str, canister_id: str) -> Optional[str]:
 
     for attempt in range(1, max_attempts + 1):
         try:
-            result = run_command([
-                "dfx", "canister", "--network", network, "status", canister_id
-            ], retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
+            result = run_command(["icp", "canister", "status", canister_id, "-e", network], retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
             for line in result.stdout.split('\n'):
                 if line.startswith('Status:'):
                     return line.split(':')[1].strip()
@@ -725,9 +715,7 @@ def get_canister_wasm_hash(network: str, canister_id: str) -> Optional[str]:
         CanisterDoesNotExistError: If the canister does not exist
     """
     try:
-        result = run_command([
-            "dfx", "canister", "--network", network, "info", canister_id
-        ], retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
+        result = run_command(["icp", "canister", "status", canister_id, "-e", network, "-p"], retry_on_transient_errors=True, max_retries=5, retry_delay=10.0)
         for line in result.stdout.split('\n'):
             if 'Module hash:' in line:
                 return line.split(':')[1].strip()
@@ -750,10 +738,7 @@ def get_canister_wasm_hash(network: str, canister_id: str) -> Optional[str]:
 def stop_timer(network: str, canister_id: str, dry_run: bool = False) -> bool:
     """Stop the timer execution for a canister with retry on transient network errors."""
     log_message(f"Stopping timer for {canister_id}...")
-    command = [
-        "dfx", "canister", "--network", network, "call",
-        canister_id, "stopTimerExecutionAdmin"
-    ]
+    command = ["icp", "canister", "call", canister_id, "stopTimerExecutionAdmin", "()", "-e", network]
     if dry_run:
         log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
         return True
@@ -777,10 +762,7 @@ def stop_timer(network: str, canister_id: str, dry_run: bool = False) -> bool:
 def start_timer(network: str, canister_id: str, dry_run: bool = False) -> bool:
     """Start the timer execution for a canister with retry on transient network errors."""
     log_message(f"Starting timer for {canister_id}...")
-    command = [
-        "dfx", "canister", "--network", network, "call",
-        canister_id, "startTimerExecutionAdmin"
-    ]
+    command = ["icp", "canister", "call", canister_id, "startTimerExecutionAdmin", "()", "-e", network]
     if dry_run:
         log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
         return True
@@ -829,10 +811,7 @@ def get_share_service_id(network: str) -> str:
 def set_game_state_canister_id(network: str, canister_id: str, gs_principal: str, dry_run: bool = False) -> bool:
     """Re-apply setGameStateCanisterId on a freshly-reinstalled mAIner."""
     log_message(f"Setting GameState canister id on {canister_id} -> {gs_principal}...")
-    command = [
-        "dfx", "canister", "--network", network, "call",
-        canister_id, "setGameStateCanisterId", f'("{gs_principal}")'
-    ]
+    command = ["icp", "canister", "call", canister_id, "setGameStateCanisterId", f'("{gs_principal}")', "-e", network]
     if dry_run:
         log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
         return True
@@ -858,10 +837,7 @@ def set_mainer_canister_type(network: str, canister_id: str, subtype: str, dry_r
         log_message(f"Invalid mAIner subtype '{subtype}' (expected one of {VALID_SUBTYPES})", "ERROR")
         return False
     log_message(f"Setting mAIner canister type on {canister_id} -> variant {{ {subtype} }}...")
-    command = [
-        "dfx", "canister", "--network", network, "call",
-        canister_id, "setMainerCanisterType", f"(variant {{ {subtype} }})"
-    ]
+    command = ["icp", "canister", "call", canister_id, "setMainerCanisterType", f"(variant {{ {subtype} }})", "-e", network]
     if dry_run:
         log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
         return True
@@ -886,16 +862,9 @@ def get_burn_rate_setting(network: str, canister_id: str) -> Optional[str]:
     """
     log_message(f"Capturing burn-rate setting from {canister_id}...")
     try:
-        result = run_command(
-            [
-                "dfx", "canister", "--network", network, "call",
-                canister_id, "getMainerStatisticsAdmin", "--output", "json",
-            ],
-            retry_on_transient_errors=True,
-            max_retries=3,
-            retry_delay=5.0,
+        data = icp_helpers.call_argv(
+            ["icp", "canister", "call", canister_id, "getMainerStatisticsAdmin", "()", "-e", network]
         )
-        data = json.loads(result.stdout)
         cycles_burn_rate = data.get("Ok", {}).get("cyclesBurnRate", {}).get("cycles")
         mapping = {
             "1_000_000_000_000": "Low",
@@ -931,11 +900,7 @@ def set_burn_rate_setting(network: str, canister_id: str, variant: str, dry_run:
         log_message(f"Invalid burn-rate variant '{variant}' (expected one of {VALID})", "ERROR")
         return False
     log_message(f"Re-applying burn-rate setting on {canister_id} -> variant {{ {variant} }}...")
-    command = [
-        "dfx", "canister", "--network", network, "call",
-        canister_id, "updateAgentSettings",
-        f"(record {{ cyclesBurnRate = variant {{ {variant} }} }})",
-    ]
+    command = ["icp", "canister", "call", canister_id, "updateAgentSettings", f"(record {{ cyclesBurnRate = variant {{ {variant} }} }})", "-e", network]
     if dry_run:
         log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
         return True
@@ -954,10 +919,7 @@ def set_burn_rate_setting(network: str, canister_id: str, variant: str, dry_run:
 def set_share_service_canister_id(network: str, canister_id: str, ss_principal: str, dry_run: bool = False) -> bool:
     """Re-apply setShareServiceCanisterId on a freshly-reinstalled ShareAgent mAIner."""
     log_message(f"Setting ShareService canister id on {canister_id} -> {ss_principal}...")
-    command = [
-        "dfx", "canister", "--network", network, "call",
-        canister_id, "setShareServiceCanisterId", f'("{ss_principal}")'
-    ]
+    command = ["icp", "canister", "call", canister_id, "setShareServiceCanisterId", f'("{ss_principal}")', "-e", network]
     if dry_run:
         log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
         return True
@@ -1012,11 +974,7 @@ def check_queue(network: str, canister_id: str) -> Tuple[bool, Optional[datetime
     """Check the queue for a canister and return status and last entry time."""
     log_message(f"Checking challenge queue for {canister_id}...")
     try:
-        result = run_command([
-            "dfx", "canister", "--network", network, "call",
-            canister_id, "getChallengeQueueAdmin", "--output", "json"
-        ], retry_on_transient_errors=True)
-        data = json.loads(result.stdout)
+        data = icp_helpers.call_argv(["icp", "canister", "call", canister_id, "getChallengeQueueAdmin", "()", "-e", network])
         queue = data.get('Ok', [])
 
         if not queue:
@@ -1055,10 +1013,7 @@ def check_queue(network: str, canister_id: str) -> Tuple[bool, Optional[datetime
 def clear_queue(network: str, canister_id: str, dry_run: bool = False) -> bool:
     """Clear the challenge queue for a canister with retry on transient network errors."""
     log_message(f"Clearing challenge queue for {canister_id}...")
-    command = [
-        "dfx", "canister", "--network", network, "call",
-        canister_id, "resetChallengeQueueAdmin"
-    ]
+    command = ["icp", "canister", "call", canister_id, "resetChallengeQueueAdmin", "()", "-e", network]
     if dry_run:
         log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
         return True
@@ -1079,9 +1034,7 @@ def clear_queue(network: str, canister_id: str, dry_run: bool = False) -> bool:
 def stop_canister(network: str, canister_id: str, dry_run: bool = False) -> bool:
     """Stop a canister with retry on transient network errors."""
     log_message(f"Stopping canister {canister_id}...")
-    command = [
-        "dfx", "canister", "--network", network, "stop", canister_id
-    ]
+    command = ["icp", "canister", "stop", canister_id, "-e", network]
     if dry_run:
         log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
         return True
@@ -1102,9 +1055,7 @@ def stop_canister(network: str, canister_id: str, dry_run: bool = False) -> bool
 def start_canister(network: str, canister_id: str, dry_run: bool = False) -> bool:
     """Start a canister with retry on transient network errors."""
     log_message(f"Starting canister {canister_id}...")
-    command = [
-        "dfx", "canister", "--network", network, "start", canister_id
-    ]
+    command = ["icp", "canister", "start", canister_id, "-e", network]
     if dry_run:
         log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
         return True
@@ -1176,9 +1127,7 @@ def upgrade_canister(network: str, canister_name: str, dry_run: bool = False, de
     install_mode = "reinstall" if reinstall else "upgrade"
     log_message(f"{'Reinstalling' if reinstall else 'Upgrading'} {canister_name} (--mode {install_mode})...")
 
-    command = [
-        "dfx", "deploy", "--network", network, canister_name, "--mode", install_mode
-    ]
+    command = ["icp", "deploy", canister_name, "--mode", install_mode, "-e", network, "-y"]
     # --wasm-memory-persistence is only valid with mode 'upgrade' or 'auto'
     if not reinstall:
         command.extend(["--wasm-memory-persistence", "keep"])
@@ -1270,10 +1219,7 @@ def check_health(network: str, canister_id: str, dry_run: bool = False) -> tuple
         Tuple of (success: bool, output: str)
     """
     log_message(f"Checking health for {canister_id}...")
-    command = [
-        "dfx", "canister", "--network", network, "call",
-        canister_id, "health"
-    ]
+    command = ["icp", "canister", "call", canister_id, "health", "()", "--query", "-e", network]
     if dry_run:
         log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
         return True, ""
@@ -1304,18 +1250,14 @@ def get_maintenance_flag(network: str, canister_id: str, dry_run: bool = False) 
         False if flag is off
         None if method doesn't exist (old canister) - treated as success in turn_on_maintenance_flag
     """
-    command = [
-        "dfx", "canister", "--network", network, "call",
-        canister_id, "getMaintenanceFlag", "--output", "json"
-    ]
+    command = ["icp", "canister", "call", canister_id, "getMaintenanceFlag", "()", "-e", network]
 
     if dry_run:
         log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
         return True
 
     try:
-        result = run_command(command, retry_on_transient_errors=True)
-        data = json.loads(result.stdout)
+        data = icp_helpers.call_argv(command)
         return data.get('Ok', {}).get('flag', None)
     except subprocess.CalledProcessError as e:
         # Check if the error is because the method doesn't exist (old canister)
@@ -1357,10 +1299,7 @@ def turn_on_maintenance_flag(network: str, canister_id: str, dry_run: bool = Fal
             log_message(f"Maintenance flag is OFF, turning it on...")
 
             # Step 2: Toggle the flag
-            toggle_command = [
-                "dfx", "canister", "--network", network, "call",
-                canister_id, "toggleMaintenanceFlagAdmin"
-            ]
+            toggle_command = ["icp", "canister", "call", canister_id, "toggleMaintenanceFlagAdmin", "()", "-e", network]
             toggle_result = run_command(toggle_command)
 
             # Step 3: Verify flag is now true (with retries)
@@ -1433,10 +1372,7 @@ def turn_off_maintenance_flag(network: str, canister_id: str, dry_run: bool = Fa
             log_message(f"Maintenance flag is ON, turning it off...")
 
             # Step 2: Toggle the flag
-            toggle_command = [
-                "dfx", "canister", "--network", network, "call",
-                canister_id, "toggleMaintenanceFlagAdmin"
-            ]
+            toggle_command = ["icp", "canister", "call", canister_id, "toggleMaintenanceFlagAdmin", "()", "-e", network]
             toggle_result = run_command(toggle_command)
 
             # Step 3: Verify flag is now false (with retries)

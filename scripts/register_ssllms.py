@@ -17,7 +17,7 @@ def reset_llm_canisters(ssctrl_canister_id, network):
     try:    
         print(f"Resetting the LLM canisters for Ssctrl {ssctrl_canister_id} on network {network}...")
         subprocess.run(
-            ["dfx", "canister", "--network", network, "call", ssctrl_canister_id, "reset_llm_canisters" ],
+            ["icp", "canister", "call", ssctrl_canister_id, "reset_llm_canisters", "()", "-e", network],
             check=True,
             text=True
         )
@@ -29,7 +29,7 @@ def register_ssllm(ssctrl_canister_id, network, canister_id):
     try:    
         print(f"Registering Ssllm canister {canister_id} with Ssctrl {ssctrl_canister_id} on network {network}...")
         subprocess.run(
-            ["dfx", "canister", "--network", network, "call", ssctrl_canister_id, "add_llm_canister", f"( record {{ canister_id = \"{canister_id}\"; }})" ],
+            ["icp", "canister", "call", ssctrl_canister_id, "add_llm_canister", f"( record {{ canister_id = \"{canister_id}\"; }})", "-e", network],
             check=True,
             text=True
         )

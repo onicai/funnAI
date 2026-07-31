@@ -29,7 +29,7 @@ def add_controllers(canister_id, network):
         try:    
             print(f"Adding controller {controller} to canister {canister_id} on network {network}...")
             subprocess.run(
-                ["dfx", "canister", "--network", network, "update-settings", canister_id, "--add-controller", controller["principal"]],
+                ["icp", "canister", "settings", "update", canister_id, "--add-controller", controller["principal"], "-e", network],
                 check=True,
                 text=True
             )

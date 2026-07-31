@@ -21,7 +21,7 @@ def am_i_controller(canister_id, network, my_principal):
         # Get canister info
         # print(f"Getting all controllers for canister {canister_id} on network {network}...")
         result = subprocess.check_output(
-            ["dfx", "canister", "--network", network, "info", canister_id],
+            ["icp", "canister", "status", canister_id, "-e", network, "-p"],
             stderr=subprocess.DEVNULL,
             text=True
         )
@@ -42,11 +42,11 @@ def main(network, canister_types):
     # --------------------------------
     # Get my principal ID
     my_identity = subprocess.check_output(
-        ["dfx", "identity", "whoami"],
+        ["icp", "identity", "default"],
         text=True
     ).strip()
     my_principal = subprocess.check_output(
-        ["dfx", "identity", "get-principal"],
+        ["icp", "identity", "principal"],
         text=True
     ).strip()
 

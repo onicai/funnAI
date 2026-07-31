@@ -20,6 +20,7 @@ To run unit tests:
     pytest scripts/test/test_update_admin_rbac_mainers.py -v
 """
 
+import os
 import subprocess
 import time
 import argparse
@@ -29,6 +30,11 @@ from datetime import datetime
 from typing import List, Dict, Optional
 import signal
 from pathlib import Path
+
+# Shared icp-cli helpers: unlike `dfx ... --output json`, icp-cli cannot decode a Candid
+# response, so decoding happens here via icp-py-core.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import icp_helpers  # noqa: E402
 
 # Get the directory of this script
 SCRIPT_DIR = Path(__file__).parent.resolve()
@@ -268,12 +274,9 @@ def get_mainers(network: str) -> List[Dict]:
     """Get all mainers from game state canister."""
     log_message(f"Getting all mAIners from game_state_canister on network {network}...")
     try:
-        result = run_command([
-            "dfx", "canister", "--network", network, "call",
-            "game_state_canister", "getMainerAgentCanistersAdmin",
-            "--output", "json"
-        ], retry_on_transient_errors=True, max_retries=5, retry_delay=3.0)
-        data = json.loads(result.stdout)
+        data = icp_helpers.call_argv(
+            ["icp", "canister", "call", "game_state_canister", "getMainerAgentCanistersAdmin", "()", "-e", network]
+        )
         mainers = data.get('Ok', [])
         log_message(f"Found {len(mainers)} total mAIners", "INFO")
         return mainers
@@ -289,14 +292,10 @@ def get_admin_roles(network: str, canister_id: str) -> Optional[List[Dict]]:
     Returns:
         List of admin role assignments, or None if the call fails
     """
-    command = [
-        "dfx", "canister", "--network", network, "call",
-        canister_id, "getAdminRoles", "--output", "json"
-    ]
+    command = ["icp", "canister", "call", canister_id, "getAdminRoles", "()", "-e", network]
 
     try:
-        result = run_command(command, retry_on_transient_errors=True, max_retries=3, retry_delay=2.0)
-        data = json.loads(result.stdout)
+        data = icp_helpers.call_argv(command)
 
         if 'Ok' in data:
             return data['Ok']
@@ -320,11 +319,7 @@ def assign_admin_role(network: str, canister_id: str, principal: str, note: str,
     Returns:
         True if successful, False otherwise
     """
-    command = [
-        "dfx", "canister", "--network", network, "call",
-        canister_id, "assignAdminRole",
-        f'( record {{ "principal" = "{principal}"; role = variant {{ AdminQuery }}; note = "{note}" }} )'
-    ]
+    command = ["icp", "canister", "call", canister_id, "assignAdminRole", f'( record {{ "principal" = "{principal}"; role = variant {{ AdminQuery }}; note = "{note}" }} )', "-e", network]
 
     if dry_run:
         log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
@@ -350,11 +345,7 @@ def revoke_admin_role(network: str, canister_id: str, principal: str, dry_run: b
     Returns:
         True if successful, False otherwise
     """
-    command = [
-        "dfx", "canister", "--network", network, "call",
-        canister_id, "revokeAdminRole",
-        f'( "{principal}")'
-    ]
+    command = ["icp", "canister", "call", canister_id, "revokeAdminRole", f'( "{principal}")', "-e", network]
 
     if dry_run:
         log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")

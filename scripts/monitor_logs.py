@@ -17,7 +17,7 @@ def get_logs(canister_id, network):
     """Fetch logs using dfx for a given canister."""
     try:
         output = subprocess.check_output(
-            ["dfx", "canister", "logs", canister_id, "--network", network],
+            ["icp", "canister", "logs", canister_id, "-e", network],
             stderr=subprocess.DEVNULL,
             text=True
         )
