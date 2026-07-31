@@ -85,7 +85,7 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
         
         print(" ")
         print(f"- Creating snapshot for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "snapshot", "create", canister_id]
+        cmd = ["icp", "canister", "snapshot", "create", canister_id, "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=True, dry_run=dry_run)
         
         print(" ")
@@ -169,6 +169,10 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
 
         print(" ")
         print(f"- Adding NNS Root Canister as controller for LLM {canister_name} ({canister_id})")
+        # THE ONE DELIBERATE dfx DEPENDENCY LEFT IN THIS REPO.
+        # icp-cli has no `sns` subcommand at all, so there is nothing to migrate this to.
+        # Keep dfx installed for exactly this call; see
+        # README-developer-migration-guide-from-dfx-to-icp-cli.md.
         cmd = ["dfx", "sns", "prepare-canisters", "--network", "ic", "add-nns-root", canister_id]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
 

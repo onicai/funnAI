@@ -2,7 +2,7 @@
 """Fetch and analyze logs for all frozen mAIners to determine why they froze.
 
 Reads the latest status JSON to identify frozen mAIners, fetches their logs
-(dfx canister logs works on frozen canisters), and analyzes for freeze causes.
+(icp canister logs works on frozen canisters), and analyzes for freeze causes.
 """
 
 import argparse

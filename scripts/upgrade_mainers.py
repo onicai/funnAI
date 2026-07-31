@@ -525,7 +525,7 @@ def get_wallet_balance(network: str) -> Optional[int]:
     """
     try:
         result = run_command(
-            ["dfx", "wallet", "--network", network, "balance"],
+            ["icp", "canister", "call", icp_helpers.CYCLES_WALLET, "wallet_balance", "()", "--query", "-e", network],
             retry_on_transient_errors=True,
             max_retries=3,
             retry_delay=5.0,
@@ -678,9 +678,9 @@ def get_canister_status(network: str, canister_id: str) -> Optional[str]:
 
                 try:
                     # Send cycles using dfx wallet
-                    send_result = run_command([
-                        "dfx", "wallet", "--network", network, "send", canister_id, "500_000_000_000"
-                    ])
+                    send_result = run_command(["icp", "canister", "call", icp_helpers.CYCLES_WALLET, "wallet_send",
+                 f'(record {{ canister = principal "{canister_id}"; amount = {str("500_000_000_000").replace("_","")} : nat64 }})',
+                 "-e", network])
                     log_message(f"Successfully sent cycles to {canister_id}", "SUCCESS")
 
                     # Wait 10 seconds before retrying
@@ -1077,7 +1077,7 @@ def create_snapshot(network: str, canister_id: str, dry_run: bool = False) -> Op
     """Create a snapshot of a canister and return the snapshot ID with retry on transient network errors."""
     log_message(f"Creating snapshot for {canister_id}...")
     command = [
-        "dfx", "canister", "--network", network, "snapshot", "create", canister_id
+        "icp", "canister", "snapshot", "create", canister_id, "-e", network
     ]
     if dry_run:
         log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
@@ -1186,9 +1186,9 @@ def upgrade_canister(network: str, canister_name: str, dry_run: bool = False, de
 
                 try:
                     # Send cycles using dfx wallet
-                    send_result = run_command([
-                        "dfx", "wallet", "--network", network, "send", canister_id, "500_000_000_000"
-                    ])
+                    send_result = run_command(["icp", "canister", "call", icp_helpers.CYCLES_WALLET, "wallet_send",
+                 f'(record {{ canister = principal "{canister_id}"; amount = {str("500_000_000_000").replace("_","")} : nat64 }})',
+                 "-e", network])
                     log_message(f"Successfully sent cycles to {canister_id}", "SUCCESS")
 
                     # Wait 10 seconds before retrying
@@ -1562,9 +1562,9 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
         log_message(f"Sending {TOPUP_CYCLES_AMOUNT} cycles to canister...", "INFO")
         if not dry_run:
             try:
-                run_command([
-                    "dfx", "wallet", "--network", network, "send", address, TOPUP_CYCLES_AMOUNT
-                ])
+                run_command(["icp", "canister", "call", icp_helpers.CYCLES_WALLET, "wallet_send",
+                 f'(record {{ canister = principal "{address}"; amount = {str(TOPUP_CYCLES_AMOUNT).replace("_","")} : nat64 }})',
+                 "-e", network])
                 log_message(f"Successfully sent cycles to {address}", "SUCCESS")
                 time.sleep(10)
                 sample_cycle_state(network, address, "after pre-topup", dry_run)
@@ -1663,7 +1663,7 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
     # The Δcurrent here is dominated by the install_code prepay/refund (~300 B
     # added) plus snapshot create refund (~130 B added) — see Main.mo
     # INSTALL_CODE_REFUND_BUFFER comment.
-    sample_cycle_state(network, address, "after dfx start (post-reinstall)", dry_run)
+    sample_cycle_state(network, address, "after reinstall", dry_run)
 
     # Step 2h.1: Immediately ensure the maintenance flag is ON. After --mode
     # reinstall, stable state is wiped and the flag defaults to OFF — without
@@ -1891,7 +1891,7 @@ def main():
     parser.add_argument(
         "--deploy-with-yes",
         action="store_true",
-        help="Use 'dfx deploy --yes' to skip confirmation prompts"
+        help="Use 'icp ... -y' to skip confirmation prompts"
     )
     parser.add_argument(
         "--reinstall",

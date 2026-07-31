@@ -92,7 +92,9 @@ def main(network, user):
             if cycles_to_send > 0:
                 total_cycles_needed += cycles_to_send
                 # get cycleBalance from getMainerStatisticsAdmin endpoint
-                cmd = ["dfx", "wallet", "send", address, f"{cycles_to_send}", "--network", network]
+                cmd = ["icp", "canister", "call", icp_helpers.CYCLES_WALLET, "wallet_send",
+                 f'(record {{ canister = principal "{address}"; amount = {str(f"{cycles_to_send}").replace("_","")} : nat64 }})',
+                 "-e", network]
                 output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
                 if output == "":
                     print(f"Successfully sent {cycles_to_send:_} cycles to canister {address}.")

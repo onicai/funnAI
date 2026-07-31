@@ -348,9 +348,11 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         # The canister is not registered with CycleOps yet at this point.
         topup_tc = INITIAL_TOPUP_CYCLES // 10**12
         print(f"\n- Depositing {topup_tc} T cycles into {llm_name} ({canister_id})")
+        # `dfx canister deposit-cycles` -> `icp canister top-up`. Note the argument order
+        # is reversed: icp takes the canister first and the amount as a flag.
         cmd = [
-            "dfx", "canister", "--network", network, "deposit-cycles",
-            str(INITIAL_TOPUP_CYCLES), canister_id,
+            "icp", "canister", "top-up", canister_id,
+            "--amount", str(INITIAL_TOPUP_CYCLES), "-e", network,
         ]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append(f"Deposit {topup_tc} T cycles")
