@@ -30,13 +30,26 @@ node --version      # must be >= 22 (dfx only needed 20)
 icp --version       # 1.2.0
 ```
 
-Python side (unchanged conda env, newer icpp-pro):
+Python side. The conda env is unchanged; its dependencies come from the **vendored**
+llama_cpp_canister, which is part of this repo -- there is no separate clone to keep in
+sync, and the vendored copy is pinned to the same version as the wasm that gets deployed.
 
 ```bash
-conda activate llama_cpp_canister
+conda activate llama_cpp_canister     # create it per PoAIW/README-setup.md if you have not
 python --version                      # must be >= 3.11
-pip install -r PoAIW/requirements.txt # now icpp-pro>=5.6.0
+
+# from folder: PoAIW/llms/llama_cpp_canister   (v0.16.0; pulls in icpp-pro >= 5.6.0)
+pip install -r requirements.txt
+
+# from folder: PoAIW   (icpp-pro + bitcoin-utils for the ckSigner tests)
+pip install -r requirements.txt
+
+# from folder: funnAI  (the admin/monitoring scripts)
+pip install -r scripts/requirements.txt
 ```
+
+`PoAIW/README-setup.md` remains the authoritative first-time setup (clone layout, conda,
+mops, the gguf download). This guide only covers what the dfx -> icp-cli move changed.
 
 ### Identity migration — do not skip this
 
@@ -82,20 +95,20 @@ Do not uninstall dfx, and do not start using it for anything else.
 
 ## 2. Command translation
 
-| task | dfx | icp |
-| ------------------------- | ------------------------------------------- | ------------------------------------------------- |
-| start / stop local network | `dfx start --background` / `dfx stop`      | `icp network start -d` / `icp network stop`       |
-| clean restart             | `dfx start --clean`                         | `icp network stop && rm -rf .icp/cache && icp network start -d` |
-| deploy                    | `dfx deploy X --network prd`                | `icp deploy X -e prd -y`                          |
-| call                      | `dfx canister call X m '(...)' --network prd` | `icp canister call X m '(...)' -e prd`          |
-| call a query              | (auto-detected)                             | `... --query`                                     |
-| canister id               | `dfx canister id X --network prd`           | `icp canister status X -e prd --id-only`          |
-| status                    | `dfx canister status X --network prd`       | `icp canister status X -e prd`                    |
-| module hash (not a controller) | `dfx canister info X --network ic`     | `icp canister status X -n ic -p`                  |
-| logs                      | `dfx canister logs X --network prd`         | `icp canister logs X -e prd`                      |
-| controllers               | `dfx canister update-settings X --add-controller P` | `icp canister settings update X --add-controller P` |
-| cycles balance            | `dfx wallet balance`                        | `icp cycles balance -e prd`                       |
-| identity                  | `dfx identity whoami` / `get-principal`     | `icp identity default` / `icp identity principal` |
+| task                           | dfx                                                 | icp                                                             |
+| ------------------------------ | --------------------------------------------------- | --------------------------------------------------------------- |
+| start / stop local network     | `dfx start --background` / `dfx stop`               | `icp network start -d` / `icp network stop`                     |
+| clean restart                  | `dfx start --clean`                                 | `icp network stop && rm -rf .icp/cache && icp network start -d` |
+| deploy                         | `dfx deploy X --network prd`                        | `icp deploy X -e prd -y`                                        |
+| call                           | `dfx canister call X m '(...)' --network prd`       | `icp canister call X m '(...)' -e prd`                          |
+| call a query                   | (auto-detected)                                     | `... --query`                                                   |
+| canister id                    | `dfx canister id X --network prd`                   | `icp canister status X -e prd --id-only`                        |
+| status                         | `dfx canister status X --network prd`               | `icp canister status X -e prd`                                  |
+| module hash (not a controller) | `dfx canister info X --network ic`                  | `icp canister status X -n ic -p`                                |
+| logs                           | `dfx canister logs X --network prd`                 | `icp canister logs X -e prd`                                    |
+| controllers                    | `dfx canister update-settings X --add-controller P` | `icp canister settings update X --add-controller P`             |
+| cycles balance                 | `dfx wallet balance`                                | `icp cycles balance -e prd`                                     |
+| identity                       | `dfx identity whoami` / `get-principal`             | `icp identity default` / `icp identity principal`               |
 
 Three gotchas worth internalising:
 
@@ -144,15 +157,15 @@ remove `.icp/cache`.
 
 ## 4. Where everything moved
 
-| dfx | icp-cli |
-| --------------------------------- | ------------------------------------------------------- |
-| `dfx.json`                        | `icp.yaml` |
-| `canister_ids.json`               | `.icp/data/mappings/<env>.ids.json` (committed) |
-| `networks` in dfx.json            | `environments` in icp.yaml |
-| `.dfx/<net>/canisters/<n>/<n>.wasm` | `.icp/cache/artifacts/<n>` |
-| `.env` (`output_env_file`)        | gone — vite reads the mappings directly |
-| dfx's bundled `moc`               | `[toolchain] moc` in `mops.toml` |
-| `dfx deps pull`                   | nothing — fixed principals, plus `ii: true` for local II |
+| dfx                                 | icp-cli                                                  |
+| ----------------------------------- | -------------------------------------------------------- |
+| `dfx.json`                          | `icp.yaml`                                               |
+| `canister_ids.json`                 | `.icp/data/mappings/<env>.ids.json` (committed)          |
+| `networks` in dfx.json              | `environments` in icp.yaml                               |
+| `.dfx/<net>/canisters/<n>/<n>.wasm` | `.icp/cache/artifacts/<n>`                               |
+| `.env` (`output_env_file`)          | gone — vite reads the mappings directly                  |
+| dfx's bundled `moc`                 | `[toolchain] moc` in `mops.toml`                         |
+| `dfx deps pull`                     | nothing — fixed principals, plus `ii: true` for local II |
 
 `PoAIW/llms/llama_cpp_canister/` is vendored at **v0.16.0**. The prd canisters still run
 v0.11.0 — upgrading them is a mainnet operation, done separately. The three fleet projects
@@ -300,15 +313,15 @@ Moving the wallet's balance to the cycles ledger is a separate, later decision.
 
 ## 9. Troubleshooting
 
-| symptom | cause and fix |
-| ------------------------------------------------- | ------------------------------------------------------ |
-| `port 8000 is in use by the local network of ...`  | another project's replica. Ours all use `gateway.port: 0`; check the project's icp.yaml. |
-| a script hangs with no output                      | an `icp canister call` with no `'()'` argument opened the interactive builder. Add `'()'`. |
-| `The replica returned ... 400` on an upload        | trailing slash: `icp network status` reports `.../`, and appending `/api/v3` gives `//api/v3`. `.rstrip("/")` it. |
-| `could not find ID for canister`                   | the canister is not in `.icp/data/mappings/<env>.ids.json`, or you are in the wrong project dir. |
+| symptom                                                 | cause and fix                                                                                                                                       |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `port 8000 is in use by the local network of ...`       | another project's replica. Ours all use `gateway.port: 0`; check the project's icp.yaml.                                                            |
+| a script hangs with no output                           | an `icp canister call` with no `'()'` argument opened the interactive builder. Add `'()'`.                                                          |
+| `The replica returned ... 400` on an upload             | trailing slash: `icp network status` reports `.../`, and appending `/api/v3` gives `//api/v3`. `.rstrip("/")` it.                                   |
+| `could not find ID for canister`                        | the canister is not in `.icp/data/mappings/<env>.ids.json`, or you are in the wrong project dir.                                                    |
 | `Caller ... is not allowed to read the canister status` | you are running as an identity that is not a controller — usually icp's `default` rather than your imported one. Check with `icp identity default`. |
-| a password prompt when exporting an identity       | it is keyring-backed. Recreate with `--storage plaintext`. |
-| CI: `403 rate limit exceeded` from api.github.com  | `icp network start` downloads the network-launcher; set `ICP_CLI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}`. |
-| `libdbus-1.so.3: cannot open shared object file`   | Linux/CI only: `apt-get install -y libdbus-1-3 libssl3`. |
-| `mops build` fails: *No Motoko canisters found*    | `[canisters.<name>]` in `mops.toml` must exactly match the `name` in `icp.yaml`. |
-| `docker-verify-wasm` says MISMATCH                 | expected until that canister is redeployed — see `WASM-HASHES.md`. |
+| a password prompt when exporting an identity            | it is keyring-backed. Recreate with `--storage plaintext`.                                                                                          |
+| CI: `403 rate limit exceeded` from api.github.com       | `icp network start` downloads the network-launcher; set `ICP_CLI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}`.                                        |
+| `libdbus-1.so.3: cannot open shared object file`        | Linux/CI only: `apt-get install -y libdbus-1-3 libssl3`.                                                                                            |
+| `mops build` fails: *No Motoko canisters found*         | `[canisters.<name>]` in `mops.toml` must exactly match the `name` in `icp.yaml`.                                                                    |
+| `docker-verify-wasm` says MISMATCH                      | expected until that canister is redeployed — see `WASM-HASHES.md`.                                                                                  |

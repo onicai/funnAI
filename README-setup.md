@@ -11,6 +11,10 @@ conda activate llama_cpp_canister
 # Set NETWORK environment variable
 NETWORK=testing  # [local|ic|development|testing|demo|prd]
 
+# NOTE: `--output json` is gone. icp-cli cannot decode a Candid response the way dfx did
+# (its `--json` wraps the raw response instead), so anything that needs real JSON goes
+# through scripts/lib/icp_helpers.py, which decodes with icp-py-core.
+
 # ADMIN MONITORING & HELPER SCRIPTS
 # The scripts read the canister ids from these files:
 # - protocol: 'scripts/canister_ids-<network>.env'
@@ -26,15 +30,17 @@ scripts/monitor_memory.sh --network $NETWORK --canister-types [all|protocol|main
 scripts/monitor_balance.sh --network $NETWORK --canister-types [all|protocol|mainers]
 
 # When running local
-# We are using dfx deps for:
-# - internet-identity
-# - cycles_ledger
+# `dfx deps pull` has no icp-cli equivalent, and none is needed:
+# - internet-identity : the managed local network serves it itself (`ii: true` in
+#                       icp.yaml), at http://id.ai.localhost:<port>/authorize
+# - cycles_ledger     : a fixed mainnet principal; nothing here deploys it
 #
 # from folder: funnAI
-dfx deps pull
-dfx deps init
-dfx start --clean
-dfx deps deploy
+# There is no `--clean`; removing .icp/cache is the equivalent.
+# NEVER remove .icp itself -- .icp/data/mappings holds the mainnet canister ids.
+icp network stop || true
+rm -rf .icp/cache
+icp network start -d
 
 # This script deploys the core canisters:
 # (-) Before doing a new install, reset all canister_ids.json files, for example:
@@ -43,7 +49,7 @@ dfx deps deploy
 # (-) Registers the canisters properly with each other
 # (-) The timers of the Challenger & Judge are not started.
 #     -> Do this manually with the command:
-#          dfx canister call <canisterId> startTimerExecutionAdmin
+#          icp canister call <canisterId> startTimerExecutionAdmin '()' -e $NETWORK
 # Note: on WSL, you might first have to run
 sudo sysctl -w vm.max_map_count=2097152
 # from folder: funnAI
@@ -65,29 +71,29 @@ scripts/deploy-all.sh --mode install --network $NETWORK
 # This is still possible, but there are other options now.
 #
 # # Verify that 'subnetShareAgentCtrl' is set correctly in GameState
-# dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
+# icp canister call game_state_canister getSubnetsAdmin '()' -e $NETWORK
 # # Deploy a new ShareAgent via Admin command
 # scripts/scripts-gamestate/deploy-mainers-ShareAgent-via-gamestate.sh --mode install --network $NETWORK
 # # Update gamestate to the latest wasmhash. <canisterId> is the address of one of the upgraded ShareAgent canisters
-# dfx canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="New wasm deployed"})' --network $NETWORK
+# icp canister call game_state_canister deriveNewMainerAgentCanisterWasmHashAdmin '(record {address="<canisterId>"; textNote="New wasm deployed"})' -e $NETWORK
 
 # # To increase limit of ShareAgent mAIners
-# dfx canister --network prd call game_state_canister setLimitForCreatingMainerAdmin '(record {mainerType = variant { ShareAgent } ; newLimit = 450 : nat;} )'
+# icp canister call game_state_canister setLimitForCreatingMainerAdmin '(record {mainerType = variant { ShareAgent } ; newLimit = 450 : nat;} )' -e prd
 
 
 # #########################################################################
 # Admin functions to clean up redeemed payments in case the creation failed.
 # This is used during testing, but can also be used in production in case the mAIner creation failed, but user payment was accepted
-dfx canister call game_state_canister getRedeemedTransactionBlockAdmin '(record {paymentTransactionBlockId = 12 : nat64} )' --network $NETWORK
-dfx canister call game_state_canister removeRedeemedTransactionBlockAdmin '(record {paymentTransactionBlockId = 12 : nat64} )' --network $NETWORK
+icp canister call game_state_canister getRedeemedTransactionBlockAdmin '(record {paymentTransactionBlockId = 12 : nat64} )' -e $NETWORK
+icp canister call game_state_canister removeRedeemedTransactionBlockAdmin '(record {paymentTransactionBlockId = 12 : nat64} )' -e $NETWORK
 
 # -----------------------------------------------
 # Timers:
 # (-) The timers for the mAIners are started automatically.
 # (-) The timers of the Challenger & Judge are NOT started automatically.
 # Start/Stop by canisterId
-dfx canister --network $NETWORK call <canisterId> startTimerExecutionAdmin
-dfx canister --network $NETWORK call <canisterId> stopTimerExecutionAdmin
+icp canister call <canisterId -e $NETWORK > startTimerExecutionAdmin
+icp canister call <canisterId -e $NETWORK > stopTimerExecutionAdmin
 # Start/Stop Challenger & Judge with script
 scripts/start-challenger.sh --network $NETWORK
 scripts/stop-challenger.sh --network $NETWORK
@@ -97,61 +103,60 @@ scripts/stop-judge.sh --network $NETWORK
 # Important
 # The IS_GENERATING_CHALLENGE flag is not reset during a stop/start of the canister
 # Make sure to call:
-dfx canister --network $NETWORK call <challenger_id> resetIsGeneratingChallengeFlag
+icp canister call <challenger_id -e $NETWORK > resetIsGeneratingChallengeFlag
 
 # Once the timers are running, you can use these commands to check on the data captured by the gamestate:
 # Run from folder: funnAI
 
 # Verify Challenger challenge generations
 # You can reset the challenge storage arrays with:
-dfx canister call game_state_canister resetCurrentChallengesAdmin --output json --network $NETWORK
+icp canister call game_state_canister resetCurrentChallengesAdmin -e $NETWORK
 
-dfx canister call game_state_canister getCurrentChallengesAdmin --output json --network $NETWORK
-dfx canister call game_state_canister getNumCurrentChallengesAdmin --output json --network $NETWORK
+icp canister call game_state_canister getCurrentChallengesAdmin -e $NETWORK
+icp canister call game_state_canister getNumCurrentChallengesAdmin -e $NETWORK
 
 
 # Verify mAIner response generations
 # Note: submissionStatus changes from #Submitted > #Judging > #Judged
-dfx canister call game_state_canister getSubmissionsAdmin --output json --network $NETWORK
-dfx canister call game_state_canister getNumSubmissionsAdmin --output json --network $NETWORK
+icp canister call game_state_canister getSubmissionsAdmin -e $NETWORK
+icp canister call game_state_canister getNumSubmissionsAdmin -e $NETWORK
 
-dfx canister call game_state_canister getOpenSubmissionsAdmin --output json --network $NETWORK
-dfx canister call game_state_canister getNumOpenSubmissionsAdmin --output json --network $NETWORK
+icp canister call game_state_canister getOpenSubmissionsAdmin -e $NETWORK
+icp canister call game_state_canister getNumOpenSubmissionsAdmin -e $NETWORK
 
-dfx canister call game_state_canister getOpenSubmissionsForOpenChallengesAdmin --output json --network $NETWORK
-dfx canister call game_state_canister getNumOpenSubmissionsForOpenChallengesAdmin --output json --network $NETWORK
+icp canister call game_state_canister getOpenSubmissionsForOpenChallengesAdmin -e $NETWORK
+icp canister call game_state_canister getNumOpenSubmissionsForOpenChallengesAdmin -e $NETWORK
 
 # Verify Judge score generations
-dfx canister call game_state_canister getScoredChallengesAdmin --output json --network $NETWORK
-dfx canister call game_state_canister getNumScoredChallengesAdmin --output json --network $NETWORK
+icp canister call game_state_canister getScoredChallengesAdmin -e $NETWORK
+icp canister call game_state_canister getNumScoredChallengesAdmin -e $NETWORK
 
 # Verify GameState management of challenges/scores/winners
-dfx canister call game_state_canister getArchivedChallengesAdmin --output json --network $NETWORK
-dfx canister call game_state_canister getNumArchivedChallengesAdmin --output json --network $NETWORK
+icp canister call game_state_canister getArchivedChallengesAdmin -e $NETWORK
+icp canister call game_state_canister getNumArchivedChallengesAdmin -e $NETWORK
 
-dfx canister call game_state_canister getClosedChallengesAdmin --output json --network $NETWORK
-dfx canister call game_state_canister getNumClosedChallengesAdmin --output json --network $NETWORK
+icp canister call game_state_canister getClosedChallengesAdmin -e $NETWORK
+icp canister call game_state_canister getNumClosedChallengesAdmin -e $NETWORK
 
-dfx canister call game_state_canister getRecentChallengeWinners --output json --network $NETWORK
-dfx canister call game_state_canister getRecentProtocolActivity --output json --network $NETWORK
+icp canister call game_state_canister getRecentChallengeWinners -e $NETWORK
+icp canister call game_state_canister getRecentProtocolActivity -e $NETWORK
 
 # Deploy funnai backend (reproducible build):
 # See README-prd-upgrade-commands.md for build, deploy and verify instructions
 
 # Deploy funnai frontend:
 ## ensure you have the latest from the PoAIW repo
-dfx generate game_state_canister
-dfx generate mainer_ctrlb_canister
-dfx generate api_canister
-dfx deploy funnai_frontend --network $NETWORK
+# `dfx generate` has no icp-cli equivalent: src/declarations/ is committed, so nothing
+# regenerates it during a build. If an interface changes, regenerate with `didc bind -t js`.
+icp deploy funnai_frontend -e $NETWORK -y
 # Note: you might need to give yourself these explicit permissions:
-dfx canister call funnai_frontend grant_permission '(record {permission = variant {Prepare}; to_principal = principal "<your-principal>"})'
-dfx canister call funnai_frontend grant_permission '(record {permission = variant {Commit}; to_principal = principal "<your-principal>"})'
+icp canister call funnai_frontend grant_permission '(record {permission = variant {Prepare}; to_principal = principal "<your-principal>"})' -e $NETWORK
+icp canister call funnai_frontend grant_permission '(record {permission = variant {Commit}; to_principal = principal "<your-principal>"})' -e $NETWORK
 
 
 # Deploy the token ledger canister:
 # from folder: PoAIW/src/TokenLedger
-dfx deploy
+icp deploy -e local -y
 # follow the manual steps in PoAIW/src/TokenLedger/README to set canister ids and test the token ledger setup
 ```
 
@@ -169,7 +174,7 @@ For accurate cycle burn calculation, turn off ALL the timers (Challenger, mAIner
 
 ```bash
 # To start with a clean slate, remove all current challenges
-dfx canister call game_state_canister resetCurrentChallengesAdmin --network $NETWORK
+icp canister call game_state_canister resetCurrentChallengesAdmin '()' -e $NETWORK
 
 # test a single Challenge Generation by the Challenger
 scripts/scripts-testing/generate-a-challenge.sh --network $NETWORK
@@ -191,43 +196,43 @@ The CyclesFlow variables are defined in GameState and then selectively passed on
 The following Admin endpoints are available:
 
 ```bash
-dfx canister call game_state_canister setCyclesFlowAdmin '(record {})'
-dfx canister call game_state_canister getCyclesFlowAdmin
-dfx canister call game_state_canister resetCyclesFlowAdmin
+icp canister call game_state_canister setCyclesFlowAdmin '(record {})' -e $NETWORK
+icp canister call game_state_canister getCyclesFlowAdmin '()' -e $NETWORK
+icp canister call game_state_canister resetCyclesFlowAdmin '()' -e $NETWORK
 
 # setCyclesFLowAdmin allows to overwrite the default values:
 #
 # a) Overwrite individual parameters that go into the CyclesFlow calculations
-dfx canister call game_state_canister setCyclesFlowAdmin '( record {
+icp canister call game_state_canister setCyclesFlowAdmin '( record {
   dailyChallenges = opt (10 : nat);
   numJudgeLlms = opt (6 : nat);
-})'
+})' -e $NETWORK
 # b) Overwrite the calculated CyclesFlow variables
-dfx canister call game_state_canister setCyclesFlowAdmin '( record {
+icp canister call game_state_canister setCyclesFlowAdmin '( record {
   cyclesGenerateResponseSsctrlSsllm = opt (100_000_000 : nat);
-})'
+})' -e $NETWORK
 ```
 
 # Adjust reward per challenge:
 
 ```bash
 # e.g. to 1000 FUNNAI
-dfx canister call game_state_canister setRewardPerChallengeAdmin '100000000000' --network $NETWORK
+icp canister call game_state_canister setRewardPerChallengeAdmin '100000000000' -e $NETWORK
 ```
 
 ## Adjust cycles security buffer
 This determines the threshold of conversion to ICP. If the Game State's cycle balance is underneath the buffer, it converts incoming ICP payments to cycles. If the cycle balance is above the threshold it doesn't convert ICP to cycles but uses the cycles from its balance.
 ```bash
-dfx canister call game_state_canister getProtocolCyclesBalanceBuffer --network $NETWORK
+icp canister call game_state_canister getProtocolCyclesBalanceBuffer '()' -e $NETWORK
 # parameter is in trillion cycles, e.g. to 400 means 400T cycles
-dfx canister call game_state_canister setProtocolCyclesBalanceBuffer '400' --network $NETWORK
+icp canister call game_state_canister setProtocolCyclesBalanceBuffer '400' -e $NETWORK
 ```
 
 ## Adjust mAIner creation buffer
 This determines the threshold of allowing more mAIners to be created and is a security measurement against concurrent creation requests from users (to avoid that they pay but then are blocked from the creation).
 ```bash
-dfx canister call game_state_canister getBufferMainerCreation --network $NETWORK
-dfx canister call game_state_canister setBufferMainerCreation '10' --network $NETWORK
+icp canister call game_state_canister getBufferMainerCreation '()' -e $NETWORK
+icp canister call game_state_canister setBufferMainerCreation '10' -e $NETWORK
 ```
 
 # The GameState Thresholds
@@ -238,42 +243,42 @@ The following endpoints allow to set & get the values:
 
 ```bash
 # From folder: funnAI
-dfx canister call game_state_canister getGameStateThresholdsAdmin --output json --network $NETWORK
+icp canister call game_state_canister getGameStateThresholdsAdmin -e $NETWORK
 
-dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
+icp canister call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdArchiveClosedChallenges = 140 : nat;
         thresholdMaxOpenChallenges = 7 : nat;
         thresholdMaxOpenSubmissions = 140 : nat;
         thresholdScoredResponsesPerChallenge = 27 : nat;
     }
-)' --network $NETWORK
+)' -e $NETWORK
 ```
 
 # Manually migrate data to the Archive canister
 ```bash
 # Archived challenges
-dfx canister call game_state_canister migrateArchivedChallengesAdmin --network $NETWORK
+icp canister call game_state_canister migrateArchivedChallengesAdmin '()' -e $NETWORK
 # Submissions
-dfx canister call game_state_canister getNumSubmissionsAdmin --output json --network $NETWORK
-dfx canister call game_state_canister getNumOpenSubmissionsAdmin --output json --network $NETWORK
-dfx canister call game_state_canister getNumOpenSubmissionsForOpenChallengesAdmin --output json --network $NETWORK
-dfx canister call game_state_canister getNumArchivedSubmissionsAdmin --network $NETWORK
-dfx canister call game_state_canister archiveSubmissionsAdmin --network $NETWORK
-dfx canister call game_state_canister cleanSubmissionsAdmin --network $NETWORK
-dfx canister call game_state_canister getNumSubmissionsToMigrateAdmin --network $NETWORK
-dfx canister call game_state_canister setNumSubmissionsToMigrateAdmin '100' --network $NETWORK # 3000 is the max (due to message size limit)
-dfx canister call game_state_canister migrateSubmissionsAdmin --network $NETWORK
+icp canister call game_state_canister getNumSubmissionsAdmin -e $NETWORK
+icp canister call game_state_canister getNumOpenSubmissionsAdmin -e $NETWORK
+icp canister call game_state_canister getNumOpenSubmissionsForOpenChallengesAdmin -e $NETWORK
+icp canister call game_state_canister getNumArchivedSubmissionsAdmin '()' -e $NETWORK
+icp canister call game_state_canister archiveSubmissionsAdmin '()' -e $NETWORK
+icp canister call game_state_canister cleanSubmissionsAdmin '()' -e $NETWORK
+icp canister call game_state_canister getNumSubmissionsToMigrateAdmin '()' -e $NETWORK
+icp canister call game_state_canister setNumSubmissionsToMigrateAdmin '100' # 3000 is the max (due to message size limit -e $NETWORK)
+icp canister call game_state_canister migrateSubmissionsAdmin '()' -e $NETWORK
 # Winner declarations
-dfx canister call game_state_canister migrateWinnerDeclarationsAdmin 'vec { "challengeIdsToMigrate"; "" }' --network $NETWORK
+icp canister call game_state_canister migrateWinnerDeclarationsAdmin 'vec { "challengeIdsToMigrate"; "" }' -e $NETWORK
 # Scored responses
-dfx canister call game_state_canister getScoredChallengesAdmin --output json --network $NETWORK
-dfx canister call game_state_canister getNumScoredChallengesAdmin --output json --network $NETWORK
-dfx canister call game_state_canister migrateScoredResponsesForChallengeAdmin '"challengeIdToMigrate"' --output json --network $NETWORK
+icp canister call game_state_canister getScoredChallengesAdmin -e $NETWORK
+icp canister call game_state_canister getNumScoredChallengesAdmin -e $NETWORK
+icp canister call game_state_canister migrateScoredResponsesForChallengeAdmin '"challengeIdToMigrate"' -e $NETWORK
 ```
 
 # Manually backup mAIners to the Archive canister
 ```bash
-dfx canister call game_state_canister backupMainersAdmin --network $NETWORK
+icp canister call game_state_canister backupMainersAdmin '()' -e $NETWORK
 ```
 
 # Start & Stop the Game
@@ -333,17 +338,14 @@ Deploy the code as canisters to the live IC where it's accessible via regular We
 ### Development Stage
 
 ```bash
-dfx deploy --network development --argument "( principal\"$(dfx identity get-principal)\" )" funnai_backend
+# funnai_backend takes the deploying principal as its init argument.
+# `--argument` is `--args` in icp-cli, and `icp identity principal` takes no environment.
+icp deploy funnai_backend --args "( principal \"$(icp identity principal)\" )" -e development -y
 
-dfx deploy --network development funnai_frontend
+icp deploy funnai_frontend -e development -y
 
-or
-
-dfx deploy funnai_frontend --network development --wallet "$(dfx identity --network development get-wallet)"
-
-demo
-
-dfx deploy funnai_frontend --network demo --wallet "$(dfx identity --network demo get-wallet)"
+# demo
+icp deploy funnai_frontend -e demo -y
 ```
 
 
@@ -354,22 +356,23 @@ For setting up stages, see [Notes on Stages](./notes/NotesOnStages.md)
 ```bash
 npm install
 
-dfx start --background
+icp network start -d
 ```
 
 Deploy to Mainnet (live IC):
 Ensure that all changes needed for Mainnet deployment have been made (e.g. define HOST in store.ts)
 
 ```bash
-dfx deploy --network ic --argument "( principal\"$(dfx identity get-principal)\" )" funnai_backend
-dfx deploy --network ic funnai_frontend
+icp deploy funnai_backend --args "( principal \"$(icp identity principal)\" )" -e prd -y
+icp deploy funnai_frontend -e prd -y
 ```
 
-In case there are authentication issues, you could try this command
+In case there are authentication issues: icp-cli has no wallet to pass. Check that the
+identity you are deploying with is a controller of the canister
 (Note that only authorized identities which are set up as canister controllers may deploy the production canisters)
 
 ```bash
-dfx deploy --network ic --wallet "$(dfx identity --network ic get-wallet)"
+icp deploy -e ic -y
 ```
 
 ### Backup stage
@@ -377,10 +380,12 @@ dfx deploy --network ic --wallet "$(dfx identity --network ic get-wallet)"
 Potentially create if there's high demand on subnets and failing deployments
 
 ```bash
-dfx identity get-wallet --ic
-dfx identity --network backup set-wallet 3v5vy-2aaaa-aaaai-aapla-cai
-dfx deploy --network backup --argument "( principal\"$(dfx identity get-principal)\" )" funnai_backend --subnet qdvhd-os4o2-zzrdw-xrcv4-gljou-eztdp-bj326-e6jgr-tkhuc-ql6v2-yqe --with-cycles 1000000000000
-dfx deploy --network backup funnai_frontend --subnet qdvhd-os4o2-zzrdw-xrcv4-gljou-eztdp-bj326-e6jgr-tkhuc-ql6v2-yqe --with-cycles 1000000000000
+# icp-cli has no cycles-wallet concept. Your own cycles balance:
+icp cycles balance -e prd
+# icp-cli has no wallet to set: cycles come from the identity's cycles-ledger balance.
+icp deploy funnai_backend --args "( principal \"$(icp identity principal)\" )" \
+  --subnet qdvhd-os4o2-zzrdw-xrcv4-gljou-eztdp-bj326-e6jgr-tkhuc-ql6v2-yqe -e backup -y
+icp deploy funnai_frontend --subnet qdvhd-os4o2-zzrdw-xrcv4-gljou-eztdp-bj326-e6jgr-tkhuc-ql6v2-yqe --with-cycles 1000000000000 -e backup -y
 ```
 
 # Credits
@@ -394,14 +399,14 @@ Serving this app and hosting the data securely and in a decentralized way is mad
 The project has email subscription functionality included. The following commands are helpful for managing subscriptions.
 
 ```bash
-dfx canister call funnai_backend get_email_subscribers
-dfx canister call funnai_backend delete_email_subscriber 'j@g.com'
+icp canister call funnai_backend get_email_subscribers '()' -e $NETWORK
+icp canister call funnai_backend delete_email_subscriber 'j@g.com'
 
-dfx canister call funnai_backend get_email_subscribers --network development
-dfx canister call funnai_backend delete_email_subscriber 'j@g.com' --network development
+icp canister call funnai_backend get_email_subscribers --network development -e $NETWORK
+icp canister call funnai_backend delete_email_subscriber 'j@g.com' --network development -e $NETWORK
 
-dfx canister call funnai_backend get_email_subscribers --network ic
-dfx canister call funnai_backend delete_email_subscriber 'j@g.com' --network ic
+icp canister call funnai_backend get_email_subscribers --network ic -e $NETWORK
+icp canister call funnai_backend delete_email_subscriber 'j@g.com' -e ic -e $NETWORK
 ```
 
 ## Cycles for Production Canisters
@@ -413,10 +418,10 @@ Fund wallet with cycles (from ICP): https://medium.com/dfinity/internet-computer
 Top up cycles:
 
 ```bash
-dfx identity --network=ic get-wallet
-dfx wallet --network ic balance
-dfx canister --network ic status funnai_backend
-dfx canister --network ic status funnai_frontend
-dfx canister --network ic --wallet 3v5vy-2aaaa-aaaai-aapla-cai deposit-cycles 3000000000000 funnai_backend
-dfx canister --network ic --wallet 3v5vy-2aaaa-aaaai-aapla-cai deposit-cycles 300000000000 funnai_frontend
+icp cycles balance -e ic
+icp canister call jh35u-eqaaa-aaaag-abf3a-cai wallet_balance '()' -e ic --query
+icp canister status funnai_backend -e ic
+icp canister status funnai_frontend -e ic
+icp canister top-up funnai_backend --amount 3000000000000 -e ic
+icp canister top-up funnai_frontend --amount 300000000000 -e ic
 ```

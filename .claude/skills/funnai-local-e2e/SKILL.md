@@ -63,10 +63,10 @@ canister id and health state in one screen.
 
 ## Identities
 
-| identity | role |
-| ------------ | ------------------------------------------------------- |
+| identity     | role                                                        |
+| ------------ | ----------------------------------------------------------- |
 | `default`    | the local admin — deploys everything, holds all admin roles |
-| `e2e-player` | an ordinary player, for exercising non-admin paths      |
+| `e2e-player` | an ordinary player, for exercising non-admin paths          |
 
 **`default` is the admin locally — not your mainnet identity.** The identity you imported
 for mainnet work is a controller *there*, and has no rights on this throwaway local
@@ -96,15 +96,15 @@ Hand off to `browser-mcp` for the actual browser driving rather than duplicating
 
 ## Known failure modes
 
-| symptom | cause |
-| ------------------------------------------------ | ----------------------------------------------- |
-| `IC0207` / "out of cycles" on `load_model`        | `icp deploy` seeds only ~0.5T. The harness tops the LLM up to 20T; if you deployed by hand, do the same. |
-| `Err = Unauthorized` where you expected data      | wrong identity — use `default` locally (see above). |
-| `llmCanisterIds` empty after wiring               | a controller must be an admin **and** a canister-controller of the LLM *before* `add_llm_canister`; the reverse order fails silently unless the response is checked. |
-| `Model not yet loaded`                            | you ran `make e2e-up-fast`. Use `make e2e-up`. |
-| a script hangs with no output                     | an `icp canister call` with no `'()'` argument opened the interactive builder. |
-| `plugin dir '../dist' is not a safe relative path`| the asset-canister recipe rejects `..`; build into `e2e/dist`. |
-| `the local network for this project is not running` | you are in the wrong project dir. The app's network belongs to `e2e/`; `icp_helpers.use_project()` handles this in Python. |
+| symptom                                             | cause                                                                                                                                                                |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `IC0207` / "out of cycles" on `load_model`          | `icp deploy` seeds only ~0.5T. The harness tops the LLM up to 20T; if you deployed by hand, do the same.                                                             |
+| `Err = Unauthorized` where you expected data        | wrong identity — use `default` locally (see above).                                                                                                                  |
+| `llmCanisterIds` empty after wiring                 | a controller must be an admin **and** a canister-controller of the LLM *before* `add_llm_canister`; the reverse order fails silently unless the response is checked. |
+| `Model not yet loaded`                              | you ran `make e2e-up-fast`. Use `make e2e-up`.                                                                                                                       |
+| a script hangs with no output                       | an `icp canister call` with no `'()'` argument opened the interactive builder.                                                                                       |
+| `plugin dir '../dist' is not a safe relative path`  | the asset-canister recipe rejects `..`; build into `e2e/dist`.                                                                                                       |
+| `the local network for this project is not running` | you are in the wrong project dir. The app's network belongs to `e2e/`; `icp_helpers.use_project()` handles this in Python.                                           |
 
 ## Limits worth stating out loud
 
