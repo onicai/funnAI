@@ -54,7 +54,7 @@ KNOWN_ACCOUNTS = {
 
 
 def dfx_call(canister_id: str, method: str, args: str = "") -> dict:
-    """Call a canister method using dfx and return JSON response."""
+    """Call a canister method and return the decoded response."""
     cmd = ["icp", "canister", "call", canister_id, method, "()", "-e", "ic"]
     if args:
         cmd.append(args)
@@ -62,7 +62,7 @@ def dfx_call(canister_id: str, method: str, args: str = "") -> dict:
     try:
         return icp_helpers.call_argv(cmd)
     except subprocess.CalledProcessError as e:
-        print(f"ERROR: dfx call failed for {method}: {e}")
+        print(f"ERROR: call failed for {method}: {e}")
         return None
     except json.JSONDecodeError as e:
         print(f"ERROR: Failed to parse JSON response for {method}: {e}")

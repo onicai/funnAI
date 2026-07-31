@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from pathlib import Path
 import subprocess
 import time
 import sys
@@ -74,25 +75,31 @@ def find_next_llm_index(canister_ids_path, network):
     return max(indices) + 1, canister_ids_data
 
 
-def ensure_dfx_json_entry(dfx_json_path, llm_name):
-    """Ensure llm_N exists in dfx.json. Add it if missing."""
-    with open(dfx_json_path) as f:
-        dfx_data = json.load(f)
+def ensure_icp_yaml_entry(icp_yaml_path, llm_name):
+    """Ensure llm_N is declared in icp.yaml. Add it if missing.
 
-    if llm_name in dfx_data.get("canisters", {}):
-        return False  # Already exists
+    Replaces the old dfx.json mutation -- dfx.json no longer exists. The slot is a
+    `pre-built` step pointing at the vendored llama_cpp wasm; there is nothing to compile.
+    Appended as text rather than round-tripped through a YAML parser, so the file keeps
+    its comments.
+    """
+    path = Path(icp_yaml_path)
+    text = path.read_text()
+    if re.search(rf"^  - name: {re.escape(llm_name)}$", text, re.MULTILINE):
+        return False  # already declared
 
-    dfx_data["canisters"][llm_name] = {
-        "type": "custom",
-        "candid": "../llama_cpp_canister/build/llama_cpp.did",
-        "wasm": "../llama_cpp_canister/build/llama_cpp.wasm",
-    }
-
-    with open(dfx_json_path, "w") as f:
-        json.dump(dfx_data, f, indent=4)
-        f.write("\n")
-
-    return True  # Was added
+    block = (
+        f"  - name: {llm_name}\n"
+        f"    build:\n"
+        f"      steps:\n"
+        f"        - type: pre-built\n"
+        f"          path: ../llama_cpp_canister/build/llama_cpp.wasm\n"
+    )
+    marker = "\nnetworks:"
+    if marker not in text:
+        raise SystemExit(f"{icp_yaml_path}: no `networks:` section to insert before")
+    path.write_text(text.replace(marker, f"\n{block}{marker}", 1))
+    return True  # was added
 
 
 def parse_subnets_from_env(env_path):
@@ -172,7 +179,7 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
     """Deploy a new LLM canister and configure it."""
     env_key = LLM_TYPE_CONFIG[llm_type]["env_key"]
     canister_ids_path = os.path.join(llm_cwd, "canister_ids.json")
-    dfx_json_path = os.path.join(llm_cwd, "dfx.json")
+    icp_yaml_path = os.path.join(llm_cwd, "icp.yaml")
     env_path = os.path.join(SCRIPT_DIR, f"canister_ids-{network}.env")
 
     # Step 1: Determine next llm_N index
@@ -181,11 +188,11 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
     print(f"\n- Next available LLM index: {llm_name}")
 
     # Step 2: Verify/add llm_N in dfx.json
-    added = ensure_dfx_json_entry(dfx_json_path, llm_name)
+    added = ensure_icp_yaml_entry(icp_yaml_path, llm_name)
     if added:
-        print(f"  Added {llm_name} to {dfx_json_path}")
+        print(f"  Added {llm_name} to {icp_yaml_path}")
     else:
-        print(f"  Ok! {llm_name} exists in {dfx_json_path} — we know how to deploy")
+        print(f"  Ok! {llm_name} exists in {icp_yaml_path} — we know how to deploy")
 
     # Step 3: Auto-select subnet if not provided
     subnet_var = None
@@ -326,11 +333,11 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         PATRICK = "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"
         ARJAAN = "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"
 
-        print(f"\n- Adding Patrick as dfx controller")
+        print(f"\n- Adding Patrick as canister controller")
         cmd = ["icp", "canister", "settings", "update", llm_name, "--add-controller", PATRICK, "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
 
-        print(f"\n- Adding Arjaan as dfx controller")
+        print(f"\n- Adding Arjaan as canister controller")
         cmd = ["icp", "canister", "settings", "update", llm_name, "--add-controller", ARJAAN, "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Add admin controllers (Patrick, Arjaan)")
@@ -505,7 +512,7 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
             else:
                 print(f"    # The canister was not yet added to canister_ids-{network}.env,")
                 print(f"    # so delete_llm.sh cannot be used. Run from {llm_cwd}:")
-                print(f"    dfx canister --network {network} delete {llm_name}")
+                print(f"    icp canister delete {llm_name} -e {network}")
         print("!" * 80)
 
 

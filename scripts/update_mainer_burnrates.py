@@ -13,7 +13,7 @@ from .monitor_common import get_canisters, ensure_log_dir
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 def update_mainer_burnrate(canister_id, network, burnrate):
-    """Update mainer burnrate using dfx for a given canister."""
+    """Update a mAIner burn rate."""
     try:    
         print(f"Updating burnrate to {burnrate} for canister {canister_id} on network {network}...")
         subprocess.run(

@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 def get_memory(canister_id, network):
-    """Fetch memory using dfx for a given canister."""
+    """Fetch the memory size of a canister."""
     try:
         output = subprocess.check_output(
             ["icp", "canister", "status", canister_id, "-e", network],

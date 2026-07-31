@@ -24,7 +24,7 @@ CONTROLLERS = [
 ]
 
 def add_controllers(canister_id, network):
-    """Add controllers using dfx for a given canister."""
+    """Add controllers to a canister."""
     for controller in CONTROLLERS:
         try:    
             print(f"Adding controller {controller} to canister {canister_id} on network {network}...")

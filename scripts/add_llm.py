@@ -271,7 +271,7 @@ def add_llm(ctrlb_canister_id, gamestate_canister_id, llm_type, canister_id, net
     print(f"  Register the new LLM canister with CycleOps")
     print(f"  (adds controller 2daxo-giaaa-aaaap-anvca-cai).")
     print("\nVerify on-chain prompt-cache cleanup is active:")
-    print(f"  dfx canister --network {network} call {canister_id} get_cache_cleanup_stats '()'")
+    print(f"  icp canister call {canister_id} get_cache_cleanup_stats '()'")
     print(f"  Look for is_running = true, and runs > 0 after one period (default 600s).")
 
 

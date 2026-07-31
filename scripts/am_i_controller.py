@@ -15,7 +15,7 @@ from .monitor_common import get_canisters, ensure_log_dir
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 def am_i_controller(canister_id, network, my_principal):
-    """List controllers using dfx for a given canister."""
+    """List the controllers of a canister."""
     try:
         # --------------------------------
         # Get canister info

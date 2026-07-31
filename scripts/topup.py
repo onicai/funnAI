@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 import subprocess
 import time
 import argparse
@@ -9,21 +10,26 @@ from dotenv import dotenv_values
 
 from .monitor_common import get_canisters, ensure_log_dir
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import icp_helpers  # noqa: E402
+
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 def topup(canister_id, network, tc):
-    """Top up using dfx for a given canister."""
-    try:    
+    """Send cycles to a canister from the funnAI cycles wallet.
+
+    icp-cli has no `dfx wallet` equivalent -- no wallet concept at all -- so this calls
+    the wallet canister's own `wallet_send` endpoint. Behaviour and funds are unchanged.
+    Refused against mainnet unless ICP_ALLOW_MAINNET_WRITES=1.
+    """
+    try:
         print(f"Topup with {tc} T Cycles for canister {canister_id} on network {network}...")
-        cycles = f"{int(tc)*1000000000000:_}"  # Convert T Cycles to Cycles (1 T Cycle = 10^12 Cycles)
-        # print(f"cycles = {cycles}   (Cycles)")
-        subprocess.run(
-            ["dfx", "wallet", "--network", network, "send", canister_id, cycles],
-            check=True,
-            text=True
-        )
-    except subprocess.CalledProcessError:
+        cycles = int(tc) * 1000000000000  # 1 T Cycle = 10^12 Cycles
+        icp_helpers.wallet_send(canister_id, cycles, env=network)
+    except icp_helpers.MainnetWriteBlocked:
+        raise
+    except Exception:
         print(f"ERROR: Unable to topup with {tc} T Cycles for canister {canister_id} on network {network}")
 
 def main(network, canister_types, tc):
