@@ -24,17 +24,28 @@ redeploys are a separate, later project, and this file is the handover artefact 
 
 | | before (deployed wasms) | after (this repo builds) |
 | ------------------- | ----------------------- | ----------------------------- |
-| CLI                 | dfx 0.29.2              | icp-cli 1.2.0                 |
-| Motoko compiler     | bundled with dfx 0.29.2 | `moc` pinned in `mops.toml`   |
-| package manager     | `mops sources` via dfx  | ic-mops                       |
-| post-processing     | dfx internal            | `@icp-sdk/ic-wasm` shrink     |
-| llama_cpp_canister  | v0.11.0                 | v0.15.0                       |
+| CLI                 | dfx 0.29.2              | icp-cli 1.2.0                     |
+| Motoko compiler     | bundled with dfx 0.29.2 | moc 1.4.1, pinned in `mops.toml`  |
+| package manager     | `mops sources` via dfx  | ic-mops 2.13.2                    |
+| post-processing     | dfx internal            | `@icp-sdk/ic-wasm` 0.11.0 shrink  |
+| Node (build image)  | 20                      | 22                                |
+| llama_cpp_canister  | v0.11.0                 | v0.15.0                           |
+
+Both `moc` and `ic-wasm` are pinned because both change the module hash: ic-wasm's `shrink`
+pass rewrites the element section, so two ic-wasm versions produce two different hashes
+from byte-identical Motoko code.
+
+**A local `icp build` will not match the Docker build on macOS**, and that is expected.
+Motoko codegen is deterministic across platforms — every wasm section matches — except the
+90-byte `icp:private moc:version` section, into which the `@dfinity/motoko` recipe stamps
+`moc --version` verbatim, and moc reports a platform-specific build hash. The Docker
+linux/amd64 build is the canonical artifact.
 
 ## funnAI-owned canisters
 
 | canister          | prd principal               | prd hash (dfx 0.29.2)                                              | new icp/mops hash | redeployed |
 | ----------------- | --------------------------- | ------------------------------------------------------------------ | ----------------- | ---------- |
-| `funnai_backend`  | 6wp2z-paaaa-aaaaa-qau7q-cai | `9fca8da6b78fe5c4aa0957596c28c32ebe90bdb16573c64880809577aca688cb` | TBD               | ☐          |
+| `funnai_backend`  | 6wp2z-paaaa-aaaaa-qau7q-cai | `9fca8da6b78fe5c4aa0957596c28c32ebe90bdb16573c64880809577aca688cb` | `51b380909e7396f21f77c17227511e150d8aca261282719359d7df586bb68f26` | ☐          |
 | `funnai_frontend` | vizih-uiaaa-aaaaa-qavaa-cai | `423f20ee4e5daf8f76d6bb2b4a87440227f15b26cf874c132fd75d83e252c8f6` | TBD               | ☐          |
 
 `funnai_frontend` is an asset canister; its hash comes from the

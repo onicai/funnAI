@@ -117,7 +117,22 @@ dist
 # TernJS port file
 .tern-port
 
+# dfx temporary files.
+# TODO: delete this line once the last canister is off dfx -- it only exists so that
+# leftover .dfx/ dirs of not-yet-migrated parts stay out of the way.
 .dfx
+
+# icp-cli state.
+#
+# ONLY the cache is disposable: it holds build artifacts and the ids of canisters on the
+# throwaway local network. `.icp/data/mappings/<env>.ids.json` holds the MAINNET canister
+# ids -- the replacement for canister_ids.json -- and MUST be committed.
+#
+# The `**/` prefix is required, not cosmetic: a pattern containing a slash is anchored to
+# the directory of this .gitignore, so a bare `.icp/cache/` would silently miss the
+# nested projects (src/funnai_backend/).
+**/.icp/cache/
+**/.mops/.build/
 
 # Docker reproducible build output
 src/funnai_backend/out/
@@ -173,3 +188,7 @@ scripts/burn_tokens_cache.json
 scripts/burn_tokens_prd.json
 
 scripts/mint_tokens_ic.json
+
+# Scratch / task-todo notes for AI agents & humans. Deliberately local-only:
+# they capture in-flight plans and findings, not repo state.
+TMP-*
