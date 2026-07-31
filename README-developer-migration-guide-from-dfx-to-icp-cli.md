@@ -145,9 +145,10 @@ remove `.icp/cache`.
 | dfx's bundled `moc`               | `[toolchain] moc` in `mops.toml` |
 | `dfx deps pull`                   | nothing — fixed principals, plus `ii: true` for local II |
 
-`PoAIW/llms/llama_cpp_canister/` is **unchanged at v0.11.0**. Upgrading it is a real
-functional change to the LLM canisters, not part of this tooling migration, and it is on
-hold until **v0.16.0** lands.
+`PoAIW/llms/llama_cpp_canister/` is vendored at **v0.16.0**. The prd canisters still run
+v0.11.0 — upgrading them is a mainnet operation, done separately. The three fleet projects
+(`PoAIW/llms/{Challenger,Judge,mAIner}/`) now carry `icp.yaml` + `.icp/data/mappings/`, and
+declare only the `llm_N` slots that actually have ids rather than all 55 dfx placeholders.
 
 Two families of canisters deliberately have **no** `icp.yaml` entry and are addressed by
 principal instead:

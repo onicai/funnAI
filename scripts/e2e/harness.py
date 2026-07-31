@@ -219,9 +219,12 @@ def load_model() -> None:
         return
     cid = canister_id("llm_0")
     llama = REPO / "PoAIW/llms/llama_cpp_canister"
+    # The vendored uploader is icp-native (v0.16.0+), but it resolves the network from ITS
+    # OWN project -- which has no running network. ICP_PROJECT_ROOT points icp at the e2e
+    # project, where the app actually lives.
     run(
-        f"python -m scripts.upload --network {ENV} --canister-id {cid} "
-        f"--canister-filename models/model.gguf {GGUF}",
+        f"ICP_PROJECT_ROOT={E2E} python -m scripts.upload --network {ENV} "
+        f"--canister-id {cid} --canister-filename models/model.gguf {GGUF}",
         cwd=llama,
     )
     icp(
