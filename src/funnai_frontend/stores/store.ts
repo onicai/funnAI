@@ -116,10 +116,13 @@ export const canisterIDLs = {
   cmc: cmcIDL,
 };
 
+// IC_HOST is injected by vite.config.ts. Locally it is the icp-cli managed network's
+// gateway, whose port is ephemeral (icp.yaml sets gateway.port: 0) and therefore must
+// never be hardcoded the way dfx's fixed 4943 could be.
 export const HOST =
   process.env.NODE_ENV !== "development"
     ? "https://ic0.app"
-    : "http://localhost:4943";
+    : process.env.IC_HOST;
 
 // User's device and browser information
 export const webGpuSupportedBrowsers = "Google Chrome, Microsoft Edge";
@@ -609,14 +612,19 @@ export const createStore = ({
   const initApiCanisterActor = async (loginType, identity: Identity) => {
     let canisterId = apiCanisterId;
     
-    // Fallback to canister_ids.json if environment variable is not set
+    // Fallback if the build-time canister id was not injected. The primary source is
+    // vite.config.ts, which reads PoAIW/src/Api/.icp/data/mappings/<env>.ids.json --
+    // the single source of truth for this canister since the dfx -> icp-cli migration.
     if (!canisterId) {
-      // Import canister IDs from the JSON file
       const canisterIds = {
         "demo": "p6pu7-5aaaa-aaaap-qqdfa-cai",
         "prd": "bgm6p-5aaaa-aaaaf-qbzda-cai",
         "testing": "nyxgs-uqaaa-aaaap-qqdia-cai",
-        "development": "p6pu7-5aaaa-aaaap-qqdfa-cai",
+        // The funnAI-controlled development Api canister (wallet jh35u + icpp-llm, same
+        // module hash as prd). The old root canister_ids.json pointed development at
+        // 2vreq-mqaaa-aaaam-qi2iq-cai, which the team does not control -- see
+        // retired_ids.json.
+        "development": "a65mx-iyaaa-aaaap-qus4a-cai",
         "ic": "bgm6p-5aaaa-aaaaf-qbzda-cai"
       };
       
@@ -1016,10 +1024,10 @@ export const createStore = ({
           const identity = await authClient.getIdentity();
           initInternetIdentity(identity);
         },
-        identityProvider:
-          process.env.DFX_NETWORK === "local"
-            ? `http://${process.env.INTERNET_IDENTITY_CANISTER_ID}.localhost:4943/#authorize`
-            : "https://identity.ic0.app/#authorize",
+        // II_URL is injected by vite.config.ts. Locally the managed network serves
+        // Internet Identity itself (icp.yaml sets `ii: true`) on an ephemeral port, so
+        // the URL is resolved at build time rather than assembled from a fixed port.
+        identityProvider: process.env.II_URL,
         // Maximum authorization expiration is 30 days
         maxTimeToLive: days * hours * nanosecondsPerHour,
         windowOpenerFeatures:

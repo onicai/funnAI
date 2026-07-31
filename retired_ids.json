@@ -1,0 +1,7 @@
+{
+  "_comment": "Canister ids that the root dfx.json/canister_ids.json carried but that this project no longer owns. Kept so the ids are recoverable, not for use by any tool.",
+  "api_canister": {
+    "_comment": "The root store and PoAIW/src/Api disagreed about `development`. PoAIW's a65mx-iyaaa-aaaap-qus4a-cai is the funnAI-controlled one (wallet jh35u + icpp-llm, same module hash as prd) and is now authoritative. The id below is what the frontend previously used on development: it is controlled by principals outside the funnAI set and runs a different build.",
+    "development_retired": "2vreq-mqaaa-aaaam-qi2iq-cai"
+  }
+}
