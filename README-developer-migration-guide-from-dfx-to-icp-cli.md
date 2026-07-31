@@ -41,17 +41,30 @@ pip install -r PoAIW/requirements.txt # now icpp-pro>=5.6.0
 ### Identity migration — do not skip this
 
 icp-cli keeps its **own** identity store. It does not import dfx's, and its own `default`
-identity is a *different principal* from the one you have been using. A command that runs
-as the wrong principal is not a controller, and the failure is sometimes silent.
+identity is a *different principal* from the one you have been using with dfx. A command
+that runs as the wrong principal is not a controller, and the failure is sometimes silent.
+
+Import **your own** identity — substitute the name you use with dfx (`dfx identity list`
+shows it; `dfx identity whoami` shows the active one):
 
 ```bash
-dfx identity export icpp-llm > /tmp/icpp-llm.pem
-icp identity import icpp-llm --from-pem /tmp/icpp-llm.pem && rm /tmp/icpp-llm.pem
-icp identity default icpp-llm
+MY_ID=$(dfx identity whoami)          # or type the name you want to migrate
 
-# verify the principals match — this must print the same value twice
-dfx identity get-principal --identity icpp-llm
-icp identity principal --identity icpp-llm     # chfec-vmrjj-...-2ae
+dfx identity export "$MY_ID" > "/tmp/$MY_ID.pem"
+icp identity import "$MY_ID" --from-pem "/tmp/$MY_ID.pem" && rm "/tmp/$MY_ID.pem"
+icp identity default "$MY_ID"
+
+# verify — these two must print the SAME principal
+dfx identity get-principal --identity "$MY_ID"
+icp identity principal --identity "$MY_ID"
+```
+
+Nothing in this repo hardcodes an identity name. The scripts and Makefiles use whatever
+`icp identity default` is set to, i.e. yours. To act as a different one for a single run:
+
+```bash
+ICP_IDENTITY=my-deploy-key ./scripts/monitor_balance.sh --network prd   # python scripts
+make docker-verify-wasm IDENTITY=my-deploy-key                          # Makefiles
 ```
 
 Also create a plaintext `default` identity, which the test suite needs:
@@ -297,7 +310,7 @@ Moving the wallet's balance to the cycles ledger is a separate, later decision.
 | a script hangs with no output                      | an `icp canister call` with no `'()'` argument opened the interactive builder. Add `'()'`. |
 | `The replica returned ... 400` on an upload        | trailing slash: `icp network status` reports `.../`, and appending `/api/v3` gives `//api/v3`. `.rstrip("/")` it. |
 | `could not find ID for canister`                   | the canister is not in `.icp/data/mappings/<env>.ids.json`, or you are in the wrong project dir. |
-| `Caller ... is not allowed to read the canister status` | running as icp's `default` instead of `icpp-llm`. Pass `--identity icpp-llm`. |
+| `Caller ... is not allowed to read the canister status` | you are running as an identity that is not a controller — usually icp's `default` rather than your imported one. Check `icp identity default`, or pass `ICP_IDENTITY=<your-identity>`. |
 | a password prompt when exporting an identity       | it is keyring-backed. Recreate with `--storage plaintext`. |
 | CI: `403 rate limit exceeded` from api.github.com  | `icp network start` downloads the network-launcher; set `ICP_CLI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}`. |
 | `libdbus-1.so.3: cannot open shared object file`   | Linux/CI only: `apt-get install -y libdbus-1-3 libssl3`. |

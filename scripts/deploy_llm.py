@@ -11,6 +11,12 @@ import re
 
 from .monitor_common import get_canisters, run_this_cmd
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import funnai_team  # noqa: E402
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import icp_helpers  # noqa: E402
+
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 FUNNAI_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../"))
@@ -330,17 +336,20 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
             completed_steps.append("Verify subnet")
 
         # Add admin controllers
-        PATRICK = "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"
-        ARJAAN = "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"
-
-        print(f"\n- Adding Patrick as canister controller")
-        cmd = ["icp", "canister", "settings", "update", llm_name, "--add-controller", PATRICK, "-e", network]
-        run_this_cmd(cmd, llm_cwd, confirm=False)
-
-        print(f"\n- Adding Arjaan as canister controller")
-        cmd = ["icp", "canister", "settings", "update", llm_name, "--add-controller", ARJAAN, "-e", network]
-        run_this_cmd(cmd, llm_cwd, confirm=False)
-        completed_steps.append("Add admin controllers (Patrick, Arjaan)")
+        # The team controllers, from scripts/lib/funnai_team.py (override with
+        # FUNNAI_CONTROLLERS), rather than principals pasted into this file.
+        for _c in funnai_team.controllers():
+            print(f"\n- Adding {_c['name']} as canister controller")
+            run_this_cmd(
+                ["icp", "canister", "settings", "update", llm_name,
+                 "--add-controller", _c["principal"], "-e", network],
+                llm_cwd, confirm=False,
+            )
+        completed_steps.append(
+            "Add admin controllers ("
+            + ", ".join(c["name"] for c in funnai_team.controllers())
+            + ")"
+        )
 
         # Deposit cycles before the model is loaded into the wasm heap.
         # load_model needs to grow the heap by ~670 MB, which requires ~135 B
@@ -420,7 +429,12 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         run_this_cmd(cmd, llm_cwd, confirm=False)
 
         print(f"\n- Assigning admin role to maintainer (Arjaan) for {llm_name} ({canister_id})")
-        cmd = ["icp", "canister", "call", canister_id, "assignAdminRole", '(record { "principal" = "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"; role = variant { AdminUpdate }; note = "maintainer" })', "-e", network]
+        # Maintainer admin goes to the team plus whoever is running this, so a
+        # developer keeps access to what they just deployed.
+        for _p in funnai_team.maintainer_principals(icp_helpers.principal()):
+            cmd = ["icp", "canister", "call", canister_id, "assignAdminRole",
+                   f'(record {{ "principal" = "{_p}"; role = variant {{ AdminUpdate }}; note = "maintainer" }})',
+                   "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
 
         print(f"\n- Assigning admin role to maintainer (Patrick) for {llm_name} ({canister_id})")
@@ -430,7 +444,10 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
 
         # Add log viewers
         print(f"\n- Adding log viewers for {llm_name} ({canister_id})")
-        cmd = ["icp", "canister", "settings", "update", canister_id, "--add-log-viewer", "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae", "--add-log-viewer", "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe", "-e", network]
+        _viewers = []
+        for _p in funnai_team.maintainer_principals(icp_helpers.principal()):
+            _viewers += ["--add-log-viewer", _p]
+        cmd = ["icp", "canister", "settings", "update", canister_id, *_viewers, "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Add log viewers")
 

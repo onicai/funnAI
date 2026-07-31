@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 import subprocess
 import time
 import argparse
@@ -9,19 +10,15 @@ from dotenv import dotenv_values
 
 from .monitor_common import get_canisters, ensure_log_dir
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import funnai_team  # noqa: E402
+
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
-CONTROLLERS = [
-    {
-        "name" : "patrick",
-        "principal" : "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"
-    },
-    {
-        "name" : "arjaan",
-        "principal" : "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"
-    } 
-]
+# Declared once in scripts/lib/funnai_team.py, and overridable with FUNNAI_CONTROLLERS,
+# so the team list is not copy-pasted across the deploy scripts.
+CONTROLLERS = funnai_team.controllers()
 
 def add_controllers(canister_id, network):
     """Add controllers to a canister."""

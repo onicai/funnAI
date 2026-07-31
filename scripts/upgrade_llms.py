@@ -13,6 +13,12 @@ from scripts.cleanup_llm_promptcache import cleanup_llm_promptcache
 
 from .monitor_common import get_canisters, run_this_cmd
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import funnai_team  # noqa: E402
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import icp_helpers  # noqa: E402
+
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 FUNNAI_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../"))
@@ -149,7 +155,12 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
 
         print(" ")
         print(f"- Assigning admin role to maintainer for LLM {canister_name} ({canister_id})")
-        cmd = ["icp", "canister", "call", canister_id, "assignAdminRole", '(record { "principal" = "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"; role = variant { AdminUpdate }; note = "maintainer" })', "-e", network]
+        # Maintainer admin goes to the team plus whoever is running this, so a
+        # developer keeps access to what they just deployed.
+        for _p in funnai_team.maintainer_principals(icp_helpers.principal()):
+            cmd = ["icp", "canister", "call", canister_id, "assignAdminRole",
+                   f'(record {{ "principal" = "{_p}"; role = variant {{ AdminUpdate }}; note = "maintainer" }})',
+                   "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
 
         print(" ")
@@ -164,7 +175,10 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
 
         print(" ")
         print(f"- Adding log viewers for LLM {canister_name} ({canister_id})")
-        cmd = ["icp", "canister", "settings", "update", canister_id, "--add-log-viewer", "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae", "--add-log-viewer", "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe", "-e", network]
+        _viewers = []
+        for _p in funnai_team.maintainer_principals(icp_helpers.principal()):
+            _viewers += ["--add-log-viewer", _p]
+        cmd = ["icp", "canister", "settings", "update", canister_id, *_viewers, "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
 
         print(" ")

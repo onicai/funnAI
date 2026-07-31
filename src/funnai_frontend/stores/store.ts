@@ -620,7 +620,7 @@ export const createStore = ({
         "demo": "p6pu7-5aaaa-aaaap-qqdfa-cai",
         "prd": "bgm6p-5aaaa-aaaaf-qbzda-cai",
         "testing": "nyxgs-uqaaa-aaaap-qqdia-cai",
-        // The funnAI-controlled development Api canister (wallet jh35u + icpp-llm, same
+        // The funnAI-controlled development Api canister (same controllers as prd, same
         // module hash as prd). The old root canister_ids.json pointed development at
         // 2vreq-mqaaa-aaaam-qi2iq-cai, which the team does not control -- see
         // retired_ids.json.

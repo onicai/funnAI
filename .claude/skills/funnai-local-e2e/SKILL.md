@@ -68,11 +68,12 @@ canister id and health state in one screen.
 | `default`    | the local admin — deploys everything, holds all admin roles |
 | `e2e-player` | an ordinary player, for exercising non-admin paths      |
 
-**`default` is the admin locally, not `icpp-llm`.** `icpp-llm` is the *mainnet* controller
-and has no rights on the local network; calling as it returns `Err = Unauthorized`, which
-is easy to misread as "empty result". The harness sets `icp_helpers.DEFAULT_IDENTITY` to
-`default` for exactly this reason. If a local call returns an empty list or an
-`Unauthorized` variant, check which identity you used before assuming a bug.
+**`default` is the admin locally — not your mainnet identity.** The identity you imported
+for mainnet work is a controller *there*, and has no rights on this throwaway local
+network; calling as it returns `Err = Unauthorized`, which is easy to misread as "empty
+result". The harness sets `icp_helpers.DEFAULT_IDENTITY` to `default` for exactly this
+reason. If a local call returns an empty list or an `Unauthorized` variant, check which
+identity you used before assuming a bug.
 
 ## Driving the UI
 

@@ -12,10 +12,10 @@ straight command swap, but three differences bite hard enough to be worth centra
    call sites did `json.loads(dfx ... --output json)`. icp's `--json` returns a *wrapper*
    (`{response_bytes, response_text, response_candid}`), not the decoded value. So calls
    that need real Python objects go through icp-py-core instead -- see `call()`.
-2. **icp does not inherit dfx's active identity.** icp's own `default` identity is a
-   different principal from the `icpp-llm` that dfx used. A command that forgets
-   `--identity` runs as a non-controller, and the failure can be silent. Hence
-   `DEFAULT_IDENTITY` and the fact that every function here passes it.
+2. **icp does not inherit dfx's active identity.** icp-cli keeps a separate identity store,
+   and its `default` is a different principal from whichever identity you used with dfx. A
+   command that runs as the wrong one is not a controller, and the failure can be silent.
+   Hence `DEFAULT_IDENTITY`, which defaults to your own `icp identity default`.
 3. **Queries are not auto-detected.** dfx worked out whether a method was a query; icp
    sends an update call unless told `--query`. On the monitoring loops -- which poll
    hundreds of canisters -- that is a 2x latency difference, so query calls say so.
@@ -40,6 +40,7 @@ mainnet project is deliberately underway.
 from __future__ import annotations
 
 import functools
+import re
 import json
 import os
 import subprocess
@@ -66,10 +67,16 @@ def use_project(root: str | None) -> None:
     _agent.cache_clear()
     candid_of.cache_clear()
 
-# NOT `default`. icp-cli does not import dfx's identities or its notion of an active one:
-# on this machine icp's `default` is iwcyb-... while the funnAI controller is
-# chfec-...-2ae, which icp knows as `icpp-llm`.
-DEFAULT_IDENTITY = os.environ.get("ICP_IDENTITY", "icpp-llm")
+# Which identity to act as.
+#
+# Empty means "whatever `icp identity default` is set to on this machine" -- i.e. YOUR
+# identity. Nothing here names a specific developer's identity: icp-cli keeps its own
+# identity store and does not import dfx's, so each developer imports their own key once
+# (see README-developer-migration-guide-from-dfx-to-icp-cli.md) and it is used from then on.
+#
+# Set ICP_IDENTITY to act as a different one for a single run, e.g. a shared deploy key:
+#     ICP_IDENTITY=my-deploy-key ./scripts/monitor_balance.sh --network prd
+DEFAULT_IDENTITY = os.environ.get("ICP_IDENTITY", "")
 
 # The five dfx "networks" were all https://icp0.io -- separate canister-id namespaces
 # rather than separate networks. Under icp-cli they are environments over network `ic`.
@@ -87,6 +94,17 @@ def mainnet_writes_allowed() -> bool:
 def _identity(identity: Optional[str]) -> str:
     """Resolve the identity to use, honouring a DEFAULT_IDENTITY set after import."""
     return identity or DEFAULT_IDENTITY
+
+
+def _identity_flag(identity: Optional[str]) -> str:
+    """`--identity X`, or nothing at all so icp uses the machine's default identity."""
+    name = _identity(identity)
+    return f"--identity {name}" if name else ""
+
+
+def principal(identity: Optional[str] = None) -> Optional[str]:
+    """The principal of an identity -- by default, whoever is running this."""
+    return run_icp(f"identity principal {_identity_flag(identity)}".rstrip())
 
 
 def guard_write(env: str, what: str) -> None:
@@ -111,6 +129,7 @@ def run_icp(args: str, quiet: bool = False, check: bool = False) -> Optional[str
     """
     if PROJECT_ROOT:
         args = f"{args} --project-root-override {PROJECT_ROOT}"
+    args = re.sub(r"\s{2,}", " ", args).strip()
     try:
         out = subprocess.run(
             f"{ICP} {args}",
@@ -169,7 +188,7 @@ def api_url(env: str) -> str:
 
 def status_json(target: str, env: str, identity: Optional[str] = None) -> Optional[dict]:
     """Full `icp canister status --json` for a canister id. Requires being a controller."""
-    out = run_icp(f"canister status {target} {net_flag(env)} --identity {_identity(identity)} --json")
+    out = run_icp(f"canister status {target} {net_flag(env)} {_identity_flag(identity)} --json")
     return json.loads(out) if out else None
 
 
@@ -213,7 +232,8 @@ def controllers(target: str, env: str, identity: Optional[str] = None) -> list[s
 # ---------------------------------------------------------------------------------------
 @functools.lru_cache(maxsize=None)
 def _agent(env: str, identity: str) -> Agent:
-    pem = run_icp(f"identity export {_identity(identity)}")
+    name = _identity(identity) or run_icp("identity default")
+    pem = run_icp(f"identity export {name}")
     if pem is None:
         raise RuntimeError(
             f"could not export identity '{identity}'. It must exist and be stored in "
@@ -283,7 +303,7 @@ def call_text(
         guard_write(env, f"call update method '{method}' on {target}")
     q = "--query" if query else ""
     return run_icp(
-        f"canister call {target} {method} '{arg}' {net_flag(env)} --identity {_identity(identity)} {q}"
+        f"canister call {target} {method} '{arg}' {net_flag(env)} {_identity_flag(identity)} {q}"
     )
 
 
@@ -307,21 +327,21 @@ def install(
     extra = f" --args '{args}'" if args else ""
     return run_icp(
         f"canister install {target} --wasm {wasm} -m {mode} {net_flag(env)} "
-        f"--identity {_identity(identity)} -y{extra}"
+        f"{_identity_flag(identity)} -y{extra}"
     )
 
 
 def top_up(target: str, amount: int, env: str = "local", identity: Optional[str] = None) -> Optional[str]:
     """Add cycles from the identity's cycles-ledger balance."""
     guard_write(env, f"top up {target}")
-    return run_icp(f"canister top-up {target} --amount {amount} {net_flag(env)} --identity {_identity(identity)}")
+    return run_icp(f"canister top-up {target} --amount {amount} {net_flag(env)} {_identity_flag(identity)}")
 
 
 def add_controller(target: str, principal: str, env: str = "local", identity: Optional[str] = None):
     guard_write(env, f"add a controller to {target}")
     return run_icp(
         f"canister settings update {target} --add-controller {principal} "
-        f"{net_flag(env)} --identity {_identity(identity)}"
+        f"{net_flag(env)} {_identity_flag(identity)}"
     )
 
 

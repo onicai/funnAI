@@ -46,8 +46,9 @@ import icp_helpers  # noqa: E402
 icp_helpers.use_project(E2E)
 
 # On the local network the admin is `default` -- the identity this harness deploys with.
-# icp_helpers defaults to `icpp-llm`, which is the MAINNET controller and has no rights
-# here; calling as it returns `Err = Unauthorized`, which is easy to misread as "empty".
+# icp_helpers otherwise uses the machine's default identity, which for most developers is
+# their MAINNET identity: it has no rights here, and calling as it returns
+# `Err = Unauthorized`, which is easy to misread as "empty".
 ADMIN_IDENTITY = "default"
 icp_helpers.DEFAULT_IDENTITY = ADMIN_IDENTITY
 
