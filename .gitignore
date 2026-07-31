@@ -164,7 +164,15 @@ funnai_accounts/
 
 # claude code
 CLAUDE.md
-.claude/
+# Ignore .claude/ EXCEPT funnAI's own project skill. git cannot re-include a path whose
+# parent directory is excluded, so each level is opened up in turn rather than using a
+# bare `.claude/`. The ic-* skills are installed automatically from dfinity/icskills and
+# stay ignored; funnai-local-e2e is ours, and is how the team (and Claude) find the local
+# end-to-end environment.
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/funnai-local-e2e/
 
 scripts/burned_tokens_cache.json
 
