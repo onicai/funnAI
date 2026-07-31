@@ -49,6 +49,23 @@ from icp_core import Agent, Canister, Client, Identity
 
 ICP = "icp"
 
+# Which icp project the commands act on.
+#
+# icp resolves the project from the CWD, and a local network belongs to a project -- so a
+# script run from the repo root cannot see the network of, say, the e2e project. Setting
+# this makes every command pass `--project-root-override`, which is how icpp-pro does it
+# too. None = resolve from the CWD, as usual.
+PROJECT_ROOT: Optional[str] = os.environ.get("ICP_PROJECT_ROOT") or None
+
+
+def use_project(root: str | None) -> None:
+    """Point subsequent icp commands at a specific project (see PROJECT_ROOT)."""
+    global PROJECT_ROOT
+    PROJECT_ROOT = str(root) if root else None
+    api_url.cache_clear()
+    _agent.cache_clear()
+    candid_of.cache_clear()
+
 # NOT `default`. icp-cli does not import dfx's identities or its notion of an active one:
 # on this machine icp's `default` is iwcyb-... while the funnAI controller is
 # chfec-...-2ae, which icp knows as `icpp-llm`.
@@ -65,6 +82,11 @@ class MainnetWriteBlocked(RuntimeError):
 
 def mainnet_writes_allowed() -> bool:
     return os.environ.get("ICP_ALLOW_MAINNET_WRITES") == "1"
+
+
+def _identity(identity: Optional[str]) -> str:
+    """Resolve the identity to use, honouring a DEFAULT_IDENTITY set after import."""
+    return identity or DEFAULT_IDENTITY
 
 
 def guard_write(env: str, what: str) -> None:
@@ -87,6 +109,8 @@ def run_icp(args: str, quiet: bool = False, check: bool = False) -> Optional[str
     stdin is closed: icp opens an interactive prompt when an argument is missing, which
     would hang a script forever.
     """
+    if PROJECT_ROOT:
+        args = f"{args} --project-root-override {PROJECT_ROOT}"
     try:
         out = subprocess.run(
             f"{ICP} {args}",
@@ -143,9 +167,9 @@ def api_url(env: str) -> str:
     return json.loads(status)["api_url"].rstrip("/")
 
 
-def status_json(target: str, env: str, identity: str = DEFAULT_IDENTITY) -> Optional[dict]:
+def status_json(target: str, env: str, identity: Optional[str] = None) -> Optional[dict]:
     """Full `icp canister status --json` for a canister id. Requires being a controller."""
-    out = run_icp(f"canister status {target} {net_flag(env)} --identity {identity} --json")
+    out = run_icp(f"canister status {target} {net_flag(env)} --identity {_identity(identity)} --json")
     return json.loads(out) if out else None
 
 
@@ -165,7 +189,7 @@ def _to_int(value: Any) -> Optional[int]:
     return int(str(value).replace("_", ""))
 
 
-def balance(target: str, env: str, identity: str = DEFAULT_IDENTITY) -> Optional[int]:
+def balance(target: str, env: str, identity: Optional[str] = None) -> Optional[int]:
     """Cycles balance of a canister. Replaces parsing dfx status' `Balance:` line."""
     st = status_json(target, env, identity)
     return _to_int(st.get("cycles")) if st else None
@@ -179,7 +203,7 @@ def module_hash(target: str) -> Optional[str]:
     return str(st["module_hash"]).removeprefix("0x")
 
 
-def controllers(target: str, env: str, identity: str = DEFAULT_IDENTITY) -> list[str]:
+def controllers(target: str, env: str, identity: Optional[str] = None) -> list[str]:
     st = status_json(target, env, identity)
     return list(st.get("settings", {}).get("controllers", [])) if st else []
 
@@ -189,7 +213,7 @@ def controllers(target: str, env: str, identity: str = DEFAULT_IDENTITY) -> list
 # ---------------------------------------------------------------------------------------
 @functools.lru_cache(maxsize=None)
 def _agent(env: str, identity: str) -> Agent:
-    pem = run_icp(f"identity export {identity}")
+    pem = run_icp(f"identity export {_identity(identity)}")
     if pem is None:
         raise RuntimeError(
             f"could not export identity '{identity}'. It must exist and be stored in "
@@ -220,7 +244,7 @@ def call(
     method: str,
     *args: Any,
     env: str = "local",
-    identity: str = DEFAULT_IDENTITY,
+    identity: Optional[str] = None,
     is_query: bool = False,
     allow_mainnet: bool = False,
 ) -> Any:
@@ -233,7 +257,7 @@ def call(
     """
     if not is_query and not allow_mainnet:
         guard_write(env, f"call update method '{method}' on {target}")
-    canister = Canister(agent=_agent(env, identity), canister_id=target, candid_str=candid_of(target, env))
+    canister = Canister(agent=_agent(env, _identity(identity)), canister_id=target, candid_str=candid_of(target, env))
     return extract_value(getattr(canister, method)(*args))
 
 
@@ -244,7 +268,7 @@ def call_text(
     *,
     env: str = "local",
     query: bool = False,
-    identity: str = DEFAULT_IDENTITY,
+    identity: Optional[str] = None,
     allow_mainnet: bool = False,
 ) -> Optional[str]:
     """Call a canister method and return the raw Candid TEXT response.
@@ -259,7 +283,7 @@ def call_text(
         guard_write(env, f"call update method '{method}' on {target}")
     q = "--query" if query else ""
     return run_icp(
-        f"canister call {target} {method} '{arg}' {net_flag(env)} --identity {identity} {q}"
+        f"canister call {target} {method} '{arg}' {net_flag(env)} --identity {_identity(identity)} {q}"
     )
 
 
@@ -271,7 +295,7 @@ def install(
     wasm: str,
     mode: str = "upgrade",
     env: str = "local",
-    identity: str = DEFAULT_IDENTITY,
+    identity: Optional[str] = None,
     args: Optional[str] = None,
 ) -> Optional[str]:
     """Install/upgrade a wasm BY PRINCIPAL -- needs no icp.yaml entry for the canister.
@@ -283,21 +307,21 @@ def install(
     extra = f" --args '{args}'" if args else ""
     return run_icp(
         f"canister install {target} --wasm {wasm} -m {mode} {net_flag(env)} "
-        f"--identity {identity} -y{extra}"
+        f"--identity {_identity(identity)} -y{extra}"
     )
 
 
-def top_up(target: str, amount: int, env: str = "local", identity: str = DEFAULT_IDENTITY) -> Optional[str]:
+def top_up(target: str, amount: int, env: str = "local", identity: Optional[str] = None) -> Optional[str]:
     """Add cycles from the identity's cycles-ledger balance."""
     guard_write(env, f"top up {target}")
-    return run_icp(f"canister top-up {target} --amount {amount} {net_flag(env)} --identity {identity}")
+    return run_icp(f"canister top-up {target} --amount {amount} {net_flag(env)} --identity {_identity(identity)}")
 
 
-def add_controller(target: str, principal: str, env: str = "local", identity: str = DEFAULT_IDENTITY):
+def add_controller(target: str, principal: str, env: str = "local", identity: Optional[str] = None):
     guard_write(env, f"add a controller to {target}")
     return run_icp(
         f"canister settings update {target} --add-controller {principal} "
-        f"{net_flag(env)} --identity {identity}"
+        f"{net_flag(env)} --identity {_identity(identity)}"
     )
 
 
@@ -307,20 +331,20 @@ def add_controller(target: str, principal: str, env: str = "local", identity: st
 CYCLES_WALLET = "jh35u-eqaaa-aaaag-abf3a-cai"
 
 
-def wallet_send(target: str, amount: int, env: str = "local", identity: str = DEFAULT_IDENTITY):
+def wallet_send(target: str, amount: int, env: str = "local", identity: Optional[str] = None):
     """Replacement for `dfx wallet send <canister> <cycles>`."""
     guard_write(env, f"send {amount} cycles to {target}")
     arg = f'(record {{ canister = principal "{target}"; amount = {amount} : nat64 }})'
     # allow_mainnet: the guard_write above already made the decision for this operation.
-    return call_text(CYCLES_WALLET, "wallet_send", arg, env=env, identity=identity, allow_mainnet=True)
+    return call_text(CYCLES_WALLET, "wallet_send", arg, env=env, identity=_identity(identity), allow_mainnet=True)
 
 
-def wallet_balance(env: str = "local", identity: str = DEFAULT_IDENTITY) -> Optional[str]:
+def wallet_balance(env: str = "local", identity: Optional[str] = None) -> Optional[str]:
     """Replacement for `dfx wallet balance` (a query, so it is not guarded)."""
-    return call_text(CYCLES_WALLET, "wallet_balance", "()", env=env, query=True, identity=identity)
+    return call_text(CYCLES_WALLET, "wallet_balance", "()", env=env, query=True, identity=_identity(identity))
 
 
-def call_argv(cmd: list[str], identity: str = DEFAULT_IDENTITY, allow_mainnet: bool = True) -> Any:
+def call_argv(cmd: list[str], identity: Optional[str] = None, allow_mainnet: bool = True) -> Any:
     """Decode an `icp canister call` argv list into Python objects.
 
     A drop-in for the `subprocess.run(cmd) + json.loads(result.stdout)` idiom these scripts
@@ -349,4 +373,4 @@ def call_argv(cmd: list[str], identity: str = DEFAULT_IDENTITY, allow_mainnet: b
             f"call_argv only handles no-argument calls; {method} was given {candid_args!r}. "
             "Call icp_helpers.call(target, method, <python args>, env=...) instead."
         )
-    return call(target, method, env=env, identity=identity, allow_mainnet=allow_mainnet)
+    return call(target, method, env=env, identity=_identity(identity), allow_mainnet=allow_mainnet)

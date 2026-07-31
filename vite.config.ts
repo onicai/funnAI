@@ -57,7 +57,9 @@ function readCanisterId(project: string, canister: string): string | undefined {
   //
   // A managed network keeps its ids in the disposable cache, not in data/.
   const candidates = isDev
-    ? [".icp/cache/mappings/local.ids.json"]
+    ? // The whole app is deployed onto ONE local network by `make e2e-up`, whose project
+      // is e2e/. Fall back to this project's own store for a frontend-only local deploy.
+      ["e2e/.icp/cache/mappings/local.ids.json", ".icp/cache/mappings/local.ids.json"]
     : [`${project}/.icp/data/mappings/${icpEnv}.ids.json`];
   for (const rel of candidates) {
     try {
@@ -98,19 +100,24 @@ const canisterDefinitions = Object.entries(canisterIds).reduce(
 // hardcoded anywhere.
 // ---------------------------------------------------------------------------
 function localReplicaUrl(): string {
-  try {
-    const out = execFileSync("icp", ["network", "status", "-e", "local", "--json"], {
-      cwd: __dirname,
-      encoding: "utf-8",
-      stdio: ["ignore", "pipe", "ignore"],
-    });
-    // icp reports the url WITH a trailing slash; strip it, or callers that append
-    // "/api/v3/..." produce "//api/v3", which the replica rejects with a 400.
-    return JSON.parse(out).api_url.replace(/\/$/, "");
-  } catch {
-    console.warn("⚠️  Could not read the local network status. Is `icp network start -d` running?");
-    return "http://127.0.0.1:8000";
+  // Try the e2e project first: `make e2e-up` runs the whole app on that one network.
+  // Fall back to this project's own network for a frontend-only local deploy.
+  for (const cwd of [path.join(__dirname, "e2e"), __dirname]) {
+    try {
+      const out = execFileSync("icp", ["network", "status", "-e", "local", "--json"], {
+        cwd,
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "ignore"],
+      });
+      // icp reports the url WITH a trailing slash; strip it, or callers that append
+      // "/api/v3/..." produce "//api/v3", which the replica rejects with a 400.
+      return JSON.parse(out).api_url.replace(/\/$/, "");
+    } catch {
+      /* try the next project */
+    }
   }
+  console.warn("⚠️  No local network is running. Start one with `make e2e-up`.");
+  return "http://127.0.0.1:8000";
 }
 
 const icHost = isDev ? localReplicaUrl() : "https://icp0.io";

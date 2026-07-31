@@ -192,3 +192,6 @@ scripts/mint_tokens_ic.json
 # Scratch / task-todo notes for AI agents & humans. Deliberately local-only:
 # they capture in-flight plans and findings, not repo state.
 TMP-*
+
+# e2e local environment: the frontend is built into e2e/dist for the asset canister
+e2e/dist/
