@@ -130,6 +130,13 @@ def run(cmd: str, cwd: Path = E2E, check: bool = True, quiet: bool = False) -> s
 
 
 def icp(args: str, cwd: Path = E2E, check: bool = True, quiet: bool = False) -> str:
+    """Run an `icp` command as the local admin.
+
+    The identity is named explicitly rather than made the machine default: switching the
+    default is global and persistent, and would clobber the identity used for mainnet work.
+    """
+    if "--identity" not in args and not args.split(" ")[0] in ("identity", "network"):
+        args = f"{args} --identity {ADMIN_IDENTITY}"
     return run(f"icp {args}", cwd=cwd, check=check, quiet=quiet)
 
 
@@ -153,15 +160,18 @@ def bootstrap_identities() -> str:
     """Create the fixed test identities.
 
     icp-cli does not create a `default` identity the way dfx did, and icpp-pro's pytest
-    fixtures need one. `--storage plaintext` is required, not cosmetic: a keyring-backed
-    identity makes `icp identity export` open a password prompt and hang.
+    fixtures need one to EXIST. `--storage plaintext` is required, not cosmetic: a
+    keyring-backed identity makes `icp identity export` open a password prompt and hang.
+
+    The identities are created but the machine default is NOT changed: `icp identity
+    default <x>` is global and persistent, so switching here would clobber the identity you
+    use for mainnet work. Local commands name the admin explicitly instead.
     """
     banner("identities")
-    for ident in ("default", "e2e-player"):
+    for ident in (ADMIN_IDENTITY, "e2e-player"):
         run(f"icp identity new {ident} --storage plaintext", check=False, quiet=True)
-    icp("identity default default", quiet=True)
-    principal = icp("identity principal", quiet=True)
-    print(f"  admin  : default     {principal}")
+    principal = icp(f"identity principal --identity {ADMIN_IDENTITY}", quiet=True)
+    print(f"  admin  : {ADMIN_IDENTITY:<12}{principal}")
     print(f"  player : e2e-player  {icp('identity principal --identity e2e-player', quiet=True)}")
     return principal
 

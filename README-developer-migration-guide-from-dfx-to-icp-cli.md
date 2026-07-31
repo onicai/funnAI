@@ -60,12 +60,46 @@ icp identity principal --identity "$MY_ID"
 ```
 
 Nothing in this repo hardcodes an identity name. The scripts and Makefiles use whatever
-`icp identity default` is set to, i.e. yours. To act as a different one for a single run:
+`icp identity default` is set to, i.e. yours.
+
+### Make your identity stick — use `icp identity default`, not `~/.zshrc`
+
+Set it once, and every icp command uses it from then on:
+
+```bash
+icp identity default "$MY_ID"
+icp identity default            # prints it back
+```
+
+**Do not export `ICP_IDENTITY` in `~/.zshrc` instead.** icp-cli has no identity environment
+variable — `--identity` is the only way to select one, and the only env vars it reads are
+`ICP_ENVIRONMENT`, `ICP_NETWORK` and `ICP_PROJECT_ROOT`. `ICP_IDENTITY` is a convention of
+*this repo's* Python helpers only, so exporting it globally gives you a split brain:
+
+| | honours `ICP_IDENTITY` | honours `icp identity default` |
+| --------------------------------- | :---: | :---: |
+| `scripts/*.py` (via `icp_helpers`) | yes   | yes (as the fallback) |
+| an `icp` command you type yourself | no    | yes |
+| the Makefiles (they use `IDENTITY`)| no    | yes |
+| icpp-pro's pytest smoketests       | no    | yes |
+| the vendored llama_cpp uploader    | no    | yes |
+
+Everything honours `icp identity default`; only one row honours the env var. Setting it in
+your shell profile means your scripts act as one principal while your hand-typed commands
+act as another — and that failure usually shows up as a silent empty result rather than an
+error.
+
+Keep `ICP_IDENTITY` / `IDENTITY` for what they are good at: a deliberate, one-off override.
 
 ```bash
 ICP_IDENTITY=my-deploy-key ./scripts/monitor_balance.sh --network prd   # python scripts
 make docker-verify-wasm IDENTITY=my-deploy-key                          # Makefiles
 ```
+
+Nothing in this repo changes your default identity behind your back. The local smoketests
+and `make e2e-up` need a `default` identity to *exist*, so they create one — but they name
+it explicitly on each command rather than calling `icp identity default`, which is global
+and persistent and would otherwise leave you running as a non-controller afterwards.
 
 Also create a plaintext `default` identity, which the test suite needs:
 
