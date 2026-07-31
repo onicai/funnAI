@@ -32,14 +32,14 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 
-CANISTER_ID_GAME_STATE_CANISTER=$(dfx canister --network $NETWORK_TYPE id game_state_canister)
+CANISTER_ID_GAME_STATE_CANISTER=$(icp canister status game_state_canister -e $NETWORK_TYPE --id-only)
 cd PoAIW/src/Judge
-CANISTER_ID_JUDGE_CTRLB_CANISTER=$(dfx canister --network $NETWORK_TYPE id judge_ctrlb_canister)
+CANISTER_ID_JUDGE_CTRLB_CANISTER=$(icp canister status judge_ctrlb_canister -e $NETWORK_TYPE --id-only)
 cd ../../llms/Judge
-CANISTER_ID_JUDGE_LLM_0=$(dfx canister --network $NETWORK_TYPE id llm_0)
+CANISTER_ID_JUDGE_LLM_0=$(icp canister status llm_0 -e $NETWORK_TYPE --id-only)
 if [ "$NETWORK_TYPE" != "local" ]; then
-    CANISTER_ID_JUDGE_LLM_1=$(dfx canister --network $NETWORK_TYPE id llm_1)   
-    CANISTER_ID_JUDGE_LLM_2=$(dfx canister --network $NETWORK_TYPE id llm_2)
+    CANISTER_ID_JUDGE_LLM_1=$(icp canister status llm_1 -e $NETWORK_TYPE --id-only) 
+    CANISTER_ID_JUDGE_LLM_2=$(icp canister status llm_2 -e $NETWORK_TYPE --id-only)
 fi
 
 # go back to the funnAI folder
@@ -105,25 +105,25 @@ echo "(Be patient, this may take a few seconds.)"
 echo " "
 echo "--------------------------------------------------"
 ########################################################
-GAME_STATE_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:" | awk '{print $2}')
-GAME_STATE_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+GAME_STATE_BALANCE_0_=$(icp canister status $CANISTER_ID_GAME_STATE_CANISTER -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{print $2}')
+GAME_STATE_BALANCE_0=$(icp canister status $CANISTER_ID_GAME_STATE_CANISTER -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{gsub("_", ""); print $2}')
 GAME_STATE_BALANCE_0_T=$(echo "scale=6; $GAME_STATE_BALANCE_0 / 1000000000000" | bc)
 
-JUDGE_CTRLB_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_CTRLB_CANISTER 2>&1 | grep "Balance:"| awk '{print $2}')
-JUDGE_CTRLB_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_CTRLB_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+JUDGE_CTRLB_BALANCE_0_=$(icp canister status $CANISTER_ID_JUDGE_CTRLB_CANISTER -e $NETWORK_TYPE 2>&1 | grep "Cycles:"| awk '{print $2}')
+JUDGE_CTRLB_BALANCE_0=$(icp canister status $CANISTER_ID_JUDGE_CTRLB_CANISTER -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{gsub("_", ""); print $2}')
 JUDGE_CTRLB_BALANCE_0_T=$(echo "scale=6; $JUDGE_CTRLB_BALANCE_0 / 1000000000000" | bc)
 
-JUDGE_LLM_0_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_0 2>&1 | grep "Balance:"| awk '{print $2}')
-JUDGE_LLM_0_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_0 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+JUDGE_LLM_0_BALANCE_0_=$(icp canister status $CANISTER_ID_JUDGE_LLM_0 -e $NETWORK_TYPE 2>&1 | grep "Cycles:"| awk '{print $2}')
+JUDGE_LLM_0_BALANCE_0=$(icp canister status $CANISTER_ID_JUDGE_LLM_0 -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{gsub("_", ""); print $2}')
 JUDGE_LLM_0_BALANCE_0_T=$(echo "scale=6; $JUDGE_LLM_0_BALANCE_0 / 1000000000000" | bc)
 
 if [ "$NETWORK_TYPE" != "local" ]; then
-    JUDGE_LLM_1_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_1 2>&1 | grep "Balance:"| awk '{print $2}')
-    JUDGE_LLM_1_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_1 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+    JUDGE_LLM_1_BALANCE_0_=$(icp canister status $CANISTER_ID_JUDGE_LLM_1 -e $NETWORK_TYPE 2>&1 | grep "Cycles:"| awk '{print $2}')
+    JUDGE_LLM_1_BALANCE_0=$(icp canister status $CANISTER_ID_JUDGE_LLM_1 -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{gsub("_", ""); print $2}')
     JUDGE_LLM_1_BALANCE_0_T=$(echo "scale=6; $JUDGE_LLM_1_BALANCE_0 / 1000000000000" | bc)
 
-    JUDGE_LLM_2_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_2 2>&1 | grep "Balance:"| awk '{print $2}')
-    JUDGE_LLM_2_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_2 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+    JUDGE_LLM_2_BALANCE_0_=$(icp canister status $CANISTER_ID_JUDGE_LLM_2 -e $NETWORK_TYPE 2>&1 | grep "Cycles:"| awk '{print $2}')
+    JUDGE_LLM_2_BALANCE_0=$(icp canister status $CANISTER_ID_JUDGE_LLM_2 -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{gsub("_", ""); print $2}')
     JUDGE_LLM_2_BALANCE_0_T=$(echo "scale=6; $JUDGE_LLM_2_BALANCE_0 / 1000000000000" | bc)
 fi
 
@@ -152,7 +152,7 @@ fi
 
 echo " "
 echo "Calling triggerScoreSubmissionAdmin"
-output=$(dfx canister call $CANISTER_ID_JUDGE_CTRLB_CANISTER triggerScoreSubmissionAdmin --network $NETWORK_TYPE)
+output=$(icp canister call $CANISTER_ID_JUDGE_CTRLB_CANISTER triggerScoreSubmissionAdmin '()' -e $NETWORK_TYPE)
 
 if [[ "$output" != *"Ok = record"* ]]; then
     echo $output
@@ -171,33 +171,33 @@ echo "Thank you! We will now check the balances again to see how much cycles wer
 echo "(Be patient, this may take a few seconds.)"
 
 ##############################################################
-GAME_STATE_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:"| awk '{print $2}')
-GAME_STATE_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+GAME_STATE_BALANCE_1_=$(icp canister status $CANISTER_ID_GAME_STATE_CANISTER -e $NETWORK_TYPE 2>&1 | grep "Cycles:"| awk '{print $2}')
+GAME_STATE_BALANCE_1=$(icp canister status $CANISTER_ID_GAME_STATE_CANISTER -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{gsub("_", ""); print $2}')
 GAME_STATE_BALANCE_1_T=$(echo "scale=6; $GAME_STATE_BALANCE_1 / 1000000000000" | bc)
 GAME_STATE_CYCLES_CHANGE_1=$(echo "$GAME_STATE_BALANCE_1 - $GAME_STATE_BALANCE_0" | bc)
 GAME_STATE_CYCLES_CHANGE_1_T=$(echo "scale=6; $GAME_STATE_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
-JUDGE_CTRLB_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_CTRLB_CANISTER 2>&1 | grep "Balance:"| awk '{print $2}')
-JUDGE_CTRLB_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_CTRLB_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+JUDGE_CTRLB_BALANCE_1_=$(icp canister status $CANISTER_ID_JUDGE_CTRLB_CANISTER -e $NETWORK_TYPE 2>&1 | grep "Cycles:"| awk '{print $2}')
+JUDGE_CTRLB_BALANCE_1=$(icp canister status $CANISTER_ID_JUDGE_CTRLB_CANISTER -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{gsub("_", ""); print $2}')
 JUDGE_CTRLB_BALANCE_1_T=$(echo "scale=6; $JUDGE_CTRLB_BALANCE_1 / 1000000000000" | bc)
 JUDGE_CTRLB_CYCLES_CHANGE_1=$(echo "$JUDGE_CTRLB_BALANCE_1 - $JUDGE_CTRLB_BALANCE_0" | bc)
 JUDGE_CTRLB_CYCLES_CHANGE_1_T=$(echo "scale=6; $JUDGE_CTRLB_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
-JUDGE_LLM_0_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_0 2>&1 | grep "Balance:"| awk '{print $2}')
-JUDGE_LLM_0_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_0 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+JUDGE_LLM_0_BALANCE_1_=$(icp canister status $CANISTER_ID_JUDGE_LLM_0 -e $NETWORK_TYPE 2>&1 | grep "Cycles:"| awk '{print $2}')
+JUDGE_LLM_0_BALANCE_1=$(icp canister status $CANISTER_ID_JUDGE_LLM_0 -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{gsub("_", ""); print $2}')
 JUDGE_LLM_0_BALANCE_1_T=$(echo "scale=6; $JUDGE_LLM_0_BALANCE_1 / 1000000000000" | bc)
 JUDGE_LLM_0_CYCLES_CHANGE_1=$(echo "$JUDGE_LLM_0_BALANCE_1 - $JUDGE_LLM_0_BALANCE_0" | bc)
 JUDGE_LLM_0_CYCLES_CHANGE_1_T=$(echo "scale=6; $JUDGE_LLM_0_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
 if [ "$NETWORK_TYPE" != "local" ]; then
-    JUDGE_LLM_1_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_1 2>&1 | grep "Balance:"| awk '{print $2}')
-    JUDGE_LLM_1_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_1 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+    JUDGE_LLM_1_BALANCE_1_=$(icp canister status $CANISTER_ID_JUDGE_LLM_1 -e $NETWORK_TYPE 2>&1 | grep "Cycles:"| awk '{print $2}')
+    JUDGE_LLM_1_BALANCE_1=$(icp canister status $CANISTER_ID_JUDGE_LLM_1 -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{gsub("_", ""); print $2}')
     JUDGE_LLM_1_BALANCE_1_T=$(echo "scale=6; $JUDGE_LLM_1_BALANCE_1 / 1000000000000" | bc)
     JUDGE_LLM_1_CYCLES_CHANGE_1=$(echo "$JUDGE_LLM_1_BALANCE_1 - $JUDGE_LLM_0_BALANCE_0" | bc)
     JUDGE_LLM_1_CYCLES_CHANGE_1_T=$(echo "scale=6; $JUDGE_LLM_1_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
-    JUDGE_LLM_2_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_2 2>&1 | grep "Balance:"| awk '{print $2}')
-    JUDGE_LLM_2_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_JUDGE_LLM_2 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+    JUDGE_LLM_2_BALANCE_1_=$(icp canister status $CANISTER_ID_JUDGE_LLM_2 -e $NETWORK_TYPE 2>&1 | grep "Cycles:"| awk '{print $2}')
+    JUDGE_LLM_2_BALANCE_1=$(icp canister status $CANISTER_ID_JUDGE_LLM_2 -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{gsub("_", ""); print $2}')
     JUDGE_LLM_2_BALANCE_1_T=$(echo "scale=6; $JUDGE_LLM_2_BALANCE_1 / 1000000000000" | bc)
     JUDGE_LLM_2_CYCLES_CHANGE_1=$(echo "$JUDGE_LLM_2_BALANCE_1 - $JUDGE_LLM_0_BALANCE_0" | bc)
     JUDGE_LLM_2_CYCLES_CHANGE_1_T=$(echo "scale=6; $JUDGE_LLM_2_CYCLES_CHANGE_1 / 1000000000000" | bc)

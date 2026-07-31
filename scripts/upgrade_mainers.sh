@@ -76,7 +76,7 @@ while [ $# -gt 0 ]; do
             echo ""
             echo "Options:"
             echo "  --network NETWORK       Required. Network to upgrade mainers on"
-            echo "  --target-hash HASH      Optional. Target wasm hash to upgrade to (from 'dfx canister info <canister_id>')"
+            echo "  --target-hash HASH      Optional. Target wasm hash to upgrade to (from 'icp canister status <canister_id>')" -n ic -p
             echo "  --num NUM               Optional. Number of mAIners to upgrade"
             echo "  --mainer CANISTER_ID    Optional. Specific mAIner canister to upgrade"
             echo "  --user PRINCIPAL        Optional. Principal ID of user whose mAIners to upgrade"
@@ -84,7 +84,7 @@ while [ $# -gt 0 ]; do
             echo "  --skip-preparation      Optional. Skip Step 1 preparation"
             echo "  --ask-before-upgrade    Optional. Ask for confirmation before upgrading each canister"
             echo "  --reverse               Optional. Process mainers in reverse order"
-            echo "  --deploy-with-yes       Optional. Use 'dfx deploy --yes' to skip confirmation prompts"
+            echo "  --deploy-with-yes       Optional. Use 'icp deploy -y' to skip confirmation prompts"
             echo "  --reinstall             Optional. Reinstall (--mode reinstall) instead of upgrade. WIPES all stable state."
             exit 1
             ;;

@@ -35,7 +35,7 @@ done
 echo "Using network type: $NETWORK_TYPE"
 
 cd PoAIW/src/Challenger
-CANISTER_ID_CHALLENGER_CTRLB_CANISTER=$(dfx canister --network $NETWORK_TYPE id challenger_ctrlb_canister)
+CANISTER_ID_CHALLENGER_CTRLB_CANISTER=$(icp canister status challenger_ctrlb_canister -e $NETWORK_TYPE --id-only)
 
 # go back to the funnAI folder
 cd ../../../
@@ -44,7 +44,7 @@ cd ../../../
 echo " "
 echo "--------------------------------------------------"
 echo "Checking health endpoint of Chellenger ($CANISTER_ID_CHALLENGER_CTRLB_CANISTER)"
-output=$(dfx canister call $CANISTER_ID_CHALLENGER_CTRLB_CANISTER health --network $NETWORK_TYPE)
+output=$(icp canister call $CANISTER_ID_CHALLENGER_CTRLB_CANISTER health '()' -e $NETWORK_TYPE)
 
 if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; then
     echo "Challenger ($CANISTER_ID_CHALLENGER_CTRLB_CANISTER) is not healthy. Exiting."
@@ -56,4 +56,4 @@ fi
 echo " "
 echo "--------------------------------------------------"
 echo "Starting timer for Challenger ($CANISTER_ID_CHALLENGER_CTRLB_CANISTER)"
-dfx canister call $CANISTER_ID_CHALLENGER_CTRLB_CANISTER startTimerExecutionAdmin --network $NETWORK_TYPE
+icp canister call $CANISTER_ID_CHALLENGER_CTRLB_CANISTER startTimerExecutionAdmin '()' -e $NETWORK_TYPE

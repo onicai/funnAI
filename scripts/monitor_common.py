@@ -11,31 +11,24 @@ from dotenv import dotenv_values
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
+# Shared icp-cli helpers. Everything that used to shell out to dfx goes through these, so
+# there is exactly one place that knows how to talk to icp-cli.
+sys.path.insert(0, os.path.join(SCRIPT_DIR, "lib"))
+import icp_helpers  # noqa: E402
+
 def get_balance(canister_id, network):
-    """Fetch cycles balance using dfx for a given canister."""
+    """Fetch the cycles balance of a canister.
+
+    Was: parsing the `Balance:` line out of `dfx canister status`. icp-cli reports it as
+    the `cycles` field of `--json`, as a string with `_` thousand separators.
+    """
     try:
-        cmd = ["dfx", "canister", "status", canister_id, "--network", network]
-        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
-        
-        # Extract balance from the output
-        balance = None
-        for line in output.split('\n'):
-            if line.startswith('Balance:'):
-                balance_string = line.split(':')[1].strip().split()[0]  
-                balance = int(balance_string)
-                break
-        
+        balance = icp_helpers.balance(canister_id, network)
         if balance is None:
             print(f"ERROR: Unable to find balance for canister {canister_id} on network {network}")
-            print(f"  {' '.join(cmd)}")
-            print(output)
-
         return balance
-    except subprocess.CalledProcessError as e:
-        print(f"ERROR occured when calling the subprocess command.")
-        print("Command:", e.cmd)
-        print("Return code:", e.returncode)
-        print("Output:\n", e.output)
+    except Exception as e:  # noqa: BLE001 - keep the old best-effort behaviour
+        print(f"ERROR occurred while reading the canister status: {e}")
         return None
 
 def run_this_cmd(cmd, cwd, confirm=False, dry_run=False):
@@ -116,21 +109,29 @@ def get_canisters(network, canister_types):
     return (CANISTERS, CANISTER_COLORS, RESET_COLOR)
 
 def get_prompt_cache_entries(canister_name, canister_id, network):
+    """List the entries of the LLM canister's .canister_cache folder.
+
+    Was: `dfx canister call ... --output json` + json.loads. icp-cli has no equivalent --
+    its `--json` wraps the raw response rather than decoding it -- so the call goes through
+    icp-py-core, which returns real Python objects directly.
+
+    allow_mainnet: `recursive_dir_content_update` is declared as an update method but only
+    reads the directory listing, and the monitoring scripts run it against prd.
+    """
     print(" ")
     print(f"Getting the content of the .canister_cache folder in the LLM canister {canister_name} ({canister_id}) on network {network}...")
     try:
-        result = subprocess.check_output(
-            ["dfx", "canister", "call", canister_id, "recursive_dir_content_update", 
-            '(record {dir = ".canister_cache"; max_entries = 0 : nat64})', 
-            "--output", "json", "--network", network],
-            stderr=subprocess.DEVNULL,
-            text=True
+        data = icp_helpers.call(
+            canister_id,
+            "recursive_dir_content_update",
+            {"dir": ".canister_cache", "max_entries": 0},
+            env=network,
+            allow_mainnet=True,
         )
-        data = json.loads(result)
-        entries = data.get('Ok', [])
+        entries = data.get("Ok", []) if isinstance(data, dict) else []
         print(f"Found {len(entries)} entries in LLM canister {canister_name} ({canister_id}) on network {network}.")
         return entries
-    except subprocess.CalledProcessError as e:
+    except Exception as e:  # noqa: BLE001 - keep the old best-effort behaviour
         print(f"Error getting content of .canister_cache in LLM canister {canister_name} ({canister_id}) on network {network}: {e}")
         return []
     

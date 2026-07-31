@@ -54,9 +54,9 @@ if [ "$DEPLOY_MODE" = "reinstall" ]; then
     fi
 fi
 
-CANISTER_ID_GAME_STATE_CANISTER=$(dfx canister --network $NETWORK_TYPE id game_state_canister)
+CANISTER_ID_GAME_STATE_CANISTER=$(icp canister status game_state_canister -e $NETWORK_TYPE --id-only)
 cd PoAIW/src/mAInerCreator
-CANISTER_ID_MAINER_CREATOR_CANISTER=$(dfx canister --network $NETWORK_TYPE id mainer_creator_canister)
+CANISTER_ID_MAINER_CREATOR_CANISTER=$(icp canister status mainer_creator_canister -e $NETWORK_TYPE --id-only)
 
 echo "CANISTER_ID_GAME_STATE_CANISTER: $CANISTER_ID_GAME_STATE_CANISTER"
 echo "CANISTER_ID_MAINER_CREATOR_CANISTER: $CANISTER_ID_MAINER_CREATOR_CANISTER"
@@ -161,12 +161,12 @@ if [ "$NETWORK_TYPE" = "local" ]; then
     echo " "
     echo "--------------------------------------------------"
     echo "To fund Controller $DEPLOY_MODE - Adding $NUMCYCLES_TO_ADD TCycles to the game_state_canister canister on local"
-    dfx ledger fabricate-cycles --canister game_state_canister --t $NUMCYCLES_TO_ADD
+    icp canister top-up game_state_canister --amount $(($NUMCYCLES_TO_ADD * 1000000000000)) -e local
 else
     echo " "
     echo "--------------------------------------------------"
     echo "To fund Controller $DEPLOY_MODE - Adding $NUMCYCLES_TO_ADD TCycles to the game_state_canister ($CANISTER_ID_GAME_STATE_CANISTER) canister on $NETWORK_TYPE"
-    dfx wallet send --network $NETWORK_TYPE $CANISTER_ID_GAME_STATE_CANISTER $NUMCYCLES_TO_ADD
+    icp canister call jh35u-eqaaa-aaaag-abf3a-cai wallet_send "(record { canister = principal \"$CANISTER_ID_GAME_STATE_CANISTER\"; amount = $NUMCYCLES_TO_ADD : nat64 })" -e $NETWORK_TYPE
 fi
 
 # ================================================================
@@ -179,7 +179,7 @@ echo "$DEPLOY_MODE a mAInerController canister of type #ShareService"
 if [ "$DEPLOY_MODE" = "upgrade" ] || [ "$DEPLOY_MODE" = "reinstall" ]; then
     echo " "
     echo "--------------------------------------------------"
-    output=$(dfx canister --network $NETWORK_TYPE call $CANISTER_ID_GAME_STATE_CANISTER getSharedServiceCanistersAdmin)
+    output=$(icp canister call $CANISTER_ID_GAME_STATE_CANISTER getSharedServiceCanistersAdmin '()' -e $NETWORK_TYPE)
     if [[ "$output" != *"Ok = vec"* ]]; then
         echo $output
         echo " "
@@ -194,7 +194,7 @@ if [ "$DEPLOY_MODE" = "upgrade" ] || [ "$DEPLOY_MODE" = "reinstall" ]; then
     echo " "
     echo "--------------------------------------------------"
     echo "Checking health endpoint of ShareService canister ($CANISTER_ID_SHARE_SERVICE_CONTROLLER)"
-    output=$(dfx canister call $CANISTER_ID_SHARE_SERVICE_CONTROLLER health --network $NETWORK_TYPE)
+    output=$(icp canister call $CANISTER_ID_SHARE_SERVICE_CONTROLLER health '()' -e $NETWORK_TYPE --query)
 
     if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; then
         echo $output
@@ -209,7 +209,7 @@ fi
 if [ "$DEPLOY_MODE" = "upgrade" ]; then
     echo " "
     echo "Calling upgradeMainerControllerAdmin"
-    output=$(dfx canister call game_state_canister upgradeMainerControllerAdmin "(record {canisterAddress = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\" })" --network $NETWORK_TYPE)
+    output=$(icp canister call game_state_canister upgradeMainerControllerAdmin "(record {canisterAddress = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\" })" -e $NETWORK_TYPE)
     if [[ "$output" != *"Ok = record"* ]]; then
         echo $output
         echo "Call to upgradeMainerControllerAdmin. Exiting."    
@@ -226,7 +226,7 @@ if [ "$DEPLOY_MODE" = "upgrade" ]; then
         while [[ "$CANISTER_STATUS" != "Running" ]]; do
             echo "sleep for $WAIT_TIME seconds..."
             sleep $WAIT_TIME
-            output=$(dfx canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\";})" --network $NETWORK_TYPE)
+            output=$(icp canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\";})" -e $NETWORK_TYPE)
             RESULT_2A=$(extract_record_from_variant "$output")
             CANISTER_STATUS=$(echo "$RESULT_2A" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
             echo "CANISTER_STATUS: $CANISTER_STATUS"
@@ -237,7 +237,7 @@ if [ "$DEPLOY_MODE" = "upgrade" ]; then
 elif [ "$DEPLOY_MODE" = "reinstall" ]; then
     echo " "
     echo "Calling reinstallMainerControllerAdmin"
-    output=$(dfx canister call game_state_canister reinstallMainerControllerAdmin "(record {canisterAddress = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\" })" --network $NETWORK_TYPE)
+    output=$(icp canister call game_state_canister reinstallMainerControllerAdmin "(record {canisterAddress = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\" })" -e $NETWORK_TYPE)
     if [[ "$output" != *"Ok = record"* ]]; then
         echo $output
         echo "Call to reinstallMainerControllerAdmin. Exiting."    
@@ -254,7 +254,7 @@ elif [ "$DEPLOY_MODE" = "reinstall" ]; then
         while [[ "$CANISTER_STATUS" != "Running" ]]; do
             echo "sleep for $WAIT_TIME seconds..."
             sleep $WAIT_TIME
-            output=$(dfx canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\";})" --network $NETWORK_TYPE)
+            output=$(icp canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\";})" -e $NETWORK_TYPE)
             RESULT_2A=$(extract_record_from_variant "$output")
             CANISTER_STATUS=$(echo "$RESULT_2A" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
             echo "CANISTER_STATUS: $CANISTER_STATUS"
@@ -273,7 +273,7 @@ else
     # (-) arguments subnetCtrl and subnetLlm are dummy values & not used by createUserMainerAgent.
     #     The actual values are already set in the game_state_canister via setSubnetsAdmin
     # (-) argument cyclesForMainer is a dummy value & not used by this call to createUserMainerAgent.
-    output=$(dfx canister call game_state_canister createUserMainerAgent '(record { paymentTransactionBlockId = 0; mainerConfig = record { mainerAgentCanisterType = variant {ShareService}; selectedLLM = opt variant {Qwen2_5_500M}; subnetCtrl = ""; subnetLlm = ""; cyclesForMainer = 0; }; })' --network $NETWORK_TYPE)
+    output=$(icp canister call game_state_canister createUserMainerAgent '(record { paymentTransactionBlockId = 0; mainerConfig = record { mainerAgentCanisterType = variant {ShareService}; selectedLLM = opt variant {Qwen2_5_500M}; subnetCtrl = ""; subnetLlm = ""; cyclesForMainer = 0; }; })' -e $NETWORK_TYPE)
     echo $output
     if [[ "$output" != *"Ok = record"* ]]; then
         echo "Call to createUserMainerAgent failed. Exiting."    
@@ -285,7 +285,7 @@ else
 
     echo " "
     echo "Calling spinUpMainerControllerCanister"
-    output=$(dfx canister call game_state_canister spinUpMainerControllerCanister "$RESULT_1" --network $NETWORK_TYPE)
+    output=$(icp canister call game_state_canister spinUpMainerControllerCanister "$RESULT_1" -e $NETWORK_TYPE)
     if [[ "$output" != *"Ok = record"* ]]; then
         echo $output
         echo "Call to spinUpMainerControllerCanisterfailed. Exiting."    
@@ -305,7 +305,7 @@ else
         while [[ "$CANISTER_STATUS" == "ControllerCreationInProgress" ]]; do
             echo "sleep for $WAIT_TIME seconds..."
             sleep $WAIT_TIME
-            output=$(dfx canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\";})" --network $NETWORK_TYPE)
+            output=$(icp canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\";})" -e $NETWORK_TYPE)
             RESULT_2A=$(extract_record_from_variant "$output")
             CANISTER_STATUS=$(echo "$RESULT_2A" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
             echo "CANISTER_STATUS: $CANISTER_STATUS"
@@ -326,7 +326,7 @@ else
     echo " "
     echo "--------------------------------------------------"
     echo "Registering ShareService mAIner canister ($CANISTER_ID_SHARE_SERVICE_CONTROLLER) on subnet $SUBNET_SHARE_SERVICE with the game_state_canister"
-    output=$(dfx canister call game_state_canister addOfficialCanister "(record { address = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\"; subnet = \"$SUBNET_SHARE_SERVICE\"; canisterType = variant {MainerAgent = variant {ShareService}} })" --network $NETWORK_TYPE)
+    output=$(icp canister call game_state_canister addOfficialCanister "(record { address = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\"; subnet = \"$SUBNET_SHARE_SERVICE\"; canisterType = variant {MainerAgent = variant {ShareService}} })" -e $NETWORK_TYPE)
 
     if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; then
         echo "Error calling addOfficialCanister for ShareService mAIner canister $CANISTER_ID_SHARE_SERVICE_CONTROLLER."

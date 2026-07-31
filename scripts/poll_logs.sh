@@ -28,7 +28,7 @@ CANISTER_ID="lmehs-taaaa-aaaaj-azzrq-cai"
 # Function to fetch logs and filter out new lines
 fetch_and_filter_logs() {
     # Fetch logs
-    new_logs=$(dfx canister logs $CANISTER_ID --network "$NETWORK_TYPE")
+    new_logs=$(icp canister logs $CANISTER_ID -e $NETWORK_TYPE)
 
     # Compare with previous logs to find new ones
     while IFS= read -r line; do
