@@ -145,6 +145,10 @@ remove `.icp/cache`.
 | dfx's bundled `moc`               | `[toolchain] moc` in `mops.toml` |
 | `dfx deps pull`                   | nothing — fixed principals, plus `ii: true` for local II |
 
+`PoAIW/llms/llama_cpp_canister/` is **unchanged at v0.11.0**. Upgrading it is a real
+functional change to the LLM canisters, not part of this tooling migration, and it is on
+hold until **v0.16.0** lands.
+
 Two families of canisters deliberately have **no** `icp.yaml` entry and are addressed by
 principal instead:
 

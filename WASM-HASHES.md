@@ -29,7 +29,7 @@ redeploys are a separate, later project, and this file is the handover artefact 
 | package manager     | `mops sources` via dfx  | ic-mops 2.13.2                    |
 | post-processing     | dfx internal            | `@icp-sdk/ic-wasm` 0.11.0 shrink  |
 | Node (build image)  | 20                      | 22                                |
-| llama_cpp_canister  | v0.11.0                 | v0.15.0                           |
+| llama_cpp_canister  | v0.11.0                 | v0.11.0 (unchanged — see below)   |
 
 Both `moc` and `ic-wasm` are pinned because both change the module hash: ic-wasm's `shrink`
 pass rewrites the element section, so two ic-wasm versions produce two different hashes
