@@ -59,47 +59,9 @@ dfx identity get-principal --identity "$MY_ID"
 icp identity principal --identity "$MY_ID"
 ```
 
-Nothing in this repo hardcodes an identity name. The scripts and Makefiles use whatever
-`icp identity default` is set to, i.e. yours.
-
-### Make your identity stick — use `icp identity default`, not `~/.zshrc`
-
-Set it once, and every icp command uses it from then on:
-
-```bash
-icp identity default "$MY_ID"
-icp identity default            # prints it back
-```
-
-**Do not export `ICP_IDENTITY` in `~/.zshrc` instead.** icp-cli has no identity environment
-variable — `--identity` is the only way to select one, and the only env vars it reads are
-`ICP_ENVIRONMENT`, `ICP_NETWORK` and `ICP_PROJECT_ROOT`. `ICP_IDENTITY` is a convention of
-*this repo's* Python helpers only, so exporting it globally gives you a split brain:
-
-| | honours `ICP_IDENTITY` | honours `icp identity default` |
-| --------------------------------- | :---: | :---: |
-| `scripts/*.py` (via `icp_helpers`) | yes   | yes (as the fallback) |
-| an `icp` command you type yourself | no    | yes |
-| the Makefiles (they use `IDENTITY`)| no    | yes |
-| icpp-pro's pytest smoketests       | no    | yes |
-| the vendored llama_cpp uploader    | no    | yes |
-
-Everything honours `icp identity default`; only one row honours the env var. Setting it in
-your shell profile means your scripts act as one principal while your hand-typed commands
-act as another — and that failure usually shows up as a silent empty result rather than an
-error.
-
-Keep `ICP_IDENTITY` / `IDENTITY` for what they are good at: a deliberate, one-off override.
-
-```bash
-ICP_IDENTITY=my-deploy-key ./scripts/monitor_balance.sh --network prd   # python scripts
-make docker-verify-wasm IDENTITY=my-deploy-key                          # Makefiles
-```
-
-Nothing in this repo changes your default identity behind your back. The local smoketests
-and `make e2e-up` need a `default` identity to *exist*, so they create one — but they name
-it explicitly on each command rather than calling `icp identity default`, which is global
-and persistent and would otherwise leave you running as a non-controller afterwards.
+`icp identity default` is global and persistent — set it once and every icp command uses
+it from then on. Nothing in this repo hardcodes an identity, and nothing changes your
+default behind your back.
 
 Also create a plaintext `default` identity, which the test suite needs:
 
@@ -344,7 +306,7 @@ Moving the wallet's balance to the cycles ledger is a separate, later decision.
 | a script hangs with no output                      | an `icp canister call` with no `'()'` argument opened the interactive builder. Add `'()'`. |
 | `The replica returned ... 400` on an upload        | trailing slash: `icp network status` reports `.../`, and appending `/api/v3` gives `//api/v3`. `.rstrip("/")` it. |
 | `could not find ID for canister`                   | the canister is not in `.icp/data/mappings/<env>.ids.json`, or you are in the wrong project dir. |
-| `Caller ... is not allowed to read the canister status` | you are running as an identity that is not a controller — usually icp's `default` rather than your imported one. Check `icp identity default`, or pass `ICP_IDENTITY=<your-identity>`. |
+| `Caller ... is not allowed to read the canister status` | you are running as an identity that is not a controller — usually icp's `default` rather than your imported one. Check with `icp identity default`. |
 | a password prompt when exporting an identity       | it is keyring-backed. Recreate with `--storage plaintext`. |
 | CI: `403 rate limit exceeded` from api.github.com  | `icp network start` downloads the network-launcher; set `ICP_CLI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}`. |
 | `libdbus-1.so.3: cannot open shared object file`   | Linux/CI only: `apt-get install -y libdbus-1-3 libssl3`. |
