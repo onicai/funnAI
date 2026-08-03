@@ -3,11 +3,43 @@
 Audience: the onicai team. This is what you need to do to your local machine, and what
 changes in day-to-day work, now that funnAI and PoAIW run on **icp-cli** instead of dfx.
 
-`dfx` is deprecated. Its successor is `icp` (icp-cli). 
-`dfx.json` is replaced by `icp.yaml`
-`canister_ids.json` is replaced by `.icp/data/mappings/{environment}.ids.json` with environment = development/prd/testing
+`dfx` is deprecated. Its successor is `icp` (icp-cli).
+
+| dfx                 | icp-cli                                                                                  |
+| ------------------- | ---------------------------------------------------------------------------------------- |
+| `dfx.json`          | `icp.yaml`                                                                               |
+| `canister_ids.json` | `.icp/data/mappings/{environment}.ids.json`, environment = `prd`/`testing`/`development` |
 
 Development & Deployment will now be done from a new conda environment: `funnAI`
+
+### What is a "project"?
+
+The word comes up constantly below, and it has a precise meaning in icp-cli:
+
+> **A project is a folder containing an `icp.yaml`.**
+
+It matters because a project owns three things, and every `icp` command resolves them from
+whichever project you are standing in:
+
+1. **which canisters exist by name** — the `canisters:` block in its `icp.yaml`
+2. **its canister ids** — `.icp/data/mappings/<env>.ids.json` (mainnet, committed) and
+   `.icp/cache/mappings/local.ids.json` (local, disposable)
+3. **its own local network** — icp-cli runs one replica *per project*, not one shared
+   replica as dfx did
+
+`icp` finds the project by walking up from your current directory. Outside one, commands
+that need any of the three fail with `failed to locate project directory`.
+
+**funnAI is unusual: it has 16 projects, not one.** The repo root, `e2e/`,
+`src/funnai_backend/`, each of the nine `PoAIW/src/*/` canisters, and the four
+`PoAIW/llms/*/` folders each have their own `icp.yaml` — so each has its own id store and
+its own local replica. That is why the instructions below keep saying "from folder X":
+`cd`-ing to the right project is a real step, not a formality.
+
+```bash
+icp project show          # what the project you are standing in actually declares
+icp environment list      # its environments
+```
 
 ---
 
@@ -215,11 +247,15 @@ declare only the `llm_N` slots that actually have ids rather than all 55 dfx pla
 Two families of canisters deliberately have **no** `icp.yaml` entry and are addressed by
 principal instead:
 
-- the 744 `mainer_ctrlb_canister_N` → `PoAIW/src/mAIner/mainer_ids.json`
-- the `llm_N` slots → `PoAIW/llms/*/llm_ids.json`
+- the ~744 `mainer_ctrlb_canister_N` → `PoAIW/src/mAIner/mainer_ids.json`
+- the ICRC token ledger + index → `PoAIW/src/Token*/token_ids.json`
 
 `icp canister install <principal> --wasm ... ` works with no project and no declaration,
 which is what makes that possible — and it keeps a 745-entry config file from existing.
+
+The `llm_N` slots are **not** in that group: the live ones are declared normally in
+`PoAIW/llms/*/icp.yaml`, with their ids in `.icp/data/mappings/<env>.ids.json`, because the
+LLM scripts address them by name.
 
 ---
 
