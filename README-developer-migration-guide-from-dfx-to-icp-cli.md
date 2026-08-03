@@ -3,18 +3,10 @@
 Audience: the onicai team. This is what you need to do to your local machine, and what
 changes in day-to-day work, now that funnAI and PoAIW run on **icp-cli** instead of dfx.
 
-`dfx` is deprecated. Its successor is `icp` (icp-cli). Everything in both repos —
-`icp.yaml`, canister ids, builds, tests, the ops scripts — has moved over.
+`dfx` is deprecated. Its successor is `icp` (icp-cli). 
+`dfx.json` is replaced by `icp.yaml`
+`canister_ids.json` is replaced by `.icp/data/mappings/{environment}.ids.json` with environment = development/prd/testing
 
-Three things will surprise you most:
-
-1. **The local network is per-project and on a random port.** There is no single shared
-   replica any more, and no fixed `4943`.
-2. **`--network prd` now names an icp.yaml *environment*.** The names you already use
-   (`local`, `prd`, `testing`, `development`, `demo`) are unchanged — they just mean
-   something slightly different underneath.
-3. **icp does not create a `default` identity for you, and does not know about dfx's.**
-   This is the step people get wrong.
 
 ---
 
@@ -54,8 +46,7 @@ mops, the gguf download). This guide only covers what the dfx -> icp-cli move ch
 ### Identity migration — do not skip this
 
 icp-cli keeps its **own** identity store. It does not import dfx's, and its own `default`
-identity is a *different principal* from the one you have been using with dfx. A command
-that runs as the wrong principal is not a controller, and the failure is sometimes silent.
+identity is a *different principal* from the one you have been using with dfx.
 
 Import **your own** identity — substitute the name you use with dfx (`dfx identity list`
 shows it; `dfx identity whoami` shows the active one):
