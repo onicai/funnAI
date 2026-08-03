@@ -1,18 +1,17 @@
 # yaml-language-server: $schema=https://github.com/dfinity/icp-cli/raw/refs/tags/v1.2.0/docs/schemas/icp-yaml-schema.json
 #
-# Root funnAI project. Replaces the legacy `dfx.json`, because dfx is deprecated.
+# Root funnAI project.
 #
-# Deliberately lean: this project owns ONLY the Svelte asset canister.
+# Deliberately lean: it declares ONLY the Svelte asset canister.
 #
-# The old dfx.json also re-declared funnai_backend, game_state_canister, api_canister and
-# mainer_ctrlb_canister, which already belong to their own projects (src/funnai_backend/,
-# PoAIW/src/Api/, PoAIW/src/GameState/, PoAIW/src/mAIner/). Under icp-cli that would mean a
-# SECOND canister-id store for the same canisters -- exactly how ids drift apart. It
-# already had: the two stores disagreed about api_canister on `development`.
-# So the frontend now reads those ids from the owning project's
-# .icp/data/mappings/<env>.ids.json (see vite.config.ts), and there is one source of truth.
+# Every backend canister belongs to its own project -- src/funnai_backend/, PoAIW/src/Api/,
+# PoAIW/src/GameState/, PoAIW/src/mAIner/ and so on -- and each project owns its own
+# canister-id store. Declaring them here as well would create a second store for the same
+# canisters, and two stores for one canister drift apart. So the frontend reads their ids
+# from the owning project's .icp/data/mappings/<env>.ids.json (see vite.config.ts), which
+# keeps a single source of truth.
 #
-# `dfx deps pull` has no icp-cli equivalent and needs none:
+# The system canisters the frontend talks to need no declaration either:
 #   - internet-identity (rdmx6-jaaaa-aaaaa-aaadq-cai) and cycles-ledger
 #     (um5iw-rqaaa-aaaaq-qaaba-cai) are fixed mainnet principals; nothing here deploys them
 #   - locally, `ii: true` below serves Internet Identity from the managed network
@@ -22,8 +21,8 @@ canisters:
     recipe:
       type: '@dfinity/asset-canister@v2.2.1'
       configuration:
-        # `npm run build` output. Must contain .ic-assets.json5 (note the json5 suffix --
-        # the recipe does not read the old .ic-assets.json name).
+        # `npm run build` output. Must contain .ic-assets.json5 -- note the json5
+        # suffix, which is the only name the asset-canister recipe reads.
         dir: dist
 
 networks:
@@ -35,14 +34,15 @@ networks:
     mode: managed
     gateway:
       port: 0
-    # Serves a local Internet Identity at http://id.ai.localhost:<port>/authorize,
-    # replacing the `dfx deps pull` of the II canister.
+    # Serves a local Internet Identity at http://id.ai.localhost:<port>/authorize, so
+    # sign-in works locally without deploying anything.
     ii: true
 
 environments:
-  # These were dfx "networks" that ALL pointed at https://icp0.io, i.e. never separate
-  # networks -- only separate canister-id namespaces, which is what an icp environment is.
-  # `prd` is this project's mainnet convention.
+  # An environment is a named set of canister ids on a network. The five mainnet
+  # environments all run on the `ic` network and differ only in which ids they address;
+  # each has its own .icp/data/mappings/<env>.ids.json.
+  # `prd` is this project's production environment.
   - name: local
     network: local
   - name: prd
