@@ -1,0 +1,26 @@
+# Python dependencies for the `funnAI` conda environment.
+#
+#     conda create --name funnAI python=3.11
+#     conda activate funnAI
+#     pip install -r requirements.txt          # from the funnAI folder
+#
+# This is the single entry point: it pulls in everything the funnAI and PoAIW tooling
+# needs, so there is no longer a list of directories to visit in the right order.
+#
+# PREREQUISITE: PoAIW must already be cloned inside funnAI (see PoAIW/README-setup.md).
+# The two `-r PoAIW/...` lines below are the only reason order matters -- without that
+# clone, pip fails with a bare "Could not open requirements file", which is not obviously
+# about a missing repo.
+
+# The vendored llama_cpp_canister (v0.16.0). Brings in icpp-pro (the canister test
+# framework), icp-py-core (used by scripts/lib/icp_helpers.py to decode Candid, since
+# icp-cli has no `--output json`), and the llama tooling's own dev dependencies.
+# Referenced rather than copied so a re-vendor updates the pins automatically.
+-r PoAIW/llms/llama_cpp_canister/requirements.txt
+
+# PoAIW canister tests: adds bitcoin-utils, needed for BIP340 signature verification in
+# the ckSigner suite.
+-r PoAIW/requirements.txt
+
+# The admin / monitoring scripts under funnAI/scripts.
+-r scripts/requirements.txt

@@ -1,4 +1,6 @@
-dotenv
+# python-dotenv provides the `dotenv` module the scripts import. (The PyPI package
+# literally named `dotenv` is a deprecated shim that just depends on this one.)
+python-dotenv
 pandas
 requests
 matplotlib

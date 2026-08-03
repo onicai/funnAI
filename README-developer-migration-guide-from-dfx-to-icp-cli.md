@@ -7,7 +7,6 @@ changes in day-to-day work, now that funnAI and PoAIW run on **icp-cli** instead
 `dfx.json` is replaced by `icp.yaml`
 `canister_ids.json` is replaced by `.icp/data/mappings/{environment}.ids.json` with environment = development/prd/testing
 
-
 ---
 
 ## 1. One-time machine setup
@@ -22,22 +21,27 @@ node --version      # must be >= 22 (dfx only needed 20)
 icp --version       # 1.2.0
 ```
 
-Python side. The conda env is unchanged; its dependencies come from the **vendored**
-llama_cpp_canister, which is part of this repo -- there is no separate clone to keep in
-sync, and the vendored copy is pinned to the same version as the wasm that gets deployed.
+Python side. There is now a single `funnAI` conda environment, and a single
+`funnAI/requirements.txt` that pulls in everything: the vendored llama_cpp_canister tooling
+(icpp-pro, icp-py-core), the PoAIW canister-test dependencies, and the admin/monitoring
+script packages.
 
 ```bash
-conda activate llama_cpp_canister     # create it per PoAIW/README-setup.md if you have not
-python --version                      # must be >= 3.11
+conda create --name funnAI python=3.11     # first time only
+conda activate funnAI
+python --version                           # must be >= 3.11
 
-# from folder: PoAIW/llms/llama_cpp_canister   (v0.16.0; pulls in icpp-pro >= 5.6.0)
+# from folder: funnAI   (requires PoAIW to be cloned inside it)
 pip install -r requirements.txt
+```
 
-# from folder: PoAIW   (icpp-pro + bitcoin-utils for the ckSigner tests)
-pip install -r requirements.txt
+**This replaces the old `llama_cpp_canister` conda env**, which was misleadingly named --
+it was always the funnAI development environment, not llama's -- and required three
+separate `pip install` runs from three different folders. Delete the old one once you have
+switched:
 
-# from folder: funnAI  (the admin/monitoring scripts)
-pip install -r scripts/requirements.txt
+```bash
+conda env remove --name llama_cpp_canister
 ```
 
 `PoAIW/README-setup.md` remains the authoritative first-time setup (clone layout, conda,
@@ -203,7 +207,7 @@ Two things you will trip over:
 ## 6. Running the tests
 
 ```bash
-conda activate llama_cpp_canister
+conda activate funnAI
 cd PoAIW/src/Challenger
 make smoketest                                    # full cycle, fresh network
 pytest -vv --network local test/test_challenger_canister.py

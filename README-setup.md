@@ -5,8 +5,8 @@ First follow all instructions of PoAIW/README.md
 Then, do the following:
 
 ```bash
-# Use conda environment
-conda activate llama_cpp_canister
+# Use the funnAI conda environment (created in PoAIW/README-setup.md)
+conda activate funnAI
 
 # Set NETWORK environment variable
 NETWORK=testing  # [local|ic|development|testing|demo|prd]
@@ -19,7 +19,7 @@ NETWORK=testing  # [local|ic|development|testing|demo|prd]
 # The scripts read the canister ids from these files:
 # - protocol: 'scripts/canister_ids-<network>.env'
 # - mainers : 'scripts/canister_ids_mainers-<network>.env'
-pip install -r scripts/requirements.txt
+# Already installed by `pip install -r requirements.txt` from the funnAI folder.
 # Update the file 'scripts/canister_ids_mainers-<network>.env'
 scripts/get_mainers.sh --network $NETWORK --user <principal>
 # Then run these

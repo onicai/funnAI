@@ -12,7 +12,7 @@ MAKEFLAGS += --no-builtin-variables
 # Everything here is LOCAL ONLY. e2e/icp.yaml declares no production environment, and the
 # harness hard-codes `-e local`. Mainnet is never touched.
 #
-# Run from the funnAI root, in the `llama_cpp_canister` conda env.
+# Run from the funnAI root, in the `funnAI` conda env.
 
 .PHONY: help
 help:
