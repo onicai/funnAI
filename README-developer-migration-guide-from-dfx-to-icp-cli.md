@@ -7,6 +7,8 @@ changes in day-to-day work, now that funnAI and PoAIW run on **icp-cli** instead
 `dfx.json` is replaced by `icp.yaml`
 `canister_ids.json` is replaced by `.icp/data/mappings/{environment}.ids.json` with environment = development/prd/testing
 
+Development & Deployment will now be done from a new conda environment: `funnAI`
+
 ---
 
 ## 1. One-time machine setup
@@ -101,7 +103,7 @@ Do not uninstall dfx, and do not start using it for anything else.
 | cycles balance                 | `dfx wallet balance`                                | `icp cycles balance -e prd`                                     |
 | identity                       | `dfx identity whoami` / `get-principal`             | `icp identity default` / `icp identity principal`               |
 
-Three gotchas worth internalising:
+Three things to internalise:
 
 - **`--query` is not auto-detected.** dfx worked out whether a method was a query; icp sends
   an update call unless you say `--query`. On the monitoring loops that poll hundreds of
@@ -109,9 +111,56 @@ Three gotchas worth internalising:
   canisters, **`ready` is not**.
 - **A call with no argument needs an explicit `'()'`.** dfx defaulted to it. icp instead
   opens an interactive argument builder, which will hang a script.
-- **`-e <env>` for names, `-n ic` for bare principals outside a project.** Resolving a
-  *name* needs the project's icp.yaml; a principal does not, but then icp needs to be told
-  the network another way.
+- **Environments and networks are two different things, and `-e` / `-n` select them.**
+  This is the one genuinely new concept versus dfx, where `--network` meant both.
+
+  A **network** is a replica to talk to. There are only two here:
+  `local` (declared in each `icp.yaml`, a throwaway replica) and `ic` (mainnet, built in).
+
+  An **environment** is a *named set of canister ids* on one of those networks. funnAI has
+  six — `local`, `prd`, `testing`, `development`, `demo`, `backup` — and the last five all
+  run on the `ic` network. They differ only in which ids they point at, which is exactly
+  what dfx's five "networks" really were.
+
+  ```
+  environment          network      canister ids live in
+  -----------          -------      --------------------
+  local          -->   local        .icp/cache/mappings/local.ids.json   (throwaway)
+  prd            -->   ic     \
+  testing        -->   ic      |    .icp/data/mappings/<env>.ids.json    (committed)
+  development    -->   ic      |
+  demo           -->   ic      |
+  backup         -->   ic     /
+  ```
+
+  From that, the rules follow:
+
+  | you are targeting   | flag                | requires                                                       |
+  | ------------------- | ------------------- | -------------------------------------------------------------- |
+  | a canister **name** | `-e <env>` ONLY     | being inside that project (it reads its `icp.yaml` + id store) |
+  | a **principal**     | `-e <env>`          | being inside a project                                         |
+  | a **principal**     | `-n ic`             | nothing — works from any folder                                |
+  | a **principal**     | `-n local`          | being inside a project (`local` is declared there)             |
+  | a **principal**     | `-n <url> -k fetch` | nothing, but `--root-key` is mandatory for a URL               |
+
+  Two mistakes that are easy to make:
+
+  ```bash
+  # `-n` takes a NETWORK name. `prd` is an environment, so this never works, anywhere:
+  icp canister status <principal> -n prd
+  #   Error: project does not contain a network named 'prd'
+
+  # `-n` cannot be combined with a canister NAME at all -- not even a valid network:
+  icp canister status challenger_ctrlb_canister -n local
+  #   Error: Specifying a network is not supported if you are targeting a canister by
+  #          name, specify an environment instead
+  ```
+
+  Rule of thumb: **use `-e <env>` for everything while you are inside a project** — it is
+  the only thing that works with names, and it works with principals too. Reach for
+  `-n ic` only when you have a bare principal and no project, which is precisely the case
+  the ops scripts are in: that is how they address the 744 mAIner canisters and the LLM
+  slots without any of them appearing in an `icp.yaml`.
 
 ---
 
