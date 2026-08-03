@@ -1,6 +1,145 @@
 # funnAI Setup instructions
 
-First follow all instructions of PoAIW/README.md
+First follow all instructions of [PoAIW/README-setup.md](PoAIW/README-setup.md) — it
+covers the clone layout, the `funnAI` conda environment, mops, and the gguf download.
+
+## How icp-cli works
+
+funnAI is built, tested and deployed with **[icp-cli](https://cli.internetcomputer.org)**
+(the `icp` command). A few of its concepts shape how this repo is laid out; skim these
+before running the commands further down, because most setup mistakes trace back to
+standing in the wrong folder or naming the wrong environment.
+
+### Projects
+
+> **A project is a folder containing an `icp.yaml`.**
+
+`icp` finds it by walking up from your current directory, and a project owns three things:
+
+1. **which canisters exist by name** — the `canisters:` block in its `icp.yaml`
+2. **its canister ids** — under `.icp/`
+3. **its own local replica** — icp-cli runs one local network *per project*
+
+**funnAI has 16 projects, not one.** The repo root, `e2e/`, `src/funnai_backend/`, each of
+the nine canisters in `PoAIW/src/*/`, and the four `PoAIW/llms/*/` folders each have their
+own `icp.yaml`. That is why instructions say "from folder X" — `cd`-ing to the right
+project is a real step, and outside one you get `failed to locate project directory`.
+
+```bash
+icp project show          # what the project you are standing in declares
+icp environment list      # its environments
+```
+
+### Environments and networks
+
+These are two different things, and every command has to be told which it is using.
+
+- A **network** is a replica to talk to. There are two: `local` (a throwaway replica
+  declared in `icp.yaml`) and `ic` (mainnet).
+- An **environment** is a *named set of canister ids* on one of those networks. Several
+  environments can share one network, differing only in which ids they point at.
+
+funnAI has six environments; five of them run on `ic`:
+
+```
+environment          network      canister ids live in
+-----------          -------      --------------------
+local          -->   local        .icp/cache/mappings/local.ids.json   (throwaway)
+prd            -->   ic     \
+testing        -->   ic      |    .icp/data/mappings/<env>.ids.json    (committed)
+development    -->   ic      |
+demo           -->   ic      |
+backup         -->   ic     /
+```
+
+`prd` is the production environment — the canisters serving https://funnai.onicai.com/.
+
+`icp environment list` shows a seventh, **`ic`**, which icp-cli always provides implicitly.
+It is not declared in any `icp.yaml` here and has no canister ids, so `-e ic` will not reach
+an existing funnAI canister — it would *create new ones on mainnet and spend real cycles*.
+Use `-e prd` for production; never `-e ic`.
+
+Select an environment with `-e`, or a network with `-n`:
+
+| you are targeting   | flag                | requires                                                       |
+| ------------------- | ------------------- | -------------------------------------------------------------- |
+| a canister **name** | `-e <env>` ONLY     | being inside that project (it reads its `icp.yaml` + id store) |
+| a **principal**     | `-e <env>`          | being inside a project                                         |
+| a **principal**     | `-n ic`             | nothing — works from any folder                                |
+| a **principal**     | `-n local`          | being inside a project (`local` is declared there)             |
+| a **principal**     | `-n <url> -k fetch` | nothing, but `--root-key` is mandatory for a URL               |
+
+Two things that catch people out:
+
+```bash
+# `-n` takes a NETWORK name. An environment name is not a network:
+icp canister status <principal> -n prd
+#   Error: project does not contain a network named 'prd'
+
+# `-n` cannot be combined with a canister NAME at all, not even a valid network:
+icp canister status game_state_canister -n local
+#   Error: Specifying a network is not supported if you are targeting a canister by
+#          name, specify an environment instead
+```
+
+**Rule of thumb: use `-e <env>` for everything while inside a project.** It is the only
+thing that works with names, and it works with principals too. Reach for `-n ic` only when
+you have a bare principal and no project — which is how the ops scripts drive the ~745
+mAIner canisters and the LLM canisters without listing any of them in an `icp.yaml`.
+
+### The local network
+
+Each project gets its own replica, on a port the OS picks at start time
+(`gateway.port: 0`). **The port changes every time you start it, so never hardcode it** —
+read it back:
+
+```bash
+icp network start -d                  # prints e.g. "Network started on port 63840"
+icp network status -e local --json    # .gateway_url / .api_url
+```
+
+To wipe local state and start clean:
+
+```bash
+icp network stop && rm -rf .icp/cache && icp network start -d
+```
+
+Because each project has its own replica, canisters in different projects cannot call each
+other locally. To run the **whole application** — every canister, the LLM and the frontend
+on one local network — use the end-to-end environment from the repo root:
+
+```bash
+make e2e-up          # build + deploy everything locally
+make e2e-status      # URLs and per-canister health
+make e2e-test        # system-level checks
+make e2e-down
+```
+
+### Where canister ids live
+
+| path                                | holds                                 | committed? |
+| ----------------------------------- | ------------------------------------- | ---------- |
+| `.icp/data/mappings/<env>.ids.json` | the **mainnet** canister ids          | yes        |
+| `.icp/cache/`                       | build artifacts + local network state | no         |
+
+> 🚨 **Never `rm -rf .icp` — only ever `.icp/cache`.** `.icp/data/` holds the mainnet
+> canister ids for every environment. Deleting it loses them all.
+
+Most canisters are declared by name in their project's `icp.yaml`, with ids in
+`.icp/data/mappings/`. Two families are not — they are addressed by principal instead, and
+their ids live in a plain registry file:
+
+| family                             | registry                           | why                                          |
+| ---------------------------------- | ---------------------------------- | -------------------------------------------- |
+| the ~744 `mainer_ctrlb_canister_N` | `PoAIW/src/mAIner/mainer_ids.json` | a 744-entry `icp.yaml` would be unmanageable |
+| the ICRC token ledger + index      | `PoAIW/src/Token*/token_ids.json`  | downloaded wasms; nothing here rebuilds them |
+
+`icp canister install <principal> --wasm ...` works with no project and no declaration,
+which is what makes that possible.
+
+---
+
+## funnAI-specific steps
 
 Then, do the following:
 
@@ -9,17 +148,12 @@ Then, do the following:
 conda activate funnAI
 
 # Set NETWORK environment variable
-NETWORK=testing  # [local|ic|development|testing|demo|prd]
-
-# NOTE: `--output json` is gone. icp-cli cannot decode a Candid response the way dfx did
-# (its `--json` wraps the raw response instead), so anything that needs real JSON goes
-# through scripts/lib/icp_helpers.py, which decodes with icp-py-core.
+NETWORK=testing  # [local|development|testing|demo|prd]  -- use prd for production, never ic
 
 # ADMIN MONITORING & HELPER SCRIPTS
 # The scripts read the canister ids from these files:
 # - protocol: 'scripts/canister_ids-<network>.env'
 # - mainers : 'scripts/canister_ids_mainers-<network>.env'
-# Already installed by `pip install -r requirements.txt` from the funnAI folder.
 # Update the file 'scripts/canister_ids_mainers-<network>.env'
 scripts/get_mainers.sh --network $NETWORK --user <principal>
 # Then run these
@@ -30,21 +164,21 @@ scripts/monitor_memory.sh --network $NETWORK --canister-types [all|protocol|main
 scripts/monitor_balance.sh --network $NETWORK --canister-types [all|protocol|mainers]
 
 # When running local
-# `dfx deps pull` has no icp-cli equivalent, and none is needed:
+# Nothing needs to be pulled first:
 # - internet-identity : the managed local network serves it itself (`ii: true` in
 #                       icp.yaml), at http://id.ai.localhost:<port>/authorize
 # - cycles_ledger     : a fixed mainnet principal; nothing here deploys it
 #
 # from folder: funnAI
-# There is no `--clean`; removing .icp/cache is the equivalent.
+# Removing .icp/cache resets the local network.
 # NEVER remove .icp itself -- .icp/data/mappings holds the mainnet canister ids.
 icp network stop || true
 rm -rf .icp/cache
 icp network start -d
 
 # This script deploys the core canisters:
-# (-) Before doing a new install, reset all canister_ids.json files, for example:
-#       "testing": ".*-cai"   -->  "testing": ""
+# (-) Before doing a new install, clear the ids for that environment, i.e. remove the
+#     canister's entry from '.icp/data/mappings/<network>.ids.json' in each project
 # (-) Deploys GameState, mAInerCreator, Challenger (1 LLM), Judge (3 LLMs)
 # (-) Registers the canisters properly with each other
 # (-) The timers of the Challenger & Judge are not started.
@@ -80,7 +214,6 @@ scripts/deploy-all.sh --mode install --network $NETWORK
 # # To increase limit of ShareAgent mAIners
 # icp canister call game_state_canister setLimitForCreatingMainerAdmin '(record {mainerType = variant { ShareAgent } ; newLimit = 450 : nat;} )' -e prd
 
-
 # #########################################################################
 # Admin functions to clean up redeemed payments in case the creation failed.
 # This is used during testing, but can also be used in production in case the mAIner creation failed, but user payment was accepted
@@ -115,7 +248,6 @@ icp canister call game_state_canister resetCurrentChallengesAdmin -e $NETWORK
 icp canister call game_state_canister getCurrentChallengesAdmin -e $NETWORK
 icp canister call game_state_canister getNumCurrentChallengesAdmin -e $NETWORK
 
-
 # Verify mAIner response generations
 # Note: submissionStatus changes from #Submitted > #Judging > #Judged
 icp canister call game_state_canister getSubmissionsAdmin -e $NETWORK
@@ -146,13 +278,12 @@ icp canister call game_state_canister getRecentProtocolActivity -e $NETWORK
 
 # Deploy funnai frontend:
 ## ensure you have the latest from the PoAIW repo
-# `dfx generate` has no icp-cli equivalent: src/declarations/ is committed, so nothing
-# regenerates it during a build. If an interface changes, regenerate with `didc bind -t js`.
+# src/declarations/ is committed, so nothing regenerates it during a build.
+# If a canister interface changes, regenerate with `didc bind -t js` and commit the result.
 icp deploy funnai_frontend -e $NETWORK -y
 # Note: you might need to give yourself these explicit permissions:
 icp canister call funnai_frontend grant_permission '(record {permission = variant {Prepare}; to_principal = principal "<your-principal>"})' -e $NETWORK
 icp canister call funnai_frontend grant_permission '(record {permission = variant {Commit}; to_principal = principal "<your-principal>"})' -e $NETWORK
-
 
 # Deploy the token ledger canister:
 # from folder: PoAIW/src/TokenLedger
@@ -348,7 +479,6 @@ icp deploy funnai_frontend -e development -y
 icp deploy funnai_frontend -e demo -y
 ```
 
-
 For setting up stages, see [Notes on Stages](./notes/NotesOnStages.md)
 
 ### Production Deployment
@@ -367,8 +497,8 @@ icp deploy funnai_backend --args "( principal \"$(icp identity principal)\" )" -
 icp deploy funnai_frontend -e prd -y
 ```
 
-In case there are authentication issues: icp-cli has no wallet to pass. Check that the
-identity you are deploying with is a controller of the canister
+In case there are authentication issues, check that the identity you are deploying with is
+a controller of the canister
 (Note that only authorized identities which are set up as canister controllers may deploy the production canisters)
 
 ```bash
@@ -380,9 +510,9 @@ icp deploy -e ic -y
 Potentially create if there's high demand on subnets and failing deployments
 
 ```bash
-# icp-cli has no cycles-wallet concept. Your own cycles balance:
+# Your own cycles balance:
 icp cycles balance -e prd
-# icp-cli has no wallet to set: cycles come from the identity's cycles-ledger balance.
+# Cycles come from the identity's cycles-ledger balance.
 icp deploy funnai_backend --args "( principal \"$(icp identity principal)\" )" \
   --subnet qdvhd-os4o2-zzrdw-xrcv4-gljou-eztdp-bj326-e6jgr-tkhuc-ql6v2-yqe -e backup -y
 icp deploy funnai_frontend --subnet qdvhd-os4o2-zzrdw-xrcv4-gljou-eztdp-bj326-e6jgr-tkhuc-ql6v2-yqe --with-cycles 1000000000000 -e backup -y
