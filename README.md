@@ -60,6 +60,11 @@ backup         -->   ic     /
 
 `prd` is the production environment — the canisters serving https://funnai.onicai.com/.
 
+`icp environment list` shows a seventh, **`ic`**, which icp-cli always provides implicitly.
+It is not declared in any `icp.yaml` here and has no canister ids, so `-e ic` will not reach
+an existing funnAI canister — it would *create new ones on mainnet and spend real cycles*.
+Use `-e prd` for production; never `-e ic`.
+
 Select an environment with `-e`, or a network with `-n`:
 
 | you are targeting   | flag                | requires                                                       |

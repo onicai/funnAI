@@ -149,10 +149,14 @@ Three things to internalise:
   A **network** is a replica to talk to. There are only two here:
   `local` (declared in each `icp.yaml`, a throwaway replica) and `ic` (mainnet, built in).
 
-  An **environment** is a *named set of canister ids* on one of those networks. funnAI has
-  six — `local`, `prd`, `testing`, `development`, `demo`, `backup` — and the last five all
-  run on the `ic` network. They differ only in which ids they point at, which is exactly
-  what dfx's five "networks" really were.
+  An **environment** is a *named set of canister ids* on one of those networks. funnAI
+  declares six — `local`, `prd`, `testing`, `development`, `demo`, `backup` — and the last
+  five all run on the `ic` network. They differ only in which ids they point at, which is
+  exactly what dfx's five "networks" really were.
+
+  `icp environment list` shows a seventh, **`ic`**, which icp-cli always provides
+  implicitly. It has no canister ids here, so `-e ic` would not reach an existing funnAI
+  canister — it would *create new ones on mainnet*. Use `-e prd` for production.
 
   ```
   environment          network      canister ids live in
