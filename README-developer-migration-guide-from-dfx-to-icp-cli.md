@@ -35,14 +35,10 @@ python --version                           # must be >= 3.11
 pip install -r requirements.txt
 ```
 
-**This replaces the old `llama_cpp_canister` conda env**, which was misleadingly named --
-it was always the funnAI development environment, not llama's -- and required three
-separate `pip install` runs from three different folders. Delete the old one once you have
-switched:
-
-```bash
-conda env remove --name llama_cpp_canister
-```
+funnAI work previously used the `llama_cpp_canister` conda env, which needed three
+separate `pip install` runs from three different folders. Use `funnAI` for funnAI from now
+on. Keep the `llama_cpp_canister` env -- it is still the right environment for working in
+the llama_cpp_canister repo itself.
 
 `PoAIW/README-setup.md` remains the authoritative first-time setup (clone layout, conda,
 mops, the gguf download). This guide only covers what the dfx -> icp-cli move changed.
