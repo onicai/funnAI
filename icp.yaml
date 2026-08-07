@@ -39,7 +39,7 @@ networks:
     ii: true
 
 environments:
-  # An environment is a named set of canister ids on a network. The five mainnet
+  # An environment is a named set of canister ids on a network. The three mainnet
   # environments all run on the `ic` network and differ only in which ids they address;
   # each has its own .icp/data/mappings/<env>.ids.json.
   # `prd` is this project's production environment.
@@ -50,8 +50,4 @@ environments:
   - name: testing
     network: ic
   - name: development
-    network: ic
-  - name: demo
-    network: ic
-  - name: backup
     network: ic

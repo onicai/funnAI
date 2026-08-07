@@ -36,10 +36,15 @@ that need any of the three fail with `failed to locate project directory`.
 its own local replica. That is why the instructions below keep saying "from folder X":
 `cd`-ing to the right project is a real step, not a formality.
 
-```bash
-icp project show          # what the project you are standing in actually declares
-icp environment list      # its environments
-```
+**`e2e/` is new, and is not like the other fifteen.** They each own a canister; `e2e/` owns
+no source and builds nothing. It exists purely to give the *whole* application one network
+and one id store to be deployed onto together — the thing a single shared `dfx start` replica
+used to provide for free, and which one-network-per-project takes away. Every canister in its
+`icp.yaml` is `pre-built`, pointing at the artifact one of the other projects produced. See
+[§3 Running the whole application](#running-the-whole-application).
+
+To see what a project declares, read its `icp.yaml`. That file is short and is the source of
+truth; it is where you change things.
 
 ---
 
@@ -61,9 +66,9 @@ Python side. There is now a single `funnAI` conda environment, and a single
 script packages.
 
 ```bash
-conda create --name funnAI python=3.11     # first time only
+conda create --name funnAI python=3.13     # first time only
 conda activate funnAI
-python --version                           # must be >= 3.11
+python --version                           # must be >= 3.13
 
 # from folder: funnAI   (requires PoAIW to be cloned inside it)
 pip install -r requirements.txt
@@ -150,13 +155,13 @@ Three things to internalise:
   `local` (declared in each `icp.yaml`, a throwaway replica) and `ic` (mainnet, built in).
 
   An **environment** is a *named set of canister ids* on one of those networks. funnAI
-  declares six — `local`, `prd`, `testing`, `development`, `demo`, `backup` — and the last
-  five all run on the `ic` network. They differ only in which ids they point at, which is
-  exactly what dfx's five "networks" really were.
+  declares four — `local`, `prd`, `testing`, `development` — and the last three all run on
+  the `ic` network. They differ only in which ids they point at, which is exactly what dfx's
+  extra "networks" really were.
 
-  `icp environment list` shows a seventh, **`ic`**, which icp-cli always provides
-  implicitly. It has no canister ids here, so `-e ic` would not reach an existing funnAI
-  canister — it would *create new ones on mainnet*. Use `-e prd` for production.
+  There is a fifth, **`ic`**, which icp-cli always provides implicitly — you will not find
+  it in any `icp.yaml` here. It has no canister ids, so `-e ic` would not reach an existing
+  funnAI canister — it would *create new ones on mainnet*. Use `-e prd` for production.
 
   ```
   environment          network      canister ids live in
@@ -164,9 +169,7 @@ Three things to internalise:
   local          -->   local        .icp/cache/mappings/local.ids.json   (throwaway)
   prd            -->   ic     \
   testing        -->   ic      |    .icp/data/mappings/<env>.ids.json    (committed)
-  development    -->   ic      |
-  demo           -->   ic      |
-  backup         -->   ic     /
+  development    -->   ic     /
   ```
 
   From that, the rules follow:
@@ -179,24 +182,9 @@ Three things to internalise:
   | a **principal**     | `-n local`          | being inside a project (`local` is declared there)             |
   | a **principal**     | `-n <url> -k fetch` | nothing, but `--root-key` is mandatory for a URL               |
 
-  Two mistakes that are easy to make:
-
-  ```bash
-  # `-n` takes a NETWORK name. `prd` is an environment, so this never works, anywhere:
-  icp canister status <principal> -n prd
-  #   Error: project does not contain a network named 'prd'
-
-  # `-n` cannot be combined with a canister NAME at all -- not even a valid network:
-  icp canister status challenger_ctrlb_canister -n local
-  #   Error: Specifying a network is not supported if you are targeting a canister by
-  #          name, specify an environment instead
-  ```
-
   Rule of thumb: **use `-e <env>` for everything while you are inside a project** — it is
   the only thing that works with names, and it works with principals too. Reach for
-  `-n ic` only when you have a bare principal and no project, which is precisely the case
-  the ops scripts are in: that is how they address the 744 mAIner canisters and the LLM
-  slots without any of them appearing in an `icp.yaml`.
+  `-n ic` only when you have a bare principal and no project.
 
 ---
 
@@ -210,9 +198,14 @@ Every `icp.yaml` here sets `gateway.port: 0`, so the OS picks a free port and **
 changes on every start**. Never hardcode it:
 
 ```bash
-icp network start -d                       # prints e.g. "Network started on port 63840"
-icp network status -e local --json         # .gateway_url / .api_url
+icp network start -d                  # prints e.g. "Network started on port 63840"
+icp network status -e local --json    # ask the running network for it again
 ```
+
+`network status --json` returns `gateway_url` (open this in a browser; canisters are served
+at `http://<canister-id>.<host>:<port>/`) and `api_url` (what agents and tooling call). Both
+come back **with a trailing slash** — strip it before joining a path on, or you get
+`//api/v3` and the replica answers 400. `scripts/lib/icp_helpers.py` already does this.
 
 There is no `--clean`. The equivalent is:
 
@@ -228,6 +221,55 @@ canister ids** — it is the replacement for `canister_ids.json`, and it is comm
 
 This exact mistake wiped the mappings during the upstream icpp-pro migration. Only ever
 remove `.icp/cache`.
+
+### Running the whole application
+
+One network per project has a consequence dfx never had: **canisters in different projects
+cannot call each other locally.** Under dfx a single shared replica held everything, so
+`dfx deploy` from the root gave you a working app. Here that would give you a dozen isolated
+replicas — individually healthy, collectively useless — and, because each allocates ids from
+the same sequence, several canisters holding the *same* id in different stores.
+
+The `e2e/` project exists to solve exactly that: it owns **one** network and **one** id
+store, and every canister is declared `pre-built`, pointing at the artifact its own project
+produced. This is the replacement for "just `dfx deploy` everything", and it is what you
+will use day to day:
+
+```bash
+make e2e-start-clean && make e2e-install   # from cold
+make e2e-status                            # URLs, ids, health
+make e2e-test                              # backend suites against this network
+```
+
+Network lifecycle and deployment are separate commands (`e2e-start` / `e2e-stop` /
+`e2e-clean` vs `e2e-install` / `e2e-reinstall` / `e2e-upgrade`), and the deploy targets
+refuse to start the network for you — so you always know whether you deployed onto reused
+state or a clean replica. `make help` lists them all.
+
+The three deploy targets are the IC's three install modes. `install` needs empty canisters,
+so a second `e2e-install` fails with `IC0514 ... canister is not empty`; `reinstall` wipes
+canister state; `upgrade` keeps it and therefore does not re-upload the LLM's gguf. Add
+`NO_GGUF=1` to install/reinstall to skip that upload when you do not need inference.
+
+**These rebuild through the reproducible Docker build**, so what you run locally is the
+same artifact the release pipeline produces — the one behind `WASM-HASHES.md` and
+`verify-wasm`. **Docker must be running.** Under dfx the local build was all you had; here
+the canonical one is the default, because it costs only ~160 s more (≈290 s vs ≈130 s for a
+cold install).
+
+`NO_DOCKER=1` falls back to the local `icp build` when Docker is unavailable or you are
+iterating hard:
+
+```bash
+make e2e-reinstall NO_DOCKER=1
+```
+
+Its output is machine-dependent — all 10 canisters differ between the two builds — so never
+quote a wasm hash from it. See
+[The build is reproducible by default](README-setup.md#the-build-is-reproducible-by-default).
+
+Full details, including what can and cannot be exercised locally, are in
+[README-setup.md](README-setup.md#running-the-whole-app-locally).
 
 ---
 
@@ -331,14 +373,79 @@ committed `src/declarations/` already expect.
 nothing needs it during a normal build. If a canister interface changes, regenerate with
 `didc bind -t js` (or adopt `@icp-sdk/bindgen`) and commit the result.
 
-Locally, Internet Identity is served by the managed network itself (`ii: true` in
-`icp.yaml`) at `http://id.ai.localhost:<port>/authorize`.
+### Local Internet Identity — a straight win
+
+Under dfx you pulled the II canister with `dfx deps pull`, initialised it with
+`dfx deps init`, and deployed it yourself, keeping the whole `deps/` tree in the repo.
+icp-cli replaces all of that with **one line** in `icp.yaml`:
+
+```yaml
+networks:
+  - name: local
+    mode: managed
+    ii: true
+```
+
+The managed network then serves Internet Identity at
+`http://id.ai.localhost:<port>/authorize`. Nothing to pull, nothing to init, nothing to
+deploy, and `deps/` is gone from both repos.
+
+It is a **test build of II that does not use real passkeys.** It prompts for a **seed
+index** instead, and seed index N always derives the same principal — so `0` is your first
+test user, `1` a second, stable across restarts and across a `e2e-start-clean`. Under dfx
+you registered an anchor and were then stuck with whatever passkey your machine had; now
+test users are deterministic and reproducible, which is the property that makes local
+testing repeatable.
+
+**The one gotcha: create before you sign in.** On a fresh network you must use **Create**
+("Create new identity" → "Create with passkey" → name it → seed index `0`), not "Sign in
+with passkey". Signing in against a seed that was never created bounces silently back to
+the sign-in screen; the only clue is
+`TypeError: Cannot read properties of undefined (reading 'anchor_number')` in the console.
+
+Because the seed index is an ordinary `window.prompt` and not an OS passkey dialog, the
+whole sign-in is scriptable — browser automation can log itself in, which was never possible
+against a real passkey flow.
+
+### Letting Claude Code drive the browser
+
+That last point is worth setting up, because it is what makes an AI agent able to verify a
+frontend change instead of guessing at it: sign in, click through a flow, read the console,
+screenshot the result — unattended.
+
+The repo ships a **`.mcp.json`** declaring the `chrome-devtools` MCP server, so there is no
+`claude mcp add` to run — cloning is enough, and Claude Code will ask you to approve the
+server on first use. All that is left is the browser itself, which a repo cannot launch for
+you:
+
+```bash
+# a DEDICATED Chrome profile -- add to ~/.zshrc
+# Use a function, not an alias: an alias re-tokenizes after expansion and splits
+# "Google Chrome" on its space, giving `exit 127: command not found`.
+chrome-claude-dev() { "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --remote-debugging-port=9222 --user-data-dir="$HOME/chrome-claude-dev" >/dev/null 2>&1 & }
+
+# verify
+chrome-claude-dev
+curl -s http://127.0.0.1:9222/json/version    # JSON with a "Browser" field
+claude mcp list                               # chrome-devtools -> Connected
+```
+
+Keep this profile separate from your everyday browser and do not sign into real accounts in
+it: the remote-debugging port lets any local process drive that Chrome. Your normal Chrome
+is unaffected and can stay open. Reset with `rm -rf ~/chrome-claude-dev/`.
+
+Two funnAI-specific quirks worth knowing before you watch an agent fumble them: the login
+modal is mounted **six times** in the DOM and does not appear in the accessibility snapshot,
+so its buttons have to be clicked via `evaluate_script` filtered to the visible copy; and
+Internet Identity opens in a **popup**, i.e. a separate page that has to be selected before
+it can be driven.
 
 ---
 
 ## 8. Ops scripts
 
-The scripts keep their existing interface — `--network local|ic|testing|development|demo|prd`
+The scripts keep their existing interface — `--network local|ic|testing|development|prd`
 still works exactly as before.
 
 Everything now routes through **`scripts/lib/icp_helpers.py`**. If you are writing or

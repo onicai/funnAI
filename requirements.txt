@@ -1,22 +1,41 @@
 # Python dependencies for the `funnAI` conda environment.
 #
-#     conda create --name funnAI python=3.11
+#     conda create --name funnAI python=3.13
 #     conda activate funnAI
 #     pip install -r requirements.txt          # from the funnAI folder
 #
 # This is the single entry point: it pulls in everything the funnAI and PoAIW tooling
 # needs, so there is no longer a list of directories to visit in the right order.
 #
-# PREREQUISITE: PoAIW must already be cloned inside funnAI (see PoAIW/README-setup.md).
+# PREREQUISITE: PoAIW must already be cloned inside funnAI (see README-setup.md, 'Clone').
 # The two `-r PoAIW/...` lines below are the only reason order matters -- without that
 # clone, pip fails with a bare "Could not open requirements file", which is not obviously
 # about a missing repo.
 
-# The vendored llama_cpp_canister (v0.16.0). Brings in icpp-pro (the canister test
-# framework), icp-py-core (used by scripts/lib/icp_helpers.py to decode Candid, since
-# icp-cli has no `--output json`), and the llama tooling's own dev dependencies.
-# Referenced rather than copied so a re-vendor updates the pins automatically.
--r PoAIW/llms/llama_cpp_canister/requirements.txt
+# The vendored llama_cpp_canister (v0.16.4).
+#
+# Its top-level requirements.txt is deliberately NOT included wholesale, because it pins
+# `binaryen.py`, which has NO cp313 wheel (no release ever shipped one; 117.1.1 is cp312
+# only) and whose sdist fails to build -- "'scripts/binaryen_build.py' does not name an
+# existing file". That single package would block the whole install on Python 3.13.
+#
+# Nothing here needs it: no file in funnAI or PoAIW imports binaryen, icpp-pro does not
+# depend on it, and it exists for building llama's wasm from C++ source -- which this repo
+# never does, since it deploys the vendored prebuilt build/llama_cpp.wasm.
+#
+# So the contents are reproduced below, minus that one line. The `scripts/requirements.txt`
+# reference is kept so the llama tooling's dev pins still update on a re-vendor.
+#
+# 🔁 ON RE-VENDOR: diff PoAIW/llms/llama_cpp_canister/requirements.txt against the three
+#    lines below. If upstream added a dependency, add it here too. Everything else in that
+#    file should already be here, minus `binaryen.py`.
+-r PoAIW/llms/llama_cpp_canister/scripts/requirements.txt
+# 6.0.0 is a REQUIRED minimum, not a preference: it is where the pytest fixtures stopped
+# switching the machine-wide icp identity and started reading $ICPP_PRO_TEST_IDENTITY.
+# On 5.x the Makefiles' `export ICPP_PRO_TEST_IDENTITY` is ignored and the suites silently
+# run as whatever `icp identity default` happens to be.
+icpp-pro>=6.0.0            # the canister test framework (icpp.smoketest)
+icp-py-core==2.3.1         # scripts/lib/icp_helpers.py -- icp-cli has no `--output json`
 
 # PoAIW canister tests: adds bitcoin-utils, needed for BIP340 signature verification in
 # the ckSigner suite.

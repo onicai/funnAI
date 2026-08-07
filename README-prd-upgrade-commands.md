@@ -9,7 +9,7 @@
 MAINTAINER=$(icp identity principal)
 PATRICK=cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe
 
-# One of these... (note: it does not work for 'demo')
+# One of these...
 NETWORK=prd
 NETWORK=testing
 NETWORK=development
@@ -1712,7 +1712,7 @@ The only errors seen so far is when the IC timed out.
 The script has been made robust against this using retry logic.
 
 ```bash
-scripts/upgrade_mainers.sh --network [local|ic|testing|development|demo|prd] [--target-hash HASH] [--num NUM] [--mainer CANISTER_ID] [--user PRINCIPAL] [--dry-run] [--skip-preparation] [--ask-before-upgrade] [--reverse] [--deploy-with-yes] [--reinstall]
+scripts/upgrade_mainers.sh --network [local|ic|testing|development|prd] [--target-hash HASH] [--num NUM] [--mainer CANISTER_ID] [--user PRINCIPAL] [--dry-run] [--skip-preparation] [--ask-before-upgrade] [--reverse] [--deploy-with-yes] [--reinstall]
 
 Options:
   --network NETWORK       Required. Network to upgrade mainers on
@@ -1856,7 +1856,7 @@ dfx canister --network $NETWORK snapshot delete $MAINER <snapshot-id>
 
 ## Judge calls to GameState fail with #Err(Unauthorized)
 
-This happens if you reinstall the judge in the `testing` or `demo` network.
+This happens if you reinstall the judge in the `testing` network.
 The default GAME_STATE_CANISTER_ID is for the `prd` network. 
 
 Verify the log file, what canister id is used.
