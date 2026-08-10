@@ -19,10 +19,10 @@
     // Initialize Chart.js components early
     initializeChartJS();
 
-    // Set dark mode as default if no preference is stored
-    const savedTheme = localStorage.getItem("theme") || "dark";
-    theme.set(savedTheme);
-    applyTheme(savedTheme);
+    // Force dark — light/dark switch removed
+    localStorage.setItem("theme", "dark");
+    theme.set("dark");
+    applyTheme("dark");
 
     // Check login state - ensure this happens before the app renders
     console.log("🚀 Starting app initialization...");

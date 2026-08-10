@@ -9,9 +9,7 @@
 
   let nfidReady = false;
 
-  // Pre-initialize NFID IdentityKit on component mount so it's ready when user clicks
   onMount(async () => {
-    // Start pre-initializing and wait for it to complete
     await store.preInitNfid?.();
     nfidReady = true;
   });
@@ -21,7 +19,7 @@
       console.warn("NFID not ready yet, please wait...");
       return;
     }
-    
+
     try {
       loading = "nfid";
       await store.nfidConnect();
@@ -31,20 +29,28 @@
       console.error("NFID connection failed:", error);
       loading = "";
     }
-  };
+  }
 </script>
 
-<a
-  class="flex items-center p-3 text-base font-bold text-gray-900 rounded-lg bg-gray-50 hover:bg-gray-100 group hover:shadow"
-  class:cursor-pointer={nfidReady && loading !== "nfid"}
-  class:opacity-60={!nfidReady || loading === "nfid"}
-  class:cursor-not-allowed={!nfidReady && loading !== "nfid"}
+<button
+  type="button"
+  class="group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3.5 text-left transition-all duration-200 hover:border-[#653FC5]/40 hover:bg-[#653FC5]/10 disabled:cursor-not-allowed disabled:opacity-60"
+  disabled={!nfidReady || loading === "nfid" || (loading !== "" && loading !== "nfid")}
   on:click={connect}
 >
   {#if loading === "nfid"}
-    <LoadingSpinner size="h-6 w-6" />
+    <div class="flex w-full items-center justify-center py-0.5">
+      <LoadingSpinner size="h-5 w-5" />
+    </div>
   {:else}
-    <img class="h-5" src={nfidlogo}  alt="nfid wallet" />
-    <span class="flex-1 ms-3 whitespace-nowrap">NFID (incl. Google)</span>
+    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10">
+      <img class="h-5 w-auto" src={nfidlogo} alt="" />
+    </span>
+    <span class="min-w-0 flex-1">
+      <span class="block text-sm font-medium text-gray-100">NFID</span>
+      <span class="block text-xs font-normal text-gray-500">
+        {nfidReady ? 'Includes Google sign-in' : 'Preparing…'}
+      </span>
+    </span>
   {/if}
-</a>
+</button>

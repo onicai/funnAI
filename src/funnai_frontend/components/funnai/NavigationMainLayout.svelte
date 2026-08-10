@@ -3,6 +3,7 @@
   import { store, theme } from "../../stores/store";
   import { link, location } from 'svelte-spa-router';
   import LoginModal from '../login/LoginModal.svelte';
+  import { ShoppingCart, LogIn } from 'lucide-svelte';
 
   let visibleInstallAppToast = false;
   let navigationDropdownOpen = false;
@@ -66,18 +67,16 @@
   });
 </script>
 
-<div class="flex items-center justify-center w-full relative">
+<div class="flex items-center justify-center w-full relative font-sans">
   <!-- Navigation & Auth - Right side -->
-  <div class="ml-auto flex items-center gap-3">
+  <div class="ml-auto flex items-center gap-2.5">
     <!-- Buy mAIner Button -->
     <a
       use:link
       href="/marketplace"
-      class="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium text-sm transition-all duration-200 shadow-md hover:shadow-lg no-underline"
+      class="group flex items-center gap-2 h-9 px-3.5 rounded-full border border-white/10 bg-white/[0.04] text-gray-200 text-[13px] font-medium tracking-tight no-underline transition-all duration-200 hover:border-[#653FC5]/40 hover:bg-[#653FC5]/10 hover:text-white"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-      </svg>
+      <ShoppingCart class="w-3.5 h-3.5 stroke-[1.75] text-gray-400 transition-colors duration-200 group-hover:text-[#653FC5]" />
       <span>Buy mAIner</span>
     </a>
 
@@ -146,11 +145,9 @@
       <button
         type="button"
         on:click={toggleModal}
-        class="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-medium text-sm transition-all duration-200 shadow-md hover:shadow-lg"
+        class="group flex items-center gap-2 h-9 px-4 rounded-full bg-[#653FC5] text-white text-[13px] font-semibold tracking-tight shadow-[0_0_0_1px_rgba(101,63,197,0.35),0_8px_20px_-8px_rgba(101,63,197,0.55)] transition-all duration-200 hover:bg-[#5a37b5] hover:shadow-[0_0_0_1px_rgba(101,63,197,0.5),0_10px_24px_-6px_rgba(101,63,197,0.65)] active:scale-[0.98]"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-        </svg>
+        <LogIn class="w-3.5 h-3.5 stroke-[1.75]" />
         <span>Connect</span>
       </button>
     {/if}
@@ -185,4 +182,3 @@
     }
   }
 </style>
-

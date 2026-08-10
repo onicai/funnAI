@@ -16,17 +16,26 @@
       console.error("Internet Identity connection failed:", error);
       loading = "";
     }
-  };
+  }
 </script>
 
-<a
-  class="flex items-center p-3 text-base font-bold text-gray-900 rounded-lg bg-gray-50 hover:bg-gray-100 group hover:shadow cursor-pointer"
+<button
+  type="button"
+  class="group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3.5 text-left transition-all duration-200 hover:border-[#653FC5]/40 hover:bg-[#653FC5]/10 disabled:cursor-not-allowed disabled:opacity-60"
+  disabled={loading === "internetidentity" || (loading !== "" && loading !== "internetidentity")}
   on:click={connect}
 >
   {#if loading === "internetidentity"}
-    <LoadingSpinner size="h-6 w-6" />
+    <div class="flex w-full items-center justify-center py-0.5">
+      <LoadingSpinner size="h-5 w-5" />
+    </div>
   {:else}
-    <img class="h-3" src={iclogo}  alt="ic wallet" />
-    <span class="flex-1 ms-3 whitespace-nowrap">Internet Identity</span>
+    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10">
+      <img class="h-4 w-auto" src={iclogo} alt="" />
+    </span>
+    <span class="min-w-0 flex-1">
+      <span class="block text-sm font-medium text-gray-100">Internet Identity</span>
+      <span class="block text-xs font-normal text-gray-500">ICP wallet</span>
+    </span>
   {/if}
-</a>
+</button>

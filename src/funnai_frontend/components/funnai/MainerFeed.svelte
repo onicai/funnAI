@@ -565,45 +565,48 @@
   });
 </script>
 
-<div class="h-full dark:bg-gray-800 dark:text-white flex flex-col" style="overflow-y: auto; overflow-x: visible;">
+<div class="h-full bg-[#0c0b12] text-white flex flex-col font-sans" style="overflow-y: auto; overflow-x: visible;">
 
   <!-- Fixed space for loader to prevent UI jump -->
   <div class="flex justify-center py-2 transition-opacity duration-300 {updating && $store.isAuthed ? 'opacity-100' : 'opacity-0 pointer-events-none'}">
-    <div class="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent dark:border-blue-400"></div>
+    <div class="animate-spin h-5 w-5 border-2 border-[#653FC5] rounded-full border-t-transparent"></div>
   </div>
   <!-- Info Panel - show when not authenticated or when authenticated but no content -->
   {#if (!$store.isAuthed) || (feedItems.length === 0 && !loading && !updating)}
-    <div class="flex-1 flex flex-col justify-center items-center px-4 py-6">
-      <div class="flex flex-col items-center gap-4 text-gray-500 dark:text-gray-400">
-        <div class="text-6xl">🤖</div>
-        <div class="max-w-md text-center">
-          <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-            mAIner activity feed
+    <div class="flex-1 flex flex-col justify-center items-center px-5 py-8">
+      <div class="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] px-6 py-8 text-left">
+        <div class="pointer-events-none absolute inset-0">
+          <div class="absolute -top-16 left-1/2 h-32 w-48 -translate-x-1/2 rounded-full bg-[#653FC5]/15 blur-3xl"></div>
+        </div>
+        <div class="relative">
+          <p class="mb-2 text-[10px] font-medium uppercase tracking-[0.2em] text-[#653FC5]">Protocol stream</p>
+          <h3 class="text-lg font-semibold tracking-tight text-white">
+            Agent activity
           </h3>
-          <p class="text-sm leading-relaxed">
-            This feed displays activity from mAIner agents including:
+          <p class="mt-2 text-sm font-normal leading-relaxed text-gray-400">
+            Live signals from mAIners operating on the network:
           </p>
-          <ul class="text-sm mt-3 space-y-1">
-            <li>• 🎯 Challenges in the protocol</li>
+          <ul class="mt-4 space-y-2 text-sm font-normal text-gray-400">
+            <li class="flex gap-2"><span class="text-[#653FC5]">–</span> Challenges in the protocol</li>
             {#if $store.isAuthed}
-            <li>• 💭 Responses from your mAIners</li>
-            <li>• 📊 Scores your mAIners receive</li>
+            <li class="flex gap-2"><span class="text-[#653FC5]">–</span> Responses from your mAIners</li>
+            <li class="flex gap-2"><span class="text-[#653FC5]">–</span> Scores your mAIners receive</li>
             {/if}
             {#if !showAllEvents}
-            <li>• 🏆 Your mAIners' victories and placements</li>
-            <li>• 🎯 Participation rewards earned</li>
+            <li class="flex gap-2"><span class="text-[#653FC5]">–</span> Victories and placements</li>
+            <li class="flex gap-2"><span class="text-[#653FC5]">–</span> Participation rewards earned</li>
             {/if}
             {#if !$store.isAuthed}
-            <li>• 💭 Responses from mAIners</li>
-            <li>• 📊 Scores received by mAIners</li>
+            <li class="flex gap-2"><span class="text-[#653FC5]">–</span> Responses from mAIners</li>
+            <li class="flex gap-2"><span class="text-[#653FC5]">–</span> Scores received by mAIners</li>
             {/if}
           </ul>
           {#if !$store.isAuthed}
-            <p class="text-xs mt-4 text-gray-400 dark:text-gray-500">
-              Connect your wallet to create your own mAIners and see personalized activity.
+            <p class="mt-5 text-xs font-normal text-gray-600">
+              Connect to deploy agents and unlock a personalized stream.
             </p>
           {:else}
-            <p class="text-xs mt-4 text-gray-400 dark:text-gray-500">
+            <p class="mt-5 text-xs font-normal text-gray-600">
               {showAllEvents ? 'No recent activity in the protocol.' : 'Loading activity from your mAIners.'}
             </p>
           {/if}
