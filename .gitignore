@@ -144,6 +144,16 @@ canister_ids_mainers-*.env
 !canister_ids_mainers-testing.env
 secret/
 
+# Working notes and investigation write-ups that are deliberately not committed.
+# Unlike secret/, nothing here is sensitive -- it is just repo-local scratch, so it is
+# fine to read and edit freely. Anchored with a leading slash so only the repo root
+# `local/` is ignored, not any nested directory that happens to be called `local`.
+/local/
+
+# Agent working notes and investigation write-ups. Same convention as the icpp-pro
+# repo, which also ignores TMP-*. These are repo-local scratch, never committed.
+TMP-*
+
 # whitelist analysis output (contains sensitive user data)
 funnai_accounts/
 
