@@ -1,5 +1,10 @@
 # April 2, 2025
 
+> ⚠️ **Historical record — dfx era.** The commands below are kept exactly as they were run
+> at the time, under `dfx`. They are a log of what happened, not a runbook to follow.
+> For current procedures see `README-prd-upgrade-commands.md`, which uses icp-cli.
+
+
 The following canisters were deployed to "ic" network as part of the demo deployment:
 
 -> Copy/Paste this into your terminal...

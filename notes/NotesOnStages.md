@@ -6,13 +6,13 @@ Process to create another stage:
 - From the burger menu, choose My Canisters
 - Click on Create Canister and follow the creation flow (note that you need ICP to pay for the creation and charge the canister with cycles), you may start with 3T cycles (and can top up later)
 - Click on the new canister and then on Add Controller
-- Go to your local CLI and run: dfx identity get-principal
+- Go to your local CLI and run: icp identity principal
 - Copy the principal returned and paste it into the Add Controller field on the nns app, continue and confirm
-- To add the controller via dfx: e.g. dfx canister update-settings --add-controller <principal> --network development funnai_frontend
-- Double-check contollers (via dfx) with e.g. dfx canister info --network development funnai_frontend
+- To add the controller via icp-cli: e.g. icp canister update-settings --add-controller <principal> -e development funnai_frontend
+- Double-check contollers (via icp-cli) with e.g. icp canister status -e development funnai_frontend
 - Copy the id of the new canister
-- Paste the canister's id in the file canister_ids.json (under the new entry for the stage, the entry's key needs to match the network name given in dfx.json) 
-- Create a new networks entry in dfx.json (with the network's name being the same key as given in canister_ids.json)
+- Paste the canister's id in .icp/data/mappings/<env>.ids.json (under the new entry for the stage, the entry's key needs to match the environment name given in icp.yaml) 
+- Create a new environments entry in icp.yaml (with the network's name being the same key as given in canister_ids.json)
 - If there are multiple canisters for a stage, create as many canisters as needed (e.g. funnai_backend and funnai_frontend)
 - Add the CLI command/s in Readme for the new stage (with the correct network name)
 - Make sure that all code relevant for stages/networks has been changed (e.g. search for network and check all relevant results in the project files)

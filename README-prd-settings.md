@@ -16,9 +16,9 @@ Follow instructions of funnAI/README-prd-upgrade-PoAIW.md
 # From folder: funnAI
 NETWORK=prd
 
-dfx canister call game_state_canister getRewardPerChallengeAdmin --network $NETWORK
+icp canister call game_state_canister getRewardPerChallengeAdmin -e $NETWORK
 
-dfx canister call game_state_canister setRewardPerChallengeAdmin '100000000000' --network $NETWORK
+icp canister call game_state_canister setRewardPerChallengeAdmin '100000000000' -e $NETWORK
 ```
 
 # GameState Settings for subnets
@@ -30,7 +30,7 @@ https://docs.google.com/spreadsheets/d/1KeyylEYVs3cQvYXOc9RS0q5eWd_vWIW1UVycfDEI
 # From folder: funnAI
 NETWORK=prd
 # Verify the subnets are set correctly
-dfx canister --network $NETWORK call game_state_canister getSubnetsAdmin
+icp canister call game_state_canister getSubnetsAdmin
 
 # Set them if not correct
 source scripts/canister_ids-$NETWORK.env
@@ -38,7 +38,7 @@ SUBNETSACTRL=$SUBNET_0_1
 SUBNETSSCTRL=$SUBNET_0_1
 SUBNETSSLLM=$SUBNET_2_1
 # Set the SubnetIds in the GameState canister
-dfx canister --network $NETWORK call game_state_canister setSubnetsAdmin "(record {subnetShareAgentCtrl = \"$SUBNETSACTRL\"; subnetShareServiceCtrl = \"$SUBNETSSCTRL\"; subnetShareServiceLlm = \"$SUBNETSSLLM\" })"
+icp canister call game_state_canister setSubnetsAdmin "(record {subnetShareAgentCtrl = \"$SUBNETSACTRL\"; subnetShareServiceCtrl = \"$SUBNETSSCTRL\"; subnetShareServiceLlm = \"$SUBNETSSLLM\" })"
 
 ```
 
@@ -48,15 +48,15 @@ dfx canister --network $NETWORK call game_state_canister setSubnetsAdmin "(recor
 # From folder: funnAI
 NETWORK=prd
 
-dfx canister call game_state_canister getGameStateThresholdsAdmin --output json --network $NETWORK 
+icp canister call game_state_canister getGameStateThresholdsAdmin --output json -e $NETWORK 
 
-dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
+icp canister call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdArchiveClosedChallenges = 140 : nat;
         thresholdMaxOpenChallenges = 7 : nat;
         thresholdMaxOpenSubmissions = 140 : nat;
         thresholdScoredResponsesPerChallenge = 27 : nat;
     }
-)' --network $NETWORK
+)' -e $NETWORK
 ```
 
 # The CyclesFlow variables (Fees & Costs)
@@ -69,10 +69,10 @@ dfx canister call game_state_canister setGameStateThresholdsAdmin '( record {
 # - dailySubmissionsAllOwn = (TODO for PowerMainer)
 
 # verify current settings
-dfx canister --network $NETWORK call game_state_canister getCyclesFlowAdmin | grep dailySubmissionsAllShare
+icp canister call game_state_canister getCyclesFlowAdmin | grep dailySubmissionsAllShare
 
 # set the values, which will trigger a recalculation
-dfx canister --network $NETWORK call game_state_canister setCyclesFlowAdmin '( record { dailySubmissionsAllShare = opt (4752 : nat);})'
+icp canister call game_state_canister setCyclesFlowAdmin '( record { dailySubmissionsAllShare = opt (4752 : nat);})'
 ```
 
 # mAIner burn rates
@@ -81,25 +81,25 @@ Get & set the values with the GameState canister:
 
 ```bash
     # from folder: funnAI
-    dfx canister --network $NETWORK call game_state_canister getCyclesBurnRate '( variant {Low} )'
-    dfx canister --network $NETWORK call game_state_canister getCyclesBurnRate '( variant {Mid} )'
-    dfx canister --network $NETWORK call game_state_canister getCyclesBurnRate '( variant {High} )'
-    dfx canister --network $NETWORK call game_state_canister getCyclesBurnRate '( variant {VeryHigh} )'
+    icp canister call game_state_canister getCyclesBurnRate '( variant {Low} )'
+    icp canister call game_state_canister getCyclesBurnRate '( variant {Mid} )'
+    icp canister call game_state_canister getCyclesBurnRate '( variant {High} )'
+    icp canister call game_state_canister getCyclesBurnRate '( variant {VeryHigh} )'
 
-    dfx canister --network $NETWORK call game_state_canister setCyclesBurnRateAdmin '( record {cyclesBurnRateDefault = variant {Low}     ; cyclesBurnRate = record { cycles = 1_000_000_000_000 : nat; timeInterval = variant { Daily }; } } )'
-    dfx canister --network $NETWORK call game_state_canister setCyclesBurnRateAdmin '( record {cyclesBurnRateDefault = variant {Mid}     ; cyclesBurnRate = record { cycles = 2_000_000_000_000 : nat; timeInterval = variant { Daily }; } } )'
-    dfx canister --network $NETWORK call game_state_canister setCyclesBurnRateAdmin '( record {cyclesBurnRateDefault = variant {High}    ; cyclesBurnRate = record { cycles = 4_000_000_000_000 : nat; timeInterval = variant { Daily }; } } )'
-    dfx canister --network $NETWORK call game_state_canister setCyclesBurnRateAdmin '( record {cyclesBurnRateDefault = variant {VeryHigh}; cyclesBurnRate = record { cycles = 6_000_000_000_000 : nat; timeInterval = variant { Daily }; } } )'
+    icp canister call game_state_canister setCyclesBurnRateAdmin '( record {cyclesBurnRateDefault = variant {Low}     ; cyclesBurnRate = record { cycles = 1_000_000_000_000 : nat; timeInterval = variant { Daily }; } } )'
+    icp canister call game_state_canister setCyclesBurnRateAdmin '( record {cyclesBurnRateDefault = variant {Mid}     ; cyclesBurnRate = record { cycles = 2_000_000_000_000 : nat; timeInterval = variant { Daily }; } } )'
+    icp canister call game_state_canister setCyclesBurnRateAdmin '( record {cyclesBurnRateDefault = variant {High}    ; cyclesBurnRate = record { cycles = 4_000_000_000_000 : nat; timeInterval = variant { Daily }; } } )'
+    icp canister call game_state_canister setCyclesBurnRateAdmin '( record {cyclesBurnRateDefault = variant {VeryHigh}; cyclesBurnRate = record { cycles = 6_000_000_000_000 : nat; timeInterval = variant { Daily }; } } )'
 ```
 
 To test it out on a mAIner, do the following:
 
 ```bash
     # Update the AgentSettings: Low, Mid, High, VeryHigh
-    dfx canister --network $NETWORK call <canister-id> updateAgentSettings '(record {cyclesBurnRate = variant {Mid}; })'
+    icp canister call <canister-id> updateAgentSettings '(record {cyclesBurnRate = variant {Mid}; })'
 
     # Check the new timer settings
-    dfx canister --network $NETWORK call <canister-id> getTimerActionRegularityInSecondsAdmin 
+    icp canister call <canister-id> getTimerActionRegularityInSecondsAdmin 
 ```
 
 The game state setting that impacts the actual timing: `cyclesUsedPerResponse 394_591_568_000`
@@ -119,24 +119,24 @@ With this, the timers end up as:
 source scripts/canister_ids-prd.env
 
 # Note: These calls will also (re-)start the timers
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    setTimerActionRegularityInSecondsAdmin  '( 300 : nat)' 
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         setTimerActionRegularityInSecondsAdmin  '( 5 : nat)'
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE setTimerAction2RegularityInSecondsAdmin '( 5 : nat)'
+icp canister call $SUBNET_0_1_CHALLENGER    setTimerActionRegularityInSecondsAdmin  '( 300 : nat)' 
+icp canister call $SUBNET_0_1_JUDGE         setTimerActionRegularityInSecondsAdmin  '( 5 : nat)'
+icp canister call $SUBNET_0_1_SHARE_SERVICE setTimerAction2RegularityInSecondsAdmin '( 5 : nat)'
 
 # Get the timer regularity 
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    getTimerActionRegularityInSecondsAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         getTimerActionRegularityInSecondsAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getTimerActionRegularityInSecondsAdmin
+icp canister call $SUBNET_0_1_CHALLENGER    getTimerActionRegularityInSecondsAdmin
+icp canister call $SUBNET_0_1_JUDGE         getTimerActionRegularityInSecondsAdmin
+icp canister call $SUBNET_0_1_SHARE_SERVICE getTimerActionRegularityInSecondsAdmin
 
 # Stopping the timers
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    stopTimerExecutionAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         stopTimerExecutionAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE stopTimerExecutionAdmin
+icp canister call $SUBNET_0_1_CHALLENGER    stopTimerExecutionAdmin
+icp canister call $SUBNET_0_1_JUDGE         stopTimerExecutionAdmin
+icp canister call $SUBNET_0_1_SHARE_SERVICE stopTimerExecutionAdmin
 
 # (Re-)Starting the timers
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    startTimerExecutionAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         startTimerExecutionAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE startTimerExecutionAdmin
+icp canister call $SUBNET_0_1_CHALLENGER    startTimerExecutionAdmin
+icp canister call $SUBNET_0_1_JUDGE         startTimerExecutionAdmin
+icp canister call $SUBNET_0_1_SHARE_SERVICE startTimerExecutionAdmin
 ```
 
 # Max number of mAIners & Whitelisting
@@ -144,13 +144,13 @@ dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE startTimerExecuti
 Also see GameState's Readme.
 
 ```bash
-dfx canister --network $NETWORK call game_state_canister getPauseProtocolFlag
-dfx canister --network $NETWORK call game_state_canister getPauseWhitelistMainerCreationFlag
+icp canister call game_state_canister getPauseProtocolFlag
+icp canister call game_state_canister getPauseWhitelistMainerCreationFlag
 
-dfx canister --network $NETWORK call game_state_canister togglePauseProtocolFlagAdmin
-dfx canister --network $NETWORK call game_state_canister togglePauseWhitelistMainerCreationFlagAdmin
+icp canister call game_state_canister togglePauseProtocolFlagAdmin
+icp canister call game_state_canister togglePauseWhitelistMainerCreationFlagAdmin
 
-dfx canister --network $NETWORK call game_state_canister setLimitForCreatingMainerAdmin ...Types.MainerLimitInput...
+icp canister call game_state_canister setLimitForCreatingMainerAdmin ...Types.MainerLimitInput...
 ```
 
 
