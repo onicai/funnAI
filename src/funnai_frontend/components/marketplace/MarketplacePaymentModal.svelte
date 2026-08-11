@@ -573,8 +573,6 @@
 <style>
   :global(.marketplace-payment-modal) {
     max-width: min(500px, calc(100vw - 2rem));
-    position: relative;
-    z-index: 100000;
   }
 
   :global(.modal-panel.marketplace-payment-modal),

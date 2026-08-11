@@ -346,8 +346,6 @@
 <style>
   :global(.very-high-burn-rate-modal) {
     max-width: min(480px, calc(100vw - 2rem));
-    position: relative;
-    z-index: 100000;
   }
 
   :global(.modal-panel.very-high-burn-rate-modal),

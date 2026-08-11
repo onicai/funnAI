@@ -878,23 +878,24 @@
     }
   }
 
-  // Update agent status based on health checks
+  // Update agent status based on health checks — only rewrite agents when uiStatus actually changes
+  // (unconditional remap caused constant re-renders with many mainers and modal scroll flicker)
   $: if (agents && agents.length > 0 && $mainerHealthStatuses) {
-    agents = agents.map(agent => {
+    let changed = false;
+    const nextAgents = agents.map(agent => {
       const healthStatus = $mainerHealthStatuses.get(agent.id);
-      
-      // Only update status if we have a health check result
-      if (healthStatus) {
-        // If health check shows unhealthy (stopped/maintenance), mark as inactive
-        if (!healthStatus.isHealthy) {
-          return { ...agent, uiStatus: 'inactive' };
-        }
-        // If health check is healthy, don't change the status - it was already set based on cycle balance
-        // A mAIner can be healthy (responding) but still inactive due to low cycles
+
+      if (healthStatus && !healthStatus.isHealthy && agent.uiStatus !== 'inactive') {
+        changed = true;
+        return { ...agent, uiStatus: 'inactive' };
       }
-      
+
       return agent;
     });
+
+    if (changed) {
+      agents = nextAgents;
+    }
   }
 
   // Auto-open logic is now handled by MainerCreationPanel component via shouldAutoOpen prop
@@ -1186,7 +1187,7 @@
 {/if}
 
 <!-- Existing Agents -->
-{#each agents as agent, index}
+{#each agents as agent, index (agent.id)}
   {#if agent && agent.id}
     {@const sanitizedId = agent.id.replace(/[^a-zA-Z0-9-_]/g, '_')}
     {@const identity = getMainerVisualIdentity(agent.id)}

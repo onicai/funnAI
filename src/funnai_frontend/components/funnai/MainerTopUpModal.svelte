@@ -986,8 +986,6 @@
 <style>
   :global(.mainer-topup-modal) {
     max-width: min(480px, calc(100vw - 2rem));
-    position: relative;
-    z-index: 100000;
   }
 
   :global(.modal-panel.mainer-topup-modal),

@@ -124,7 +124,7 @@
 {#if isVisible}
   <!-- Full-screen overlay -->
   <div 
-    class="fixed inset-0 z-[200000] bg-black/60 backdrop-blur-sm flex items-center justify-center"
+    class="fixed inset-0 z-[200000] bg-black/70 flex items-center justify-center"
     transition:fade={{ duration: 300 }}
     on:click={stopCelebration}
     on:keydown={(e) => { if (e.key === 'Escape') { stopCelebration(); } }}

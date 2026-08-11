@@ -174,10 +174,17 @@ class MainerHealthService {
    * Update health status in the store
    */
   private updateHealthStatus(canisterId: string, status: MainerHealthStatus): void {
-    console.log(`Updating health status in store for ${canisterId}:`, status);
     mainerHealthStatuses.update(statuses => {
+      const previous = statuses.get(canisterId);
+      // Skip store churn when health result is unchanged (avoids remount flicker with many mainers)
+      if (
+        previous &&
+        previous.isHealthy === status.isHealthy &&
+        previous.maintenanceMessage === status.maintenanceMessage
+      ) {
+        return statuses;
+      }
       statuses.set(canisterId, status);
-      console.log(`Store now has ${statuses.size} mAIner statuses`);
       return new Map(statuses);
     });
   }
