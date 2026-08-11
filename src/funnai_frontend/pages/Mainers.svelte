@@ -18,15 +18,17 @@
   }
 </script>
 
-<div class="flex flex-col h-full min-h-[calc(100vh-60px)] bg-[#0B0A0F] font-sans">
-  <div class="container mx-auto px-2 md:px-8 py-2 md:py-8 flex-grow">
+<div class="agent-page">
+  <div class="agent-container">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full min-h-0">
-      <div class="rounded-2xl border border-white/[0.08] bg-[#0c0b12] p-0 mb-2 flex flex-col overflow-hidden min-h-0 text-gray-200">
-        <div class="flex-grow overflow-hidden">
+      <!-- Left column: no outer frame — each module keeps its own border -->
+      <div class="mb-2 flex flex-col min-h-0 text-gray-200">
+        <div class="flex-grow min-h-0">
           <MainerAccordion />
         </div>
       </div>
-      <div class="rounded-2xl border border-white/[0.08] bg-[#0c0b12] p-0 mb-2 flex flex-col overflow-hidden min-h-0 text-gray-200">
+      <div class="agent-card !bg-agent-surface rounded-2xl p-0 mb-2 flex flex-col overflow-hidden min-h-0 text-gray-200">
+        <div class="relative z-[1] flex flex-col flex-grow min-h-0 bg-agent-surface">
         <div class="flex-shrink-0 mb-4 p-4 pb-0">
           <CyclesDisplay cycles={21246900000000} {showAllEvents} />
         </div>
@@ -37,7 +39,7 @@
               <p class="text-[10px] font-medium uppercase tracking-[0.2em] text-[#653FC5]">Live</p>
               <h2 class="mt-0.5 text-base font-semibold tracking-tight text-white">Activity feed</h2>
             </div>
-            <div class="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] p-1">
+            <div class="inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
               <button
                 type="button"
                 class="relative px-3.5 py-1.5 text-[13px] font-medium rounded-full transition-all duration-200
@@ -85,6 +87,7 @@
         
         <div class="flex-grow overflow-hidden min-h-0 border-t border-white/[0.06]">
           <MainerFeed {showAllEvents} />
+        </div>
         </div>
       </div>
     </div>

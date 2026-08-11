@@ -35,7 +35,7 @@
   $: formattedCycles = cyclesCount?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'");
 </script>
 
-<div class="agent-card p-4">
+<div class="rounded-xl bg-white/[0.03] p-4">
   <div class="flex flex-col gap-3">
     <div class="flex items-center space-x-3">
       <div class="flex-shrink-0 w-10 h-10 rounded-xl border border-white/5 bg-white/[0.05] flex items-center justify-center">

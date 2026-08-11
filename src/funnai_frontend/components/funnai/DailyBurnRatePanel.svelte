@@ -348,13 +348,13 @@
   }
 </script>
 
-<!-- Enhanced Daily Burn Rate Panel -->
-<div class="agent-card">
+<!-- Nested inside agent module — surface only, no second outline -->
+<div class="rounded-xl bg-white/[0.03]">
   <div class="p-4 sm:p-5">
     <!-- Header Section -->
     <div class="flex flex-col space-y-3 mb-4">
       <div class="flex items-center space-x-3">
-        <div class="flex-shrink-0 w-10 h-10 rounded-xl border border-white/5 bg-white/[0.05] flex items-center justify-center">
+        <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-white/[0.05] flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-agent-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
@@ -368,7 +368,7 @@
       </div>
       
       <!-- Current Setting Display -->
-      <div class="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+      <div class="rounded-xl bg-agent-bg/40 p-3">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-agent-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -550,7 +550,7 @@
         </div>
       {:else}
         <!-- Info Footer -->
-        <div class="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+        <div class="rounded-xl bg-agent-bg/40 p-3">
           <div class="flex items-start space-x-2 text-xs text-gray-400">
             <div class="space-y-2 w-full">
               <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">

@@ -50,25 +50,25 @@
   });
 </script>
 
-<!-- Accordion shell -->
-<div class="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c0b12] font-sans">
+<!-- Accordion shell — one module border only -->
+<div class="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-agent-surface font-sans">
   <button 
     on:click={toggleAccordion} 
     class="group w-full relative overflow-hidden transition-colors duration-200 {isOpen ? 'rounded-t-2xl' : 'rounded-2xl'} hover:bg-white/[0.02]"
   >
     <div class="pointer-events-none absolute inset-0 opacity-40">
-      <div class="absolute -top-16 right-0 h-32 w-48 rounded-full bg-[#653FC5]/20 blur-3xl"></div>
+      <div class="absolute -top-16 right-0 h-32 w-48 rounded-full bg-agent-purple/20 blur-3xl"></div>
     </div>
 
     <div class="relative flex items-center justify-between px-5 py-4 sm:px-6 sm:py-5">
       <div class="flex flex-col items-start text-left min-w-0">
-        <p class="mb-1 text-[10px] font-medium uppercase tracking-[0.2em] text-[#653FC5]">Deploy</p>
+        <p class="mb-1 text-[10px] font-medium uppercase tracking-[0.2em] text-agent-purple">Deploy</p>
         <h2 class="text-base sm:text-lg font-semibold text-white tracking-tight">Create new mAIner</h2>
         <p class="text-sm font-normal text-gray-400 hidden sm:block mt-0.5">Spin up an autonomous mining agent</p>
       </div>
       
       <div class="flex-shrink-0 ml-4">
-        <div class="w-9 h-9 rounded-xl border border-white/10 bg-white/[0.04] flex items-center justify-center transition-transform duration-300" style="transform: rotate({isOpen ? 180 : 0}deg)">
+        <div class="w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center transition-transform duration-300" style="transform: rotate({isOpen ? 180 : 0}deg)">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
           </svg>
@@ -79,30 +79,28 @@
   
   <!-- Accordion Content -->
   <div class="accordion-content" class:accordion-open={isOpen}>
-    <div class="border-t border-white/[0.06] bg-[#0c0b12]">
+    <div class="border-t border-white/[0.06]">
       {#if isAuthenticated}
         <!-- Authenticated Content -->
-        <div class="p-6 sm:p-8 space-y-6">
+        <div class="p-5 sm:p-6 space-y-5">
           
           <!-- Agent Type Selection -->
           <div class="space-y-4">
-            <!-- Agent Type Card -->
+            <!-- Agent Type Card — soft surface, border only when selected -->
             <div 
-              class="group relative overflow-hidden rounded-2xl border transition-all duration-300 cursor-pointer {modelType === 'Shared' 
-                ? 'border-agent-purple/50 bg-agent-purple/10' 
-                : 'border-white/10 bg-white/[0.03] hover:border-agent-purple/40'}"
+              class="group relative overflow-hidden rounded-xl transition-all duration-300 cursor-pointer {modelType === 'Shared' 
+                ? 'bg-agent-purple/10 ring-1 ring-agent-purple/40' 
+                : 'bg-white/[0.03] hover:bg-white/[0.05]'}"
               on:click={() => onModelTypeChange('Shared')}
               on:keydown={(e) => e.key === 'Enter' && onModelTypeChange('Shared')}
               role="button"
               tabindex="0"
             >
-              <div class="pointer-events-none absolute -top-12 right-0 h-28 w-40 rounded-full bg-agent-purple/10 blur-3xl"></div>
-              
-              <div class="relative p-5 sm:p-6">
+              <div class="relative p-4 sm:p-5">
                 <div class="flex items-start justify-between">
                   <div class="flex items-start space-x-4 flex-1 min-w-0">
                     <!-- Icon -->
-                    <div class="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-agent-purple/15 border border-agent-purple/30 flex items-center justify-center">
+                    <div class="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-agent-purple/15 flex items-center justify-center">
                       <svg class="w-6 h-6 sm:w-7 sm:h-7 text-agent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                       </svg>
@@ -113,11 +111,11 @@
                       <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
                         <h4 class="text-base sm:text-lg font-semibold text-white tracking-tight">mAIner Agent</h4>
                         {#if isProtocolActive && !stopMainerCreation}
-                          <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 w-fit border border-emerald-500/20">
+                          <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 w-fit">
                             Available
                           </span>
                         {:else}
-                          <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 w-fit border border-red-500/20">
+                          <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 w-fit">
                             Creation not available
                           </span>
                         {/if}
@@ -130,7 +128,7 @@
                       <!-- Features -->
                       <div class="flex flex-wrap gap-3 text-xs">
                         {#if isProtocolActive && !stopMainerCreation}
-                          <div class="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-white/10 bg-white/[0.03]">
+                          <div class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04]">
                             <svg class="w-4 h-4 text-agent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
                             </svg>
@@ -148,7 +146,7 @@
                           </a>
                         {/if}
                         
-                        <div class="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-white/10 bg-white/[0.03]">
+                        <div class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04]">
                           <svg class="w-4 h-4 text-agent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                           </svg>
@@ -156,7 +154,7 @@
                         </div>
 
                         {#if showCreationBonus}
-                          <div class="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-agent-purple/30 bg-agent-purple/10">
+                          <div class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-agent-purple/10">
                             <svg class="w-4 h-4 text-agent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/>
                             </svg>
@@ -271,13 +269,13 @@
             </p>
 
             <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <div class="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-center">
+              <div class="rounded-xl bg-white/[0.04] px-3 py-3 text-center">
                 <p class="text-xs font-medium text-gray-200">Create agents</p>
               </div>
-              <div class="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-center">
+              <div class="rounded-xl bg-white/[0.04] px-3 py-3 text-center">
                 <p class="text-xs font-medium text-gray-200">Join challenges</p>
               </div>
-              <div class="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-center">
+              <div class="rounded-xl bg-white/[0.04] px-3 py-3 text-center">
                 <p class="text-xs font-medium text-gray-200">Earn rewards</p>
               </div>
             </div>

@@ -242,10 +242,8 @@
                   <div class="flex items-start justify-between">
                     <div class="flex items-center space-x-3">
                       <!-- Avatar -->
-                      <div class="w-12 h-12 {identity.colors.accent} rounded-xl flex items-center justify-center border border-white/10 opacity-90">
-                        <div class="w-6 h-6 {identity.colors.icon}">
-                          {@html identity.icon}
-                        </div>
+                      <div class="w-12 h-12 rounded-xl overflow-hidden border border-white/10 bg-agent-elevated [&>svg]:w-full [&>svg]:h-full [&>svg]:block">
+                        {@html identity.icon}
                       </div>
                       
                       <div>

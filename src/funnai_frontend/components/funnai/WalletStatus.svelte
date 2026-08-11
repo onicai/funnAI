@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { RefreshCw, Copy, Check, LogOut, Wallet } from 'lucide-svelte';
   import LoginModal from '../login/LoginModal.svelte';
   import { store } from "../../stores/store";
   import { WalletDataService } from "../../helpers/WalletDataService";
@@ -8,25 +9,13 @@
   let copySuccess = false;
   let showFullPrincipal = false;
 
-  // Function to refresh wallet balances
   async function getWalletBalances() {
-    if (!$store.principal || !$store.isAuthed) {
-      console.log('No wallet connected to refresh balances');
-      return;
-    }
-
-    if (isRefreshingBalances) {
-      console.log('Balance refresh already in progress');
-      return;
-    }
+    if (!$store.principal || !$store.isAuthed) return;
+    if (isRefreshingBalances) return;
 
     isRefreshingBalances = true;
-    console.log('Refreshing wallet balances...');
-    
     try {
-      // Force refresh balances using WalletDataService
       await WalletDataService.refreshBalances(true);
-      console.log('Wallet balances refreshed successfully');
     } catch (error) {
       console.error('Error refreshing wallet balances:', error);
     } finally {
@@ -46,10 +35,8 @@
     modalIsOpen = !modalIsOpen;
   };
 
-  // Function to copy principal ID to clipboard
   async function copyPrincipalId() {
     if (!$store.principal) return;
-    
     try {
       await navigator.clipboard.writeText($store.principal.toString());
       copySuccess = true;
@@ -61,164 +48,150 @@
     }
   }
 
-  // Function to truncate principal ID from the middle for display
-  function truncatePrincipal(principal: string, maxLength: number = 30): string {
+  function truncatePrincipal(principal: string, maxLength: number = 28): string {
     if (principal.length <= maxLength) return principal;
-    
     const start = Math.floor((maxLength - 3) / 2);
     const end = Math.ceil((maxLength - 3) / 2);
-    
-    return principal.slice(0, start) + '...' + principal.slice(-end);
+    return principal.slice(0, start) + '…' + principal.slice(-end);
   }
+
+  $: principalText = $store.principal ? $store.principal.toString() : '';
 </script>
 
-<div class="w-full bg-white dark:bg-gray-800 p-6 rounded-lg">
-  <div class="flex items-center justify-between mb-6">
-    <h2 class="text-xl font-semibold dark:text-white flex items-center gap-2">
-      <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-      </svg>
-      Wallet Status
-    </h2>
-    
-    <!-- Connection Status Badge -->
-    <div class="flex items-center gap-2">
-      {#if $store.isAuthed}
-        <div class="flex items-center gap-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1.5 rounded-full text-sm font-medium">
-          <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          Connected
-        </div>
-      {:else}
-        <div class="flex items-center gap-1.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-3 py-1.5 rounded-full text-sm font-medium">
-          <div class="w-2 h-2 bg-red-500 rounded-full"></div>
-          Disconnected
-        </div>
-      {/if}
-    </div>
-  </div>
-
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:items-start">
-    <!-- Principal ID Section -->
-    <div class="space-y-3">
-      <div class="flex items-center justify-between min-h-[24px]">
-        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Principal ID</label>
-        {#if $store.principal}
-          <button
-            on:click={copyPrincipalId}
-            class="flex items-center gap-1.5 text-xs text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 transition-colors"
-            title={copySuccess ? "Copied!" : "Copy to clipboard"}
-          >
-            {#if copySuccess}
-              <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              Copied!
-            {:else}
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-              </svg>
-              Copy
-            {/if}
-          </button>
-        {/if}
-      </div>
-      
-      <div class="relative">
-        {#if $store.principal}
-          <div class="bg-gray-50 dark:bg-gray-700/50 border dark:border-gray-600 rounded-lg p-3 font-mono text-xs">
-            <!-- Mobile: Show truncated with option to expand -->
-            <div class="block lg:hidden">
-              {#if showFullPrincipal}
-                <div class="break-all text-gray-700 dark:text-gray-300 leading-relaxed">
-                  {$store.principal.toString()}
-                </div>
-                <button
-                  on:click={() => showFullPrincipal = false}
-                  class="text-xs text-purple-600 dark:text-purple-400 mt-2 hover:underline"
-                >
-                  Show less
-                </button>
-              {:else}
-                <div class="text-gray-700 dark:text-gray-300">
-                  {truncatePrincipal($store.principal.toString(), 24)}
-                </div>
-                <button
-                  on:click={() => showFullPrincipal = true}
-                  class="text-xs text-purple-600 dark:text-purple-400 mt-1 hover:underline"
-                >
-                  Show full
-                </button>
-              {/if}
-            </div>
-            
-            <!-- Desktop: Show full address with smaller font -->
-            <div 
-              class="hidden lg:block text-gray-700 dark:text-gray-300 cursor-help leading-relaxed"
-              title="Click copy button to copy full address"
-            >
-              {$store.principal.toString()}
-            </div>
+<div class="agent-card !bg-agent-surface overflow-hidden">
+  <div class="relative z-[1]">
+    {#if $store.isAuthed && principalText}
+      <!-- Identity header -->
+      <div class="flex items-start sm:items-center gap-3 sm:gap-4 p-5 sm:p-6 pb-4 sm:pb-5">
+        <div class="relative flex-shrink-0">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#653FC5]/35 bg-[#653FC5]/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+            <Wallet class="h-5 w-5 text-[#c4b5fd]" />
           </div>
-        {:else}
-          <div class="bg-gray-50 dark:bg-gray-700/50 border dark:border-gray-600 rounded-lg p-3 text-gray-500 dark:text-gray-400 italic">
-            Not connected
-          </div>
-        {/if}
-      </div>
-    </div>
+          <span class="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-agent-surface bg-emerald-400"></span>
+        </div>
 
-    <!-- Wallet Actions Section -->
-    <div class="space-y-3">
-      <div class="flex items-center min-h-[24px]">
-        <label class="text-sm font-medium text-gray-600 dark:text-gray-400">Actions</label>
-      </div>
-      
-      <div class="flex flex-col sm:flex-row gap-3">
-        {#if $store.isAuthed}
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <p class="agent-eyebrow">Account</p>
+            <span class="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-300">
+              <span class="h-1 w-1 rounded-full bg-emerald-400 animate-pulse"></span>
+              Live
+            </span>
+          </div>
+          <h2 class="mt-1 text-base font-semibold tracking-tight text-white">Wallet connected</h2>
+          <p class="mt-0.5 text-sm text-gray-500">Your principal on the Internet Computer</p>
+        </div>
+
+        <div class="hidden sm:flex items-center gap-1.5 flex-shrink-0">
           <button
+            type="button"
             on:click={getWalletBalances}
             disabled={isRefreshingBalances}
-            class="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white font-medium rounded-lg px-4 py-2.5 transition-colors disabled:cursor-not-allowed flex-1 sm:flex-initial"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-gray-300 transition-all hover:border-[#653FC5]/40 hover:bg-[#653FC5]/10 hover:text-white disabled:opacity-40"
+            title="Refresh balances"
           >
-            {#if isRefreshingBalances}
-              <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Refreshing...
-            {:else}
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-              </svg>
-              Refresh Balances
-            {/if}
+            <RefreshCw class="h-3.5 w-3.5 {isRefreshingBalances ? 'animate-spin' : ''}" />
           </button>
-          
           <button
+            type="button"
             on:click={disconnect}
-            class="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg px-4 py-2.5 transition-colors flex-1 sm:flex-initial"
+            class="inline-flex h-9 items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/[0.08] px-3 text-[13px] font-medium text-red-300 transition-all hover:border-red-400/35 hover:bg-red-500/15 hover:text-red-200"
+            title="Disconnect"
           >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-            </svg>
+            <LogOut class="h-3.5 w-3.5" />
             Disconnect
           </button>
-        {:else}
-          <button
-            on:click={connect}
-            class="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg px-6 py-3 transition-colors w-full"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-            </svg>
-            Connect Wallet
-          </button>
-        {/if}
+        </div>
       </div>
-    </div>
+
+      <!-- Principal strip -->
+      <div class="px-5 sm:px-6 pb-5 sm:pb-6">
+        <div class="rounded-xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-transparent p-3.5 sm:p-4">
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <span class="text-[11px] font-medium uppercase tracking-[0.16em] text-gray-500">Principal ID</span>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                class="sm:hidden text-[11px] font-medium text-[#a78bfa] hover:text-white transition-colors"
+                on:click={() => showFullPrincipal = !showFullPrincipal}
+              >
+                {showFullPrincipal ? 'Hide' : 'Show full'}
+              </button>
+              <button
+                type="button"
+                on:click={copyPrincipalId}
+                class="inline-flex h-7 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 text-[11px] font-medium text-gray-300 transition-all hover:border-[#653FC5]/40 hover:bg-[#653FC5]/10 hover:text-white"
+                title={copySuccess ? 'Copied!' : 'Copy principal'}
+              >
+                {#if copySuccess}
+                  <Check class="h-3 w-3 text-emerald-400" />
+                  <span class="text-emerald-400">Copied</span>
+                {:else}
+                  <Copy class="h-3 w-3" />
+                  Copy
+                {/if}
+              </button>
+            </div>
+          </div>
+
+          <p class="font-mono text-[13px] sm:text-sm leading-relaxed text-gray-200 break-all tracking-tight pr-1">
+            <span class="sm:hidden">
+              {showFullPrincipal ? principalText : truncatePrincipal(principalText, 26)}
+            </span>
+            <span class="hidden sm:inline">{principalText}</span>
+          </p>
+        </div>
+
+        <!-- Mobile actions -->
+        <div class="mt-3 flex sm:hidden gap-2">
+          <button
+            type="button"
+            on:click={getWalletBalances}
+            disabled={isRefreshingBalances}
+            class="agent-btn-ghost flex-1 !h-9 disabled:opacity-40"
+          >
+            <RefreshCw class="h-3.5 w-3.5 {isRefreshingBalances ? 'animate-spin' : ''}" />
+            Refresh
+          </button>
+          <button
+            type="button"
+            on:click={disconnect}
+            class="inline-flex flex-1 h-9 items-center justify-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/[0.08] text-[13px] font-medium text-red-300"
+          >
+            <LogOut class="h-3.5 w-3.5" />
+            Exit
+          </button>
+        </div>
+      </div>
+    {:else}
+      <!-- Disconnected state -->
+      <div class="flex flex-col sm:flex-row sm:items-center gap-5 p-5 sm:p-6">
+        <div class="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
+          <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]">
+            <Wallet class="h-5 w-5 text-gray-500" />
+          </div>
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <p class="agent-eyebrow">Account</p>
+              <span class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[11px] font-medium text-gray-500">
+                <span class="h-1 w-1 rounded-full bg-gray-500"></span>
+                Offline
+              </span>
+            </div>
+            <h2 class="mt-1 text-base font-semibold tracking-tight text-white">Connect your wallet</h2>
+            <p class="mt-0.5 text-sm text-gray-500">Link an identity to view balances and send tokens</p>
+          </div>
+        </div>
+
+        <button type="button" on:click={connect} class="agent-btn-primary w-full sm:w-auto flex-shrink-0">
+          <Wallet class="h-4 w-4" />
+          Connect wallet
+        </button>
+      </div>
+    {/if}
   </div>
 </div>
 
 {#if modalIsOpen}
   <LoginModal {toggleModal} />
-{/if} 
+{/if}

@@ -2,9 +2,11 @@
   import { Principal } from "@dfinity/principal";
 
   import { onMount } from "svelte";
-  import { fly } from "svelte/transition";
+  import { fly, scale } from "svelte/transition";
+  import { elasticOut } from "svelte/easing";
   import { store } from "../../stores/store";
   import { formatFunnaiAmount } from "../../helpers/utils/numberFormatUtils";
+  import { getMainerVisualIdentity } from "../../helpers/utils/mainerIdentity";
   import ShareFeedItem from "./ShareFeedItem.svelte";
 
   export let showAllEvents: boolean = true; // Will be overridden by parent based on auth status
@@ -17,6 +19,7 @@
     timestamp: number;
     type: "challenge" | "response" | "score" | "winner" | "participation";
     mainerName: string;
+    mainerAddress?: string;
     content: {
       challenge?: string;
       response?: string;
@@ -176,34 +179,38 @@
   function getWinnerStyling(placement: string): string {
     switch (placement) {
       case "First Place":
-        return "border-l-2 border-l-amber-400/50";
+        return "prize-card prize-first";
       case "Second Place":
-        return "border-l-2 border-l-gray-400/40";
+        return "prize-card prize-second";
       case "Third Place":
-        return "border-l-2 border-l-orange-400/50";
+        return "prize-card prize-third";
       default:
-        return "";
+        return "prize-card";
     }
   }
 
   function getItemBackground(type: string, placement?: string): string {
-    const base = "bg-white/[0.03] border border-white/10 rounded-xl p-4";
     if (type === "winner") {
-      return `${base} ${getWinnerStyling(placement || "")}`;
+      return getWinnerStyling(placement || "");
     }
-    return base;
+    return "bg-white/[0.03] border border-white/10 rounded-xl p-4";
   }
 
-  function getWinnerIcon(placement: string): string {
+  function getPlacementMeta(placement: string): {
+    rank: string;
+    label: string;
+    tone: string;
+    ring: string;
+  } {
     switch (placement) {
       case "First Place":
-        return "🏆";
+        return { rank: "1", label: "First place", tone: "text-amber-300", ring: "ring-amber-400/40" };
       case "Second Place":
-        return "🥈";
+        return { rank: "2", label: "Second place", tone: "text-gray-200", ring: "ring-white/25" };
       case "Third Place":
-        return "🥉";
+        return { rank: "3", label: "Third place", tone: "text-orange-300", ring: "ring-orange-400/35" };
       default:
-        return "🏅";
+        return { rank: "•", label: placement || "Placement", tone: "text-agent-purple", ring: "ring-agent-purple/30" };
     }
   }
 
@@ -291,6 +298,7 @@
                   timestamp: winnerTimestamp,
                   type: "winner",
                   mainerName,
+                  mainerAddress: entry.submittedBy.toString(),
                   content: {
                     placement: position,
                     reward: entry.reward.amount.toString(),
@@ -573,7 +581,7 @@
   });
 </script>
 
-<div class="h-full bg-[#0c0b12] text-white flex flex-col font-sans" style="overflow-y: auto; overflow-x: visible;">
+<div class="h-full bg-agent-surface text-white flex flex-col font-sans" style="overflow-y: auto; overflow-x: visible;">
 
   <!-- Fixed space for loader to prevent UI jump -->
   <div class="flex justify-center py-2 transition-opacity duration-300 {updating && $store.isAuthed ? 'opacity-100' : 'opacity-0 pointer-events-none'}">
@@ -642,14 +650,64 @@
             in:fly="{{ y: 20, duration: 500 }}"
           >
             <div class="flex flex-col flex-1 gap-2 {getItemBackground(item.type, item.content.placement)}">
+              {#if item.type === 'winner'}
+                {@const place = getPlacementMeta(item.content.placement || '')}
+                {@const identity = getMainerVisualIdentity(item.mainerAddress || item.mainerName)}
+                <div
+                  class="relative overflow-hidden"
+                  in:scale={{ duration: 520, start: 0.94, easing: elasticOut }}
+                >
+                  <div class="prize-glow" aria-hidden="true"></div>
+                  <div class="relative flex items-start gap-3">
+                    <div class="relative flex-shrink-0">
+                      <div class="w-12 h-12 rounded-xl overflow-hidden border border-white/10 bg-agent-elevated [&>svg]:w-full [&>svg]:h-full [&>svg]:block prize-avatar">
+                        {@html identity.icon}
+                      </div>
+                      <div class="absolute -bottom-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-agent-elevated ring-2 {place.ring} prize-rank-badge">
+                        <span class="text-[11px] font-semibold tabular-nums {place.tone}">{place.rank}</span>
+                      </div>
+                    </div>
+
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-start justify-between gap-2">
+                        <div>
+                          <p class="agent-eyebrow mb-1">Prize announcement</p>
+                          <h4 class="text-sm font-semibold tracking-tight text-white">
+                            {item.mainerName}
+                          </h4>
+                        </div>
+                        <div class="flex items-center gap-2 flex-shrink-0">
+                          <div class="text-2xs font-medium text-gray-500 text-right">
+                            <div>{formatTimestamp(item.timestamp).date}</div>
+                            <div class="text-gray-600">{formatTimestamp(item.timestamp).time}</div>
+                          </div>
+                          <ShareFeedItem feedItem={item} />
+                        </div>
+                      </div>
+
+                      <div class="mt-3 flex flex-wrap items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-white/[0.05] px-2.5 py-1 text-[11px] font-medium {place.tone} prize-place-chip">
+                          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.9 7.2 17l.9-5.4L4.2 7.7l5.4-.8L12 2z"/>
+                          </svg>
+                          {place.label}
+                        </span>
+                        <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300 prize-reward">
+                          +{formatFunnaiAmount(item.content.reward || '0')} FUNNAI
+                        </span>
+                      </div>
+
+                      <p class="mt-2.5 text-sm text-gray-400">
+                        Placement secured on the Proof-of-AI-Work leaderboard.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              {:else}
               <h4
-                class="text-sm font-medium flex justify-between items-center text-gray-200
-                       {item.type === 'winner' ? 'text-base' : ''}"
+                class="text-sm font-medium flex justify-between items-center text-gray-200"
               >
                 <span class="flex items-center gap-2">
-                  {#if item.type === 'winner'}
-                    <span class="text-base opacity-80">{getWinnerIcon(item.content.placement || '')}</span>
-                  {/if}
                   {item.mainerName}
                 </span>
                 <div class="flex items-center gap-2">
@@ -666,22 +724,14 @@
                 <p class="text-gray-500 pr-2">Submitted response: <span class="font-medium text-gray-300">{item.content.response}</span></p>
               {:else if item.type === 'score'}
                 <p class="text-gray-500 pr-2">Received score: <span class="font-semibold text-orange-400/90">{item.content.score}/5</span></p>
-              {:else if item.type === 'winner'}
-                <div class="rounded-lg border border-white/[0.06] bg-agent-elevated/80 px-3 py-3">
-                  <p class="text-sm font-medium text-gray-200 mb-1.5">
-                    Placement secured
-                  </p>
-                  <p class="text-gray-400 text-sm">
-                    Achieved <span class="font-semibold {item.content.placement === 'First Place' ? 'text-amber-400/90' : item.content.placement === 'Second Place' ? 'text-gray-300' : 'text-orange-400/90'}">{item.content.placement}</span>
-                  </p>
-                  <p class="text-gray-400 text-sm mt-0.5">
-                    Earned <span class="font-semibold text-emerald-400/90">{formatFunnaiAmount(item.content.reward || '0')} FUNNAI</span>
+              {:else if item.type === 'participation'}
+                <div class="rounded-lg bg-agent-purple/10 px-3 py-2.5">
+                  <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-agent-purple mb-1">Participation</p>
+                  <p class="text-sm text-gray-300">
+                    Earned <span class="font-semibold text-emerald-300">{formatFunnaiAmount(item.content.reward || '0')} FUNNAI</span>
                   </p>
                 </div>
-              {:else if item.type === 'participation'}
-                <p class="text-gray-500 pr-2">
-                  Earned participation reward: <span class="font-semibold text-[#653FC5]">{formatFunnaiAmount(item.content.reward || '0')} FUNNAI</span>
-                </p>
+              {/if}
               {/if}
             </div>
           </li>
@@ -694,77 +744,125 @@
 <style>
   /* Custom text size smaller than text-xs */
   .text-2xs {
-    font-size: 0.625rem; /* 10px */
-    line-height: 0.75rem; /* 12px */
+    font-size: 0.625rem;
+    line-height: 0.75rem;
   }
 
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
+  .prize-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1rem;
+  }
+
+  .prize-first {
+    border-color: rgba(251, 191, 36, 0.28);
+    background:
+      linear-gradient(135deg, rgba(251, 191, 36, 0.08), transparent 42%),
+      rgba(255, 255, 255, 0.03);
+  }
+
+  .prize-second {
+    border-color: rgba(255, 255, 255, 0.16);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 42%),
+      rgba(255, 255, 255, 0.03);
+  }
+
+  .prize-third {
+    border-color: rgba(251, 146, 60, 0.28);
+    background:
+      linear-gradient(135deg, rgba(251, 146, 60, 0.08), transparent 42%),
+      rgba(255, 255, 255, 0.03);
+  }
+
+  .prize-glow {
+    pointer-events: none;
+    position: absolute;
+    inset: -40% auto auto 55%;
+    width: 10rem;
+    height: 10rem;
+    border-radius: 9999px;
+    background: rgba(101, 63, 197, 0.18);
+    filter: blur(40px);
+    animation: prizeGlow 3.2s ease-in-out infinite;
+  }
+
+  .prize-first .prize-glow {
+    background: rgba(251, 191, 36, 0.2);
+  }
+
+  .prize-second .prize-glow {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .prize-third .prize-glow {
+    background: rgba(251, 146, 60, 0.18);
+  }
+
+  .prize-avatar {
+    animation: prizeAvatarIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .prize-rank-badge {
+    animation: prizeBadgePop 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+  }
+
+  .prize-place-chip {
+    animation: prizeChipIn 0.45s ease-out 0.15s both;
+  }
+
+  .prize-reward {
+    position: relative;
+    overflow: hidden;
+    animation: prizeChipIn 0.45s ease-out 0.22s both;
+  }
+
+  .prize-reward::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.22), transparent 65%);
+    transform: translateX(-120%);
+    animation: prizeShimmer 2.4s ease-in-out 0.6s 2;
+  }
+
+  @keyframes prizeGlow {
+    0%, 100% { opacity: 0.45; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.08); }
+  }
+
+  @keyframes prizeAvatarIn {
+    from { opacity: 0; transform: scale(0.86) translateY(6px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  @keyframes prizeBadgePop {
+    0% { opacity: 0; transform: scale(0.5); }
+    70% { opacity: 1; transform: scale(1.12); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes prizeChipIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes prizeShimmer {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(120%); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .prize-glow,
+    .prize-avatar,
+    .prize-rank-badge,
+    .prize-place-chip,
+    .prize-reward,
+    .prize-reward::after {
+      animation: none !important;
     }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes pulseWinner {
-    0%, 100% {
-      box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
-    }
-    50% {
-      box-shadow: 0 0 0 10px rgba(251, 191, 36, 0);
-    }
-  }
-
-  @keyframes shimmer {
-    0% {
-      background-position: -200% 0;
-    }
-    100% {
-      background-position: 200% 0;
-    }
-  }
-
-  @keyframes bounce10s {
-    0%, 100% {
-      transform: translateY(-25%);
-      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-    }
-    50% {
-      transform: none;
-      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
-    }
-  }
-
-  .animate-fadeIn {
-    animation: fadeIn 0.5s ease-out forwards;
-  }
-
-  .animate-bounce-10s {
-    animation: bounce10s 1s ease-in-out 10;
-  }
-
-  .animate-pulse-winner {
-    animation: pulseWinner 2s 5;
-  }
-
-  /* Shimmer effect for winner text */
-  .winner-shimmer {
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    background-size: 200% 100%;
-    animation: shimmer 2s 6;
-  }
-
-  /* Dark mode adjustments */
-  :global(.dark) .animate-spin {
-    border-color: rgba(96, 165, 250, 0.8);
-    border-top-color: transparent;
-  }
-
-  /* Enhanced winner glow for dark mode */
-  :global(.dark) .animate-pulse-winner {
-    box-shadow: 0 0 22px rgba(251, 191, 36, 0.3);
   }
 </style> 

@@ -456,10 +456,8 @@
               <div class="relative p-4">
                 <!-- mAIner Avatar & Info -->
                 <div class="flex items-start space-x-3 mb-4">
-                  <div class="w-14 h-14 {identity.colors.accent} rounded-xl flex items-center justify-center border border-white/10 opacity-90">
-                    <div class="w-7 h-7 {identity.colors.icon}">
-                      {@html identity.icon}
-                    </div>
+                  <div class="w-14 h-14 rounded-xl overflow-hidden border border-white/10 bg-agent-elevated [&>svg]:w-full [&>svg]:h-full [&>svg]:block">
+                    {@html identity.icon}
                   </div>
 
                   <div class="flex-1 min-w-0">
@@ -608,10 +606,8 @@
               <div class="relative p-5">
                 <!-- mAIner Avatar & Info -->
                 <div class="flex items-start space-x-3 mb-4">
-                  <div class="w-14 h-14 {identity.colors.accent} rounded-xl flex items-center justify-center border border-white/10 opacity-90">
-                    <div class="w-7 h-7 {identity.colors.icon}">
-                      {@html identity.icon}
-                    </div>
+                  <div class="w-14 h-14 rounded-xl overflow-hidden border border-white/10 bg-agent-elevated [&>svg]:w-full [&>svg]:h-full [&>svg]:block">
+                    {@html identity.icon}
                   </div>
                   
                   <div class="flex-1 min-w-0">
@@ -764,10 +760,8 @@
       <div class="sticky top-0 bg-agent-elevated/95 backdrop-blur-sm border-b border-white/[0.08] px-6 py-4 z-10">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-3">
-            <div class="w-12 h-12 {identity.colors.accent} rounded-xl flex items-center justify-center border border-white/10 opacity-90">
-              <div class="w-6 h-6 {identity.colors.icon}">
-                {@html identity.icon}
-              </div>
+            <div class="w-12 h-12 rounded-xl overflow-hidden border border-white/10 bg-agent-elevated [&>svg]:w-full [&>svg]:h-full [&>svg]:block">
+              {@html identity.icon}
             </div>
             <div>
               <p class="agent-eyebrow">Details</p>

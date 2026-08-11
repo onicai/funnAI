@@ -335,9 +335,9 @@
             <header
               class="flex justify-between items-center flex-shrink-0 pb-4"
             >
-              <div class="flex-grow">
+              <div class="flex-grow min-w-0">
                 <slot name="title">
-                  <h2 class="text-lg font-semibold modal-title text-gray-900 dark:text-gray-100">
+                  <h2 class="text-base font-semibold tracking-tight modal-title text-white">
                     {#if typeof title === "string"}
                       {title}
                     {/if}
@@ -345,11 +345,12 @@
                 </slot>
               </div>
               <button
-                class="!flex !items-center hover:text-red-600 !border-0 !shadow-none group relative ml-2 text-gray-600 hover:text-red-400 dark:text-gray-300 dark:hover:text-red-400"
+                type="button"
+                class="!flex !items-center !justify-center !h-8 !w-8 !rounded-full !border !border-white/10 !bg-white/[0.04] !shadow-none ml-2 text-gray-400 hover:text-white hover:border-white/20 transition-colors"
                 on:click={(e) => handleClose(e)}
                 aria-label="Close modal"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </header>
 
@@ -380,7 +381,7 @@
     height: 5px;
     margin: 4px auto 12px;
     border-radius: 9999px;
-    background: rgba(156, 163, 175, 0.45);
+    background: rgba(255, 255, 255, 0.18);
     touch-action: none;
     cursor: grab;
   }

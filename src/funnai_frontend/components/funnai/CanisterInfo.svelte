@@ -3,13 +3,13 @@
   export let agent: any;
 </script>
 
-<!-- Enhanced Canister Information Section -->
+<!-- Nested inside agent module — surface only, no second outline -->
 <div class="flex flex-col space-y-2 mb-2">
-  <div class="agent-card">
+  <div class="rounded-xl bg-white/[0.03]">
     <div class="p-4 sm:p-5">
       <!-- Header Section -->
       <div class="flex items-center space-x-3 mb-4">
-        <div class="flex-shrink-0 w-10 h-10 rounded-xl border border-white/5 bg-white/[0.05] flex items-center justify-center">
+        <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-white/[0.05] flex items-center justify-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-agent-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
           </svg>
@@ -23,7 +23,7 @@
       </div>
 
       <!-- Controller ID Section -->
-      <div class="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+      <div class="rounded-xl bg-agent-bg/40 p-4">
         <div class="flex flex-col space-y-3">
           <!-- Controller ID Header -->
           <div class="flex items-center space-x-2">
@@ -36,7 +36,7 @@
           <!-- Enhanced Controller ID Link -->
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div class="flex-1 min-w-0">
-              <div class="font-mono text-xs text-gray-300 bg-white/[0.03] px-3 py-2 rounded-lg border border-white/10">
+              <div class="font-mono text-xs text-gray-300 bg-white/[0.03] px-3 py-2 rounded-lg">
                 <span class="break-all">{agent.id}</span>
               </div>
             </div>

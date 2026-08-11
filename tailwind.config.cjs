@@ -36,6 +36,24 @@ export default {
       boxShadow: {
         agent: '0 24px 80px -20px rgba(101, 63, 197, 0.35)',
         'agent-cta': '0 0 0 1px rgba(101,63,197,0.35), 0 8px 20px -8px rgba(101,63,197,0.55)',
+        'agent-soft': '0 1px 0 0 rgba(255,255,255,0.06) inset, 0 18px 40px -28px rgba(0,0,0,0.75)',
+        'agent-lift': '0 22px 48px -24px rgba(101, 63, 197, 0.28), 0 18px 40px -28px rgba(0,0,0,0.8)',
+      },
+      backgroundImage: {
+        'agent-grid':
+          'linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)',
+      },
+      backgroundSize: {
+        'agent-grid': '48px 48px',
+      },
+      keyframes: {
+        'agent-pulse-soft': {
+          '0%, 100%': { opacity: '0.45' },
+          '50%': { opacity: '0.8' },
+        },
+      },
+      animation: {
+        'agent-pulse-soft': 'agent-pulse-soft 6s ease-in-out infinite',
       },
     },
   },

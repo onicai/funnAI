@@ -872,11 +872,7 @@
               id="amount-input"
               type="text"
               inputmode="decimal"
-              class="agent-input w-full pr-12 sm:pr-16 text-xs sm:text-sm"
-              class:border-emerald-500/50={hasEnoughBalance && isValidAmount}
-              class:border-red-500/50={(!hasEnoughBalance && isValidAmount) || isAboveMaximum}
-              class:border-amber-500/50={isBelowMinimum}
-              class:border-agent-purple/50={isMaxAmount && hasEnoughBalance}
+              class="agent-input w-full pr-12 sm:pr-16 text-xs sm:text-sm {hasEnoughBalance && isValidAmount ? 'border-emerald-500/50' : ''} {(!hasEnoughBalance && isValidAmount) || isAboveMaximum ? 'border-red-500/50' : ''} {isBelowMinimum ? 'border-amber-500/50' : ''} {isMaxAmount && hasEnoughBalance ? 'border-agent-purple/50' : ''}"
               placeholder="Enter {selectedToken?.symbol || 'token'} amount to top up"
               bind:value={amount}
               on:input={handleAmountInput}

@@ -1008,6 +1008,8 @@
 
 </script>
 
+<div class="flex flex-col gap-3 p-1 sm:p-0">
+
 <!-- Announcements Panel 
 <AnnouncementPanel
   isVisible={showAnnouncement}
@@ -1024,7 +1026,7 @@
 
 <!-- Loading state for protocol flags -->
 {#if protocolFlagsLoading}
-  <div class="agent-card border-b-0 rounded-b-none">
+  <div class="agent-card">
     <div class="w-full flex justify-center items-center py-8 px-6 text-gray-400">
       <div class="flex items-center space-x-3">
         <div class="w-6 h-6 border-2 border-white/10 border-t-agent-purple rounded-full animate-spin"></div>
@@ -1191,7 +1193,7 @@
   {#if agent && agent.id}
     {@const sanitizedId = agent.id.replace(/[^a-zA-Z0-9-_]/g, '_')}
     {@const identity = getMainerVisualIdentity(agent.id)}
-    <div class="agent-card mb-2" class:opacity-75={agent.uiStatus === 'inactive'}>
+    <div class="agent-card" class:opacity-75={agent.uiStatus === 'inactive'}>
       <button 
         on:click={() => toggleAccordion(agent.id)} 
         class="w-full relative overflow-hidden bg-agent-surface hover:bg-agent-elevated border-b border-white/[0.06] transition-all duration-300 group"
@@ -1203,10 +1205,8 @@
           <div class="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
             <!-- Unique avatar with visual identity and name -->
             <div class="relative flex-shrink-0 flex flex-col items-center">
-              <div class="w-12 h-12 sm:w-16 sm:h-16 bg-agent-purple/15 border border-agent-purple/30 rounded-xl flex items-center justify-center group-hover:border-agent-purple/50 transition-all duration-300">
-                <div class="w-6 h-6 sm:w-8 sm:h-8 text-agent-purple">
-                  {@html identity.icon}
-                </div>
+              <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden border border-white/10 bg-agent-elevated group-hover:border-agent-purple/40 transition-all duration-300 [&>svg]:w-full [&>svg]:h-full [&>svg]:block">
+                {@html identity.icon}
               </div>
               
               <!-- mAIner number badge -->
@@ -1316,15 +1316,15 @@
         </div>
       </button>
       <div id="content-{sanitizedId}" class="accordion-content">
-        <div class="pb-3 sm:pb-5 text-xs sm:text-sm text-gray-300 p-3 sm:p-4 bg-agent-bg/50">
-          <div class="flex flex-col space-y-2 mb-2">
-            <!-- Enhanced Cycles Management Panel -->
-            <div class="relative overflow-hidden agent-card">
+        <div class="pb-3 sm:pb-5 text-xs sm:text-sm text-gray-300 p-3 sm:p-4 space-y-3 border-t border-white/[0.06]">
+          <div class="flex flex-col space-y-3">
+            <!-- Cycles Management Panel — no nested agent-card border -->
+            <div class="relative overflow-hidden rounded-xl bg-white/[0.03]">
               <div class="relative p-4 sm:p-5">
                 <!-- Header Section -->
                 <div class="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0 mb-4">
                   <div class="flex items-center space-x-3">
-                    <div class="flex-shrink-0 w-10 h-10 bg-agent-purple/15 border border-agent-purple/30 rounded-xl flex items-center justify-center">
+                    <div class="flex-shrink-0 w-10 h-10 bg-agent-purple/15 rounded-xl flex items-center justify-center">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-agent-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                       </svg>
@@ -1338,7 +1338,7 @@
                   
                   <!-- Primary Top-up Button -->
                   {#if $mainerHealthStatuses.get(agent.id)?.isHealthy !== true}
-                    <div class="w-full md:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                    <div class="w-full md:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-amber-500/10 rounded-xl">
                       <div class="flex items-center space-x-2 text-amber-300">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -1373,7 +1373,7 @@
                 </div>
 
                 <!-- Balance Display Section -->
-                <div class="rounded-xl p-4 border border-white/[0.08] bg-white/[0.03]">
+                <div class="rounded-xl p-4 bg-agent-bg/40">
                   <div class="flex flex-col space-y-3">
                     <!-- Balance Header -->
                     <div class="flex items-center justify-between">
@@ -1532,6 +1532,8 @@
     </div>
   {/if}
 {/each}
+
+</div>
 
 <!-- Top-Up Celebration Component -->
 <TopUpCelebration 

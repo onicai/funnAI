@@ -133,67 +133,59 @@
   height="auto"
   className="transfer-confirmation-modal"
 >
-  <div class="p-6 flex flex-col gap-4">
-    <!-- Success animation -->
+  <div class="px-1 sm:px-2 py-2 flex flex-col gap-4">
     {#if showSuccess}
       <div class="text-center py-8" transition:fade={{ duration: 300 }}>
-        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-          <Check size={32} class="text-green-600 dark:text-green-400" />
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full border border-emerald-500/25 bg-emerald-500/10 flex items-center justify-center">
+          <Check size={32} class="text-emerald-400" />
         </div>
-        <p class="text-lg font-medium text-gray-900 dark:text-gray-100">Transfer Confirmed!</p>
+        <p class="text-lg font-semibold tracking-tight text-white">Transfer confirmed</p>
       </div>
     {:else}
-      <!-- Transfer Details -->
-      <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 space-y-3">
-        <h3 class="text-base font-medium text-gray-900 dark:text-gray-100">Transfer Details</h3>
-        
-        <!-- Amount -->
+      <div class="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
+        <h3 class="text-[13px] font-medium text-gray-300">Transfer details</h3>
+
         <div class="flex justify-between items-center">
-          <span class="text-sm text-gray-600 dark:text-gray-400">Amount</span>
-          <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{receiverAmount} {token.symbol}</span>
+          <span class="text-sm text-gray-500">Amount</span>
+          <span class="text-sm font-medium text-white tabular-nums">{receiverAmount} {token.symbol}</span>
         </div>
-        
-        <!-- Fee -->
+
         <div class="flex justify-between items-center">
-          <span class="text-sm text-gray-600 dark:text-gray-400">Network Fee</span>
-          <span class="text-sm text-gray-900 dark:text-gray-100">{formattedFee} {token.symbol}</span>
+          <span class="text-sm text-gray-500">Network fee</span>
+          <span class="text-sm text-gray-200 tabular-nums">{formattedFee} {token.symbol}</span>
         </div>
-        
-        <!-- Total -->
-        <div class="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
-          <span class="text-sm font-medium text-gray-900 dark:text-gray-100">Total</span>
+
+        <div class="flex justify-between items-center pt-2 border-t border-white/[0.06]">
+          <span class="text-sm font-medium text-white">Total</span>
           <div class="text-right">
-            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{totalAmount} {token.symbol}</div>
+            <div class="text-sm font-medium text-white tabular-nums">{totalAmount} {token.symbol}</div>
             {#if Number(usdValue) > 0}
-              <div class="text-xs text-gray-600 dark:text-gray-400">${usdValue} USD</div>
+              <div class="text-xs text-gray-500">${usdValue} USD</div>
             {/if}
           </div>
         </div>
       </div>
 
-      <!-- Recipient -->
-      <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-        <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Sending to</h3>
-        <div class="font-mono text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 p-2 rounded border border-gray-200 dark:border-gray-600">
+      <div class="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+        <h3 class="text-[13px] font-medium text-gray-300 mb-2">Sending to</h3>
+        <div class="font-mono text-sm text-gray-200 bg-white/[0.03] p-2.5 rounded-xl border border-white/10 break-all">
           {truncatedAddress}
         </div>
       </div>
 
-      <!-- Warning -->
-      <div class="flex items-start gap-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/30 rounded-lg">
-        <AlertTriangle size={16} class="text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
+      <div class="flex items-start gap-3 p-3 rounded-xl border border-amber-500/25 bg-amber-500/10">
+        <AlertTriangle size={16} class="text-amber-400 mt-0.5 flex-shrink-0" />
         <div class="text-sm">
-          <p class="text-yellow-800 dark:text-yellow-200 font-medium">Double-check the recipient address</p>
-          <p class="text-yellow-700 dark:text-yellow-300 mt-1">Transfers cannot be reversed once confirmed.</p>
+          <p class="text-amber-200 font-medium">Double-check the recipient address</p>
+          <p class="text-amber-200/70 mt-1">Transfers cannot be reversed once confirmed.</p>
         </div>
       </div>
 
-      <!-- Action Buttons -->
-      <div class="flex gap-3 pt-2">
+      <div class="flex gap-2.5 pt-1">
         <button
           type="button"
           on:click={onClose}
-          class="flex-1 py-2.5 px-4 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors"
+          class="agent-btn-ghost flex-1 !h-10 disabled:opacity-50"
           disabled={isProcessing}
         >
           Cancel
@@ -201,15 +193,15 @@
         <button
           type="button"
           on:click={handleConfirm}
-          class="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md flex items-center justify-center gap-2 transition-colors"
+          class="agent-btn-primary flex-1 !h-10 disabled:opacity-50"
           disabled={isProcessing}
         >
           {#if isProcessing}
             <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            Processing...
+            Processing…
           {:else}
             <ArrowRight size={16} />
-            Confirm Transfer
+            Confirm transfer
           {/if}
         </button>
       </div>
