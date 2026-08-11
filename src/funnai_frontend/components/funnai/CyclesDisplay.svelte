@@ -85,15 +85,15 @@
   $: formattedCycles = cyclesCount?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'");
 </script>
 
-<div class="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c0b12] p-5 font-sans">
+<div class="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-agent-surface p-5 font-sans">
   <div class="pointer-events-none absolute inset-0">
-    <div class="absolute -top-16 right-0 h-32 w-40 rounded-full bg-[#653FC5]/15 blur-3xl"></div>
+    <div class="absolute -top-16 right-0 h-32 w-40 rounded-full bg-agent-purple/15 blur-3xl"></div>
   </div>
 
   <div class="relative z-10 flex flex-col gap-4">
     <div class="flex items-start justify-between gap-3">
       <div>
-        <p class="text-[10px] font-medium uppercase tracking-[0.2em] text-[#653FC5]">Metric</p>
+        <p class="agent-eyebrow">Metric</p>
         <p class="mt-1 text-sm font-medium text-gray-200">{label}</p>
       </div>
       <div class="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1">

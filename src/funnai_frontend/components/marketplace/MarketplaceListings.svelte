@@ -420,16 +420,17 @@
 <div class="space-y-6">
   <!-- Own Listings Section (if any) -->
   {#if ownListings.length > 0}
-    <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="agent-card">
       <!-- Header -->
-      <div class="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4">
+      <div class="border-b border-white/[0.08] px-6 py-4">
         <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-            <Crown class="w-6 h-6 text-white" />
+          <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+            <Crown class="w-5 h-5 text-amber-400" />
           </div>
           <div>
-            <h2 class="text-xl font-bold text-white">My Listings</h2>
-            <p class="text-sm text-white/80">Manage your mAIners on sale</p>
+            <p class="agent-eyebrow">Yours</p>
+            <h2 class="text-lg font-semibold tracking-tight text-white">My Listings</h2>
+            <p class="text-sm text-gray-400">Manage your mAIners on sale</p>
           </div>
         </div>
       </div>
@@ -440,44 +441,47 @@
           {#each ownListings as listing}
             {@const identity = getMainerVisualIdentity(listing.mainerId)}
 
-            <div class="group relative overflow-hidden rounded-xl border-2 border-amber-300 dark:border-amber-600 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 shadow-lg hover:shadow-xl transition-all duration-300">
+            <div class="group relative overflow-hidden rounded-xl border border-amber-500/25 bg-white/[0.03] hover:border-amber-500/40 transition-all duration-300">
+              <!-- Soft identity tint -->
+              <div class="absolute inset-0 bg-gradient-to-br {identity.colors.bg} opacity-[0.04]"></div>
+
               <!-- Featured Badge -->
               <div class="absolute top-3 right-3 z-10">
-                <div class="flex items-center space-x-1 px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
+                <div class="flex items-center space-x-1 px-2 py-1 bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-medium rounded-full">
                   <Crown class="w-3 h-3" />
                   <span>YOURS</span>
                 </div>
               </div>
 
-              <div class="p-4">
+              <div class="relative p-4">
                 <!-- mAIner Avatar & Info -->
                 <div class="flex items-start space-x-3 mb-4">
-                  <div class="w-14 h-14 {identity.colors.accent} backdrop-blur-sm rounded-xl shadow-lg flex items-center justify-center border-2 border-white/20">
+                  <div class="w-14 h-14 {identity.colors.accent} rounded-xl flex items-center justify-center border border-white/10 opacity-90">
                     <div class="w-7 h-7 {identity.colors.icon}">
                       {@html identity.icon}
                     </div>
                   </div>
 
                   <div class="flex-1 min-w-0">
-                    <h3 class="font-bold text-gray-900 dark:text-white truncate">🦜 {listing.mainerName}</h3>
+                    <h3 class="font-semibold text-white truncate">{listing.mainerName}</h3>
                   </div>
                 </div>
 
                 <!-- Stats -->
                 <div class="space-y-2 mb-4">
                   <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Listed:</span>
-                    <span class="font-semibold text-gray-900 dark:text-white">
+                    <span class="text-gray-400">Listed:</span>
+                    <span class="font-medium text-gray-200">
                       {formatTimeAgo(listing.listedAt)}
                     </span>
                   </div>
                 </div>
 
                 <!-- Price & Actions -->
-                <div class="border-t border-amber-200 dark:border-amber-700 pt-4">
+                <div class="border-t border-white/10 pt-4">
                   <div class="flex items-center justify-between mb-3">
-                    <span class="text-sm text-gray-600 dark:text-gray-400">Price:</span>
-                    <span class="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                    <span class="text-sm text-gray-400">Price:</span>
+                    <span class="text-2xl font-semibold text-amber-400">
                       {formatPrice(listing.price)} ICP
                     </span>
                   </div>
@@ -485,10 +489,10 @@
                   <button
                     on:click={() => handleCancelListing(listing)}
                     disabled={isProcessing || cancelingListingId === listing.id}
-                    class="w-full px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                    class="w-full agent-btn-ghost border-red-500/30 text-red-300 hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {#if cancelingListingId === listing.id}
-                      <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full spinner"></div>
+                      <div class="w-4 h-4 border-2 border-red-300 border-t-transparent rounded-full spinner"></div>
                       <span>Canceling...</span>
                     {:else}
                       <X class="w-4 h-4" />
@@ -505,17 +509,18 @@
   {/if}
 
   <!-- All Marketplace Listings -->
-  <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+  <div class="agent-card">
     <!-- Header -->
-    <div class="bg-gradient-to-r from-purple-500 to-blue-500 px-6 py-4">
-      <div class="flex items-center justify-between">
+    <div class="border-b border-white/[0.08] px-6 py-4">
+      <div class="flex items-center justify-between gap-4 flex-wrap">
         <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-            <ShoppingBag class="w-6 h-6 text-white" />
+          <div class="w-10 h-10 rounded-xl bg-agent-purple/15 border border-agent-purple/20 flex items-center justify-center">
+            <ShoppingBag class="w-5 h-5 text-agent-purple" />
           </div>
           <div>
-            <h2 class="text-xl font-bold text-white">Marketplace Listings</h2>
-            <p class="text-sm text-white/80">Browse and purchase mAIners</p>
+            <p class="agent-eyebrow">Browse</p>
+            <h2 class="text-lg font-semibold tracking-tight text-white">Marketplace Listings</h2>
+            <p class="text-sm text-gray-400">Browse and purchase mAIners</p>
           </div>
         </div>
 
@@ -524,24 +529,24 @@
           <button
             on:click={manualRefresh}
             disabled={isRefreshing || isLoading}
-            class="flex items-center space-x-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            class="agent-btn-ghost disabled:opacity-50 disabled:cursor-not-allowed"
             title="Refresh listings"
           >
-            <RefreshCw class="w-4 h-4 text-white {isRefreshing ? 'animate-spin' : ''}" />
-            <span class="text-xs text-white/90">
+            <RefreshCw class="w-4 h-4 {isRefreshing ? 'animate-spin' : ''}" />
+            <span class="text-xs">
               {isRefreshing ? 'Updating...' : 'Refresh'}
             </span>
           </button>
 
           <!-- Live indicator -->
           <div class="flex items-center space-x-1.5" title="Auto-refreshes every 15 seconds">
-            <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span class="text-xs text-white/80">Live</span>
+            <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+            <span class="text-xs text-gray-400">Live</span>
           </div>
 
           <div class="text-right">
-            <p class="text-2xl font-bold text-white">{otherListings.length}</p>
-            <p class="text-xs text-white/80">Available</p>
+            <p class="text-2xl font-semibold text-white">{otherListings.length}</p>
+            <p class="text-xs text-gray-400">Available</p>
           </div>
         </div>
       </div>
@@ -549,18 +554,18 @@
 
     <!-- Sorting & Pagination Controls -->
     {#if !isLoading && otherListings.length > 0}
-      <div class="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+      <div class="px-6 py-3 border-b border-white/[0.08] bg-white/[0.02]">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <!-- Sort controls - removed -->
           
           <!-- Items per page -->
           <div class="flex items-center space-x-3">
-            <label for="items-per-page" class="text-sm text-gray-600 dark:text-gray-400">Show:</label>
+            <label for="items-per-page" class="text-sm text-gray-400">Show:</label>
             <select
               id="items-per-page"
               value={itemsPerPage}
               on:change={handleItemsPerPageChange}
-              class="px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-white"
+              class="agent-input w-auto py-1.5"
             >
               {#each itemsPerPageOptions as option}
                 <option value={option}>{option} per page</option>
@@ -569,8 +574,8 @@
           </div>
           
           <!-- Page info -->
-          <div class="text-sm text-gray-600 dark:text-gray-400">
-            Showing <span class="font-semibold text-gray-900 dark:text-white">{startIndex + 1}-{endIndex}</span> of <span class="font-semibold text-gray-900 dark:text-white">{otherListings.length}</span>
+          <div class="text-sm text-gray-400">
+            Showing <span class="font-medium text-white">{startIndex + 1}-{endIndex}</span> of <span class="font-medium text-white">{otherListings.length}</span>
           </div>
         </div>
       </div>
@@ -580,15 +585,13 @@
     <div class="p-6">
       {#if isLoading}
         <div class="flex items-center justify-center py-20">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-agent-purple"></div>
         </div>
       {:else if otherListings.length === 0}
         <div class="text-center py-12">
-          <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <ShoppingBag class="w-8 h-8 text-gray-400" />
-          </div>
-          <p class="text-gray-600 dark:text-gray-400 mb-2">No listings available</p>
-          <p class="text-sm text-gray-500 dark:text-gray-500">Check back later for new mAIners</p>
+          <ShoppingBag class="w-8 h-8 text-gray-500 mx-auto mb-4" />
+          <p class="text-gray-400 mb-2">No listings available</p>
+          <p class="text-sm text-gray-500">Check back later for new mAIners</p>
         </div>
       {:else}
         <!-- Listings Grid -->
@@ -598,42 +601,42 @@
             {#each paginatedListings as listing}
             {@const identity = getMainerVisualIdentity(listing.mainerId)}
             
-            <div class="group relative overflow-hidden rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-purple-300 dark:hover:border-purple-600 shadow-lg hover:shadow-xl transition-all duration-300">
-              <!-- Background gradient -->
-              <div class="absolute inset-0 bg-gradient-to-br {identity.colors.bg} opacity-5"></div>
+            <div class="group relative overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] hover:border-agent-purple/40 transition-all duration-300">
+              <!-- Soft identity tint -->
+              <div class="absolute inset-0 bg-gradient-to-br {identity.colors.bg} opacity-[0.04]"></div>
               
               <div class="relative p-5">
                 <!-- mAIner Avatar & Info -->
                 <div class="flex items-start space-x-3 mb-4">
-                  <div class="w-14 h-14 {identity.colors.accent} backdrop-blur-sm rounded-xl shadow-lg flex items-center justify-center border-2 border-white/20">
+                  <div class="w-14 h-14 {identity.colors.accent} rounded-xl flex items-center justify-center border border-white/10 opacity-90">
                     <div class="w-7 h-7 {identity.colors.icon}">
                       {@html identity.icon}
                     </div>
                   </div>
                   
                   <div class="flex-1 min-w-0">
-                    <h3 class="font-bold text-gray-900 dark:text-white truncate">🦜 {listing.mainerName}</h3>
+                    <h3 class="font-semibold text-white truncate">{listing.mainerName}</h3>
                   </div>
                 </div>
 
                 <!-- Stats Grid -->
                 <div class="space-y-2 mb-4">
                   <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-600 dark:text-gray-400">Seller:</span>
-                    <span class="font-mono text-xs text-gray-700 dark:text-gray-300">
+                    <span class="text-gray-400">Seller:</span>
+                    <span class="font-mono text-xs text-gray-300">
                       {shortenPrincipal(listing.seller)}
                     </span>
                   </div>
                 </div>
 
                 <!-- Price & Actions -->
-                <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <div class="border-t border-white/10 pt-4">
                   <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center space-x-1 text-sm text-gray-600 dark:text-gray-400">
+                    <div class="flex items-center space-x-1 text-sm text-gray-400">
                       <Tag class="w-4 h-4" />
                       <span>Price:</span>
                     </div>
-                    <span class="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    <span class="text-2xl font-semibold text-agent-purple">
                       {formatPrice(listing.price)} ICP
                     </span>
                   </div>
@@ -641,7 +644,7 @@
                   <div class="grid grid-cols-2 gap-2">
                     <button
                       on:click={() => handleViewDetails(listing)}
-                      class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center space-x-1.5"
+                      class="agent-btn-ghost w-full"
                     >
                       <Eye class="w-4 h-4" />
                       <span>Details</span>
@@ -650,7 +653,7 @@
                     <button
                       on:click={() => $store.isAuthed ? handleBuy(listing) : toggleModal()}
                       disabled={isProcessing}
-                      class="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-1.5"
+                      class="agent-btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
                       title={!$store.isAuthed ? 'Please connect your wallet to purchase' : ''}
                     >
                       {#if $store.isAuthed}
@@ -678,7 +681,7 @@
             <button
               on:click={prevPage}
               disabled={currentPage === 1}
-              class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-1"
+              class="agent-btn-ghost disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -694,9 +697,9 @@
                 {:else}
                   <button
                     on:click={() => goToPage(item)}
-                    class="w-10 h-10 rounded-lg font-medium transition-colors {currentPage === item 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}"
+                    class="w-10 h-10 rounded-full font-medium transition-colors {currentPage === item 
+                      ? 'bg-agent-purple text-white' 
+                      : 'border border-white/10 bg-white/[0.03] text-gray-300 hover:border-agent-purple/40 hover:bg-agent-purple/10'}"
                   >
                     {item}
                   </button>
@@ -708,7 +711,7 @@
             <button
               on:click={nextPage}
               disabled={currentPage === totalPages}
-              class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-1"
+              class="agent-btn-ghost disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span>Next</span>
               <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -720,16 +723,16 @@
           <!-- Page Jump (for many pages) -->
           {#if totalPages > 10}
             <div class="mt-4 flex items-center justify-center space-x-2">
-              <span class="text-sm text-gray-600 dark:text-gray-400">Go to page:</span>
+              <span class="text-sm text-gray-400">Go to page:</span>
               <input
                 type="number"
                 min="1"
                 max={totalPages}
                 value={currentPage}
                 on:change={(e) => goToPage(parseInt(e.currentTarget.value) || 1)}
-                class="w-20 px-3 py-1.5 text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-white text-center"
+                class="agent-input w-20 text-center py-1.5"
               />
-              <span class="text-sm text-gray-600 dark:text-gray-400">of {totalPages}</span>
+              <span class="text-sm text-gray-400">of {totalPages}</span>
             </div>
           {/if}
         {/if}
@@ -753,41 +756,45 @@
     ></div>
     
     <!-- Modal Content -->
-    <div class="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
+    <div class="relative bg-agent-elevated border border-white/10 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <!-- Soft identity tint -->
+      <div class="pointer-events-none absolute inset-0 bg-gradient-to-br {identity.colors.bg} opacity-[0.04] rounded-2xl"></div>
+
       <!-- Header -->
-      <div class="sticky top-0 bg-gradient-to-r {identity.colors.bg} px-6 py-4 border-b border-gray-200 dark:border-gray-700 z-10">
+      <div class="sticky top-0 bg-agent-elevated/95 backdrop-blur-sm border-b border-white/[0.08] px-6 py-4 z-10">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-3">
-            <div class="w-12 h-12 {identity.colors.accent} backdrop-blur-sm rounded-xl shadow-lg flex items-center justify-center border-2 border-white/20">
+            <div class="w-12 h-12 {identity.colors.accent} rounded-xl flex items-center justify-center border border-white/10 opacity-90">
               <div class="w-6 h-6 {identity.colors.icon}">
                 {@html identity.icon}
               </div>
             </div>
             <div>
-              <h3 class="text-xl font-bold {identity.colors.text}">🦜 {selectedListing.mainerName}</h3>
-              <p class="text-sm {identity.colors.text} opacity-75">mAIner Details</p>
+              <p class="agent-eyebrow">Details</p>
+              <h3 class="text-lg font-semibold tracking-tight text-white">{selectedListing.mainerName}</h3>
+              <p class="text-sm text-gray-400">mAIner Details</p>
             </div>
           </div>
           
           <button
             on:click={closeDetailsModal}
-            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/20 transition-colors"
+            class="w-8 h-8 flex items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-gray-300 hover:border-agent-purple/40 hover:text-white transition-colors"
           >
-            <X class="w-5 h-5 {identity.colors.text}" />
+            <X class="w-5 h-5" />
           </button>
         </div>
       </div>
       
       <!-- Content -->
-      <div class="p-6 space-y-6">
+      <div class="relative p-6 space-y-6">
         <!-- Price Section -->
-        <div class="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-6 border border-purple-200 dark:border-purple-800">
+        <div class="bg-white/[0.03] rounded-xl p-6 border border-white/10">
           <div class="text-center">
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Listed Price</p>
-            <p class="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-1">
+            <p class="text-sm text-gray-400 mb-2">Listed Price</p>
+            <p class="text-4xl font-semibold text-agent-purple mb-1">
               {selectedListing.price} ICP
             </p>
-            <p class="text-xs text-gray-500 dark:text-gray-500">
+            <p class="text-xs text-gray-500">
               Listed {formatTimeAgo(selectedListing.listedAt)}
             </p>
           </div>
@@ -795,16 +802,16 @@
 
         <!-- Details Grid -->
         <div class="grid grid-cols-1 gap-4">
-          <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-            <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Status</p>
-            <p class="font-semibold text-gray-900 dark:text-white capitalize">{selectedListing.status}</p>
+          <div class="bg-white/[0.03] border border-white/10 rounded-xl p-4">
+            <p class="text-xs text-gray-400 mb-1">Status</p>
+            <p class="font-medium text-white capitalize">{selectedListing.status}</p>
           </div>
         </div>
 
         <!-- Seller Info -->
-        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-          <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">Seller Principal</p>
-          <p class="font-mono text-sm text-gray-900 dark:text-white break-all">
+        <div class="bg-white/[0.03] border border-white/10 rounded-xl p-4">
+          <p class="text-xs text-gray-400 mb-2">Seller Principal</p>
+          <p class="font-mono text-sm text-gray-200 break-all">
             {selectedListing.seller}
           </p>
         </div>
@@ -814,10 +821,10 @@
           <button
             on:click={() => handleCancelListing(selectedListing)}
             disabled={isProcessing || cancelingListingId === selectedListing.id}
-            class="w-full px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            class="w-full agent-btn-ghost border-red-500/30 text-red-300 hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-50 disabled:cursor-not-allowed h-11"
           >
             {#if isProcessing || cancelingListingId === selectedListing.id}
-              <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full spinner"></div>
+              <div class="w-5 h-5 border-2 border-red-300 border-t-transparent rounded-full spinner"></div>
               <span>Canceling...</span>
             {:else}
               <X class="w-5 h-5" />
@@ -828,7 +835,7 @@
           <button
             on:click={() => handleBuy(selectedListing)}
             disabled={isProcessing || !$store.isAuthed}
-            class="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl"
+            class="w-full agent-btn-primary h-11 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {#if !$store.isAuthed}
               <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -873,12 +880,12 @@
   }
 
   .overflow-y-auto::-webkit-scrollbar-thumb {
-    background: rgba(156, 163, 175, 0.5);
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 4px;
   }
 
   .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-    background: rgba(156, 163, 175, 0.7);
+    background: rgba(101, 63, 197, 0.5);
   }
 </style>
 

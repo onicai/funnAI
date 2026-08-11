@@ -322,39 +322,39 @@
   <div class="space-y-4">
     {#if !listing}
       <div class="text-center py-8">
-        <AlertCircle class="w-12 h-12 text-gray-400 mx-auto mb-2" />
-        <p class="text-gray-600 dark:text-gray-400">No listing selected</p>
+        <AlertCircle class="w-10 h-10 text-gray-500 mx-auto mb-2" />
+        <p class="text-gray-400">No listing selected</p>
       </div>
     {:else if currentStep === 'success'}
       <!-- Success State -->
       <div class="text-center py-8">
-        <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle class="w-10 h-10 text-green-600 dark:text-green-400" />
+        <div class="w-14 h-14 bg-emerald-500/10 border border-emerald-500/25 rounded-xl flex items-center justify-center mx-auto mb-4">
+          <CheckCircle class="w-8 h-8 text-emerald-400" />
         </div>
-        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Purchase Complete!</h3>
-        <p class="text-gray-600 dark:text-gray-400">
+        <h3 class="text-xl font-semibold tracking-tight text-white mb-2">Purchase Complete!</h3>
+        <p class="text-gray-400">
           {listing.mainerName} has been transferred to your account.
         </p>
       </div>
     {:else}
       <!-- Reservation Timer Banner (only shown after reservation is made) -->
       {#if reservationActive}
-        <div class="flex items-center justify-between p-3 rounded-lg {timeRemaining <= 30 ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'}">
+        <div class="flex items-center justify-between p-3 rounded-xl {timeRemaining <= 30 ? 'bg-red-500/10 border border-red-500/25' : 'bg-sky-500/10 border border-sky-500/25'}">
           <div class="flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 {timeRemaining <= 30 ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 {timeRemaining <= 30 ? 'text-red-400' : 'text-sky-400'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <p class="text-sm font-medium {timeRemaining <= 30 ? 'text-red-900 dark:text-red-200' : 'text-blue-900 dark:text-blue-200'}">
+              <p class="text-sm font-medium {timeRemaining <= 30 ? 'text-red-300' : 'text-sky-200'}">
                 {timeRemaining <= 30 ? 'Completing purchase...' : 'mAIner reserved for you'}
               </p>
-              <p class="text-xs {timeRemaining <= 30 ? 'text-red-700 dark:text-red-300' : 'text-blue-700 dark:text-blue-300'}">
+              <p class="text-xs {timeRemaining <= 30 ? 'text-red-400/80' : 'text-sky-400/80'}">
                 Processing payment...
               </p>
             </div>
           </div>
           <div class="text-right">
-            <div class="text-2xl font-bold {timeRemaining <= 30 ? 'text-red-700 dark:text-red-300' : 'text-blue-700 dark:text-blue-300'}">
+            <div class="text-2xl font-semibold {timeRemaining <= 30 ? 'text-red-300' : 'text-sky-300'}">
               {formatTime(timeRemaining)}
             </div>
           </div>
@@ -363,23 +363,23 @@
 
       <!-- Progress Steps (shown during purchase process) -->
       {#if currentStep !== 'confirm'}
-        <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+        <div class="bg-white/[0.03] rounded-xl p-4 border border-white/10">
           <div class="space-y-3">
             <!-- Step 1: Reserving -->
             <div class="flex items-center gap-3">
               <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0
-                {reservingStatus === 'complete' ? 'bg-green-500' : 
-                 reservingStatus === 'active' ? 'bg-purple-500' : 
-                 reservingStatus === 'error' ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'}">
+                {reservingStatus === 'complete' ? 'bg-emerald-500' : 
+                 reservingStatus === 'active' ? 'bg-agent-purple' : 
+                 reservingStatus === 'error' ? 'bg-red-500' : 'bg-white/10'}">
                 {#if reservingStatus === 'complete'}
                   <CheckCircle class="w-4 h-4 text-white" />
                 {:else if reservingStatus === 'active'}
                   <div class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 {:else}
-                  <span class="text-xs text-white font-bold">1</span>
+                  <span class="text-xs text-gray-400 font-bold">1</span>
                 {/if}
               </div>
-              <span class="text-sm {reservingStatus === 'active' ? 'text-purple-600 dark:text-purple-400 font-medium' : 'text-gray-600 dark:text-gray-400'}">
+              <span class="text-sm {reservingStatus === 'active' ? 'text-agent-purple font-medium' : 'text-gray-400'}">
                 {reservingStatus === 'active' ? 'Reserving mAIner...' : 'Reserve mAIner'}
               </span>
             </div>
@@ -387,18 +387,18 @@
             <!-- Step 2: Approving -->
             <div class="flex items-center gap-3">
               <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0
-                {approvingStatus === 'complete' ? 'bg-green-500' : 
-                 approvingStatus === 'active' ? 'bg-purple-500' : 
-                 approvingStatus === 'error' ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'}">
+                {approvingStatus === 'complete' ? 'bg-emerald-500' : 
+                 approvingStatus === 'active' ? 'bg-agent-purple' : 
+                 approvingStatus === 'error' ? 'bg-red-500' : 'bg-white/10'}">
                 {#if approvingStatus === 'complete'}
                   <CheckCircle class="w-4 h-4 text-white" />
                 {:else if approvingStatus === 'active'}
                   <div class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 {:else}
-                  <span class="text-xs text-white font-bold">2</span>
+                  <span class="text-xs text-gray-400 font-bold">2</span>
                 {/if}
               </div>
-              <span class="text-sm {approvingStatus === 'active' ? 'text-purple-600 dark:text-purple-400 font-medium' : 'text-gray-600 dark:text-gray-400'}">
+              <span class="text-sm {approvingStatus === 'active' ? 'text-agent-purple font-medium' : 'text-gray-400'}">
                 {approvingStatus === 'active' ? 'Approving ICP...' : 'Approve ICP'}
               </span>
             </div>
@@ -406,29 +406,29 @@
             <!-- Step 3: Completing -->
             <div class="flex items-center gap-3">
               <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0
-                {completingStatus === 'complete' ? 'bg-green-500' : 
-                 completingStatus === 'active' ? 'bg-purple-500' : 
-                 completingStatus === 'error' ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'}">
+                {completingStatus === 'complete' ? 'bg-emerald-500' : 
+                 completingStatus === 'active' ? 'bg-agent-purple' : 
+                 completingStatus === 'error' ? 'bg-red-500' : 'bg-white/10'}">
                 {#if completingStatus === 'complete'}
                   <CheckCircle class="w-4 h-4 text-white" />
                 {:else if completingStatus === 'active'}
                   <div class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 {:else}
-                  <span class="text-xs text-white font-bold">3</span>
+                  <span class="text-xs text-gray-400 font-bold">3</span>
                 {/if}
               </div>
-              <span class="text-sm {completingStatus === 'active' ? 'text-purple-600 dark:text-purple-400 font-medium' : 'text-gray-600 dark:text-gray-400'}">
+              <span class="text-sm {completingStatus === 'active' ? 'text-agent-purple font-medium' : 'text-gray-400'}">
                 {completingStatus === 'active' ? 'Completing purchase...' : 'Complete purchase'}
               </span>
             </div>
           </div>
 
           <!-- Warning: Do not refresh -->
-          <div class="mt-3 flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div class="mt-3 flex items-center gap-2 p-2 bg-amber-500/5 rounded-xl border border-amber-500/20">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
-            <p class="text-xs font-medium text-amber-700 dark:text-amber-300">
+            <p class="text-xs font-medium text-amber-300">
               ⚠️ Do NOT refresh or close this page until the purchase is complete
             </p>
           </div>
@@ -436,16 +436,16 @@
       {/if}
 
       <!-- mAIner Info -->
-      <div class="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+      <div class="bg-white/[0.03] rounded-xl p-4 border border-white/10">
         <div class="flex items-start space-x-3">
-          <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-            <ShoppingBag class="w-5 h-5 text-white" />
+          <div class="w-10 h-10 bg-agent-purple/15 border border-agent-purple/20 rounded-xl flex items-center justify-center flex-shrink-0">
+            <ShoppingBag class="w-5 h-5 text-agent-purple" />
           </div>
           <div class="flex-1 min-w-0">
-            <h3 class="font-semibold text-gray-900 dark:text-white truncate">🦜 {listing.mainerName}</h3>
+            <h3 class="font-semibold text-white truncate">{listing.mainerName}</h3>
             {#if listing.cycleBalance}
-              <p class="text-sm text-gray-600 dark:text-gray-400">
-                Balance: <span class="font-medium">{formatLargeNumber(listing.cycleBalance / 1_000_000_000_000, 2, false)} TCYCLES</span>
+              <p class="text-sm text-gray-400">
+                Balance: <span class="font-medium text-gray-200">{formatLargeNumber(listing.cycleBalance / 1_000_000_000_000, 2, false)} TCYCLES</span>
               </p>
             {/if}
           </div>
@@ -455,9 +455,9 @@
       <!-- Seller Info (only show in confirm step or if we have seller info) -->
       {#if listing.seller || reservedListingInfo?.seller}
         <div>
-          <span class="block text-xs text-gray-600 dark:text-gray-400 mb-1.5">Seller</span>
-          <div class="p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-            <p class="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">{reservedListingInfo?.seller || listing.seller}</p>
+          <span class="block text-xs text-gray-400 mb-1.5">Seller</span>
+          <div class="p-2 bg-white/[0.03] rounded-xl border border-white/10">
+            <p class="text-xs font-mono text-gray-300 break-all">{reservedListingInfo?.seller || listing.seller}</p>
           </div>
         </div>
       {/if}
@@ -465,17 +465,17 @@
       <!-- Balance Display (only in confirm step) -->
       {#if currentStep === 'confirm'}
         <div>
-          <span class="block text-xs text-gray-600 dark:text-gray-400 mb-1.5">Your ICP Balance</span>
-          <div class="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <span class="block text-xs text-gray-400 mb-1.5">Your ICP Balance</span>
+          <div class="p-3 bg-white/[0.03] rounded-xl border border-white/10">
             {#if isLoadingBalance}
               <div class="flex items-center space-x-2">
-                <div class="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-                <span class="text-sm text-gray-600 dark:text-gray-400">Loading balance...</span>
+                <div class="w-4 h-4 border-2 border-agent-purple border-t-transparent rounded-full animate-spin"></div>
+                <span class="text-sm text-gray-400">Loading balance...</span>
               </div>
             {:else}
               <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-600 dark:text-gray-400">Available:</span>
-                <span class="text-lg font-semibold text-gray-900 dark:text-white">
+                <span class="text-sm text-gray-400">Available:</span>
+                <span class="text-lg font-semibold text-white">
                   {formatICP(balance)} ICP
                 </span>
               </div>
@@ -486,29 +486,29 @@
 
       <!-- Payment Breakdown -->
       <div class="space-y-2">
-        <span class="block text-xs text-gray-600 dark:text-gray-400">Payment Details</span>
-        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 space-y-2 border border-gray-200 dark:border-gray-700">
+        <span class="block text-xs text-gray-400">Payment Details</span>
+        <div class="bg-white/[0.03] rounded-xl p-3 space-y-2 border border-white/10">
           <div class="flex justify-between text-sm">
-            <span class="text-gray-600 dark:text-gray-400">mAIner Price:</span>
-            <span class="font-semibold text-gray-900 dark:text-white">{priceICP.toFixed(8)} ICP</span>
+            <span class="text-gray-400">mAIner Price:</span>
+            <span class="font-semibold text-white">{priceICP.toFixed(8)} ICP</span>
           </div>
           <div class="flex justify-between text-sm">
-            <span class="text-gray-600 dark:text-gray-400">Network Fee:</span>
-            <span class="font-semibold text-gray-900 dark:text-white">{formatICP(ICP_FEE)} ICP</span>
+            <span class="text-gray-400">Network Fee:</span>
+            <span class="font-semibold text-white">{formatICP(ICP_FEE)} ICP</span>
           </div>
-          <div class="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between">
-            <span class="font-semibold text-gray-900 dark:text-white">Total:</span>
-            <span class="font-bold text-lg text-purple-600 dark:text-purple-400">{totalICPWithFee.toFixed(8)} ICP</span>
+          <div class="border-t border-white/10 pt-2 flex justify-between">
+            <span class="font-semibold text-white">Total:</span>
+            <span class="font-semibold text-lg text-agent-purple">{totalICPWithFee.toFixed(8)} ICP</span>
           </div>
         </div>
       </div>
 
       <!-- Info Box (only in confirm step) -->
       {#if currentStep === 'confirm'}
-        <div class="flex items-start space-x-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-          <Info class="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-          <div class="text-xs text-blue-700 dark:text-blue-300">
-            <p class="font-medium mb-1">Secure escrow purchase</p>
+        <div class="flex items-start space-x-2 p-3 bg-sky-500/5 rounded-xl border border-sky-500/20">
+          <Info class="w-4 h-4 text-sky-400 flex-shrink-0 mt-0.5" />
+          <div class="text-xs text-sky-300/90">
+            <p class="font-medium mb-1 text-sky-200">Secure escrow purchase</p>
             <p>When you confirm, the mAIner will be reserved for you, then ICP will be approved and the protocol will securely complete the transfer.</p>
           </div>
         </div>
@@ -516,19 +516,19 @@
 
       <!-- Error Message -->
       {#if errorMessage}
-        <div class="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-          <p class="text-sm text-red-700 dark:text-red-300">{errorMessage}</p>
+        <div class="p-3 bg-red-500/10 rounded-xl border border-red-500/25">
+          <p class="text-sm text-red-300">{errorMessage}</p>
         </div>
       {/if}
 
       <!-- Insufficient Balance Warning (only in confirm step) -->
       {#if currentStep === 'confirm' && hasInsufficientBalance && !isLoadingBalance}
-        <div class="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+        <div class="p-3 bg-amber-500/5 rounded-xl border border-amber-500/20">
           <div class="flex items-start space-x-2">
-            <AlertCircle class="w-4 h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
-            <div class="text-sm text-yellow-700 dark:text-yellow-300">
+            <AlertCircle class="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+            <div class="text-sm text-amber-300">
               <p class="font-medium">Insufficient Balance</p>
-              <p class="mt-1">You need {totalICPWithFee.toFixed(8)} ICP but only have {formatICP(balance)} ICP</p>
+              <p class="mt-1 text-amber-400/80">You need {totalICPWithFee.toFixed(8)} ICP but only have {formatICP(balance)} ICP</p>
             </div>
           </div>
         </div>
@@ -540,7 +540,7 @@
           <button
             type="button"
             on:click={handleClose}
-            class="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            class="flex-1 agent-btn-ghost disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isProcessing}
           >
             <span>Cancel</span>
@@ -548,12 +548,7 @@
           <button
             type="button"
             on:click={handleConfirmPurchase}
-            class="flex-1 px-4 py-2.5 rounded-lg text-white font-medium flex items-center justify-center space-x-2 transition-colors"
-            class:bg-purple-600={canSubmit}
-            class:hover:bg-purple-700={canSubmit}
-            class:bg-gray-400={!canSubmit}
-            class:dark:bg-gray-700={!canSubmit}
-            class:cursor-not-allowed={!canSubmit}
+            class="flex-1 agent-btn-primary disabled:opacity-50 disabled:cursor-not-allowed {!canSubmit ? 'bg-white/10 hover:bg-white/10 text-gray-500 shadow-none' : ''}"
             disabled={!canSubmit}
           >
             <ShoppingBag class="w-4 h-4" />
@@ -565,7 +560,7 @@
           <button
             type="button"
             on:click={handleClose}
-            class="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center justify-center"
+            class="flex-1 agent-btn-ghost"
           >
             <span>Close</span>
           </button>
@@ -580,6 +575,14 @@
     max-width: min(500px, calc(100vw - 2rem));
     position: relative;
     z-index: 100000;
+  }
+
+  :global(.modal-panel.marketplace-payment-modal),
+  :global(.marketplace-payment-modal.modal-panel) {
+    background: #15141B !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 1rem !important;
+    color: #e5e7eb !important;
   }
   
   @media (max-width: 640px) {

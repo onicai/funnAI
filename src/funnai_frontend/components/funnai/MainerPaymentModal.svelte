@@ -217,15 +217,15 @@
   className="mainer-payment-modal"
   isPadded={true}
 >
-  <div class="px-2 sm:px-4 py-4 flex flex-col gap-3 sm:gap-4">
+  <div class="space-y-4">
     {#if isTokenLoading}
       <div class="flex justify-center py-4">
-        <span class="w-6 h-6 border-2 border-gray-400/30 border-t-gray-400 dark:border-gray-400/30 dark:border-t-gray-400 rounded-full animate-spin"></span>
+        <span class="w-6 h-6 border-2 border-agent-purple/30 border-t-agent-purple rounded-full animate-spin"></span>
       </div>
     {:else}
       <!-- Token Info Banner -->
-      <div class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100">
-        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
+      <div class="flex items-center gap-2 sm:gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/10">
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-agent-purple/15 border border-agent-purple/20 flex-shrink-0 overflow-hidden">
           <div class="sm:hidden">
             <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
           </div>
@@ -234,69 +234,69 @@
           </div>
         </div>
         <div class="flex flex-col min-w-0 flex-1">
-          <div class="text-gray-900 font-medium dark:text-gray-100 text-sm sm:text-base truncate">{token.name}</div>
-          <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Balance: {formatBalance(balance.toString(), token.decimals)} {token.symbol}</div>
+          <div class="text-white font-medium text-sm sm:text-base truncate">{token.name}</div>
+          <div class="text-xs sm:text-sm text-gray-400 truncate">Balance: {formatBalance(balance.toString(), token.decimals)} {token.symbol}</div>
           {#if showCreationBonus}
-            <div class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 truncate">+{bonusCyclesTopupInPercent}% bonus cycles</div>
+            <div class="text-[10px] font-medium text-emerald-400 truncate">+{bonusCyclesTopupInPercent}% bonus cycles</div>
           {/if}
         </div>
       </div>
 
       <!-- Payment Info -->
-      <div class="flex flex-col gap-2 sm:gap-3">
+      <div class="flex flex-col gap-3">
         <!-- Recipient Address - only show if user has enough balance -->
         {#if hasEnoughBalance}
           <div>
-            <label class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">Recipient</label>
+            <span class="block text-xs text-gray-400 mb-1.5">Recipient</span>
             <div class="relative">
               <input
                 type="text"
-                class="w-full py-2 px-2 sm:px-3 bg-white border border-gray-300 rounded-md text-xs sm:text-sm text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 pr-8"
+                class="agent-input w-full pr-8 text-xs sm:text-sm"
                 value={protocolAddress}
                 disabled
               />
               <div class="absolute inset-y-0 right-0 flex items-center">
-                <div class="p-1.5 text-green-500">
+                <div class="p-1.5 text-emerald-400">
                   <Check size={14} class="sm:hidden" />
                   <Check size={16} class="hidden sm:block" />
                 </div>
               </div>
             </div>
-            <div class="mt-1 text-xs text-green-600 dark:text-green-500">funnAI mAIner creation address</div>
+            <div class="mt-1 text-xs text-emerald-400/80">funnAI mAIner creation address</div>
           </div>
         {/if}
 
         <!-- Amount -->
         <div>
-          <label class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">Payment Amount</label>
+          <span class="block text-xs text-gray-400 mb-1.5">Payment Amount</span>
           <div class="relative">
             <input
               type="text"
-              class="w-full py-2 px-2 sm:px-3 bg-white border border-gray-300 rounded-md text-xs sm:text-sm text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100 pr-12 sm:pr-16"
+              class="agent-input w-full pr-12 sm:pr-16 text-xs sm:text-sm"
               value={totalPaymentAmount}
               disabled
             />
             <div class="absolute inset-y-0 right-0 flex items-center">
-              <span class="pr-2 sm:pr-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">{token.symbol}</span>
+              <span class="pr-2 sm:pr-3 text-xs sm:text-sm text-gray-400">{token.symbol}</span>
             </div>
           </div>
-          <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
+          <div class="mt-1 text-xs text-gray-400">
             Protocol fees included
             {#if showCreationBonus}
-              <span class="text-emerald-600 dark:text-emerald-400"> · +{bonusCyclesTopupInPercent}% bonus cycles included</span>
+              <span class="text-emerald-400"> · +{bonusCyclesTopupInPercent}% bonus cycles included</span>
             {/if}
           </div>
         </div>
         
         <!-- Payment Description -->
-        <div class="p-2 sm:p-3 rounded-lg {isWhitelistPhaseActive && selectedUnlockedMainer ? 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800/30 dark:text-yellow-200' : 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200'} text-xs sm:text-sm">
+        <div class="p-3 rounded-xl text-xs sm:text-sm {isWhitelistPhaseActive && selectedUnlockedMainer ? 'bg-amber-500/5 border border-amber-500/20 text-amber-300' : 'bg-sky-500/5 border border-sky-500/20 text-sky-300/90'}">
           {#if isWhitelistPhaseActive && selectedUnlockedMainer}
             This whitelist payment ({totalPaymentAmount} {token.symbol} total including network fees) allows you to finish the set up of your pre-unlocked mAIner at a special discounted price. Once payment is complete, your mAIner will be created automatically.
           {:else}
             This payment ({totalPaymentAmount} {token.symbol} total including network fees) is used to create your mAIner. Once payment is complete, your mAIner will be created automatically.
           {/if}
           {#if showCreationBonus}
-            <div class="mt-2 text-emerald-700 dark:text-emerald-300">
+            <div class="mt-2 text-emerald-400">
               Includes +{bonusCyclesTopupInPercent}% bonus cycles on ICP payments
             </div>
           {/if}
@@ -304,8 +304,17 @@
 
         <!-- Error message -->
         {#if errorMessage}
-          <div class="mt-1 p-2 rounded bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-400">
-            {errorMessage}
+          <div class="p-3 bg-red-500/10 rounded-xl border border-red-500/25">
+            <p class="text-sm text-red-300">{errorMessage}</p>
+          </div>
+        {/if}
+
+        <!-- Insufficient balance helper -->
+        {#if !hasEnoughBalance && !isValidating && token}
+          <div class="p-3 bg-amber-500/5 rounded-xl border border-amber-500/20">
+            <p class="text-sm text-amber-300">
+              You need {formatBalance((amountBigInt - balance).toString(), token.decimals)} more {token.symbol} to create this mAIner.
+            </p>
           </div>
         {/if}
 
@@ -313,51 +322,26 @@
         <button
           type="button"
           on:click={handleSubmit}
-          class="mt-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-md text-white font-medium transition-colors text-sm sm:text-base"
-          class:flex={!(!hasEnoughBalance && !isValidating)}
-          class:items-center={!(!hasEnoughBalance && !isValidating)}
-          class:justify-center={!(!hasEnoughBalance && !isValidating)}
-          class:gap-2={!(!hasEnoughBalance && !isValidating)}
-          class:bg-purple-600={hasEnoughBalance && !isValidating}
-          class:hover:bg-purple-500={hasEnoughBalance && !isValidating}
-          class:bg-gray-400={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
-          class:cursor-not-allowed={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
-          class:dark:bg-gray-700={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
+          class="w-full agent-btn-primary disabled:opacity-50 disabled:cursor-not-allowed {!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation) ? 'bg-white/10 hover:bg-white/10 text-gray-500 shadow-none' : ''}"
           disabled={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
         >
           {#if isValidating}
-            <div class="flex items-center justify-center gap-2">
-              <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-              Processing...
-            </div>
+            <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+            <span>Processing...</span>
           {:else if !hasEnoughBalance}
             <div class="flex flex-col items-center justify-center gap-1">
-              <div class="text-center">Insufficient Balance</div>
-              <a href="/#/wallet" class="underline text-xs sm:text-sm text-orange-800 dark:text-orange-200 hover:text-orange-900 dark:hover:text-orange-100">Please fund your wallet ↗</a>
+              <span>Insufficient Balance</span>
+              <a href="/#/wallet" class="underline text-xs sm:text-sm text-amber-300 hover:text-amber-200">Please fund your wallet ↗</a>
             </div>
           {:else if !isProtocolActive}
-            <div class="flex flex-col items-center justify-center gap-1">
-              <div class="text-center">Protocol is currently paused. Please check back in a couple of minutes.</div>
-            </div>
+            <span class="text-center">Protocol is currently paused. Please check back in a couple of minutes.</span>
           {:else if stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
-            <div class="flex flex-col items-center justify-center gap-1">
-              <div class="text-center">mAIner creation is currently paused. Please check official announcements.</div>
-            </div>
+            <span class="text-center">mAIner creation is currently paused. Please check official announcements.</span>
           {:else}
-            <div class="flex items-center justify-center gap-2">
-              <ArrowUp size={14} class="sm:hidden" />
-              <ArrowUp size={16} class="hidden sm:block" />
-              Pay {totalPaymentAmount} {token.symbol}
-            </div>
+            <ArrowUp size={16} />
+            <span>Pay {totalPaymentAmount} {token.symbol}</span>
           {/if}
         </button>
-        
-        <!-- Insufficient balance helper -->
-        {#if !hasEnoughBalance && !isValidating && token}
-          <div class="mt-2 p-2 rounded bg-orange-50 border border-orange-200 text-orange-700 text-xs sm:text-sm dark:bg-orange-900/30 dark:border-orange-800/30 dark:text-orange-300">
-            You need {formatBalance((amountBigInt - balance).toString(), token.decimals)} more {token.symbol} to create this mAIner.
-          </div>
-        {/if}
       </div>
     {/if}
   </div>
@@ -368,6 +352,14 @@
     max-width: min(480px, calc(100vw - 2rem));
     position: relative;
     z-index: 100000;
+  }
+
+  :global(.modal-panel.mainer-payment-modal),
+  :global(.mainer-payment-modal.modal-panel) {
+    background: #15141B !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 1rem !important;
+    color: #e5e7eb !important;
   }
   
   /* Ensure proper text wrapping on mobile */
@@ -383,4 +375,4 @@
       margin: 0.5rem;
     }
   }
-</style> 
+</style>

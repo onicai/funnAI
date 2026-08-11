@@ -125,24 +125,27 @@
 
 </script>
 
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+<div class="agent-card p-6">
   <div class="flex items-center justify-between mb-4">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-      {title}
-    </h3>
+    <div>
+      <p class="agent-eyebrow">Protocol</p>
+      <h3 class="text-lg font-semibold tracking-tight text-white">
+        {title}
+      </h3>
+    </div>
     <div class="flex items-center gap-2">
       {#if loading}
-        <div class="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+        <div class="animate-spin h-4 w-4 border-2 border-agent-purple rounded-full border-t-transparent"></div>
       {/if}
-      <div class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-        <div class="w-2 h-2 rounded-full bg-green-500"></div>
+      <div class="flex items-center gap-1 text-xs text-gray-500">
+        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
         <span>Live</span>
       </div>
     </div>
   </div>
 
   {#if error}
-    <div class="text-red-600 dark:text-red-400 text-sm mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+    <div class="text-red-400 text-sm mb-4 p-3 bg-red-950/40 rounded-xl border border-red-500/30">
       {error}
     </div>
   {/if}
@@ -150,117 +153,117 @@
   {#if compact}
     <!-- Compact view for smaller spaces -->
     <div class="grid grid-cols-2 gap-3">
-      <div class="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-        <div class="text-lg font-bold text-blue-600 dark:text-blue-400">
+      <div class="text-center p-3 bg-white/[0.03] border border-white/10 rounded-xl">
+        <div class="text-lg font-semibold tracking-tight text-white">
           {formatLargeNumber(totalCyclesBurned)}
         </div>
-        <div class="text-xs text-gray-600 dark:text-gray-400">Total TC Burned</div>
+        <div class="text-xs text-gray-400">Total TC Burned</div>
       </div>
       
-      <div class="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-        <div class="text-lg font-bold text-purple-600 dark:text-purple-400">
+      <div class="text-center p-3 bg-white/[0.03] border border-white/10 rounded-xl">
+        <div class="text-lg font-semibold tracking-tight text-white">
           {totalChallenges}
         </div>
-        <div class="text-xs text-gray-600 dark:text-gray-400">Challenges</div>
+        <div class="text-xs text-gray-400">Challenges</div>
       </div>
     </div>
   {:else}
     <!-- Full view -->
     <div class="grid grid-cols-1 gap-4 mb-6">
-      <div class="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+      <div class="text-center p-4 bg-white/[0.03] border border-white/10 rounded-xl">
+        <div class="text-2xl font-semibold tracking-tight text-white">
           {formatLargeNumber(totalCyclesBurned)}
         </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Total cycles burned</div>
-        <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">By funnAI</div>
+        <div class="text-sm text-gray-400">Total cycles burned</div>
+        <div class="text-xs text-gray-500 mt-1">By funnAI</div>
       </div>
       
-      <!-- <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-        <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">
+      <!-- <div class="text-center p-4 bg-white/[0.03] border border-white/10 rounded-xl">
+        <div class="text-2xl font-semibold tracking-tight text-white">
           {totalChallenges}
         </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Total Challenges</div>
-        <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Completed</div>
+        <div class="text-sm text-gray-400">Total Challenges</div>
+        <div class="text-xs text-gray-500 mt-1">Completed</div>
       </div>
       
-      <div class="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-        <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+      <div class="text-center p-4 bg-white/[0.03] border border-white/10 rounded-xl">
+        <div class="text-2xl font-semibold tracking-tight text-white">
           {totalSubmissions}
         </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Total submissions</div>
-        <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">All time</div>
+        <div class="text-sm text-gray-400">Total submissions</div>
+        <div class="text-xs text-gray-500 mt-1">All time</div>
       </div> -->
     </div>
 
     <!-- Reward Structure Section -->
     <div class="flex items-center my-6">
-      <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mr-4">Reward structure</span>
-      <div class="flex-1 h-px bg-gradient-to-r from-gray-300 to-transparent dark:from-gray-600 dark:to-transparent"></div>
+      <span class="text-sm font-medium text-gray-400 mr-4">Reward structure</span>
+      <div class="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent"></div>
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-      <div class="text-center p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg">
-        <div class="text-2xl font-bold text-pink-600 dark:text-pink-400">
+      <div class="text-center p-4 bg-white/[0.03] border border-white/10 rounded-xl">
+        <div class="text-2xl font-semibold tracking-tight text-white">
           73.21
         </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">FUNNAI</div>
-        <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Reward per challenge</div>
+        <div class="text-sm text-gray-400">FUNNAI</div>
+        <div class="text-xs text-gray-500 mt-1">Reward per challenge</div>
       </div>
-      <div class="text-center p-4 bg-pink-50 dark:bg-pink-900/20 rounded-lg">
-        <div class="text-2xl font-bold text-pink-600 dark:text-pink-400">
+      <div class="text-center p-4 bg-white/[0.03] border border-white/10 rounded-xl">
+        <div class="text-2xl font-semibold tracking-tight text-white">
           10
         </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Minutes</div>
-        <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Challenge per interval</div>
+        <div class="text-sm text-gray-400">Minutes</div>
+        <div class="text-xs text-gray-500 mt-1">Challenge per interval</div>
       </div>
-      <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-        <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">
+      <div class="text-center p-4 bg-white/[0.03] border border-white/10 rounded-xl">
+        <div class="text-2xl font-semibold tracking-tight text-white">
           45%
         </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">All participants</div>
-        <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Shared equally</div>
+        <div class="text-sm text-gray-400">All participants</div>
+        <div class="text-xs text-gray-500 mt-1">Shared equally</div>
       </div>
 
-      <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-        <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">
+      <div class="text-center p-4 bg-white/[0.03] border border-white/10 rounded-xl">
+        <div class="text-2xl font-semibold tracking-tight text-white">
           35%
         </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">1st place</div>
-        <!-- <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">Active now</div> -->
+        <div class="text-sm text-gray-400">1st place</div>
+        <!-- <div class="text-xs text-gray-500 mt-1">Active now</div> -->
       </div>
-      <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-        <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">
+      <div class="text-center p-4 bg-white/[0.03] border border-white/10 rounded-xl">
+        <div class="text-2xl font-semibold tracking-tight text-white">
           15%
         </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">2nd place</div>
+        <div class="text-sm text-gray-400">2nd place</div>
       </div>
-      <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-        <div class="text-2xl font-bold text-orange-600 dark:text-orange-400">
+      <div class="text-center p-4 bg-white/[0.03] border border-white/10 rounded-xl">
+        <div class="text-2xl font-semibold tracking-tight text-white">
           5%
         </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">3rd place</div>
+        <div class="text-sm text-gray-400">3rd place</div>
       </div>
       
     </div>
 
     <!-- Next Reward Decrease Section -->
     <div class="flex items-center my-6">
-      <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mr-4">Next reward decrease</span>
-      <div class="flex-1 h-px bg-gradient-to-r from-gray-300 to-transparent dark:from-gray-600 dark:to-transparent"></div>
+      <span class="text-sm font-medium text-gray-400 mr-4">Next reward decrease</span>
+      <div class="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent"></div>
     </div>
       
-    <div class="text-center p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+    <div class="text-center p-4 bg-white/[0.03] border border-white/10 rounded-xl">
       <div class="flex flex-col items-center space-y-2">
-        <div class="text-sm text-gray-500 dark:text-gray-500 mt-1">Sept 29th, 2026 at 12pm PT / 9pm CET</div>
+        <div class="text-sm text-gray-500 mt-1">Sept 29th, 2026 at 12pm PT / 9pm CET</div>
       
-        <div class="text-xl font-bold text-red-600 dark:text-red-400 mt-4">
+        <div class="text-xl font-semibold tracking-tight text-agent-purple mt-4">
           <Countdown 
             targetDate={new Date("2026-09-29T12:00:00-08:00")} 
             format="detailed"
-            className="text-red-600 dark:text-red-400"
+            className="text-agent-purple"
           />
         </div>
-        <div class="text-lg text-gray-600 dark:text-gray-500">until rewards decrease</div>
+        <div class="text-lg text-gray-500">until rewards decrease</div>
 
       </div>
     </div>

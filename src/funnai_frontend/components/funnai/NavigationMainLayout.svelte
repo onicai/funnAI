@@ -74,9 +74,9 @@
     <a
       use:link
       href="/marketplace"
-      class="group flex items-center gap-2 h-9 px-3.5 rounded-full border border-white/10 bg-white/[0.04] text-gray-200 text-[13px] font-medium tracking-tight no-underline transition-all duration-200 hover:border-[#653FC5]/40 hover:bg-[#653FC5]/10 hover:text-white"
+      class="group flex items-center gap-2 h-9 px-3.5 rounded-full border border-white/10 bg-white/[0.04] text-gray-200 text-[13px] font-medium tracking-tight no-underline transition-all duration-200 hover:border-agent-purple/40 hover:bg-agent-purple/10 hover:text-white"
     >
-      <ShoppingCart class="w-3.5 h-3.5 stroke-[1.75] text-gray-400 transition-colors duration-200 group-hover:text-[#653FC5]" />
+      <ShoppingCart class="w-3.5 h-3.5 stroke-[1.75] text-gray-400 transition-colors duration-200 group-hover:text-agent-purple" />
       <span>Buy mAIner</span>
     </a>
 
@@ -86,7 +86,7 @@
         <button
           id="navigationDropdownButton"
           on:click={toggleNavigationDropdown}
-          class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 text-gray-700 dark:text-gray-200"
+          class="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/10 hover:bg-agent-purple/10 hover:text-agent-purple transition-colors duration-150 text-gray-300"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -101,39 +101,35 @@
         {#if navigationDropdownOpen}
           <div
             id="navigationDropdown"
-            class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50 animate-slideDown"
+            class="absolute right-0 mt-2 w-56 bg-agent-elevated rounded-xl shadow-xl border border-white/10 py-2 z-50 animate-slideDown"
           >
             {#each navItems as item}
               <a
                 use:link
                 href={item.href}
                 on:click={closeNavigationDropdown}
-                class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 {currentPath === item.href ? 'bg-gray-50 dark:bg-gray-700 border-l-4 border-' + item.color + '-500' : ''}"
+                class="flex items-center gap-3 px-4 py-2.5 mx-1 rounded-lg transition-colors duration-150
+                  {currentPath === item.href
+                    ? 'bg-white/[0.07] text-white'
+                    : 'text-gray-400 hover:bg-white/[0.05] hover:text-gray-100'}"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-{item.color}-600 dark:text-{item.color}-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={item.icon} />
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 {currentPath === item.href ? 'text-agent-purple' : 'text-gray-500'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d={item.icon} />
                 </svg>
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{item.label}</span>
-                {#if currentPath === item.href}
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 ml-auto text-{item.color}-600 dark:text-{item.color}-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                {/if}
+                <span class="text-sm font-medium">{item.label}</span>
               </a>
             {/each}
             
-            <!-- Separator -->
-            <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
+            <div class="border-t border-white/10 my-2"></div>
             
-            <!-- Logout Button -->
             <button
               on:click={() => { disconnect(); closeNavigationDropdown(); }}
-              class="flex items-center gap-3 px-4 py-2.5 w-full text-left hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-150"
+              class="flex items-center gap-3 px-4 py-2.5 mx-1 rounded-lg w-[calc(100%-0.5rem)] text-left hover:bg-red-500/10 transition-colors duration-150 text-red-400"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
-              <span class="text-sm font-medium text-red-600 dark:text-red-400">Logout</span>
+              <span class="text-sm font-medium">Logout</span>
             </button>
           </div>
         {/if}
@@ -145,7 +141,7 @@
       <button
         type="button"
         on:click={toggleModal}
-        class="group flex items-center gap-2 h-9 px-4 rounded-full bg-[#653FC5] text-white text-[13px] font-semibold tracking-tight shadow-[0_0_0_1px_rgba(101,63,197,0.35),0_8px_20px_-8px_rgba(101,63,197,0.55)] transition-all duration-200 hover:bg-[#5a37b5] hover:shadow-[0_0_0_1px_rgba(101,63,197,0.5),0_10px_24px_-6px_rgba(101,63,197,0.65)] active:scale-[0.98]"
+        class="group flex items-center gap-2 h-9 px-4 rounded-full bg-agent-purple text-white text-[13px] font-semibold tracking-tight shadow-agent-cta transition-all duration-200 hover:bg-[#5a37b5] active:scale-[0.98]"
       >
         <LogIn class="w-3.5 h-3.5 stroke-[1.75]" />
         <span>Connect</span>

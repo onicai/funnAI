@@ -238,15 +238,15 @@
   }
 </script>
 
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+<div class="agent-card p-6">
   <!-- Header -->
   <div class="flex items-center justify-between mb-4">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{title}</h3>
+    <h3 class="text-lg font-semibold text-white">{title}</h3>
     <div class="flex items-center space-x-2">
       {#if !loading}
         <button
           on:click={handleRefresh}
-          class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+          class="text-sm text-agent-purple hover:text-white transition-colors"
           title="Refresh holder data"
         >
           Refresh
@@ -260,46 +260,46 @@
     <div class="flex flex-col items-center justify-center py-8 space-y-4">
       <LoadingSpinner size="w-8 h-8" />
       <div class="text-center">
-        <p class="text-sm text-gray-600 dark:text-gray-400">Loading FUNNAI holders...</p>
+        <p class="text-sm text-gray-400">Loading FUNNAI holders...</p>
         {#if processingProgress}
-          <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">{processingProgress}</p>
+          <p class="text-xs text-gray-500 mt-1">{processingProgress}</p>
         {/if}
       </div>
     </div>
   {:else if error}
     <div class="text-center py-8">
-      <div class="text-red-600 dark:text-red-400 mb-2">
+      <div class="text-red-400 mb-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
         </svg>
       </div>
-      <p class="text-red-600 dark:text-red-400 text-sm">{error}</p>
+      <p class="text-red-400 text-sm">{error}</p>
       <button
         on:click={handleRefresh}
-        class="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+        class="mt-2 agent-btn-primary text-sm"
       >
         Try Again
       </button>
     </div>
   {:else if holders.length === 0}
     <div class="text-center py-8">
-      <div class="text-gray-400 dark:text-gray-500 mb-4">
+      <div class="text-gray-500 mb-4">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
       </div>
-      <h4 class="text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">Holder Data Unavailable</h4>
-      <div class="space-y-2 text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+      <h4 class="text-gray-300 text-sm font-medium mb-2">Holder Data Unavailable</h4>
+      <div class="space-y-2 text-xs text-gray-500 max-w-sm mx-auto">
         <p>• FUNNAI canister doesn't expose transaction history</p>
         <p>• External blockchain explorers don't currently support this token</p>
         <p>• Holder rankings require direct ledger access</p>
       </div>
-      <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-        <p class="text-xs text-blue-600 dark:text-blue-400">
+      <div class="mt-4 p-3 rounded-xl border border-agent-purple/20 bg-agent-purple/10">
+        <p class="text-xs text-agent-purple">
           💡 <strong>Tip:</strong> You can still check individual balances by querying the FUNNAI canister directly
         </p>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Canister: <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">{FUNNAI_CANISTER_ID}</code>
+        <p class="text-xs text-gray-500 mt-1">
+          Canister: <code class="bg-white/[0.06] px-1 rounded border border-white/[0.08]">{FUNNAI_CANISTER_ID}</code>
         </p>
       </div>
     </div>
@@ -307,29 +307,29 @@
     <!-- Holders List -->
     <div class="space-y-3">
       {#each holders as holder, index}
-        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+        <div class="flex items-center justify-between p-3 rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.05] transition-colors">
           <div class="flex items-center space-x-3">
             <!-- Rank -->
-            <div class="flex-shrink-0 w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
-              <span class="text-sm font-medium text-purple-600 dark:text-purple-400">#{index + 1}</span>
+            <div class="flex-shrink-0 w-8 h-8 bg-agent-purple/15 border border-agent-purple/30 rounded-full flex items-center justify-center">
+              <span class="text-sm font-medium text-agent-purple">#{index + 1}</span>
             </div>
             
             <!-- Account Info -->
             <div class="min-w-0 flex-1">
               <div class="flex items-center space-x-2">
-                <p class="text-sm font-medium text-gray-900 dark:text-white font-mono">
+                <p class="text-sm font-medium text-white font-mono">
                   {formatAccount(holder.account)}
                 </p>
                 {#if holder.isWhale}
                   <span 
-                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-500/15 text-yellow-400 border border-yellow-500/30"
                     title="Whale: Holds {holder.percentOfSupply.toFixed(2)}% of total supply"
                   >
                     🐋
                   </span>
                 {/if}
               </div>
-              <p class="text-xs text-gray-500 dark:text-gray-400" title={holder.account}>
+              <p class="text-xs text-gray-500" title={holder.account}>
                 {holder.percentOfSupply.toFixed(2)}% of supply
               </p>
             </div>
@@ -337,10 +337,10 @@
           
           <!-- Balance -->
           <div class="text-right">
-            <p class="text-sm font-semibold text-gray-900 dark:text-white">
+            <p class="text-sm font-semibold text-white">
               {holder.formattedBalance}
             </p>
-            <p class="text-xs text-green-600 dark:text-green-400">
+            <p class="text-xs text-emerald-400">
               FUNNAI
             </p>
           </div>
@@ -350,8 +350,8 @@
 
     <!-- Footer Info -->
     {#if holders.length > 0}
-      <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-        <p class="text-xs text-gray-500 dark:text-gray-400 text-center">
+      <div class="mt-4 pt-4 border-t border-white/[0.08]">
+        <p class="text-xs text-gray-500 text-center">
           Showing top {holders.length} FUNNAI holders
         </p>
       </div>

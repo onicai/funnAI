@@ -14,41 +14,21 @@
   import { onMount } from 'svelte';
   import { initializeChartJS } from '../helpers/chartSetup';
 
-  // Initialize theme from localStorage on mount
   onMount(async () => {
-    // Initialize Chart.js components early
     initializeChartJS();
 
-    // Force dark — light/dark switch removed
     localStorage.setItem("theme", "dark");
     theme.set("dark");
-    applyTheme("dark");
+    document.documentElement.classList.add("dark");
 
-    // Check login state - ensure this happens before the app renders
     console.log("🚀 Starting app initialization...");
     try {
       await store.checkExistingLoginAndConnect();
       console.log("✅ App initialization complete - session restored if available");
     } catch (error) {
       console.error("❌ Error during app initialization:", error);
-      // Don't crash the app, just log the error
     }
   });
-  
-  // React to theme changes
-  theme.subscribe(newTheme => {
-    applyTheme(newTheme);
-  });
-  
-  function applyTheme(currentTheme) {
-    if (typeof document !== 'undefined') {
-      if (currentTheme === "dark") {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    }
-  }
 
   const routes = {
     "/": Mainers,
@@ -61,16 +41,26 @@
   };
 </script>
 
-<div class="flex flex-row h-screen dark:bg-gray-900">
-  <aside id="mainSidebar" class="bg-[radial-gradient(circle_at_center,_#e6e9f0,_#fafbfc,_#dfe7fd)] dark:bg-[radial-gradient(circle_at_center,_#1f2937,_#111827,_#1e293b)] fixed z-50 w-72 min-w-72 h-full md:shadow transform -translate-x-full md:translate-x-0 transition-transform duration-150 ease-in">
-    <div class="sidebar-content p-4 pt-0 h-full overflow-hidden">
+<div class="flex flex-row h-screen bg-agent-bg font-sans text-gray-200">
+  <aside
+    id="mainSidebar"
+    class="bg-agent-surface border-r border-white/[0.06] fixed z-50 w-72 min-w-72 h-full md:shadow-xl transform -translate-x-full md:translate-x-0 transition-transform duration-150 ease-in"
+  >
+    <div class="sidebar-content h-full overflow-hidden">
       <SidebarMainLayout />
     </div>
   </aside>
-  <main class="main flex flex-col flex-grow ml-0 md:ml-72 transition-all duration-150 ease-in dark:bg-gray-900 dark:text-gray-200 min-h-screen w-full">
-    <header class="header bg-white dark:bg-gray-800 shadow py-2 px-4 h-[60px]">
-      <div class="header-content flex items-center flex-row">
-        <button id="mainSidebarToggle" data-drawer-target="mainSidebar" data-drawer-toggle="mainSidebar" aria-controls="mainSidebar" type="button" class="inline-flex items-center p-2 mt-2 ms-3 text-sm text-gray-500 dark:text-gray-400 rounded-lg md:hidden hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:focus:ring-gray-600">
+  <main class="main flex flex-col flex-grow ml-0 md:ml-72 transition-all duration-150 ease-in bg-agent-bg text-gray-200 min-h-screen w-full">
+    <header class="header bg-agent-surface/80 backdrop-blur-md border-b border-white/[0.06] py-2 px-4 h-[60px]">
+      <div class="header-content flex items-center flex-row h-full">
+        <button
+          id="mainSidebarToggle"
+          data-drawer-target="mainSidebar"
+          data-drawer-toggle="mainSidebar"
+          aria-controls="mainSidebar"
+          type="button"
+          class="inline-flex items-center p-2 text-sm text-gray-400 rounded-lg md:hidden hover:bg-white/5 hover:text-agent-purple focus:outline-none focus:ring-2 focus:ring-agent-purple/40"
+        >
           <span class="sr-only">Open sidebar</span>
           <svg class="w-6 h-6" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
             <path clip-rule="evenodd" fill-rule="evenodd" d="M2 4.75A.75.75 0 012.75 4h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 4.75zm0 10.5a.75.75 0 01.75-.75h7.5a.75.75 0 010 1.5h-7.5a.75.75 0 01-.75-.75zM2 10a.75.75 0 01.75-.75h14.5a.75.75 0 010 1.5H2.75A.75.75 0 012 10z"></path>
@@ -81,13 +71,12 @@
         </div>
       </div>
     </header>
-    <div class="flex-grow flex flex-col dark:bg-gray-900">
-  <Router {routes} />
-</div>
+    <div class="flex-grow flex flex-col bg-agent-bg">
+      <Router {routes} />
+    </div>
 
-<!-- Global notification toast -->
-<NotificationToast />
+    <NotificationToast />
   </main>
-</div> 
+</div>
 
 <div id="portal-target"></div>

@@ -10,21 +10,21 @@
   // Status level configurations
   const statusConfig = {
     excellent: {
-      bgColor: 'bg-green-100 dark:bg-green-900/30',
-      textColor: 'text-green-600 dark:text-green-400',
-      iconColor: 'text-green-600 dark:text-green-400',
-      dotColor: 'bg-green-500'
+      bgColor: 'border border-white/5 bg-white/[0.05]',
+      textColor: 'text-emerald-400',
+      iconColor: 'text-emerald-400',
+      dotColor: 'bg-emerald-500'
     },
     degraded: {
-      bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
-      textColor: 'text-yellow-600 dark:text-yellow-400',
-      iconColor: 'text-yellow-600 dark:text-yellow-400',
-      dotColor: 'bg-yellow-500'
+      bgColor: 'border border-white/5 bg-white/[0.05]',
+      textColor: 'text-amber-400',
+      iconColor: 'text-amber-400',
+      dotColor: 'bg-amber-500'
     },
     paused: {
-      bgColor: 'bg-red-100 dark:bg-red-900/30',
-      textColor: 'text-red-600 dark:text-red-400',
-      iconColor: 'text-red-600 dark:text-red-400',
+      bgColor: 'border border-white/5 bg-white/[0.05]',
+      textColor: 'text-red-400',
+      iconColor: 'text-red-400',
       dotColor: 'bg-red-500'
     }
   };
@@ -60,13 +60,13 @@
 </script>
 
 <!-- System Status Card -->
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+<div class="agent-card p-6">
   <div class="flex items-center justify-between">
     <div>
-      <p class="text-sm font-medium text-gray-600 dark:text-gray-400">System status</p>
-              <p class="text-lg font-semibold {overallConfig.textColor}">{formatStatus(protocolStatus)}</p>
+      <p class="agent-eyebrow">Status</p>
+      <p class="mt-1 text-lg font-semibold tracking-tight {overallConfig.textColor}">{formatStatus(protocolStatus)}</p>
     </div>
-    <div class="p-3 {overallConfig.bgColor} rounded-full">
+    <div class="p-3 {overallConfig.bgColor} rounded-xl">
       <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 {overallConfig.iconColor}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         {#if protocolStatus === 'excellent'}
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -79,6 +79,6 @@
     </div>
   </div>
   <div class="mt-4">
-    <p class="text-sm text-gray-600 dark:text-gray-400">{statusDescription}</p>
+    <p class="text-sm text-gray-400">{statusDescription}</p>
   </div>
 </div>

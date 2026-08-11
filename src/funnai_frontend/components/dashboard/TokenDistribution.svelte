@@ -249,10 +249,10 @@
 
   function getPriceChangeColor(change: string): string {
     const num = parseFloat(change);
-    if (isNaN(num)) return "text-gray-600 dark:text-gray-400";
-    if (num > 0) return "text-green-600 dark:text-green-400";
-    if (num < 0) return "text-red-600 dark:text-red-400";
-    return "text-gray-600 dark:text-gray-400";
+    if (isNaN(num)) return "text-gray-400";
+    if (num > 0) return "text-emerald-400";
+    if (num < 0) return "text-red-400";
+    return "text-gray-400";
   }
 
   onMount(async () => {
@@ -279,20 +279,23 @@
   }
 </script>
 
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+<div class="agent-card p-6">
   <div class="flex items-center justify-between mb-4">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-      {title}
-    </h3>
+    <div>
+      <p class="agent-eyebrow">Token</p>
+      <h3 class="text-lg font-semibold tracking-tight text-white">
+        {title}
+      </h3>
+    </div>
     <div class="flex items-center gap-2">
       {#if loading || (isAuthenticated && isLoadingUserBalance)}
-        <div class="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+        <div class="animate-spin h-4 w-4 border-2 border-agent-purple rounded-full border-t-transparent"></div>
       {/if}
-      <span class="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
+      <span class="text-xs text-gray-400 px-2 py-1 bg-white/[0.03] border border-white/10 rounded-lg">
         $FUNNAI
       </span>
       {#if icpswapData}
-        <span class="text-xs text-green-600 dark:text-green-400 px-2 py-1 bg-green-50 dark:bg-green-900/20 rounded">
+        <span class="text-xs text-emerald-400 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
           Live
         </span>
       {/if}
@@ -300,7 +303,7 @@
   </div>
 
   {#if error}
-    <div class="text-red-600 dark:text-red-400 text-sm mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+    <div class="text-red-400 text-sm mb-4 p-3 bg-red-950/40 rounded-xl border border-red-500/30">
       {error}
     </div>
   {/if}
@@ -308,31 +311,31 @@
   <!-- Token Metrics -->
   {#if loading}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-      <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-        <div class="text-lg font-bold text-purple-600 dark:text-purple-400">
+      <div class="text-center p-4 bg-white/[0.03] border border-white/10 rounded-xl">
+        <div class="text-lg font-semibold tracking-tight text-white">
           <div class="animate-pulse flex justify-center">
-            <div class="h-6 bg-purple-300 dark:bg-purple-600 rounded w-20"></div>
+            <div class="h-6 bg-white/[0.06] rounded w-20"></div>
           </div>
         </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Price</div>
+        <div class="text-sm text-gray-400">Price</div>
       </div>
       
-      <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-        <div class="text-lg font-bold text-orange-600 dark:text-orange-400">
+      <div class="text-center p-4 bg-white/[0.03] border border-white/10 rounded-xl">
+        <div class="text-lg font-semibold tracking-tight text-white">
           <div class="animate-pulse flex justify-center">
-            <div class="h-6 bg-orange-300 dark:bg-orange-600 rounded w-24"></div>
+            <div class="h-6 bg-white/[0.06] rounded w-24"></div>
           </div>
         </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Market Cap</div>
+        <div class="text-sm text-gray-400">Market Cap</div>
       </div>
     </div>
   {:else if dataLoadedSuccessfully && tokenPrice !== null && marketCap !== null}
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-      <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-        <div class="text-lg font-bold text-purple-600 dark:text-purple-400">
+      <div class="text-center p-4 bg-white/[0.03] border border-white/10 rounded-xl">
+        <div class="text-lg font-semibold tracking-tight text-white">
           ${tokenPrice.toFixed(4)}
         </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Price</div>
+        <div class="text-sm text-gray-400">Price</div>
         {#if priceChange24h && priceChange24h !== "0"}
           <div class="text-xs {getPriceChangeColor(priceChange24h)} mt-1">
             {formatPriceChange(priceChange24h)} (24h)
@@ -340,50 +343,50 @@
         {/if}
       </div>
       
-      <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-        <div class="text-lg font-bold text-orange-600 dark:text-orange-400">
+      <div class="text-center p-4 bg-white/[0.03] border border-white/10 rounded-xl">
+        <div class="text-lg font-semibold tracking-tight text-white">
           ${formatLargeNumber(parseFloat(marketCap))}
         </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Market Cap</div>
+        <div class="text-sm text-gray-400">Market Cap</div>
       </div>
     </div>
   {/if}
 
   <!-- User Balance (if authenticated) -->
   {#if isAuthenticated}
-    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6">
+    <div class="bg-white/[0.03] border border-white/10 rounded-xl p-4 mb-6">
       <div class="flex items-center justify-between">
         <div class="flex-1">
-          <div class="text-sm text-gray-600 dark:text-gray-400">Your balance</div>
+          <div class="text-sm text-gray-400">Your balance</div>
           {#if isLoadingUserBalance}
-            <div class="text-xl font-bold text-gray-900 dark:text-white">
+            <div class="text-xl font-semibold tracking-tight text-white">
               <div class="animate-pulse flex items-center">
-                <div class="h-6 bg-gray-300 dark:bg-gray-600 rounded w-32"></div>
+                <div class="h-6 bg-white/[0.06] rounded w-32"></div>
               </div>
             </div>
-            <div class="text-lg font-semibold text-gray-600 dark:text-gray-400 mt-1">
+            <div class="text-lg font-semibold text-gray-400 mt-1">
               <div class="animate-pulse flex items-center">
-                <div class="h-5 bg-gray-300 dark:bg-gray-600 rounded w-24"></div>
+                <div class="h-5 bg-white/[0.06] rounded w-24"></div>
               </div>
             </div>
           {:else}
-            <div class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <div class="text-xl font-semibold tracking-tight text-white flex items-center gap-2">
               {userBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 8 })} FUNNAI
               {#if isWhale()}
                 <span class="text-2xl" title="Whale Alert! You hold {getUserSupplyPercentage()}% of total supply">🐋</span>
               {/if}
             </div>
             {#if dataLoadedSuccessfully && tokenPrice !== null}
-              <div class="text-lg font-semibold text-green-600 dark:text-green-400 mt-1">
+              <div class="text-lg font-semibold text-emerald-400 mt-1">
                 ${(userBalance * tokenPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
               </div>
             {:else}
-              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <div class="text-sm text-gray-400 mt-1">
                 USD value unavailable
               </div>
             {/if}
             {#if totalSupply && userBalance > 0}
-              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <div class="text-xs text-gray-500 mt-1">
                 {getUserSupplyPercentage()}% of current supply
               </div>
             {/if}
@@ -395,7 +398,7 @@
   {/if}
 
   <!-- Data Source Info -->
-  <div class="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
+  <div class="text-xs text-gray-500 text-center mt-4">
     {#if loading}
       Loading token data...
     {:else if !dataLoadedSuccessfully}

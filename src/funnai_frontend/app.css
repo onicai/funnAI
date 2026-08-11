@@ -2,3 +2,71 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html.dark body {
+    @apply bg-agent-bg text-gray-200 font-sans antialiased;
+  }
+}
+
+@layer components {
+  .agent-page {
+    @apply flex flex-col h-full min-h-[calc(100vh-60px)] bg-agent-bg font-sans text-gray-200;
+  }
+
+  .agent-container {
+    @apply container mx-auto px-2 md:px-8 py-4 md:py-8 flex-grow;
+  }
+
+  .agent-card {
+    @apply relative overflow-hidden rounded-2xl border border-white/[0.08] bg-agent-surface;
+  }
+
+  .agent-card-elevated {
+    @apply relative overflow-hidden rounded-2xl border border-white/[0.08] bg-agent-elevated;
+  }
+
+  .agent-eyebrow {
+    @apply text-[10px] font-medium uppercase tracking-[0.2em] text-agent-purple;
+  }
+
+  .agent-title {
+    @apply text-2xl sm:text-3xl font-semibold tracking-tight text-white;
+  }
+
+  .agent-subtitle {
+    @apply text-sm font-normal text-gray-400 leading-relaxed;
+  }
+
+  .agent-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 h-9 px-4 rounded-full bg-agent-purple text-white text-[13px] font-semibold tracking-tight shadow-agent-cta transition-all duration-200 hover:bg-[#5a37b5] active:scale-[0.98];
+  }
+
+  .agent-btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 h-9 px-3.5 rounded-full border border-white/10 bg-white/[0.04] text-gray-200 text-[13px] font-medium tracking-tight transition-all duration-200 hover:border-agent-purple/40 hover:bg-agent-purple/10 hover:text-white;
+  }
+
+  .agent-stat {
+    @apply agent-card p-5;
+  }
+
+  .agent-input {
+    @apply w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-gray-100 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-agent-purple/40 focus:border-agent-purple/40;
+  }
+
+  .agent-tab-track {
+    @apply inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] p-1;
+  }
+
+  .agent-tab {
+    @apply relative px-3.5 py-1.5 text-[13px] font-medium rounded-full transition-all duration-200 text-gray-400 hover:text-gray-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-agent-purple/40;
+  }
+
+  .agent-tab-active {
+    @apply bg-agent-purple text-white shadow-sm hover:text-white;
+  }
+
+  .agent-glow {
+    @apply pointer-events-none absolute -top-20 left-1/2 h-40 w-64 -translate-x-1/2 rounded-full bg-agent-purple/15 blur-3xl;
+  }
+}

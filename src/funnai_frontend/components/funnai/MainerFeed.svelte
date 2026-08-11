@@ -159,15 +159,15 @@
   function getStatusColor(type: string): string {
     switch (type) {
       case "challenge":
-        return "before:bg-blue-500";
+        return "before:bg-blue-400/70";
       case "response":
-        return "before:bg-purple-500";
+        return "before:bg-[#653FC5]";
       case "score":
-        return "before:bg-orange-500";
+        return "before:bg-orange-400/70";
       case "winner":
-        return "before:bg-gradient-to-r before:from-yellow-400 before:to-yellow-600 before:shadow-lg before:shadow-yellow-500/50";
+        return "before:bg-amber-400/80";
       case "participation":
-        return "before:bg-green-500";
+        return "before:bg-emerald-400/70";
       default:
         return "before:bg-gray-500";
     }
@@ -176,14 +176,22 @@
   function getWinnerStyling(placement: string): string {
     switch (placement) {
       case "First Place":
-        return "bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 shadow-lg shadow-yellow-500/20 dark:from-yellow-900/20 dark:to-amber-900/20 dark:border-yellow-600";
+        return "border-l-2 border-l-amber-400/50";
       case "Second Place":
-        return "bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-300 shadow-lg shadow-gray-500/20 dark:from-gray-800/20 dark:to-slate-800/20 dark:border-gray-600";
+        return "border-l-2 border-l-gray-400/40";
       case "Third Place":
-        return "bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-300 shadow-lg shadow-orange-500/20 dark:from-orange-900/20 dark:to-amber-900/20 dark:border-orange-600";
+        return "border-l-2 border-l-orange-400/50";
       default:
         return "";
     }
+  }
+
+  function getItemBackground(type: string, placement?: string): string {
+    const base = "bg-white/[0.03] border border-white/10 rounded-xl p-4";
+    if (type === "winner") {
+      return `${base} ${getWinnerStyling(placement || "")}`;
+    }
+    return base;
   }
 
   function getWinnerIcon(placement: string): string {
@@ -574,31 +582,28 @@
   <!-- Info Panel - show when not authenticated or when authenticated but no content -->
   {#if (!$store.isAuthed) || (feedItems.length === 0 && !loading && !updating)}
     <div class="flex-1 flex flex-col justify-center items-center px-5 py-8">
-      <div class="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.02] px-6 py-8 text-left">
-        <div class="pointer-events-none absolute inset-0">
-          <div class="absolute -top-16 left-1/2 h-32 w-48 -translate-x-1/2 rounded-full bg-[#653FC5]/15 blur-3xl"></div>
-        </div>
+      <div class="relative w-full max-w-md overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02] px-6 py-8 text-left">
         <div class="relative">
-          <p class="mb-2 text-[10px] font-medium uppercase tracking-[0.2em] text-[#653FC5]">Protocol stream</p>
-          <h3 class="text-lg font-semibold tracking-tight text-white">
+          <p class="mb-2 text-[10px] font-medium uppercase tracking-[0.2em] text-[#653FC5]/80">Protocol stream</p>
+          <h3 class="text-base font-medium tracking-tight text-gray-300">
             Agent activity
           </h3>
-          <p class="mt-2 text-sm font-normal leading-relaxed text-gray-400">
+          <p class="mt-2 text-sm font-normal leading-relaxed text-gray-500">
             Live signals from mAIners operating on the network:
           </p>
-          <ul class="mt-4 space-y-2 text-sm font-normal text-gray-400">
-            <li class="flex gap-2"><span class="text-[#653FC5]">–</span> Challenges in the protocol</li>
+          <ul class="mt-4 space-y-2 text-sm font-normal text-gray-500">
+            <li class="flex gap-2"><span class="text-gray-600">–</span> Challenges in the protocol</li>
             {#if $store.isAuthed}
-            <li class="flex gap-2"><span class="text-[#653FC5]">–</span> Responses from your mAIners</li>
-            <li class="flex gap-2"><span class="text-[#653FC5]">–</span> Scores your mAIners receive</li>
+            <li class="flex gap-2"><span class="text-gray-600">–</span> Responses from your mAIners</li>
+            <li class="flex gap-2"><span class="text-gray-600">–</span> Scores your mAIners receive</li>
             {/if}
             {#if !showAllEvents}
-            <li class="flex gap-2"><span class="text-[#653FC5]">–</span> Victories and placements</li>
-            <li class="flex gap-2"><span class="text-[#653FC5]">–</span> Participation rewards earned</li>
+            <li class="flex gap-2"><span class="text-gray-600">–</span> Victories and placements</li>
+            <li class="flex gap-2"><span class="text-gray-600">–</span> Participation rewards earned</li>
             {/if}
             {#if !$store.isAuthed}
-            <li class="flex gap-2"><span class="text-[#653FC5]">–</span> Responses from mAIners</li>
-            <li class="flex gap-2"><span class="text-[#653FC5]">–</span> Scores received by mAIners</li>
+            <li class="flex gap-2"><span class="text-gray-600">–</span> Responses from mAIners</li>
+            <li class="flex gap-2"><span class="text-gray-600">–</span> Scores received by mAIners</li>
             {/if}
           </ul>
           {#if !$store.isAuthed}
@@ -619,12 +624,12 @@
     <ul 
       aria-label="mAIner Activity feed" 
       role="feed" 
-      class="relative flex flex-col gap-8 py-12 pl-6 text-sm 
-             before:absolute before:top-0 before:z-0 before:left-6 before:h-full before:border-2 before:-translate-x-1/2 before:border-slate-400 before:border-dashed dark:before:border-slate-400"
+      class="relative flex flex-col gap-4 py-8 pl-6 text-sm 
+             before:absolute before:top-0 before:z-0 before:left-6 before:h-full before:border before:-translate-x-1/2 before:border-white/10 before:border-dashed"
     >
       {#if feedItems.length === 0 && loading}
         <li class="text-center py-4">
-          <p class="text-sm text-gray-500 dark:text-gray-400">
+          <p class="text-sm text-gray-600">
             {showAllEvents ? 'No recent activity in the protocol.' : 'Loading activity from your mAIners.'}
           </p>
         </li>
@@ -632,53 +637,50 @@
         {#each feedItems.filter(item => !showAllEvents || (item.type !== 'winner' && item.type !== 'participation')) as item (item.id)}
           <li 
             role="article" 
-            class="relative px-6 
-                   before:absolute before:z-[1] before:left-0 before:top-2 before:h-3 before:w-3 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 before:shadow-sm"
+            class="relative px-4 
+                   before:absolute before:z-[1] before:left-0 before:top-5 before:h-2.5 before:w-2.5 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-[#0c0b12]"
             in:fly="{{ y: 20, duration: 500 }}"
           >
-            <div class="flex flex-col flex-1 gap-2 {item.type === 'winner' ? getWinnerStyling(item.content.placement || '') + ' p-4 rounded-lg animate-pulse-winner' : ''}">
+            <div class="flex flex-col flex-1 gap-2 {getItemBackground(item.type, item.content.placement)}">
               <h4
-                class="text-base font-medium flex justify-between items-center mr-6 text-gray-900 dark:text-gray-100
-                       {item.type === 'winner' ? 'text-lg font-bold' : ''}"
+                class="text-sm font-medium flex justify-between items-center text-gray-200
+                       {item.type === 'winner' ? 'text-base' : ''}"
               >
                 <span class="flex items-center gap-2">
                   {#if item.type === 'winner'}
-                    <span class="text-2xl animate-bounce-10s">{getWinnerIcon(item.content.placement || '')}</span>
+                    <span class="text-base opacity-80">{getWinnerIcon(item.content.placement || '')}</span>
                   {/if}
                   {item.mainerName}
-                  {#if item.type === 'winner'}
-                    <span class="text-2xl animate-bounce-10s">{getWinnerIcon(item.content.placement || '')}</span>
-                  {/if}
                 </span>
                 <div class="flex items-center gap-2">
-                  <div class="text-2xs font-bold text-slate-600 dark:text-slate-300 text-right opacity-60">
+                  <div class="text-2xs font-medium text-gray-500 text-right">
                     <div>{formatTimestamp(item.timestamp).date}</div>
-                    <div class="opacity-40">{formatTimestamp(item.timestamp).time}</div>
+                    <div class="text-gray-600">{formatTimestamp(item.timestamp).time}</div>
                   </div>
                   <ShareFeedItem feedItem={item} />
                 </div>
               </h4>
               {#if item.type === 'challenge'}
-                <p class="text-slate-600 dark:text-slate-300 pr-6">New challenge: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.challenge}</span></p>
+                <p class="text-gray-500 pr-2">New challenge: <span class="font-medium text-gray-300">{item.content.challenge}</span></p>
               {:else if item.type === 'response'}
-                <p class="text-slate-600 dark:text-slate-300 pr-6">Submitted response: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.response}</span></p>
+                <p class="text-gray-500 pr-2">Submitted response: <span class="font-medium text-gray-300">{item.content.response}</span></p>
               {:else if item.type === 'score'}
-                <p class="text-slate-600 dark:text-slate-300 pr-6">Received score: <span class="font-semibold text-orange-600 dark:text-orange-400">{item.content.score}/5</span></p>
+                <p class="text-gray-500 pr-2">Received score: <span class="font-semibold text-orange-400/90">{item.content.score}/5</span></p>
               {:else if item.type === 'winner'}
-                <div class="text-center">
-                  <p class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 to-amber-600 dark:from-yellow-400 dark:to-amber-400 mb-2">
-                    🎉 CONGRATULATIONS! 🎉
+                <div class="rounded-lg border border-white/[0.06] bg-agent-elevated/80 px-3 py-3">
+                  <p class="text-sm font-medium text-gray-200 mb-1.5">
+                    Placement secured
                   </p>
-                  <p class="text-slate-700 dark:text-slate-200">
-                    Achieved <span class="font-bold text-lg {item.content.placement === 'First Place' ? 'text-yellow-600 dark:text-yellow-400' : item.content.placement === 'Second Place' ? 'text-gray-600 dark:text-gray-400' : 'text-orange-600 dark:text-orange-400'}">{item.content.placement}</span>
+                  <p class="text-gray-400 text-sm">
+                    Achieved <span class="font-semibold {item.content.placement === 'First Place' ? 'text-amber-400/90' : item.content.placement === 'Second Place' ? 'text-gray-300' : 'text-orange-400/90'}">{item.content.placement}</span>
                   </p>
-                  <p class="text-slate-700 dark:text-slate-200">
-                    and earned <span class="font-bold text-lg text-green-600 dark:text-green-400">{formatFunnaiAmount(item.content.reward || '0')} FUNNAI</span>
+                  <p class="text-gray-400 text-sm mt-0.5">
+                    Earned <span class="font-semibold text-emerald-400/90">{formatFunnaiAmount(item.content.reward || '0')} FUNNAI</span>
                   </p>
                 </div>
               {:else if item.type === 'participation'}
-                <p class="text-slate-600 dark:text-slate-300 pr-6">
-                  🎯 Earned participation reward: <span class="font-semibold text-blue-600 dark:text-blue-400">{formatFunnaiAmount(item.content.reward || '0')} FUNNAI</span>
+                <p class="text-gray-500 pr-2">
+                  Earned participation reward: <span class="font-semibold text-[#653FC5]">{formatFunnaiAmount(item.content.reward || '0')} FUNNAI</span>
                 </p>
               {/if}
             </div>

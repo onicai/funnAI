@@ -17,14 +17,10 @@
   }
 </script>
 
-<div class="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+<div class="agent-tab-track">
   {#each filters as filter}
     <button
-      class="px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 {
-        selectedFilter === filter.value
-          ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-600/50'
-      }"
+      class="agent-tab {selectedFilter === filter.value ? 'agent-tab-active' : ''}"
       on:click={() => handleFilterChange(filter.value)}
       title={filter.description}
     >
