@@ -582,6 +582,7 @@ export interface GameStateCanister {
   'getAllMainerAgentsAdmin' : ActorMethod<[], MainerAgentCanistersResult>,
   'getArchivedChallengesAdmin' : ActorMethod<[], ChallengesResult>,
   'getAvailableMainers' : ActorMethod<[], NatResult>,
+  'getBonusCyclesTopupInPercent' : ActorMethod<[], NatResult>,
   'getBufferMainerCreation' : ActorMethod<[], NatResult>,
   'getCanisterPrincipal' : ActorMethod<[], string>,
   'getClosedChallengesAdmin' : ActorMethod<[], ChallengesResult>,
@@ -804,6 +805,7 @@ export interface GameStateCanister {
     [BigUint64Array | bigint[]],
     AuthRecordResult
   >,
+  'setBonusCyclesTopupInPercent' : ActorMethod<[bigint], AuthRecordResult>,
   'setBufferMainerCreation' : ActorMethod<[bigint], AuthRecordResult>,
   'setCyclesBalanceThresholdFunnaiTopups' : ActorMethod<
     [bigint],

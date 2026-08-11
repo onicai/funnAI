@@ -299,7 +299,13 @@ dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getTimerActionReg
 Grant the Api canister `#AdminQuery` so it can pull the ShareAgent
 registry+activity snapshot via `getShareAgentRegistryWithActivityAdmin`.
 Required for the on-chain daily-metrics aggregation. One-time per network —
-the role assignment persists across upgrades.
+role assignments survive an **upgrade**.
+
+> 🚨 **They do NOT survive a `--mode reinstall`.** A reinstall wipes stable state, and the
+> admin roles go with it. Re-run **every** assignment in this section afterwards, including
+> the mAInerCreator one below — and then actually read back `getAdminRoles` to confirm.
+> A missing role here fails **silently**: the callers that need it swallow the
+> `#Err(#Unauthorized)`, so everything reports success while doing nothing.
 
 ```bash
 # verify which principals already have admin roles
@@ -313,7 +319,24 @@ dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$MAINTAINER'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
 
-# verify
+# 🚨 REQUIRED, AND EASY TO MISS: grant #AdminUpdate to the mAInerCreator canister.
+#
+# Every ShareAgent it creates or reinstalls is registered with the ShareService via
+# addMainerShareAgentCanister, which is gated on hasAdminRole(caller, #AdminUpdate).
+# Without this role the call returns #Err(#Unauthorized) -- and mAInerCreator SWALLOWS
+# that error (the `return #Err` is commented out), so the creation reports success while
+# the agent is silently absent from the registry and is never given any work.
+#
+# This bit us in prd on 2026-08-10: the role was missing (presumably lost in an earlier
+# ShareService reinstall and never re-added), and every auction mAIner came up inert.
+# Verify with getShareAgentRegistryWithActivityAdmin that a newly created mAIner actually
+# appears in the registry -- that is the only reliable check, since the error is swallowed.
+#
+# Assign the ROLE, not controllership -- the role is what the code checks and is narrower.
+echo "$SUBNET_0_1_MAINER_CREATOR"
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$SUBNET_0_1_MAINER_CREATOR'"; role = variant { AdminUpdate }; note = "mAInerCreator: register new ShareAgents" } )'
+
+# verify -- mAInerCreator MUST appear in this list with AdminUpdate
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getAdminRoles
 
 # if needed, revoke
