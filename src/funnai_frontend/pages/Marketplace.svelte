@@ -11,6 +11,7 @@
   import { Store, TrendingUp, Users, Zap, ShoppingCart, Tag, History } from "lucide-svelte";
   import { MarketplaceService } from "../helpers/marketplaceService";
   import type { Principal } from '@dfinity/principal';
+  import { MARKETPLACE_DISABLED_MESSAGE, MARKETPLACE_ENABLED } from "../helpers/config/featureFlags";
 
   let isLoading = true;
   let activeTab: 'sell' | 'buy' | 'history' = 'buy';
@@ -42,11 +43,15 @@
   let reservationRefreshKey = 0; // Key to force re-check of reservation banner
 
   onMount(() => {
+    if (!MARKETPLACE_ENABLED) {
+      isLoading = false;
+      return;
+    }
     initialize();
   });
 
   // Reactive: Clean up stale reservations when user becomes authenticated
-  $: if ($store.isAuthed && !hasRunCleanup && !isCleaningReservation) {
+  $: if (MARKETPLACE_ENABLED && $store.isAuthed && !hasRunCleanup && !isCleaningReservation) {
     console.log('🔄 Auth state changed, running cleanup check...');
     clearStaleReservationsOnAuth();
   }
@@ -409,9 +414,15 @@
         <div>
           <div class="flex items-center gap-2 sm:gap-3">
             <h1 class="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">Marketplace</h1>
-            <span class="px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm font-semibold bg-gradient-to-r from-yellow-500 to-orange-500 text-black rounded-full shadow-md">
-              Beta
-            </span>
+            {#if MARKETPLACE_ENABLED}
+              <span class="px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm font-semibold bg-gradient-to-r from-yellow-500 to-orange-500 text-black rounded-full shadow-md">
+                Beta
+              </span>
+            {:else}
+              <span class="px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm font-semibold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700 rounded-full">
+                Temporarily unavailable
+              </span>
+            {/if}
           </div>
           <p class="text-sm sm:text-lg text-gray-600 dark:text-gray-400 hidden sm:block">
             Buy and sell funnAI mAIner agents
@@ -419,6 +430,31 @@
         </div>
       </div>
 
+      {#if !MARKETPLACE_ENABLED}
+        <div class="mt-6 relative overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-900/20 dark:via-orange-900/20 dark:to-yellow-900/20 border border-amber-200/60 dark:border-amber-700/60 rounded-xl shadow-sm">
+          <div class="relative p-6 sm:p-8">
+            <div class="flex flex-col sm:flex-row items-start gap-4">
+              <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg flex items-center justify-center">
+                <Store class="w-6 h-6 text-white" />
+              </div>
+              <div class="flex-1">
+                <h2 class="text-xl font-bold text-amber-900 dark:text-amber-100 mb-2">
+                  Marketplace will return soon
+                </h2>
+                <p class="text-sm sm:text-base text-amber-800 dark:text-amber-200/90 leading-relaxed">
+                  {MARKETPLACE_DISABLED_MESSAGE} Buying and selling are paused while we complete maintenance. Check back shortly.
+                </p>
+                <p class="mt-3 text-xs sm:text-sm text-amber-700 dark:text-amber-300">
+                  Updates on
+                  <a href="https://x.com/onicaiHQ" target="_blank" rel="noopener noreferrer" class="underline hover:text-amber-900 dark:hover:text-amber-100">X</a>
+                  or
+                  <a href="https://oc.app/community/mepna-eqaaa-aaaar-bclua-cai/channel/2881126157/" target="_blank" rel="noopener noreferrer" class="underline hover:text-amber-900 dark:hover:text-amber-100">OpenChat</a>.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      {:else}
       <!-- Tab Navigation -->
       <div class="flex justify-end gap-2 mb-4">
         <button
@@ -553,8 +589,10 @@
           </div>
         </div>
       {/if}
+      {/if}
     </div>
 
+    {#if MARKETPLACE_ENABLED}
     {#if isLoading}
       <div class="flex items-center justify-center py-20">
         <div class="text-center">
@@ -581,12 +619,14 @@
         {/key}
       {/if}
     {/if}
+    {/if}
   </div>
 
   <Footer />
 </div>
 
 <!-- Payment Modal -->
+{#if MARKETPLACE_ENABLED}
   <MarketplacePaymentModal
     isOpen={showPaymentModal}
     onClose={handlePaymentModalClose}
@@ -594,6 +634,7 @@
     listing={selectedListingForPurchase}
     isCanceling={isCancelingReservation}
   />
+{/if}
 
 <!-- Toast Notifications -->
 <ToastContainer />
