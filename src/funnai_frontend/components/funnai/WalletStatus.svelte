@@ -140,6 +140,9 @@
             </span>
             <span class="hidden sm:inline">{principalText}</span>
           </p>
+          <p class="mt-2.5 text-xs leading-relaxed text-gray-500">
+            Only send tokens supported in this wallet, as listed below.
+          </p>
         </div>
 
         <!-- Mobile actions -->

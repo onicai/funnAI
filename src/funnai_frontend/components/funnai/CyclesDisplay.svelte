@@ -94,7 +94,7 @@
     <div class="flex items-start justify-between gap-3">
       <div>
         <p class="agent-eyebrow">Metric</p>
-        <p class="mt-1 text-sm font-medium text-gray-200">{label}</p>
+        <p class="mt-1 text-sm font-medium text-gray-200 min-h-[1.25rem]">{label}</p>
       </div>
       <div class="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1">
         <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>

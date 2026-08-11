@@ -581,16 +581,19 @@
   });
 </script>
 
-<div class="h-full bg-agent-surface text-white flex flex-col font-sans" style="overflow-y: auto; overflow-x: visible;">
-
-  <!-- Fixed space for loader to prevent UI jump -->
-  <div class="flex justify-center py-2 transition-opacity duration-300 {updating && $store.isAuthed ? 'opacity-100' : 'opacity-0 pointer-events-none'}">
+<div class="relative h-full min-h-0 bg-agent-surface text-white flex flex-col font-sans overflow-hidden">
+  <!-- Overlay loader — does not affect layout height -->
+  <div
+    class="absolute top-2 left-1/2 z-20 -translate-x-1/2 transition-opacity duration-300
+           {updating && $store.isAuthed ? 'opacity-100' : 'opacity-0 pointer-events-none'}"
+    aria-hidden={!(updating && $store.isAuthed)}
+  >
     <div class="animate-spin h-5 w-5 border-2 border-[#653FC5] rounded-full border-t-transparent"></div>
   </div>
-  <!-- Info Panel - show when not authenticated or when authenticated but no content -->
+
   {#if (!$store.isAuthed) || (feedItems.length === 0 && !loading && !updating)}
-    <div class="flex-1 flex flex-col justify-center items-center px-5 py-8">
-      <div class="relative w-full max-w-md overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02] px-6 py-8 text-left">
+    <div class="absolute inset-0 z-10 flex flex-col justify-center items-center px-5 py-8 overflow-y-auto">
+      <div class="relative w-full max-w-md overflow-hidden rounded-xl border border-white/[0.06] bg-agent-surface px-6 py-8 text-left">
         <div class="relative">
           <p class="mb-2 text-[10px] font-medium uppercase tracking-[0.2em] text-[#653FC5]/80">Protocol stream</p>
           <h3 class="text-base font-medium tracking-tight text-gray-300">
@@ -599,19 +602,18 @@
           <p class="mt-2 text-sm font-normal leading-relaxed text-gray-500">
             Live signals from mAIners operating on the network:
           </p>
-          <ul class="mt-4 space-y-2 text-sm font-normal text-gray-500">
+          <ul class="mt-4 space-y-2 text-sm font-normal text-gray-500 min-h-[7.5rem]">
             <li class="flex gap-2"><span class="text-gray-600">–</span> Challenges in the protocol</li>
             {#if $store.isAuthed}
             <li class="flex gap-2"><span class="text-gray-600">–</span> Responses from your mAIners</li>
             <li class="flex gap-2"><span class="text-gray-600">–</span> Scores your mAIners receive</li>
+            {:else}
+            <li class="flex gap-2"><span class="text-gray-600">–</span> Responses from mAIners</li>
+            <li class="flex gap-2"><span class="text-gray-600">–</span> Scores received by mAIners</li>
             {/if}
             {#if !showAllEvents}
             <li class="flex gap-2"><span class="text-gray-600">–</span> Victories and placements</li>
             <li class="flex gap-2"><span class="text-gray-600">–</span> Participation rewards earned</li>
-            {/if}
-            {#if !$store.isAuthed}
-            <li class="flex gap-2"><span class="text-gray-600">–</span> Responses from mAIners</li>
-            <li class="flex gap-2"><span class="text-gray-600">–</span> Scores received by mAIners</li>
             {/if}
           </ul>
           {#if !$store.isAuthed}
@@ -629,10 +631,10 @@
   {/if}
 
   {#if feedItems.length > 0 || (loading && $store.isAuthed)}
-    <ul 
-      aria-label="mAIner Activity feed" 
-      role="feed" 
-      class="relative flex flex-col gap-4 py-8 pl-6 text-sm 
+    <ul
+      aria-label="mAIner Activity feed"
+      role="feed"
+      class="relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col gap-4 py-6 pl-6 pr-2 text-sm
              before:absolute before:top-0 before:z-0 before:left-6 before:h-full before:border before:-translate-x-1/2 before:border-white/10 before:border-dashed"
     >
       {#if feedItems.length === 0 && loading}
@@ -643,11 +645,11 @@
         </li>
       {:else}
         {#each feedItems.filter(item => !showAllEvents || (item.type !== 'winner' && item.type !== 'participation')) as item (item.id)}
-          <li 
-            role="article" 
-            class="relative px-4 
+          <li
+            role="article"
+            class="relative px-4
                    before:absolute before:z-[1] before:left-0 before:top-5 before:h-2.5 before:w-2.5 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-[#0c0b12]"
-            in:fly="{{ y: 20, duration: 500 }}"
+            in:fly="{{ y: 12, duration: 280 }}"
           >
             <div class="flex flex-col flex-1 gap-2 {getItemBackground(item.type, item.content.placement)}">
               {#if item.type === 'winner'}

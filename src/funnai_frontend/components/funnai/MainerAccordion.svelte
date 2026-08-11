@@ -1047,7 +1047,7 @@
       {modelType}
       {selectedModel}
       {addressCopied}
-      shouldAutoOpen={agents.length === 0 && !isWhitelistPhaseActive && !isAuctionActive}
+      shouldAutoOpen={false}
       onCreateAgent={createAgent}
       onToggleLoginModal={toggleLoginModal}
       onToggleAccordion={toggleAccordion}
