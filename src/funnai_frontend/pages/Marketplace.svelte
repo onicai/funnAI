@@ -11,6 +11,7 @@
   import { Store, TrendingUp, Users, Zap, ShoppingCart, Tag, History } from "lucide-svelte";
   import { MarketplaceService } from "../helpers/marketplaceService";
   import type { Principal } from '@dfinity/principal';
+  import { MARKETPLACE_DISABLED_MESSAGE, MARKETPLACE_ENABLED } from "../helpers/config/featureFlags";
 
   let isLoading = true;
   let activeTab: 'sell' | 'buy' | 'history' = 'buy';
@@ -42,11 +43,15 @@
   let reservationRefreshKey = 0; // Key to force re-check of reservation banner
 
   onMount(() => {
+    if (!MARKETPLACE_ENABLED) {
+      isLoading = false;
+      return;
+    }
     initialize();
   });
 
   // Reactive: Clean up stale reservations when user becomes authenticated
-  $: if ($store.isAuthed && !hasRunCleanup && !isCleaningReservation) {
+  $: if (MARKETPLACE_ENABLED && $store.isAuthed && !hasRunCleanup && !isCleaningReservation) {
     console.log('🔄 Auth state changed, running cleanup check...');
     clearStaleReservationsOnAuth();
   }
@@ -410,6 +415,15 @@
           <p class="agent-eyebrow mb-2">Trade</p>
           <div class="flex items-center gap-2 sm:gap-3">
             <h1 class="agent-title">Marketplace</h1>
+            {#if MARKETPLACE_ENABLED}
+              <span class="px-2.5 py-0.5 text-[11px] font-semibold tracking-tight rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-300">
+                Beta
+              </span>
+            {:else}
+              <span class="px-2.5 py-0.5 text-[11px] font-semibold tracking-tight rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300">
+                Temporarily unavailable
+              </span>
+            {/if}
           </div>
           <p class="agent-subtitle mt-1 hidden sm:block">
             Buy and sell autonomous mAIner agents on the network
@@ -417,6 +431,31 @@
         </div>
       </div>
 
+      {#if !MARKETPLACE_ENABLED}
+        <div class="agent-card relative overflow-hidden p-6 sm:p-8">
+          <div class="absolute -top-16 right-0 h-40 w-56 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" aria-hidden="true"></div>
+          <div class="relative flex flex-col sm:flex-row items-start gap-4">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-amber-500/25 bg-amber-500/10">
+              <Store class="w-6 h-6 text-amber-300" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-amber-400/80">Maintenance</p>
+              <h2 class="mt-1 text-xl font-semibold tracking-tight text-white">
+                Marketplace will return soon
+              </h2>
+              <p class="mt-2 text-sm text-gray-400 leading-relaxed">
+                {MARKETPLACE_DISABLED_MESSAGE} Buying and selling are paused while we complete maintenance. Check back shortly.
+              </p>
+              <p class="mt-4 text-xs text-gray-500">
+                Updates on
+                <a href="https://x.com/onicaiHQ" target="_blank" rel="noopener noreferrer" class="text-gray-300 underline decoration-white/20 underline-offset-2 hover:text-white transition-colors">X</a>
+                or
+                <a href="https://oc.app/community/mepna-eqaaa-aaaar-bclua-cai/channel/2881126157/" target="_blank" rel="noopener noreferrer" class="text-gray-300 underline decoration-white/20 underline-offset-2 hover:text-white transition-colors">OpenChat</a>.
+              </p>
+            </div>
+          </div>
+        </div>
+      {:else}
       <!-- Tab Navigation -->
       <div class="flex justify-end mb-4">
         <div class="agent-tab-track w-full sm:w-auto">
@@ -544,8 +583,10 @@
           </div>
         </div>
       {/if}
+      {/if}
     </div>
 
+    {#if MARKETPLACE_ENABLED}
     {#if isLoading}
       <div class="flex items-center justify-center py-20">
         <div class="text-center">
@@ -572,12 +613,14 @@
         {/key}
       {/if}
     {/if}
+    {/if}
   </div>
 
   <Footer />
 </div>
 
 <!-- Payment Modal -->
+{#if MARKETPLACE_ENABLED}
   <MarketplacePaymentModal
     isOpen={showPaymentModal}
     onClose={handlePaymentModalClose}
@@ -585,6 +628,7 @@
     listing={selectedListingForPurchase}
     isCanceling={isCancelingReservation}
   />
+{/if}
 
 <!-- Toast Notifications -->
 <ToastContainer />

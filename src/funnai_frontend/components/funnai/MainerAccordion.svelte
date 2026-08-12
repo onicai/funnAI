@@ -20,6 +20,7 @@
   import { getSharedAgentPrice, getOwnAgentPrice, getIsProtocolActive, getIsMainerCreationStopped, getWhitelistAgentPrice, getPauseWhitelistMainerCreationFlag, getIsWhitelistPhaseActive, getIsMainerAuctionActive, getMainerAuctionTimerInfo, getNextMainerAuctionPriceDropAtNs, getAvailableMainers } from "../../helpers/gameState";
   import { mainerHealthService, mainerHealthStatuses } from "../../helpers/mainerHealthService";
   import { MarketplaceService } from "../../helpers/marketplaceService";
+  import { MARKETPLACE_ENABLED } from "../../helpers/config/featureFlags";
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -404,7 +405,7 @@
   };
 
   async function loadMarketplaceListings() {
-    if (!isAuthenticated) {
+    if (!MARKETPLACE_ENABLED || !isAuthenticated) {
       listedMainerAddresses = new Set<string>();
       return;
     }
