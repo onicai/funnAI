@@ -38,6 +38,30 @@ node --version   # must be >= 22
 icp --version    # 1.2.0
 ```
 
+## Docker
+
+Required, not optional: every deploy target compiles each Motoko canister inside a pinned
+toolchain image, so `make e2e-install` / `e2e-upgrade` / `e2e-reinstall` all fail without a
+running Docker. See [The build is reproducible by default](#the-build-is-reproducible-by-default).
+
+Install [Docker Desktop](https://docs.docker.com/desktop/) (macOS/Windows) or Docker Engine
+(Linux), then **start it** — the daemon has to be up, not just installed.
+
+```bash
+# verify the daemon is actually running, not just that the CLI exists
+docker info > /dev/null && echo "docker is running"
+
+docker --version
+```
+
+Give it enough headroom in Docker Desktop → Settings → Resources. The toolchain images are a
+few GB and are rebuilt on every deploy (~150 s; see
+[The toolchain image is rebuilt on every deploy](#the-toolchain-image-is-rebuilt-on-every-deploy)
+for why, and for `KEEP_BASE=1` to skip it while iterating).
+
+The images are local-only and never pushed. `docker system prune -a` deletes them, which is
+harmless — each project's `docker-build-wasm` notices and rebuilds rather than failing.
+
 ## Local identities
 
 The local environment uses two icp-cli identities. **`make e2e-start` creates both for
@@ -52,59 +76,30 @@ and why, plus the commands if you want to create them by hand.
 ```bash
 icp identity new funnAI-local --storage plaintext
 icp identity new e2e-player   --storage plaintext
-```
 
-Four things about that are deliberate:
-
-- **Nothing here touches or uses your machine default.** `icp identity default` reports a
-  machine-wide setting, which for most of us is the *mainnet* identity. It has no rights on
-  this throwaway network, so calling as it returns `Err = Unauthorized` — easy to misread as
-  an empty result. Every command names its identity explicitly with `--identity`, and
-  nothing ever runs `icp identity default <name>`, which is global and persistent.
-- **The admin is not called `default`.** It would collide with the above: "the default
-  identity" would mean two different things, and `icp identity default default` is a real
-  command you could end up typing.
-- **`--storage plaintext` is required, not cosmetic.** The file uploaders sign locally, so
-  they export the identity's key; a keyring-backed identity makes `icp identity export`
-  open a password prompt and hang. These are disposable local keys with play money on a
-  throwaway replica — do not use this for anything that holds value.
-- **They must exist *before* the network starts.** The local ledger seeds 1,000,000 ICP to
-  the identities that exist at that moment, and nothing afterwards. `make e2e-start` creates
-  them first for exactly this reason. An identity created later has a zero balance and
-  cannot buy anything.
-
-### The canister tests use the same identity
-
-`make smoketest` in a canister's own project deploys **and** asserts as `funnAI-local`. Each
-Makefile exports it:
-
-```make
-export ICPP_PRO_TEST_IDENTITY = funnAI-local
-```
-
-icpp-pro reads that (or `pytest --identity <name>`) and passes `--identity` to every icp
-command. A run with neither stops at session start rather than silently testing as the wrong
-principal.
-
-Deployer and tester must be the **same** identity: a canister's controller is whoever
-installed it, so if they diverge, every `is_controller` assertion flips — and
-`Err = Unauthorized` looks like a legitimate response, not a bug.
-
-> This needs **icpp-pro >= 6.0.0**. Before that, the fixtures switched the machine-wide
-> identity for the duration of each test and there was an identity literally named `default`
-> that existed only to satisfy them. Both are gone. On 5.x the `export` above is ignored and
-> the suites quietly run as whatever identity happens to be active.
-
-To see what you have:
-
-```bash
+# verify
 icp identity list
 icp identity principal --identity funnAI-local
 ```
 
-## Download the LLMs from HuggingFace
+Notes:
 
-### Download LLM model (gguf)
+- **these identities are onlyused for setting up a local end-2-end deployment** they are
+  NOT for deploying to mainnet.
+- **Nothing here touches or uses your machine default.** `icp identity default` reports a
+  machine-wide setting that you typically use for your identity that deploys to mainnet. 
+  Every command in the scripts names its identity explicitly with `--identity`, and
+  nothing ever runs `icp identity default <name>`, which is global and persistent.
+- **`--storage plaintext` is required for these two identities.** The file uploaders sign locally, so
+  they export the identity's key; a keyring-backed identity makes `icp identity export`
+  open a password prompt and hang. These are disposable local keys with play money on a
+  throwaway replica — do not use this for anything that holds value.
+- **They must exist *before* the local replica starts.** The local ledger seeds 1,000,000 ICP to
+  the identities that exist at that moment, and nothing afterwards. `make e2e-start` creates
+  them first for exactly this reason. An identity created later has a zero balance and
+  cannot buy anything.
+
+## Download the LLMs from HuggingFace
 
 Download the model `qwen2.5-0.5b-instruct-q8_0.gguf` from huggingface: https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF
 
