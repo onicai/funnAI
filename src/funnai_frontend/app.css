@@ -28,13 +28,13 @@
     z-index: 0;
     pointer-events: none;
     background-image:
-      /* soft radial lights */
-      radial-gradient(ellipse 80% 50% at 12% -10%, rgba(101, 63, 197, 0.18), transparent 55%),
-      radial-gradient(ellipse 60% 40% at 92% 8%, rgba(125, 211, 252, 0.06), transparent 50%),
-      radial-gradient(ellipse 50% 45% at 70% 100%, rgba(101, 63, 197, 0.1), transparent 55%),
-      /* quadricular grid */
-      linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+      /* soft radial lights — dialed down so content wins hierarchy */
+      radial-gradient(ellipse 70% 40% at 10% -8%, rgba(101, 63, 197, 0.1), transparent 55%),
+      radial-gradient(ellipse 50% 35% at 90% 5%, rgba(125, 211, 252, 0.03), transparent 50%),
+      radial-gradient(ellipse 45% 40% at 70% 100%, rgba(101, 63, 197, 0.05), transparent 55%),
+      /* quieter grid */
+      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
     background-size:
       100% 100%,
       100% 100%,
@@ -42,8 +42,8 @@
       48px 48px,
       48px 48px;
     background-position: center top;
-    mask-image: radial-gradient(ellipse 90% 70% at 50% 20%, #000 20%, transparent 85%);
-    -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 20%, #000 20%, transparent 85%);
+    mask-image: radial-gradient(ellipse 90% 65% at 50% 15%, #000 15%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse 90% 65% at 50% 15%, #000 15%, transparent 80%);
   }
 
   .agent-atmosphere::after {
@@ -207,67 +207,169 @@
     @apply pointer-events-none absolute -top-20 left-1/2 h-40 w-64 -translate-x-1/2 rounded-full bg-agent-purple/15 blur-3xl;
   }
 
-  /* floating ambient orb used sparingly in shells */
+  /* floating ambient orb — muted; prefer not using in shell */
   .agent-orb {
     pointer-events: none;
     position: absolute;
     border-radius: 9999px;
     filter: blur(60px);
-    opacity: 0.55;
-    animation: agentOrbFloat 14s ease-in-out infinite;
+    opacity: 0.28;
+    animation: none;
   }
 
   .agent-orb-a {
-    width: 18rem;
-    height: 18rem;
+    width: 16rem;
+    height: 16rem;
     top: -6rem;
     right: -4rem;
-    background: rgba(101, 63, 197, 0.22);
+    background: rgba(101, 63, 197, 0.12);
   }
 
   .agent-orb-b {
-    width: 14rem;
-    height: 14rem;
+    width: 12rem;
+    height: 12rem;
     bottom: 10%;
     left: -3rem;
-    background: rgba(125, 211, 252, 0.08);
-    animation-delay: -5s;
+    background: rgba(125, 211, 252, 0.04);
   }
 
   .agent-sheen {
-    pointer-events: none;
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      115deg,
-      transparent 35%,
-      rgba(255, 255, 255, 0.04) 48%,
-      transparent 62%
-    );
-    background-size: 220% 100%;
-    animation: agentSheen 9s ease-in-out infinite;
+    display: none;
   }
 
-  /* header accent hairline */
+  /* header accent hairline — slow traveling gleam */
   .agent-header-line {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
     height: 1px;
+    overflow: hidden;
     background: linear-gradient(
       90deg,
       transparent,
-      rgba(101, 63, 197, 0.55) 30%,
-      rgba(255, 255, 255, 0.25) 50%,
-      rgba(101, 63, 197, 0.45) 70%,
+      rgba(101, 63, 197, 0.35) 30%,
+      rgba(255, 255, 255, 0.18) 50%,
+      rgba(101, 63, 197, 0.3) 70%,
       transparent
     );
-    opacity: 0.85;
+    opacity: 0.9;
+  }
+
+  .agent-header-line::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      transparent 40%,
+      rgba(196, 181, 253, 0.85) 50%,
+      transparent 60%,
+      transparent 100%
+    );
+    background-size: 40% 100%;
+    background-repeat: no-repeat;
+    animation: agentHeaderGleam 7s ease-in-out infinite;
+  }
+
+  /* Brand mark: quiet entrance + soft live glow */
+  .brand-mark {
+    position: relative;
+  }
+
+  .brand-mark-text {
+    display: inline-block;
+    animation: brandMarkIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    transition: letter-spacing 0.35s ease, text-shadow 0.35s ease, color 0.2s ease;
+    text-shadow: 0 0 0 transparent;
+  }
+
+  .brand-mark:hover .brand-mark-text {
+    letter-spacing: 0.04em;
+    color: #fff;
+    text-shadow: 0 0 24px rgba(101, 63, 197, 0.45);
+  }
+
+  .brand-mark::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 12%;
+    bottom: -6px;
+    height: 2px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, rgba(101, 63, 197, 0.65), transparent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .brand-mark:hover::after {
+    transform: scaleX(1);
+  }
+
+  /* Active nav rail: grow in + soft pulse */
+  .nav-active-rail {
+    animation: navRailIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    box-shadow: 0 0 12px rgba(101, 63, 197, 0.55);
+  }
+
+  .nav-active-rail::after {
+    content: "";
+    position: absolute;
+    inset: -2px -1px;
+    border-radius: inherit;
+    background: rgba(101, 63, 197, 0.5);
+    filter: blur(4px);
+    opacity: 0.55;
+    animation: navRailGlow 2.8s ease-in-out infinite;
   }
 }
 
 @layer utilities {
+  @keyframes brandMarkIn {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+      filter: blur(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes navRailIn {
+    from {
+      opacity: 0;
+      transform: translateY(-50%) scaleY(0.4);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(-50%) scaleY(1);
+    }
+  }
+
+  @keyframes navRailGlow {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 0.75; }
+  }
+
+  @keyframes agentHeaderGleam {
+    0%, 100% {
+      background-position: -40% 0;
+      opacity: 0;
+    }
+    15% { opacity: 0.9; }
+    45% {
+      background-position: 140% 0;
+      opacity: 0.5;
+    }
+    55%, 100% { opacity: 0; }
+  }
+
   @keyframes agentOrbFloat {
     0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.45; }
     50% { transform: translate3d(-12px, 18px, 0) scale(1.08); opacity: 0.7; }
@@ -283,9 +385,19 @@
   @media (prefers-reduced-motion: reduce) {
     .agent-orb,
     .agent-sheen,
-    .agent-card {
+    .agent-card,
+    .brand-mark-text,
+    .nav-active-rail,
+    .nav-active-rail::after,
+    .agent-header-line::after {
       animation: none !important;
       transition: none !important;
+      filter: none !important;
+    }
+
+    .brand-mark-text {
+      opacity: 1;
+      transform: none;
     }
   }
 }
