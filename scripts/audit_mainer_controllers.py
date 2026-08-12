@@ -434,8 +434,15 @@ def main(network: str, workers: int, limit: Optional[int], check_llms: bool,
             if r.get("owner_is_controller"):
                 owner_is_ctrl += 1
             # shape = the controller set with the owner factored out, so mAIners differing
-            # only by which user owns them collapse into one row
-            shape_counts[tuple(sorted(set(r["controllers"]) - {r.get("owner")}))] += 1
+            # only by which user owns them collapse into one row.
+            #
+            # Only strip the owner if they are NOT also an expected controller. A team
+            # member who owns a mAIner is both; stripping them unconditionally made that
+            # one mAIner look like it was "missing" a required controller (it was not --
+            # the principal was present, just removed by this very line).
+            owner_p = r.get("owner")
+            strip = {owner_p} if owner_p not in expected else set()
+            shape_counts[tuple(sorted(set(r["controllers"]) - strip))] += 1
 
         def label(p: str) -> str:
             if p == creator:
@@ -454,10 +461,16 @@ def main(network: str, workers: int, limit: Optional[int], check_llms: bool,
 
         # A principal that owns some mAIner AND controls a DIFFERENT one is exactly the
         # "seller keeps control after the sale" shape. Separate those from ordinary owners.
+        # Expected controllers are on EVERY mAIner by design. If a team member also happens
+        # to own one, they would otherwise appear to be "controlling mAIners they do not
+        # own" across the entire fleet -- 755 rows of pure noise that would bury the real
+        # signal. Only a NON-expected principal doing this is suspicious.
         owners = {r.get("owner") for r in seen}
         foreign_control: dict = {}
         for r in seen:
             for c in r["controllers"]:
+                if c in expected:
+                    continue
                 if c in owners and c != r.get("owner"):
                     foreign_control.setdefault(c, []).append(r["address"])
 
@@ -466,8 +479,11 @@ def main(network: str, workers: int, limit: Optional[int], check_llms: bool,
                  "rather than listed individually.\n\n")
         fh.write("| principal | who | # mAIners | expected? |\n| --- | --- | ---: | --- |\n")
         for p, n in principal_counts.most_common():
-            if p in owners and p not in foreign_control:
-                continue  # ordinary owner-of-own-mAIner
+            # Hide ordinary owners (a user controlling only the mAIner they own) -- there is
+            # one per mAIner and they carry no signal. But never hide an EXPECTED controller
+            # just because they also happen to own one: they belong in this fleet-wide table.
+            if p not in expected and p in owners and p not in foreign_control:
+                continue
             exp = "yes" if (p in EXPECTED_CONTROLLERS or p == creator) else "**NO**"
             fh.write(f"| `{p}` | {label(p)} | {n} | {exp} |\n")
 
