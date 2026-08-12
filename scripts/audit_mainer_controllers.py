@@ -62,11 +62,21 @@ REPORT_DIR = os.path.join(SCRIPT_DIR, "logs-mainer-analysis")
 #
 # NOTE: two of these are not identified anywhere in either repo. Do not treat this list as
 # a policy to enforce until they are -- see the plan, Phase 2.
+# The order in Main.mo:679 is wallet/owner pairs:
+#   3v5vy (patrick's wallet), fqkhp (nuno's wallet), cda4n (patrick), fsmbm (?),
+#   chfec (arjaan), opcne (nuno)
 EXPECTED_CONTROLLERS = {
-    "3v5vy-2aaaa-aaaai-aapla-cai": "team cycles wallet",
-    "fqkhp-waaaa-aaaam-qdmta-cai": "UNIDENTIFIED (canister principal)",
+    # Identified 2026-08-12 via `dfx canister info` + the cycles-wallet custodian rejection
+    # on wallet_balance: sole controller cda4n (patrick).
+    "3v5vy-2aaaa-aaaai-aapla-cai": "patrick's cycles wallet",
+    # Same method: sole controller opcne (nuno).
+    "fqkhp-waaaa-aaaam-qdmta-cai": "nuno's cycles wallet",
     "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe": "patrick",
-    "fsmbm-odyjn-hkwt2-3be4e-h6bg3-yi3pi-f5eny-2rosh-4u6jm-3rwa5-xae": "UNIDENTIFIED (self-auth)",
+    # STILL UNIDENTIFIED. Self-authenticating, so there is no canister to query; matches no
+    # local dfx identity; appears nowhere in either repo, in git history on any branch, or
+    # in secret/. Introduced by patnorris in PoAIW 433d745c "Add our principals as
+    # controllers of mAIners for testing" (2025-06-08). Ask him before enforcing this list.
+    "fsmbm-odyjn-hkwt2-3be4e-h6bg3-yi3pi-f5eny-2rosh-4u6jm-3rwa5-xae": "UNIDENTIFIED — ask patnorris",
     "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae": "arjaan",
     "opcne-svazk-6dnsy-iejci-fsm7h-miuun-ovpm4-wtsgw-5pgbz-teu3h-eqe": "nuno",
 }
@@ -413,9 +423,89 @@ def main(network: str, workers: int, limit: Optional[int], check_llms: bool,
             fh.write(f"- ShareService registry: **{len(ss_registry)}** entries\n")
         fh.write(f"- Findings: **{len(findings)}**\n\n")
 
-        fh.write("## Module hash distribution\n\n| hash | count |\n| --- | ---: |\n")
+        # ---- controllers: the point of this audit, so it leads ----------------------
+        seen = [r for r in results if r.get("controllers")]
+        principal_counts: Counter = Counter()
+        shape_counts: Counter = Counter()
+        owner_is_ctrl = 0
+        for r in seen:
+            for c in r["controllers"]:
+                principal_counts[c] += 1
+            if r.get("owner_is_controller"):
+                owner_is_ctrl += 1
+            # shape = the controller set with the owner factored out, so mAIners differing
+            # only by which user owns them collapse into one row
+            shape_counts[tuple(sorted(set(r["controllers"]) - {r.get("owner")}))] += 1
+
+        def label(p: str) -> str:
+            if p == creator:
+                return f"mAInerCreator ({network})"
+            if p in EXPECTED_CONTROLLERS:
+                return EXPECTED_CONTROLLERS[p]
+            if p in KNOWN_EXTRA_CONTROLLERS:
+                return KNOWN_EXTRA_CONTROLLERS[p]
+            return "**UNKNOWN**"
+
+        fh.write("## Controllers\n\n")
+        fh.write(f"- mAIners inspected: **{len(seen)}**\n")
+        fh.write(f"- Owner is a controller of their own mAIner: **{owner_is_ctrl}** / {len(seen)}"
+                 f"  ← this is the vulnerability, expected until it is fixed at the source\n")
+        fh.write(f"- Distinct controller-set shapes (owner excluded): **{len(shape_counts)}**\n\n")
+
+        # A principal that owns some mAIner AND controls a DIFFERENT one is exactly the
+        # "seller keeps control after the sale" shape. Separate those from ordinary owners.
+        owners = {r.get("owner") for r in seen}
+        foreign_control: dict = {}
+        for r in seen:
+            for c in r["controllers"]:
+                if c in owners and c != r.get("owner"):
+                    foreign_control.setdefault(c, []).append(r["address"])
+
+        fh.write("### Every controller principal seen across the fleet\n\n")
+        fh.write("Owner principals controlling only their own mAIner are summarised above "
+                 "rather than listed individually.\n\n")
+        fh.write("| principal | who | # mAIners | expected? |\n| --- | --- | ---: | --- |\n")
+        for p, n in principal_counts.most_common():
+            if p in owners and p not in foreign_control:
+                continue  # ordinary owner-of-own-mAIner
+            exp = "yes" if (p in EXPECTED_CONTROLLERS or p == creator) else "**NO**"
+            fh.write(f"| `{p}` | {label(p)} | {n} | {exp} |\n")
+
+        if foreign_control:
+            fh.write(f"\n### ⚠️ Principals controlling a mAIner they do not own "
+                     f"({len(foreign_control)})\n\n")
+            fh.write("This is the shape left behind when a seller keeps control after a "
+                     "marketplace sale — `icrc37_transfer_from` never prunes extra controllers "
+                     "the seller planted.\n\n")
+            fh.write("| principal | controls (not owned) |\n| --- | --- |\n")
+            for p, addrs in sorted(foreign_control.items(), key=lambda kv: -len(kv[1])):
+                fh.write(f"| `{p}` | {', '.join(f'`{a}`' for a in sorted(addrs))} |\n")
+
+        fh.write("\n### Controller-set shapes (owner excluded)\n\n")
+        fh.write("| # mAIners | missing required | unexpected extras |\n| ---: | --- | --- |\n")
+        for shape, n in shape_counts.most_common():
+            s = set(shape)
+            missing = sorted(set(expected) - s)
+            extra = sorted(s - set(expected))
+            fh.write(f"| {n} | "
+                     f"{', '.join(f'`{m}` ({label(m)})' for m in missing) or '— none'} | "
+                     f"{', '.join(f'`{e}` ({label(e)})' for e in extra) or '— none'} |\n")
+
+        missing_any = [r for r in seen if r.get("missing_required")]
+        if missing_any:
+            fh.write(f"\n### mAIners missing a required controller ({len(missing_any)})\n\n")
+            fh.write("A mAIner missing **mAInerCreator** cannot be reinstalled through "
+                     "`reinstallMainerControllerAdmin`, and one missing every required "
+                     "controller is unreachable by the team entirely.\n\n")
+            fh.write("| mAIner | missing |\n| --- | --- |\n")
+            for r in sorted(missing_any, key=lambda r: r["address"]):
+                fh.write(f"| `{r['address']}` | "
+                         f"{', '.join(f'`{m}` ({label(m)})' for m in r['missing_required'])} |\n")
+
+        fh.write("\n## Module hash distribution\n\n| hash | count |\n| --- | ---: |\n")
         for h, n in counts.most_common():
-            fh.write(f"| `{h}` | {n} |\n")
+            marker = "  ← canonical" if h == canonical else ""
+            fh.write(f"| `{h}` | {n}{marker} |\n")
 
         fh.write("\n## Findings\n\n")
         if not findings:
