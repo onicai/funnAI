@@ -415,11 +415,7 @@
           <p class="agent-eyebrow mb-2">Trade</p>
           <div class="flex items-center gap-2 sm:gap-3">
             <h1 class="agent-title">Marketplace</h1>
-            {#if MARKETPLACE_ENABLED}
-              <span class="px-2.5 py-0.5 text-[11px] font-semibold tracking-tight rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-300">
-                Beta
-              </span>
-            {:else}
+            {#if !MARKETPLACE_ENABLED}
               <span class="px-2.5 py-0.5 text-[11px] font-semibold tracking-tight rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300">
                 Temporarily unavailable
               </span>
