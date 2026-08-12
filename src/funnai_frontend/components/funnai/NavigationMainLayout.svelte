@@ -72,12 +72,12 @@
           aria-haspopup="menu"
           aria-expanded={accountDropdownOpen}
           on:click={toggleAccountDropdown}
-          class="agent-btn-ghost"
+          class="agent-btn-ghost sm:min-w-[9.5rem]"
         >
-          <User class="w-3.5 h-3.5 stroke-[1.75] text-gray-400" />
-          <span class="hidden sm:inline max-w-[7.5rem] truncate">{principalShort}</span>
+          <User class="w-3.5 h-3.5 stroke-[1.75] text-gray-400 shrink-0" />
+          <span class="hidden sm:inline w-[5.5rem] truncate text-left">{principalShort}</span>
           <ChevronDown
-            class="w-3.5 h-3.5 stroke-[1.75] text-gray-500 transition-transform duration-200 {accountDropdownOpen ? 'rotate-180' : ''}"
+            class="w-3.5 h-3.5 stroke-[1.75] text-gray-500 shrink-0 transition-transform duration-200 {accountDropdownOpen ? 'rotate-180' : ''}"
           />
         </button>
 

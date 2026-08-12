@@ -61,11 +61,11 @@
     </div>
   </aside>
 
-  <main class="main relative flex flex-col flex-grow ml-0 md:ml-72 transition-all duration-200 ease-out text-gray-200 min-h-screen w-full">
+  <main class="main relative flex flex-col flex-grow ml-0 md:ml-72 transition-all duration-200 ease-out text-gray-200 h-screen max-h-screen w-full overflow-hidden">
     <!-- calmer stage: soft wash only, no competing orbs/sheen -->
     <div class="pointer-events-none absolute inset-0 agent-atmosphere overflow-hidden" aria-hidden="true"></div>
 
-    <header class="header relative z-40 bg-agent-surface/70 backdrop-blur-xl border-b border-white/[0.06] py-2 px-4 h-[60px]">
+    <header class="header relative z-40 shrink-0 bg-agent-surface/70 backdrop-blur-xl border-b border-white/[0.06] py-2 px-4 h-[60px]">
       <div class="agent-header-line" aria-hidden="true"></div>
       <div class="header-content flex items-center flex-row h-full gap-2">
         <button
@@ -94,13 +94,13 @@
           </span>
         </a>
 
-        <div class="flex ml-auto">
+        <div class="flex ml-auto shrink-0">
           <NavigationMainLayout />
         </div>
       </div>
     </header>
 
-    <div class="relative z-[1] flex-grow flex flex-col min-h-0">
+    <div class="relative z-[1] flex-1 min-h-0 overflow-y-auto overscroll-contain" style="scrollbar-gutter: stable;">
       <Router {routes} />
     </div>
 

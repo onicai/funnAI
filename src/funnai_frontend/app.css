@@ -4,6 +4,10 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scrollbar-gutter: stable;
+  }
+
   html.dark body {
     @apply bg-agent-bg text-gray-200 font-sans antialiased;
   }
@@ -85,7 +89,7 @@
   }
 
   .agent-page {
-    @apply relative flex flex-col h-full min-h-[calc(100vh-60px)] font-sans text-gray-200;
+    @apply relative flex flex-col min-h-full font-sans text-gray-200;
     background: transparent;
   }
 
