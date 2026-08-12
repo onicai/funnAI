@@ -7,6 +7,7 @@ import { get } from 'svelte/store';
 import { store, canisterIds } from '../stores/store';
 import type { Principal } from '@dfinity/principal';
 import { Principal as PrincipalClass } from '@dfinity/principal';
+import { MARKETPLACE_DISABLED_MESSAGE, MARKETPLACE_ENABLED } from './config/featureFlags';
 
 export interface MarketplaceListing {
   address: string;
@@ -17,12 +18,21 @@ export interface MarketplaceListing {
   reservedBy: [] | [Principal];
 }
 
+const marketplaceDisabledError = () => ({
+  success: false as const,
+  error: MARKETPLACE_DISABLED_MESSAGE,
+});
+
 export class MarketplaceService {
   /**
    * List a mAIner for sale on the marketplace
    * Uses ICRC37 approve_tokens with price as token_id and mAIner address as memo
    */
   static async listMainer(mainerAddress: string, priceICP: number): Promise<{ success: boolean; transactionId?: bigint; error?: string }> {
+    if (!MARKETPLACE_ENABLED) {
+      return marketplaceDisabledError();
+    }
+
     try {
       const $store = get(store);
       
@@ -290,6 +300,10 @@ export class MarketplaceService {
    * Uses ICRC37 revoke_token_approvals with mAIner address as memo
    */
   static async cancelListing(mainerAddress: string): Promise<{ success: boolean; transactionId?: bigint; error?: string }> {
+    if (!MARKETPLACE_ENABLED) {
+      return marketplaceDisabledError();
+    }
+
     try {
       const $store = get(store);
       
@@ -353,6 +367,10 @@ export class MarketplaceService {
    * Step 1 of the buy process
    */
   static async reserveMainer(mainerAddress: string): Promise<{ success: boolean; listing?: MarketplaceListing; error?: string }> {
+    if (!MARKETPLACE_ENABLED) {
+      return marketplaceDisabledError();
+    }
+
     try {
       const $store = get(store);
       
@@ -467,6 +485,10 @@ export class MarketplaceService {
     sellerPrincipal: Principal,
     paymentTxId: bigint
   ): Promise<{ success: boolean; transactionId?: bigint; error?: string }> {
+    if (!MARKETPLACE_ENABLED) {
+      return marketplaceDisabledError();
+    }
+
     try {
       const $store = get(store);
       
@@ -545,6 +567,10 @@ export class MarketplaceService {
    * Get all marketplace listings
    */
   static async getAllListings(): Promise<{ success: boolean; listings?: any[]; error?: string }> {
+    if (!MARKETPLACE_ENABLED) {
+      return { ...marketplaceDisabledError(), listings: [] };
+    }
+
     try {
       const $store = get(store);
       
@@ -578,6 +604,10 @@ export class MarketplaceService {
    * Get user's own marketplace listings
    */
   static async getUserListings(): Promise<{ success: boolean; listings?: any[]; error?: string }> {
+    if (!MARKETPLACE_ENABLED) {
+      return { ...marketplaceDisabledError(), listings: [] };
+    }
+
     try {
       const $store = get(store);
       
@@ -615,6 +645,10 @@ export class MarketplaceService {
     stats?: { totalListings: number; totalSales: number; totalVolume: string; activeTraders: number };
     error?: string;
   }> {
+    if (!MARKETPLACE_ENABLED) {
+      return marketplaceDisabledError();
+    }
+
     try {
       const $store = get(store);
       
@@ -663,6 +697,10 @@ export class MarketplaceService {
     sales?: MarketplaceTransaction[];
     error?: string;
   }> {
+    if (!MARKETPLACE_ENABLED) {
+      return { ...marketplaceDisabledError(), purchases: [], sales: [] };
+    }
+
     try {
       const $store = get(store);
       
