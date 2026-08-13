@@ -342,19 +342,22 @@
   }
 </script>
 
-<div class="agent-card p-6">
-  <div class="flex items-center justify-between mb-4">
+<div class="agent-card !bg-agent-surface p-6">
+  <div class="flex items-center justify-between mb-5">
     <div>
       <p class="agent-eyebrow">Leaderboard</p>
-      <h3 class="text-lg font-semibold tracking-tight text-white">
-        {title}
-      </h3>
+      <h3 class="mt-1 text-base font-semibold tracking-tight text-white">{title}</h3>
+      <p class="mt-0.5 text-sm text-gray-500">
+        {variant === "user" ? "Performance of your mAIners" : "Network-wide rankings"}
+      </p>
     </div>
-    <div class="flex items-center gap-2">
-      {#if loading}
-        <div class="animate-spin h-4 w-4 border-2 border-agent-purple rounded-full border-t-transparent"></div>
-      {/if}
-      <span class="text-xs text-gray-400 px-2 py-1 bg-white/[0.03] border border-white/10 rounded-lg">
+    <div class="flex items-center gap-2 flex-shrink-0">
+      <span class="inline-flex h-4 w-4 items-center justify-center">
+        {#if loading}
+          <span class="h-4 w-4 border-2 border-[#653FC5] rounded-full border-t-transparent animate-spin"></span>
+        {/if}
+      </span>
+      <span class="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-gray-400">
         {variant === "user" ? "My mAIners" : "Global"}
       </span>
     </div>
@@ -367,16 +370,9 @@
   {/if}
 
   {#if !isAuthenticated && variant === "user"}
-    <div class="text-center py-8">
-      <div class="text-gray-500 mb-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      </div>
-      <p class="text-sm text-gray-400 mb-2">Connect your wallet to see your mAIner leaderboard</p>
-      <p class="text-xs text-gray-500">
-        Requires at least {MIN_FUNNAI_REQUIRED} FUNNAI tokens
-      </p>
+    <div class="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-8 text-center">
+      <p class="text-sm text-gray-400 mb-1">Connect your wallet to see your mAIner leaderboard</p>
+      <p class="text-xs text-gray-500">Requires at least {MIN_FUNNAI_REQUIRED} FUNNAI tokens</p>
     </div>
   {:else if isAuthenticated && shouldShowLoadingForWallet && variant === "user"}
     <div class="text-center py-8">

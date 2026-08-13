@@ -18,8 +18,8 @@
   let loading = true;
   let error = "";
 
-  async function loadAllMetrics() {
-    loading = true;
+  async function loadAllMetrics(isRefresh = false) {
+    if (!isRefresh && !displayMetrics) loading = true;
     error = "";
     
     try {
@@ -45,7 +45,7 @@
 
   function handleFilterChange(filter: TimeFilter) {
     selectedTimeFilter = filter;
-    loadAllMetrics(); // Reload data when filter changes
+    loadAllMetrics(true); // Reload data when filter changes without collapsing tiles
   }
 
   function handleRefreshAll() {
@@ -60,136 +60,158 @@
 
 <div class="space-y-6">
   <!-- Dashboard Header -->
-  <div class="agent-card p-6">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+  <div class="agent-card !bg-agent-surface p-5 sm:p-6">
+    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
       <div>
-        <h2 class="text-2xl font-semibold text-white">{title}</h2>
-        <p class="text-sm text-gray-400 mt-1">
+        <p class="agent-eyebrow">Metrics</p>
+        <h2 class="mt-1 text-base font-semibold tracking-tight text-white">{title}</h2>
+        <p class="mt-0.5 text-sm text-gray-500">
           Real-time insights into mAIner performance and system metrics
         </p>
       </div>
     </div>
 
-    <!-- Quick Stats Row -->
-    {#if displayMetrics && !loading}
-      <div class="mt-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold text-white">Current Metrics</h3>
-          <div class="text-sm text-gray-400">
-            Latest data from {new Date(displayMetrics.metadata.date + 'T00:00:00').toLocaleDateString()}
-          </div>
+    <div class="mt-5">
+      <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500 mb-3 min-h-4">
+        {#if displayMetrics}
+          Latest · {new Date(displayMetrics.metadata.date + 'T00:00:00').toLocaleDateString()}
+        {:else}
+          Latest
+        {/if}
+      </p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="rounded-xl bg-white/[0.03] p-4">
+          <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Total mAIners</p>
+          <p class="agent-metric-value">
+            {#if displayMetrics}
+              <span class="min-w-[4ch]">{formatChartNumber(displayMetrics.mainers.totals.created)}</span>
+            {:else}
+              <span class="agent-metric-pulse w-[4ch]" aria-hidden="true"></span>
+            {/if}
+          </p>
         </div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
-          <div class="text-sm font-medium text-blue-400">Total mAIners</div>
-          <div class="text-2xl font-semibold text-white">
-            {formatChartNumber(displayMetrics.mainers.totals.created)}
-          </div>
+        <div class="rounded-xl bg-white/[0.03] p-4">
+          <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Active</p>
+          <p class="agent-metric-value">
+            {#if displayMetrics}
+              <span class="min-w-[4ch]">{formatChartNumber(displayMetrics.mainers.totals.active)}</span>
+            {:else}
+              <span class="agent-metric-pulse w-[4ch]" aria-hidden="true"></span>
+            {/if}
+          </p>
+          <p class="agent-metric-hint text-emerald-400/80">
+            {#if displayMetrics}
+              {formatChartNumber(displayMetrics.derived_metrics.active_percentage, 'percentage')} of fleet
+            {:else}
+              &nbsp;
+            {/if}
+          </p>
         </div>
-        <div class="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
-          <div class="text-sm font-medium text-emerald-400">Active mAIners</div>
-          <div class="text-2xl font-semibold text-white">
-            {formatChartNumber(displayMetrics.mainers.totals.active)}
-          </div>
-          <div class="text-xs text-emerald-400/80">
-            {formatChartNumber(displayMetrics.derived_metrics.active_percentage, 'percentage')} active
-          </div>
-        </div>
-        <div class="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
-          <div class="text-sm font-medium text-agent-purple flex items-center gap-1">
+        <div class="rounded-xl bg-white/[0.03] p-4">
+          <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500 flex items-center gap-1">
             FunnAI Index
-            <div class="group relative">
-              <svg class="w-4 h-4 text-agent-purple cursor-help" fill="currentColor" viewBox="0 0 20 20">
+            <span class="group relative">
+              <svg class="w-3.5 h-3.5 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
               </svg>
-              <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-agent-elevated text-white text-xs rounded-lg border border-white/[0.08] shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 w-48">
-                <div class="text-center">
-                  <div class="font-medium mb-1">FunnAI cycles burned as % of total IC protocol daily burn</div>
-                </div>
-                <div class="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-agent-elevated"></div>
-              </div>
-            </div>
-          </div>
-          <div class="text-2xl font-semibold text-white">
-            {(displayMetrics.system_metrics.funnai_index * 100).toFixed(1)}%
-          </div>
+              <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-agent-elevated text-white text-xs rounded-lg border border-white/[0.08] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 w-48 text-center font-normal normal-case tracking-normal">
+                FunnAI cycles burned as % of total IC protocol daily burn
+              </span>
+            </span>
+          </p>
+          <p class="agent-metric-value">
+            {#if displayMetrics}
+              <span class="min-w-[4ch]">{(displayMetrics.system_metrics.funnai_index * 100).toFixed(1)}%</span>
+            {:else}
+              <span class="agent-metric-pulse w-[4ch]" aria-hidden="true"></span>
+            {/if}
+          </p>
         </div>
-        <div class="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
-          <div class="text-sm font-medium text-orange-400">Daily Burn Rate</div>
-          <div class="text-xl font-semibold text-white">
-            {formatChartNumber(displayMetrics.system_metrics.daily_burn_rate.usd, 'currency')}
-          </div>
-          <div class="text-xs text-orange-400/80">
-            {formatChartNumber(displayMetrics.system_metrics.daily_burn_rate.cycles * 1e12, 'cycles')} cycles
-          </div>
+        <div class="rounded-xl bg-white/[0.03] p-4">
+          <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Daily burn</p>
+          <p class="agent-metric-value-md">
+            {#if displayMetrics}
+              <span class="min-w-[6ch]">{formatChartNumber(displayMetrics.system_metrics.daily_burn_rate.usd, 'currency')}</span>
+            {:else}
+              <span class="agent-metric-pulse w-[6ch]" aria-hidden="true"></span>
+            {/if}
+          </p>
+          <p class="agent-metric-hint">
+            {#if displayMetrics}
+              {formatChartNumber(displayMetrics.system_metrics.daily_burn_rate.cycles * 1e12, 'cycles')} cycles
+            {:else}
+              &nbsp;
+            {/if}
+          </p>
         </div>
       </div>
     </div>
-    {/if}
   </div>
 
   <!-- Additional Metrics Row -->
-  {#if displayMetrics && !loading}
-    <div class="agent-card p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-white">
-          Additional Metrics
-        </h3>
-        <div class="flex items-center gap-2">
-          <div class="bg-emerald-500/15 text-emerald-400 text-xs px-3 py-1.5 rounded-full border border-emerald-500/30">
-            Latest data
-          </div>
-          <span class="text-sm text-gray-500">
-            as of {new Date(displayMetrics.metadata.date + 'T00:00:00').toLocaleDateString()}
-          </span>
-        </div>
+  <div class="agent-card !bg-agent-surface p-5 sm:p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <p class="agent-eyebrow">Inventory</p>
+        <h3 class="mt-1 text-base font-semibold tracking-tight text-white">Additional metrics</h3>
+      </div>
+      <span class="text-xs text-gray-500 min-h-4 min-w-[6rem] text-right">
+        {#if displayMetrics}
+          {new Date(displayMetrics.metadata.date + 'T00:00:00').toLocaleDateString()}
+        {/if}
+      </span>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div class="rounded-xl bg-white/[0.03] p-4">
+        <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Total cycles</p>
+        <p class="agent-metric-value-md">
+          {#if displayMetrics}
+            <span class="min-w-[8ch]">{formatChartNumber(displayMetrics.mainers.totals.total_cycles * 1e12, 'cycles')}</span>
+          {:else}
+            <span class="agent-metric-pulse w-[8ch]" aria-hidden="true"></span>
+          {/if}
+        </p>
       </div>
       
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div class="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
-          <div class="text-sm font-medium text-cyan-400">Total Cycles</div>
-          <div class="text-xl font-semibold text-white">
-            {formatChartNumber(displayMetrics.mainers.totals.total_cycles * 1e12, 'cycles')}
-
-          </div>
-        </div>
-        
-        <div class="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
-          <div class="text-sm font-medium text-indigo-400">Avg Cycles per mAIner</div>
-          <div class="text-xl font-semibold text-white">
-            {formatChartNumber(displayMetrics.derived_metrics.avg_cycles_per_mainer * 1e12, 'cycles')}
-          </div>
-        </div>
-        
-        <div class="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4">
-          <div class="text-sm font-medium text-teal-400">Burn Rate per Active</div>
-          <div class="text-xl font-semibold text-white">
-            {formatChartNumber(displayMetrics.derived_metrics.burn_rate_per_active_mainer * 1e12, 'cycles')}
-          </div>
-        </div>
+      <div class="rounded-xl bg-white/[0.03] p-4">
+        <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Avg per mAIner</p>
+        <p class="agent-metric-value-md">
+          {#if displayMetrics}
+            <span class="min-w-[8ch]">{formatChartNumber(displayMetrics.derived_metrics.avg_cycles_per_mainer * 1e12, 'cycles')}</span>
+          {:else}
+            <span class="agent-metric-pulse w-[8ch]" aria-hidden="true"></span>
+          {/if}
+        </p>
+      </div>
+      
+      <div class="rounded-xl bg-white/[0.03] p-4">
+        <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Burn per active</p>
+        <p class="agent-metric-value-md">
+          {#if displayMetrics}
+            <span class="min-w-[8ch]">{formatChartNumber(displayMetrics.derived_metrics.burn_rate_per_active_mainer * 1e12, 'cycles')}</span>
+          {:else}
+            <span class="agent-metric-pulse w-[8ch]" aria-hidden="true"></span>
+          {/if}
+        </p>
       </div>
     </div>
-  {/if}
+  </div>
 
   <!-- Historical Charts Section -->
-  <div class="agent-card">
-    <!-- Charts Header with Controls -->
-    <div class="p-6 border-b border-white/[0.08]">
+  <div class="agent-card !bg-agent-surface">
+    <div class="p-5 sm:p-6 border-b border-white/[0.06]">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 class="text-xl font-semibold text-white">Historical Charts</h3>
-          <p class="text-sm text-gray-400 mt-1">
-            View trends and patterns over time • Time filter controls all charts below
-          </p>
+          <p class="agent-eyebrow">History</p>
+          <h3 class="mt-1 text-base font-semibold tracking-tight text-white">Historical charts</h3>
+          <p class="mt-0.5 text-sm text-gray-500">Trends over the selected period</p>
         </div>
         
-        <div class="flex items-center gap-2">
-          <span class="text-sm font-medium text-gray-400">Time Period:</span>
-          <TimeFilterSelector 
-            selectedFilter={selectedTimeFilter} 
-            onFilterChange={handleFilterChange}
-          />
-        </div>
+        <TimeFilterSelector 
+          selectedFilter={selectedTimeFilter} 
+          onFilterChange={handleFilterChange}
+        />
       </div>
     </div>
 

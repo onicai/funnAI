@@ -392,16 +392,18 @@
   });
 </script>
 
-<div class="agent-card p-6">
-  <div class="flex items-center justify-between mb-6">
-    <h3 class="text-lg font-semibold text-white">
-      {title}
-    </h3>
-    <div class="flex items-center gap-2">
-      {#if loading}
-        <div class="animate-spin h-4 w-4 border-2 border-agent-purple rounded-full border-t-transparent"></div>
-      {/if}
+<div class="agent-card !bg-agent-surface p-5 sm:p-6">
+  <div class="relative z-[1] flex items-center justify-between mb-5">
+    <div>
+      <p class="agent-eyebrow">Analytics</p>
+      <h3 class="mt-1 text-base font-semibold tracking-tight text-white">{title}</h3>
+      <p class="mt-0.5 text-sm text-gray-500">Supply growth and quarterly minting</p>
     </div>
+    <span class="inline-flex h-4 w-4 items-center justify-center">
+      {#if loading}
+        <span class="h-4 w-4 border-2 border-[#653FC5] rounded-full border-t-transparent animate-spin"></span>
+      {/if}
+    </span>
   </div>
 
   {#if error}

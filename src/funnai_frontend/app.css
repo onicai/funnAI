@@ -32,22 +32,23 @@
     z-index: 0;
     pointer-events: none;
     background-image:
-      /* soft radial lights — dialed down so content wins hierarchy */
-      radial-gradient(ellipse 70% 40% at 10% -8%, rgba(101, 63, 197, 0.1), transparent 55%),
-      radial-gradient(ellipse 50% 35% at 90% 5%, rgba(125, 211, 252, 0.03), transparent 50%),
-      radial-gradient(ellipse 45% 40% at 70% 100%, rgba(101, 63, 197, 0.05), transparent 55%),
-      /* quieter grid */
-      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      /* overhead light — grid catches this */
+      radial-gradient(ellipse 80% 42% at 50% -6%, rgba(255, 255, 255, 0.07), transparent 58%),
+      radial-gradient(ellipse 70% 40% at 12% -8%, rgba(101, 63, 197, 0.16), transparent 55%),
+      radial-gradient(ellipse 50% 35% at 90% 8%, rgba(125, 211, 252, 0.045), transparent 50%),
+      radial-gradient(ellipse 45% 40% at 70% 100%, rgba(101, 63, 197, 0.07), transparent 55%),
+      linear-gradient(rgba(196, 181, 253, 0.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(196, 181, 253, 0.045) 1px, transparent 1px);
     background-size:
       100% 100%,
       100% 100%,
       100% 100%,
-      48px 48px,
-      48px 48px;
+      100% 100%,
+      44px 44px,
+      44px 44px;
     background-position: center top;
-    mask-image: radial-gradient(ellipse 90% 65% at 50% 15%, #000 15%, transparent 80%);
-    -webkit-mask-image: radial-gradient(ellipse 90% 65% at 50% 15%, #000 15%, transparent 80%);
+    mask-image: radial-gradient(ellipse 95% 78% at 50% 12%, #000 22%, transparent 88%);
+    -webkit-mask-image: radial-gradient(ellipse 95% 78% at 50% 12%, #000 22%, transparent 88%);
   }
 
   .agent-atmosphere::after {
@@ -57,8 +58,9 @@
     z-index: 0;
     pointer-events: none;
     background:
-      radial-gradient(ellipse 100% 80% at 50% 120%, rgba(0, 0, 0, 0.55), transparent 50%),
-      linear-gradient(180deg, rgba(11, 10, 15, 0.15) 0%, transparent 28%, rgba(11, 10, 15, 0.45) 100%);
+      radial-gradient(ellipse 70% 36% at 50% 0%, rgba(101, 63, 197, 0.1), transparent 62%),
+      radial-gradient(ellipse 100% 80% at 50% 120%, rgba(0, 0, 0, 0.5), transparent 50%),
+      linear-gradient(180deg, rgba(11, 10, 15, 0.08) 0%, transparent 24%, rgba(11, 10, 15, 0.42) 100%);
   }
 
   .agent-atmosphere > * {
@@ -101,8 +103,9 @@
     @apply relative overflow-hidden rounded-2xl border border-white/[0.08] bg-agent-surface/90;
     box-shadow:
       0 0 0 1px rgba(255, 255, 255, 0.02) inset,
-      0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
-      0 18px 40px -28px rgba(0, 0, 0, 0.75);
+      0 1px 0 0 rgba(255, 255, 255, 0.07) inset,
+      0 10px 28px -14px rgba(0, 0, 0, 0.55),
+      0 28px 56px -32px rgba(101, 63, 197, 0.18);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     transition:
@@ -130,19 +133,20 @@
   }
 
   .agent-card:hover {
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.13);
     box-shadow:
       0 0 0 1px rgba(255, 255, 255, 0.03) inset,
-      0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
-      0 22px 48px -24px rgba(101, 63, 197, 0.28),
-      0 18px 40px -28px rgba(0, 0, 0, 0.8);
+      0 1px 0 0 rgba(255, 255, 255, 0.09) inset,
+      0 14px 32px -12px rgba(0, 0, 0, 0.58),
+      0 32px 64px -28px rgba(101, 63, 197, 0.28);
   }
 
   .agent-card-elevated {
     @apply relative overflow-hidden rounded-2xl border border-white/[0.08] bg-agent-elevated;
     box-shadow:
-      0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
-      0 20px 44px -28px rgba(0, 0, 0, 0.7);
+      0 1px 0 0 rgba(255, 255, 255, 0.07) inset,
+      0 10px 28px -14px rgba(0, 0, 0, 0.5),
+      0 24px 48px -28px rgba(101, 63, 197, 0.14);
   }
 
   .agent-card-elevated::before {
@@ -187,6 +191,32 @@
 
   .agent-stat {
     @apply agent-card p-5;
+  }
+
+  /* Reserved metric slots — same height/units while values load */
+  .agent-metric-value {
+    @apply mt-2 flex items-baseline gap-1.5 text-2xl font-semibold tracking-tight text-white tabular-nums leading-8 min-h-8;
+  }
+
+  .agent-metric-value-md {
+    @apply mt-2 flex items-baseline gap-1.5 text-xl font-semibold tracking-tight text-white tabular-nums leading-7 min-h-7;
+  }
+
+  .agent-metric-unit {
+    @apply text-xs font-medium text-gray-500 tracking-normal shrink-0;
+  }
+
+  .agent-metric-hint {
+    @apply mt-1 text-xs leading-4 min-h-4 text-gray-500;
+  }
+
+  .agent-metric-pulse {
+    display: inline-block;
+    height: 0.7em;
+    border-radius: 0.25rem;
+    background: rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
   .agent-input {

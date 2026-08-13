@@ -6,7 +6,6 @@
   import LoginModal from '../components/login/LoginModal.svelte';
   import WalletTokenList from "../components/WalletTokenList.svelte";
   import TokenListSkeleton from "../components/TokenListSkeleton.svelte";
-  import LoadingIndicator from "../components/LoadingIndicator.svelte";
   import Footer from "../components/funnai/Footer.svelte";
   import TransactionHistory from "../components/dashboard/TransactionHistory.svelte";
   import { store } from "../stores/store";
@@ -24,6 +23,12 @@
     isLoading ||
     isLoadingHistory ||
     walletData.isLoading;
+
+  $: listedCount = walletData?.tokens?.length ?? 0;
+  $: holdingCount = walletData?.tokens?.filter((token) => {
+    const balance = walletData.balances[token.canister_id];
+    return balance && Number(balance.in_tokens || "0") > 0;
+  }).length ?? 0;
 
   async function loadTokensOnly(principalId: string) {
     if (isLoading || !principalId) return;
@@ -77,49 +82,61 @@
     <div class="flex flex-col gap-6">
       <WalletStatus />
 
-      <div class="agent-card !bg-agent-surface p-5 sm:p-6">
-        <div class="relative z-[1]">
-          <p class="agent-eyebrow">Holdings</p>
-          <h2 class="mt-0.5 text-base font-semibold tracking-tight text-white mb-4">Your assets</h2>
+      <div class="agent-card !bg-agent-surface overflow-hidden">
+        <div class="relative z-[1] p-5 sm:p-6">
+          <div class="flex items-start justify-between gap-3 mb-5">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <p class="agent-eyebrow">Holdings</p>
+                {#if $store.isAuthed && !isDataLoading && listedCount > 0}
+                  <span class="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] font-medium text-gray-400">
+                    {holdingCount} with balance
+                    {#if listedCount !== holdingCount}
+                      <span class="text-gray-600"> · {listedCount} listed</span>
+                    {/if}
+                  </span>
+                {/if}
+              </div>
+              <h2 class="mt-1 text-base font-semibold tracking-tight text-white">Your assets</h2>
+              <p class="mt-0.5 text-sm text-gray-500">Tokens you can send and receive in this wallet</p>
+            </div>
+          </div>
 
           {#if $store.isAuthed}
-            <div class="min-h-[340px] relative">
-              {#if isDataLoading}
-                <TokenListSkeleton rows={4} />
-                <div class="absolute inset-0 bg-agent-surface/80 flex items-center justify-center rounded-xl">
-                  <LoadingIndicator text={"Loading wallet data..."} size={24} />
-                </div>
-              {:else if loadingError}
-                <div class="flex flex-col items-center justify-center py-12">
-                  <div class="text-red-300 mb-4 text-center text-sm">{loadingError}</div>
-                  <button
-                    type="button"
-                    class="agent-btn-ghost"
-                    on:click={() => $store.principal && loadTokensOnly($store.principal.toString())}
-                  >
-                    Try again
-                  </button>
-                </div>
-              {:else if walletData.tokens.length === 0}
-                <div class="flex flex-col items-center justify-center py-12">
-                  <LoadingIndicator text="Please connect your wallet..." size={24} />
-                </div>
-              {:else}
-                {#key walletData}
-                  <WalletTokenList
-                    tokens={walletData.tokens}
-                    showHeader={false}
-                    showOnlyWithBalance={false}
-                    isLoading={isDataLoading}
-                  />
-                {/key}
-              {/if}
-            </div>
+            {#if isDataLoading}
+              <TokenListSkeleton rows={4} />
+            {:else if loadingError}
+              <div class="rounded-xl border border-red-500/20 bg-red-500/[0.08] px-4 py-8 text-center">
+                <p class="text-red-300 mb-4 text-sm">{loadingError}</p>
+                <button
+                  type="button"
+                  class="agent-btn-ghost"
+                  on:click={() => $store.principal && loadTokensOnly($store.principal.toString())}
+                >
+                  Try again
+                </button>
+              </div>
+            {:else if walletData.tokens.length === 0}
+              <div class="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-10 text-center">
+                <p class="text-sm text-gray-400">No tokens available yet</p>
+              </div>
+            {:else}
+              {#key walletData}
+                <WalletTokenList
+                  tokens={walletData.tokens}
+                  showHeader={false}
+                  showOnlyWithBalance={false}
+                  isLoading={isDataLoading}
+                />
+              {/key}
+            {/if}
           {:else}
-            <div class="text-center py-10 rounded-xl border border-white/[0.06] bg-white/[0.03]">
-              <h3 class="text-lg font-semibold tracking-tight text-white">Connect your wallet</h3>
-              <p class="mt-1 text-sm text-gray-400">Connect to view your assets</p>
-              <button type="button" on:click={connect} class="agent-btn-primary mt-5">
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4 rounded-xl border border-white/[0.07] bg-white/[0.02] p-4 sm:p-5">
+              <div class="min-w-0 flex-1">
+                <h3 class="text-sm font-semibold tracking-tight text-white">Connect to view balances</h3>
+                <p class="mt-0.5 text-sm text-gray-500">Your supported tokens will appear here</p>
+              </div>
+              <button type="button" on:click={connect} class="agent-btn-primary w-full sm:w-auto flex-shrink-0">
                 Connect wallet
               </button>
             </div>

@@ -41,8 +41,6 @@
         ...token,
         balanceAmount,
         formattedUsdValue: balance?.in_usd || "0",
-        priceChange24h: token.metrics?.price_change_24h || "0",
-        price: token.metrics?.price || "0",
         percentOfSupply,
         isWhale,
       };
@@ -62,6 +60,24 @@
 
   function formatSupplyPercentage(percent: number): string {
     return percent.toFixed(2) + "%";
+  }
+
+  function formatUsd(value: string): string {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) return "";
+    return n.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  function displayBalance(token): string {
+    if (token.balanceAmount === BigInt(0)) return `0 ${token.symbol}`;
+    const formatted = formatBalance(token.balanceAmount.toString(), token.decimals);
+    if (Number(formatted) < 0.00000001) return `<0.00000001 ${token.symbol}`;
+    return `${formatted} ${token.symbol}`;
   }
 
   const whaleTooltipText = `This wallet holds at least ${WHALE_THRESHOLD}% of the token's total supply, making it a significant holder ("whale").`;
@@ -91,144 +107,82 @@
     </div>
   {/if}
 
-  {#if !isLoadingBalances && formattedTokens.length > 0}
-    <div
-      class="hidden sm:grid sm:grid-cols-[2fr,1.5fr,1fr] gap-4 px-4 py-2 text-[11px] uppercase tracking-[0.14em] text-gray-500 font-medium border-b border-white/[0.06]"
-    >
-      <div>Token</div>
-      <div class="text-right">Balance</div>
-      <div class="text-right">Actions</div>
-    </div>
-  {/if}
-
   <div class="max-h-[600px] overflow-y-auto">
     {#if isLoadingBalances}
       <div class="text-center py-8">
         <LoadingIndicator text="Loading token balances..." size={24} />
       </div>
     {:else if formattedTokens.length === 0}
-      <div class="text-center py-8 text-gray-500 text-sm">
-        {#if showOnlyWithBalance}
-          No tokens with balance found in this wallet
-        {:else}
-          No tokens found
-        {/if}
+      <div class="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-8 text-center">
+        <p class="text-sm text-gray-400">
+          {#if showOnlyWithBalance}
+            No tokens with a balance in this wallet
+          {:else}
+            No tokens found
+          {/if}
+        </p>
       </div>
     {:else}
-      <div class="divide-y divide-white/[0.06]">
+      <div class="space-y-2">
         {#each formattedTokens as token (token.canister_id)}
+          {@const hasBalance = token.balanceAmount > BigInt(0)}
+          {@const usd = formatUsd(token.formattedUsdValue)}
           <div
             animate:flip={{ duration: 300 }}
-            class="sm:grid sm:grid-cols-[2fr,1.5fr,1fr] sm:gap-4 sm:items-center p-4 rounded-xl hover:bg-white/[0.03] transition-colors"
+            class="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3.5 sm:px-4 sm:py-3.5 transition-colors hover:border-white/[0.12] hover:bg-white/[0.04] {hasBalance ? '' : 'opacity-55'}"
           >
-            <!-- Mobile display -->
-            <div class="flex flex-col gap-3 sm:hidden">
-              <div class="flex justify-between items-center">
-                <div class="flex items-center gap-2">
-                  <TokenImages tokens={[token]} size={28} />
-                  <div class="flex flex-col">
-                    <div class="flex items-center gap-1">
-                      <span class="font-semibold text-white">{token.symbol}</span>
-                      {#if token.isWhale}
-                        <Badge
-                          variant="blue"
-                          icon="🐋"
-                          size="xs"
-                          tooltipText={whaleTooltipText}
-                        >
-                          {formatSupplyPercentage(token.percentOfSupply)}
-                        </Badge>
-                      {/if}
-                    </div>
-                    <span class="text-xs text-gray-500">{token.name}</span>
-                  </div>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <div class="flex items-center gap-3 min-w-0 flex-1">
+                <div class="flex h-10 w-10 sm:h-11 sm:w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]">
+                  <TokenImages tokens={[token]} size={32} />
                 </div>
-                <div class="text-right">
-                  <div class="font-medium text-gray-100 tabular-nums">
-                    {#if token.balanceAmount === BigInt(0)}
-                      0 {token.symbol}
-                    {:else if Number(token.balanceAmount) < 0.00001}
-                      &lt;0.001 {token.symbol}
-                    {:else}
-                      {formatBalance(token.balanceAmount.toString(), token.decimals)}
-                      {token.symbol}
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="font-semibold tracking-tight text-white truncate">{token.symbol}</span>
+                    {#if token.isWhale}
+                      <Badge
+                        variant="blue"
+                        icon="🐋"
+                        size="xs"
+                        tooltipText={whaleTooltipText}
+                      >
+                        {formatSupplyPercentage(token.percentOfSupply)}
+                      </Badge>
                     {/if}
                   </div>
+                  <p class="text-xs text-gray-500 truncate">{token.name}</p>
                 </div>
               </div>
-            </div>
 
-            <!-- Desktop token column -->
-            <div class="hidden sm:flex items-center gap-3">
-              <TokenImages tokens={[token]} size={38} />
-              <div class="flex flex-col">
-                <div class="flex items-center gap-1">
-                  <span class="font-semibold text-white">{token.symbol}</span>
-                  {#if token.isWhale}
-                    <Badge
-                      variant="blue"
-                      icon="🐋"
-                      size="xs"
-                      tooltipText={whaleTooltipText}
-                    >
-                      {formatSupplyPercentage(token.percentOfSupply)}
-                    </Badge>
+              <div class="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 sm:flex-1">
+                <div class="sm:text-right min-w-0">
+                  <p class="font-medium text-gray-100 tabular-nums tracking-tight truncate">
+                    {displayBalance(token)}
+                  </p>
+                  {#if usd}
+                    <p class="text-xs text-gray-500 tabular-nums">{usd}</p>
+                  {:else if !hasBalance}
+                    <p class="text-xs text-gray-600">No balance</p>
                   {/if}
                 </div>
-                <span class="text-xs text-gray-500">{token.name}</span>
-              </div>
-            </div>
 
-            <!-- Desktop balance column -->
-            <div class="hidden sm:block text-right">
-              <div class="font-medium text-gray-100 tabular-nums">
-                {#if token.balanceAmount === BigInt(0)}
-                  0 {token.symbol}
-                {:else if Number(formatBalance(token.balanceAmount.toString(), token.decimals)) < 0.00000001}
-                  &lt;0.00000001 {token.symbol}
-                {:else}
-                  {formatBalance(token.balanceAmount.toString(), token.decimals)}
-                  {token.symbol}
-                {/if}
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    type="button"
+                    on:click={() => openReceiveModal(token)}
+                    class="agent-btn-ghost !h-8 !px-3 !text-xs"
+                  >
+                    Receive
+                  </button>
+                  <button
+                    type="button"
+                    on:click={() => openSendModal(token)}
+                    class="agent-btn-primary !h-8 !px-3 !text-xs {hasBalance ? '' : 'opacity-50'}"
+                  >
+                    Send
+                  </button>
+                </div>
               </div>
-            </div>
-
-            <!-- Desktop actions column -->
-            <div class="hidden sm:block text-right">
-              <div class="flex justify-end gap-2">
-                <button
-                  type="button"
-                  on:click={() => openReceiveModal(token)}
-                  class="agent-btn-ghost !h-8 !px-3 !text-xs"
-                >
-                  Receive
-                </button>
-                <button
-                  type="button"
-                  on:click={() => openSendModal(token)}
-                  class="agent-btn-primary !h-8 !px-3 !text-xs"
-                >
-                  Send
-                </button>
-              </div>
-            </div>
-
-            <!-- Mobile buttons -->
-            <div class="flex sm:hidden justify-end gap-2 mt-3">
-              <button
-                type="button"
-                on:click={() => openReceiveModal(token)}
-                class="agent-btn-ghost !h-8 !px-3 !text-xs"
-              >
-                Receive
-              </button>
-              <button
-                type="button"
-                on:click={() => openSendModal(token)}
-                class="agent-btn-primary !h-8 !px-3 !text-xs"
-              >
-                Send
-              </button>
             </div>
           </div>
         {/each}

@@ -45,13 +45,13 @@
 <div class="flex flex-row h-screen bg-agent-bg font-sans text-gray-200">
   <aside
     id="mainSidebar"
-    class="bg-agent-surface/95 border-r border-white/[0.06] fixed z-50 w-72 min-w-72 h-full md:shadow-xl transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-out backdrop-blur-xl"
+    class="bg-agent-surface/95 border-r border-white/[0.06] fixed z-50 w-72 min-w-72 h-full transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-out backdrop-blur-xl md:shadow-[8px_0_32px_-12px_rgba(0,0,0,0.45),12px_0_40px_-20px_rgba(101,63,197,0.12)]"
   >
     <!-- quieter sidebar atmosphere -->
     <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
       <div
-        class="absolute inset-0 opacity-40"
-        style="background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 32px 32px; mask-image: linear-gradient(180deg, #000 0%, transparent 70%);"
+        class="absolute inset-0 opacity-55"
+        style="background-image: linear-gradient(rgba(196,181,253,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(196,181,253,0.05) 1px, transparent 1px); background-size: 32px 32px; mask-image: linear-gradient(180deg, #000 0%, transparent 72%);"
       ></div>
       <div class="absolute -top-20 left-1/2 h-32 w-48 -translate-x-1/2 rounded-full bg-agent-purple/10 blur-3xl"></div>
       <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"></div>
@@ -65,7 +65,7 @@
     <!-- calmer stage: soft wash only, no competing orbs/sheen -->
     <div class="pointer-events-none absolute inset-0 agent-atmosphere overflow-hidden" aria-hidden="true"></div>
 
-    <header class="header relative z-40 shrink-0 bg-agent-surface/70 backdrop-blur-xl border-b border-white/[0.06] py-2 px-4 h-[60px]">
+    <header class="header relative z-40 shrink-0 bg-agent-surface/70 backdrop-blur-xl border-b border-white/[0.06] py-2 px-4 h-[60px] shadow-[0_10px_28px_-18px_rgba(0,0,0,0.55),0_16px_40px_-24px_rgba(101,63,197,0.16)]">
       <div class="agent-header-line" aria-hidden="true"></div>
       <div class="header-content flex items-center flex-row h-full gap-2">
         <button
