@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { tooltip } from "../../../helpers/utils/tooltip";
   import { getBonusCyclesTopupInPercent } from "../../../helpers/gameState";
   import { store } from "../../../stores/store";
@@ -25,6 +24,7 @@
   
   // Internal state for accordion
   let isOpen = false;
+  let userToggledOpen = false;
   let bonusCyclesTopupInPercent = 0;
   $: showCreationBonus = bonusCyclesTopupInPercent > 0;
 
@@ -35,19 +35,17 @@
   $: if (isAuthenticated && $store.gameStateCanisterActor) {
     loadBonusPercent();
   }
+
+  // Logged-out: open by default. Logged-in: closed unless the user toggled it.
+  $: if (!userToggledOpen) {
+    isOpen = shouldAutoOpen;
+  }
   
   function toggleAccordion() {
+    userToggledOpen = true;
     isOpen = !isOpen;
     onToggleAccordion('create');
   }
-  
-  onMount(() => {
-    if (shouldAutoOpen) {
-      setTimeout(() => {
-        isOpen = true;
-      }, 100);
-    }
-  });
 </script>
 
 <!-- Accordion shell — one module border only -->

@@ -1048,7 +1048,7 @@
       {modelType}
       {selectedModel}
       {addressCopied}
-      shouldAutoOpen={false}
+      shouldAutoOpen={!isAuthenticated}
       onCreateAgent={createAgent}
       onToggleLoginModal={toggleLoginModal}
       onToggleAccordion={toggleAccordion}
