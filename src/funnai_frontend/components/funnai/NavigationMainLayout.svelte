@@ -133,9 +133,9 @@
   </div>
 </div>
 
-<div class={modalIsOpen ? "" : "hidden"}>
+{#if modalIsOpen}
   <LoginModal {toggleModal} />
-</div>
+{/if}
 
 <style>
   @keyframes slideDown {

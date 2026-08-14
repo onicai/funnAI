@@ -95,6 +95,14 @@
     background: transparent;
   }
 
+  /* Stable mobile drawer height — 100vh jumps when the browser chrome shows/hides */
+  .agent-sidebar-drawer {
+    height: 100vh;
+    height: 100svh;
+    max-height: 100dvh;
+    overscroll-behavior: none;
+  }
+
   .agent-container {
     @apply container mx-auto px-2 md:px-8 py-4 md:py-8 flex-grow;
   }

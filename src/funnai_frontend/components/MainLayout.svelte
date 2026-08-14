@@ -45,7 +45,7 @@
 <div class="flex flex-row h-screen bg-agent-bg font-sans text-gray-200">
   <aside
     id="mainSidebar"
-    class="bg-agent-surface/95 border-r border-white/[0.06] fixed z-50 w-72 min-w-72 h-full transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-out backdrop-blur-xl md:shadow-[8px_0_32px_-12px_rgba(0,0,0,0.45),12px_0_40px_-20px_rgba(101,63,197,0.12)]"
+    class="agent-sidebar-drawer bg-agent-surface/95 border-r border-white/[0.06] fixed top-0 left-0 z-50 w-72 min-w-72 overflow-hidden transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-out backdrop-blur-xl md:shadow-[8px_0_32px_-12px_rgba(0,0,0,0.45),12px_0_40px_-20px_rgba(101,63,197,0.12)]"
   >
     <!-- quieter sidebar atmosphere -->
     <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
@@ -56,7 +56,7 @@
       <div class="absolute -top-20 left-1/2 h-32 w-48 -translate-x-1/2 rounded-full bg-agent-purple/10 blur-3xl"></div>
       <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"></div>
     </div>
-    <div class="sidebar-content relative z-[1] h-full overflow-hidden">
+    <div class="sidebar-content relative z-[1] flex h-full min-h-0 flex-col overflow-hidden">
       <SidebarMainLayout />
     </div>
   </aside>
