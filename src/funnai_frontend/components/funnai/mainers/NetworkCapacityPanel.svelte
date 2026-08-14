@@ -41,9 +41,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
               </svg>
               <span class="font-medium">$FUNNAI available at: 
-                <a href="https://app.icpswap.com/swap?input=ryjl3-tyaaa-aaaaa-aaaba-cai&output=vpyot-zqaaa-aaaaa-qavaq-cai" target="_blank" rel="noopener noreferrer" class="text-amber-300 underline hover:text-amber-200 transition-colors duration-200">ICPSwap</a> 
-                or 
-                <a href="https://www.kongswap.io/stats/vpyot-zqaaa-aaaaa-qavaq-cai" target="_blank" rel="noopener noreferrer" class="text-amber-300 underline hover:text-amber-200 transition-colors duration-200">KongSwap</a>
+                <a href="https://app.icpswap.com/swap?input=ryjl3-tyaaa-aaaaa-aaaba-cai&output=vpyot-zqaaa-aaaaa-qavaq-cai" target="_blank" rel="noopener noreferrer" class="text-amber-300 underline hover:text-amber-200 transition-colors duration-200">ICPSwap</a>
               </span>
             </div>
           </div>
