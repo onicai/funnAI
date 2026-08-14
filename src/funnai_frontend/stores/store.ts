@@ -197,7 +197,50 @@ const SESSION_CHECK_INTERVAL = 30 * 60 * 1000; // Check every 30 minutes in mill
 // Add localStorage keys for mAIner creation state persistence
 const STORAGE_KEYS = {
   MAINER_CREATION_STATE: 'mainerCreationState',
-  MAINER_CREATION_SESSION: 'mainerCreationSession'
+  MAINER_CREATION_SESSION: 'mainerCreationSession',
+  MAINER_UI_CACHE: 'funnai.mainerUiCache',
+};
+
+export const MAINER_UI_CACHE_KEY = STORAGE_KEYS.MAINER_UI_CACHE;
+
+type AuthProvider = "nfid" | "internetidentity";
+
+/**
+ * Synchronous localStorage peek so the first paint can use the last known
+ * login instead of waiting for AuthClient / NFID restore (which runs after mount).
+ * Must NOT be folded into defaultState — disconnect() resets from defaultState.
+ */
+const peekStoredAuth = (): AuthProvider | null => {
+  if (typeof localStorage === "undefined") {
+    return null;
+  }
+
+  try {
+    const sessionInfoStr = localStorage.getItem("sessionInfo");
+    if (sessionInfoStr) {
+      const sessionInfo = JSON.parse(sessionInfoStr);
+      const loginType = sessionInfo?.loginType;
+      if (loginType === "nfid" || loginType === "internetidentity") {
+        if (sessionInfo.expiry) {
+          const expiry = BigInt(sessionInfo.expiry);
+          const nowNs = BigInt(Date.now()) * 1_000_000n;
+          if (expiry <= nowNs) {
+            return null;
+          }
+        }
+        return loginType;
+      }
+    }
+
+    const legacy = localStorage.getItem("isAuthed");
+    if (legacy === "nfid" || legacy === "internetidentity") {
+      return legacy;
+    }
+  } catch (error) {
+    console.warn("Could not peek stored auth session:", error);
+  }
+
+  return null;
 };
 
 type State = {
@@ -355,13 +398,15 @@ export const createStore = ({
   whitelist?: string[];
   host?: string;
 }) => {
-  const { subscribe, update } = writable<State>(defaultState);
-  let globalState: State;
-  
-  // Defer the subscription to avoid temporal dead zone
-  setTimeout(() => {
-    subscribe((value) => globalState = value);
-  }, 0);
+  const initialState: State = {
+    ...defaultState,
+    isAuthed: peekStoredAuth(),
+  };
+  const { subscribe, update } = writable<State>(initialState);
+  let globalState: State = initialState;
+  subscribe((value) => {
+    globalState = value;
+  });
 
   // Add helper functions for mAIner creation state persistence
   const storeMainerCreationState = (isCreating: boolean, sessionId: string | null, progress: any[] = []) => {
@@ -1169,7 +1214,9 @@ export const createStore = ({
     });
   };
 
-  const checkExistingLoginAndConnect = async () => {
+  let sessionRestorePromise: Promise<void> | null = null;
+
+  const restoreExistingSession = async () => {
     console.log("🔄 Checking for existing login session...");
 
     // Check login state if user is already logged in
@@ -1356,6 +1403,16 @@ export const createStore = ({
     }
 
     console.log("🏁 Session restoration check complete");
+  };
+
+  const checkExistingLoginAndConnect = () => {
+    if (!sessionRestorePromise) {
+      sessionRestorePromise = restoreExistingSession().catch((error) => {
+        sessionRestorePromise = null;
+        throw error;
+      });
+    }
+    return sessionRestorePromise;
   };
 
   const loadUserMainerCanisters = async () => {
@@ -1630,6 +1687,7 @@ export const createStore = ({
   const clearSessionInfo = () => {
     localStorage.removeItem('sessionInfo');
     localStorage.removeItem('isAuthed');
+    localStorage.removeItem(STORAGE_KEYS.MAINER_UI_CACHE);
   };
 
   const shouldRefreshSession = (expiry: bigint): boolean => {
@@ -1766,6 +1824,12 @@ export const createStore = ({
       shouldOpenFirstMainerAfterCreation: false
     }));
   };
+
+  // Start session restore as soon as the store module loads — do not wait for
+  // layout onMount (or Chart.js init) before knowing the user is logged in.
+  if (typeof window !== "undefined") {
+    void checkExistingLoginAndConnect();
+  }
 
   return {
     subscribe,
