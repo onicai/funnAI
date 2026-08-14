@@ -1393,217 +1393,100 @@
         </div>
       </button>
       <div id="content-{sanitizedId}" class="accordion-content">
-        <div class="pb-3 sm:pb-5 text-xs sm:text-sm text-gray-300 p-3 sm:p-4 space-y-3 border-t border-white/[0.06]">
-          <div class="flex flex-col space-y-3">
-            <!-- Cycles Management Panel — no nested agent-card border -->
-            <div class="relative overflow-hidden rounded-xl bg-white/[0.03]">
-              <div class="relative p-4 sm:p-5">
-                <!-- Header Section -->
-                <div class="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0 mb-4">
-                  <div class="flex items-center space-x-3">
-                    <div class="flex-shrink-0 w-10 h-10 bg-agent-purple/15 rounded-xl flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-agent-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                      </svg>
-                    </div>
-                    
-                    <div class="flex flex-col">
-                      <h2 class="text-sm sm:text-base font-semibold text-white">Cycles Management</h2>
-                      <p class="text-xs text-gray-400">Cycle-power your mAIner</p>
-                    </div>
-                  </div>
-                  
-                  <!-- Primary Top-up Button -->
-                  {#if $mainerHealthStatuses.get(agent.id)?.isHealthy !== true}
-                    <div class="w-full md:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-amber-500/10 rounded-xl">
-                      <div class="flex items-center space-x-2 text-amber-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        <span class="text-sm font-medium">{$mainerHealthStatuses.get(agent.id)?.maintenanceMessage || 'Checking mAIner status...'}</span>
-                      </div>
-                    </div>
+        <div class="text-xs sm:text-sm text-gray-300 p-3 space-y-2 border-t border-white/[0.06]">
+            <div class="rounded-xl bg-white/[0.03] p-3">
+              <div class="flex items-center justify-between gap-2 mb-2.5">
+                <div class="flex items-center gap-2 min-w-0">
+                  <h2 class="text-sm font-semibold text-white">Cycles</h2>
+                  {#if agent.cycleBalance > 5_000_000_000_000}
+                    <span class="inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-emerald-300">Healthy</span>
+                  {:else if agent.cycleBalance > 1_000_000_000_000}
+                    <span class="inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-300">Low</span>
                   {:else}
-                    <button 
-                      type="button" 
-                      class="agent-btn-primary w-full md:w-auto"
-                      class:opacity-50={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                      class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                      disabled={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                      on:click={() => openTopUpModal(agent)}
-                    >
-                      {#if agentsBeingToppedUp.has(agent.id)}
-                        <div class="flex items-center space-x-2">
-                          <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                          <span>Processing...</span>
-                        </div>
-                      {:else}
-                        <div class="flex items-center space-x-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                          </svg>
-                          <span>Top-up Cycles</span>
-                        </div>
-                      {/if}
-                    </button>
+                    <span class="inline-flex items-center rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-medium text-red-300">Critical</span>
                   {/if}
                 </div>
 
-                <!-- Balance Display Section -->
-                <div class="rounded-xl p-4 bg-agent-bg/40">
-                  <div class="flex flex-col space-y-3">
-                    <!-- Balance Header -->
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-agent-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                        </svg>
-                        <span class="text-sm font-medium text-gray-200">Current Balance</span>
-                      </div>
-                      
-                      <!-- Status indicator based on balance level -->
-                      {#if agent.cycleBalance > 5_000_000_000_000}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                          </svg>
-                          Healthy
-                        </span>
-                      {:else if agent.cycleBalance > 1_000_000_000_000}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                          </svg>
-                          Low
-                        </span>
-                      {:else}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/15 text-red-300 border border-red-500/30">
-                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                          </svg>
-                          Critical
-                        </span>
-                      {/if}
-                    </div>
+                {#if $mainerHealthStatuses.get(agent.id)?.isHealthy !== true}
+                  <span class="text-[11px] font-medium text-amber-300 truncate max-w-[55%]">
+                    {$mainerHealthStatuses.get(agent.id)?.maintenanceMessage || 'Checking status…'}
+                  </span>
+                {:else}
+                  <button
+                    type="button"
+                    class="agent-btn-primary h-8 px-3 text-xs"
+                    class:opacity-50={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
+                    class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
+                    disabled={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
+                    on:click={() => openTopUpModal(agent)}
+                  >
+                    {#if agentsBeingToppedUp.has(agent.id)}
+                      <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                      <span>Processing…</span>
+                    {:else}
+                      <span>Top up</span>
+                    {/if}
+                  </button>
+                {/if}
+              </div>
 
-                    <!-- Balance Value Display -->
-                    <div class="flex items-center justify-between">
-                      {#if agentsBeingToppedUp.has(agent.id) || agentsBeingRefreshed.has(agent.id)}
-                        <div class="flex items-center space-x-3">
-                          <span class="w-5 h-5 border-2 border-agent-purple/30 border-t-agent-purple rounded-full animate-spin"></span>
-                          <div class="flex flex-col">
-                            <span class="text-sm font-medium text-gray-300">
-                              {agentsBeingToppedUp.has(agent.id) ? 'Updating balance...' : 'Refreshing balance...'}
-                            </span>
-                            <span class="text-xs text-gray-500">Please wait</span>
-                          </div>
-                        </div>
-                      {:else}
-                        <div class="flex flex-col">
-                          {#if $mainerHealthStatuses.get(agent.id)?.isHealthy === false}
-                            <div class="flex items-center space-x-2">
-                              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              <span class="text-xl sm:text-2xl font-semibold text-gray-400">
-                                Unknown
-                              </span>
-                            </div>
-                            <span class="text-xs text-gray-500">
-                              Balance unavailable (mAIner stopped)
-                            </span>
-                          {:else}
-                            <div class="flex items-baseline space-x-2">
-                              <span class="text-2xl sm:text-3xl font-semibold text-white">
-                                {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)}
-                              </span>
-                              <span class="text-sm font-medium text-gray-400">T cycles</span>
-                            </div>
-                            <span class="text-xs text-gray-500">
-                              ≈ {formatLargeNumber(agent.cycleBalance, 2, true)} total cycles
-                            </span>
-                          {/if}
-                        </div>
-                      {/if}
-
-                      <!-- Refresh Button -->
-                      <button 
-                        type="button" 
-                        class="group inline-flex items-center justify-center w-9 h-9 text-gray-400 bg-white/[0.04] hover:bg-agent-purple/15 hover:text-agent-purple rounded-lg border border-white/10 hover:border-agent-purple/30 transition-all duration-200"
-                        class:opacity-50={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
-                        class:cursor-not-allowed={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
-                        disabled={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
-                        on:click={() => refreshAgentBalance(agent)}
-                        use:tooltip={{ 
-                          text: "Refresh cycles balance",
-                          direction: 'top',
-                          textSize: 'xs'
-                        }}
-                      >
-                        {#if agentsBeingRefreshed.has(agent.id)}
-                          <span class="w-4 h-4 border-2 border-agent-purple/30 border-t-agent-purple rounded-full animate-spin"></span>
-                        {:else}
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                        {/if}
-                      </button>
-                    </div>
-
-                    <!-- Balance Info Footer -->
-                    {#if !agentsBeingToppedUp.has(agent.id) && !agentsBeingRefreshed.has(agent.id)}
-                      <div class="pt-2 border-t border-white/[0.06]">
-                        <div class="flex flex-col text-xs space-y-1.5">
-                          <!-- Official App Warning -->
-                          <div class="flex items-start gap-1.5 p-2 bg-amber-500/10 border border-amber-500/30 rounded">
-                            <svg class="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                            </svg>
-                            <span class="text-amber-200 text-sm leading-tight">
-                              <sup class="font-bold mr-1">Only top-up via this official app. Direct cycles transfers to the mAIner canister incur high fees.
-                            </span>
-                          </div>
-                          
-                          <!-- Info and Low Balance Warning -->
-                          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1 sm:space-y-0">
-                            <span class="text-gray-500">
-                              Cycles power your mAIner's computational tasks
-                            </span>
-                            {#if agent.cycleBalance <= 1_000_000_000_000 && $mainerHealthStatuses.get(agent.id)?.isHealthy !== false}
-                              <span class="text-red-400 font-medium">
-                                Top-up recommended
-                              </span>
-                            {/if}
-                          </div>
-                        </div>
-                      </div>
+              <div class="flex items-center justify-between gap-3">
+                {#if agentsBeingToppedUp.has(agent.id) || agentsBeingRefreshed.has(agent.id)}
+                  <div class="flex items-center gap-2 text-gray-400">
+                    <span class="w-4 h-4 border-2 border-agent-purple/30 border-t-agent-purple rounded-full animate-spin"></span>
+                    <span class="text-xs">
+                      {agentsBeingToppedUp.has(agent.id) ? 'Updating balance…' : 'Refreshing…'}
+                    </span>
+                  </div>
+                {:else if $mainerHealthStatuses.get(agent.id)?.isHealthy === false}
+                  <span class="text-sm font-medium text-gray-400">Balance unknown</span>
+                {:else}
+                  <div class="flex items-baseline gap-1.5">
+                    <span class="text-xl font-semibold text-white tabular-nums">
+                      {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 2, false)}
+                    </span>
+                    <span class="text-xs text-gray-500">T cycles</span>
+                    {#if agent.cycleBalance <= 1_000_000_000_000}
+                      <span class="text-[10px] font-medium text-red-400">Top-up recommended</span>
                     {/if}
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
+                {/if}
 
-          <div class="flex flex-col space-y-2 mb-2">
-            <!-- Daily Burn Rate Panel Component -->
-            <DailyBurnRatePanel 
-              {agent} 
-              {agentCanisterActors} 
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center w-8 h-8 text-gray-400 bg-white/[0.04] hover:bg-agent-purple/15 hover:text-agent-purple rounded-lg border border-white/10 hover:border-agent-purple/30 transition-colors"
+                  class:opacity-50={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
+                  class:cursor-not-allowed={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
+                  disabled={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
+                  on:click={() => refreshAgentBalance(agent)}
+                  use:tooltip={{ text: "Refresh cycles balance", direction: 'top', textSize: 'xs' }}
+                >
+                  {#if agentsBeingRefreshed.has(agent.id)}
+                    <span class="w-3.5 h-3.5 border-2 border-agent-purple/30 border-t-agent-purple rounded-full animate-spin"></span>
+                  {:else}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  {/if}
+                </button>
+              </div>
+
+              <p class="mt-2 text-[11px] leading-snug text-amber-200/90">
+                Top up only in this app — direct canister transfers incur high fees.
+              </p>
+            </div>
+
+            <DailyBurnRatePanel
+              {agent}
+              {agentCanisterActors}
               {agentCanistersInfo}
               isHealthy={$mainerHealthStatuses.get(agent.id)?.isHealthy ?? true}
               on:burnRateUpdated={handleBurnRateUpdate}
             />
-          </div>
 
-          <!-- Canister Info Component -->
-          <div class="flex flex-col space-y-2 mb-2">
             <CanisterInfo {agent} />
-          </div>
 
-          <div class="flex flex-col space-y-2 mb-2">
             <CyclesDisplayAgent cycles={agent.burnedCycles} label="Burned Cycles" />
-          </div>
-
         </div>
       </div>
     </div>
