@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { get } from "svelte/store";
   import { store } from "../../stores/store";
   import CyclesDisplay from "./CyclesDisplay.svelte";
   import MainerFeed from "./MainerFeed.svelte";
 
   let isOpen = false;
-  let showAllEvents = true;
   let hasUserToggledFeed = false;
+  let showAllEvents = !get(store).isAuthed;
 
   $: if (!hasUserToggledFeed) {
     showAllEvents = !$store.isAuthed;
