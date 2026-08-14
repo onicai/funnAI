@@ -48,6 +48,8 @@
   let isValidating: boolean = false;
   let errorMessage: string = "";
   let tokenFee: bigint = BigInt(0);
+  let feeLoaded: boolean = false;
+  let feeLoadError: string = "";
   let showScanner: boolean = false;
   let hasCamera: boolean = false;
   let accounts: { subaccount: string; main: string } = { subaccount: "", main: "" };
@@ -84,13 +86,16 @@
     }, 200);
   }
 
-  // Load token fee
+  // Load token fee from the ledger. Never guess — a stale/default fee causes BadFee.
   async function loadTokenFee() {
+    feeLoaded = false;
+    feeLoadError = "";
     try {
       tokenFee = await IcrcService.getTokenFee(token);
+      feeLoaded = true;
     } catch (error) {
       console.error("Error loading token fee:", error);
-      tokenFee = BigInt(10000); // Fallback to default fee
+      feeLoadError = "Could not load the current transfer fee. Please try again.";
     }
   }
 
@@ -230,13 +235,19 @@
         throw new Error("Authentication not initialized");
       }
 
+      // Re-read the live ledger fee immediately before signing so a stale
+      // token.fee_fixed cannot cause BadFee.
+      tokenFee = await IcrcService.getTokenFee(token);
+      feeLoaded = true;
+      if (transferDetails) {
+        transferDetails = { ...transferDetails, tokenFee };
+      }
+
       const result = await IcrcService.transfer(
         token,
         recipientAddress,
         amountBigInt,
-        {
-          fee: token.fee_fixed ? BigInt(token.fee_fixed) : tokenFee
-        }
+        { fee: tokenFee }
       );
 
       //@ts-ignore
@@ -317,6 +328,8 @@
     amount &&
     recipientAddress &&
     !errorMessage &&
+    !feeLoadError &&
+    feeLoaded &&
     addressValidation.addressType !== null &&
     addressValidation.isValid &&
     amountValidation.isValid
@@ -326,7 +339,9 @@
   function getTooltipMessage(): string {
     if (!recipientAddress) return "Enter recipient address";
     if (!amount) return "Enter amount";
+    if (feeLoadError) return feeLoadError;
     if (errorMessage) return errorMessage;
+    if (!feeLoaded) return "Loading transfer fee…";
     return "Send tokens";
   }
 
@@ -454,7 +469,11 @@
         {/if}
       </div>
 
-      {#if errorMessage}
+      {#if feeLoadError}
+        <div class="p-2.5 rounded-xl border border-red-500/25 bg-red-500/10 text-red-300 text-xs sm:text-sm">
+          {feeLoadError}
+        </div>
+      {:else if errorMessage}
         <div class="p-2.5 rounded-xl border border-red-500/25 bg-red-500/10 text-red-300 text-xs sm:text-sm">
           {errorMessage}
         </div>
