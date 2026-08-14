@@ -5,7 +5,6 @@
   import LoginModal from '../login/LoginModal.svelte';
   import {
     ShoppingCart,
-    LogIn,
     ChevronDown,
     LogOut,
     User,
@@ -126,9 +125,8 @@
       <button
         type="button"
         on:click={toggleModal}
-        class="agent-btn-ghost"
+        class="inline-flex items-center justify-center gap-2 h-9 px-4 rounded-xl border border-white/12 bg-white/[0.04] text-[13px] font-medium tracking-tight text-white shadow-[0_1px_0_0_rgba(255,255,255,0.06)_inset] transition-colors hover:border-white/20 hover:bg-white/[0.07]"
       >
-        <LogIn class="w-3.5 h-3.5 stroke-[1.75]" />
         <span>Connect</span>
       </button>
     {/if}
