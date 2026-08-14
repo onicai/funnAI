@@ -14,20 +14,40 @@ onMount(() => {
   const sidebarToggle = document.getElementById('mainSidebarToggle');
   const mainSidebar = document.getElementById('mainSidebar');
 
+  function isMobileDrawer() {
+    return window.matchMedia('(max-width: 767px)').matches;
+  }
+
+  function lockPageScroll(lock) {
+    document.documentElement.style.overflow = lock ? 'hidden' : '';
+    document.body.style.overflow = lock ? 'hidden' : '';
+  }
+
+  function setSidebarOpen(open) {
+    if (open) {
+      mainSidebar.classList.remove('-translate-x-full');
+      if (isMobileDrawer()) lockPageScroll(true);
+    } else {
+      mainSidebar.classList.add('-translate-x-full');
+      lockPageScroll(false);
+    }
+  }
+
   function toggleSidebar(event) {
     event.stopPropagation();
-    mainSidebar.classList.toggle('-translate-x-full');
-  };
+    const isClosed = mainSidebar.classList.contains('-translate-x-full');
+    setSidebarOpen(isClosed);
+  }
 
   function closeSidebarOutside(event) {
     if (!mainSidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
-      mainSidebar.classList.add('-translate-x-full');
-    };
-  };
+      setSidebarOpen(false);
+    }
+  }
 
   function stopPropagation(event) {
     event.stopPropagation();
-  };
+  }
 
   sidebarToggle.addEventListener('click', toggleSidebar);
   document.body.addEventListener('click', closeSidebarOutside);
@@ -37,12 +57,15 @@ onMount(() => {
     sidebarToggle.removeEventListener('click', toggleSidebar);
     document.body.removeEventListener('click', closeSidebarOutside);
     mainSidebar.removeEventListener('click', stopPropagation);
+    lockPageScroll(false);
   };
 });
 
 function closeSidebar() {
   const mainSidebar = document.getElementById('mainSidebar');
   mainSidebar?.classList.add('-translate-x-full');
+  document.documentElement.style.overflow = '';
+  document.body.style.overflow = '';
 }
 
 $: currentPath = $location;
@@ -56,7 +79,7 @@ const navItems = [
 ];
 </script>
 
-<div class="sidebar-header font-sans flex flex-col h-full bg-transparent">
+<div class="sidebar-header font-sans flex flex-col h-full min-h-0 bg-transparent">
   <!-- Brand: text-only during rebrand -->
   <div class="px-5 pt-6 pb-4">
     <a
@@ -72,7 +95,7 @@ const navItems = [
     </a>
   </div>
 
-  <nav class="flex-1 px-3 pb-3 overflow-y-auto" aria-label="Primary">
+  <nav class="flex-1 min-h-0 px-3 pb-3 overflow-y-auto overscroll-contain" aria-label="Primary">
     <ul class="space-y-0.5">
       {#each navItems as item}
         <li>
@@ -106,7 +129,7 @@ const navItems = [
   </nav>
 
   <!-- Connect module -->
-  <div class="px-3 pb-4 pt-3 border-t border-white/[0.06]">
+  <div class="shrink-0 px-3 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-white/[0.06]">
     <div class="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-transparent p-3">
       <div class="px-1 mb-3">
         <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Connect</p>
