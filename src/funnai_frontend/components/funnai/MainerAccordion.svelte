@@ -9,7 +9,8 @@
   import NetworkCapacityPanel from './mainers/NetworkCapacityPanel.svelte';
   import AnnouncementPanel from './mainers/AnnouncementPanel.svelte';
   import CanisterInfo from './CanisterInfo.svelte';
-  import { store } from "../../stores/store";
+  import { get } from 'svelte/store';
+  import { store, MAINER_UI_CACHE_KEY } from "../../stores/store";
   import LoginModal from '../login/LoginModal.svelte';
   import MainerPaymentModal from './MainerPaymentModal.svelte';
   import MainerTopUpModal from './MainerTopUpModal.svelte';
@@ -29,24 +30,88 @@
   $: mainerCreationProgress = $store.mainerCreationProgress;
   $: shouldOpenFirstMainerAfterCreation = $store.shouldOpenFirstMainerAfterCreation;
 
-  // Loading state for protocol flags
-  let protocolFlagsLoading = true;
+  const PROTOCOL_FLAGS_CACHE_KEY = 'funnai.protocolFlags';
 
-  let isProtocolActiveFlag = true; // Will be loaded
+  function readProtocolFlagsCache() {
+    try {
+      const raw = localStorage.getItem(PROTOCOL_FLAGS_CACHE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeProtocolFlagsCache(flags) {
+    try {
+      localStorage.setItem(PROTOCOL_FLAGS_CACHE_KEY, JSON.stringify(flags));
+    } catch {
+      // ignore quota / private mode
+    }
+  }
+
+  function readMainerUiCache() {
+    try {
+      const raw = localStorage.getItem(MAINER_UI_CACHE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed?.agents)) return [];
+      return parsed.agents.map((agent) => ({
+        ...agent,
+        originalCanisterInfo: {
+          address: agent.id,
+          creationTimestamp: agent.createdAtNs ? BigInt(agent.createdAtNs) : 0n,
+        },
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  function writeMainerUiCache(nextAgents) {
+    try {
+      localStorage.setItem(MAINER_UI_CACHE_KEY, JSON.stringify({
+        agents: nextAgents.map((agent) => ({
+          id: agent.id,
+          name: agent.name,
+          uiStatus: agent.uiStatus,
+          burnedCycles: agent.burnedCycles,
+          cycleBalance: agent.cycleBalance,
+          cyclesBurnRateSetting: agent.cyclesBurnRateSetting,
+          mainerType: agent.mainerType,
+          llmSetupStatus: agent.llmSetupStatus,
+          hasError: agent.hasError,
+          isUnlocked: agent.isUnlocked,
+          createdAt: agent.createdAt,
+          createdAtNs: agent.originalCanisterInfo?.creationTimestamp
+            ? agent.originalCanisterInfo.creationTimestamp.toString()
+            : null,
+        })),
+      }));
+    } catch {
+      // ignore quota / private mode
+    }
+  }
+
+  const cachedProtocolFlags = readProtocolFlagsCache();
+
+  // Loading state for protocol flags — skip the spinner when we already know last values
+  let protocolFlagsLoading = !cachedProtocolFlags;
+
+  let isProtocolActiveFlag = cachedProtocolFlags?.isProtocolActive ?? true;
   $: isProtocolActive = isProtocolActiveFlag;
 
-  let isMainerCreationStoppedFlag = false; // Will be loaded
+  let isMainerCreationStoppedFlag = cachedProtocolFlags?.isMainerCreationStopped ?? false;
   $: stopMainerCreation = isMainerCreationStoppedFlag;
 
   // Whitelist phase variables
-  let isWhitelistPhaseActiveFlag = false; // Will be loaded
+  let isWhitelistPhaseActiveFlag = cachedProtocolFlags?.isWhitelistPhaseActive ?? false;
   $: isWhitelistPhaseActive = isWhitelistPhaseActiveFlag;
   
-  let isPauseWhitelistMainerCreationFlag = false; // Will be loaded
+  let isPauseWhitelistMainerCreationFlag = cachedProtocolFlags?.isPauseWhitelistMainerCreation ?? false;
   $: isPauseWhitelistMainerCreation = isPauseWhitelistMainerCreationFlag;
 
   // Reverse Auction variables
-  let isAuctionActiveFlag = false; // Will be loaded
+  let isAuctionActiveFlag = cachedProtocolFlags?.isAuctionActive ?? false;
   $: isAuctionActive = isAuctionActiveFlag;
   
   let availableMainersCount = 0; // Will be loaded
@@ -60,8 +125,6 @@
   let auctionUpdateInterval: number | null = null;
 
   let agents = [];
-
-  // Separate unlocked mAIners for whitelist phase
   let unlockedMainers = [];
 
   let selectedBurnRate: 'Low' | 'Medium' | 'High' = 'Medium'; // Default value
@@ -399,8 +462,14 @@
         await loadProtocolFlags();
       }, 2000);
     } finally {
-      // Set loading to false after flags are loaded (whether successful or not)
       protocolFlagsLoading = false;
+      writeProtocolFlagsCache({
+        isProtocolActive: isProtocolActiveFlag,
+        isMainerCreationStopped: isMainerCreationStoppedFlag,
+        isWhitelistPhaseActive: isWhitelistPhaseActiveFlag,
+        isPauseWhitelistMainerCreation: isPauseWhitelistMainerCreationFlag,
+        isAuctionActive: isAuctionActiveFlag,
+      });
     };    
   };
 
@@ -451,6 +520,14 @@
       availableMainersCount = 0;
       nextPriceDropAtNs = 0;
       auctionIntervalSeconds = 0;
+    } finally {
+      writeProtocolFlagsCache({
+        isProtocolActive: isProtocolActiveFlag,
+        isMainerCreationStopped: isMainerCreationStoppedFlag,
+        isWhitelistPhaseActive: isWhitelistPhaseActiveFlag,
+        isPauseWhitelistMainerCreation: isPauseWhitelistMainerCreationFlag,
+        isAuctionActive: isAuctionActiveFlag,
+      });
     }
   };
 
@@ -715,21 +792,13 @@
     addressCopied = true;
   };
 
-  async function loadAgents() {
-    // The store now provides enriched canister info with status, cycles, etc.
-    const enrichedCanistersInfo = agentCanistersInfo;
-
-    // Separate unlocked mAIners from active agents
+  function mapAgentsFrom(canistersInfo = [], _canisterActors = [], principalText = null) {
     const activeAgents = [];
     const unlockedAgents = [];
 
-    enrichedCanistersInfo.forEach((canisterInfo, index) => {
-      // Get the correct actor by index (might be null for unlocked mAIners)
-      const agentActor = agentCanisterActors[index];
-      
-      // Determine mainer type from the canister info
+    canistersInfo.forEach((canisterInfo, index) => {
       let mainerType = 'Unknown';
-      if (canisterInfo.canisterType) {
+      if (canisterInfo.canisterType?.MainerAgent) {
         if ('Own' in canisterInfo.canisterType.MainerAgent) {
           mainerType = 'Own';
         } else if ('ShareAgent' in canisterInfo.canisterType.MainerAgent) {
@@ -737,14 +806,12 @@
         }
       }
 
-      // Check if this is an unlocked mAIner
       const isUnlocked = canisterInfo.status && 'Unlocked' in canisterInfo.status;
-      
-      // Check if this unlocked mAIner is owned by the current user
-      const isOwnedByCurrentUser = !canisterInfo.ownedBy || canisterInfo.ownedBy.toString() === $store.principal?.toString();
+      const isOwnedByCurrentUser = !canisterInfo.ownedBy || canisterInfo.ownedBy.toString() === principalText;
+      const creationTimestamp = canisterInfo.creationTimestamp;
       
       const mainerData = {
-        id: canisterInfo.address || `unlocked-${index}`, // Use index for unlocked without address
+        id: canisterInfo.address || `unlocked-${index}`,
         name: isUnlocked ? `Unlocked mAIner ${index + 1}` : `mAIner ${canisterInfo.address?.slice(0, 5) || 'Unknown'}`,
         uiStatus: isUnlocked ? "unlocked" : (canisterInfo.uiStatus || "active"),
         burnedCycles: canisterInfo.burnedCycles || 0,
@@ -757,44 +824,68 @@
         hasError: canisterInfo.hasError || false,
         isUnlocked,
         isOwnedByCurrentUser,
-        originalCanisterInfo: canisterInfo, // Store original for whitelist creation
-        // NEW: store creation timestamp in milliseconds for easy display
-        createdAt: canisterInfo.creationTimestamp ? Number(canisterInfo.creationTimestamp / 1000000n) : null
+        originalCanisterInfo: canisterInfo,
+        createdAt: creationTimestamp
+          ? Number(typeof creationTimestamp === 'bigint' ? creationTimestamp / 1000000n : creationTimestamp)
+          : null
       };
 
       if (isUnlocked && isOwnedByCurrentUser) {
         unlockedAgents.push(mainerData);
-      } else if (isUnlocked && !isOwnedByCurrentUser) {
-        //console.log(`⏭️ Skipping unlocked mAIner ${index + 1} - owned by different user:`, canisterInfo.ownedBy?.toString());
       } else if (!isUnlocked) {
         activeAgents.push(mainerData);
       }
     });
 
-    // Update unlocked mAIners list
-    unlockedMainers = unlockedAgents;
-    
-    // Sort by creation timestamp so newest mAIners appear first
-    return activeAgents.sort((a, b) => {
-      const nowNs = BigInt(Date.now()) * 1000000n; // current time in nanoseconds approximation
+    const agentsSorted = activeAgents.sort((a, b) => {
+      const nowNs = BigInt(Date.now()) * 1000000n;
       const tsA: bigint = (a.originalCanisterInfo?.creationTimestamp && a.originalCanisterInfo.creationTimestamp > 0n) ? a.originalCanisterInfo.creationTimestamp : nowNs;
       const tsB: bigint = (b.originalCanisterInfo?.creationTimestamp && b.originalCanisterInfo.creationTimestamp > 0n) ? b.originalCanisterInfo.creationTimestamp : nowNs;
       if (tsA === tsB) return 0;
-      // Newest first => larger timestamp comes before smaller one
       return tsA < tsB ? 1 : -1;
     });
-  };
+
+    return { agents: agentsSorted, unlocked: unlockedAgents };
+  }
+
+  function loadAgents() {
+    const mapped = mapAgentsFrom(
+      agentCanistersInfo || [],
+      agentCanisterActors || [],
+      $store.principal?.toString()
+    );
+    unlockedMainers = mapped.unlocked;
+    return mapped.agents;
+  }
+
+  {
+    const initial = get(store);
+    if (initial.userMainerAgentCanistersInfo?.length) {
+      const mapped = mapAgentsFrom(
+        initial.userMainerAgentCanistersInfo,
+        initial.userMainerCanisterActors,
+        initial.principal?.toString()
+      );
+      agents = mapped.agents;
+      unlockedMainers = mapped.unlocked;
+    } else if (initial.isAuthed) {
+      agents = readMainerUiCache();
+    }
+  }
 
   $: {
-    // React to changes in agentCanisterActors and agentCanistersInfo
     agentCanisterActors;
     agentCanistersInfo;
 
-    (async () => {
-      agents = await loadAgents();
-      // Check if we should auto-open the first mAIner after creation
+    if (agentCanistersInfo && agentCanistersInfo.length > 0) {
+      agents = loadAgents();
+      writeMainerUiCache(agents);
       openFirstMainerAccordion();
-    })();
+    } else if ($store.principal) {
+      agents = [];
+      unlockedMainers = [];
+      writeMainerUiCache([]);
+    }
   };
 
   function toggleLoginModal() {
@@ -810,9 +901,6 @@
     ]).catch(error => {
       console.error("Error loading initial data:", error);
     });
-    
-    // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
-    agents = await loadAgents();
     
     // Load marketplace listings to show "For Sale" badges
     await loadMarketplaceListings();
@@ -1025,36 +1113,24 @@
 />
 -->
 
-<!-- Loading state for protocol flags -->
-{#if protocolFlagsLoading}
-  <div class="agent-card">
-    <div class="w-full flex justify-center items-center py-8 px-6 text-gray-400">
-      <div class="flex items-center space-x-3">
-        <div class="w-6 h-6 border-2 border-white/10 border-t-agent-purple rounded-full animate-spin"></div>
-        <span class="text-sm font-medium">Loading creation options...</span>
-      </div>
-    </div>
-  </div>
-{:else}
-  <!-- Create Agent Accordion (only show when not in whitelist phase AND not in auction mode) -->
-  {#if !isWhitelistPhaseActive && !isAuctionActive}
-    <MainerCreationPanel
-      {isAuthenticated}
-      {isProtocolActive}
-      {stopMainerCreation}
-      {isCreatingMainer}
-      {mainerCreationProgress}
-      {mainerPrice}
-      {modelType}
-      {selectedModel}
-      {addressCopied}
-      shouldAutoOpen={!isAuthenticated}
-      onCreateAgent={createAgent}
-      onToggleLoginModal={toggleLoginModal}
-      onToggleAccordion={toggleAccordion}
-      onModelTypeChange={(type) => modelType = type}
-    />
-  {/if}
+<!-- Create Agent Accordion (only show when not in whitelist phase AND not in auction mode) -->
+{#if !isWhitelistPhaseActive && !isAuctionActive}
+  <MainerCreationPanel
+    {isAuthenticated}
+    {isProtocolActive}
+    {stopMainerCreation}
+    {isCreatingMainer}
+    {mainerCreationProgress}
+    {mainerPrice}
+    {modelType}
+    {selectedModel}
+    {addressCopied}
+    shouldAutoOpen={false}
+    onCreateAgent={createAgent}
+    onToggleLoginModal={toggleLoginModal}
+    onToggleAccordion={toggleAccordion}
+    onModelTypeChange={(type) => modelType = type}
+  />
 {/if}
 
 
@@ -1076,7 +1152,7 @@
 />
 
 <!--Reverse Auction Section (show when auction is active and not in whitelist phase) -->
-{#if isAuctionActive && !isWhitelistPhaseActive && !protocolFlagsLoading}
+{#if isAuctionActive && !isWhitelistPhaseActive}
   <div class="mt-4">
     <ReverseAuctionPanel
       {isAuthenticated}

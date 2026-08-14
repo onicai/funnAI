@@ -8,10 +8,32 @@
   let metricsLoading = true;
   let activeMainers: number | null = null;
   let funnaiIndex: number | null = null;
+  let auraEl: HTMLImageElement | null = null;
+  let auraReady = false;
 
   const toggleModal = () => {};
 
+  function revealAura(img: HTMLImageElement) {
+    if (auraReady) return;
+    const show = () => {
+      auraReady = true;
+    };
+    if (typeof img.decode === "function") {
+      img.decode().then(show).catch(show);
+    } else {
+      show();
+    }
+  }
+
+  function handleAuraLoad(event: Event) {
+    revealAura(event.currentTarget as HTMLImageElement);
+  }
+
   onMount(async () => {
+    if (auraEl && auraEl.complete && auraEl.naturalWidth > 0) {
+      revealAura(auraEl);
+    }
+
     try {
       const latest = await DailyMetricsService.getLatestMetrics();
       if (latest) {
@@ -29,9 +51,14 @@
 <section class="relative mx-auto w-full max-w-5xl px-2 sm:px-0 pt-6 sm:pt-10 pb-16 sm:pb-24 min-h-[28rem] sm:min-h-[34rem]">
   <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
     <img
+      bind:this={auraEl}
       src="/landing-aura.jpg"
       alt=""
-      class="absolute left-1/2 bottom-0 w-[160%] max-w-none -translate-x-1/2 translate-y-[4%] mix-blend-screen select-none"
+      width="1024"
+      height="635"
+      decoding="async"
+      on:load={handleAuraLoad}
+      class="landing-aura absolute left-1/2 bottom-0 w-[160%] max-w-none -translate-x-1/2 translate-y-[4%] mix-blend-screen select-none {auraReady ? 'is-ready' : ''}"
     />
     <img
       src="/landing-stars.png"
@@ -128,3 +155,14 @@
     </div>
   </div>
 </section>
+
+<style>
+  .landing-aura {
+    opacity: 0;
+    transition: opacity 0.85s ease-out;
+  }
+
+  .landing-aura.is-ready {
+    opacity: 1;
+  }
+</style>

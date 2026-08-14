@@ -15,20 +15,18 @@
   import { initializeChartJS } from '../helpers/chartSetup';
   import { link } from 'svelte-spa-router';
 
-  onMount(async () => {
+  onMount(() => {
     initializeChartJS();
 
     localStorage.setItem("theme", "dark");
     theme.set("dark");
     document.documentElement.classList.add("dark");
 
-    console.log("🚀 Starting app initialization...");
-    try {
-      await store.checkExistingLoginAndConnect();
-      console.log("✅ App initialization complete - session restored if available");
-    } catch (error) {
-      console.error("❌ Error during app initialization:", error);
-    }
+    // Session restore already starts when the store module loads; this call is
+    // idempotent and only waits if restoration is still in flight.
+    store.checkExistingLoginAndConnect().catch((error) => {
+      console.error("❌ Error during session restoration:", error);
+    });
   });
 
   const routes = {

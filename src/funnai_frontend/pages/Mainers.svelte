@@ -8,13 +8,13 @@
 
 <div class="agent-page">
   <div class="agent-container">
-    {#if !$store.isAuthed}
-      <LoggedOutLanding />
-    {:else}
+    {#if $store.isAuthed}
       <div class="mx-auto w-full max-w-3xl flex flex-col gap-4 text-gray-200">
         <MainerAccordion />
         <ActivityFeedPanel />
       </div>
+    {:else}
+      <LoggedOutLanding />
     {/if}
   </div>
   <Footer />
