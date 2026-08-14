@@ -31,7 +31,7 @@
     <img
       src="/landing-aura.jpg"
       alt=""
-      class="absolute left-1/2 bottom-0 w-[160%] max-w-none -translate-x-1/2 -translate-y-[18%] sm:-translate-y-[22%] mix-blend-screen select-none"
+      class="absolute left-1/2 bottom-0 w-[160%] max-w-none -translate-x-1/2 translate-y-[4%] mix-blend-screen select-none"
     />
     <img
       src="/landing-stars.png"
@@ -91,6 +91,7 @@
       </div>
 
       <div class="relative p-4 sm:p-5">
+        <p class="agent-eyebrow mb-3">Connect</p>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <InternetIdentityButton bind:loading {toggleModal} />
           <NfidButton bind:loading {toggleModal} />
