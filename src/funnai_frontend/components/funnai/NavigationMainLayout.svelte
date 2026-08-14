@@ -5,7 +5,6 @@
   import LoginModal from '../login/LoginModal.svelte';
   import {
     ShoppingCart,
-    LogIn,
     ChevronDown,
     LogOut,
     User,
@@ -58,7 +57,7 @@
     <a
       use:link
       href="/marketplace"
-      class="agent-btn-primary no-underline"
+      class="agent-btn-neon agent-btn-neon-pink no-underline"
     >
       <ShoppingCart class="w-3.5 h-3.5 stroke-[1.75]" />
       <span>Buy mAIner</span>
@@ -126,18 +125,17 @@
       <button
         type="button"
         on:click={toggleModal}
-        class="agent-btn-ghost"
+        class="agent-btn-neon agent-btn-neon-cyan"
       >
-        <LogIn class="w-3.5 h-3.5 stroke-[1.75]" />
         <span>Connect</span>
       </button>
     {/if}
   </div>
 </div>
 
-<div class={modalIsOpen ? "" : "hidden"}>
+{#if modalIsOpen}
   <LoginModal {toggleModal} />
-</div>
+{/if}
 
 <style>
   @keyframes slideDown {
