@@ -8,16 +8,25 @@
   let isRefreshingBalances = false;
   let copySuccess = false;
   let showFullPrincipal = false;
+  let refreshFeedback: 'updated' | 'unchanged' | 'failed' | null = null;
+  let refreshFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
   async function getWalletBalances() {
     if (!$store.principal || !$store.isAuthed) return;
     if (isRefreshingBalances) return;
 
     isRefreshingBalances = true;
+    refreshFeedback = null;
     try {
-      await WalletDataService.refreshBalances(true);
+      const result = await WalletDataService.refreshBalances(true);
+      refreshFeedback = result;
+      if (refreshFeedbackTimer) clearTimeout(refreshFeedbackTimer);
+      refreshFeedbackTimer = setTimeout(() => {
+        refreshFeedback = null;
+      }, 4000);
     } catch (error) {
       console.error('Error refreshing wallet balances:', error);
+      refreshFeedback = 'failed';
     } finally {
       isRefreshingBalances = false;
     }
@@ -88,7 +97,7 @@
             on:click={getWalletBalances}
             disabled={isRefreshingBalances}
             class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-gray-300 transition-all hover:border-[#653FC5]/40 hover:bg-[#653FC5]/10 hover:text-white disabled:opacity-40"
-            title="Refresh balances"
+            title={isRefreshingBalances ? 'Refreshing…' : refreshFeedback === 'updated' ? 'Balances updated' : refreshFeedback === 'unchanged' ? 'Balances unchanged' : refreshFeedback === 'failed' ? 'Refresh failed' : 'Refresh balances'}
           >
             <RefreshCw class="h-3.5 w-3.5 {isRefreshingBalances ? 'animate-spin' : ''}" />
           </button>
@@ -143,6 +152,15 @@
           <p class="mt-2.5 text-xs leading-relaxed text-gray-500">
             Only send tokens supported in this wallet, as listed below.
           </p>
+          {#if isRefreshingBalances}
+            <p class="mt-2 text-xs text-[#c4b5fd]">Refreshing balances…</p>
+          {:else if refreshFeedback === 'updated'}
+            <p class="mt-2 text-xs text-emerald-400">Balances updated.</p>
+          {:else if refreshFeedback === 'unchanged'}
+            <p class="mt-2 text-xs text-gray-400">Balances unchanged. If a credit is still pending, it may take a moment to appear.</p>
+          {:else if refreshFeedback === 'failed'}
+            <p class="mt-2 text-xs text-red-300">Couldn't refresh balances. Please try again.</p>
+          {/if}
         </div>
 
         <!-- Mobile actions -->
@@ -154,7 +172,17 @@
             class="agent-btn-ghost flex-1 !h-9 disabled:opacity-40"
           >
             <RefreshCw class="h-3.5 w-3.5 {isRefreshingBalances ? 'animate-spin' : ''}" />
-            Refresh
+            {#if isRefreshingBalances}
+              Refreshing…
+            {:else if refreshFeedback === 'updated'}
+              Updated
+            {:else if refreshFeedback === 'unchanged'}
+              Unchanged
+            {:else if refreshFeedback === 'failed'}
+              Failed
+            {:else}
+              Refresh
+            {/if}
           </button>
           <button
             type="button"
