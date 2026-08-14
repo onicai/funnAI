@@ -28,7 +28,8 @@
   $: formattedTokens = tokens
     .map((token) => {
       const balance = walletData.balances[token.canister_id];
-      const balanceAmount = balance?.in_tokens || BigInt(0);
+      const hasKnownBalance = Boolean(balance);
+      const balanceAmount = balance?.in_tokens ?? BigInt(0);
       const totalSupply = token.metrics?.total_supply || "0";
 
       const percentOfSupply =
@@ -40,6 +41,7 @@
       return {
         ...token,
         balanceAmount,
+        hasKnownBalance,
         formattedUsdValue: balance?.in_usd || "0",
         percentOfSupply,
         isWhale,
@@ -74,6 +76,10 @@
   }
 
   function displayBalance(token): string {
+    const queryFailed = walletData.balancesStatus === 'error';
+    if (!token.hasKnownBalance) {
+      return queryFailed ? `Couldn't load ${token.symbol}` : `0 ${token.symbol}`;
+    }
     if (token.balanceAmount === BigInt(0)) return `0 ${token.symbol}`;
     const formatted = formatBalance(token.balanceAmount.toString(), token.decimals);
     if (Number(formatted) < 0.00000001) return `<0.00000001 ${token.symbol}`;
@@ -161,6 +167,8 @@
                   </p>
                   {#if usd}
                     <p class="text-xs text-gray-500 tabular-nums">{usd}</p>
+                  {:else if !token.hasKnownBalance && walletData.balancesStatus === 'error'}
+                    <p class="text-xs text-amber-400">Retry to load</p>
                   {:else if !hasBalance}
                     <p class="text-xs text-gray-600">No balance</p>
                   {/if}

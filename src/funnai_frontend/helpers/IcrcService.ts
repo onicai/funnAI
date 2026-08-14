@@ -138,9 +138,7 @@ export class IcrcService {
       };
     } catch (error) {
       console.error(`Error getting ICRC1 balance for ${token.symbol}: `, error);
-      return separateBalances
-        ? { default: BigInt(0), subaccount: BigInt(0) }
-        : BigInt(0);
+      throw error;
     }
   }
 
@@ -220,13 +218,13 @@ export class IcrcService {
                 principal,
                 subaccount,
               );
-              return { token, balance };
+              return { token, balance, ok: true as const };
             } catch (error) {
               console.error(
                 `Failed to get balance for ${token.symbol}: `,
                 error,
               );
-              return { token, balance: BigInt(0) };
+              return { token, balance: null, ok: false as const };
             }
           });
 
@@ -234,7 +232,7 @@ export class IcrcService {
           const balances = await this.withConcurrencyLimit(operations, 25);
 
           balances.forEach((result) => {
-            if (result) {
+            if (result && result.ok) {
               const { token, balance } = result;
               results.set(
                 token.canister_id,

@@ -105,13 +105,14 @@
           {#if $store.isAuthed}
             {#if isDataLoading}
               <TokenListSkeleton rows={4} />
-            {:else if loadingError}
+            {:else if loadingError && Object.keys(walletData.balances || {}).length === 0}
               <div class="rounded-xl border border-red-500/20 bg-red-500/[0.08] px-4 py-8 text-center">
-                <p class="text-red-300 mb-4 text-sm">{loadingError}</p>
+                <p class="text-red-300 mb-2 text-sm">{loadingError}</p>
+                <p class="text-gray-500 mb-4 text-sm">This is not a zero balance — the query failed.</p>
                 <button
                   type="button"
                   class="agent-btn-ghost"
-                  on:click={() => $store.principal && loadTokensOnly($store.principal.toString())}
+                  on:click={() => $store.principal && WalletDataService.initializeWallet($store.principal.toString(), true)}
                 >
                   Try again
                 </button>
@@ -121,6 +122,16 @@
                 <p class="text-sm text-gray-400">No tokens available yet</p>
               </div>
             {:else}
+              {#if loadingError}
+                <div class="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.08] px-4 py-3 text-sm text-amber-200">
+                  {loadingError}. Showing last known balances.
+                  <button
+                    type="button"
+                    class="ml-2 underline"
+                    on:click={() => WalletDataService.refreshBalances(true)}
+                  >Retry</button>
+                </div>
+              {/if}
               {#key walletData}
                 <WalletTokenList
                   tokens={walletData.tokens}
