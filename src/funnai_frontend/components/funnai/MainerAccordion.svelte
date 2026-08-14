@@ -28,6 +28,8 @@
   $: isCreatingMainer = $store.isCreatingMainer;
   $: mainerCreationProgress = $store.mainerCreationProgress;
   $: shouldOpenFirstMainerAfterCreation = $store.shouldOpenFirstMainerAfterCreation;
+  $: mainersLoadError = $store.userMainersLoadError;
+  $: mainersLoadStatus = $store.userMainersLoadStatus;
 
   // Loading state for protocol flags
   let protocolFlagsLoading = true;
@@ -1175,6 +1177,26 @@
     canisterId={selectedCanister.id}
     canisterName={selectedCanister.name}
   />
+{/if}
+
+{#if isAuthenticated && mainersLoadStatus === 'error'}
+  <div class="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/[0.08] px-4 py-3 sm:px-5 sm:py-4">
+    <p class="text-sm text-amber-200">
+      {mainersLoadError || "Couldn't load your mAIners."}
+      {#if agents.length > 0}
+        Showing last known list.
+      {:else}
+        This is not an empty flock — the query failed.
+      {/if}
+    </p>
+    <button
+      type="button"
+      class="mt-2 agent-btn-ghost !h-8 !px-3 !text-xs"
+      on:click={() => store.loadUserMainerCanisters()}
+    >
+      Retry
+    </button>
+  </div>
 {/if}
 
 {#if totalMainers > 0}
