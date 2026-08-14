@@ -22,8 +22,8 @@
   export let onToggleAccordion: (id: string) => void;
   export let onModelTypeChange: (type: 'Own' | 'Shared') => void;
   
-  // Internal state for accordion
-  let isOpen = false;
+  // Logged-out: open by default. Logged-in: closed unless the user toggled it.
+  let isOpen = shouldAutoOpen;
   let userToggledOpen = false;
   let bonusCyclesTopupInPercent = 0;
   $: showCreationBonus = bonusCyclesTopupInPercent > 0;
@@ -36,7 +36,6 @@
     loadBonusPercent();
   }
 
-  // Logged-out: open by default. Logged-in: closed unless the user toggled it.
   $: if (!userToggledOpen) {
     isOpen = shouldAutoOpen;
   }
