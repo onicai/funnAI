@@ -54,7 +54,9 @@
   let errorMessage: string = "";
   let tokenFee: bigint = BigInt(0); // Will be set once token is loaded
   let balance: bigint = BigInt(0);
-  let mainerPrice = 1000; // Will be loaded
+  let mainerPrice: number | null = null;
+  let isPriceLoading: boolean = true;
+  $: isFormLoading = isTokenLoading || isPriceLoading;
 
   let isProtocolActiveFlag = true; // Will be loaded
   $: isProtocolActive = isProtocolActiveFlag; // When false, stops mAIner creation activities
@@ -69,15 +71,14 @@
   $: showCreationBonus = bonusCyclesTopupInPercent > 0;
   
   // Determine payment amount based on model type
-  $: paymentAmount = mainerPrice;
-  $: amountBigInt = token ? BigInt(new BigNumber(paymentAmount).times(new BigNumber(10).pow(token.decimals)).toString()) : BigInt(0);
-  $: hasEnoughBalance = balance >= (amountBigInt + tokenFee);
+  $: amountBigInt = token && mainerPrice != null ? BigInt(new BigNumber(mainerPrice).times(new BigNumber(10).pow(token.decimals)).toString()) : BigInt(0);
+  $: hasEnoughBalance = mainerPrice != null && balance >= (amountBigInt + tokenFee);
   $: if (token) {
     tokenFee = BigInt(token.fee_fixed);
   }
   
   // Calculate total amount including fee for display
-  $: totalPaymentAmount = token ? new BigNumber(paymentAmount).toString() : paymentAmount;
+  $: totalPaymentAmount = token && mainerPrice != null ? new BigNumber(mainerPrice).toString() : "";
 
   async function loadBalance() {
     try {
@@ -103,20 +104,23 @@
         price = modelType === 'Own' ? await getOwnAgentPrice() : await getSharedAgentPrice();
       }
 
-      if (price <= 0) {
+      const numericPrice = Number(price);
+      if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
         console.error("Issue getting mAIner price as it's 0 or negative.");
         errorMessage = `The price for the mAIner didn't load correctly. Please try again.`;
-      };
+        return null;
+      }
 
-      return Number(price);      
+      return numericPrice;
     } catch (error) {
       console.error("Error getting mAIner price:", error);
       errorMessage = `There was an error loading the price for the mAIner. Please try again.`;
+      return null;
     }
   };
 
   async function handleSubmit() {
-    if (isValidating || !token) return;
+    if (isValidating || !token || mainerPrice == null) return;
     isValidating = true;
     errorMessage = "";
 
@@ -195,10 +199,12 @@
   };
 
   onMount(async () => {
+    isPriceLoading = true;
     await loadTokenData();
     loadBalance();
     await loadProtocolFlags();
     mainerPrice = await getMainerPrice();
+    isPriceLoading = false;
     await loadBonusPercent();
   });
 
@@ -217,14 +223,18 @@
   className="mainer-payment-modal"
   isPadded={true}
 >
-  <div class="space-y-4">
-    {#if isTokenLoading}
-      <div class="flex justify-center py-4">
+  <div class="space-y-5 pb-1">
+    {#if isFormLoading}
+      <div class="flex justify-center py-6">
         <span class="w-6 h-6 border-2 border-agent-purple/30 border-t-agent-purple rounded-full animate-spin"></span>
+      </div>
+    {:else if mainerPrice == null}
+      <div class="p-4 bg-red-500/10 rounded-xl border border-red-500/25">
+        <p class="text-sm leading-relaxed text-red-300">{errorMessage || "The price for the mAIner didn't load correctly. Please try again."}</p>
       </div>
     {:else}
       <!-- Token Info Banner -->
-      <div class="flex items-center gap-2 sm:gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/10">
+      <div class="flex items-center gap-3 p-4 rounded-xl bg-white/[0.03] border border-white/10">
         <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-agent-purple/15 border border-agent-purple/20 flex-shrink-0 overflow-hidden">
           <div class="sm:hidden">
             <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
@@ -233,21 +243,18 @@
             <TokenImages tokens={[token]} size={38} showSymbolFallback={true} />
           </div>
         </div>
-        <div class="flex flex-col min-w-0 flex-1">
+        <div class="flex flex-col min-w-0 flex-1 gap-0.5">
           <div class="text-white font-medium text-sm sm:text-base truncate">{token.name}</div>
           <div class="text-xs sm:text-sm text-gray-400 truncate">Balance: {formatBalance(balance.toString(), token.decimals)} {token.symbol}</div>
-          {#if showCreationBonus}
-            <div class="text-[10px] font-medium text-emerald-400 truncate">+{bonusCyclesTopupInPercent}% bonus cycles</div>
-          {/if}
         </div>
       </div>
 
       <!-- Payment Info -->
-      <div class="flex flex-col gap-3">
+      <div class="flex flex-col gap-4">
         <!-- Recipient Address - only show if user has enough balance -->
         {#if hasEnoughBalance}
           <div>
-            <span class="block text-xs text-gray-400 mb-1.5">Recipient</span>
+            <span class="block text-xs text-gray-400 mb-2">Recipient</span>
             <div class="relative">
               <input
                 type="text"
@@ -262,13 +269,13 @@
                 </div>
               </div>
             </div>
-            <div class="mt-1 text-xs text-emerald-400/80">funnAI mAIner creation address</div>
+            <div class="mt-1.5 text-xs text-emerald-400/80">funnAI mAIner creation address</div>
           </div>
         {/if}
 
         <!-- Amount -->
         <div>
-          <span class="block text-xs text-gray-400 mb-1.5">Payment Amount</span>
+          <span class="block text-xs text-gray-400 mb-2">Payment Amount</span>
           <div class="relative">
             <input
               type="text"
@@ -280,23 +287,18 @@
               <span class="pr-2 sm:pr-3 text-xs sm:text-sm text-gray-400">{token.symbol}</span>
             </div>
           </div>
-          <div class="mt-1 text-xs text-gray-400">
-            Protocol fees included
-            {#if showCreationBonus}
-              <span class="text-emerald-400"> · +{bonusCyclesTopupInPercent}% bonus cycles included</span>
-            {/if}
-          </div>
+          <div class="mt-1.5 text-xs text-gray-400">Protocol fees included</div>
         </div>
         
         <!-- Payment Description -->
-        <div class="p-3 rounded-xl text-xs sm:text-sm {isWhitelistPhaseActive && selectedUnlockedMainer ? 'bg-amber-500/5 border border-amber-500/20 text-amber-300' : 'bg-sky-500/5 border border-sky-500/20 text-sky-300/90'}">
+        <div class="p-4 rounded-xl leading-relaxed text-xs sm:text-sm {isWhitelistPhaseActive && selectedUnlockedMainer ? 'bg-amber-500/5 border border-amber-500/20 text-amber-300' : 'bg-sky-500/5 border border-sky-500/20 text-sky-300/90'}">
           {#if isWhitelistPhaseActive && selectedUnlockedMainer}
             This whitelist payment ({totalPaymentAmount} {token.symbol} total including network fees) allows you to finish the set up of your pre-unlocked mAIner at a special discounted price. Once payment is complete, your mAIner will be created automatically.
           {:else}
             This payment ({totalPaymentAmount} {token.symbol} total including network fees) is used to create your mAIner. Once payment is complete, your mAIner will be created automatically.
           {/if}
           {#if showCreationBonus}
-            <div class="mt-2 text-emerald-400">
+            <div class="mt-2.5 text-emerald-400">
               Includes +{bonusCyclesTopupInPercent}% bonus cycles on ICP payments
             </div>
           {/if}
@@ -304,44 +306,48 @@
 
         <!-- Error message -->
         {#if errorMessage}
-          <div class="p-3 bg-red-500/10 rounded-xl border border-red-500/25">
-            <p class="text-sm text-red-300">{errorMessage}</p>
+          <div class="p-4 bg-red-500/10 rounded-xl border border-red-500/25">
+            <p class="text-sm leading-relaxed text-red-300">{errorMessage}</p>
           </div>
         {/if}
 
         <!-- Insufficient balance helper -->
         {#if !hasEnoughBalance && !isValidating && token}
-          <div class="p-3 bg-amber-500/5 rounded-xl border border-amber-500/20">
-            <p class="text-sm text-amber-300">
+          <div class="p-4 bg-amber-500/5 rounded-xl border border-amber-500/20">
+            <p class="text-sm leading-relaxed text-amber-300">
               You need {formatBalance((amountBigInt - balance).toString(), token.decimals)} more {token.symbol} to create this mAIner.
             </p>
           </div>
         {/if}
 
         <!-- Send Button -->
-        <button
-          type="button"
-          on:click={handleSubmit}
-          class="w-full agent-btn-primary disabled:opacity-50 disabled:cursor-not-allowed {!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation) ? 'bg-white/10 hover:bg-white/10 text-gray-500 shadow-none' : ''}"
-          disabled={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
-        >
-          {#if isValidating}
-            <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            <span>Processing...</span>
-          {:else if !hasEnoughBalance}
-            <div class="flex flex-col items-center justify-center gap-1">
+        <div class="flex flex-col items-center gap-3 pt-1">
+          <button
+            type="button"
+            on:click={handleSubmit}
+            class="w-full agent-btn-primary !h-auto min-h-9 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed {!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation) ? 'bg-white/10 hover:bg-white/10 text-gray-500 shadow-none' : ''}"
+            disabled={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
+          >
+            {#if isValidating}
+              <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+              <span>Processing...</span>
+            {:else if !hasEnoughBalance}
               <span>Insufficient Balance</span>
-              <a href="/#/wallet" class="underline text-xs sm:text-sm text-amber-300 hover:text-amber-200">Please fund your wallet ↗</a>
-            </div>
-          {:else if !isProtocolActive}
-            <span class="text-center">Protocol is currently paused. Please check back in a couple of minutes.</span>
-          {:else if stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
-            <span class="text-center">mAIner creation is currently paused. Please check official announcements.</span>
-          {:else}
-            <ArrowUp size={16} />
-            <span>Pay {totalPaymentAmount} {token.symbol}</span>
+            {:else if !isProtocolActive}
+              <span class="text-center px-2">Protocol is currently paused. Please check back in a couple of minutes.</span>
+            {:else if stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
+              <span class="text-center px-2">mAIner creation is currently paused. Please check official announcements.</span>
+            {:else}
+              <ArrowUp size={16} />
+              <span>Pay {totalPaymentAmount} {token.symbol}</span>
+            {/if}
+          </button>
+          {#if !hasEnoughBalance && !isValidating}
+            <a href="/#/wallet" class="inline-flex items-center gap-1 text-xs sm:text-sm text-amber-300 hover:text-amber-200 underline underline-offset-2">
+              Please fund your wallet ↗
+            </a>
           {/if}
-        </button>
+        </div>
       </div>
     {/if}
   </div>
@@ -358,6 +364,11 @@
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     border-radius: 1rem !important;
     color: #e5e7eb !important;
+    padding: 1.25rem 1.25rem 1.5rem !important;
+  }
+
+  :global(.mainer-payment-modal .modal-content > header) {
+    padding-bottom: 1.25rem;
   }
   
   /* Ensure proper text wrapping on mobile */
