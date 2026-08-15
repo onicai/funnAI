@@ -160,7 +160,7 @@ const navItems = [
 
       <div class="mt-2.5 grid grid-cols-2 gap-2">
         <a
-          href="https://www.onicai.com/#/funnai"
+          href="https://www.onicai.com/"
           target="_blank"
           rel="noopener noreferrer"
           class="group flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-2 text-gray-400 transition-colors hover:border-[#653FC5]/35 hover:bg-[#653FC5]/10 hover:text-gray-200"
