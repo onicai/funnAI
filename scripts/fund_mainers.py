@@ -14,6 +14,11 @@ from .monitor_common import get_canisters, ensure_log_dir, get_balance
 from .get_mainers import get_mainers_for_user
 from .ledgers.icp import get_usd_per_computed_xdr_from_cmc, icp_xdr_summary, get_cycle_burn_rate_from_ic_api
 
+# Shared icp-cli helpers: unlike `dfx ... --output json`, icp-cli cannot decode a Candid
+# response, so decoding happens here via icp-py-core.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import icp_helpers  # noqa: E402
+
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -53,9 +58,8 @@ def main(network, user):
 
             # check if the canister is paused or active
             active = False
-            cmd = ["dfx", "canister", "call", address, "getIssueFlagsAdmin", "--network", network, "--output", "json"]
-            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
-            data = json.loads(output)
+            cmd = ["icp", "canister", "call", address, "getIssueFlagsAdmin", "()", "-e", network]
+            data = icp_helpers.call_argv(cmd)
             low_cycle_balance = data.get('Ok', {}).get('lowCycleBalance', None)
             if low_cycle_balance is None:
                 print(f"ERROR 1: Unable to get issue flags for canister {address} on network {network}")
@@ -71,9 +75,8 @@ def main(network, user):
                 # print(f"Canister {address} is paused")
 
             # get cycleBalance from getMainerStatisticsAdmin endpoint
-            cmd = ["dfx", "canister", "call", address, "getMainerStatisticsAdmin", "--network", network, "--output", "json"]
-            output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
-            data = json.loads(output)
+            cmd = ["icp", "canister", "call", address, "getMainerStatisticsAdmin", "()", "-e", network]
+            data = icp_helpers.call_argv(cmd)
 
             cycle_balance = int(data.get('Ok', {}).get('cycleBalance', 0))
             if cycle_balance > 0:
@@ -89,7 +92,9 @@ def main(network, user):
             if cycles_to_send > 0:
                 total_cycles_needed += cycles_to_send
                 # get cycleBalance from getMainerStatisticsAdmin endpoint
-                cmd = ["dfx", "wallet", "send", address, f"{cycles_to_send}", "--network", network]
+                cmd = ["icp", "canister", "call", icp_helpers.CYCLES_WALLET, "wallet_send",
+                 f'(record {{ canister = principal "{address}"; amount = {str(f"{cycles_to_send}").replace("_","")} : nat64 }})',
+                 "-e", network]
                 output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
                 if output == "":
                     print(f"Successfully sent {cycles_to_send:_} cycles to canister {address}.")

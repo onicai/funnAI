@@ -31,7 +31,7 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 
-CANISTER_ID_GAME_STATE_CANISTER=$(dfx canister --network $NETWORK_TYPE id game_state_canister)
+CANISTER_ID_GAME_STATE_CANISTER=$(icp canister status game_state_canister -e $NETWORK_TYPE --id-only)
 
 echo "CANISTER_ID_GAME_STATE_CANISTER: $CANISTER_ID_GAME_STATE_CANISTER"
 
@@ -127,7 +127,7 @@ echo "Finding the address of my first mAIner of type Own..."
 
 # echo " "
 # echo "Retrieving all my mAIner agents:"
-output=$(dfx canister --network $NETWORK_TYPE call $CANISTER_ID_GAME_STATE_CANISTER getMainerAgentCanistersForUser)
+output=$(icp canister call $CANISTER_ID_GAME_STATE_CANISTER getMainerAgentCanistersForUser '()' -e $NETWORK_TYPE)
 if [[ "$output" != *"Ok = vec"* ]]; then
     echo $output
     echo " "
@@ -143,7 +143,7 @@ fi
 
 # echo " "
 # echo "Get the LLM for the mAIner Agent ($CANISTER_ID_OWN_CONTROLLER):"
-output=$(dfx canister --network $NETWORK_TYPE call $CANISTER_ID_OWN_CONTROLLER getLLMCanisterIds)
+output=$(icp canister call $CANISTER_ID_OWN_CONTROLLER getLLMCanisterIds '()' -e $NETWORK_TYPE)
 # echo "output (getLLMCanisterIds): $output"
 if [[ "$output" != *"Ok = vec"* ]]; then
     echo $output
@@ -165,12 +165,12 @@ echo "TODO: fund mAIner with sufficient Cycles to create a response"
 #     echo " "
 #     echo "--------------------------------------------------"
 #     echo "To fund Controller creation - Adding 5 TCycles to the game_state_canister canister on local"
-#     dfx ledger fabricate-cycles --canister game_state_canister --t 5
+#     icp canister top-up game_state_canister --amount $((5 * 1000000000000)) -e local
 # else
 #     echo " "
 #     echo "--------------------------------------------------"
 #     echo "To fund Controller creation - Adding 5 TCycles to the game_state_canister ($CANISTER_ID_GAME_STATE_CANISTER) canister on $NETWORK_TYPE"
-#     dfx wallet send --network $NETWORK_TYPE $CANISTER_ID_GAME_STATE_CANISTER 5000000000000
+#     icp canister call jh35u-eqaaa-aaaag-abf3a-cai wallet_send "(record { canister = principal \"$CANISTER_ID_GAME_STATE_CANISTER\"; amount = 5000000000000 : nat64 })" -e $NETWORK_TYPE
 # fi
 
 # ================================================================
@@ -182,16 +182,16 @@ echo "(Be patient, this may take a few seconds.)"
 echo " "
 echo "--------------------------------------------------"
 ########################################################
-GAME_STATE_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:" | awk '{print $2}')
-GAME_STATE_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+GAME_STATE_BALANCE_0_=$(icp canister status $CANISTER_ID_GAME_STATE_CANISTER -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{print $2}')
+GAME_STATE_BALANCE_0=$(icp canister status $CANISTER_ID_GAME_STATE_CANISTER -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{gsub("_", ""); print $2}')
 GAME_STATE_BALANCE_0_T=$(echo "scale=6; $GAME_STATE_BALANCE_0 / 1000000000000" | bc)
 
-MAINER_OWN_CTRLB_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_OWN_CONTROLLER 2>&1 | grep "Balance:"| awk '{print $2}')
-MAINER_OWN_CTRLB_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_OWN_CONTROLLER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+MAINER_OWN_CTRLB_BALANCE_0_=$(icp canister status $CANISTER_ID_OWN_CONTROLLER -e $NETWORK_TYPE 2>&1 | grep "Cycles:"| awk '{print $2}')
+MAINER_OWN_CTRLB_BALANCE_0=$(icp canister status $CANISTER_ID_OWN_CONTROLLER -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{gsub("_", ""); print $2}')
 MAINER_OWN_CTRLB_BALANCE_0_T=$(echo "scale=6; $MAINER_OWN_CTRLB_BALANCE_0 / 1000000000000" | bc)
 
-MAINER_OWN_LLM_BALANCE_0_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_OWN_LLM 2>&1 | grep "Balance:"| awk '{print $2}')
-MAINER_OWN_LLM_BALANCE_0=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_OWN_LLM 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+MAINER_OWN_LLM_BALANCE_0_=$(icp canister status $CANISTER_ID_OWN_LLM -e $NETWORK_TYPE 2>&1 | grep "Cycles:"| awk '{print $2}')
+MAINER_OWN_LLM_BALANCE_0=$(icp canister status $CANISTER_ID_OWN_LLM -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{gsub("_", ""); print $2}')
 MAINER_OWN_LLM_BALANCE_0_T=$(echo "scale=6; $MAINER_OWN_LLM_BALANCE_0 / 1000000000000" | bc)
 
 echo " "
@@ -210,7 +210,7 @@ echo "-> Balance: $MAINER_OWN_LLM_BALANCE_0_T TCycles ($MAINER_OWN_LLM_BALANCE_0
 
 echo " "
 echo "Calling triggerChallengeResponseAdmin"
-output=$(dfx canister call $CANISTER_ID_OWN_CONTROLLER triggerChallengeResponseAdmin --network $NETWORK_TYPE)
+output=$(icp canister call $CANISTER_ID_OWN_CONTROLLER triggerChallengeResponseAdmin '()' -e $NETWORK_TYPE)
 
 if [[ "$output" != *"Ok = record"* ]]; then
     echo $output
@@ -229,20 +229,20 @@ echo " "
 echo "Thank you! We will now check the balances again to see how much cycles were used to generate the response."
 echo "(Be patient, this may take a few seconds.)"
 ##############################################################
-GAME_STATE_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:"| awk '{print $2}')
-GAME_STATE_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_GAME_STATE_CANISTER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+GAME_STATE_BALANCE_1_=$(icp canister status $CANISTER_ID_GAME_STATE_CANISTER -e $NETWORK_TYPE 2>&1 | grep "Cycles:"| awk '{print $2}')
+GAME_STATE_BALANCE_1=$(icp canister status $CANISTER_ID_GAME_STATE_CANISTER -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{gsub("_", ""); print $2}')
 GAME_STATE_BALANCE_1_T=$(echo "scale=6; $GAME_STATE_BALANCE_1 / 1000000000000" | bc)
 GAME_STATE_CYCLES_CHANGE_1=$(echo "$GAME_STATE_BALANCE_1 - $GAME_STATE_BALANCE_0" | bc)
 GAME_STATE_CYCLES_CHANGE_1_T=$(echo "scale=6; $GAME_STATE_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
-MAINER_OWN_CTRLB_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_OWN_CONTROLLER 2>&1 | grep "Balance:"| awk '{print $2}')
-MAINER_OWN_CTRLB_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_OWN_CONTROLLER 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+MAINER_OWN_CTRLB_BALANCE_1_=$(icp canister status $CANISTER_ID_OWN_CONTROLLER -e $NETWORK_TYPE 2>&1 | grep "Cycles:"| awk '{print $2}')
+MAINER_OWN_CTRLB_BALANCE_1=$(icp canister status $CANISTER_ID_OWN_CONTROLLER -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{gsub("_", ""); print $2}')
 MAINER_OWN_CTRLB_BALANCE_1_T=$(echo "scale=6; $MAINER_OWN_CTRLB_BALANCE_1 / 1000000000000" | bc)
 MAINER_OWN_CTRLB_CYCLES_CHANGE_1=$(echo "$MAINER_OWN_CTRLB_BALANCE_1 - $MAINER_OWN_CTRLB_BALANCE_0" | bc)
 MAINER_OWN_CTRLB_CYCLES_CHANGE_1_T=$(echo "scale=6; $MAINER_OWN_CTRLB_CYCLES_CHANGE_1 / 1000000000000" | bc)
 
-MAINER_OWN_LLM_BALANCE_1_=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_OWN_LLM 2>&1 | grep "Balance:"| awk '{print $2}')
-MAINER_OWN_LLM_BALANCE_1=$(dfx canister --network $NETWORK_TYPE status $CANISTER_ID_OWN_LLM 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+MAINER_OWN_LLM_BALANCE_1_=$(icp canister status $CANISTER_ID_OWN_LLM -e $NETWORK_TYPE 2>&1 | grep "Cycles:"| awk '{print $2}')
+MAINER_OWN_LLM_BALANCE_1=$(icp canister status $CANISTER_ID_OWN_LLM -e $NETWORK_TYPE 2>&1 | grep "Cycles:" | awk '{gsub("_", ""); print $2}')
 MAINER_OWN_LLM_BALANCE_1_T=$(echo "scale=6; $MAINER_OWN_LLM_BALANCE_1 / 1000000000000" | bc)
 MAINER_OWN_LLM_CYCLES_CHANGE_1=$(echo "$MAINER_OWN_LLM_BALANCE_1 - $MAINER_OWN_LLM_BALANCE_0" | bc)
 MAINER_OWN_LLM_CYCLES_CHANGE_1_T=$(echo "scale=6; $MAINER_OWN_LLM_CYCLES_CHANGE_1 / 1000000000000" | bc)

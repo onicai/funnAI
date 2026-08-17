@@ -1,5 +1,10 @@
 # mAIners failed to deploy via mAInerCreator
 
+> ⚠️ **Historical record — dfx era.** The commands below are kept exactly as they were run
+> at the time, under `dfx`. They are a log of what happened, not a runbook to follow.
+> For current procedures see `README-prd-upgrade-commands.md`, which uses icp-cli.
+
+
 During the reverse auction of Nov 7, 2025 the mAInerCreator correctly created the mAIner canisters and installed the code.
 However, during setup (configuration) it failed the health check due to a recently introduced maintenance flag.
 And it did not finish all the required configurations.

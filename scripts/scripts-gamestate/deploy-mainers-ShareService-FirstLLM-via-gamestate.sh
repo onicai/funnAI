@@ -42,9 +42,9 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 
-CANISTER_ID_GAME_STATE_CANISTER=$(dfx canister --network $NETWORK_TYPE id game_state_canister)
+CANISTER_ID_GAME_STATE_CANISTER=$(icp canister status game_state_canister -e $NETWORK_TYPE --id-only)
 cd PoAIW/src/mAInerCreator
-CANISTER_ID_MAINER_CREATOR_CANISTER=$(dfx canister --network $NETWORK_TYPE id mainer_creator_canister)
+CANISTER_ID_MAINER_CREATOR_CANISTER=$(icp canister status mainer_creator_canister -e $NETWORK_TYPE --id-only)
 
 # go back to the funnAI folder
 cd ../../../
@@ -140,17 +140,17 @@ if [ "$NETWORK_TYPE" = "local" ]; then
     echo " "
     echo "--------------------------------------------------"
     echo "To fund LLM creation - Adding 5 TCycles to the game_state_canister canister on local"
-    dfx ledger fabricate-cycles --canister game_state_canister --t 5
+    icp canister top-up game_state_canister --amount $((5 * 1000000000000)) -e local
 else
     echo " "
     echo "--------------------------------------------------"
     echo "To fund LLM creation - Adding 5 TCycles to the game_state_canister ($CANISTER_ID_GAME_STATE_CANISTER) canister on $NETWORK_TYPE"
-    dfx wallet send --network $NETWORK_TYPE $CANISTER_ID_GAME_STATE_CANISTER 5000000000000
+    icp canister call jh35u-eqaaa-aaaag-abf3a-cai wallet_send "(record { canister = principal \"$CANISTER_ID_GAME_STATE_CANISTER\"; amount = 5000000000000 : nat64 })" -e $NETWORK_TYPE
 fi
 
 echo " "
 echo "--------------------------------------------------"
-output=$(dfx canister --network $NETWORK_TYPE call $CANISTER_ID_GAME_STATE_CANISTER getSharedServiceCanistersAdmin)
+output=$(icp canister call $CANISTER_ID_GAME_STATE_CANISTER getSharedServiceCanistersAdmin '()' -e $NETWORK_TYPE)
 if [[ "$output" != *"Ok = vec"* ]]; then
     echo $output
     echo " "
@@ -165,7 +165,7 @@ echo "CANISTER_ID_SHARE_SERVICE_CONTROLLER: $CANISTER_ID_SHARE_SERVICE_CONTROLLE
 echo " "
 echo "--------------------------------------------------"
 echo "Checking health endpoint of ShareService canister ($CANISTER_ID_SHARE_SERVICE_CONTROLLER)"
-output=$(dfx canister call $CANISTER_ID_SHARE_SERVICE_CONTROLLER health --network $NETWORK_TYPE)
+output=$(icp canister call $CANISTER_ID_SHARE_SERVICE_CONTROLLER health '()' -e $NETWORK_TYPE --query)
 
 if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; then
     echo $output
@@ -177,7 +177,7 @@ fi
 
 echo " "
 echo "--------------------------------------------------"
-output=$(dfx canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\";})" --network $NETWORK_TYPE)
+output=$(icp canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\";})" -e $NETWORK_TYPE)
 RESULT_2A=$(extract_record_from_variant "$output")
 CANISTER_STATUS=$(echo "$RESULT_2A" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
 echo "CANISTER_STATUS: $CANISTER_STATUS"
@@ -186,7 +186,7 @@ echo "RESULT_2A (getMainerAgentCanisterInfo): $RESULT_2A"
 
 echo " "
 echo "Calling setUpMainerLlmCanister to add an LLM to the ShareService"
-output=$(dfx canister call game_state_canister setUpMainerLlmCanister "$RESULT_2A" --network $NETWORK_TYPE)
+output=$(icp canister call game_state_canister setUpMainerLlmCanister "$RESULT_2A" -e $NETWORK_TYPE)
 
 if [[ "$output" != *"Ok = record"* ]]; then
     echo $output
@@ -208,7 +208,7 @@ else
     while [[ "$CANISTER_STATUS" == "LlmSetupInProgress" ]]; do
         echo "sleep for $WAIT_TIME seconds..."
         sleep $WAIT_TIME
-        output=$(dfx canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\";})" --network $NETWORK_TYPE)
+        output=$(icp canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\";})" -e $NETWORK_TYPE)
         RESULT_3A=$(extract_record_from_variant "$output")
         CANISTER_STATUS_BLOCK=$(printf '%s\n' "$RESULT_3A" | extract_status_block)
         CANISTER_STATUS=$(printf '%s\n' "$CANISTER_STATUS_BLOCK" | extract_status_name)
@@ -217,7 +217,7 @@ else
     done
 fi
 
-output=$(dfx canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\";})" --network $NETWORK_TYPE)
+output=$(icp canister call game_state_canister getMainerAgentCanisterInfo "(record { address = \"$CANISTER_ID_SHARE_SERVICE_CONTROLLER\";})" -e $NETWORK_TYPE)
 RESULT_3A=$(extract_record_from_variant "$output")
 CANISTER_STATUS=$(echo "$RESULT_3A" | grep -o 'status = variant { [^}]* }' | sed 's/status = variant { //; s/ }//')
 echo "CANISTER_STATUS: $CANISTER_STATUS"

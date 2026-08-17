@@ -26,7 +26,7 @@ def start_timer(canister_id, network):
     try:
         print(f"Starting timer for canister {canister_id} on network {network}...")
         subprocess.run(
-            ["dfx", "canister", "--network", network, "call", canister_id, "startTimerExecutionAdmin"],
+            ["icp", "canister", "call", canister_id, "startTimerExecutionAdmin", "()", "-e", network],
             check=True,
             text=True
         )
@@ -40,7 +40,7 @@ def check_health_and_start_timer(canister_id, network, index, total):
     Returns dict with canister_id, status ('started', 'frozen', 'unhealthy', 'error').
     """
     # Step 1: Check health
-    cmd = ["dfx", "canister", "--network", network, "call", canister_id, "health"]
+    cmd = ["icp", "canister", "call", canister_id, "health", "()", "--query", "-e", network]
     max_retries = 3
     retry_delay = 5.0
 
@@ -68,7 +68,7 @@ def check_health_and_start_timer(canister_id, network, index, total):
         return {"canister_id": canister_id, "status": "error"}
 
     # Step 2: Start timer
-    cmd = ["dfx", "canister", "--network", network, "call", canister_id, "startTimerExecutionAdmin"]
+    cmd = ["icp", "canister", "call", canister_id, "startTimerExecutionAdmin", "()", "-e", network]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, check=True)
         print(f"  ({index}/{total}) {canister_id} — timer started")
@@ -78,7 +78,7 @@ def check_health_and_start_timer(canister_id, network, index, total):
         return {"canister_id": canister_id, "status": "error", "logs": []}
 
     # Step 3: Capture logs after starting timer
-    cmd = ["dfx", "canister", "logs", canister_id, "--network", network]
+    cmd = ["icp", "canister", "logs", canister_id, "-e", network]
     try:
         output = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True, timeout=30)
         log_lines = output.strip().splitlines()[-20:]  # last 20 lines

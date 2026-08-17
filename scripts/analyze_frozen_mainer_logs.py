@@ -2,7 +2,7 @@
 """Fetch and analyze logs for all frozen mAIners to determine why they froze.
 
 Reads the latest status JSON to identify frozen mAIners, fetches their logs
-(dfx canister logs works on frozen canisters), and analyzes for freeze causes.
+(icp canister logs works on frozen canisters), and analyzes for freeze causes.
 """
 
 import argparse
@@ -43,7 +43,7 @@ def get_logs(canister_id, network):
     for attempt in range(3):
         try:
             output = subprocess.check_output(
-                ["dfx", "canister", "logs", canister_id, "--network", network],
+                ["icp", "canister", "logs", canister_id, "-e", network],
                 stderr=subprocess.DEVNULL,
                 text=True,
                 timeout=30,

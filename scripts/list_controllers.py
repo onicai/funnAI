@@ -17,7 +17,7 @@ def list_controllers(canister_id, network):
     try:    
         print(f"Listing all controllers for canister {canister_id} on network {network}...")
         subprocess.run(
-            ["dfx", "canister", "--network", network, "info", canister_id],
+            ["icp", "canister", "status", canister_id, "-e", network, "-p"],
             check=True,
             text=True
         )

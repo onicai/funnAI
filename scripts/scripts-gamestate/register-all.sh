@@ -32,11 +32,11 @@ done
 echo "Using network type: $NETWORK_TYPE"
 
 cd PoAIW/src/mAInerCreator
-CANISTER_ID_MAINER_CREATOR_CANISTER=$(dfx canister --network $NETWORK_TYPE id mainer_creator_canister)
+CANISTER_ID_MAINER_CREATOR_CANISTER=$(icp canister status mainer_creator_canister -e $NETWORK_TYPE --id-only)
 cd ../Challenger
-CANISTER_ID_CHALLENGER_CTRLB_CANISTER=$(dfx canister --network $NETWORK_TYPE id challenger_ctrlb_canister)
+CANISTER_ID_CHALLENGER_CTRLB_CANISTER=$(icp canister status challenger_ctrlb_canister -e $NETWORK_TYPE --id-only)
 cd ../Judge
-CANISTER_ID_JUDGE_CTRLB_CANISTER=$(dfx canister --network $NETWORK_TYPE id judge_ctrlb_canister)
+CANISTER_ID_JUDGE_CTRLB_CANISTER=$(icp canister status judge_ctrlb_canister -e $NETWORK_TYPE --id-only)
 
 echo "CANISTER_ID_MAINER_CREATOR_CANISTER: $CANISTER_ID_MAINER_CREATOR_CANISTER"
 echo "CANISTER_ID_CHALLENGER_CTRLB_CANISTER: $CANISTER_ID_CHALLENGER_CTRLB_CANISTER"
@@ -59,7 +59,7 @@ cd ../../../
 echo " "
 echo "--------------------------------------------------"
 echo "Checking health endpoint"
-output=$(dfx canister call game_state_canister health --network $NETWORK_TYPE)
+output=$(icp canister call game_state_canister health '()' -e $NETWORK_TYPE --query)
 
 if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; then
     echo "game_state_canister is not healthy. Exiting."
@@ -71,7 +71,7 @@ fi
 echo " "
 echo "--------------------------------------------------"
 echo "Registering mAInerCreator ($CANISTER_ID_MAINER_CREATOR_CANISTER) on subnet $SUBNET_MAINER_CREATOR with the game_state_canister"
-output=$(dfx canister call game_state_canister addOfficialCanister "(record { address = \"$CANISTER_ID_MAINER_CREATOR_CANISTER\"; subnet = \"$SUBNET_MAINER_CREATOR\"; canisterType = variant {MainerCreator} })" --network $NETWORK_TYPE)
+output=$(icp canister call game_state_canister addOfficialCanister "(record { address = \"$CANISTER_ID_MAINER_CREATOR_CANISTER\"; subnet = \"$SUBNET_MAINER_CREATOR\"; canisterType = variant {MainerCreator} })" -e $NETWORK_TYPE)
 
 if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; then
     echo "Error calling addOfficialCanister for mAInerCreator $CANISTER_ID_MAINER_CREATOR_CANISTER."
@@ -83,7 +83,7 @@ fi
 echo " "
 echo "--------------------------------------------------"
 echo "Registering Challenger ($CANISTER_ID_CHALLENGER_CTRLB_CANISTER) on subnet $SUBNET_CHALLENGER with the game_state_canister"
-output=$(dfx canister call game_state_canister addOfficialCanister "(record { address = \"$CANISTER_ID_CHALLENGER_CTRLB_CANISTER\"; subnet = \"$SUBNET_CHALLENGER\"; canisterType = variant {Challenger} })" --network $NETWORK_TYPE)
+output=$(icp canister call game_state_canister addOfficialCanister "(record { address = \"$CANISTER_ID_CHALLENGER_CTRLB_CANISTER\"; subnet = \"$SUBNET_CHALLENGER\"; canisterType = variant {Challenger} })" -e $NETWORK_TYPE)
 
 if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; then
     echo "Error calling addOfficialCanister for Challenger $CANISTER_ID_CHALLENGER_CTRLB_CANISTER."
@@ -95,7 +95,7 @@ fi
 echo " "
 echo "--------------------------------------------------"
 echo "Registering Judge ($CANISTER_ID_JUDGE_CTRLB_CANISTER) on subnet $SUBNET_JUDGE with the game_state_canister"
-output=$(dfx canister call game_state_canister addOfficialCanister "(record { address = \"$CANISTER_ID_JUDGE_CTRLB_CANISTER\"; subnet = \"$SUBNET_JUDGE\"; canisterType = variant {Judge} })" --network $NETWORK_TYPE)
+output=$(icp canister call game_state_canister addOfficialCanister "(record { address = \"$CANISTER_ID_JUDGE_CTRLB_CANISTER\"; subnet = \"$SUBNET_JUDGE\"; canisterType = variant {Judge} })" -e $NETWORK_TYPE)
 
 if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; then
     echo "Error calling addOfficialCanister for Judge $CANISTER_ID_JUDGE_CTRLB_CANISTER."

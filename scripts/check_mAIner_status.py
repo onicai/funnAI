@@ -79,7 +79,7 @@ def get_module_hash(network: str, canister_id: str) -> tuple[Optional[str], Opti
         - ("None", None) if canister is uninstalled
         - (None, "error text") if call failed
     """
-    cmd = ["dfx", "canister", "--network", network, "info", canister_id]
+    cmd = ["icp", "canister", "status", canister_id, "-e", network, "-p"]
     max_retries = 3
     retry_delay = 5.0
 
@@ -115,7 +115,7 @@ def check_health(network: str, canister_id: str) -> tuple[str, Optional[str]]:
     Returns:
         (status, error_message)
     """
-    cmd = ["dfx", "canister", "--network", network, "call", canister_id, "health"]
+    cmd = ["icp", "canister", "call", canister_id, "health", '"()"', "--query", "-e", network]
     max_retries = 3
     retry_delay = 5.0
 
@@ -176,7 +176,7 @@ def get_canister_resources(network: str, canister_id: str) -> tuple[Optional[int
     Returns:
         (memory_bytes, cycles_balance)
     """
-    cmd = ["dfx", "canister", "--network", network, "status", canister_id]
+    cmd = ["icp", "canister", "status", canister_id, "-e", network]
     max_retries = 3
     retry_delay = 5.0
 
@@ -209,7 +209,7 @@ def check_canister_status(network: str, canister_id: str, owner: str,
     """Check the full status of a single mAIner canister.
 
     Detection order:
-    1. dfx canister info → check Module hash (uninstalled/frozen)
+    1. icp canister status -p → check Module hash (uninstalled/frozen)
     2. health endpoint → healthy/maintenance/stopped/frozen/unavailable
     """
     result = {

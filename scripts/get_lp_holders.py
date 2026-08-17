@@ -10,12 +10,18 @@ Uses the ICPSwap v3 SwapPool canister API to:
 5. Output to JSON and MD files
 """
 
+import sys
 import subprocess
 import argparse
 import os
 import json
 from datetime import datetime
 from pathlib import Path
+
+# Shared icp-cli helpers: unlike `dfx ... --output json`, icp-cli cannot decode a Candid
+# response, so decoding happens here via icp-py-core.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import icp_helpers  # noqa: E402
 
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -48,20 +54,15 @@ KNOWN_ACCOUNTS = {
 
 
 def dfx_call(canister_id: str, method: str, args: str = "") -> dict:
-    """Call a canister method using dfx and return JSON response."""
-    cmd = [
-        "dfx", "canister", "--network", "ic", "call",
-        canister_id, method
-    ]
+    """Call a canister method and return the decoded response."""
+    cmd = ["icp", "canister", "call", canister_id, method, "()", "-e", "ic"]
     if args:
         cmd.append(args)
-    cmd.extend(["--output", "json"])
 
     try:
-        result = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True)
-        return json.loads(result)
+        return icp_helpers.call_argv(cmd)
     except subprocess.CalledProcessError as e:
-        print(f"ERROR: dfx call failed for {method}: {e}")
+        print(f"ERROR: call failed for {method}: {e}")
         return None
     except json.JSONDecodeError as e:
         print(f"ERROR: Failed to parse JSON response for {method}: {e}")

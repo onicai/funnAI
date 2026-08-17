@@ -13,6 +13,11 @@ import pandas as pd
 from .monitor_common import get_canisters, ensure_log_dir, get_balance
 from .ledgers.icp import get_usd_per_computed_xdr_from_cmc, icp_xdr_summary, get_cycle_burn_rate_from_ic_api
 
+# Shared icp-cli helpers: `icp canister call` cannot decode a Candid response the way
+# `dfx ... --output json` did, so decoding happens here via icp-py-core.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import icp_helpers  # noqa: E402
+
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 POAIW_DFX_JSON_PATH = os.path.join(SCRIPT_DIR, "../PoAIW/src/mAIner/dfx.json")
@@ -35,12 +40,12 @@ def get_mainers(network):
     """Get mainers from gamestate using dfx."""
     try:    
         print(f"Getting all mAIners from the game_state_canister on network {network}...")
-        result = subprocess.check_output(
-            ["dfx", "canister", "--network", network, "call", "game_state_canister", "getMainerAgentCanistersAdmin", "--output", "json"],
-            stderr=subprocess.DEVNULL,
-            text=True
+        data = icp_helpers.call(
+            "game_state_canister",
+            "getMainerAgentCanistersAdmin",
+            env=network,
+            allow_mainnet=True,
         )
-        data = json.loads(result)
         mainers = data.get('Ok', [])
         return mainers
     except subprocess.CalledProcessError:
@@ -57,9 +62,8 @@ def get_mainers_for_user(network, user):
 def get_mainer_setting(network, address):
     """Get the mainer setting (Low, Medium, High, VeryHigh, Custom) for a given mainer."""
     try:
-        cmd = ["dfx", "canister", "call", address, "getMainerStatisticsAdmin", "--network", network, "--output", "json"]
-        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True, timeout=10)
-        data = json.loads(output)
+        cmd = ["icp", "canister", "call", address, "getMainerStatisticsAdmin", "()", "-e", network]
+        data = icp_helpers.call_argv(cmd)
         cycles_burn_rate = data.get('Ok', {}).get('cyclesBurnRate', {}).get('cycles', None)
 
         # Map cycles burn rate to human-readable setting
@@ -81,9 +85,8 @@ def get_mainer_setting(network, address):
 def get_mainer_is_active(network, address):
     """Check if a mainer is active (not paused due to low cycle balance)."""
     try:
-        cmd = ["dfx", "canister", "call", address, "getIssueFlagsAdmin", "--network", network, "--output", "json"]
-        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True, timeout=10)
-        data = json.loads(output)
+        cmd = ["icp", "canister", "call", address, "getIssueFlagsAdmin", "()", "-e", network]
+        data = icp_helpers.call_argv(cmd)
         low_cycle_balance = data.get('Ok', {}).get('lowCycleBalance', None)
 
         if low_cycle_balance is None:
@@ -395,9 +398,8 @@ def main(network, user, skip_poaiw_update=False, daily_metrics=False, limit=None
 
                 # check if the canister is paused or active
                 active = False
-                cmd = ["dfx", "canister", "call", address, "getIssueFlagsAdmin", "--network", network, "--output", "json"]
-                output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
-                data = json.loads(output)
+                cmd = ["icp", "canister", "call", address, "getIssueFlagsAdmin", "()", "-e", network]
+                data = icp_helpers.call_argv(cmd)
                 low_cycle_balance = data.get('Ok', {}).get('lowCycleBalance', None)
                 if low_cycle_balance is None:
                     print(f"ERROR 1: Unable to get issue flags for canister {address} on network {network}")
@@ -411,9 +413,8 @@ def main(network, user, skip_poaiw_update=False, daily_metrics=False, limit=None
                     total_paused += 1
 
                 # get cycleBalance & cyclesBurnRate from getMainerStatisticsAdmin endpoint
-                cmd = ["dfx", "canister", "call", address, "getMainerStatisticsAdmin", "--network", network, "--output", "json"]
-                output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
-                data = json.loads(output)
+                cmd = ["icp", "canister", "call", address, "getMainerStatisticsAdmin", "()", "-e", network]
+                data = icp_helpers.call_argv(cmd)
 
                 cycle_balance = int(data.get('Ok', {}).get('cycleBalance', 0))
                 if cycle_balance > 0:

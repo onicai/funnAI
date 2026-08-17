@@ -5,10 +5,11 @@
 # Maintainer development principals (same for all networks). Needed for admin
 # access post-SNS, when the controller (isController) route belongs only to
 # NNS/SNS root and AdminRBAC is the remaining maintenance path.
-ARJAAN=chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
+# Your own principal, so this runbook works for whoever is running it.
+MAINTAINER=$(icp identity principal)
 PATRICK=cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe
 
-# One of these... (note: it does not work for 'demo')
+# One of these...
 NETWORK=prd
 NETWORK=testing
 NETWORK=development
@@ -20,19 +21,19 @@ source scripts/canister_ids-$NETWORK.env
 source scripts/canister_ids_mainers-$NETWORK.env
 
 # Check status of some canisters
-echo -n "SUBNET_0_1_GAMESTATE           = $SUBNET_0_1_GAMESTATE - "; dfx canister --network $NETWORK status $SUBNET_0_1_GAMESTATE | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "SUBNET_0_1_MAINER_CREATOR      = $SUBNET_0_1_MAINER_CREATOR - "; dfx canister --network $NETWORK status $SUBNET_0_1_MAINER_CREATOR | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "SUBNET_0_1_CHALLENGER          = $SUBNET_0_1_CHALLENGER - "; dfx canister --network $NETWORK status $SUBNET_0_1_CHALLENGER | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "SUBNET_0_1_JUDGE               = $SUBNET_0_1_JUDGE - "; dfx canister --network $NETWORK status $SUBNET_0_1_JUDGE | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "SUBNET_0_1_SHARE_SERVICE       = $SUBNET_0_1_SHARE_SERVICE - "; dfx canister --network $NETWORK status $SUBNET_0_1_SHARE_SERVICE | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "SUBNET_0_1_BACKEND             = $SUBNET_0_1_BACKEND - "; dfx canister --network $NETWORK status $SUBNET_0_1_BACKEND | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "SUBNET_0_1_FRONTEND            = $SUBNET_0_1_FRONTEND - "; dfx canister --network $NETWORK status $SUBNET_0_1_FRONTEND | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "SUBNET_0_2_API                 = $SUBNET_0_2_API - "; dfx canister --network $NETWORK status $SUBNET_0_2_API | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "SUBNET_1_1_CHALLENGER_LLM_0    = $SUBNET_1_1_CHALLENGER_LLM_0 - "; dfx canister --network $NETWORK status $SUBNET_1_1_CHALLENGER_LLM_0 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "SUBNET_1_1_JUDGE_LLM_0         = $SUBNET_1_1_JUDGE_LLM_0 - "; dfx canister --network $NETWORK status $SUBNET_1_1_JUDGE_LLM_0 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "SUBNET_2_1_SHARE_SERVICE_LLM_0 = $SUBNET_2_1_SHARE_SERVICE_LLM_0 - "; dfx canister --network $NETWORK status $SUBNET_2_1_SHARE_SERVICE_LLM_0 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "MAINER_SHARE_AGENT_0000        = $MAINER_SHARE_AGENT_0000 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0000 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
-echo -n "MAINER_SHARE_AGENT_0001        = $MAINER_SHARE_AGENT_0001 - "; dfx canister --network $NETWORK status $MAINER_SHARE_AGENT_0001 | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_1_GAMESTATE           = $SUBNET_0_1_GAMESTATE - "; icp canister status $SUBNET_0_1_GAMESTATE -e $NETWORK | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_1_MAINER_CREATOR      = $SUBNET_0_1_MAINER_CREATOR - "; icp canister status $SUBNET_0_1_MAINER_CREATOR -e $NETWORK | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_1_CHALLENGER          = $SUBNET_0_1_CHALLENGER - "; icp canister status $SUBNET_0_1_CHALLENGER -e $NETWORK | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_1_JUDGE               = $SUBNET_0_1_JUDGE - "; icp canister status $SUBNET_0_1_JUDGE -e $NETWORK | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_1_SHARE_SERVICE       = $SUBNET_0_1_SHARE_SERVICE - "; icp canister status $SUBNET_0_1_SHARE_SERVICE -e $NETWORK | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_1_BACKEND             = $SUBNET_0_1_BACKEND - "; icp canister status $SUBNET_0_1_BACKEND -e $NETWORK | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_1_FRONTEND            = $SUBNET_0_1_FRONTEND - "; icp canister status $SUBNET_0_1_FRONTEND -e $NETWORK | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_0_2_API                 = $SUBNET_0_2_API - "; icp canister status $SUBNET_0_2_API -e $NETWORK | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_1_1_CHALLENGER_LLM_0    = $SUBNET_1_1_CHALLENGER_LLM_0 - "; icp canister status $SUBNET_1_1_CHALLENGER_LLM_0 -e $NETWORK | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_1_1_JUDGE_LLM_0         = $SUBNET_1_1_JUDGE_LLM_0 - "; icp canister status $SUBNET_1_1_JUDGE_LLM_0 -e $NETWORK | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "SUBNET_2_1_SHARE_SERVICE_LLM_0 = $SUBNET_2_1_SHARE_SERVICE_LLM_0 - "; icp canister status $SUBNET_2_1_SHARE_SERVICE_LLM_0 -e $NETWORK | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "MAINER_SHARE_AGENT_0000        = $MAINER_SHARE_AGENT_0000 - "; icp canister status $MAINER_SHARE_AGENT_0000 -e $NETWORK | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+echo -n "MAINER_SHARE_AGENT_0001        = $MAINER_SHARE_AGENT_0001 - "; icp canister status $MAINER_SHARE_AGENT_0001 -e $NETWORK | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 ```
 
 # stop timers of protocol canisters
@@ -45,11 +46,11 @@ echo $NETWORK
 echo $SUBNET_0_1_CHALLENGER
 echo $SUBNET_0_1_SHARE_SERVICE
 echo $SUBNET_0_1_JUDGE
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    stopTimerExecutionAdmin
+icp canister call $SUBNET_0_1_CHALLENGER    stopTimerExecutionAdmin
 # wait a couple of minutes..
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE stopTimerExecutionAdmin
+icp canister call $SUBNET_0_1_SHARE_SERVICE stopTimerExecutionAdmin
 # wait a couple of minutes..
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         stopTimerExecutionAdmin
+icp canister call $SUBNET_0_1_JUDGE         stopTimerExecutionAdmin
 # Wait until ShareService has nothing left in it's queue.
 # -> pause is next step
 ```
@@ -61,10 +62,10 @@ dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         stopTimerExecutio
 echo $NETWORK
 echo $SUBNET_0_1_GAMESTATE
 # check if it is already paused
-dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getPauseProtocolFlag
+icp canister call $SUBNET_0_1_GAMESTATE getPauseProtocolFlag
 
 # then toggle it
-dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE togglePauseProtocolFlagAdmin
+icp canister call $SUBNET_0_1_GAMESTATE togglePauseProtocolFlagAdmin
 ```
 
 # upgrade the GameState
@@ -84,50 +85,49 @@ mops install
 make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
 make docker-build-wasm
 
-dfx canister --network $NETWORK stop $SUBNET_0_1_GAMESTATE
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_GAMESTATE
+icp canister stop $SUBNET_0_1_GAMESTATE -e $NETWORK
+icp canister snapshot create $SUBNET_0_1_GAMESTATE -e $NETWORK
 
 # Deploy the pre-built wasm
 # Note: Post-SNS, this step is replaced with SNS governed deployment.
 # The wasm will be uploaded to the SNS and a deploy proposal will be created
 # for the community to vote on. Once the proposal passes, the SNS automatically
 # upgrades the canister.
-dfx canister install --wasm out/game_state_canister.wasm \
-    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    $SUBNET_0_1_GAMESTATE
+icp canister install $SUBNET_0_1_GAMESTATE --wasm out/game_state_canister.wasm \
+    -e $NETWORK --mode upgrade --wasm-memory-persistence keep -y
 
 # Verify wasm hash
 make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the GameState canister back up
-dfx canister --network $NETWORK start  $SUBNET_0_1_GAMESTATE
-dfx canister --network $NETWORK status $SUBNET_0_1_GAMESTATE     | grep Status
-dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE health
+icp canister start $SUBNET_0_1_GAMESTATE -e $NETWORK
+icp canister status $SUBNET_0_1_GAMESTATE -e $NETWORK     | grep Status
+icp canister call   $SUBNET_0_1_GAMESTATE health
 
 # verify that it is still paused
-dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getPauseProtocolFlag
+icp canister call   $SUBNET_0_1_GAMESTATE getPauseProtocolFlag
 
 # Update the wasm-hash, using the Admin owned test mAIner ShareAgent
 echo $MAINER_SHARE_AGENT_0001
-dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE deriveNewMainerAgentCanisterWasmHashAdmin "(record {address=\"$MAINER_SHARE_AGENT_0001\"; textNote=\"Protocol upgrade\"})"
+icp canister call   $SUBNET_0_1_GAMESTATE deriveNewMainerAgentCanisterWasmHashAdmin "(record {address=\"$MAINER_SHARE_AGENT_0001\"; textNote=\"Protocol upgrade\"})"
 
 # If needed, initialize the openSubmissionsQueue. 
 # -> Tyically not needed. Was created during introduction of new openSubmissionsQueue
 # -> Needed if getNumOpenSubmissionsAdmin > 0 , while getNumOpenSubmissionsForOpenChallengesAdmin = 0
-dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE initializeOpenSubmissionsQueueAdmin
+icp canister call   $SUBNET_0_1_GAMESTATE initializeOpenSubmissionsQueueAdmin
 
-dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getNumOpenSubmissionsAdmin
-dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getOpenSubmissionsAdmin
+icp canister call   $SUBNET_0_1_GAMESTATE getNumOpenSubmissionsAdmin
+icp canister call   $SUBNET_0_1_GAMESTATE getOpenSubmissionsAdmin
 
-dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getNumOpenSubmissionsForOpenChallengesAdmin
-dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getOpenSubmissionsForOpenChallengesAdmin
+icp canister call   $SUBNET_0_1_GAMESTATE getNumOpenSubmissionsForOpenChallengesAdmin
+icp canister call   $SUBNET_0_1_GAMESTATE getOpenSubmissionsForOpenChallengesAdmin
 
-dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getOpenSubmissionsQueueSizeAdmin
+icp canister call   $SUBNET_0_1_GAMESTATE getOpenSubmissionsQueueSizeAdmin
 
 # Update the protocol thresholds, if needed.
-dfx canister --network $NETWORK call game_state_canister getGameStateThresholdsAdmin
+icp canister call game_state_canister getGameStateThresholdsAdmin
 
-dfx canister --network $NETWORK call game_state_canister setGameStateThresholdsAdmin '( record {
+icp canister call game_state_canister setGameStateThresholdsAdmin '( record {
         thresholdArchiveClosedChallenges = 140 : nat;
         thresholdMaxOpenChallenges = 7 : nat;
         thresholdMaxOpenSubmissions = 140 : nat;
@@ -142,10 +142,10 @@ dfx canister --network $NETWORK call game_state_canister setGameStateThresholdsA
 # - dailySubmissionsAllOwn = (TODO for PowerMainer)
 
 # verify current settings
-dfx canister --network $NETWORK call game_state_canister getCyclesFlowAdmin | grep dailySubmissionsAllShare
+icp canister call game_state_canister getCyclesFlowAdmin | grep dailySubmissionsAllShare
 
 # set the values, which will trigger a recalculation
-dfx canister --network $NETWORK call game_state_canister setCyclesFlowAdmin '( record { dailySubmissionsAllShare = opt (4752 : nat);})'
+icp canister call game_state_canister setCyclesFlowAdmin '( record { dailySubmissionsAllShare = opt (4752 : nat);})'
 ```
 
 ## Update Admin RBAC for GameState
@@ -154,12 +154,12 @@ Grant the maintainer principals `#AdminUpdate` so they keep admin access post-SN
 
 ```bash
 # verify which principals already have admin roles
-dfx canister --network $NETWORK call game_state_canister getAdminRoles
+icp canister call game_state_canister getAdminRoles
 # grant #AdminUpdate to the maintainer principals (arjaan, patrick)
-dfx canister --network $NETWORK call game_state_canister assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call game_state_canister assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+icp canister call game_state_canister assignAdminRole '( record { "principal" = "'$MAINTAINER'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
+icp canister call game_state_canister assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
 # if needed, this is how you revoke permissions for a principal
-# dfx canister --network $NETWORK call game_state_canister revokeAdminRole '( "'$ARJAAN'")'
+# icp canister call game_state_canister revokeAdminRole '( "'$MAINTAINER'")'
 ```
 
 # upgrade the Challenger
@@ -186,17 +186,16 @@ mops install
 make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
 make docker-build-wasm
 
-dfx canister --network $NETWORK stop $SUBNET_0_1_CHALLENGER
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_CHALLENGER
+icp canister stop $SUBNET_0_1_CHALLENGER -e $NETWORK
+icp canister snapshot create $SUBNET_0_1_CHALLENGER -e $NETWORK
 
 # Deploy the pre-built wasm
 # Note: Post-SNS, this step is replaced with SNS governed deployment.
 # The wasm will be uploaded to the SNS and a deploy proposal will be created
 # for the community to vote on. Once the proposal passes, the SNS automatically
 # upgrades the canister.
-dfx canister install --wasm out/challenger_ctrlb_canister.wasm \
-    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    $SUBNET_0_1_CHALLENGER
+icp canister install $SUBNET_0_1_CHALLENGER --wasm out/challenger_ctrlb_canister.wasm \
+    -e $NETWORK --mode upgrade --wasm-memory-persistence keep -y
 
 # Verify wasm hash
 make docker-verify-wasm VERIFY_NETWORK=$NETWORK
@@ -206,21 +205,21 @@ make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 # The IS_GENERATING_CHALLENGE flag is not reset during a stop/start of the canister
 # Make sure to call resetIsGeneratingChallengeFlag after start
 #
-dfx canister --network $NETWORK start  $SUBNET_0_1_CHALLENGER
-dfx canister --network $NETWORK call   $SUBNET_0_1_CHALLENGER resetIsGeneratingChallengeFlag
-dfx canister --network $NETWORK status $SUBNET_0_1_CHALLENGER     | grep Status
-dfx canister --network $NETWORK call   $SUBNET_0_1_CHALLENGER health
-dfx canister --network $NETWORK call   $SUBNET_0_1_CHALLENGER getIsGeneratingChallengeFlag
+icp canister start $SUBNET_0_1_CHALLENGER -e $NETWORK
+icp canister call   $SUBNET_0_1_CHALLENGER resetIsGeneratingChallengeFlag
+icp canister status $SUBNET_0_1_CHALLENGER -e $NETWORK     | grep Status
+icp canister call   $SUBNET_0_1_CHALLENGER health
+icp canister call   $SUBNET_0_1_CHALLENGER getIsGeneratingChallengeFlag
 
 # fill the LLM data storage - No longer needed. Is in stable storage
 # -> Run it in case a reinstall is needed
-# scripts/register-llms.sh --network $NETWORK
+# scripts/register-llms.sh -e $NETWORK
 
 # Verify registered LLMs
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    get_llm_canisters
+icp canister call $SUBNET_0_1_CHALLENGER    get_llm_canisters
 
 # Verify timer setting
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getTimerActionRegularityInSecondsAdmin
+icp canister call $SUBNET_0_1_CHALLENGER getTimerActionRegularityInSecondsAdmin
 ```
 
 ## Update Admin RBAC for Challenger
@@ -231,14 +230,14 @@ NNS/SNS root). One-time per network — the role assignment persists across upgr
 
 ```bash
 # verify which principals already have admin roles
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getAdminRoles
+icp canister call $SUBNET_0_1_CHALLENGER getAdminRoles
 # grant #AdminUpdate to the maintainer principals (arjaan, patrick)
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+icp canister call $SUBNET_0_1_CHALLENGER assignAdminRole '( record { "principal" = "'$MAINTAINER'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
+icp canister call $SUBNET_0_1_CHALLENGER assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
 # verify
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getAdminRoles
+icp canister call $SUBNET_0_1_CHALLENGER getAdminRoles
 # if needed, revoke
-# dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER revokeAdminRole '( "'$ARJAAN'")'
+# icp canister call $SUBNET_0_1_CHALLENGER revokeAdminRole '( "'$MAINTAINER'")'
 ```
 
 # upgrade the ShareService
@@ -265,32 +264,31 @@ mops install
 make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
 make docker-build-wasm
 
-dfx canister --network $NETWORK stop $SUBNET_0_1_SHARE_SERVICE
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
+icp canister stop $SUBNET_0_1_SHARE_SERVICE -e $NETWORK
+icp canister snapshot create $SUBNET_0_1_SHARE_SERVICE -e $NETWORK
 
 # Deploy the pre-built wasm
 # Note: Post-SNS, this step is replaced with SNS governed deployment.
 # The wasm will be uploaded to the SNS and a deploy proposal will be created
 # for the community to vote on. Once the proposal passes, the SNS automatically
 # upgrades the canister.
-dfx canister install --wasm out/mainer_service_canister.wasm \
-    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    $SUBNET_0_1_SHARE_SERVICE
+icp canister install $SUBNET_0_1_SHARE_SERVICE --wasm out/mainer_service_canister.wasm \
+    -e $NETWORK --mode upgrade --wasm-memory-persistence keep -y
 
 # Verify wasm hash
 make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the ShareService canister back up
 echo "SUBNET_0_1_SHARE_SERVICE: $SUBNET_0_1_SHARE_SERVICE"
-dfx canister --network $NETWORK start  $SUBNET_0_1_SHARE_SERVICE
-dfx canister --network $NETWORK status $SUBNET_0_1_SHARE_SERVICE     | grep Status
-dfx canister --network $NETWORK call   $SUBNET_0_1_SHARE_SERVICE health
+icp canister start $SUBNET_0_1_SHARE_SERVICE -e $NETWORK
+icp canister status $SUBNET_0_1_SHARE_SERVICE -e $NETWORK     | grep Status
+icp canister call   $SUBNET_0_1_SHARE_SERVICE health
 
 # Verify registered LLMs
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE get_llm_canisters
+icp canister call $SUBNET_0_1_SHARE_SERVICE get_llm_canisters
 
 # Verify timer setting
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getTimerActionRegularityInSecondsAdmin
+icp canister call $SUBNET_0_1_SHARE_SERVICE getTimerActionRegularityInSecondsAdmin
 ```
 
 ## Update Admin RBAC for ShareService
@@ -308,15 +306,15 @@ role assignments survive an **upgrade**.
 
 ```bash
 # verify which principals already have admin roles
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getAdminRoles
+icp canister call $SUBNET_0_1_SHARE_SERVICE getAdminRoles
 
 # grant #AdminQuery to the Api canister
 echo "$SUBNET_0_2_API"
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$SUBNET_0_2_API'"; role = variant { AdminQuery }; note = "Daily metrics pull from Api canister" } )'
+icp canister call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$SUBNET_0_2_API'"; role = variant { AdminQuery }; note = "Daily metrics pull from Api canister" } )'
 
 # grant #AdminUpdate to the maintainer principals (arjaan, patrick) for maintenance (post-SNS)
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+icp canister call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$MAINTAINER'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
+icp canister call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
 
 # 🚨 REQUIRED, AND EASY TO MISS: grant #AdminUpdate to the mAInerCreator canister.
 #
@@ -333,13 +331,13 @@ dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '
 #
 # Assign the ROLE, not controllership -- the role is what the code checks and is narrower.
 echo "$SUBNET_0_1_MAINER_CREATOR"
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$SUBNET_0_1_MAINER_CREATOR'"; role = variant { AdminUpdate }; note = "mAInerCreator: register new ShareAgents" } )'
+icp canister call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$SUBNET_0_1_MAINER_CREATOR'"; role = variant { AdminUpdate }; note = "mAInerCreator: register new ShareAgents" } )'
 
 # verify -- mAInerCreator MUST appear in this list with AdminUpdate
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getAdminRoles
+icp canister call $SUBNET_0_1_SHARE_SERVICE getAdminRoles
 
 # if needed, revoke
-# dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE revokeAdminRole '( "'$SUBNET_0_2_API'")'
+# icp canister call $SUBNET_0_1_SHARE_SERVICE revokeAdminRole '( "'$SUBNET_0_2_API'")'
 ```
 
 ## reinstall the ShareService
@@ -358,55 +356,54 @@ mops install
 make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
 make docker-build-wasm
 
-dfx canister --network $NETWORK stop $SUBNET_0_1_SHARE_SERVICE
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
+icp canister stop $SUBNET_0_1_SHARE_SERVICE -e $NETWORK
+icp canister snapshot create $SUBNET_0_1_SHARE_SERVICE -e $NETWORK
 #
-dfx canister install --wasm out/mainer_service_canister.wasm \
-    --network $NETWORK --mode reinstall --wasm-memory-persistence keep \
-    $SUBNET_0_1_SHARE_SERVICE
+icp canister install $SUBNET_0_1_SHARE_SERVICE --wasm out/mainer_service_canister.wasm \
+    -e $NETWORK --mode reinstall --wasm-memory-persistence keep -y
 
 # Verify wasm hash
 make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the ShareService canister back up
 echo "SUBNET_0_1_SHARE_SERVICE: $SUBNET_0_1_SHARE_SERVICE"
-dfx canister --network $NETWORK start  $SUBNET_0_1_SHARE_SERVICE
-dfx canister --network $NETWORK status $SUBNET_0_1_SHARE_SERVICE     | grep Status
-dfx canister --network $NETWORK call   $SUBNET_0_1_SHARE_SERVICE health
+icp canister start $SUBNET_0_1_SHARE_SERVICE -e $NETWORK
+icp canister status $SUBNET_0_1_SHARE_SERVICE -e $NETWORK     | grep Status
+icp canister call   $SUBNET_0_1_SHARE_SERVICE health
 
 # Verify timer setting
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getTimerActionRegularityInSecondsAdmin
+icp canister call $SUBNET_0_1_SHARE_SERVICE getTimerActionRegularityInSecondsAdmin
 
 # register game state
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE setGameStateCanisterId '("'$SUBNET_0_1_GAMESTATE'")'
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getGameStateCanisterId
+icp canister call $SUBNET_0_1_SHARE_SERVICE setGameStateCanisterId '("'$SUBNET_0_1_GAMESTATE'")'
+icp canister call $SUBNET_0_1_SHARE_SERVICE getGameStateCanisterId
 
 # register the LLMs
 # from folder: PoAIW/src/mAIner
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE get_llm_canisters
+icp canister call $SUBNET_0_1_SHARE_SERVICE get_llm_canisters
 # register every LLM with the ShareService with this command
 CANISTER_ID_LLM=...
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE add_llm_canister '(record { canister_id = "'$CANISTER_ID_LLM'" })'
+icp canister call $SUBNET_0_1_SHARE_SERVICE add_llm_canister '(record { canister_id = "'$CANISTER_ID_LLM'" })'
 
 # register all the ShareAgent mAIners, by upgrading them via GameState > mAInerCreator
 # -> This will take care of all proper registrations
 MAINER=...
 # snapshot
-dfx canister --network $NETWORK stop $MAINER
-dfx canister --network $NETWORK snapshot create $MAINER
-dfx canister --network $NETWORK start $MAINER
+icp canister stop $MAINER -e $NETWORK
+icp canister snapshot create $MAINER -e $NETWORK
+icp canister start $MAINER -e $NETWORK
 # set correct type & register ShareAgent with ShareService
-dfx canister call --network $NETWORK $MAINER setMainerCanisterType '(variant {ShareAgent} )'
-dfx canister call --network $NETWORK $MAINER setShareServiceCanisterId '("'$SUBNET_0_1_SHARE_SERVICE'")'
-dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE upgradeMainerControllerAdmin "(record {canisterAddress = \"$MAINER\" })"
+icp canister call -e $NETWORK $MAINER setMainerCanisterType '(variant {ShareAgent} )'
+icp canister call -e $NETWORK $MAINER setShareServiceCanisterId '("'$SUBNET_0_1_SHARE_SERVICE'")'
+icp canister call $SUBNET_0_1_GAMESTATE upgradeMainerControllerAdmin "(record {canisterAddress = \"$MAINER\" })"
 # Note: it will fail if maintenance flag is on. Toggle it and retry
-dfx canister --network $NETWORK call $MAINER getMaintenanceFlag
-dfx canister --network $NETWORK call $MAINER toggleMaintenanceFlagAdmin # it must be off !
+icp canister call $MAINER getMaintenanceFlag
+icp canister call $MAINER toggleMaintenanceFlagAdmin # it must be off !
 # verify
-dfx canister call --network $NETWORK $MAINER getMainerCanisterType
-dfx canister --network $NETWORK call $MAINER getGameStateCanisterId 
-dfx canister --network $NETWORK call $MAINER health
-dfx canister --network $NETWORK call $MAINER getMaintenanceFlag
+icp canister call -e $NETWORK $MAINER getMainerCanisterType
+icp canister call $MAINER getGameStateCanisterId 
+icp canister call $MAINER health
+icp canister call $MAINER getMaintenanceFlag
 ```
 
 # upgrade the Judge
@@ -433,45 +430,44 @@ mops install
 make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
 make docker-build-wasm
 
-dfx canister --network $NETWORK stop $SUBNET_0_1_JUDGE
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_JUDGE
+icp canister stop $SUBNET_0_1_JUDGE -e $NETWORK
+icp canister snapshot create $SUBNET_0_1_JUDGE -e $NETWORK
 
 # Deploy the pre-built wasm
 # Note: Post-SNS, this step is replaced with SNS governed deployment.
 # The wasm will be uploaded to the SNS and a deploy proposal will be created
 # for the community to vote on. Once the proposal passes, the SNS automatically
 # upgrades the canister.
-dfx canister install --wasm out/judge_ctrlb_canister.wasm \
-    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    $SUBNET_0_1_JUDGE
+icp canister install $SUBNET_0_1_JUDGE --wasm out/judge_ctrlb_canister.wasm \
+    -e $NETWORK --mode upgrade --wasm-memory-persistence keep -y
 
 # When upgrade fails, do a reinstall
 # -> WHEN REINSTALLING, THE LMMs need to be registered again! See step below
-# dfx canister install --wasm out/judge_ctrlb_canister.wasm \
-#   --network $NETWORK --mode reinstall --wasm-memory-persistence keep \
+# icp canister install --wasm out/judge_ctrlb_canister.wasm \
+#   -e $NETWORK --mode reinstall --wasm-memory-persistence keep \
 #    $SUBNET_0_1_JUDGE
 
 # Verify wasm hash
 make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the Judge canister back up
-dfx canister --network $NETWORK start  $SUBNET_0_1_JUDGE
-dfx canister --network $NETWORK status $SUBNET_0_1_JUDGE     | grep Status
-dfx canister --network $NETWORK call   $SUBNET_0_1_JUDGE health
+icp canister start $SUBNET_0_1_JUDGE -e $NETWORK
+icp canister status $SUBNET_0_1_JUDGE -e $NETWORK     | grep Status
+icp canister call   $SUBNET_0_1_JUDGE health
 
 # When reinstalled, issue these commands:
 # re-register the LLMs, from PoAIW/src/Judge folder
-# scripts/register-llms.sh --network $NETWORK
+# scripts/register-llms.sh -e $NETWORK
 
 # set the timer
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE getTimerActionRegularityInSecondsAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE setTimerActionRegularityInSecondsAdmin '(15)'
+icp canister call $SUBNET_0_1_JUDGE getTimerActionRegularityInSecondsAdmin
+icp canister call $SUBNET_0_1_JUDGE setTimerActionRegularityInSecondsAdmin '(15)'
 
 # reset the isProcessingSubmissions flag
-dfx canister --network $NETWORK call   $SUBNET_0_1_JUDGE resetIsProcessingSubmissionsAdmin
+icp canister call   $SUBNET_0_1_JUDGE resetIsProcessingSubmissionsAdmin
 
 # Verify registered LLMs
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --output json
+icp canister call $SUBNET_0_1_JUDGE    get_llm_canisters --output json
 ```
 
 ## Update Admin RBAC for Judge
@@ -482,14 +478,14 @@ NNS/SNS root). One-time per network — the role assignment persists across upgr
 
 ```bash
 # verify which principals already have admin roles
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE getAdminRoles
+icp canister call $SUBNET_0_1_JUDGE getAdminRoles
 # grant #AdminUpdate to the maintainer principals (arjaan, patrick)
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+icp canister call $SUBNET_0_1_JUDGE assignAdminRole '( record { "principal" = "'$MAINTAINER'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
+icp canister call $SUBNET_0_1_JUDGE assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
 # verify
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE getAdminRoles
+icp canister call $SUBNET_0_1_JUDGE getAdminRoles
 # if needed, revoke
-# dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE revokeAdminRole '( "'$ARJAAN'")'
+# icp canister call $SUBNET_0_1_JUDGE revokeAdminRole '( "'$MAINTAINER'")'
 ```
 
 # upgrade the API canister
@@ -509,27 +505,26 @@ mops install
 make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
 make docker-build-wasm
 
-dfx canister --network $NETWORK stop $SUBNET_0_2_API
-dfx canister --network $NETWORK snapshot create $SUBNET_0_2_API
+icp canister stop $SUBNET_0_2_API -e $NETWORK
+icp canister snapshot create $SUBNET_0_2_API -e $NETWORK
 
 # Deploy the pre-built wasm
 # Note: Post-SNS, this step is replaced with SNS governed deployment.
 # The wasm will be uploaded to the SNS and a deploy proposal will be created
 # for the community to vote on. Once the proposal passes, the SNS automatically
 # upgrades the canister.
-dfx canister install --wasm out/api_canister.wasm \
-    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    $SUBNET_0_2_API
+icp canister install $SUBNET_0_2_API --wasm out/api_canister.wasm \
+    -e $NETWORK --mode upgrade --wasm-memory-persistence keep -y
 
 # Verify wasm hash
 make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the API canister back up
-dfx canister --network $NETWORK start  $SUBNET_0_2_API
+icp canister start $SUBNET_0_2_API -e $NETWORK
 
 # run a few tests to confirm data was preserved
-dfx canister --network $NETWORK call $SUBNET_0_2_API getLatestDailyMetric --output json
-dfx canister --network $NETWORK call $SUBNET_0_2_API getDailyMetrics '(opt record { start_date = opt "2025-12-21"; end_date = opt "2026-01-21"; limit = null })' --output json
+icp canister call $SUBNET_0_2_API getLatestDailyMetric --output json
+icp canister call $SUBNET_0_2_API getDailyMetrics '(opt record { start_date = opt "2025-12-21"; end_date = opt "2026-01-21"; limit = null })' --output json
 
 # -------------------------------------------------------------------------
 # Start the Activity Feed sync timer (Monitor Api canister logs to follow along)
@@ -537,41 +532,41 @@ dfx canister --network $NETWORK call $SUBNET_0_2_API getDailyMetrics '(opt recor
 # The timer syncs winners and challenges from GameState every 300 seconds (default)
 
 # Check current sync interval (should be 300 seconds / 5 minutes)
-dfx canister --network $NETWORK call $SUBNET_0_2_API getActivityFeedSyncIntervalAdmin
+icp canister call $SUBNET_0_2_API getActivityFeedSyncIntervalAdmin
 
 # Optional: Change the sync interval (in seconds) if needed
-# dfx canister --network $NETWORK call $SUBNET_0_2_API setActivityFeedSyncIntervalAdmin '(600)'
+# icp canister call $SUBNET_0_2_API setActivityFeedSyncIntervalAdmin '(600)'
 
 # Start the timer (will sync 5 seconds after starting, then every syncInterval seconds)
-dfx canister --network $NETWORK call $SUBNET_0_2_API startActivityFeedTimerAdmin
+icp canister call $SUBNET_0_2_API startActivityFeedTimerAdmin
 
 # Wait ~10 seconds for first sync, then verify cache is populated
-dfx canister --network $NETWORK call $SUBNET_0_2_API getActivityFeedCacheStatus --output json
+icp canister call $SUBNET_0_2_API getActivityFeedCacheStatus --output json
 
 # -------------------------------------------------------------------------
 # Test the Activity Feed endpoints
 # -------------------------------------------------------------------------
 
 # Get activity feed with default pagination (20 winners, 20 challenges)
-dfx canister --network $NETWORK call $SUBNET_0_2_API getActivityFeed '(record { winnersLimit = null; winnersOffset = null; challengesLimit = null; challengesOffset = null; sinceTimestamp = null })' --output json
+icp canister call $SUBNET_0_2_API getActivityFeed '(record { winnersLimit = null; winnersOffset = null; challengesLimit = null; challengesOffset = null; sinceTimestamp = null })' --output json
 
 # Get activity feed with custom pagination
-dfx canister --network $NETWORK call $SUBNET_0_2_API getActivityFeed '(record { winnersLimit = opt 5; winnersOffset = opt 0; challengesLimit = opt 3; challengesOffset = opt 0; sinceTimestamp = null })' --output json
+icp canister call $SUBNET_0_2_API getActivityFeed '(record { winnersLimit = opt 5; winnersOffset = opt 0; challengesLimit = opt 3; challengesOffset = opt 0; sinceTimestamp = null })' --output json
 
 # Get open challenges from cache
-dfx canister --network $NETWORK call $SUBNET_0_2_API getOpenChallengesFromCache --output json
+icp canister call $SUBNET_0_2_API getOpenChallengesFromCache --output json
 ```
 
 ## Update Admin RBAC for API canister
 
 ```bash
 # verify which principals already have admin roles
-dfx canister --network $NETWORK call $SUBNET_0_2_API getAdminRoles
+icp canister call $SUBNET_0_2_API getAdminRoles
 # grant #AdminUpdate to the maintainer principals (arjaan, patrick)
-dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+icp canister call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$MAINTAINER'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
+icp canister call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
 # if needed, this is how you revoke permissions for a principal
-# dfx canister --network $NETWORK call $SUBNET_0_2_API revokeAdminRole '( "'$ARJAAN'")'
+# icp canister call $SUBNET_0_2_API revokeAdminRole '( "'$MAINTAINER'")'
 ```
 
 ## On-chain Daily Metrics setup for the API canister
@@ -583,16 +578,16 @@ do **not** auto-restart on upgrade.
 
 ```bash
 # Verify the current ShareService canister id on the API canister
-dfx canister --network $NETWORK call $SUBNET_0_2_API getShareServiceCanisterIdAdmin
+icp canister call $SUBNET_0_2_API getShareServiceCanisterIdAdmin
 
 # Set it to this network's ShareService (idempotent — safe to run on prd too)
-dfx canister --network $NETWORK call $SUBNET_0_2_API setShareServiceCanisterIdAdmin '("'$SUBNET_0_1_SHARE_SERVICE'")'
+icp canister call $SUBNET_0_2_API setShareServiceCanisterIdAdmin '("'$SUBNET_0_1_SHARE_SERVICE'")'
 
 # Start the pricing timer (HTTPS outcalls Coinbase + IC API every hour; refreshes immediately on start)
-dfx canister --network $NETWORK call $SUBNET_0_2_API startPricingTimerAdmin
+icp canister call $SUBNET_0_2_API startPricingTimerAdmin
 
 # Verify the pricing cache populated with real upstream values
-dfx canister --network $NETWORK call $SUBNET_0_2_API getPricingCacheAdmin
+icp canister call $SUBNET_0_2_API getPricingCacheAdmin
 ```
 
 ## Daily Metrics admin smoke tests for the API canister
@@ -604,14 +599,14 @@ during the rollout window when Django is still the authoritative writer.
 
 ```bash
 # Cross-canister read of ShareService (requires the #AdminQuery grant — see ShareService section)
-dfx canister --network $NETWORK call $SUBNET_0_2_API pullShareServiceSnapshotAdmin
+icp canister call $SUBNET_0_2_API pullShareServiceSnapshotAdmin
 
 # Run-status: expect timerActive = false right after upgrade
-dfx canister --network $NETWORK call $SUBNET_0_2_API getDailyMetricsRunStatusAdmin
+icp canister call $SUBNET_0_2_API getDailyMetricsRunStatusAdmin
 
 # Compute the metric for yesterday WITHOUT storing it. Inspect the returned
 # record to verify the aggregation, pricing, and date look right.
-dfx canister --network $NETWORK call $SUBNET_0_2_API previewDailyMetricsAggregationAdmin
+icp canister call $SUBNET_0_2_API previewDailyMetricsAggregationAdmin
 ```
 
 > When you are ready to start writing the row to canister storage, use
@@ -628,19 +623,19 @@ dfx canister --network $NETWORK call $SUBNET_0_2_API previewDailyMetricsAggregat
 
 ```bash
 # Verify the warm-up: activity list should be close to registry size (≥80%)
-dfx canister --network $NETWORK call $SUBNET_0_2_API pullShareServiceSnapshotAdmin
+icp canister call $SUBNET_0_2_API pullShareServiceSnapshotAdmin
 
 # Start the daily-metrics timer (anchored to 00:00 UTC; recurring every 24h)
-dfx canister --network $NETWORK call $SUBNET_0_2_API startDailyMetricsTimerAdmin
+icp canister call $SUBNET_0_2_API startDailyMetricsTimerAdmin
 
 # Verify
-dfx canister --network $NETWORK call $SUBNET_0_2_API getDailyMetricsRunStatusAdmin
+icp canister call $SUBNET_0_2_API getDailyMetricsRunStatusAdmin
 ```
 
 To stop the daily-metrics timer (e.g. rolling back to the Django writer):
 
 ```bash
-dfx canister --network $NETWORK call $SUBNET_0_2_API stopDailyMetricsTimerAdmin
+icp canister call $SUBNET_0_2_API stopDailyMetricsTimerAdmin
 ```
 
 ## Burn-scan setup for the API canister
@@ -661,29 +656,29 @@ hour.
 ```bash
 # Verify the TokenIndex canister id the Api canister will scan.
 # Default points at prd; non-prd networks must override (next command).
-dfx canister --network $NETWORK call $SUBNET_0_2_API getTokenIndexCanisterIdAdmin
+icp canister call $SUBNET_0_2_API getTokenIndexCanisterIdAdmin
 
 # Set it for this network (idempotent — safe to run on prd too)
 TOKEN_INDEX="<this-network's-token-index-canister-id>"
-dfx canister --network $NETWORK call $SUBNET_0_2_API setTokenIndexCanisterIdAdmin "(\"$TOKEN_INDEX\")"
+icp canister call $SUBNET_0_2_API setTokenIndexCanisterIdAdmin "(\"$TOKEN_INDEX\")"
 
 # Start the burn-scan timer (runs one scan immediately, then every hour)
-dfx canister --network $NETWORK call $SUBNET_0_2_API startBurnScanTimerAdmin
+icp canister call $SUBNET_0_2_API startBurnScanTimerAdmin
 
 # Read the current running total + scan cursor
-dfx canister --network $NETWORK call --query $SUBNET_0_2_API getTotalBurned
+icp canister call --query $SUBNET_0_2_API getTotalBurned
 ```
 
 To stop the timer (e.g. before a planned upgrade or for ops investigation):
 
 ```bash
-dfx canister --network $NETWORK call $SUBNET_0_2_API stopBurnScanTimerAdmin
+icp canister call $SUBNET_0_2_API stopBurnScanTimerAdmin
 ```
 
 To force a one-shot scan without touching the recurring timer:
 
 ```bash
-dfx canister --network $NETWORK call $SUBNET_0_2_API triggerBurnScanAdmin
+icp canister call $SUBNET_0_2_API triggerBurnScanAdmin
 ```
 
 # upgrade the ArchiveChallenges canister
@@ -703,23 +698,22 @@ mops install
 make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
 make docker-build-wasm
 
-dfx canister --network $NETWORK stop $SUBNET_0_2_ARCHIVE
-dfx canister --network $NETWORK snapshot create $SUBNET_0_2_ARCHIVE
+icp canister stop $SUBNET_0_2_ARCHIVE -e $NETWORK
+icp canister snapshot create $SUBNET_0_2_ARCHIVE -e $NETWORK
 
 # Deploy the pre-built wasm
 # Note: Post-SNS, this step is replaced with SNS governed deployment.
 # The wasm will be uploaded to the SNS and a deploy proposal will be created
 # for the community to vote on. Once the proposal passes, the SNS automatically
 # upgrades the canister.
-dfx canister install --wasm out/archive_challenges_canister.wasm \
-    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    $SUBNET_0_2_ARCHIVE
+icp canister install $SUBNET_0_2_ARCHIVE --wasm out/archive_challenges_canister.wasm \
+    -e $NETWORK --mode upgrade --wasm-memory-persistence keep -y
 
 # Verify wasm hash
 make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the Archive canister back up
-dfx canister --network $NETWORK start  $SUBNET_0_2_ARCHIVE
+icp canister start $SUBNET_0_2_ARCHIVE -e $NETWORK
 ```
 
 # upgrade the Treasury canister
@@ -735,29 +729,28 @@ echo $SUBNET_0_1_TREASURY
 rm -rf .mops
 mops install
 
-dfx generate funnai_treasury_canister
+# (no `icp` equivalent to `dfx generate` -- src/declarations/ is committed)
 
 # Build wasm with Docker (reproducible build)
 make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
 make docker-build-wasm
 
-dfx canister --network $NETWORK stop $SUBNET_0_1_TREASURY
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_TREASURY
+icp canister stop $SUBNET_0_1_TREASURY -e $NETWORK
+icp canister snapshot create $SUBNET_0_1_TREASURY -e $NETWORK
 
 # Deploy the pre-built wasm
 # Note: Post-SNS, this step is replaced with SNS governed deployment.
 # The wasm will be uploaded to the SNS and a deploy proposal will be created
 # for the community to vote on. Once the proposal passes, the SNS automatically
 # upgrades the canister.
-dfx canister install --wasm out/funnai_treasury_canister.wasm \
-    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    $SUBNET_0_1_TREASURY
+icp canister install $SUBNET_0_1_TREASURY --wasm out/funnai_treasury_canister.wasm \
+    -e $NETWORK --mode upgrade --wasm-memory-persistence keep -y
 
 # Verify wasm hash
 make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the Treasury canister back up
-dfx canister --network $NETWORK start  $SUBNET_0_1_TREASURY
+icp canister start $SUBNET_0_1_TREASURY -e $NETWORK
 ```
 
 # upgrade the ckSigner canister
@@ -766,11 +759,11 @@ The ckSigner canister requires a Schnorr key name in addition to the network.
 
 Schnorr Key Names
 
-| Schnorr Key Name | dfx network                 | Signing Cost | Subnet used for signing    |
+| Schnorr Key Name | network                     | Signing Cost | Subnet used for signing    |
 | ---------------- | --------------------------- | ------------ | -------------------------- |
 | `key_1`          | IC mainnet (prd)            | ~26B cycles  | 34-node fiduciary subnet   |
 | `test_key_1`     | IC mainnet (testing)        | ~10B cycles  | 13-node application subnet |
-| `dfx_test_key`   | Local replica (`dfx start`) | Free         | Local test subnet          |
+| `dfx_test_key`   | Local replica (`icp network start`) | Free         | Local test subnet          |
 
 ```bash
 # Set SCHNORR_KEY_NAME to match your NETWORK
@@ -789,14 +782,14 @@ echo "SCHNORR_KEY_NAME=$SCHNORR_KEY_NAME"
 make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
 make docker-build-wasm
 
-dfx canister --network $NETWORK stop ck_signer_canister
-dfx canister --network $NETWORK snapshot create ck_signer_canister
+icp canister stop ck_signer_canister -e $NETWORK
+icp canister snapshot create ck_signer_canister -e $NETWORK
 
 # ---------------------------------------------
 # To upgrade
-dfx canister install ck_signer_canister \
+icp canister install ck_signer_canister \
     --mode upgrade \
-    --network $NETWORK \
+    -e $NETWORK \
     --wasm out/ck_signer_canister.wasm \
     --argument "(\"$SCHNORR_KEY_NAME\")" \
     --wasm-memory-persistence keep
@@ -805,9 +798,9 @@ dfx canister install ck_signer_canister \
 # When reinstalling, make sure the redo the steps of the section:
 # "Configure fee tokens"
 #
-dfx canister install ck_signer_canister \
+icp canister install ck_signer_canister \
     --mode reinstall \
-    --network $NETWORK \
+    -e $NETWORK \
     --wasm out/ck_signer_canister.wasm \
     --argument "(\"$SCHNORR_KEY_NAME\")"
 
@@ -815,15 +808,15 @@ dfx canister install ck_signer_canister \
 make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # Start the canister back up
-dfx canister --network $NETWORK start ck_signer_canister
-dfx canister --network $NETWORK status ck_signer_canister | grep Status
-dfx canister --network $NETWORK call ck_signer_canister health
+icp canister start ck_signer_canister -e $NETWORK
+icp canister status ck_signer_canister -e $NETWORK | grep Status
+icp canister call ck_signer_canister health
 
 # Verify Treasury -> go to Configure Treasury section if wrong
-dfx canister --network $NETWORK call ck_signer_canister getTreasury
+icp canister call ck_signer_canister getTreasury
 
 # Verify fee token configuration
-dfx canister --network $NETWORK call ck_signer_canister getFeeTokens
+icp canister call ck_signer_canister getFeeTokens
 
 # If "Accepted tokens" is empty (e.g. after reinstall), add ckBTC:
 #
@@ -831,9 +824,9 @@ dfx canister --network $NETWORK call ck_signer_canister getFeeTokens
 # | ----- | --------------------------- | ---------- |
 # | ckBTC | mxzaz-hqaaa-aaaar-qaada-cai | 100 (sats) |
 #
-dfx canister --network $NETWORK call ck_signer_canister addFeeToken \
+icp canister call ck_signer_canister addFeeToken \
     '(record { tokenName = "ckBTC"; tokenLedger = principal "mxzaz-hqaaa-aaaar-qaada-cai"; fee = 100 : nat })'
-dfx canister --network $NETWORK call ck_signer_canister getFeeTokens
+icp canister call ck_signer_canister getFeeTokens
 ```
 
 ## Configure ckSigner treasury
@@ -845,10 +838,10 @@ After a reinstall, verify the treasury is correct. For testing, set it to the te
 echo "Using network: $NETWORK"
 
 # Check current treasury
-dfx canister --network $NETWORK call ck_signer_canister getTreasury
+icp canister call ck_signer_canister getTreasury
 
 # Set treasury (only needed if default is wrong, e.g. for testing network)
-# dfx canister --network $NETWORK call ck_signer_canister setTreasury  '(record { treasuryName = "<description>"; treasuryPrincipal = principal "<principal>" })'
+# icp canister call ck_signer_canister setTreasury  '(record { treasuryName = "<description>"; treasuryPrincipal = principal "<principal>" })'
 ```
 
 ## Configure ckSigner fee tokens
@@ -859,7 +852,7 @@ After upgrade, configure the accepted ICRC-2 fee tokens.
 echo "Using network: $NETWORK"
 
 # Check current fee token configuration
-dfx canister --network $NETWORK call ck_signer_canister getFeeTokens
+icp canister call ck_signer_canister getFeeTokens
 
 ## Fee Token Configuration
 #
@@ -867,18 +860,18 @@ dfx canister --network $NETWORK call ck_signer_canister getFeeTokens
 # | ----- | --------------------------- | ---------- |
 # | ckBTC | mxzaz-hqaaa-aaaar-qaada-cai | 100 (sats) |
 
-dfx canister --network $NETWORK call ck_signer_canister addFeeToken \
+icp canister call ck_signer_canister addFeeToken \
     '(record { tokenName = "ckBTC"; tokenLedger = principal "mxzaz-hqaaa-aaaar-qaada-cai"; fee = 100 : nat })'
 
 # Verify fee tokens are configured
-dfx canister --network $NETWORK call ck_signer_canister getFeeTokens
+icp canister call ck_signer_canister getFeeTokens
 
 # Verify sign rejects without payment (should return "Fee payment required" error)
-dfx canister --network $NETWORK call ck_signer_canister sign \
+icp canister call ck_signer_canister sign \
     '(record { botName = "testbot"; message = blob "\00\01\02\03\04\05\06\07\08\09\0a\0b\0c\0d\0e\0f\10\11\12\13\14\15\16\17\18\19\1a\1b\1c\1d\1e\1f"; payment = null })'
 
 # To remove a fee token (if needed):
-# dfx canister --network $NETWORK call ck_signer_canister removeFeeToken \
+# icp canister call ck_signer_canister removeFeeToken \
 #     '(record { tokenLedger = principal "mxzaz-hqaaa-aaaar-qaada-cai" })'
 ```
 
@@ -891,7 +884,7 @@ echo $SUBNET_0_1_MAINER_CREATOR
 
 # from folder: PoAIW/src/mAInerCreator
 # Generate the bindings for the upload scripts and the frontend
-dfx generate mainer_creator_canister
+# (no `icp` equivalent to `dfx generate` -- src/declarations/ is committed)
 
 # mops.toml was updated in latest PR
 rm -rf .mops
@@ -901,34 +894,33 @@ mops install
 make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
 make docker-build-wasm
 
-dfx canister --network $NETWORK stop $SUBNET_0_1_MAINER_CREATOR
-dfx canister --network $NETWORK snapshot create $SUBNET_0_1_MAINER_CREATOR
+icp canister stop $SUBNET_0_1_MAINER_CREATOR -e $NETWORK
+icp canister snapshot create $SUBNET_0_1_MAINER_CREATOR -e $NETWORK
 
 # Deploy the pre-built wasm
 # Note: Post-SNS, this step is replaced with SNS governed deployment.
 # The wasm will be uploaded to the SNS and a deploy proposal will be created
 # for the community to vote on. Once the proposal passes, the SNS automatically
 # upgrades the canister.
-dfx canister install --wasm out/mainer_creator_canister.wasm \
-    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
-    $SUBNET_0_1_MAINER_CREATOR
+icp canister install $SUBNET_0_1_MAINER_CREATOR --wasm out/mainer_creator_canister.wasm \
+    -e $NETWORK --mode upgrade --wasm-memory-persistence keep -y
 
 # Verify wasm hash
 make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
 # start the mAInerCreator canister back up
-dfx canister --network $NETWORK start  $SUBNET_0_1_MAINER_CREATOR
-dfx canister --network $NETWORK status $SUBNET_0_1_MAINER_CREATOR     | grep Status
-dfx canister --network $NETWORK call   $SUBNET_0_1_MAINER_CREATOR health
+icp canister start $SUBNET_0_1_MAINER_CREATOR -e $NETWORK
+icp canister status $SUBNET_0_1_MAINER_CREATOR -e $NETWORK     | grep Status
+icp canister call   $SUBNET_0_1_MAINER_CREATOR health
 
 # ensure the correct wasm & did files are in this folder 
 # -> PoAIW/src/mAInerCreator/files
 #
 # If you just did a mAIner upgrade, you can do this:
 # From folder: PoAIW/src/mAIner
-shasum -a 256 .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.wasm # confirm it is the TARGET_HASH
-cp .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.did ../mAInerCreator/files/mainer_ctrlb_canister.did
-cp .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.wasm ../mAInerCreator/files/mainer_ctrlb_canister.wasm
+shasum -a 256 PoAIW/src/mAIner/out/mainer_ctrlb_canister_0.wasm # confirm it is the TARGET_HASH
+cp PoAIW/src/mAIner/out/mainer_ctrlb_canister_0.did ../mAInerCreator/files/mainer_ctrlb_canister.did
+cp PoAIW/src/mAIner/out/mainer_ctrlb_canister_0.wasm ../mAInerCreator/files/mainer_ctrlb_canister.wasm
 #
 # From folder: PoAIW/llms/llama_cpp_canister/build
 shasum -a 256 llama_cpp.wasm # confirm it is the deployed llm wasm
@@ -941,23 +933,23 @@ cp llama_cpp.wasm ../../../src/mAInerCreator/files/llama_cpp.wasm
 #
 # (if changed) Upload the mainer controller canister wasm
 shasum -a 256 files/mainer_ctrlb_canister.wasm # verify
-python -m scripts.upload_mainer_controller_canister --network $NETWORK --canister mainer_creator_canister --wasm files/mainer_ctrlb_canister.wasm --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
+python -m scripts.upload_mainer_controller_canister -e $NETWORK --canister mainer_creator_canister --wasm files/mainer_ctrlb_canister.wasm --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
 # -> Repeat for all networks, used to test mAInerCreator
 #
 # (if changed) Upload the mainer LLM canister wasm
 shasum -a 256 files/llama_cpp.wasm # verify
-python -m scripts.upload_mainer_llm_canister_wasm --network $NETWORK --canister mainer_creator_canister --wasm files/llama_cpp.wasm --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
+python -m scripts.upload_mainer_llm_canister_wasm -e $NETWORK --canister mainer_creator_canister --wasm files/llama_cpp.wasm --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
 # -> Repeat for all networks, used to test mAInerCreator
 
 # (if changed) Upload the mainer LLM model file (gguf)
 shasum -a 256 files/qwen2.5-0.5b-instruct-q8_0.gguf # verify
-python -m scripts.upload_mainer_llm_canister_modelfile --network $NETWORK --canister mainer_creator_canister --chunksize 2000000 --wasm files/qwen2.5-0.5b-instruct-q8_0.gguf --hf-sha256 "ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e" --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
+python -m scripts.upload_mainer_llm_canister_modelfile -e $NETWORK --canister mainer_creator_canister --chunksize 2000000 --wasm files/qwen2.5-0.5b-instruct-q8_0.gguf --hf-sha256 "ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e" --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
 # -> Repeat for all networks, used to test mAInerCreator
 
 # Verify the sha256 hashes of all uploaded files
 # Warning: do not run this while upload is in process. Wait till it is fully completed.
 #          It uses a lazy evaluation logic.
-dfx canister --network $NETWORK call mainer_creator_canister getSha256HashesAdmin
+icp canister call mainer_creator_canister getSha256HashesAdmin
 ```
 
 ## Post-reinstall configuration (mAInerCreator)
@@ -980,20 +972,20 @@ reinstall (no-op on prd, since the default already matches):
 
 ```bash
 # verify current value
-dfx canister --network $NETWORK call $SUBNET_0_1_MAINER_CREATOR getMasterCanisterIdAdmin
+icp canister call $SUBNET_0_1_MAINER_CREATOR getMasterCanisterIdAdmin
 
 # set it to this network's GameState
-dfx canister --network $NETWORK call $SUBNET_0_1_MAINER_CREATOR setMasterCanisterId '("'$SUBNET_0_1_GAMESTATE'")'
+icp canister call $SUBNET_0_1_MAINER_CREATOR setMasterCanisterId '("'$SUBNET_0_1_GAMESTATE'")'
 
 # verify
-dfx canister --network $NETWORK call $SUBNET_0_1_MAINER_CREATOR getMasterCanisterIdAdmin
+icp canister call $SUBNET_0_1_MAINER_CREATOR getMasterCanisterIdAdmin
 ```
 
 Regular `--mode upgrade` preserves stable state and does not need this step.
 
 ## Testing the mAInerCreator
 
-Final test must be done by creating a mAIner via the UI, but initial test you can do with dfx.
+Final test must be done by creating a mAIner via the UI, but initial test you can do from the command line.
 
 Call the `spinUpMainerControllerCanisterForUserAdmin` endpoint as described in PoAIW/src/GameState/README.md 
 
@@ -1015,25 +1007,25 @@ mops install
 make docker-build-base
 make docker-build-wasm
 
-dfx generate funnai_backend
-dfx canister --network $NETWORK stop funnai_backend
-dfx canister --network $NETWORK snapshot create funnai_backend
+# (no `icp` equivalent to `dfx generate` -- src/declarations/ is committed)
+icp canister stop funnai_backend -e $NETWORK
+icp canister snapshot create funnai_backend -e $NETWORK
 
 # Deploy the pre-built wasm
 # Note: Post-SNS, this step is replaced with SNS governed deployment.
 # The wasm will be uploaded to the SNS and a deploy proposal will be created
 # for the community to vote on. Once the proposal passes, the SNS automatically
 # upgrades the canister.
-dfx canister install --wasm out/funnai_backend.wasm \
-    --argument "( principal \"$(dfx identity get-principal)\" )" \
-    --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
+icp canister install --wasm out/funnai_backend.wasm \
+    --argument "( principal \"$(icp identity principal)\" )" \
+    -e $NETWORK --mode upgrade --wasm-memory-persistence keep \
     funnai_backend
 
 
 # Verify wasm hash
 make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 
-dfx canister --network $NETWORK start funnai_backend
+icp canister start funnai_backend -e $NETWORK
 ```
 
 # un-pause protocol
@@ -1041,10 +1033,10 @@ dfx canister --network $NETWORK start funnai_backend
 # From folder: funnAI
 
 # Toggle it
-dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE togglePauseProtocolFlagAdmin
+icp canister call $SUBNET_0_1_GAMESTATE togglePauseProtocolFlagAdmin
 
 # verify
-dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getPauseProtocolFlag
+icp canister call $SUBNET_0_1_GAMESTATE getPauseProtocolFlag
 ```
 
 # start timers of protocol canisters
@@ -1053,13 +1045,13 @@ In this order:
 
 ```bash
 # From folder: funnAI
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         startTimerExecutionAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE startTimerExecutionAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    startTimerExecutionAdmin
+icp canister call $SUBNET_0_1_JUDGE         startTimerExecutionAdmin
+icp canister call $SUBNET_0_1_SHARE_SERVICE startTimerExecutionAdmin
+icp canister call $SUBNET_0_1_CHALLENGER    startTimerExecutionAdmin
 
 # If you changed the Challenger timer interval, note it is a stble var.
 # You will need to call setTimerActionRegularityInSecondsAdmin, as in:
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER setTimerActionRegularityInSecondsAdmin '(420)'
+icp canister call $SUBNET_0_1_CHALLENGER setTimerActionRegularityInSecondsAdmin '(420)'
 ```
 
 # Cycle capping: start the send-cycles drain timers
@@ -1071,16 +1063,16 @@ does NOT survive an upgrade** — re-arm it after every controller upgrade.
 
 ```bash
 # From folder: funnAI  (run after upgrading each controller)
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    startSendCyclesTimerAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE startSendCyclesTimerAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         startSendCyclesTimerAdmin
+icp canister call $SUBNET_0_1_CHALLENGER    startSendCyclesTimerAdmin
+icp canister call $SUBNET_0_1_SHARE_SERVICE startSendCyclesTimerAdmin
+icp canister call $SUBNET_0_1_JUDGE         startSendCyclesTimerAdmin
 
 # Period defaults to 3600s (1 hour). To change (per controller):
-# dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER setSendCyclesPeriodInSecondsAdmin '(3600)'
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    getSendCyclesPeriodInSecondsAdmin
+# icp canister call $SUBNET_0_1_CHALLENGER setSendCyclesPeriodInSecondsAdmin '(3600)'
+icp canister call $SUBNET_0_1_CHALLENGER    getSendCyclesPeriodInSecondsAdmin
 
 # To stop a drain timer:
-# dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER stopSendCyclesTimerAdmin
+# icp canister call $SUBNET_0_1_CHALLENGER stopSendCyclesTimerAdmin
 ```
 
 The drain keeps `MIN_CYCLES_BALANCE` (30T default) and sends the fixed
@@ -1101,12 +1093,12 @@ Verify (all three controllers):
 
 ```bash
 # From folder: funnAI  (prd)
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    getMinCyclesBalanceAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    getCyclesToSendToGameStateAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getMinCyclesBalanceAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getCyclesToSendToGameStateAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         getMinCyclesBalanceAdmin
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         getCyclesToSendToGameStateAdmin
+icp canister call $SUBNET_0_1_CHALLENGER    getMinCyclesBalanceAdmin
+icp canister call $SUBNET_0_1_CHALLENGER    getCyclesToSendToGameStateAdmin
+icp canister call $SUBNET_0_1_SHARE_SERVICE getMinCyclesBalanceAdmin
+icp canister call $SUBNET_0_1_SHARE_SERVICE getCyclesToSendToGameStateAdmin
+icp canister call $SUBNET_0_1_JUDGE         getMinCyclesBalanceAdmin
+icp canister call $SUBNET_0_1_JUDGE         getCyclesToSendToGameStateAdmin
 ```
 
 Each `getMinCyclesBalanceAdmin` should return `30_000_000_000_000` and each
@@ -1114,12 +1106,12 @@ Each `getMinCyclesBalanceAdmin` should return `30_000_000_000_000` and each
 that differ:
 
 ```bash
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    setMinCyclesBalanceAdmin        '(30_000_000_000_000)'
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    setCyclesToSendToGameStateAdmin '(10_000_000_000_000)'
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE setMinCyclesBalanceAdmin        '(30_000_000_000_000)'
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE setCyclesToSendToGameStateAdmin '(10_000_000_000_000)'
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         setMinCyclesBalanceAdmin        '(30_000_000_000_000)'
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         setCyclesToSendToGameStateAdmin '(10_000_000_000_000)'
+icp canister call $SUBNET_0_1_CHALLENGER    setMinCyclesBalanceAdmin        '(30_000_000_000_000)'
+icp canister call $SUBNET_0_1_CHALLENGER    setCyclesToSendToGameStateAdmin '(10_000_000_000_000)'
+icp canister call $SUBNET_0_1_SHARE_SERVICE setMinCyclesBalanceAdmin        '(30_000_000_000_000)'
+icp canister call $SUBNET_0_1_SHARE_SERVICE setCyclesToSendToGameStateAdmin '(10_000_000_000_000)'
+icp canister call $SUBNET_0_1_JUDGE         setMinCyclesBalanceAdmin        '(30_000_000_000_000)'
+icp canister call $SUBNET_0_1_JUDGE         setCyclesToSendToGameStateAdmin '(10_000_000_000_000)'
 ```
 
 Note: `MIN_CYCLES_BALANCE` also sets the LLM funding cap (LLMs are topped up only
@@ -1168,20 +1160,20 @@ After a couple of hours, if everything looks good, remove the snapshots to save 
 
 ```bash
 # list & delete the snapshots
-dfx canister --network $NETWORK snapshot list   $SUBNET_0_1_GAMESTATE
-dfx canister --network $NETWORK snapshot delete $SUBNET_0_1_GAMESTATE     <snapshot-id>
+icp canister snapshot list $SUBNET_0_1_GAMESTATE -e $NETWORK
+icp canister snapshot delete $SUBNET_0_1_GAMESTATE -e $NETWORK     <snapshot-id>
 
-dfx canister --network $NETWORK snapshot list   $SUBNET_0_1_CHALLENGER    
-dfx canister --network $NETWORK snapshot delete $SUBNET_0_1_CHALLENGER    <snapshot-id>
+icp canister snapshot list $SUBNET_0_1_CHALLENGER -e $NETWORK    
+icp canister snapshot delete $SUBNET_0_1_CHALLENGER -e $NETWORK    <snapshot-id>
 
-dfx canister --network $NETWORK snapshot list   $SUBNET_0_1_SHARE_SERVICE 
-dfx canister --network $NETWORK snapshot delete $SUBNET_0_1_SHARE_SERVICE <snapshot-id>
+icp canister snapshot list $SUBNET_0_1_SHARE_SERVICE -e $NETWORK 
+icp canister snapshot delete $SUBNET_0_1_SHARE_SERVICE -e $NETWORK <snapshot-id>
 
-dfx canister --network $NETWORK snapshot list   $SUBNET_0_1_JUDGE
-dfx canister --network $NETWORK snapshot delete $SUBNET_0_1_JUDGE         <snapshot-id>
+icp canister snapshot list $SUBNET_0_1_JUDGE -e $NETWORK
+icp canister snapshot delete $SUBNET_0_1_JUDGE -e $NETWORK         <snapshot-id>
 
-dfx canister --network $NETWORK snapshot list   ck_signer_canister
-dfx canister --network $NETWORK snapshot delete  ck_signer_canister <snapshot-id>
+icp canister snapshot list ck_signer_canister -e $NETWORK
+icp canister snapshot delete ck_signer_canister -e $NETWORK <snapshot-id>
 ```
 
 # Load a snapshot to ROLL BACK
@@ -1192,23 +1184,23 @@ Use the snapshots to roll back everything
 # pause > stop timers > stop canisters , as described above
 
 # list & load the snapshots
-dfx canister --network $NETWORK snapshot list $SUBNET_0_1_GAMESTATE
-dfx canister --network $NETWORK snapshot load $SUBNET_0_1_GAMESTATE     <snapshot-id>
+icp canister snapshot list $SUBNET_0_1_GAMESTATE -e $NETWORK
+icp canister snapshot restore $SUBNET_0_1_GAMESTATE -e $NETWORK     <snapshot-id>
 
-dfx canister --network $NETWORK snapshot list $SUBNET_0_1_CHALLENGER    
-dfx canister --network $NETWORK snapshot load $SUBNET_0_1_CHALLENGER    <snapshot-id>
+icp canister snapshot list $SUBNET_0_1_CHALLENGER -e $NETWORK    
+icp canister snapshot restore $SUBNET_0_1_CHALLENGER -e $NETWORK    <snapshot-id>
 
-dfx canister --network $NETWORK snapshot list $SUBNET_0_1_SHARE_SERVICE 
-dfx canister --network $NETWORK snapshot load $SUBNET_0_1_SHARE_SERVICE <snapshot-id>
+icp canister snapshot list $SUBNET_0_1_SHARE_SERVICE -e $NETWORK 
+icp canister snapshot restore $SUBNET_0_1_SHARE_SERVICE -e $NETWORK <snapshot-id>
 
-dfx canister --network $NETWORK snapshot list $SUBNET_0_1_JUDGE
-dfx canister --network $NETWORK snapshot load $SUBNET_0_1_JUDGE         <snapshot-id>
+icp canister snapshot list $SUBNET_0_1_JUDGE -e $NETWORK
+icp canister snapshot restore $SUBNET_0_1_JUDGE -e $NETWORK         <snapshot-id>
 
-dfx canister --network $NETWORK stop ck_signer_canister
-dfx canister --network $NETWORK snapshot list ck_signer_canister
-dfx canister --network $NETWORK snapshot load ck_signer_canister <snapshot-id>
-dfx canister --network $NETWORK start ck_signer_canister
-dfx canister --network $NETWORK call ck_signer_canister health
+icp canister stop ck_signer_canister -e $NETWORK
+icp canister snapshot list ck_signer_canister -e $NETWORK
+icp canister snapshot restore ck_signer_canister -e $NETWORK <snapshot-id>
+icp canister start ck_signer_canister -e $NETWORK
+icp canister call ck_signer_canister health
 
 # start canisters > start timers > unpause, as described above
 ```
@@ -1236,9 +1228,9 @@ We create, update & manage the LLMs from these folders:
 - `PoAIW/llms/Judge`
 - `PoAIW/llms/mAIner` 
 
-In these folders, the following files are used by dfx:
-- dfx.json : `llm_#`    -> used by `dfx deploy`
-- canister_ids.json     -> used & updated by `dfx deploy`
+In these folders, the following files are used by icp-cli:
+- icp.yaml : `llm_#`    -> used by `icp deploy`
+- .icp/data/mappings/<env>.ids.json -> used & updated by `icp deploy`
 
 
 ## Deploy a new LLM
@@ -1252,18 +1244,18 @@ log viewers, and tests the LLM.
 ```bash
 # from folder: funnAI
 # Activate the conda environment
-conda activate llama_cpp_canister
+conda activate funnAI
 
 # Dry run first to see what will happen
-scripts/deploy_llm.sh --network $NETWORK --llm-type <challenger|judge|share_service> [--subnet <subnet-id>] --dry-run
+scripts/deploy_llm.sh -e $NETWORK --llm-type <challenger|judge|share_service> [--subnet <subnet-id>] --dry-run
 
 # Deploy for real
-scripts/deploy_llm.sh --network $NETWORK --llm-type <challenger|judge|share_service> [--subnet <subnet-id>]
+scripts/deploy_llm.sh -e $NETWORK --llm-type <challenger|judge|share_service> [--subnet <subnet-id>]
 ```
 
 The script will:
 1. Find the next available `llm_N` index in `canister_ids.json`
-2. Ensure the entry exists in `dfx.json`
+2. Ensure the entry exists in `icp.yaml`
 3. Auto-select a subnet with < 3 LLMs (or use `--subnet` to override)
 4. Deploy, health-check, verify subnet, configure controllers & admin roles
 5. Upload and load the model, set max_tokens, pause logs/chats
@@ -1276,14 +1268,14 @@ a `delete_llm.sh` command to clean up.
 **Next step: add the LLM to the protocol**
 - See section below: "Add new LLM to the protocol"
 
-### Manually using dfx commands
+### Manually using icp commands
 
 - Select a new subnet, if needed, and record it in our tracking spreadsheet:
     https://docs.google.com/spreadsheets/d/1KeyylEYVs3cQvYXOc9RS0q5eWd_vWIW1UVycfDEIkBk/edit?gid=0#gid=0
 
 - Add the subnet to `funnAI/scripts/canister_ids-prd.env`
 
-- Add the llm_# entries to `PoAIW/llms/xxx/dfx.json`
+- Add the llm_# entries to `PoAIW/llms/xxx/icp.yaml`
 
 - Create the canister
 
@@ -1292,7 +1284,7 @@ a `delete_llm.sh` command to clean up.
 
         # Deploy it
         # from folder: PoAIW/llms/xxx
-        dfx deploy --network $NETWORK llm_<#> --subnet <subnet-id> --mode install
+        icp deploy -e $NETWORK llm_<#> --subnet <subnet-id> --mode install
 
         # -> Update the file: `funnAI/scripts/canister_ids-prd.env`
 
@@ -1319,13 +1311,13 @@ a `delete_llm.sh` command to clean up.
         # from folder: PoAIW/llms/xxx
 
         # For Challenger LLM
-        dfx canister --network $NETWORK update-settings llm_<#> --add-controller $SUBNET_0_1_CHALLENGER
+        icp canister settings update llm_<#> -e $NETWORK --add-controller $SUBNET_0_1_CHALLENGER
 
         # For ShareService LLM
-        dfx canister --network $NETWORK update-settings llm_<#> --add-controller $SUBNET_0_1_SHARE_SERVICE
+        icp canister settings update llm_<#> -e $NETWORK --add-controller $SUBNET_0_1_SHARE_SERVICE
 
         # For Judge LLM
-        dfx canister --network $NETWORK update-settings llm_<#> --add-controller $SUBNET_0_1_JUDGE
+        icp canister settings update llm_<#> -e $NETWORK --add-controller $SUBNET_0_1_JUDGE
 
     ```
 
@@ -1334,9 +1326,9 @@ a `delete_llm.sh` command to clean up.
     ```bash
         NETWORK=prd
         PATRICK="cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"
-        ARJAAN="chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"
-        dfx canister --network $NETWORK update-settings $llm --add-controller $PATRICK
-        dfx canister --network $NETWORK update-settings $llm --add-controller $ARJAAN
+        MAINTAINER="$(icp identity principal)"
+        icp canister settings update $llm -e $NETWORK --add-controller $PATRICK
+        icp canister settings update $llm -e $NETWORK --add-controller $MAINTAINER
     ```
 
 - Register the canister with CycleOps
@@ -1352,7 +1344,7 @@ a `delete_llm.sh` command to clean up.
         export PYTHONPATH="${PYTHONPATH}:$(realpath $LLAMA_CPP_CANISTER_PATH)"
         MODEL="models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf"
         LLM="<canister-id>"
-        python -m scripts.upload --network $NETWORK --canister $LLM --canister-filename models/model.gguf $MODEL
+        python -m scripts.upload -e $NETWORK --canister $LLM --canister-filename models/model.gguf $MODEL
     ```
 
 - Update the scripts that automate deployment:
@@ -1414,10 +1406,10 @@ with the controller canister and updating the GameState LLM count.
 # from folder: funnAI
 
 # Dry run first
-scripts/add_llm.sh --network $NETWORK --canister-id <canister-id> --dry-run
+scripts/add_llm.sh -e $NETWORK --canister-id <canister-id> --dry-run
 
 # Add for real
-scripts/add_llm.sh --network $NETWORK --canister-id <canister-id>
+scripts/add_llm.sh -e $NETWORK --canister-id <canister-id>
 ```
 
 The script will:
@@ -1433,47 +1425,47 @@ The script will:
 
 
 
-### Manually using dfx commands
+### Manually using icp commands
 
 #### For Challenger
 ```bash
     LLM="<canister-id>"
     # Add it to the Challenger ctrlb canister
-    dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    get_llm_canisters --output json
-    dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    add_llm_canister "(record {canister_id = \"$LLM\"})"
-    dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    get_llm_canisters --output json
+    icp canister call $SUBNET_0_1_CHALLENGER    get_llm_canisters --output json
+    icp canister call $SUBNET_0_1_CHALLENGER    add_llm_canister "(record {canister_id = \"$LLM\"})"
+    icp canister call $SUBNET_0_1_CHALLENGER    get_llm_canisters --output json
 
     # update GameState cycle cost calculations
-    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numChallengerLlms
+    icp canister call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numChallengerLlms
     NUM_LLMS_DEPLOYED=....
-    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numChallengerLlms = opt ($NUM_LLMS_DEPLOYED : nat);})"
+    icp canister call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numChallengerLlms = opt ($NUM_LLMS_DEPLOYED : nat);})"
 ```
 
 #### For ShareService
 ```bash
     LLM="<canister-id>"
     # Add it to the ShareService ctrlb canister
-    dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    get_llm_canisters --output json
-    dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    add_llm_canister "(record {canister_id = \"$LLM\"})"
-    dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE    get_llm_canisters --output json
+    icp canister call $SUBNET_0_1_SHARE_SERVICE    get_llm_canisters --output json
+    icp canister call $SUBNET_0_1_SHARE_SERVICE    add_llm_canister "(record {canister_id = \"$LLM\"})"
+    icp canister call $SUBNET_0_1_SHARE_SERVICE    get_llm_canisters --output json
 
     # update GameState cycle cost calculations
-    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numShareServiceLlms
+    icp canister call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numShareServiceLlms
     NUM_LLMS_DEPLOYED=....
-    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numShareServiceLlms = opt ($NUM_LLMS_DEPLOYED : nat);})"
+    icp canister call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numShareServiceLlms = opt ($NUM_LLMS_DEPLOYED : nat);})"
 ```
 
 #### For Judge
 ```bash
     LLM="<canister-id>"
     # Add it to the Judge ctrlb canister
-    dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    add_llm_canister "(record {canister_id = \"$LLM\"})"
-    dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE    get_llm_canisters --output json
+    icp canister call $SUBNET_0_1_JUDGE    add_llm_canister "(record {canister_id = \"$LLM\"})"
+    icp canister call $SUBNET_0_1_JUDGE    get_llm_canisters --output json
 
     # update GameState cycle cost calculations
-    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numJudgeLlms
+    icp canister call $SUBNET_0_1_GAMESTATE getCyclesFlowAdmin | grep numJudgeLlms
     NUM_LLMS_DEPLOYED=...
-    dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numJudgeLlms = opt ($NUM_LLMS_DEPLOYED : nat);})"
+    icp canister call $SUBNET_0_1_GAMESTATE setCyclesFlowAdmin "(record {numJudgeLlms = opt ($NUM_LLMS_DEPLOYED : nat);})"
 ```
 
 ## Delete an LLM
@@ -1487,10 +1479,10 @@ The `delete_llm.sh` script removes an LLM from the protocol, deletes the caniste
 # from folder: funnAI
 
 # Dry run first
-scripts/delete_llm.sh --network $NETWORK --canister-id <canister-id> --dry-run
+scripts/delete_llm.sh -e $NETWORK --canister-id <canister-id> --dry-run
 
 # Delete for real
-scripts/delete_llm.sh --network $NETWORK --canister-id <canister-id>
+scripts/delete_llm.sh -e $NETWORK --canister-id <canister-id>
 ```
 
 The script will:
@@ -1501,7 +1493,7 @@ The script will:
 5. Remove entry from `canister_ids.json`
 6. Remove entry from `canister_ids-{network}.env`
 
-### Manually using dfx commands
+### Manually using icp commands
 
 ```bash
     NETWORK=prd
@@ -1510,17 +1502,17 @@ The script will:
 
     # Remove from controller (pick the right one for your LLM type)
     # For Challenger
-    dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    remove_llm_canister "(record {canister_id = \"$LLM\"})"
+    icp canister call $SUBNET_0_1_CHALLENGER    remove_llm_canister "(record {canister_id = \"$LLM\"})"
     # For ShareService
-    dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE remove_llm_canister "(record {canister_id = \"$LLM\"})"
+    icp canister call $SUBNET_0_1_SHARE_SERVICE remove_llm_canister "(record {canister_id = \"$LLM\"})"
     # For Judge
-    dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         remove_llm_canister "(record {canister_id = \"$LLM\"})"
+    icp canister call $SUBNET_0_1_JUDGE         remove_llm_canister "(record {canister_id = \"$LLM\"})"
 
     # Wait for in-flight requests (180 seconds recommended)
     sleep 180
 
     # Delete the canister (cycles returned to wallet)
-    dfx canister --network $NETWORK delete $LLM
+    icp canister delete $LLM -e $NETWORK
 
     # Manually clean up:
     # - Remove entry from canister_ids.json in the LLM directory
@@ -1534,13 +1526,13 @@ To replace an existing LLM (e.g. moving it to a different subnet):
 
 ```bash
 # 1. Delete the old LLM
-scripts/delete_llm.sh --network $NETWORK --canister-id <old-canister-id>
+scripts/delete_llm.sh -e $NETWORK --canister-id <old-canister-id>
 
 # 2. Deploy a new LLM
-scripts/deploy_llm.sh --network $NETWORK --llm-type <challenger|judge|share_service> [--subnet <subnet-id>]
+scripts/deploy_llm.sh -e $NETWORK --llm-type <challenger|judge|share_service> [--subnet <subnet-id>]
 
 # 3. Add the new LLM to the protocol
-scripts/add_llm.sh --network $NETWORK --canister-id <new-canister-id>
+scripts/add_llm.sh -e $NETWORK --canister-id <new-canister-id>
 
 # 4. Manual steps:
 #    - Register new canister with CycleOps
@@ -1552,7 +1544,7 @@ scripts/add_llm.sh --network $NETWORK --canister-id <new-canister-id>
 ```bash
     # Takes the LLM offline, upgrades it, tests it, and puts it back online
     # Script will pause to ask for confirmation a couple of times
-    scripts/upgrade_llms.sh --network $NETWORK [--canister-id <canister-id>]
+    scripts/upgrade_llms.sh -e $NETWORK [--canister-id <canister-id>]
 ```
 
 # Cleaning LLMs (prompt cache files)
@@ -1567,7 +1559,7 @@ recurring prompt-cache cleanup timer (`cache_cleanup_start_timer`, armed after e
 This approach is deprecated.
 
 ```bash
-    sscripts/cleanup_llm_promptcache_live.sh --network $NETWORK [--canister-id <canister-id>]
+    sscripts/cleanup_llm_promptcache_live.sh -e $NETWORK [--canister-id <canister-id>]
 ```
 
 ## Manually, while the LLM is offline
@@ -1577,7 +1569,7 @@ This approach is deprecated.
 This script is used by `scripts/upgrade_llms.sh` which takes the LLM offline first:
 
 ```bash
-    sscripts/cleanup_llm_promptcache.sh --network $NETWORK [--canister-id <canister-id>]
+    sscripts/cleanup_llm_promptcache.sh -e $NETWORK [--canister-id <canister-id>]
 ```
 
 
@@ -1616,45 +1608,45 @@ If you want to do it all manually, follow these steps:
     echo "LLM = $LLM"
 
     # Follow the logs
-    dfx canister --network $NETWORK logs $LLM --follow
+    icp canister logs $LLM -e $NETWORK --follow
 
     # Remove the LLM from the protocol
     # for Challenger
-    dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    remove_llm_canister "(record {canister_id = \"$LLM\"})"
+    icp canister call $SUBNET_0_1_CHALLENGER    remove_llm_canister "(record {canister_id = \"$LLM\"})"
     # for ShareService
-    dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE remove_llm_canister "(record {canister_id = \"$LLM\"})"
+    icp canister call $SUBNET_0_1_SHARE_SERVICE remove_llm_canister "(record {canister_id = \"$LLM\"})"
     # for Judge
-    dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         remove_llm_canister "(record {canister_id = \"$LLM\"})"
+    icp canister call $SUBNET_0_1_JUDGE         remove_llm_canister "(record {canister_id = \"$LLM\"})"
 
     # then upgrade
     # from folder: PoAIW/llms/xxx
-    dfx canister --network $NETWORK status $llm | grep "Memory Size"
-    dfx canister --network $NETWORK stop $llm
-    dfx canister --network $NETWORK snapshot create $llm
-    dfx deploy   --network $NETWORK $llm --mode upgrade
-    dfx canister --network $NETWORK start $llm
+    icp canister status $llm -e $NETWORK | grep "Memory Size"
+    icp canister stop $llm -e $NETWORK
+    icp canister snapshot create $llm -e $NETWORK
+    icp deploy   -e $NETWORK $llm --mode upgrade
+    icp canister start $llm -e $NETWORK
 
     # Cleanup the prompt cache files
     # from folder: funnAI
-    scripts/cleanup_llm_promptcache.sh --network $NETWORK --canister-id $LLM
+    scripts/cleanup_llm_promptcache.sh -e $NETWORK --canister-id $LLM
 
     # Configure the LLM
     # from folder: PoAIW/llms/xxx
-    dfx canister --network $NETWORK call $llm health
-    dfx canister --network $NETWORK call $llm load_model '(record { args = vec {"--model"; "models/model.gguf"} })'
-    dfx canister --network $NETWORK call $llm set_max_tokens '(record { max_tokens_query = 13 : nat64; max_tokens_update = 13 : nat64 })'
-    dfx canister --network $NETWORK call $llm get_max_tokens
-    dfx canister --network $NETWORK call $llm log_pause
-    dfx canister --network $NETWORK call $llm chats_pause
+    icp canister call $llm health
+    icp canister call $llm load_model '(record { args = vec {"--model"; "models/model.gguf"} })'
+    icp canister call $llm set_max_tokens '(record { max_tokens_query = 13 : nat64; max_tokens_update = 13 : nat64 })'
+    icp canister call $llm get_max_tokens
+    icp canister call $llm log_pause
+    icp canister call $llm chats_pause
 
     # Test operations manually (Copy/Paste all commands at once...)
-    dfx canister --network $NETWORK call $llm new_chat '(record {
+    icp canister call $llm new_chat '(record {
         args = vec {
             "--prompt-cache"; "prompt.cache";
             "--cache-type-k"; "q8_0";
         }
         })'
-    dfx canister --network $NETWORK call $llm run_update '(record {
+    icp canister call $llm run_update '(record {
         args = vec {
             "--prompt-cache"; "prompt.cache"; "--prompt-cache-all";
             "--cache-type-k"; "q8_0";
@@ -1665,17 +1657,17 @@ If you want to do it all manually, follow these steps:
             "-n"; "1"
         }
         })'
-    dfx canister --network $NETWORK call $llm recursive_dir_content_query  '(record {dir = ".canister_cache"; max_entries = 0 : nat64})' --output json
-    dfx canister --network $NETWORK call $llm remove_prompt_cache '(record {
+    icp canister call $llm recursive_dir_content_query  '(record {dir = ".canister_cache"; max_entries = 0 : nat64})' --output json
+    icp canister call $llm remove_prompt_cache '(record {
         args = vec {
             "--prompt-cache"; "prompt.cache"
         }
         })'
-    dfx canister --network $NETWORK call $llm recursive_dir_content_update  '(record {dir = ".canister_cache"; max_entries = 0 : nat64})' --output json
-    dfx canister --network $NETWORK call $llm filesystem_remove '(record {filename = ".canister_cache/chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae/sessions"})'
-    dfx canister --network $NETWORK call $llm filesystem_remove '(record {filename = ".canister_cache/chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"})'
-    dfx canister --network $NETWORK call $llm filesystem_remove '(record {filename = ".canister_cache"})'
-    dfx canister --network $NETWORK call $llm recursive_dir_content_query  '(record {dir = ".canister_cache"; max_entries = 0 : nat64})' --output json
+    icp canister call $llm recursive_dir_content_update  '(record {dir = ".canister_cache"; max_entries = 0 : nat64})' --output json
+    icp canister call $llm filesystem_remove '(record {filename = ".canister_cache/$MAINTAINER/sessions"})'
+    icp canister call $llm filesystem_remove '(record {filename = ".canister_cache/$MAINTAINER"})'
+    icp canister call $llm filesystem_remove '(record {filename = ".canister_cache"})'
+    icp canister call $llm recursive_dir_content_query  '(record {dir = ".canister_cache"; max_entries = 0 : nat64})' --output json
 
     # Re-arm the in-memory timers (REQUIRED after every upgrade).
     # Both timers are in-memory only and are NOT auto-armed on upgrade.
@@ -1683,8 +1675,8 @@ If you want to do it all manually, follow these steps:
     # - cache_cleanup_start_timer : recurring prompt-cache cleanup
     # - cycle_balance_start_timer : recurring cycle-balance tracking
     #   (llama_cpp_canister >= v0.11.0). Without it, get_cycle_balance errors.
-    dfx canister --network $NETWORK call $llm cache_cleanup_start_timer
-    dfx canister --network $NETWORK call $llm cycle_balance_start_timer
+    icp canister call $llm cache_cleanup_start_timer
+    icp canister call $llm cycle_balance_start_timer
 ```
 
 
@@ -1692,20 +1684,21 @@ If you want to do it all manually, follow these steps:
 
 ```bash
     # We have a script to delete ALL snapshots for either ALL protocol canisters or a specified canister-id
-    scripts/delete_snapshots.sh --network $NETWORK --canister-types [all/protocol/mainers] [--canister-id <canister-id>] [--dry-run] [--workers N]
+    scripts/delete_snapshots.sh -e $NETWORK --canister-types [all/protocol/mainers] [--canister-id <canister-id>] [--dry-run] [--workers N]
 
     # You can do it manually with:
     LLM="<canister-id>"
     # list & delete the snapshot
-    dfx canister --network $NETWORK snapshot list   $LLM
-    dfx canister --network $NETWORK snapshot delete $LLM     <snapshot-id>
+    icp canister snapshot list $LLM -e $NETWORK
+    icp canister snapshot delete $LLM -e $NETWORK     <snapshot-id>
     # verify memory
-    dfx canister --network $NETWORK status $llm | grep "Memory Size"
+    icp canister status $llm -e $NETWORK | grep "Memory Size"
 ```
 
 # Upgrade the mAIners
 
-> **dfx version note (2026-06-29):** the LLMs and ShareAgent mAIners now use **dfx 0.32.0** (pinned via `DFX_VERSION='0.32.0'` in each `PoAIW/llms/<x>/.env`); this is the version for the llama_cpp_canister v0.11.0 LLM upgrade. (They were previously on dfx 0.31.0 as of the 2026-04-16 mAIner upgrade/reinstall.) All other canisters (frontend, backend, and PoAIW protocol canisters) are still on **dfx 0.29.2** (pinned in `PoAIW/src/GameState/docker/docker-compose.yml`). Keep this mismatch in mind when regenerating declarations or reproducing wasm hashes — newer dfx versions emit different JS codegen (e.g. importing from `@icp-sdk/core/agent` instead of `@dfinity/agent`), which can break the frontend build if regenerated wholesale.
+> **Toolchain note (historical, 2026-06-29 — predates the icp-cli migration):** the LLMs and
+> ShareAgent mAIners used **dfx 0.32.0** at that time (pinned via `DFX_VERSION='0.32.0'` in each `PoAIW/llms/<x>/.env`); this is the version for the llama_cpp_canister v0.11.0 LLM upgrade. (They were previously on dfx 0.31.0 as of the 2026-04-16 mAIner upgrade/reinstall.) All other canisters (frontend, backend, and PoAIW protocol canisters) are still on **dfx 0.29.2** (pinned in `PoAIW/src/GameState/docker/docker-compose.yml`). Keep this mismatch in mind when regenerating declarations or reproducing wasm hashes — newer dfx versions emit different JS codegen (e.g. importing from `@icp-sdk/core/agent` instead of `@dfinity/agent`), which can break the frontend build if regenerated wholesale.
 >
 > **EOP migration block in `PoAIW/src/mAIner/src/Main.mo` — on-chain-daily-metric PR.**
 > ShareAgents and ShareService share the same source file, so the migration block applies to both, but their **deployed starting points differ**:
@@ -1734,11 +1727,11 @@ The only errors seen so far is when the IC timed out.
 The script has been made robust against this using retry logic.
 
 ```bash
-scripts/upgrade_mainers.sh --network [local|ic|testing|development|demo|prd] [--target-hash HASH] [--num NUM] [--mainer CANISTER_ID] [--user PRINCIPAL] [--dry-run] [--skip-preparation] [--ask-before-upgrade] [--reverse] [--deploy-with-yes] [--reinstall]
+scripts/upgrade_mainers.sh -e [local|ic|testing|development|prd] [--target-hash HASH] [--num NUM] [--mainer CANISTER_ID] [--user PRINCIPAL] [--dry-run] [--skip-preparation] [--ask-before-upgrade] [--reverse] [--deploy-with-yes] [--reinstall]
 
 Options:
-  --network NETWORK       Required. Network to upgrade mainers on
-  --target-hash HASH      Optional. Target wasm hash to upgrade to (from 'dfx canister info <canister_id>')
+  -e NETWORK       Required. Network to upgrade mainers on
+  --target-hash HASH      Optional. Target wasm hash to upgrade to (from 'icp canister status <canister_id>')
   --num NUM               Optional. Number of mAIners to upgrade
   --mainer CANISTER_ID    Optional. Specific mAIner canister to upgrade
   --user PRINCIPAL        Optional. Principal ID of user whose mAIners to upgrade
@@ -1746,24 +1739,24 @@ Options:
   --skip-preparation      Optional. Skip Step 1 preparation
   --ask-before-upgrade    Optional. Ask for confirmation before upgrading each canister
   --reverse               Optional. Process mainers in reverse order
-  --deploy-with-yes       Optional. Will use: dfx deploy ... --yes
+  --deploy-with-yes       Optional. Will use: icp deploy ... --yes
   --reinstall             Optional. Reinstall (`--mode reinstall`) instead of upgrade. WIPES all stable
                           state on each canister. Use after capping unbounded stable lists to reset
                           accumulated memory back to baseline. Mutually exclusive with `--target-hash`.
 
 # Reinstall ONE mAIner first to verify, then roll out in batches:
-scripts/upgrade_mainers.sh --network $NETWORK --reinstall --mainer $MAINER --dry-run
-scripts/upgrade_mainers.sh --network $NETWORK --reinstall --mainer $MAINER
-scripts/upgrade_mainers.sh --network $NETWORK --reinstall --num 10
+scripts/upgrade_mainers.sh -e $NETWORK --reinstall --mainer $MAINER --dry-run
+scripts/upgrade_mainers.sh -e $NETWORK --reinstall --mainer $MAINER
+scripts/upgrade_mainers.sh -e $NETWORK --reinstall --num 10
 # (Top-up of low-balance canisters happens automatically before each (re)install.)
 
 # from the folder: funnAI
-conda activate llama_cpp_canister
+conda activate funnAI
 
 # Option 1: Upgrade a specific mAIner of IConfucius
 # -> eg: nkftb-zqaaa-aaaaa-qbbxa-cai is running at VeryHigh
 MAINER=nkftb-zqaaa-aaaaa-qbbxa-cai
-scripts/upgrade_mainers.sh --network $NETWORK --mainer $MAINER --ask-before-upgrade [--dry-run]
+scripts/upgrade_mainers.sh -e $NETWORK --mainer $MAINER --ask-before-upgrade [--dry-run]
 # -> It will print new wasm hash, which you set as the target hash for rest of deployment
 TARGET_HASH=0x2dbae383acd69e45ee48c35d71c1af87ac8261876daa458beb62e46547ed587d  # Mar 22, 2026 (AdminRBAC for ChallengeQueue endpoints)
 TARGET_HASH=0xf20306cea7159e1fe5a023e2a3b3b1b4acb795341b5a6f0cd3de0526866f649e  # Jan 15, 2026 (release-8; SNS)
@@ -1775,22 +1768,22 @@ TARGET_HASH=0xf2a40400e1f0cc0896c976eb2efa7a902aff68266b69b4a6be0a077b022db819  
 
 # Upgrade 1 more mAIner of IConfucius on production network with confirmation prompt:
 USER=xijdk-rtoet-smgxl-a4apd-ahchq-bslha-ope4a-zlpaw-ldxat-prh6f-jqe
-scripts/upgrade_mainers.sh --network $NETWORK --user $USER --target-hash $TARGET_HASH --num 1 --ask-before-upgrade [--dry-run]
+scripts/upgrade_mainers.sh -e $NETWORK --user $USER --target-hash $TARGET_HASH --num 1 --ask-before-upgrade [--dry-run]
 
 # Upgrade 2 more mAIners of IConfucius on production network, without confirmation prompt:
-scripts/upgrade_mainers.sh --network $NETWORK --user $USER --target-hash $TARGET_HASH --num 2 [--dry-run]
+scripts/upgrade_mainers.sh -e $NETWORK --user $USER --target-hash $TARGET_HASH --num 2 [--dry-run]
 
 # Upgrade ALL mAIners of IConfucius on production network without confirmation prompt:
-scripts/upgrade_mainers.sh --network $NETWORK --user $USER --target-hash $TARGET_HASH [--dry-run]
+scripts/upgrade_mainers.sh -e $NETWORK --user $USER --target-hash $TARGET_HASH [--dry-run]
 
 # Upgrade 1 other mAIner on production network, with confirmation prompt:
-scripts/upgrade_mainers.sh --network $NETWORK --num 1 --target-hash $TARGET_HASH [--dry-run]
+scripts/upgrade_mainers.sh -e $NETWORK --num 1 --target-hash $TARGET_HASH [--dry-run]
 
 # Upgrade 100 mainers on production network with target hash and without confirmation prompt:
-scripts/upgrade_mainers.sh --network $NETWORK --num 100 --target-hash $TARGET_HASH [--dry-run]
+scripts/upgrade_mainers.sh -e $NETWORK --num 100 --target-hash $TARGET_HASH [--dry-run]
 
 # Upgrade ALL mainers on production network with target hash and without confirmation prompt:
-scripts/upgrade_mainers.sh --network $NETWORK --target-hash $TARGET_HASH [--dry-run]
+scripts/upgrade_mainers.sh -e $NETWORK --target-hash $TARGET_HASH [--dry-run]
 ```
 
 ### Update Admin RBAC for mAIners
@@ -1799,11 +1792,11 @@ scripts/upgrade_mainers.sh --network $NETWORK --target-hash $TARGET_HASH [--dry-
 
 ```bash
 # To assign permissions (run for each maintainer principal)
-scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $ARJAAN [--action assign] [--dry-run]
-scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $PATRICK [--action assign] [--dry-run]
+scripts/update_admin_rbac_mainers.sh -e $NETWORK --principal $MAINTAINER [--action assign] [--dry-run]
+scripts/update_admin_rbac_mainers.sh -e $NETWORK --principal $PATRICK [--action assign] [--dry-run]
 
 # To revoke permissions
-scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $ARJAAN --action revoke [--dry-run]
+scripts/update_admin_rbac_mainers.sh -e $NETWORK --principal $MAINTAINER --action revoke [--dry-run]
 ```
 
 #### Manual
@@ -1811,12 +1804,12 @@ scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $ARJAAN --ac
 ```bash
 MAINER=...
 # verify which principals already have admin roles
-dfx canister --network $NETWORK call $MAINER getAdminRoles
+icp canister call $MAINER getAdminRoles
 # grant #AdminUpdate to the maintainer principals (arjaan, patrick)
-dfx canister --network $NETWORK call $MAINER assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call $MAINER assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+icp canister call $MAINER assignAdminRole '( record { "principal" = "'$MAINTAINER'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
+icp canister call $MAINER assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
 # if needed, this is how you revoke permissions for a principal
-# dfx canister --network $NETWORK call $MAINER revokeAdminRole '( "'$ARJAAN'")'
+# icp canister call $MAINER revokeAdminRole '( "'$MAINTAINER'")'
 ```
 
 ### Verify mAIners Health & Hash
@@ -1825,7 +1818,7 @@ After upgrade is completed, verify every mAIner is healthy and has correct modul
 
 ```bash
 TARGET_HASH=0x...
-scripts/get_mainers_health.sh --network $NETWORK --target-hash $TARGET_HASH
+scripts/get_mainers_health.sh -e $NETWORK --target-hash $TARGET_HASH
 ```
 
 ### Delete mAIners snapshots
@@ -1833,7 +1826,7 @@ scripts/get_mainers_health.sh --network $NETWORK --target-hash $TARGET_HASH
 Delete snapshot of all the mAIners:
 
 ```bash
-scripts/delete_snapshots.sh --network $NETWORK --canister-types mainers [--dry-run]
+scripts/delete_snapshots.sh -e $NETWORK --canister-types mainers [--dry-run]
 ```
 
 ## Old approach
@@ -1850,35 +1843,35 @@ echo SUBNET_0_1_MAINER_CREATOR = $SUBNET_0_1_MAINER_CREATOR
 echo MAINER  = $MAINER
 
 # first check the logs, and make sure the mAIner is not doing anything
-dfx canister --network $NETWORK logs $MAINER --follow
+icp canister logs $MAINER -e $NETWORK --follow
 
 # monitor the mAInerCreator
-dfx canister --network $NETWORK logs $SUBNET_0_1_MAINER_CREATOR --follow
+icp canister logs $SUBNET_0_1_MAINER_CREATOR -e $NETWORK --follow
 
 # stop the mAIner > snapshot it > start it > upgrade
 # mAIner must be running during upgrade for the configuration steps
-dfx canister --network $NETWORK stop $MAINER
-dfx canister --network $NETWORK snapshot create $MAINER
-dfx canister --network $NETWORK start $MAINER
-dfx canister --network $NETWORK call game_state_canister upgradeMainerControllerAdmin "(record {canisterAddress = \"$MAINER\" })"
+icp canister stop $MAINER -e $NETWORK
+icp canister snapshot create $MAINER -e $NETWORK
+icp canister start $MAINER -e $NETWORK
+icp canister call game_state_canister upgradeMainerControllerAdmin "(record {canisterAddress = \"$MAINER\" })"
 
 # verify everything looks good (timer should have been restarted)
-dfx canister --network $NETWORK logs $MAINER
+icp canister logs $MAINER -e $NETWORK
 
 # if it does not look good, restore the snapshot
-dfx canister --network $NETWORK snapshot list $MAINER
-dfx canister --network $NETWORK snapshot load $MAINER <snapshot-id>
+icp canister snapshot list $MAINER -e $NETWORK
+icp canister snapshot restore $MAINER -e $NETWORK <snapshot-id>
 
 # if all good, delete the snapshot
-dfx canister --network $NETWORK snapshot list   $MAINER
-dfx canister --network $NETWORK snapshot delete $MAINER <snapshot-id>
+icp canister snapshot list $MAINER -e $NETWORK
+icp canister snapshot delete $MAINER -e $NETWORK <snapshot-id>
 ```
 
 # Troubleshooting
 
 ## Judge calls to GameState fail with #Err(Unauthorized)
 
-This happens if you reinstall the judge in the `testing` or `demo` network.
+This happens if you reinstall the judge in the `testing` network.
 The default GAME_STATE_CANISTER_ID is for the `prd` network. 
 
 Verify the log file, what canister id is used.
@@ -1886,5 +1879,5 @@ Verify the log file, what canister id is used.
 If wrong, set it to the correct value with:
 
 ```bash
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE setGameStateCanisterId "(\"$SUBNET_0_1_GAMESTATE\")"
+icp canister call $SUBNET_0_1_JUDGE setGameStateCanisterId "(\"$SUBNET_0_1_GAMESTATE\")"
 ```

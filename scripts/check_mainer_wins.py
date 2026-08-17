@@ -9,6 +9,11 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Any
 
+# Shared icp-cli helpers: unlike `dfx ... --output json`, icp-cli cannot decode a Candid
+# response, so decoding happens here via icp-py-core.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import icp_helpers  # noqa: E402
+
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 FUNNAI_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../"))
@@ -34,19 +39,12 @@ def get_canister_id_from_env(env_key: str, network: str) -> str:
 
 def run_dfx_call(canister_id: str, method: str, network: str) -> Any:
     """Run a dfx canister call and return the parsed JSON response."""
-    cmd = [
-        "dfx", "canister", "call",
-        "--network", network,
-        "--output", "json",
-        canister_id,
-        method
-    ]
+    cmd = ["icp", "canister", "call", canister_id, method, "()", "-e", network]
 
     print(f"Running: {' '.join(cmd)}")
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        response_json = json.loads(result.stdout)
+        response_json = icp_helpers.call_argv(cmd)
         return response_json.get('Ok', [])
     except subprocess.CalledProcessError as e:
         print(f"Error running dfx command: {e}")

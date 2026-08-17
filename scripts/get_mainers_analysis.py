@@ -76,7 +76,7 @@ def check_mainer_controllers(network, canister_id, debug=False):
         List of CycleOps canister IDs that are controllers, or empty list
     """
     try:
-        cmd = ["dfx", "canister", "--network", network, "info", canister_id]
+        cmd = ["icp", "canister", "status", canister_id, "-e", network, "-p"]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
 
         if debug:
@@ -127,7 +127,7 @@ def get_canister_cycle_balance(network, canister_id, debug=False):
         Cycle balance as an integer, or None if error
     """
     try:
-        cmd = ["dfx", "canister", "--network", network, "status", canister_id]
+        cmd = ["icp", "canister", "status", canister_id, "-e", network]
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
 
         if debug:

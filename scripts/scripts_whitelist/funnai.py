@@ -1,9 +1,15 @@
+import os
 import json
 import subprocess
 import sys
 import pprint
 from pathlib import Path
 from typing import Dict, Any, List
+
+# Shared icp-cli helpers: unlike `dfx ... --output json`, icp-cli cannot decode a Candid
+# response, so decoding happens here via icp-py-core.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "lib"))
+import icp_helpers  # noqa: E402
 
 def get_funnai_principals() -> list:
     """
@@ -28,19 +34,10 @@ def get_funnai_principals() -> list:
         print(f"Querying backend canister: {backend_canister_id}")
         
         # Run the dfx canister call command
-        cmd = [
-            "dfx", "canister", "call", 
-            "--network", "ic",
-            "--output", "json",
-            backend_canister_id,
-            "getUsersAdmin"
-        ]
+        cmd = ["icp", "canister", "call", backend_canister_id, "getUsersAdmin", "()", "-e", "ic"]
         
         print(f"Running command: {' '.join(cmd)}")
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        
-        # Parse the JSON response
-        response_json = json.loads(result.stdout)
+        response_json = icp_helpers.call_argv(cmd)
 
         # Extract the list of principals
         principals = response_json.get('Ok', [])
@@ -83,19 +80,10 @@ def get_mainer_ownership_data() -> Dict[str, List[str]]:
         print(f"Querying GameState canister: {gamestate_canister_id}")
 
         # Run the dfx canister call command
-        cmd = [
-            "dfx", "canister", "call",
-            "--network", "ic",
-            "--output", "json",
-            gamestate_canister_id,
-            "getMainerAgentCanistersAdmin"
-        ]
+        cmd = ["icp", "canister", "call", gamestate_canister_id, "getMainerAgentCanistersAdmin", "()", "-e", "ic"]
 
         print(f"Running command: {' '.join(cmd)}")
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-
-        # Parse the JSON response
-        response_json = json.loads(result.stdout)
+        response_json = icp_helpers.call_argv(cmd)
 
         # Extract the mAIner data
         mainers_data = response_json.get('Ok', [])

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 import subprocess
 import time
 import argparse
@@ -9,6 +10,11 @@ from collections import defaultdict
 from dotenv import dotenv_values
 
 from .monitor_common import get_canisters, ensure_log_dir
+
+# Shared icp-cli helpers: `icp canister call` cannot decode a Candid response the way
+# `dfx ... --output json` did, so decoding happens here via icp-py-core.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import icp_helpers  # noqa: E402
 
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -23,19 +29,19 @@ def reset_challenge_queue(canister_id, network):
 
     try:
         print(f"Getting challengeQueue for the mAIner {canister_id} on network {network}...")
-        result = subprocess.check_output(
-            ["dfx", "canister", "--network", network, "call", canister_id, "getChallengeQueueAdmin", "--output", "json"],
-            stderr=subprocess.DEVNULL,
-            text=True
+        data = icp_helpers.call(
+            canister_id,
+            "getChallengeQueueAdmin",
+            env=network,
+            allow_mainnet=True,
         )
-        data = json.loads(result)
         challenge_queue = data.get('Ok', [])
 
         if len(challenge_queue) > 0:
             if len(challenge_queue) >= 4:
                 print(f"  Resetting the challenge queue for {canister_id}.")
 
-                cmd = ["dfx", "canister", "call", canister_id, "resetChallengeQueueAdmin", "--network", network]    
+                cmd = ["icp", "canister", "call", canister_id, "resetChallengeQueueAdmin", "()", "-e", network]    
                 subprocess.run(
                     cmd,
                     check=True,

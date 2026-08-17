@@ -11,16 +11,15 @@
   ],
   "scripts": {
     "dev": "npm run replica && npm run deploy",
-    "replica": "dfx stop && dfx start --background",
+    "replica": "icp network stop || true && icp network start -d",
     "erase-replica": "npm run fresh-replica && npm run deploy",
-    "fresh-replica": "dfx stop && rm -rf .dfx && dfx start --clean --background",
-    "generate": "dfx generate",
-    "deploy": "dfx canister create --all && npm run generate",
+    "fresh-replica": "icp network stop || true && rm -rf .icp/cache && icp network start -d",
+    "deploy": "icp deploy funnai_frontend -e local -y",
     "vite": "vite --port 3000",
     "build": "vite build",
     "serve": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "stop": "dfx stop"
+    "stop": "icp network stop"
   },
   "dependencies": {
     "@dfinity/agent": "^2.4.1",

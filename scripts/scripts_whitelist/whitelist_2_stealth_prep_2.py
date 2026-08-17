@@ -1,8 +1,14 @@
+import sys
 import os
 import json
 import subprocess
 import time
 from pathlib import Path
+
+# Shared icp-cli helpers: `icp canister call` cannot decode a Candid response the way
+# `dfx ... --output json` did, so decoding happens here via icp-py-core.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "lib"))
+import icp_helpers  # noqa: E402
 
 SCRIPT_DIR = Path(__file__).parent
 
@@ -49,13 +55,12 @@ def get_all_mainers():
     try:
         # Change to the funnAI root directory where dfx.json is located
         funnai_root = "/Users/arjaan/github/repos/funnAI"
-        result = subprocess.check_output(
-            ["dfx", "canister", "--network", "prd", "call", "game_state_canister", "getMainerAgentCanistersAdmin", "--output", "json"],
-            cwd=funnai_root,
-            stderr=subprocess.DEVNULL,
-            text=True
+        data = icp_helpers.call(
+            "game_state_canister",
+            "getMainerAgentCanistersAdmin",
+            env="prd",
+            allow_mainnet=True,
         )
-        data = json.loads(result)
         mainers = data.get('Ok', [])
         print(f"Found {len(mainers)} total mAIner entries")
         return mainers

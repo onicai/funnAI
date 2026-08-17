@@ -12,6 +12,11 @@ import json
 from .monitor_common import get_canisters, get_prompt_cache_entries
 from datetime import datetime, timezone
 
+# Shared icp-cli helpers: `icp canister call` cannot decode a Candid response the way
+# `dfx ... --output json` did, so decoding happens here via icp-py-core.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import icp_helpers  # noqa: E402
+
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -36,12 +41,12 @@ def cleanup_llm_promptcache(gamestate_canister_id, challenger_canister_id, judge
     print("----------------------------------------------------")
     # confirm that the canister is offline
     try:
-        result = subprocess.check_output(
-            ["dfx", "canister", "call", ctrlb_canister_id, "get_llm_canisters", "--output", "json", "--network", network],
-            stderr=subprocess.DEVNULL,
-            text=True
+        data = icp_helpers.call(
+            ctrlb_canister_id,
+            "get_llm_canisters",
+            env=network,
+            allow_mainnet=True,
         )
-        data = json.loads(result)
         LLMs = data.get('Ok', {}).get('llmCanisterIds', [])
         # print(f"Found {len(LLMs)} entries in LLM canister {canister_name} ({canister_id}) on network {network}.")
         # make sure the canister_id is NOT in the list of LLMs
@@ -74,9 +79,7 @@ def cleanup_llm_promptcache(gamestate_canister_id, challenger_canister_id, judge
                     count += 1
                     print(f"({count}/{len(entries)}) Deleting {filename} ")
                     subprocess.run(
-                        ["dfx", "canister", "call", canister_id, "filesystem_remove", 
-                        f"(record {{filename = \"{filename}\"; }})", 
-                        "--network", network],
+                        ["icp", "canister", "call", canister_id, "filesystem_remove", f"(record {{filename = \"{filename}\"; }})", "-e", network],
                         check=True,
                         text=True
                     )

@@ -17,8 +17,7 @@
     "allowJs": true,
     "checkJs": true,
     "types": ["vite/client", "svelte", "node", "vite-plugin-pwa/svelte"],
-    "baseUrl": ".",
-    "paths": { "canisters/*": [".dfx/local/canisters/*"] }
+    "baseUrl": "."
   },
   "include": [
     "src/funnai_frontend/**/*.d.ts",

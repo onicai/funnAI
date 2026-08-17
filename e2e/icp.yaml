@@ -1,0 +1,136 @@
+# yaml-language-server: $schema=https://github.com/dfinity/icp-cli/raw/refs/tags/v1.2.0/docs/schemas/icp-yaml-schema.json
+#
+# The funnAI end-to-end test environment.
+#
+# WHY THIS PROJECT EXISTS
+# -----------------------
+# icp-cli runs one local network per project root. In production each canister has its own
+# project (src/funnai_backend/, PoAIW/src/*/), so each also gets its own private replica --
+# and canisters on different replicas cannot talk to each other. Deploying the whole app
+# that way produces canisters that are individually healthy and collectively useless; worse,
+# each replica hands out ids from the same sequence, so two canisters end up with the SAME
+# id in their respective id stores.
+#
+# This project exists to put the entire application on ONE network. It builds nothing: every
+# canister is declared `pre-built`, pointing at the artifact its owning project produced.
+# `make e2e-install` builds those first, then deploys them all here.
+#
+# SAFETY
+# ------
+# Only a `local` environment is declared, so the production environment names do not exist
+# here: `icp deploy -e prd` fails outright, as do -e testing / -e development.
+#
+# Be aware of the limit of that, though: icp-cli always provides an implicit `ic`
+# environment alongside `local`, even though it appears in no icp.yaml. It has no id
+# mappings in this project, so `-e ic` would not touch any existing funnAI canister -- it
+# would CREATE new ones on mainnet and spend real cycles. Never pass `-e ic` from this
+# directory. `make e2e-*` never does, and refuses any environment other than `local`.
+
+canisters:
+  # --- funnAI repo ---------------------------------------------------------------------
+  - name: funnai_backend
+    build:
+      steps:
+        - type: pre-built
+          path: ../src/funnai_backend/.icp/cache/artifacts/funnai_backend
+
+  # The Svelte frontend. Built INTO this project (`vite build --outDir e2e/dist`) rather
+  # than pointed at ../dist: the asset-canister sync plugin rejects any `dir` containing
+  # '..' ("not a safe relative path"). The output carries .ic-assets.json5 and .well-known/.
+  - name: funnai_frontend
+    recipe:
+      type: '@dfinity/asset-canister@v2.2.1'
+      configuration:
+        dir: dist
+
+  # --- PoAIW protocol canisters ---------------------------------------------------------
+  - name: game_state_canister
+    build:
+      steps:
+        - type: pre-built
+          path: ../PoAIW/src/GameState/.icp/cache/artifacts/game_state_canister
+
+  - name: api_canister
+    build:
+      steps:
+        - type: pre-built
+          path: ../PoAIW/src/Api/.icp/cache/artifacts/api_canister
+
+  - name: challenger_ctrlb_canister
+    build:
+      steps:
+        - type: pre-built
+          path: ../PoAIW/src/Challenger/.icp/cache/artifacts/challenger_ctrlb_canister
+
+  - name: judge_ctrlb_canister
+    build:
+      steps:
+        - type: pre-built
+          path: ../PoAIW/src/Judge/.icp/cache/artifacts/judge_ctrlb_canister
+
+  - name: mainer_creator_canister
+    build:
+      steps:
+        - type: pre-built
+          path: ../PoAIW/src/mAInerCreator/.icp/cache/artifacts/mainer_creator_canister
+
+  - name: funnai_treasury_canister
+    build:
+      steps:
+        - type: pre-built
+          path: ../PoAIW/src/Treasury/.icp/cache/artifacts/funnai_treasury_canister
+
+  - name: archive_challenges_canister
+    build:
+      steps:
+        - type: pre-built
+          path: ../PoAIW/src/ArchiveChallenges/.icp/cache/artifacts/archive_challenges_canister
+
+  # ck_signer_canister is deliberately NOT deployed here: it is not used by funnAI. It still
+  # has its own project and smoke tests in PoAIW/src/ckSigner/, so it remains testable
+  # standalone with `make smoketest` there.
+
+  # The ShareService -- the one mAIner that runs inference. The ShareAgents that queue work
+  # on it run this same wasm but are deliberately NOT declared here: a mAIner is not
+  # installed with `icp canister install`, it is bought. `make e2e-install` pays GameState in
+  # local ICP and lets mAInerCreator create the canister through the CMC, exactly as in
+  # production, so their ids are allocated by the CMC and live in GameState rather than in
+  # this project's id store.
+  - name: mainer_service_canister
+    build:
+      steps:
+        - type: pre-built
+          path: ../PoAIW/src/mAIner/.icp/cache/artifacts/mainer_service_canister
+
+  # --- LLM ------------------------------------------------------------------------------
+  # The vendored llama_cpp_canister wasm, currently v0.16.4. It is a released binary, not
+  # built here, so re-vendoring a new release (see
+  # ../PoAIW/llms/llama_cpp_canister/README-instructions.md) is picked up by this path with
+  # no change needed here.
+  #
+  # NOTE this is AHEAD of prd, which still runs v0.11.0 -- upgrading those canisters is a
+  # mainnet operation and a separate project. So local inference is not bit-identical to
+  # production; it is the newer build.
+  - name: llm_0
+    build:
+      steps:
+        - type: pre-built
+          path: ../PoAIW/llms/llama_cpp_canister/build/llama_cpp.wasm
+
+networks:
+  - name: local
+    mode: managed
+    gateway:
+      # Ephemeral: never hardcode the port, read it from `icp network status -e local --json`.
+      port: 0
+    # Serves Internet Identity locally at http://id.ai.localhost:<port>/authorize.
+    ii: true
+    # `system` is required by the Api canister's CMC-dependent paths; `application` must be
+    # listed too or the network has no subnet to create ordinary canisters on (including
+    # icp's own Candid UI).
+    subnets: [application, system]
+
+environments:
+  # local ONLY -- see the safety note at the top of this file.
+  - name: local
+    network: local

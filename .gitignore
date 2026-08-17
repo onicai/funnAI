@@ -117,7 +117,22 @@ dist
 # TernJS port file
 .tern-port
 
+# dfx temporary files.
+# TODO: delete this line once the last canister is off dfx -- it only exists so that
+# leftover .dfx/ dirs of not-yet-migrated parts stay out of the way.
 .dfx
+
+# icp-cli state.
+#
+# ONLY the cache is disposable: it holds build artifacts and the ids of canisters on the
+# throwaway local network. `.icp/data/mappings/<env>.ids.json` holds the MAINNET canister
+# ids -- the replacement for canister_ids.json -- and MUST be committed.
+#
+# The `**/` prefix is required, not cosmetic: a pattern containing a slash is anchored to
+# the directory of this .gitignore, so a bare `.icp/cache/` would silently miss the
+# nested projects (src/funnai_backend/).
+**/.icp/cache/
+**/.mops/.build/
 
 # Docker reproducible build output
 src/funnai_backend/out/
@@ -150,16 +165,20 @@ secret/
 # `local/` is ignored, not any nested directory that happens to be called `local`.
 /local/
 
-# Agent working notes and investigation write-ups. Same convention as the icpp-pro
-# repo, which also ignores TMP-*. These are repo-local scratch, never committed.
-TMP-*
-
 # whitelist analysis output (contains sensitive user data)
 funnai_accounts/
 
 # claude code
 CLAUDE.md
-.claude/
+# Ignore .claude/ EXCEPT funnAI's own project skill. git cannot re-include a path whose
+# parent directory is excluded, so each level is opened up in turn rather than using a
+# bare `.claude/`. The ic-* skills are installed automatically from dfinity/icskills and
+# stay ignored; funnai-local-e2e is ours, and is how the team (and Claude) find the local
+# end-to-end environment.
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/funnai-local-e2e/
 
 scripts/burned_tokens_cache.json
 
@@ -183,3 +202,10 @@ scripts/burn_tokens_cache.json
 scripts/burn_tokens_prd.json
 
 scripts/mint_tokens_ic.json
+
+# Scratch / task-todo notes for AI agents & humans. Deliberately local-only:
+# they capture in-flight plans and findings, not repo state.
+TMP-*
+
+# e2e local environment: the frontend is built into e2e/dist for the asset canister
+e2e/dist/

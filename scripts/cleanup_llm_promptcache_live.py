@@ -12,6 +12,11 @@ import json
 from .monitor_common import get_canisters, get_prompt_cache_entries
 from datetime import datetime, timezone
 
+# Shared icp-cli helpers: unlike `dfx ... --output json`, icp-cli cannot decode a Candid
+# response, so decoding happens here via icp-py-core.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import icp_helpers  # noqa: E402
+
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -51,12 +56,14 @@ def cleanup_llm_promptcache(challenger_canister_id, judge_canister_id, share_ser
 
             # get age of the file
             # print(f"({count}/{len(entries)}) Checking age of {filename}...")
-            cmd = ["dfx", "canister", "--network", network, "call", canister_id, "get_creation_timestamp_ns", 
-                f"(record {{filename = \"{filename}\"; }})", "--output", "json"]
             # print(f"  {' '.join(cmd)}")
-            result = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
-            # print(result)
-            data = json.loads(result)
+            data = icp_helpers.call(
+                canister_id,
+                "get_creation_timestamp_ns",
+                {"filename": filename},
+                env=network,
+                allow_mainnet=True,
+            )
             if 'Err' in data:
                 print(f"  Error getting age for {filename}: {data['Err']}")
                 continue
@@ -76,9 +83,7 @@ def cleanup_llm_promptcache(challenger_canister_id, judge_canister_id, share_ser
             # time.sleep(3)
             # continue            
             subprocess.run(
-                ["dfx", "canister", "call", canister_id, "filesystem_remove", 
-                f"(record {{filename = \"{filename}\"; }})", 
-                "--network", network],
+                ["icp", "canister", "call", canister_id, "filesystem_remove", f"(record {{filename = \"{filename}\"; }})", "-e", network],
                 check=True,
                 text=True
             )

@@ -17,7 +17,7 @@ def stop_timer(canister_id, network):
     try:    
         print(f"Stopping timer for canister {canister_id} on network {network}...")
         subprocess.run(
-            ["dfx", "canister", "--network", network, "call", canister_id, "stopTimerExecutionAdmin"],
+            ["icp", "canister", "call", canister_id, "stopTimerExecutionAdmin", "()", "-e", network],
             check=True,
             text=True
         )

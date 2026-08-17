@@ -1,0 +1,22 @@
+{
+  "_comment": "Canister ids that were carried in the dfx-era canister_ids.json files but are no longer in use. Kept so the ids stay recoverable and nobody re-discovers them as a surprise; NOT read by any tool. Entries marked not_found_on_mainnet were verified absent via both `icp canister status <id> -n ic -p` and the IC dashboard API.",
+  "api_canister": {
+    "_comment": "The root store and PoAIW/src/Api disagreed about `development`. PoAIW's a65mx-iyaaa-aaaap-qus4a-cai is the funnAI-controlled one (wallet jh35u + icpp-llm, same module hash as prd) and is now authoritative. The id below is what the frontend previously used on development: it is controlled by principals outside the funnAI set and runs a different build.",
+    "development_retired": "2vreq-mqaaa-aaaam-qi2iq-cai"
+  },
+  "not_found_on_mainnet": {
+    "_comment": "Liveness sweep of every development/testing/demo id, 2026-08-03. These three return 'Canister was not found' on mainnet -- most likely deleted at some point, with the stale entry left behind in canister_ids.json. A deleted canister and one that never existed are indistinguishable from the outside. Removed from the id stores so that `icp canister status <name> -e <env> --id-only` fails fast instead of handing out a principal that cannot be called.",
+    "funnai_backend": {
+      "demo": "dtxtp-ciaaa-aaaah-are5a-cai",
+      "was_in": "src/funnai_backend/.icp/data/mappings/demo.ids.json"
+    },
+    "llm_1": {
+      "testing": "gkyvn-gaaaa-aaaab-aakva-cai",
+      "was_in": "PoAIW/llms/mAIner/.icp/data/mappings/testing.ids.json"
+    },
+    "mainer_ctrlb_canister_6": {
+      "development": "mqa5f-ciaaa-aaaaj-a2cya-cai",
+      "was_in": "PoAIW/src/mAIner/mainer_ids.json"
+    }
+  }
+}

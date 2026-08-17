@@ -93,19 +93,19 @@ echo "Deploying the game_state_canister"
 
 if [ "$NETWORK_TYPE" = "ic" ] || [ "$NETWORK_TYPE" = "testing" ] || [ "$NETWORK_TYPE" = "development" ] || [ "$NETWORK_TYPE" = "demo" ] || [ "$NETWORK_TYPE" = "prd" ]; then
     if [ "$SUBNET_GAME_STATE" = "none" ]; then
-        dfx deploy game_state_canister --mode $DEPLOY_MODE --network $NETWORK_TYPE
+        icp deploy game_state_canister -m $DEPLOY_MODE -e $NETWORK_TYPE -y
     else
         echo "--mode $DEPLOY_MODE --network $NETWORK_TYPE --subnet $SUBNET_GAME_STATE"
-        dfx deploy game_state_canister --mode $DEPLOY_MODE --network $NETWORK_TYPE --subnet $SUBNET_GAME_STATE
+        icp deploy game_state_canister -m $DEPLOY_MODE --subnet $SUBNET_GAME_STATE -e $NETWORK_TYPE -y
     fi
 else
-    dfx deploy game_state_canister --mode $DEPLOY_MODE --network $NETWORK_TYPE
+    icp deploy game_state_canister -m $DEPLOY_MODE -e $NETWORK_TYPE -y
 fi
 
 echo " "
 echo "--------------------------------------------------"
 echo "Checking health endpoint"
-output=$(dfx canister call game_state_canister health --network $NETWORK_TYPE)
+output=$(icp canister call game_state_canister health '()' -e $NETWORK_TYPE --query)
 
 if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; then
     echo "game_state_canister is not healthy. Exiting."
@@ -117,23 +117,23 @@ fi
 echo " "
 echo "--------------------------------------------------"
 echo "Calling setSubnetsAdmin to set the mAIner subnets"
-dfx canister call game_state_canister setSubnetsAdmin "(record {subnetShareAgentCtrl = \"$SUBNET_SHARE_AGENT_CTRL\"; subnetShareServiceCtrl = \"$SUBNET_SHARE_SERVICE_CTRL\"; subnetShareServiceLlm = \"$SUBNET_SHARE_SERVICE_LLM\";})" --network $NETWORK_TYPE
+icp canister call game_state_canister setSubnetsAdmin "(record {subnetShareAgentCtrl = \"$SUBNET_SHARE_AGENT_CTRL\"; subnetShareServiceCtrl = \"$SUBNET_SHARE_SERVICE_CTRL\"; subnetShareServiceLlm = \"$SUBNET_SHARE_SERVICE_LLM\";})" -e $NETWORK_TYPE
 
 echo " "
 echo "--------------------------------------------------"
 echo "Calling getSubnetsAdmin to get the mAIner subnets"
-dfx canister call game_state_canister getSubnetsAdmin  --network $NETWORK_TYPE
+icp canister call game_state_canister getSubnetsAdmin '()' -e $NETWORK_TYPE
 
 echo " "
 echo "--------------------------------------------------"
 echo "Calling setCyclesFlowAdmin to calculate the CyclesFlow variables"
-dfx canister call game_state_canister setCyclesFlowAdmin '(record {})' --network $NETWORK_TYPE
+icp canister call game_state_canister setCyclesFlowAdmin '(record {})' -e $NETWORK_TYPE
 
 if [ "$DEPLOY_MODE" != "upgrade" ]; then
     echo " "
     echo "--------------------------------------------------"
     echo "Setting initial challenge topics"
-    output=$(dfx canister call game_state_canister setInitialChallengeTopics --network $NETWORK_TYPE)
+    output=$(icp canister call game_state_canister setInitialChallengeTopics '()' -e $NETWORK_TYPE)
 
     if [ "$output" != "(variant { Ok = record { status_code = 200 : nat16 } })" ]; then
         echo "setInitialChallengeTopics failed. Exiting."
@@ -146,4 +146,4 @@ fi
 echo " "
 echo "--------------------------------------------------"
 echo "Generating bindings for a frontend"
-dfx generate game_state_canister
+# (dfx generate dropped: icp-cli has no equivalent and src/declarations/ is committed)

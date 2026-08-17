@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from pathlib import Path
 import subprocess
 import time
 import sys
@@ -9,6 +10,12 @@ import json
 import re
 
 from .monitor_common import get_canisters, run_this_cmd
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import funnai_team  # noqa: E402
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import icp_helpers  # noqa: E402
 
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -74,25 +81,31 @@ def find_next_llm_index(canister_ids_path, network):
     return max(indices) + 1, canister_ids_data
 
 
-def ensure_dfx_json_entry(dfx_json_path, llm_name):
-    """Ensure llm_N exists in dfx.json. Add it if missing."""
-    with open(dfx_json_path) as f:
-        dfx_data = json.load(f)
+def ensure_icp_yaml_entry(icp_yaml_path, llm_name):
+    """Ensure llm_N is declared in icp.yaml. Add it if missing.
 
-    if llm_name in dfx_data.get("canisters", {}):
-        return False  # Already exists
+    Replaces the old dfx.json mutation -- dfx.json no longer exists. The slot is a
+    `pre-built` step pointing at the vendored llama_cpp wasm; there is nothing to compile.
+    Appended as text rather than round-tripped through a YAML parser, so the file keeps
+    its comments.
+    """
+    path = Path(icp_yaml_path)
+    text = path.read_text()
+    if re.search(rf"^  - name: {re.escape(llm_name)}$", text, re.MULTILINE):
+        return False  # already declared
 
-    dfx_data["canisters"][llm_name] = {
-        "type": "custom",
-        "candid": "../llama_cpp_canister/build/llama_cpp.did",
-        "wasm": "../llama_cpp_canister/build/llama_cpp.wasm",
-    }
-
-    with open(dfx_json_path, "w") as f:
-        json.dump(dfx_data, f, indent=4)
-        f.write("\n")
-
-    return True  # Was added
+    block = (
+        f"  - name: {llm_name}\n"
+        f"    build:\n"
+        f"      steps:\n"
+        f"        - type: pre-built\n"
+        f"          path: ../llama_cpp_canister/build/llama_cpp.wasm\n"
+    )
+    marker = "\nnetworks:"
+    if marker not in text:
+        raise SystemExit(f"{icp_yaml_path}: no `networks:` section to insert before")
+    path.write_text(text.replace(marker, f"\n{block}{marker}", 1))
+    return True  # was added
 
 
 def parse_subnets_from_env(env_path):
@@ -172,7 +185,7 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
     """Deploy a new LLM canister and configure it."""
     env_key = LLM_TYPE_CONFIG[llm_type]["env_key"]
     canister_ids_path = os.path.join(llm_cwd, "canister_ids.json")
-    dfx_json_path = os.path.join(llm_cwd, "dfx.json")
+    icp_yaml_path = os.path.join(llm_cwd, "icp.yaml")
     env_path = os.path.join(SCRIPT_DIR, f"canister_ids-{network}.env")
 
     # Step 1: Determine next llm_N index
@@ -181,11 +194,11 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
     print(f"\n- Next available LLM index: {llm_name}")
 
     # Step 2: Verify/add llm_N in dfx.json
-    added = ensure_dfx_json_entry(dfx_json_path, llm_name)
+    added = ensure_icp_yaml_entry(icp_yaml_path, llm_name)
     if added:
-        print(f"  Added {llm_name} to {dfx_json_path}")
+        print(f"  Added {llm_name} to {icp_yaml_path}")
     else:
-        print(f"  Ok! {llm_name} exists in {dfx_json_path} — we know how to deploy")
+        print(f"  Ok! {llm_name} exists in {icp_yaml_path} — we know how to deploy")
 
     # Step 3: Auto-select subnet if not provided
     subnet_var = None
@@ -257,10 +270,7 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
     try:
         # Step 6: Deploy canister
         print(f"\n- Deploying {llm_name} to subnet {subnet}")
-        cmd = [
-            "dfx", "deploy", "--network", network,
-            llm_name, "--subnet", subnet, "--mode", "install",
-        ]
+        cmd = ["icp", "deploy", llm_name, "--subnet", subnet, "--mode", "install", "-e", network, "-y"]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Deploy canister")
 
@@ -270,7 +280,7 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
 
         # Step 8: Get canister ID
         print(f"\n- Getting canister ID for {llm_name}")
-        cmd = ["dfx", "canister", "id", llm_name, "--network", network]
+        cmd = ["icp", "canister", "status", llm_name, "-e", network, "--id-only"]
         print(f"  {' '.join(cmd)} \n  -> from directory: {llm_cwd}")
         result = subprocess.check_output(cmd, text=True, cwd=llm_cwd)
         canister_id = result.strip()
@@ -279,7 +289,7 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
 
         # Health check with retries
         print(f"\n- Checking health for {llm_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "health"]
+        cmd = ["icp", "canister", "call", canister_id, "health", "()", "--query", "-e", network]
         max_retries = 3
         retry_delay = 10
         for attempt in range(1, max_retries + 1):
@@ -326,25 +336,20 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
             completed_steps.append("Verify subnet")
 
         # Add admin controllers
-        PATRICK = "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"
-        ARJAAN = "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"
-
-        print(f"\n- Adding Patrick as dfx controller")
-        cmd = [
-            "dfx", "canister", "update-settings", llm_name,
-            "--add-controller", PATRICK,
-            "--network", network,
-        ]
-        run_this_cmd(cmd, llm_cwd, confirm=False)
-
-        print(f"\n- Adding Arjaan as dfx controller")
-        cmd = [
-            "dfx", "canister", "update-settings", llm_name,
-            "--add-controller", ARJAAN,
-            "--network", network,
-        ]
-        run_this_cmd(cmd, llm_cwd, confirm=False)
-        completed_steps.append("Add admin controllers (Patrick, Arjaan)")
+        # The team controllers, from scripts/lib/funnai_team.py (override with
+        # FUNNAI_CONTROLLERS), rather than principals pasted into this file.
+        for _c in funnai_team.controllers():
+            print(f"\n- Adding {_c['name']} as canister controller")
+            run_this_cmd(
+                ["icp", "canister", "settings", "update", llm_name,
+                 "--add-controller", _c["principal"], "-e", network],
+                llm_cwd, confirm=False,
+            )
+        completed_steps.append(
+            "Add admin controllers ("
+            + ", ".join(c["name"] for c in funnai_team.controllers())
+            + ")"
+        )
 
         # Deposit cycles before the model is loaded into the wasm heap.
         # load_model needs to grow the heap by ~670 MB, which requires ~135 B
@@ -352,9 +357,11 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         # The canister is not registered with CycleOps yet at this point.
         topup_tc = INITIAL_TOPUP_CYCLES // 10**12
         print(f"\n- Depositing {topup_tc} T cycles into {llm_name} ({canister_id})")
+        # `dfx canister deposit-cycles` -> `icp canister top-up`. Note the argument order
+        # is reversed: icp takes the canister first and the amount as a flag.
         cmd = [
-            "dfx", "canister", "--network", network, "deposit-cycles",
-            str(INITIAL_TOPUP_CYCLES), canister_id,
+            "icp", "canister", "top-up", canister_id,
+            "--amount", str(INITIAL_TOPUP_CYCLES), "-e", network,
         ]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append(f"Deposit {topup_tc} T cycles")
@@ -394,95 +401,67 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
 
         # Step 13: Load model
         print(f"\n- Loading model for {llm_name} ({canister_id})")
-        cmd = [
-            "dfx", "canister", "--network", network, "call", canister_id,
-            "load_model", '(record { args = vec {"--model"; "models/model.gguf"} })',
-        ]
+        cmd = ["icp", "canister", "call", canister_id, "load_model", '(record { args = vec {"--model"; "models/model.gguf"} })', "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Load model")
 
         # Step 14: Set max_tokens
         print(f"\n- Setting max_tokens for {llm_name} ({canister_id})")
-        cmd = [
-            "dfx", "canister", "--network", network, "call", canister_id,
-            "set_max_tokens",
-            "(record { max_tokens_query = 12 : nat64; max_tokens_update = 12 : nat64 })",
-        ]
+        cmd = ["icp", "canister", "call", canister_id, "set_max_tokens", "(record { max_tokens_query = 12 : nat64; max_tokens_update = 12 : nat64 })", "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Set max_tokens")
 
         # Step 15: Pause logs
         print(f"\n- Pausing logs for {llm_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "log_pause"]
+        cmd = ["icp", "canister", "call", canister_id, "log_pause", "()", "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Pause logs")
 
         # Step 16: Pause chats
         print(f"\n- Pausing chats for {llm_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "chats_pause"]
+        cmd = ["icp", "canister", "call", canister_id, "chats_pause", "()", "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Pause chats")
 
         # Step 17: Assign admin roles
         print(f"\n- Assigning admin role to controller canister for {llm_name} ({canister_id})")
-        cmd = [
-            "dfx", "canister", "--network", network, "call", canister_id,
-            "assignAdminRole",
-            f'(record {{ "principal" = "{ctrlb_canister_id}"; role = variant {{ AdminUpdate }}; note = "{llm_type.capitalize()} controller canister" }})',
-        ]
+        cmd = ["icp", "canister", "call", canister_id, "assignAdminRole", f'(record {{ "principal" = "{ctrlb_canister_id}"; role = variant {{ AdminUpdate }}; note = "{llm_type.capitalize()} controller canister" }})', "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
 
         print(f"\n- Assigning admin role to maintainer (Arjaan) for {llm_name} ({canister_id})")
-        cmd = [
-            "dfx", "canister", "--network", network, "call", canister_id,
-            "assignAdminRole",
-            '(record { "principal" = "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"; role = variant { AdminUpdate }; note = "maintainer" })',
-        ]
+        # Maintainer admin goes to the team plus whoever is running this, so a
+        # developer keeps access to what they just deployed.
+        for _p in funnai_team.maintainer_principals(icp_helpers.principal()):
+            cmd = ["icp", "canister", "call", canister_id, "assignAdminRole",
+                   f'(record {{ "principal" = "{_p}"; role = variant {{ AdminUpdate }}; note = "maintainer" }})',
+                   "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
 
         print(f"\n- Assigning admin role to maintainer (Patrick) for {llm_name} ({canister_id})")
-        cmd = [
-            "dfx", "canister", "--network", network, "call", canister_id,
-            "assignAdminRole",
-            '(record { "principal" = "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"; role = variant { AdminUpdate }; note = "maintainer" })',
-        ]
+        cmd = ["icp", "canister", "call", canister_id, "assignAdminRole", '(record { "principal" = "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"; role = variant { AdminUpdate }; note = "maintainer" })', "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Assign admin roles")
 
         # Add log viewers
         print(f"\n- Adding log viewers for {llm_name} ({canister_id})")
-        cmd = [
-            "dfx", "canister", "update-settings", canister_id,
-            "--add-log-viewer", "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae",
-            "--add-log-viewer", "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe",
-            "--network", network,
-        ]
+        _viewers = []
+        for _p in funnai_team.maintainer_principals(icp_helpers.principal()):
+            _viewers += ["--add-log-viewer", _p]
+        cmd = ["icp", "canister", "settings", "update", canister_id, *_viewers, "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Add log viewers")
 
         # Step 20: Test LLM
         print(f"\n- Testing LLM {llm_name} ({canister_id})")
-        cmd = [
-            "dfx", "canister", "--network", network, "call", canister_id,
-            "new_chat",
-            '(record { args = vec { "--prompt-cache"; "prompt.cache"; "--cache-type-k"; "q8_0"; }})',
-        ]
+        cmd = ["icp", "canister", "call", canister_id, "new_chat", '(record { args = vec { "--prompt-cache"; "prompt.cache"; "--cache-type-k"; "q8_0"; }})', "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
 
         print(f"\n- Testing LLM {llm_name} ({canister_id}) — run_update")
-        cmd = [
-            "dfx", "canister", "--network", network, "call", canister_id,
-            "run_update",
-            '(record { args = vec { "--prompt-cache"; "prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--repeat-penalty"; "1.1"; "--temp"; "0.6"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" }})',
-        ]
+        cmd = ["icp", "canister", "call", canister_id, "run_update", '(record { args = vec { "--prompt-cache"; "prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--repeat-penalty"; "1.1"; "--temp"; "0.6"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" }})', "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
 
         print(f"\n- Testing LLM {llm_name} ({canister_id}) — remove_prompt_cache")
-        cmd = [
-            "dfx", "canister", "--network", network, "call", canister_id,
-            "remove_prompt_cache",
-            '(record { args = vec { "--prompt-cache"; "prompt.cache" }})',
-        ]
+        cmd = ["icp", "canister", "call", canister_id, "remove_prompt_cache", '(record { args = vec { "--prompt-cache"; "prompt.cache" }})', "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Test LLM")
 
@@ -490,10 +469,7 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         # Timer is in-memory only and is NOT auto-armed on install/upgrade,
         # so it must be explicitly started here.
         print(f"\n- Starting prompt-cache cleanup timer for {llm_name} ({canister_id})")
-        cmd = [
-            "dfx", "canister", "--network", network, "call", canister_id,
-            "cache_cleanup_start_timer",
-        ]
+        cmd = ["icp", "canister", "call", canister_id, "cache_cleanup_start_timer", "()", "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Start prompt-cache cleanup timer")
 
@@ -502,10 +478,7 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         # started explicitly. Without it, get_cycle_balance returns an error
         # instead of a cached balance.
         print(f"\n- Starting cycle-balance tracking timer for {llm_name} ({canister_id})")
-        cmd = [
-            "dfx", "canister", "--network", network, "call", canister_id,
-            "cycle_balance_start_timer",
-        ]
+        cmd = ["icp", "canister", "call", canister_id, "cycle_balance_start_timer", "()", "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Start cycle-balance tracking timer")
 
@@ -558,7 +531,7 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
             else:
                 print(f"    # The canister was not yet added to canister_ids-{network}.env,")
                 print(f"    # so delete_llm.sh cannot be used. Run from {llm_cwd}:")
-                print(f"    dfx canister --network {network} delete {llm_name}")
+                print(f"    icp canister delete {llm_name} -e {network}")
         print("!" * 80)
 
 

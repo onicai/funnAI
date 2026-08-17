@@ -9,10 +9,12 @@ export const createAnonymousActorHelper = (canisterId: string, idl: any) => {
     return actorCache.get(cacheKey);
   }
 
+  // IC_HOST is injected by vite.config.ts. Locally it points at the icp-cli managed
+  // network, whose gateway port is ephemeral and so cannot be hardcoded.
   const agent = new HttpAgent({
     host:
       process.env.DFX_NETWORK === "local"
-        ? "http://localhost:4943"
+        ? process.env.IC_HOST
         : "https://icp0.io",
   });
 

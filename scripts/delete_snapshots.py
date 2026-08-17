@@ -57,7 +57,7 @@ def delete_snapshots_worker(canister_name, canister_id, network, dry_run, index,
     """Worker function to delete snapshots for a single canister."""
     try:
         log_message(f"Getting list of snapshots for {canister_name} ({canister_id})", "INFO", index, total)
-        cmd = ["dfx", "canister", "--network", network, "snapshot", "list", canister_id]
+        cmd = ["icp", "canister", "snapshot", "list", canister_id, "-e", network]
         result = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
 
         if "No snapshots found" in result:
@@ -86,7 +86,7 @@ def delete_snapshots_worker(canister_name, canister_id, network, dry_run, index,
                 log_message(f"[DRY RUN] Would delete snapshot {i}/{len(snapshot_ids)}: {snapshot_id}", "WARNING", index, total)
             else:
                 log_message(f"Deleting snapshot {i}/{len(snapshot_ids)}: {snapshot_id}", "INFO", index, total)
-                cmd = ["dfx", "canister", "--network", network, "snapshot", "delete", canister_id, snapshot_id]
+                cmd = ["icp", "canister", "snapshot", "delete", canister_id, snapshot_id, "-e", network]
                 subprocess.run(cmd, check=True, text=True, cwd=FUNNAI_DIR, capture_output=True)
                 deleted_count += 1
 

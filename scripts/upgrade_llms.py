@@ -13,6 +13,12 @@ from scripts.cleanup_llm_promptcache import cleanup_llm_promptcache
 
 from .monitor_common import get_canisters, run_this_cmd
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import funnai_team  # noqa: E402
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+import icp_helpers  # noqa: E402
+
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 FUNNAI_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../"))
@@ -54,12 +60,12 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
         
         print(" ")
         print(f"- Verifying LLMs registered in controller canister {canister_name} ({ctrlb_canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", ctrlb_canister_id, "get_llm_canisters", "--output", "json"]
+        cmd = ["icp", "canister", "call", ctrlb_canister_id, "get_llm_canisters", "()", "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
 
         print(" ")
         print(f"- Removing LLM from controller canister {canister_name} ({ctrlb_canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", ctrlb_canister_id, "remove_llm_canister", f"(record {{canister_id = \"{canister_id}\"}})"]
+        cmd = ["icp", "canister", "call", ctrlb_canister_id, "remove_llm_canister", f"(record {{canister_id = \"{canister_id}\"}})", "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
     
         DELAY = 180
@@ -80,22 +86,22 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
         
         print(" ")
         print(f"- Stopping LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "stop", canister_id]
+        cmd = ["icp", "canister", "stop", canister_id, "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
         
         print(" ")
         print(f"- Creating snapshot for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "snapshot", "create", canister_id]
+        cmd = ["icp", "canister", "snapshot", "create", canister_id, "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=True, dry_run=dry_run)
         
         print(" ")
         print(f"- Upgrading LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "deploy", "--network", network, llm_name_dfx_json, "--mode", "upgrade"]
+        cmd = ["icp", "deploy", llm_name_dfx_json, "--mode", "upgrade", "-e", network, "-y"]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
         
         print(" ")
         print(f"- Starting LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "start", canister_id]
+        cmd = ["icp", "canister", "start", canister_id, "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
         
         # We can now skip this. Cleaning is done constantly while in production.
@@ -106,7 +112,7 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
         
         print(" ")
         print(f"- Checking health for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "health"]
+        cmd = ["icp", "canister", "call", canister_id, "health", "()", "--query", "-e", network]
         print(f"Command: {' '.join(cmd)} \n-> from directory: {llm_cwd}")
         max_retries = 3
         retry_delay = 10
@@ -124,77 +130,86 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
 
         print(" ")
         print(f"- Loading model for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "load_model", '(record { args = vec {"--model"; "models/model.gguf"} })']
+        cmd = ["icp", "canister", "call", canister_id, "load_model", '(record { args = vec {"--model"; "models/model.gguf"} })', "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
         
         print(" ")
         print(f"- Setting max_tokens for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "set_max_tokens", '(record { max_tokens_query = 12 : nat64; max_tokens_update = 12 : nat64 })']
+        cmd = ["icp", "canister", "call", canister_id, "set_max_tokens", '(record { max_tokens_query = 12 : nat64; max_tokens_update = 12 : nat64 })', "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
         
         print(" ")
         print(f"- Pausing logs for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "log_pause"]
+        cmd = ["icp", "canister", "call", canister_id, "log_pause", "()", "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
         
         print(" ")
         print(f"- Pausing db_chats for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "chats_pause"]
+        cmd = ["icp", "canister", "call", canister_id, "chats_pause", "()", "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
 
         print(" ")
         print(f"- Assigning admin role to controller canister for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "assignAdminRole", f'(record {{ "principal" = "{ctrlb_canister_id}"; role = variant {{ AdminUpdate }}; note = "{llm_type.capitalize()} controller canister" }})']
+        cmd = ["icp", "canister", "call", canister_id, "assignAdminRole", f'(record {{ "principal" = "{ctrlb_canister_id}"; role = variant {{ AdminUpdate }}; note = "{llm_type.capitalize()} controller canister" }})', "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
 
         print(" ")
         print(f"- Assigning admin role to maintainer for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "assignAdminRole", '(record { "principal" = "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"; role = variant { AdminUpdate }; note = "maintainer" })']
+        # Maintainer admin goes to the team plus whoever is running this, so a
+        # developer keeps access to what they just deployed.
+        for _p in funnai_team.maintainer_principals(icp_helpers.principal()):
+            cmd = ["icp", "canister", "call", canister_id, "assignAdminRole",
+                   f'(record {{ "principal" = "{_p}"; role = variant {{ AdminUpdate }}; note = "maintainer" }})',
+                   "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
 
         print(" ")
         print(f"- Assigning admin role to maintainer for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "assignAdminRole", '(record { "principal" = "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"; role = variant { AdminUpdate }; note = "maintainer" })']
+        cmd = ["icp", "canister", "call", canister_id, "assignAdminRole", '(record { "principal" = "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"; role = variant { AdminUpdate }; note = "maintainer" })', "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
 
         print(" ")
         print(f"- Removing controller canister as controller for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "update-settings", canister_id, "--remove-controller", ctrlb_canister_id, "--network", network]
+        cmd = ["icp", "canister", "settings", "update", canister_id, "--remove-controller", ctrlb_canister_id, "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
 
         print(" ")
         print(f"- Adding log viewers for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "update-settings", canister_id,
-               "--add-log-viewer", "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae",
-               "--add-log-viewer", "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe",
-               "--network", network]
+        _viewers = []
+        for _p in funnai_team.maintainer_principals(icp_helpers.principal()):
+            _viewers += ["--add-log-viewer", _p]
+        cmd = ["icp", "canister", "settings", "update", canister_id, *_viewers, "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
 
         print(" ")
         print(f"- Adding NNS Root Canister as controller for LLM {canister_name} ({canister_id})")
+        # THE ONE DELIBERATE dfx DEPENDENCY LEFT IN THIS REPO.
+        # icp-cli has no `sns` subcommand at all, so there is nothing to migrate this to.
+        # Keep dfx installed for exactly this call; see
+        # README-developer-migration-guide-from-dfx-to-icp-cli.md.
         cmd = ["dfx", "sns", "prepare-canisters", "--network", "ic", "add-nns-root", canister_id]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
 
         print(" ")
         print(f"- Testing LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "new_chat", '(record { args = vec { "--prompt-cache"; "prompt.cache"; "--cache-type-k"; "q8_0"; }})']
+        cmd = ["icp", "canister", "call", canister_id, "new_chat", '(record { args = vec { "--prompt-cache"; "prompt.cache"; "--cache-type-k"; "q8_0"; }})', "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
         
         print(" ")
         print(f"- Testing LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "run_update", '(record { args = vec { "--prompt-cache"; "prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--repeat-penalty"; "1.1"; "--temp"; "0.6"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" }})']
+        cmd = ["icp", "canister", "call", canister_id, "run_update", '(record { args = vec { "--prompt-cache"; "prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--repeat-penalty"; "1.1"; "--temp"; "0.6"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" }})', "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
         
         print(" ")
         print(f"- Testing LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "remove_prompt_cache", '(record { args = vec { "--prompt-cache"; "prompt.cache" }})']
+        cmd = ["icp", "canister", "call", canister_id, "remove_prompt_cache", '(record { args = vec { "--prompt-cache"; "prompt.cache" }})', "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
 
         # Timer is in-memory only and does not survive an upgrade, so it
         # must be explicitly re-armed here before traffic resumes.
         print(" ")
         print(f"- Starting prompt-cache cleanup timer for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "cache_cleanup_start_timer"]
+        cmd = ["icp", "canister", "call", canister_id, "cache_cleanup_start_timer", "()", "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
 
         # Cycle-balance tracking timer (llama_cpp_canister >= v0.11.0). Like the
@@ -203,17 +218,17 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
         # get_cycle_balance returns an error instead of a cached balance.
         print(" ")
         print(f"- Starting cycle-balance tracking timer for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "cycle_balance_start_timer"]
+        cmd = ["icp", "canister", "call", canister_id, "cycle_balance_start_timer", "()", "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
 
         print(" ")
         print(f"- Adding LLM to controller canister {canister_name} ({ctrlb_canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", ctrlb_canister_id, "add_llm_canister", f"(record {{canister_id = \"{canister_id}\"}})"]
+        cmd = ["icp", "canister", "call", ctrlb_canister_id, "add_llm_canister", f"(record {{canister_id = \"{canister_id}\"}})", "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=True, dry_run=dry_run)
         
         print(" ")
         print(f"- Verifying LLMs registered in controller canister {canister_name} ({ctrlb_canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", ctrlb_canister_id, "get_llm_canisters", "--output", "json"]
+        cmd = ["icp", "canister", "call", ctrlb_canister_id, "get_llm_canisters", "()", "-e", network]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
         
         print(" ")
