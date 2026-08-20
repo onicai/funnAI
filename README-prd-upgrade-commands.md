@@ -107,9 +107,25 @@ dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE health
 # verify that it is still paused
 dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getPauseProtocolFlag
 
-# Update the wasm-hash, using the Admin owned test mAIner ShareAgent
-echo $MAINER_SHARE_AGENT_0001
-dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE deriveNewMainerAgentCanisterWasmHashAdmin "(record {address=\"$MAINER_SHARE_AGENT_0001\"; textNote=\"Protocol upgrade\"})"
+# Clear orphaned marketplace reservations.
+#
+# marketplaceReservationTimers is `transient` (GameState/src/Main.mo:9309), so every
+# GameState upgrade kills the expiry timer of any pending reservation. The entry
+# survives in marketplaceReservedMainerAgentsStorage with nothing left to expire it,
+# which silently blocks that mAIner from ever being sold.
+#
+# Call this unconditionally after every GameState upgrade. It is controller-only and
+# idempotent: it walks all reservations, cancels their timers, returns each mAIner to
+# the listings, and reports how many it cleared. With none pending it clears 0.
+#
+# There is no admin endpoint to enumerate reservations first
+# (getUserMarketplaceReservation is per-caller only), so clearing blind is correct.
+dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE clearMarketplaceReservationsAdmin
+
+# Update the mAIner wasm-hash?
+# -> NOT HERE. See "Update the official mAIner wasm hash" at the end of the
+#    "Upgrade the mAIners" section. Deriving it here would record the hash of a
+#    mAIner that has not been upgraded yet.
 
 # If needed, initialize the openSubmissionsQueue. 
 # -> Tyically not needed. Was created during introduction of new openSubmissionsQueue
@@ -1827,6 +1843,32 @@ After upgrade is completed, verify every mAIner is healthy and has correct modul
 TARGET_HASH=0x...
 scripts/get_mainers_health.sh --network $NETWORK --target-hash $TARGET_HASH
 ```
+
+### Update the official mAIner wasm hash
+
+Run this **after** the mAIner rollout has completed, against a mAIner that is
+already on the new wasm. It records the hash GameState treats as canonical.
+
+Doing it earlier - for example during the GameState upgrade, where this call used
+to live - records the hash of a mAIner that has not been upgraded yet, and nothing
+later re-derives it.
+
+```bash
+# Verify correct network & canister settings !
+echo $NETWORK
+echo $MAINER_SHARE_AGENT_0001   # an Admin owned test mAIner ShareAgent
+
+# confirm it is already at the new hash before deriving from it
+dfx canister --network $NETWORK info $MAINER_SHARE_AGENT_0001
+
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE deriveNewMainerAgentCanisterWasmHashAdmin "(record {address=\"$MAINER_SHARE_AGENT_0001\"; textNote=\"Protocol upgrade\"})"
+```
+
+> Note: the runtime wasm-hash check in `submitChallengeResponse` is currently
+> patched out - the `IC0.canister_info` call is commented out and the hash hardcoded
+> because the call takes ~30 seconds (`GameState/src/Main.mo` ~8012). So this records
+> state that is not presently enforced. Do it anyway, so the value is correct for
+> when that check is re-enabled.
 
 ### Delete mAIners snapshots
 
