@@ -110,7 +110,7 @@
                   disconnect();
                   closeAccountDropdown();
                 }}
-                class="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-red-400 transition-colors duration-150 hover:bg-red-500/10"
+                class="group flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-red-400 transition-colors duration-150 hover:bg-red-500/10"
               >
                 <LogOut class="w-4 h-4 stroke-[1.75] text-red-400/80 group-hover:text-red-300" />
                 <span class="text-[13px] font-medium tracking-tight">Logout</span>

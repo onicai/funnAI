@@ -71,6 +71,17 @@
   ::file-selector-button {
     border-color: var(--color-gray-200, currentcolor);
   }
+
+  button:not(:disabled),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  a[href],
+  summary,
+  [role="button"]:not([aria-disabled="true"]),
+  [role="menuitem"],
+  [role="tab"] {
+    cursor: pointer;
+  }
 }
 
 @utility agent-atmosphere {
@@ -286,7 +297,7 @@
 }
 
 @utility agent-btn-primary {
-  @apply inline-flex items-center justify-center gap-2 h-9 px-4 rounded-full bg-agent-purple text-white text-[13px] font-semibold tracking-tight shadow-agent-cta transition-all duration-200 hover:bg-[#5a37b5] active:scale-[0.98];
+  @apply inline-flex items-center justify-center gap-2 h-9 px-4 rounded-full bg-agent-purple text-white text-[13px] font-semibold tracking-tight shadow-agent-cta transition-all duration-200 hover:bg-[#5a37b5] active:scale-[0.98] cursor-pointer disabled:cursor-not-allowed;
   position: relative;
   overflow: hidden;
 
@@ -304,13 +315,13 @@
 }
 
 @utility agent-btn-ghost {
-  @apply inline-flex items-center justify-center gap-2 h-9 px-3.5 rounded-full border border-white/10 bg-white/4 text-gray-200 text-[13px] font-medium tracking-tight transition-all duration-200 hover:border-agent-purple/40 hover:bg-agent-purple/10 hover:text-white;
+  @apply inline-flex items-center justify-center gap-2 h-9 px-3.5 rounded-full border border-white/10 bg-white/4 text-gray-200 text-[13px] font-medium tracking-tight transition-all duration-200 hover:border-agent-purple/40 hover:bg-agent-purple/10 hover:text-white cursor-pointer disabled:cursor-not-allowed;
   box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.04) inset;
 }
 
 @utility agent-btn-neon {
   /* Neon pill — gradient rim + glow, like a lit chip on dark */
-  @apply relative inline-flex items-center justify-center gap-2 h-9 px-4 rounded-full text-[13px] font-medium tracking-tight text-white no-underline;
+  @apply relative inline-flex items-center justify-center gap-2 h-9 px-4 rounded-full text-[13px] font-medium tracking-tight text-white no-underline cursor-pointer;
   background: rgba(12, 11, 18, 0.88);
   isolation: isolate;
   box-shadow:

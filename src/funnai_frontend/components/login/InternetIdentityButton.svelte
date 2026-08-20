@@ -21,7 +21,7 @@
 
 <button
   type="button"
-  class="group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/3 px-4 py-3.5 text-left transition-all duration-200 hover:border-agent-purple/40 hover:bg-agent-purple/10 disabled:cursor-not-allowed disabled:opacity-60"
+  class="group flex w-full cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-white/3 px-4 py-3.5 text-left transition-all duration-200 hover:border-agent-purple/40 hover:bg-agent-purple/10 disabled:cursor-not-allowed disabled:opacity-60"
   disabled={loading === "internetidentity" || (loading !== "" && loading !== "internetidentity")}
   on:click={connect}
 >

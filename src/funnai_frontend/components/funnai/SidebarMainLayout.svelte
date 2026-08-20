@@ -44,7 +44,7 @@
           <a
             use:link
             href={item.href}
-            class="nav-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] tracking-tight transition-colors duration-200
+            class="nav-item group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] tracking-tight transition-colors duration-200 cursor-pointer
               {active
                 ? 'font-medium bg-white/[0.07] text-white'
                 : 'font-normal text-gray-500 hover:bg-white/5 hover:text-gray-200'}"
