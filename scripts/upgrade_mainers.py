@@ -6,7 +6,7 @@ This script safely upgrades mAIner canisters with health checks, snapshots, and 
 
 To run the upgrade in a safe sequence:
     # from the folder: funnAI
-    conda activate llama_cpp_canister
+    conda activate funnAI
     
     # Upgrade 1 mAIner of IConfucius on production network confirmation prompt:
     USER=xijdk-rtoet-smgxl-a4apd-ahchq-bslha-ope4a-zlpaw-ldxat-prh6f-jqe
@@ -34,7 +34,7 @@ To run the upgrade in a safe sequence:
 
 To run unit tests:
     # from the root of the repository
-    conda activate llama_cpp_canister
+    conda activate funnAI
     pytest scripts/test/test_upgrade_mainers.py -v
 """
 

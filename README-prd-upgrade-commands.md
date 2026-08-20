@@ -1252,7 +1252,7 @@ log viewers, and tests the LLM.
 ```bash
 # from folder: funnAI
 # Activate the conda environment
-conda activate llama_cpp_canister
+conda activate funnAI
 
 # Dry run first to see what will happen
 scripts/deploy_llm.sh --network $NETWORK --llm-type <challenger|judge|share_service> [--subnet <subnet-id>] --dry-run
@@ -1758,7 +1758,7 @@ scripts/upgrade_mainers.sh --network $NETWORK --reinstall --num 10
 # (Top-up of low-balance canisters happens automatically before each (re)install.)
 
 # from the folder: funnAI
-conda activate llama_cpp_canister
+conda activate funnAI
 
 # Option 1: Upgrade a specific mAIner of IConfucius
 # -> eg: nkftb-zqaaa-aaaaa-qbbxa-cai is running at VeryHigh

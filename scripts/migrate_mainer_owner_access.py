@@ -25,7 +25,7 @@ END STATE
 
 To run:
     # from the folder: funnAI
-    conda activate llama_cpp_canister
+    conda activate funnAI
 
     scripts/migrate_mainer_owner_access.sh --network $NETWORK [--num 10] [--dry-run]
 """

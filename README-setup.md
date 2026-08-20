@@ -1,12 +1,12 @@
 # funnAI Setup instructions
 
-First follow all instructions of PoAIW/README.md
+First follow all instructions of PoAIW/README-setup.md
 
 Then, do the following:
 
 ```bash
 # Use conda environment
-conda activate llama_cpp_canister
+conda activate funnAI
 
 # Set NETWORK environment variable
 NETWORK=testing  # [local|ic|development|testing|demo|prd]
