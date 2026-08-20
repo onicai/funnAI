@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Check, Copy, QrCode, X } from 'lucide-svelte';
+  import { Check, Copy, QrCode, X } from '@lucide/svelte';
   import { fade } from 'svelte/transition';
-  import Portal from 'svelte-portal';
+  import Portal from './Portal.svelte';
   import QRCode from 'qrcode';
 
   import Modal from "./CommonModal.svelte";
@@ -128,10 +128,10 @@
 >
   <div class="px-1 sm:px-2 py-2 flex flex-col gap-3 sm:gap-4">
     <div
-      class="flex items-center gap-2 sm:gap-3 p-3 rounded-xl border border-white/10 bg-white/[0.03] transition-all duration-300"
+      class="flex items-center gap-2 sm:gap-3 p-3 rounded-xl border border-white/10 bg-white/3 transition-all duration-300"
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '10px')});"
     >
-      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 bg-white/[0.04] flex-shrink-0 overflow-hidden">
+      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 bg-white/4 shrink-0 overflow-hidden">
         <div class="sm:hidden">
           <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
         </div>
@@ -149,7 +149,7 @@
       class="flex flex-col gap-3 sm:gap-4 transition-all duration-300"
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '20px')});"
     >
-      <div class="rounded-xl border border-white/10 bg-white/[0.03] p-3 sm:p-4">
+      <div class="rounded-xl border border-white/10 bg-white/3 p-3 sm:p-4">
         <div class="flex justify-between items-center mb-2.5 gap-3">
           <h3 class="text-[13px] font-medium text-gray-300">Principal ID</h3>
           {#if principalQrCode}
@@ -162,7 +162,7 @@
           {/if}
         </div>
         <div class="relative">
-          <div class="rounded-xl border border-white/10 bg-white/[0.03] p-2.5 pr-10 text-xs sm:text-sm break-all font-mono text-gray-200">
+          <div class="rounded-xl border border-white/10 bg-white/3 p-2.5 pr-10 text-xs sm:text-sm break-all font-mono text-gray-200">
             {principal || "Loading…"}
           </div>
           <button
@@ -184,7 +184,7 @@
       </div>
 
       {#if token.symbol === "ICP"}
-        <div class="rounded-xl border border-white/10 bg-white/[0.03] p-3 sm:p-4">
+        <div class="rounded-xl border border-white/10 bg-white/3 p-3 sm:p-4">
           <div class="flex justify-between items-center mb-2.5 gap-3">
             <h3 class="text-[13px] font-medium text-gray-300">Account ID</h3>
             {#if accountIdQrCode}
@@ -197,7 +197,7 @@
             {/if}
           </div>
           <div class="relative">
-            <div class="rounded-xl border border-white/10 bg-white/[0.03] p-2.5 pr-10 text-xs sm:text-sm break-all font-mono text-gray-200">
+            <div class="rounded-xl border border-white/10 bg-white/3 p-2.5 pr-10 text-xs sm:text-sm break-all font-mono text-gray-200">
               {accountId || "Loading…"}
             </div>
             <button
@@ -219,9 +219,9 @@
         </div>
       {/if}
 
-      <div class="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-xs sm:text-sm">
+      <div class="rounded-xl border border-white/10 bg-white/3 p-3 text-xs sm:text-sm">
         <div class="flex items-center gap-2 mb-1.5">
-          <QrCode size={16} class="text-[#a78bfa] flex-shrink-0" />
+          <QrCode size={16} class="text-[#a78bfa] shrink-0" />
           <span class="text-gray-200 font-medium">How to receive {token.symbol}</span>
         </div>
         <p class="ml-6 text-gray-500">
@@ -239,7 +239,7 @@
 {#if enlargedQrCode}
   <Portal target="body">
     <div
-      class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[100001]"
+      class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-100001"
       on:click={closeEnlargedQrCode}
       transition:fade={{ duration: 200 }}
     >

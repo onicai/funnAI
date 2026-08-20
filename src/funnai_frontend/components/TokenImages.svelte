@@ -84,7 +84,7 @@
       style="height: {size}px; width: {size}px; z-index: {displayedTokens.length - index}; transform: translateX(0); transition: transform 0.15s ease-in-out;"
       class="flex items-center rounded-full {imageWrapperClass} {overlap
         ? `mr-[-${Math.floor(size * 0.3)}px]`
-        : ''} relative group-hover:hover:translate-y-[-2px]"
+        : ''} relative hover:group-hover:translate-y-[-2px]"
     >
       {#if hasValidImage(token)}
         <img
@@ -119,7 +119,7 @@
   {#if remainingCount > 0}
   <div
     style="height: {size}px; width: {size}px; z-index: 0;"
-    class="flex items-center justify-center rounded-full {countBgColor} {overlap ? `mr-[-${Math.floor(size * 0.3)}px]` : ''} relative border border-gray-300 shadow-md group-hover:hover:translate-y-[-2px] transition-transform duration-150"
+    class="flex items-center justify-center rounded-full {countBgColor} {overlap ? `mr-[-${Math.floor(size * 0.3)}px]` : ''} relative border border-gray-300 shadow-md hover:group-hover:translate-y-[-2px] transition-transform duration-150"
   >
     <span class="text-[.625rem] font-bold {countTextColor}">+{remainingCount}</span>
   </div>

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Line, Bar } from 'svelte-chartjs';
-  import { theme } from '../../stores/store';
   import { getBaseChartOptions, createDataset, formatChartNumber } from '../../helpers/chartUtils';
   import { TokenRewardsService, type TokenRewardsData } from '../../helpers/TokenRewardsService';
 
@@ -14,7 +13,7 @@
   let tokenRewardsData: TokenRewardsData | null = null;
 
   // Theme reactivity
-  $: isDark = $theme === 'dark';
+  const isDark = true;
 
   // Load token rewards data from API canister
   async function loadTokenRewardsData() {
@@ -392,8 +391,8 @@
   });
 </script>
 
-<div class="agent-card !bg-agent-surface p-5 sm:p-6">
-  <div class="relative z-[1] flex items-center justify-between mb-5">
+<div class="agent-card bg-agent-surface! p-5 sm:p-6">
+  <div class="relative z-1 flex items-center justify-between mb-5">
     <div>
       <p class="agent-eyebrow">Analytics</p>
       <h3 class="mt-1 text-base font-semibold tracking-tight text-white">{title}</h3>
@@ -401,7 +400,7 @@
     </div>
     <span class="inline-flex h-4 w-4 items-center justify-center">
       {#if loading}
-        <span class="h-4 w-4 border-2 border-[#653FC5] rounded-full border-t-transparent animate-spin"></span>
+        <span class="h-4 w-4 border-2 border-agent-purple rounded-full border-t-transparent animate-spin"></span>
       {/if}
     </span>
   </div>
@@ -467,7 +466,7 @@
 
   <!-- Data Source Footer -->
   {#if tokenRewardsData}
-    <div class="mt-4 pt-4 border-t border-white/[0.08]">
+    <div class="mt-4 pt-4 border-t border-white/8">
       <p class="text-xs text-gray-500 text-center">
         Data source: {tokenRewardsData.metadata.dataset} • Last updated: {tokenRewardsData.metadata.last_updated}
       </p>

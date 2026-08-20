@@ -279,8 +279,8 @@
   }
 </script>
 
-<div class="agent-card !bg-agent-surface p-5 sm:p-6">
-  <div class="relative z-[1] flex items-start justify-between gap-3 mb-5">
+<div class="agent-card bg-agent-surface! p-5 sm:p-6">
+  <div class="relative z-1 flex items-start justify-between gap-3 mb-5">
     <div>
       <div class="flex flex-wrap items-center gap-2">
         <p class="agent-eyebrow">Token</p>
@@ -292,9 +292,9 @@
       <h3 class="mt-1 text-base font-semibold tracking-tight text-white">{title}</h3>
       <p class="mt-0.5 text-sm text-gray-500">FUNNAI price, market cap, and your balance</p>
     </div>
-    <span class="inline-flex h-4 w-4 flex-shrink-0 mt-1 items-center justify-center">
+    <span class="inline-flex h-4 w-4 shrink-0 mt-1 items-center justify-center">
       {#if loading || (isAuthenticated && isLoadingUserBalance)}
-        <span class="h-4 w-4 border-2 border-[#653FC5] rounded-full border-t-transparent animate-spin"></span>
+        <span class="h-4 w-4 border-2 border-agent-purple rounded-full border-t-transparent animate-spin"></span>
       {/if}
     </span>
   </div>
@@ -307,7 +307,7 @@
 
   <!-- Token Metrics -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-    <div class="p-4 rounded-xl bg-white/[0.03]">
+    <div class="p-4 rounded-xl bg-white/3">
       <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Price</p>
       <p class="agent-metric-value-md">
         {#if loading || tokenPrice === null}
@@ -325,7 +325,7 @@
       </p>
     </div>
     
-    <div class="p-4 rounded-xl bg-white/[0.03]">
+    <div class="p-4 rounded-xl bg-white/3">
       <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Market cap</p>
       <p class="agent-metric-value-md">
         {#if loading || marketCap === null}
@@ -340,7 +340,7 @@
 
   <!-- User Balance (if authenticated) -->
   {#if isAuthenticated}
-    <div class="rounded-xl bg-white/[0.03] p-4 mb-5">
+    <div class="rounded-xl bg-white/3 p-4 mb-5">
       <div class="flex items-center justify-between">
         <div class="flex-1">
           <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Your balance</p>

@@ -342,7 +342,7 @@
   }
 </script>
 
-<div class="agent-card !bg-agent-surface p-6">
+<div class="agent-card bg-agent-surface! p-6">
   <div class="flex items-center justify-between mb-5">
     <div>
       <p class="agent-eyebrow">Leaderboard</p>
@@ -351,13 +351,13 @@
         {variant === "user" ? "Performance of your mAIners" : "Network-wide rankings"}
       </p>
     </div>
-    <div class="flex items-center gap-2 flex-shrink-0">
+    <div class="flex items-center gap-2 shrink-0">
       <span class="inline-flex h-4 w-4 items-center justify-center">
         {#if loading}
-          <span class="h-4 w-4 border-2 border-[#653FC5] rounded-full border-t-transparent animate-spin"></span>
+          <span class="h-4 w-4 border-2 border-agent-purple rounded-full border-t-transparent animate-spin"></span>
         {/if}
       </span>
-      <span class="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-gray-400">
+      <span class="inline-flex items-center rounded-full border border-white/10 bg-white/4 px-2.5 py-1 text-[11px] font-medium text-gray-400">
         {variant === "user" ? "My mAIners" : "Global"}
       </span>
     </div>
@@ -370,7 +370,7 @@
   {/if}
 
   {#if !isAuthenticated && variant === "user"}
-    <div class="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-8 text-center">
+    <div class="rounded-xl border border-white/6 bg-white/2 px-4 py-8 text-center">
       <p class="text-sm text-gray-400 mb-1">Connect your wallet to see your mAIner leaderboard</p>
       <p class="text-xs text-gray-500">Requires at least {MIN_FUNNAI_REQUIRED} FUNNAI tokens</p>
     </div>
@@ -406,7 +406,7 @@
       <p class="text-xs text-gray-500 mb-4">This is not an empty list — the query failed.</p>
       <button
         type="button"
-        class="agent-btn-ghost !h-8 !px-3 !text-xs"
+        class="agent-btn-ghost h-8! px-3! text-xs!"
         on:click={() => store.loadUserMainerCanisters()}
       >
         Retry
@@ -427,7 +427,7 @@
     <div class="overflow-x-auto">
       <table class="w-full min-w-full">
         <thead>
-          <tr class="border-b border-white/[0.08]">
+          <tr class="border-b border-white/8">
             <th class="text-left py-3 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Rank
             </th>
@@ -451,9 +451,9 @@
             </th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-white/[0.08]">
+        <tbody class="divide-y divide-white/8">
           {#each leaderboardData as entry (entry.id)}
-            <tr class="hover:bg-white/[0.03] transition-colors">
+            <tr class="hover:bg-white/3 transition-colors">
               <td class="py-3 px-2">
                 <div class="flex items-center gap-2">
                   <span class="text-lg {getRankClass(entry.rank)}">

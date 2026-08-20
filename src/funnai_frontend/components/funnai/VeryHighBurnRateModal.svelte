@@ -3,8 +3,8 @@
   import Modal from "../CommonModal.svelte";
   import TokenImages from "../TokenImages.svelte";
 
-  import { ArrowUp, Info, Flame } from 'lucide-svelte';
-  import { MEMO_PAYMENT_PROTOCOL, store, theme } from "../../stores/store";
+  import { ArrowUp, Info, Flame } from '@lucide/svelte';
+  import { MEMO_PAYMENT_PROTOCOL, store } from "../../stores/store";
   import { IcrcService } from "../../helpers/IcrcService";
   import BigNumber from "bignumber.js";
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
@@ -246,7 +246,7 @@
             <p class="mt-1.5 text-sm text-gray-400">
               Activate <span class="font-medium text-gray-200">Very High</span> (≈6T cycles/day) by burning <span class="font-medium text-gray-200">{BURN_AMOUNT} FUNNAI</span>.
             </p>
-            <div class="mt-3 rounded-lg border border-white/10 bg-white/[0.03] p-2.5">
+            <div class="mt-3 rounded-lg border border-white/10 bg-white/3 p-2.5">
               <p class="text-xs font-medium text-gray-300">Permanent burn</p>
               <p class="mt-0.5 text-xs text-gray-500">
                 Burns {BURN_AMOUNT} FUNNAI to unlock the Very High performance tier.
@@ -258,8 +258,8 @@
 
       <!-- FUNNAI Token Info -->
       {#if funnaiToken}
-        <div class="flex items-center gap-2 sm:gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/10">
-          <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-agent-purple/15 border border-agent-purple/20 flex-shrink-0 overflow-hidden">
+        <div class="flex items-center gap-2 sm:gap-3 p-3 rounded-xl bg-white/3 border border-white/10">
+          <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-agent-purple/15 border border-agent-purple/20 shrink-0 overflow-hidden">
             <div class="sm:hidden">
               <TokenImages tokens={[funnaiToken]} size={32} showSymbolFallback={true} />
             </div>

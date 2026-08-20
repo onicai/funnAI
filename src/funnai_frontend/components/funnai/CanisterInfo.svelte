@@ -2,7 +2,7 @@
   export let agent: any;
 </script>
 
-<div class="rounded-xl bg-white/[0.03] px-3 py-2.5">
+<div class="rounded-xl bg-white/3 px-3 py-2.5">
   <div class="flex items-center justify-between gap-3">
     <div class="min-w-0">
       <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Controller</p>
@@ -12,7 +12,7 @@
       href="https://dashboard.internetcomputer.org/canister/{agent.id}"
       target="_blank"
       rel="noopener noreferrer"
-      class="shrink-0 inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 bg-white/[0.04] text-[11px] font-medium text-gray-200 hover:border-agent-purple/40 hover:bg-agent-purple/15 hover:text-white transition-colors"
+      class="shrink-0 inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-white/10 bg-white/4 text-[11px] font-medium text-gray-200 hover:border-agent-purple/40 hover:bg-agent-purple/15 hover:text-white transition-colors"
     >
       Dashboard
       <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -42,16 +42,16 @@
   $: overallConfig = statusConfig[protocolStatus];
 </script>
 
-<div class="agent-card !bg-agent-surface p-5">
-  <div class="relative z-[1] flex items-center gap-2">
+<div class="agent-card bg-agent-surface! p-5">
+  <div class="relative z-1 flex items-center gap-2">
     <p class="agent-eyebrow">Status</p>
     <span class="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium {overallConfig.chip}">
       <span class="h-1 w-1 rounded-full {overallConfig.dot} {protocolStatus === 'excellent' ? 'animate-pulse' : ''}"></span>
       Live
     </span>
   </div>
-  <p class="relative z-[1] mt-3 text-2xl font-semibold tracking-tight leading-8 min-h-8 {overallConfig.textColor}">
+  <p class="relative z-1 mt-3 text-2xl font-semibold tracking-tight leading-8 min-h-8 {overallConfig.textColor}">
     {formatStatus(protocolStatus)}
   </p>
-  <p class="relative z-[1] mt-1 text-xs leading-4 min-h-4 text-gray-500">{getStatusDescription(protocolStatus)}</p>
+  <p class="relative z-1 mt-1 text-xs leading-4 min-h-4 text-gray-500">{getStatusDescription(protocolStatus)}</p>
 </div>

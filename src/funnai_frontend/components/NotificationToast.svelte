@@ -33,13 +33,13 @@
   function getClasses(type: Notification['type']) {
     switch (type) {
       case 'success':
-        return 'bg-green-100 border-green-400 text-green-800 dark:bg-green-900/30 dark:border-green-700 dark:text-green-300';
+        return 'bg-green-100 border-green-400 text-green-800 bg-green-900/30 border-green-700 text-green-300';
       case 'error':
-        return 'bg-red-100 border-red-400 text-red-800 dark:bg-red-900/30 dark:border-red-700 dark:text-red-300';
+        return 'bg-red-100 border-red-400 text-red-800 bg-red-900/30 border-red-700 text-red-300';
       case 'warning':
-        return 'bg-yellow-100 border-yellow-400 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-700 dark:text-yellow-300';
+        return 'bg-yellow-100 border-yellow-400 text-yellow-800 bg-yellow-900/30 border-yellow-700 text-yellow-300';
       case 'info':
-        return 'bg-blue-100 border-blue-400 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300';
+        return 'bg-blue-100 border-blue-400 text-blue-800 bg-blue-900/30 border-blue-700 text-blue-300';
     }
   }
 
@@ -49,13 +49,15 @@
 </script>
 
 {#if notifications.length > 0}
-  <div class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-md">
+  <div
+    class="fixed z-100 flex flex-col gap-2 left-1/2 -translate-x-1/2 bottom-6 w-[min(calc(100%-2rem),28rem)] md:left-auto md:right-4 md:translate-x-0 md:bottom-4 md:w-auto md:max-w-md"
+  >
     {#each notifications as notification (notification.id)}
       <div
         transition:fly={{ y: 50, duration: 300, easing: quintOut }}
-        class="flex items-start gap-3 p-4 rounded-lg shadow-lg border-2 {getClasses(notification.type)} backdrop-blur-sm"
+        class="flex items-start gap-3 p-4 rounded-lg shadow-lg border-2 {getClasses(notification.type)} backdrop-blur-xs"
       >
-        <div class="flex-shrink-0 mt-0.5">
+        <div class="shrink-0 mt-0.5">
           {@html getIcon(notification.type)}
         </div>
         <div class="flex-1 text-sm font-medium">
@@ -63,7 +65,7 @@
         </div>
         <button
           on:click={() => close(notification.id)}
-          class="flex-shrink-0 ml-2 hover:opacity-70 transition-opacity"
+          class="shrink-0 ml-2 hover:opacity-70 transition-opacity"
           aria-label="Close notification"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

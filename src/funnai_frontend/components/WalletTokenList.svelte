@@ -1,6 +1,6 @@
 <script lang="ts">
   import { flip } from "svelte/animate";
-  import { Coins } from "lucide-svelte";
+  import { Coins } from "@lucide/svelte";
 
   import SendTokenModal from "./SendTokenModal.svelte";
   import ReceiveTokenModal from './ReceiveTokenModal.svelte';
@@ -107,7 +107,7 @@
   {#if showHeader}
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-sm font-medium text-gray-300">Token balances</h3>
-      <div class="p-2 rounded-lg bg-[#653FC5]/15">
+      <div class="p-2 rounded-lg bg-agent-purple/15">
         <Coins class="w-3 h-3 text-[#a78bfa]" />
       </div>
     </div>
@@ -119,7 +119,7 @@
         <LoadingIndicator text="Loading token balances..." size={24} />
       </div>
     {:else if formattedTokens.length === 0}
-      <div class="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-8 text-center">
+      <div class="rounded-xl border border-white/6 bg-white/2 px-4 py-8 text-center">
         <p class="text-sm text-gray-400">
           {#if showOnlyWithBalance}
             No tokens with a balance in this wallet
@@ -135,11 +135,11 @@
           {@const usd = formatUsd(token.formattedUsdValue)}
           <div
             animate:flip={{ duration: 300 }}
-            class="rounded-xl border border-white/[0.07] bg-white/[0.025] p-3.5 sm:px-4 sm:py-3.5 transition-colors hover:border-white/[0.12] hover:bg-white/[0.04] {hasBalance ? '' : 'opacity-55'}"
+            class="rounded-xl border border-white/[0.07] bg-white/2.5 p-3.5 sm:px-4 sm:py-3.5 transition-colors hover:border-white/12 hover:bg-white/4 {hasBalance ? '' : 'opacity-55'}"
           >
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
               <div class="flex items-center gap-3 min-w-0 flex-1">
-                <div class="flex h-10 w-10 sm:h-11 sm:w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/[0.04]">
+                <div class="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-white/4">
                   <TokenImages tokens={[token]} size={32} />
                 </div>
                 <div class="min-w-0">
@@ -174,18 +174,18 @@
                   {/if}
                 </div>
 
-                <div class="flex items-center gap-2 flex-shrink-0">
+                <div class="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
                     on:click={() => openReceiveModal(token)}
-                    class="agent-btn-ghost !h-8 !px-3 !text-xs"
+                    class="agent-btn-ghost h-8! px-3! text-xs!"
                   >
                     Receive
                   </button>
                   <button
                     type="button"
                     on:click={() => openSendModal(token)}
-                    class="agent-btn-primary !h-8 !px-3 !text-xs {hasBalance ? '' : 'opacity-50'}"
+                    class="agent-btn-primary h-8! px-3! text-xs! {hasBalance ? '' : 'opacity-50'}"
                   >
                     Send
                   </button>

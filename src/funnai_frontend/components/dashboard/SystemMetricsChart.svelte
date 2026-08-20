@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { Bar } from 'svelte-chartjs';
-  import { theme } from '../../stores/store';
   import { DailyMetricsService, type DailyMetricsData, type TimeFilter } from '../../helpers/DailyMetricsService';
   import { getBaseChartOptions, createDataset, formatDateLabel, formatChartNumber } from '../../helpers/chartUtils';
 
@@ -20,7 +19,7 @@
   let updateInterval: NodeJS.Timer;
 
   // Theme reactivity
-  $: isDark = $theme === 'dark';
+  const isDark = true;
   $: chartOptions = {
     ...getBaseChartOptions(isDark),
     plugins: {
@@ -198,14 +197,14 @@
 
   <!-- Legend explanation for dual axis -->
   {#if !loading && !error && chartData.labels.length > 0}
-    <div class="mt-4 pt-4 border-t border-white/[0.08]">
+    <div class="mt-4 pt-4 border-t border-white/8">
       <div class="flex flex-wrap gap-4 text-xs text-gray-400">
         <div class="flex items-center gap-2">
-          <div class="w-3 h-3 bg-gray-500 rounded"></div>
+          <div class="w-3 h-3 bg-gray-500 rounded-sm"></div>
           <span>Left axis: USD, Cycles</span>
         </div>
         <div class="flex items-center gap-2">
-          <div class="w-3 h-3 bg-agent-purple rounded"></div>
+          <div class="w-3 h-3 bg-agent-purple rounded-sm"></div>
           <span>Right axis: FunnAI Index</span>
         </div>
       </div>

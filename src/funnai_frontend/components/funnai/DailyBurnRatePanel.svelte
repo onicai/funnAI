@@ -349,7 +349,7 @@
 </script>
 
 <!-- Nested inside agent module — compact surface -->
-<div class="rounded-xl bg-white/[0.03] p-3">
+<div class="rounded-xl bg-white/3 p-3">
   <div class="flex items-center justify-between gap-2 mb-2.5">
     <div class="flex items-center gap-2 min-w-0">
       <h2 class="text-sm font-semibold tracking-tight text-white">Burn rate</h2>
@@ -376,7 +376,7 @@
       class="relative rounded-lg border px-1 py-1.5 text-center transition-colors focus:z-10 focus:ring-2 focus:ring-agent-purple/40
       {agent.cyclesBurnRateSetting === 'Low'
         ? 'bg-agent-purple text-white border-agent-purple'
-        : 'border-white/10 bg-white/[0.03] text-gray-300 hover:border-emerald-500/40 hover:bg-emerald-500/10'}"
+        : 'border-white/10 bg-white/3 text-gray-300 hover:border-emerald-500/40 hover:bg-emerald-500/10'}"
       class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
       class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
       disabled={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
@@ -391,7 +391,7 @@
       class="relative rounded-lg border px-1 py-1.5 text-center transition-colors focus:z-10 focus:ring-2 focus:ring-agent-purple/40
       {agent.cyclesBurnRateSetting === 'Medium'
         ? 'bg-agent-purple text-white border-agent-purple'
-        : 'border-white/10 bg-white/[0.03] text-gray-300 hover:border-amber-500/40 hover:bg-amber-500/10'}"
+        : 'border-white/10 bg-white/3 text-gray-300 hover:border-amber-500/40 hover:bg-amber-500/10'}"
       class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
       class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
       disabled={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
@@ -406,7 +406,7 @@
       class="relative rounded-lg border px-1 py-1.5 text-center transition-colors focus:z-10 focus:ring-2 focus:ring-agent-purple/40
       {agent.cyclesBurnRateSetting === 'High'
         ? 'bg-agent-purple text-white border-agent-purple'
-        : 'border-white/10 bg-white/[0.03] text-gray-300 hover:border-orange-500/40 hover:bg-orange-500/10'}"
+        : 'border-white/10 bg-white/3 text-gray-300 hover:border-orange-500/40 hover:bg-orange-500/10'}"
       class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
       class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
       disabled={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
@@ -421,7 +421,7 @@
       class="relative rounded-lg border px-1 py-1.5 text-center transition-colors focus:z-10 focus:ring-2 focus:ring-agent-purple/40
       {agent.cyclesBurnRateSetting === 'VeryHigh'
         ? 'bg-agent-purple text-white border-agent-purple'
-        : 'border-white/10 bg-white/[0.03] text-gray-300 hover:border-red-500/40 hover:bg-red-500/10'}"
+        : 'border-white/10 bg-white/3 text-gray-300 hover:border-red-500/40 hover:bg-red-500/10'}"
       class:opacity-50={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
       class:cursor-not-allowed={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}
       disabled={agentsBeingUpdated.has(agent.id) || !canUpdate || !isHealthy}

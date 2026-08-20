@@ -7,7 +7,7 @@
   export let onClose: (() => void) | undefined = undefined;
   
   const variantStyles = {
-    info: "border-white/10 bg-white/[0.03]",
+    info: "border-white/10 bg-white/3",
     warning: "border-amber-500/30 bg-amber-500/5",
     success: "border-emerald-500/30 bg-emerald-500/5",
     announcement: "border-agent-purple/30 bg-agent-purple/5"
@@ -21,7 +21,7 @@
   };
 
   const iconBgStyles = {
-    info: "border-white/10 bg-white/[0.03]",
+    info: "border-white/10 bg-white/3",
     warning: "border-amber-500/30 bg-amber-500/10",
     success: "border-emerald-500/30 bg-emerald-500/10",
     announcement: "border-agent-purple/20 bg-agent-purple/15"
@@ -40,7 +40,7 @@
     {#if onClose}
       <button
         on:click={handleClose}
-        class="absolute top-3 right-3 text-gray-500 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/[0.06]"
+        class="absolute top-3 right-3 text-gray-500 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/6"
         aria-label="Close announcement"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +51,7 @@
     
     <div class="flex items-start gap-4">
       <!-- Icon/Visual Element -->
-      <div class="flex-shrink-0">
+      <div class="shrink-0">
         <div class="w-10 h-10 rounded-xl border {iconBgStyles[variant]} flex items-center justify-center">
           {#if variant === "warning"}
             <svg class="w-5 h-5 {iconStyles[variant]}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -88,7 +88,7 @@
             {#each items as item}
               <li class="flex items-start gap-3">
                 {#if item.icon}
-                  <span class="text-sm flex-shrink-0 text-gray-500">{item.icon}</span>
+                  <span class="text-sm shrink-0 text-gray-500">{item.icon}</span>
                 {/if}
                 <span class="text-gray-300 leading-relaxed text-sm">{item.text}</span>
               </li>

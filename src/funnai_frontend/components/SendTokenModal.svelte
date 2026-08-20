@@ -11,7 +11,7 @@
     ArrowUp,
     X, 
     Check 
-  } from 'lucide-svelte';
+  } from '@lucide/svelte';
   import { tooltip } from "../helpers/utils/tooltip";
   import { store } from "../stores/store";
   import { IcrcService } from "../helpers/IcrcService";
@@ -365,10 +365,10 @@
 >
   <div class="px-1 sm:px-2 py-2 flex flex-col gap-3 sm:gap-4">
     <div
-      class="flex items-center gap-2 sm:gap-3 p-3 rounded-xl border border-white/10 bg-white/[0.03] transition-all duration-300"
+      class="flex items-center gap-2 sm:gap-3 p-3 rounded-xl border border-white/10 bg-white/3 transition-all duration-300"
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '10px')});"
     >
-      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 bg-white/[0.04] flex-shrink-0 overflow-hidden">
+      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 bg-white/4 shrink-0 overflow-hidden">
         <div class="sm:hidden">
           <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
         </div>
@@ -395,9 +395,9 @@
           <input
             id="recipient-address"
             type="text"
-            class="agent-input !pr-16 sm:!pr-20 !text-xs sm:!text-sm font-mono
-              {addressValidation.isValid ? '!border-emerald-500/50 focus:!ring-emerald-500/30' : ''}
-              {!addressValidation.isValid && recipientAddress ? '!border-red-500/50 focus:!ring-red-500/30' : ''}"
+            class="agent-input pr-16! sm:pr-20! text-xs! sm:text-sm! font-mono
+              {addressValidation.isValid ? 'border-emerald-500/50! focus:ring-emerald-500/30!' : ''}
+              {!addressValidation.isValid && recipientAddress ? 'border-red-500/50! focus:ring-red-500/30!' : ''}"
             placeholder="Principal ID, Account ID, or Canister ID"
             bind:value={recipientAddress}
             on:input={handleAddressInput}
@@ -451,9 +451,9 @@
             id="amount-input"
             type="text"
             inputmode="decimal"
-            class="agent-input !pr-14 sm:!pr-16 !text-xs sm:!text-sm tabular-nums
-              {amountValidation.isValid && amount ? '!border-emerald-500/50 focus:!ring-emerald-500/30' : ''}
-              {!amountValidation.isValid && amount ? '!border-red-500/50 focus:!ring-red-500/30' : ''}"
+            class="agent-input pr-14! sm:pr-16! text-xs! sm:text-sm! tabular-nums
+              {amountValidation.isValid && amount ? 'border-emerald-500/50! focus:ring-emerald-500/30!' : ''}
+              {!amountValidation.isValid && amount ? 'border-red-500/50! focus:ring-red-500/30!' : ''}"
             placeholder={`Enter amount of ${token.symbol}`}
             bind:value={amount}
             on:input={handleAmountInput}
@@ -481,7 +481,7 @@
 
       <button
         type="submit"
-        class="mt-1 w-full agent-btn-primary !h-10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-agent-purple"
+        class="mt-1 w-full agent-btn-primary h-10! disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-agent-purple"
         disabled={!isFormValid || isValidating}
         use:tooltip={{ text: getTooltipMessage(), direction: "top" }}
       >
@@ -498,9 +498,9 @@
 </Modal>
 
 {#if showScanner && QrScanner}
-  <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[100001]" transition:fade={{ duration: 200 }}>
-    <div class="relative agent-card !bg-agent-surface rounded-2xl overflow-hidden w-full max-w-md mx-4">
-      <div class="relative z-[1] p-4 flex justify-between items-center border-b border-white/[0.06]">
+  <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-100001" transition:fade={{ duration: 200 }}>
+    <div class="relative agent-card bg-agent-surface! rounded-2xl overflow-hidden w-full max-w-md mx-4">
+      <div class="relative z-1 p-4 flex justify-between items-center border-b border-white/6">
         <h3 class="font-medium text-white">Scan QR code</h3>
         <button type="button" class="text-gray-400 hover:text-white transition-colors" on:click={() => showScanner = false}>
           <X size={20} />

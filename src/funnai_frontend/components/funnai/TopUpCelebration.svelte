@@ -124,7 +124,7 @@
 {#if isVisible}
   <!-- Full-screen overlay -->
   <div 
-    class="fixed inset-0 z-[200000] bg-black/70 flex items-center justify-center"
+    class="fixed inset-0 z-200000 bg-black/70 flex items-center justify-center"
     transition:fade={{ duration: 300 }}
     on:click={stopCelebration}
     on:keydown={(e) => { if (e.key === 'Escape') { stopCelebration(); } }}
@@ -135,7 +135,7 @@
     <div bind:this={confettiContainer} class="absolute inset-0 pointer-events-none overflow-hidden">
       {#each confettiPieces as piece (piece.id)}
         <div
-          class="absolute w-2 h-2 rounded-sm opacity-70"
+          class="absolute w-2 h-2 rounded-xs opacity-70"
           style="
             left: {piece.x}px;
             top: {piece.y}px;
@@ -149,7 +149,7 @@
 
     <!-- Main celebration content -->
     <div 
-      class="relative z-10 text-center p-8 max-w-md mx-4 rounded-2xl bg-[#15141B] border border-white/10 shadow-[0_0_60px_rgba(139,124,246,0.15)]"
+      class="relative z-10 text-center p-8 max-w-md mx-4 rounded-2xl bg-agent-elevated border border-white/10 shadow-[0_0_60px_rgba(139,124,246,0.15)]"
       transition:scale={{ duration: 600, easing: elasticOut }}
       on:click|stopPropagation
       on:keydown|stopPropagation

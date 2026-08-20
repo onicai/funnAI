@@ -8,7 +8,7 @@
     ChevronDown,
     LogOut,
     User,
-  } from 'lucide-svelte';
+  } from '@lucide/svelte';
 
   let accountDropdownOpen = false;
   let modalIsOpen = false;
@@ -64,17 +64,17 @@
     </a>
 
     {#if $store.isAuthed}
-      <div class="relative z-[80]">
+      <div class="relative z-80">
         <button
           id="accountDropdownButton"
           type="button"
           aria-haspopup="menu"
           aria-expanded={accountDropdownOpen}
           on:click={toggleAccountDropdown}
-          class="agent-btn-ghost sm:min-w-[9.5rem]"
+          class="agent-btn-ghost sm:min-w-38"
         >
           <User class="w-3.5 h-3.5 stroke-[1.75] text-gray-400 shrink-0" />
-          <span class="hidden sm:inline w-[5.5rem] truncate text-left">{principalShort}</span>
+          <span class="hidden sm:inline w-22 truncate text-left">{principalShort}</span>
           <ChevronDown
             class="w-3.5 h-3.5 stroke-[1.75] text-gray-500 shrink-0 transition-transform duration-200 {accountDropdownOpen ? 'rotate-180' : ''}"
           />
@@ -83,7 +83,7 @@
         {#if accountDropdownOpen}
           <button
             type="button"
-            class="fixed inset-0 z-[90] cursor-default bg-black/20"
+            class="fixed inset-0 z-90 cursor-default bg-black/20"
             aria-label="Close account menu"
             on:click={closeAccountDropdown}
           ></button>
@@ -91,9 +91,9 @@
           <div
             id="accountDropdown"
             role="menu"
-            class="absolute right-0 top-full mt-2 w-52 z-[100] overflow-hidden rounded-2xl border border-white/10 bg-[#15141B] shadow-[0_20px_50px_rgba(0,0,0,0.55)] animate-slideDown"
+            class="absolute right-0 top-full mt-2 w-52 z-100 overflow-hidden rounded-2xl border border-white/10 bg-agent-elevated shadow-[0_20px_50px_rgba(0,0,0,0.55)] animate-slideDown"
           >
-            <div class="border-b border-white/[0.06] px-4 py-3">
+            <div class="border-b border-white/6 px-4 py-3">
               <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Account</p>
               {#if $store.principal}
                 <p class="mt-1.5 font-mono text-[11px] text-gray-400 truncate" title={$store.principal.toText()}>

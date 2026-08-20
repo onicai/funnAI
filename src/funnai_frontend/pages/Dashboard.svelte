@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { store, theme } from "../stores/store";
+  import { store } from "../stores/store";
   import { link } from 'svelte-spa-router';
   import Footer from "../components/funnai/Footer.svelte";
   
@@ -116,8 +116,8 @@
 
     <!-- Quick Stats Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
-      <div class="agent-card !bg-agent-surface p-5">
-        <div class="relative z-[1] flex items-start justify-between gap-2 min-h-[1.25rem]">
+      <div class="agent-card bg-agent-surface! p-5">
+        <div class="relative z-1 flex items-start justify-between gap-2 min-h-5">
           <p class="agent-eyebrow">Current supply</p>
           <button
             type="button"
@@ -129,7 +129,7 @@
             {supplyError ? 'Retry' : 'Refresh'}
           </button>
         </div>
-        <div class="relative z-[1] mt-3">
+        <div class="relative z-1 mt-3">
           <p class="agent-metric-value">
             {#if isLoadingSupply}
               <span class="agent-metric-pulse w-[9ch]" aria-hidden="true"></span>
@@ -144,9 +144,9 @@
         </div>
       </div>
 
-      <div class="agent-card !bg-agent-surface p-5">
-        <p class="relative z-[1] agent-eyebrow">Cap</p>
-        <div class="relative z-[1] mt-3">
+      <div class="agent-card bg-agent-surface! p-5">
+        <p class="relative z-1 agent-eyebrow">Cap</p>
+        <div class="relative z-1 mt-3">
           <p class="agent-metric-value">
             <span class="min-w-[9ch]">21M</span>
             <span class="agent-metric-unit">$FUNNAI</span>
@@ -155,8 +155,8 @@
         </div>
       </div>
 
-      <div class="agent-card !bg-agent-surface p-5">
-        <div class="relative z-[1] flex items-start justify-between gap-2 min-h-[1.25rem]">
+      <div class="agent-card bg-agent-surface! p-5">
+        <div class="relative z-1 flex items-start justify-between gap-2 min-h-5">
           <p class="agent-eyebrow">Burned</p>
           <button
             type="button"
@@ -168,7 +168,7 @@
             {burnedError ? 'Retry' : 'Refresh'}
           </button>
         </div>
-        <div class="relative z-[1] mt-3">
+        <div class="relative z-1 mt-3">
           <p class="agent-metric-value">
             {#if isLoadingBurned}
               <span class="agent-metric-pulse w-[9ch]" aria-hidden="true"></span>

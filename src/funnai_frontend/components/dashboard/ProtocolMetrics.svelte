@@ -125,8 +125,8 @@
 
 </script>
 
-<div class="agent-card !bg-agent-surface p-5 sm:p-6">
-  <div class="relative z-[1] flex items-start justify-between gap-3 mb-5">
+<div class="agent-card bg-agent-surface! p-5 sm:p-6">
+  <div class="relative z-1 flex items-start justify-between gap-3 mb-5">
     <div>
       <div class="flex flex-wrap items-center gap-2">
         <p class="agent-eyebrow">Protocol</p>
@@ -138,9 +138,9 @@
       <h3 class="mt-1 text-base font-semibold tracking-tight text-white">{title}</h3>
       <p class="mt-0.5 text-sm text-gray-500">Burn, challenge rewards, and the next decrease</p>
     </div>
-    <span class="inline-flex h-4 w-4 flex-shrink-0 mt-1 items-center justify-center">
+    <span class="inline-flex h-4 w-4 shrink-0 mt-1 items-center justify-center">
       {#if loading}
-        <span class="h-4 w-4 border-2 border-[#653FC5] rounded-full border-t-transparent animate-spin"></span>
+        <span class="h-4 w-4 border-2 border-agent-purple rounded-full border-t-transparent animate-spin"></span>
       {/if}
     </span>
   </div>
@@ -154,14 +154,14 @@
   {#if compact}
     <!-- Compact view for smaller spaces -->
     <div class="grid grid-cols-2 gap-3">
-      <div class="text-center p-3 rounded-xl bg-white/[0.03]">
+      <div class="text-center p-3 rounded-xl bg-white/3">
         <div class="text-lg font-semibold tracking-tight text-white">
           {formatLargeNumber(totalCyclesBurned)}
         </div>
         <div class="text-xs text-gray-400">Total TC Burned</div>
       </div>
       
-      <div class="text-center p-3 rounded-xl bg-white/[0.03]">
+      <div class="text-center p-3 rounded-xl bg-white/3">
         <div class="text-lg font-semibold tracking-tight text-white">
           {totalChallenges}
         </div>
@@ -171,7 +171,7 @@
   {:else}
     <!-- Full view -->
     <div class="grid grid-cols-1 gap-4 mb-6">
-      <div class="p-4 rounded-xl bg-white/[0.03]">
+      <div class="p-4 rounded-xl bg-white/3">
         <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Total cycles burned</p>
         <p class="agent-metric-value">
           {#if loading}
@@ -183,7 +183,7 @@
         <p class="agent-metric-hint">By funnAI</p>
       </div>
       
-      <!-- <div class="text-center p-4 bg-white/[0.03] border border-white/10 rounded-xl">
+      <!-- <div class="text-center p-4 bg-white/3 border border-white/10 rounded-xl">
         <div class="text-2xl font-semibold tracking-tight text-white">
           {totalChallenges}
         </div>
@@ -191,7 +191,7 @@
         <div class="text-xs text-gray-500 mt-1">Completed</div>
       </div>
       
-      <div class="p-4 rounded-xl bg-white/[0.03]">
+      <div class="p-4 rounded-xl bg-white/3">
         <div class="text-2xl font-semibold tracking-tight text-white">
           {totalSubmissions}
         </div>
@@ -203,34 +203,34 @@
     <!-- Reward Structure Section -->
     <div class="flex items-center my-5">
       <span class="text-[11px] font-medium uppercase tracking-[0.14em] text-gray-500 mr-3">Reward structure</span>
-      <div class="flex-1 h-px bg-white/[0.06]"></div>
+      <div class="flex-1 h-px bg-white/6"></div>
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
-      <div class="p-3.5 rounded-xl bg-white/[0.03]">
+      <div class="p-3.5 rounded-xl bg-white/3">
         <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Per challenge</p>
         <p class="mt-2 text-xl font-semibold tracking-tight text-white tabular-nums">73.21</p>
         <p class="mt-0.5 text-xs text-gray-500">FUNNAI</p>
       </div>
-      <div class="p-3.5 rounded-xl bg-white/[0.03]">
+      <div class="p-3.5 rounded-xl bg-white/3">
         <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Interval</p>
         <p class="mt-2 text-xl font-semibold tracking-tight text-white tabular-nums">10</p>
         <p class="mt-0.5 text-xs text-gray-500">Minutes</p>
       </div>
-      <div class="p-3.5 rounded-xl bg-white/[0.03]">
+      <div class="p-3.5 rounded-xl bg-white/3">
         <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">All participants</p>
         <p class="mt-2 text-xl font-semibold tracking-tight text-white tabular-nums">45%</p>
         <p class="mt-0.5 text-xs text-gray-500">Shared equally</p>
       </div>
-      <div class="p-3.5 rounded-xl bg-white/[0.03]">
+      <div class="p-3.5 rounded-xl bg-white/3">
         <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">1st place</p>
         <p class="mt-2 text-xl font-semibold tracking-tight text-white tabular-nums">35%</p>
       </div>
-      <div class="p-3.5 rounded-xl bg-white/[0.03]">
+      <div class="p-3.5 rounded-xl bg-white/3">
         <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">2nd place</p>
         <p class="mt-2 text-xl font-semibold tracking-tight text-white tabular-nums">15%</p>
       </div>
-      <div class="p-3.5 rounded-xl bg-white/[0.03]">
+      <div class="p-3.5 rounded-xl bg-white/3">
         <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">3rd place</p>
         <p class="mt-2 text-xl font-semibold tracking-tight text-white tabular-nums">5%</p>
       </div>
@@ -238,10 +238,10 @@
 
     <div class="flex items-center my-5">
       <span class="text-[11px] font-medium uppercase tracking-[0.14em] text-gray-500 mr-3">Next reward decrease</span>
-      <div class="flex-1 h-px bg-white/[0.06]"></div>
+      <div class="flex-1 h-px bg-white/6"></div>
     </div>
 
-    <div class="rounded-xl bg-white/[0.03] p-4">
+    <div class="rounded-xl bg-white/3 p-4">
       <p class="text-xs text-gray-500">Sept 29, 2026 · 12pm PT / 9pm CET</p>
       <div class="mt-2 text-xl font-semibold tracking-tight text-[#c4b5fd] tabular-nums">
         <Countdown

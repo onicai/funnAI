@@ -34,7 +34,7 @@
 
 <button
   type="button"
-  class="group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3.5 text-left transition-all duration-200 hover:border-[#653FC5]/40 hover:bg-[#653FC5]/10 disabled:cursor-not-allowed disabled:opacity-60"
+  class="group flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/3 px-4 py-3.5 text-left transition-all duration-200 hover:border-agent-purple/40 hover:bg-agent-purple/10 disabled:cursor-not-allowed disabled:opacity-60"
   disabled={!nfidReady || loading === "nfid" || (loading !== "" && loading !== "nfid")}
   on:click={connect}
 >

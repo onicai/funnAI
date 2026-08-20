@@ -3,7 +3,7 @@
   import { toastStore } from "../../stores/toastStore";
   import { onMount, onDestroy } from "svelte";
   import { getMainerVisualIdentity } from "../../helpers/utils/mainerIdentity";
-  import { ShoppingBag, Crown, X, Eye, Tag, Clock, RefreshCw } from "lucide-svelte";
+  import { ShoppingBag, Crown, X, Eye, Tag, Clock, RefreshCw } from "@lucide/svelte";
   import { MarketplaceService } from "../../helpers/marketplaceService";
   import { Principal } from '@dfinity/principal';
   import LoginModal from "../login/LoginModal.svelte";
@@ -422,7 +422,7 @@
   {#if ownListings.length > 0}
     <div class="agent-card">
       <!-- Header -->
-      <div class="border-b border-white/[0.08] px-6 py-4">
+      <div class="border-b border-white/8 px-6 py-4">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
             <Crown class="w-5 h-5 text-amber-400" />
@@ -441,9 +441,9 @@
           {#each ownListings as listing}
             {@const identity = getMainerVisualIdentity(listing.mainerId)}
 
-            <div class="group relative overflow-hidden rounded-xl border border-amber-500/25 bg-white/[0.03] hover:border-amber-500/40 transition-all duration-300">
+            <div class="group relative overflow-hidden rounded-xl border border-amber-500/25 bg-white/3 hover:border-amber-500/40 transition-all duration-300">
               <!-- Soft identity tint -->
-              <div class="absolute inset-0 bg-gradient-to-br {identity.colors.bg} opacity-[0.04]"></div>
+              <div class="absolute inset-0 bg-linear-to-br {identity.colors.bg} opacity-[0.04]"></div>
 
               <!-- Featured Badge -->
               <div class="absolute top-3 right-3 z-10">
@@ -509,7 +509,7 @@
   <!-- All Marketplace Listings -->
   <div class="agent-card">
     <!-- Header -->
-    <div class="border-b border-white/[0.08] px-6 py-4">
+    <div class="border-b border-white/8 px-6 py-4">
       <div class="flex items-center justify-between gap-4 flex-wrap">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 rounded-xl bg-agent-purple/15 border border-agent-purple/20 flex items-center justify-center">
@@ -552,7 +552,7 @@
 
     <!-- Sorting & Pagination Controls -->
     {#if !isLoading && otherListings.length > 0}
-      <div class="px-6 py-3 border-b border-white/[0.08] bg-white/[0.02]">
+      <div class="px-6 py-3 border-b border-white/8 bg-white/2">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <!-- Sort controls - removed -->
           
@@ -599,9 +599,9 @@
             {#each paginatedListings as listing}
             {@const identity = getMainerVisualIdentity(listing.mainerId)}
             
-            <div class="group relative overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] hover:border-agent-purple/40 transition-all duration-300">
+            <div class="group relative overflow-hidden rounded-xl border border-white/10 bg-white/3 hover:border-agent-purple/40 transition-all duration-300">
               <!-- Soft identity tint -->
-              <div class="absolute inset-0 bg-gradient-to-br {identity.colors.bg} opacity-[0.04]"></div>
+              <div class="absolute inset-0 bg-linear-to-br {identity.colors.bg} opacity-[0.04]"></div>
               
               <div class="relative p-5">
                 <!-- mAIner Avatar & Info -->
@@ -695,7 +695,7 @@
                     on:click={() => goToPage(item)}
                     class="w-10 h-10 rounded-full font-medium transition-colors {currentPage === item 
                       ? 'bg-agent-purple text-white' 
-                      : 'border border-white/10 bg-white/[0.03] text-gray-300 hover:border-agent-purple/40 hover:bg-agent-purple/10'}"
+                      : 'border border-white/10 bg-white/3 text-gray-300 hover:border-agent-purple/40 hover:bg-agent-purple/10'}"
                   >
                     {item}
                   </button>
@@ -754,10 +754,10 @@
     <!-- Modal Content -->
     <div class="relative bg-agent-elevated border border-white/10 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
       <!-- Soft identity tint -->
-      <div class="pointer-events-none absolute inset-0 bg-gradient-to-br {identity.colors.bg} opacity-[0.04] rounded-2xl"></div>
+      <div class="pointer-events-none absolute inset-0 bg-linear-to-br {identity.colors.bg} opacity-[0.04] rounded-2xl"></div>
 
       <!-- Header -->
-      <div class="sticky top-0 bg-agent-elevated/95 backdrop-blur-sm border-b border-white/[0.08] px-6 py-4 z-10">
+      <div class="sticky top-0 bg-agent-elevated/95 backdrop-blur-xs border-b border-white/8 px-6 py-4 z-10">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-3">
             <div class="w-12 h-12 rounded-xl overflow-hidden border border-white/10 bg-agent-elevated [&>svg]:w-full [&>svg]:h-full [&>svg]:block">
@@ -772,7 +772,7 @@
           
           <button
             on:click={closeDetailsModal}
-            class="w-8 h-8 flex items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-gray-300 hover:border-agent-purple/40 hover:text-white transition-colors"
+            class="w-8 h-8 flex items-center justify-center rounded-full border border-white/10 bg-white/4 text-gray-300 hover:border-agent-purple/40 hover:text-white transition-colors"
           >
             <X class="w-5 h-5" />
           </button>
@@ -782,7 +782,7 @@
       <!-- Content -->
       <div class="relative p-6 space-y-6">
         <!-- Price Section -->
-        <div class="bg-white/[0.03] rounded-xl p-6 border border-white/10">
+        <div class="bg-white/3 rounded-xl p-6 border border-white/10">
           <div class="text-center">
             <p class="text-sm text-gray-400 mb-2">Listed Price</p>
             <p class="text-4xl font-semibold text-agent-purple mb-1">
@@ -796,14 +796,14 @@
 
         <!-- Details Grid -->
         <div class="grid grid-cols-1 gap-4">
-          <div class="bg-white/[0.03] border border-white/10 rounded-xl p-4">
+          <div class="bg-white/3 border border-white/10 rounded-xl p-4">
             <p class="text-xs text-gray-400 mb-1">Status</p>
             <p class="font-medium text-white capitalize">{selectedListing.status}</p>
           </div>
         </div>
 
         <!-- Seller Info -->
-        <div class="bg-white/[0.03] border border-white/10 rounded-xl p-4">
+        <div class="bg-white/3 border border-white/10 rounded-xl p-4">
           <p class="text-xs text-gray-400 mb-2">Seller Principal</p>
           <p class="font-mono text-sm text-gray-200 break-all">
             {selectedListing.seller}

@@ -1,42 +1,112 @@
 /* Write your global styles here, in PostCSS syntax */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-@layer base {
-  html {
-    scrollbar-gutter: stable;
-  }
+@custom-variant dark (&:is(.dark *));
 
-  html.dark body {
-    @apply bg-agent-bg text-gray-200 font-sans antialiased;
-  }
+@theme {
+  --font-sans: Inter, system-ui, sans-serif;
+  --font-fredoka: Fredoka, sans-serif;
 
-  html.dark {
-    color-scheme: dark;
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --color-agent-bg: #0b0a0f;
+  --color-agent-surface: #0c0b12;
+  --color-agent-elevated: #15141b;
+  --color-agent-border: rgba(255, 255, 255, 0.08);
+  --color-agent-purple: #653fc5;
+  --color-agent-purpleDim: rgba(101, 63, 197, 0.15);
+  --color-agent-muted: #6b7280;
+  --color-agent-soft: #9ca3af;
+
+  --color-dark-primary: #1f2937;
+  --color-dark-secondary: #374151;
+  --color-dark-accent: #4b5563;
+
+  --shadow-agent: 0 24px 80px -20px rgba(101, 63, 197, 0.35);
+  --shadow-agent-cta:
+    0 0 0 1px rgba(101, 63, 197, 0.35), 0 8px 20px -8px rgba(101, 63, 197, 0.55);
+  --shadow-agent-soft:
+    0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+    0 18px 40px -28px rgba(0, 0, 0, 0.75);
+  --shadow-agent-lift:
+    0 22px 48px -24px rgba(101, 63, 197, 0.28),
+    0 18px 40px -28px rgba(0, 0, 0, 0.8);
+
+  --background-image-agent-grid:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+
+  --background-size-agent-grid: 48px 48px;
+
+  --animate-agent-pulse-soft: agent-pulse-soft 6s ease-in-out infinite;
+
+  @keyframes agent-pulse-soft {
+    0%,
+    100% {
+      opacity: 0.45;
+    }
+    50% {
+      opacity: 0.8;
+    }
   }
 }
 
-@layer components {
-  /* ─── Atmosphere: quadricular grid + soft light field ─── */
-  .agent-atmosphere {
-    position: relative;
-    isolation: isolate;
-    background-color: #0B0A0F;
-  }
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
 
-  .agent-atmosphere::before {
-    content: "";
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility agent-atmosphere {
+  /* ─── Atmosphere: quadricular grid + soft light field ─── */
+  position: relative;
+  isolation: isolate;
+  background-color: #0b0a0f;
+
+  &::before {
+    content: '';
     position: absolute;
     inset: 0;
     z-index: 0;
     pointer-events: none;
     background-image:
       /* overhead light — grid catches this */
-      radial-gradient(ellipse 80% 42% at 50% -6%, rgba(255, 255, 255, 0.07), transparent 58%),
-      radial-gradient(ellipse 70% 40% at 12% -8%, rgba(101, 63, 197, 0.16), transparent 55%),
-      radial-gradient(ellipse 50% 35% at 90% 8%, rgba(125, 211, 252, 0.045), transparent 50%),
-      radial-gradient(ellipse 45% 40% at 70% 100%, rgba(101, 63, 197, 0.07), transparent 55%),
+      radial-gradient(
+        ellipse 80% 42% at 50% -6%,
+        rgba(255, 255, 255, 0.07),
+        transparent 58%
+      ),
+      radial-gradient(
+        ellipse 70% 40% at 12% -8%,
+        rgba(101, 63, 197, 0.16),
+        transparent 55%
+      ),
+      radial-gradient(
+        ellipse 50% 35% at 90% 8%,
+        rgba(125, 211, 252, 0.045),
+        transparent 50%
+      ),
+      radial-gradient(
+        ellipse 45% 40% at 70% 100%,
+        rgba(101, 63, 197, 0.07),
+        transparent 55%
+      ),
       linear-gradient(rgba(196, 181, 253, 0.045) 1px, transparent 1px),
       linear-gradient(90deg, rgba(196, 181, 253, 0.045) 1px, transparent 1px);
     background-size:
@@ -47,83 +117,108 @@
       44px 44px,
       44px 44px;
     background-position: center top;
-    mask-image: radial-gradient(ellipse 95% 78% at 50% 12%, #000 22%, transparent 88%);
-    -webkit-mask-image: radial-gradient(ellipse 95% 78% at 50% 12%, #000 22%, transparent 88%);
+    mask-image: radial-gradient(
+      ellipse 95% 78% at 50% 12%,
+      #000 22%,
+      transparent 88%
+    );
+    -webkit-mask-image: radial-gradient(
+      ellipse 95% 78% at 50% 12%,
+      #000 22%,
+      transparent 88%
+    );
   }
 
-  .agent-atmosphere::after {
-    content: "";
+  &::after {
+    content: '';
     position: absolute;
     inset: 0;
     z-index: 0;
     pointer-events: none;
     background:
-      radial-gradient(ellipse 70% 36% at 50% 0%, rgba(101, 63, 197, 0.1), transparent 62%),
-      radial-gradient(ellipse 100% 80% at 50% 120%, rgba(0, 0, 0, 0.5), transparent 50%),
-      linear-gradient(180deg, rgba(11, 10, 15, 0.08) 0%, transparent 24%, rgba(11, 10, 15, 0.42) 100%);
+      radial-gradient(
+        ellipse 70% 36% at 50% 0%,
+        rgba(101, 63, 197, 0.1),
+        transparent 62%
+      ),
+      radial-gradient(
+        ellipse 100% 80% at 50% 120%,
+        rgba(0, 0, 0, 0.5),
+        transparent 50%
+      ),
+      linear-gradient(
+        180deg,
+        rgba(11, 10, 15, 0.08) 0%,
+        transparent 24%,
+        rgba(11, 10, 15, 0.42) 100%
+      );
   }
 
-  .agent-atmosphere > * {
+  & > * {
     position: relative;
     z-index: 1;
   }
+}
 
+@utility agent-grid-panel {
   /* denser local grid for panels / columns */
-  .agent-grid-panel {
-    position: relative;
-    overflow: hidden;
-    background-color: rgba(12, 11, 18, 0.72);
-    background-image:
-      linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
-    background-size: 28px 28px;
-    background-position: -1px -1px;
-  }
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(12, 11, 18, 0.72);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: -1px -1px;
 
-  .agent-grid-panel::before {
-    content: "";
+  &::before {
+    content: '';
     position: absolute;
     inset: 0;
     pointer-events: none;
     background:
-      radial-gradient(ellipse 70% 50% at 50% 0%, rgba(101, 63, 197, 0.12), transparent 60%),
+      radial-gradient(
+        ellipse 70% 50% at 50% 0%,
+        rgba(101, 63, 197, 0.12),
+        transparent 60%
+      ),
       linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 40%);
   }
+}
 
-  .agent-page {
-    @apply relative flex flex-col min-h-full font-sans text-gray-200;
-    background: transparent;
-  }
+@utility agent-page {
+  @apply relative flex flex-col min-h-full font-sans text-gray-200;
+  background: transparent;
+}
 
+@utility agent-sidebar-drawer {
   /* Stable mobile drawer height — 100vh jumps when the browser chrome shows/hides */
-  .agent-sidebar-drawer {
-    height: 100vh;
-    height: 100svh;
-    max-height: 100dvh;
-    overscroll-behavior: none;
-  }
+  height: 100vh;
+  height: 100svh;
+  max-height: 100dvh;
+  overscroll-behavior: none;
+}
 
-  .agent-container {
-    @apply container mx-auto px-2 md:px-8 py-4 md:py-8 flex-grow;
-  }
+@utility agent-container {
+  @apply container mx-auto px-2 md:px-8 py-4 md:py-8 grow;
+}
 
-  .agent-card {
-    @apply relative overflow-hidden rounded-2xl border border-white/[0.08] bg-agent-surface/90;
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.02) inset,
-      0 1px 0 0 rgba(255, 255, 255, 0.07) inset,
-      0 10px 28px -14px rgba(0, 0, 0, 0.55),
-      0 28px 56px -32px rgba(101, 63, 197, 0.18);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    transition:
-      border-color 0.25s ease,
-      box-shadow 0.25s ease,
-      transform 0.25s ease;
-  }
+@utility agent-card {
+  @apply relative overflow-hidden rounded-2xl border border-white/8 bg-agent-surface/90;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.02) inset,
+    0 1px 0 0 rgba(255, 255, 255, 0.07) inset,
+    0 10px 28px -14px rgba(0, 0, 0, 0.55),
+    0 28px 56px -32px rgba(101, 63, 197, 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
 
-  .agent-card::before {
-    content: "";
+  &::before {
+    content: '';
     position: absolute;
     inset: 0 0 auto 0;
     height: 1px;
@@ -140,7 +235,7 @@
     opacity: 0.7;
   }
 
-  .agent-card:hover {
+  &:hover {
     border-color: rgba(255, 255, 255, 0.13);
     box-shadow:
       0 0 0 1px rgba(255, 255, 255, 0.03) inset,
@@ -149,73 +244,90 @@
       0 32px 64px -28px rgba(101, 63, 197, 0.28);
   }
 
-  .agent-card-elevated {
-    @apply relative overflow-hidden rounded-2xl border border-white/[0.08] bg-agent-elevated;
-    box-shadow:
-      0 1px 0 0 rgba(255, 255, 255, 0.07) inset,
-      0 10px 28px -14px rgba(0, 0, 0, 0.5),
-      0 24px 48px -28px rgba(101, 63, 197, 0.14);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none !important;
+    transition: none !important;
+    filter: none !important;
   }
+}
 
-  .agent-card-elevated::before {
-    content: "";
+@utility agent-card-elevated {
+  @apply relative overflow-hidden rounded-2xl border border-white/8 bg-agent-elevated;
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.07) inset,
+    0 10px 28px -14px rgba(0, 0, 0, 0.5),
+    0 24px 48px -28px rgba(101, 63, 197, 0.14);
+
+  &::before {
+    content: '';
     position: absolute;
     inset: 0 0 auto 0;
     height: 1px;
     pointer-events: none;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
   }
+}
 
-  .agent-eyebrow {
-    @apply text-[10px] font-medium uppercase tracking-[0.2em] text-agent-purple;
-  }
+@utility agent-eyebrow {
+  @apply text-[10px] font-medium uppercase tracking-[0.2em] text-agent-purple;
+}
 
-  .agent-title {
-    @apply text-2xl sm:text-3xl font-semibold tracking-tight text-white;
-  }
+@utility agent-title {
+  @apply text-2xl sm:text-3xl font-semibold tracking-tight text-white;
+}
 
-  .agent-subtitle {
-    @apply text-sm font-normal text-gray-400 leading-relaxed;
-  }
+@utility agent-subtitle {
+  @apply text-sm font-normal text-gray-400 leading-relaxed;
+}
 
-  .agent-btn-primary {
-    @apply inline-flex items-center justify-center gap-2 h-9 px-4 rounded-full bg-agent-purple text-white text-[13px] font-semibold tracking-tight shadow-agent-cta transition-all duration-200 hover:bg-[#5a37b5] active:scale-[0.98];
-    position: relative;
-    overflow: hidden;
-  }
+@utility agent-btn-primary {
+  @apply inline-flex items-center justify-center gap-2 h-9 px-4 rounded-full bg-agent-purple text-white text-[13px] font-semibold tracking-tight shadow-agent-cta transition-all duration-200 hover:bg-[#5a37b5] active:scale-[0.98];
+  position: relative;
+  overflow: hidden;
 
-  .agent-btn-primary::after {
-    content: "";
+  &::after {
+    content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 45%);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.16),
+      transparent 45%
+    );
     pointer-events: none;
   }
+}
 
-  .agent-btn-ghost {
-    @apply inline-flex items-center justify-center gap-2 h-9 px-3.5 rounded-full border border-white/10 bg-white/[0.04] text-gray-200 text-[13px] font-medium tracking-tight transition-all duration-200 hover:border-agent-purple/40 hover:bg-agent-purple/10 hover:text-white;
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.04) inset;
-  }
+@utility agent-btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 h-9 px-3.5 rounded-full border border-white/10 bg-white/4 text-gray-200 text-[13px] font-medium tracking-tight transition-all duration-200 hover:border-agent-purple/40 hover:bg-agent-purple/10 hover:text-white;
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.04) inset;
+}
 
+@utility agent-btn-neon {
   /* Neon pill — gradient rim + glow, like a lit chip on dark */
-  .agent-btn-neon {
-    @apply relative inline-flex items-center justify-center gap-2 h-9 px-4 rounded-full text-[13px] font-medium tracking-tight text-white no-underline;
-    background: rgba(12, 11, 18, 0.88);
-    isolation: isolate;
-    box-shadow:
-      0 0 10px rgba(167, 139, 250, 0.38),
-      0 0 24px rgba(101, 63, 197, 0.28),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    transition: box-shadow 0.2s ease, transform 0.15s ease;
-  }
+  @apply relative inline-flex items-center justify-center gap-2 h-9 px-4 rounded-full text-[13px] font-medium tracking-tight text-white no-underline;
+  background: rgba(12, 11, 18, 0.88);
+  isolation: isolate;
+  box-shadow:
+    0 0 10px rgba(167, 139, 250, 0.38),
+    0 0 24px rgba(101, 63, 197, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
 
-  .agent-btn-neon::before {
-    content: "";
+  &::before {
+    content: '';
     position: absolute;
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(115deg, #e9d5ff 0%, #653FC5 42%, #67e8f9 100%);
+    background: linear-gradient(115deg, #e9d5ff 0%, #653fc5 42%, #67e8f9 100%);
     -webkit-mask:
       linear-gradient(#fff 0 0) content-box,
       linear-gradient(#fff 0 0);
@@ -224,156 +336,168 @@
     pointer-events: none;
   }
 
-  .agent-btn-neon:hover {
+  &:hover {
     box-shadow:
       0 0 16px rgba(196, 181, 253, 0.55),
       0 0 36px rgba(101, 63, 197, 0.42),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
-  .agent-btn-neon:active {
+  &:active {
     transform: scale(0.98);
   }
+}
 
-  .agent-btn-neon-cyan {
-    box-shadow:
-      0 0 10px rgba(34, 211, 238, 0.38),
-      0 0 24px rgba(56, 189, 248, 0.26),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  }
+@utility agent-btn-neon-cyan {
+  box-shadow:
+    0 0 10px rgba(34, 211, 238, 0.38),
+    0 0 24px rgba(56, 189, 248, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
-  .agent-btn-neon-cyan::before {
+  &::before {
     background: linear-gradient(115deg, #a5f3fc 0%, #22d3ee 38%, #3b82f6 100%);
   }
 
-  .agent-btn-neon-cyan:hover {
+  &:hover {
     box-shadow:
       0 0 16px rgba(103, 232, 249, 0.5),
       0 0 34px rgba(56, 189, 248, 0.38),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
+}
 
-  .agent-btn-neon-pink {
-    box-shadow:
-      0 0 10px rgba(244, 114, 182, 0.4),
-      0 0 24px rgba(101, 63, 197, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+@utility agent-btn-neon-pink {
+  box-shadow:
+    0 0 10px rgba(244, 114, 182, 0.4),
+    0 0 24px rgba(101, 63, 197, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  &::before {
+    background: linear-gradient(115deg, #f0abfc 0%, #653fc5 42%, #fb7185 100%);
   }
 
-  .agent-btn-neon-pink::before {
-    background: linear-gradient(115deg, #f0abfc 0%, #653FC5 42%, #fb7185 100%);
-  }
-
-  .agent-btn-neon-pink:hover {
+  &:hover {
     box-shadow:
       0 0 16px rgba(240, 171, 252, 0.55),
       0 0 36px rgba(101, 63, 197, 0.42),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
+}
 
-  .agent-stat {
-    @apply agent-card p-5;
-  }
+@utility agent-stat {
+  @apply agent-card p-5;
+}
 
+@utility agent-metric-value {
   /* Reserved metric slots — same height/units while values load */
-  .agent-metric-value {
-    @apply mt-2 flex items-baseline gap-1.5 text-2xl font-semibold tracking-tight text-white tabular-nums leading-8 min-h-8;
-  }
+  @apply mt-2 flex items-baseline gap-1.5 text-2xl font-semibold tracking-tight text-white tabular-nums leading-8 min-h-8;
+}
 
-  .agent-metric-value-md {
-    @apply mt-2 flex items-baseline gap-1.5 text-xl font-semibold tracking-tight text-white tabular-nums leading-7 min-h-7;
-  }
+@utility agent-metric-value-md {
+  @apply mt-2 flex items-baseline gap-1.5 text-xl font-semibold tracking-tight text-white tabular-nums leading-7 min-h-7;
+}
 
-  .agent-metric-unit {
-    @apply text-xs font-medium text-gray-500 tracking-normal shrink-0;
-  }
+@utility agent-metric-unit {
+  @apply text-xs font-medium text-gray-500 tracking-normal shrink-0;
+}
 
-  .agent-metric-hint {
-    @apply mt-1 text-xs leading-4 min-h-4 text-gray-500;
-  }
+@utility agent-metric-hint {
+  @apply mt-1 text-xs leading-4 min-h-4 text-gray-500;
+}
 
-  .agent-metric-pulse {
-    display: inline-block;
-    height: 0.7em;
-    border-radius: 0.25rem;
-    background: rgba(255, 255, 255, 0.08);
-    flex-shrink: 0;
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
+@utility agent-metric-pulse {
+  display: inline-block;
+  height: 0.7em;
+  border-radius: 0.25rem;
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
 
-  .agent-input {
-    @apply w-full rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm text-gray-100 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-agent-purple/40 focus:border-agent-purple/40;
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.03) inset;
-  }
+@utility agent-input {
+  @apply w-full rounded-xl border border-white/10 bg-white/3 px-3.5 py-2.5 text-sm text-gray-100 placeholder:text-gray-600 focus:outline-hidden focus:ring-2 focus:ring-agent-purple/40 focus:border-agent-purple/40;
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.03) inset;
+}
 
-  .agent-tab-track {
-    @apply inline-flex items-center rounded-full border border-white/10 bg-white/[0.03] p-1;
-    box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.04) inset;
-  }
+@utility agent-tab-track {
+  @apply inline-flex items-center rounded-full border border-white/10 bg-white/3 p-1;
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.04) inset;
+}
 
-  .agent-tab {
-    @apply relative px-3.5 py-1.5 text-[13px] font-medium rounded-full transition-all duration-200 text-gray-400 hover:text-gray-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-agent-purple/40;
-  }
+@utility agent-tab {
+  @apply relative px-3.5 py-1.5 text-[13px] font-medium rounded-full transition-all duration-200 text-gray-400 hover:text-gray-200 cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-agent-purple/40;
+}
 
-  .agent-tab-active {
-    @apply bg-agent-purple text-white shadow-sm hover:text-white;
-  }
+@utility agent-tab-active {
+  @apply bg-agent-purple text-white shadow-xs hover:text-white;
+}
 
-  .agent-glow {
-    @apply pointer-events-none absolute -top-20 left-1/2 h-40 w-64 -translate-x-1/2 rounded-full bg-agent-purple/15 blur-3xl;
-  }
+@utility agent-glow {
+  @apply pointer-events-none absolute -top-20 left-1/2 h-40 w-64 -translate-x-1/2 rounded-full bg-agent-purple/15 blur-3xl;
+}
 
+@utility agent-orb {
   /* floating ambient orb — muted; prefer not using in shell */
-  .agent-orb {
-    pointer-events: none;
-    position: absolute;
-    border-radius: 9999px;
-    filter: blur(60px);
-    opacity: 0.28;
-    animation: none;
-  }
+  pointer-events: none;
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(60px);
+  opacity: 0.28;
+  animation: none;
 
-  .agent-orb-a {
-    width: 16rem;
-    height: 16rem;
-    top: -6rem;
-    right: -4rem;
-    background: rgba(101, 63, 197, 0.12);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none !important;
+    transition: none !important;
+    filter: none !important;
   }
+}
 
-  .agent-orb-b {
-    width: 12rem;
-    height: 12rem;
-    bottom: 10%;
-    left: -3rem;
-    background: rgba(125, 211, 252, 0.04);
+@utility agent-orb-a {
+  width: 16rem;
+  height: 16rem;
+  top: -6rem;
+  right: -4rem;
+  background: rgba(101, 63, 197, 0.12);
+}
+
+@utility agent-orb-b {
+  width: 12rem;
+  height: 12rem;
+  bottom: 10%;
+  left: -3rem;
+  background: rgba(125, 211, 252, 0.04);
+}
+
+@utility agent-sheen {
+  display: none;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none !important;
+    transition: none !important;
+    filter: none !important;
   }
+}
 
-  .agent-sheen {
-    display: none;
-  }
-
+@utility agent-header-line {
   /* header accent hairline — slow traveling gleam */
-  .agent-header-line {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 1px;
-    overflow: hidden;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(101, 63, 197, 0.35) 30%,
-      rgba(255, 255, 255, 0.18) 50%,
-      rgba(101, 63, 197, 0.3) 70%,
-      transparent
-    );
-    opacity: 0.9;
-  }
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(101, 63, 197, 0.35) 30%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(101, 63, 197, 0.3) 70%,
+    transparent
+  );
+  opacity: 0.9;
 
-  .agent-header-line::after {
-    content: "";
+  &::after {
+    content: '';
     position: absolute;
     inset: 0;
     background: linear-gradient(
@@ -389,26 +513,27 @@
     animation: agentHeaderGleam 7s ease-in-out infinite;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      animation: none !important;
+      transition: none !important;
+      filter: none !important;
+    }
+  }
+}
+
+@utility brand-mark {
   /* Brand mark: quiet entrance + soft live glow */
-  .brand-mark {
-    position: relative;
-  }
+  position: relative;
 
-  .brand-mark-text {
-    display: inline-block;
-    animation: brandMarkIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
-    transition: letter-spacing 0.35s ease, text-shadow 0.35s ease, color 0.2s ease;
-    text-shadow: 0 0 0 transparent;
-  }
-
-  .brand-mark:hover .brand-mark-text {
+  &:hover .brand-mark-text {
     letter-spacing: 0.04em;
     color: #fff;
     text-shadow: 0 0 24px rgba(101, 63, 197, 0.45);
   }
 
-  .brand-mark::after {
-    content: "";
+  &::after {
+    content: '';
     position: absolute;
     left: 0;
     right: 12%;
@@ -421,25 +546,71 @@
     transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  .brand-mark:hover::after {
+  &:hover::after {
     transform: scaleX(1);
   }
+}
 
-  /* Active nav rail: grow in + soft pulse */
-  .nav-active-rail {
-    animation: navRailIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
-    box-shadow: 0 0 12px rgba(101, 63, 197, 0.55);
+@utility brand-mark-text {
+  display: inline-block;
+  animation: brandMarkIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition:
+    letter-spacing 0.35s ease,
+    text-shadow 0.35s ease,
+    color 0.2s ease;
+  text-shadow: 0 0 0 transparent;
+
+  .brand-mark:hover & {
+    letter-spacing: 0.04em;
+    color: #fff;
+    text-shadow: 0 0 24px rgba(101, 63, 197, 0.45);
   }
 
-  .nav-active-rail::after {
-    content: "";
+  @media (prefers-reduced-motion: reduce) {
+    animation: none !important;
+    transition: none !important;
+    filter: none !important;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility nav-active-rail {
+  /* Grow from the row center. Do not animate translateY — the rail is
+     pinned with top/bottom so it stays aligned with the item. */
+  transform-origin: center;
+  animation: navRailIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  box-shadow:
+    0 0 10px rgba(101, 63, 197, 0.65),
+    0 0 0 1px rgba(196, 181, 253, 0.25);
+
+  &::after {
+    content: '';
     position: absolute;
-    inset: -2px -1px;
+    inset: -3px -4px;
     border-radius: inherit;
-    background: rgba(101, 63, 197, 0.5);
-    filter: blur(4px);
-    opacity: 0.55;
+    background: rgba(101, 63, 197, 0.45);
+    filter: blur(6px);
+    opacity: 0.7;
     animation: navRailGlow 2.8s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none !important;
+    &::after {
+      animation: none !important;
+    }
+  }
+}
+
+@layer base {
+  html {
+    scrollbar-gutter: stable;
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-agent-bg text-gray-200 font-sans antialiased;
   }
 }
 
@@ -460,11 +631,11 @@
   @keyframes navRailIn {
     from {
       opacity: 0;
-      transform: translateY(-50%) scaleY(0.4);
+      transform: scaleY(0.45);
     }
     to {
       opacity: 1;
-      transform: translateY(-50%) scaleY(1);
+      transform: scaleY(1);
     }
   }
 
@@ -496,24 +667,5 @@
     40% { opacity: 0.7; }
     55% { background-position: -20% 0; opacity: 0.35; }
     70% { opacity: 0; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .agent-orb,
-    .agent-sheen,
-    .agent-card,
-    .brand-mark-text,
-    .nav-active-rail,
-    .nav-active-rail::after,
-    .agent-header-line::after {
-      animation: none !important;
-      transition: none !important;
-      filter: none !important;
-    }
-
-    .brand-mark-text {
-      opacity: 1;
-      transform: none;
-    }
   }
 }

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Principal } from "@dfinity/principal";
 
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { fly, scale } from "svelte/transition";
   import { elasticOut } from "svelte/easing";
   import { store } from "../../stores/store";
@@ -164,7 +164,7 @@
       case "challenge":
         return "before:bg-blue-400/70";
       case "response":
-        return "before:bg-[#653FC5]";
+        return "before:bg-agent-purple";
       case "score":
         return "before:bg-orange-400/70";
       case "winner":
@@ -193,7 +193,7 @@
     if (type === "winner") {
       return getWinnerStyling(placement || "");
     }
-    return "bg-white/[0.03] border border-white/10 rounded-xl p-4";
+    return "bg-white/3 border border-white/10 rounded-xl p-4";
   }
 
   function getPlacementMeta(placement: string): {
@@ -574,10 +574,10 @@
         cleanupOldCachedItems();
       }
     }, 10000); // Update every 10 seconds
+  });
 
-    return () => {
-      if (interval) clearInterval(interval);
-    };
+  onDestroy(() => {
+    if (interval) clearInterval(interval);
   });
 </script>
 
@@ -588,21 +588,21 @@
            {updating && $store.isAuthed ? 'opacity-100' : 'opacity-0 pointer-events-none'}"
     aria-hidden={!(updating && $store.isAuthed)}
   >
-    <div class="animate-spin h-5 w-5 border-2 border-[#653FC5] rounded-full border-t-transparent"></div>
+    <div class="animate-spin h-5 w-5 border-2 border-agent-purple rounded-full border-t-transparent"></div>
   </div>
 
   {#if (!$store.isAuthed) || (feedItems.length === 0 && !loading && !updating)}
     <div class="absolute inset-0 z-10 flex flex-col justify-center items-center px-5 py-8 overflow-y-auto">
-      <div class="relative w-full max-w-md overflow-hidden rounded-xl border border-white/[0.06] bg-agent-surface px-6 py-8 text-left">
+      <div class="relative w-full max-w-md overflow-hidden rounded-xl border border-white/6 bg-agent-surface px-6 py-8 text-left">
         <div class="relative">
-          <p class="mb-2 text-[10px] font-medium uppercase tracking-[0.2em] text-[#653FC5]/80">Protocol stream</p>
+          <p class="mb-2 text-[10px] font-medium uppercase tracking-[0.2em] text-agent-purple/80">Protocol stream</p>
           <h3 class="text-base font-medium tracking-tight text-gray-300">
             Agent activity
           </h3>
           <p class="mt-2 text-sm font-normal leading-relaxed text-gray-500">
             Live signals from mAIners operating on the network:
           </p>
-          <ul class="mt-4 space-y-2 text-sm font-normal text-gray-500 min-h-[7.5rem]">
+          <ul class="mt-4 space-y-2 text-sm font-normal text-gray-500 min-h-30">
             <li class="flex gap-2"><span class="text-gray-600">–</span> Challenges in the protocol</li>
             {#if $store.isAuthed}
             <li class="flex gap-2"><span class="text-gray-600">–</span> Responses from your mAIners</li>
@@ -648,7 +648,7 @@
           <li
             role="article"
             class="relative px-4
-                   before:absolute before:z-[1] before:left-0 before:top-5 before:h-2.5 before:w-2.5 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-[#0c0b12]"
+                   before:absolute before:z-1 before:left-0 before:top-5 before:h-2.5 before:w-2.5 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-agent-surface"
             in:fly="{{ y: 12, duration: 280 }}"
           >
             <div class="flex flex-col flex-1 gap-2 {getItemBackground(item.type, item.content.placement)}">
@@ -661,7 +661,7 @@
                 >
                   <div class="prize-glow" aria-hidden="true"></div>
                   <div class="relative flex items-start gap-3">
-                    <div class="relative flex-shrink-0">
+                    <div class="relative shrink-0">
                       <div class="w-12 h-12 rounded-xl overflow-hidden border border-white/10 bg-agent-elevated [&>svg]:w-full [&>svg]:h-full [&>svg]:block prize-avatar">
                         {@html identity.icon}
                       </div>
@@ -678,7 +678,7 @@
                             {item.mainerName}
                           </h4>
                         </div>
-                        <div class="flex items-center gap-2 flex-shrink-0">
+                        <div class="flex items-center gap-2 shrink-0">
                           <div class="text-2xs font-medium text-gray-500 text-right">
                             <div>{formatTimestamp(item.timestamp).date}</div>
                             <div class="text-gray-600">{formatTimestamp(item.timestamp).time}</div>
@@ -688,7 +688,7 @@
                       </div>
 
                       <div class="mt-3 flex flex-wrap items-center gap-2">
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-white/[0.05] px-2.5 py-1 text-[11px] font-medium {place.tone} prize-place-chip">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-medium {place.tone} prize-place-chip">
                           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                             <path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.9 7.2 17l.9-5.4L4.2 7.7l5.4-.8L12 2z"/>
                           </svg>

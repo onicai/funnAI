@@ -2,8 +2,8 @@
   import { onMount } from 'svelte';
   import Modal from "../CommonModal.svelte";
   import TokenImages from "../TokenImages.svelte";
-  import { ArrowUp, Check } from 'lucide-svelte';
-  import { MEMO_PAYMENT_PROTOCOL, store, theme } from "../../stores/store";
+  import { ArrowUp, Check } from '@lucide/svelte';
+  import { MEMO_PAYMENT_PROTOCOL, store } from "../../stores/store";
   import { IcrcService } from "../../helpers/IcrcService";
   import BigNumber from "bignumber.js";
   import { formatBalance } from "../../helpers/utils/numberFormatUtils";
@@ -234,8 +234,8 @@
       </div>
     {:else}
       <!-- Token Info Banner -->
-      <div class="flex items-center gap-3 p-4 rounded-xl bg-white/[0.03] border border-white/10">
-        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-agent-purple/15 border border-agent-purple/20 flex-shrink-0 overflow-hidden">
+      <div class="flex items-center gap-3 p-4 rounded-xl bg-white/3 border border-white/10">
+        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-agent-purple/15 border border-agent-purple/20 shrink-0 overflow-hidden">
           <div class="sm:hidden">
             <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
           </div>
@@ -325,7 +325,7 @@
           <button
             type="button"
             on:click={handleSubmit}
-            class="w-full agent-btn-primary !h-auto min-h-9 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed {!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation) ? 'bg-white/10 hover:bg-white/10 text-gray-500 shadow-none' : ''}"
+            class="w-full agent-btn-primary h-auto! min-h-9 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed {!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation) ? 'bg-white/10 hover:bg-white/10 text-gray-500 shadow-none' : ''}"
             disabled={!hasEnoughBalance || isValidating || !isProtocolActive || stopMainerCreation || (isWhitelistPhaseActive && isPauseWhitelistMainerCreation)}
           >
             {#if isValidating}

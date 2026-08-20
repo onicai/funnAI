@@ -22,7 +22,7 @@
   import { mainerHealthService, mainerHealthStatuses } from "../../helpers/mainerHealthService";
   import { MarketplaceService } from "../../helpers/marketplaceService";
   import { MARKETPLACE_ENABLED } from "../../helpers/config/featureFlags";
-  import { ArrowUp } from 'lucide-svelte';
+  import { ArrowUp } from '@lucide/svelte';
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -1204,7 +1204,7 @@
   <div class="mt-4 relative overflow-hidden agent-card border-red-500/40 bg-red-950/40 animate-pulse">
     <div class="relative p-3 sm:p-4">
       <div class="flex items-start space-x-3">
-        <div class="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-red-500/20 rounded-xl flex items-center justify-center border border-red-500/30">
+        <div class="shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-red-500/20 rounded-xl flex items-center justify-center border border-red-500/30">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 text-red-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
           </svg>
@@ -1238,7 +1238,7 @@
       {#each mainerCreationProgress as progress}
         <div class="flex mb-1 items-start" class:text-green-300={progress.complete}>
           <span class="text-gray-500 mr-1 sm:mr-2 text-xs hidden sm:inline">[{progress.timestamp}]</span>
-          <span class="flex-1 text-xs sm:text-sm break-words">{progress.message}</span>
+          <span class="flex-1 text-xs sm:text-sm wrap-break-word">{progress.message}</span>
           {#if progress.complete}
             <span class="text-green-500 ml-1">✓</span>
           {/if}
@@ -1278,7 +1278,7 @@
 {/if}
 
 {#if isAuthenticated && mainersLoadStatus === 'error'}
-  <div class="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/[0.08] px-4 py-3 sm:px-5 sm:py-4">
+  <div class="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/8 px-4 py-3 sm:px-5 sm:py-4">
     <p class="text-sm text-amber-200">
       {mainersLoadError || "Couldn't load your mAIners."}
       {#if agents.length > 0}
@@ -1289,7 +1289,7 @@
     </p>
     <button
       type="button"
-      class="mt-2 agent-btn-ghost !h-8 !px-3 !text-xs"
+      class="mt-2 agent-btn-ghost h-8! px-3! text-xs!"
       on:click={() => store.loadUserMainerCanisters()}
     >
       Retry
@@ -1317,7 +1317,7 @@
     <div class="agent-card" class:opacity-75={agent.uiStatus === 'inactive'}>
       <button 
         on:click={() => toggleAccordion(agent.id)} 
-        class="w-full relative overflow-hidden bg-agent-surface hover:bg-agent-elevated border-b border-white/[0.06] transition-all duration-300 group"
+        class="w-full relative overflow-hidden bg-agent-surface hover:bg-agent-elevated border-b border-white/6 transition-all duration-300 group"
       >
         <div class="absolute left-0 top-0 bottom-0 w-[3px] bg-agent-purple/60 group-hover:bg-agent-purple transition-colors"></div>
         
@@ -1325,7 +1325,7 @@
           <!-- Left section: Avatar and Info -->
           <div class="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
             <!-- Unique avatar with visual identity and name -->
-            <div class="relative flex-shrink-0 flex flex-col items-center">
+            <div class="relative shrink-0 flex flex-col items-center">
               <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden border border-white/10 bg-agent-elevated group-hover:border-agent-purple/40 transition-all duration-300 [&>svg]:w-full [&>svg]:h-full [&>svg]:block">
                 {@html identity.icon}
               </div>
@@ -1357,11 +1357,11 @@
                 <!-- Daily Burn Rate badge (only show if active) -->
                 {#if agent.uiStatus === 'active' && agent.cyclesBurnRateSetting}
                   {@const burnRateColors = {
-                    'Low': 'bg-white/[0.04] text-gray-300 border-white/10',
+                    'Low': 'bg-white/4 text-gray-300 border-white/10',
                     'Medium': 'bg-agent-purple/15 text-agent-purple border-agent-purple/30', 
                     'High': 'bg-red-500/15 text-red-300 border-red-500/30'
                   }}
-                  <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${burnRateColors[agent.cyclesBurnRateSetting] || 'bg-white/[0.04] text-gray-400 border-white/10'}`}>
+                  <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${burnRateColors[agent.cyclesBurnRateSetting] || 'bg-white/4 text-gray-400 border-white/10'}`}>
                     {agent.cyclesBurnRateSetting}
                   </span>
                 {/if}
@@ -1422,13 +1422,13 @@
           </div>
           
           <!-- Right section: Expand indicator -->
-          <div class="flex-shrink-0 ml-4">
-            <div class="mb-2 px-2 py-0.5 bg-white/[0.04] rounded-md border border-white/10 max-w-[80px] sm:max-w-[100px]">
+          <div class="shrink-0 ml-4">
+            <div class="mb-2 px-2 py-0.5 bg-white/4 rounded-md border border-white/10 max-w-[80px] sm:max-w-[100px]">
               <span class="text-xs font-semibold text-gray-200 truncate block text-center">
                 {agent.name.replace('mAIner ', '')}
               </span>
             </div>
-            <div class="w-full h-10 bg-white/[0.04] rounded-lg flex items-center justify-center border border-white/10 group-hover:border-agent-purple/40 group-hover:bg-agent-purple/10 transition-all duration-300">
+            <div class="w-full h-10 bg-white/4 rounded-lg flex items-center justify-center border border-white/10 group-hover:border-agent-purple/40 group-hover:bg-agent-purple/10 transition-all duration-300">
               <span id="icon-{sanitizedId}" class="text-gray-400 group-hover:text-agent-purple transition-transform duration-300" style="transform: rotate(180deg)">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 sm:w-5 sm:h-5">
                   <path fill-rule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
@@ -1439,8 +1439,8 @@
         </div>
       </button>
       <div id="content-{sanitizedId}" class="accordion-content">
-        <div class="text-xs sm:text-sm text-gray-300 p-3 space-y-2 border-t border-white/[0.06]">
-            <div class="rounded-xl bg-white/[0.03] p-4">
+        <div class="text-xs sm:text-sm text-gray-300 p-3 space-y-2 border-t border-white/6">
+            <div class="rounded-xl bg-white/3 p-4">
               <div class="flex items-center justify-between gap-2 mb-3">
                 <div class="flex items-center gap-2 min-w-0">
                   <h2 class="text-sm font-semibold text-white">Cycles</h2>
@@ -1484,7 +1484,7 @@
 
                 <button
                   type="button"
-                  class="inline-flex items-center justify-center w-8 h-8 text-gray-400 bg-white/[0.04] hover:bg-agent-purple/15 hover:text-agent-purple rounded-lg border border-white/10 hover:border-agent-purple/30 transition-colors"
+                  class="inline-flex items-center justify-center w-8 h-8 text-gray-400 bg-white/4 hover:bg-agent-purple/15 hover:text-agent-purple rounded-lg border border-white/10 hover:border-agent-purple/30 transition-colors"
                   class:opacity-50={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
                   class:cursor-not-allowed={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
                   disabled={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
@@ -1504,7 +1504,7 @@
               {#if $mainerHealthStatuses.get(agent.id)?.isHealthy === true}
                 <button
                   type="button"
-                  class="mt-4 w-full agent-btn-neon !h-12 !rounded-xl text-sm font-semibold"
+                  class="mt-4 w-full agent-btn-neon h-12! rounded-xl! text-sm font-semibold"
                   class:opacity-50={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
                   class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
                   disabled={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
@@ -1610,7 +1610,7 @@
     }
     
     /* Better text wrapping on small screens */
-    .break-words {
+    .wrap-break-word {
       word-break: break-word;
       overflow-wrap: break-word;
     }

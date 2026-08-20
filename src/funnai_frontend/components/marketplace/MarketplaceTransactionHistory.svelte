@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { store } from "../../stores/store";
   import { MarketplaceService, type MarketplaceTransaction } from "../../helpers/marketplaceService";
-  import { History, ArrowDownLeft, ArrowUpRight, Clock, ExternalLink } from "lucide-svelte";
+  import { History, ArrowDownLeft, ArrowUpRight, Clock, ExternalLink } from "@lucide/svelte";
 
   // State
   let purchases: MarketplaceTransaction[] = [];
@@ -79,7 +79,7 @@
 
 <div class="agent-card">
   <!-- Header -->
-  <div class="border-b border-white/[0.08] px-6 py-4">
+  <div class="border-b border-white/8 px-6 py-4">
     <div class="flex items-center space-x-3">
       <div class="w-10 h-10 rounded-xl bg-agent-purple/15 border border-agent-purple/20 flex items-center justify-center">
         <History class="w-5 h-5 text-agent-purple" />
@@ -93,7 +93,7 @@
   </div>
 
   <!-- Tab Navigation -->
-  <div class="border-b border-white/[0.08] px-6 py-3">
+  <div class="border-b border-white/8 px-6 py-3">
     <div class="agent-tab-track">
       <button
         on:click={() => activeTab = 'all'}
@@ -163,7 +163,7 @@
       <!-- Transaction List -->
       <div class="space-y-3">
         {#each displayedTransactions as transaction}
-          <div class="flex items-center justify-between p-4 bg-white/[0.03] rounded-xl border border-white/10 hover:border-agent-purple/40 transition-colors">
+          <div class="flex items-center justify-between p-4 bg-white/3 rounded-xl border border-white/10 hover:border-agent-purple/40 transition-colors">
             <div class="flex items-center space-x-4">
               <!-- Transaction Type Icon -->
               <div class="w-10 h-10 rounded-xl flex items-center justify-center border
@@ -215,9 +215,9 @@
 
       <!-- Summary -->
       {#if allTransactions.length > 0}
-        <div class="mt-6 pt-6 border-t border-white/[0.08]">
+        <div class="mt-6 pt-6 border-t border-white/8">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="text-center p-3 bg-white/[0.03] border border-white/10 rounded-xl">
+            <div class="text-center p-3 bg-white/3 border border-white/10 rounded-xl">
               <p class="text-2xl font-semibold text-white">{allTransactions.length}</p>
               <p class="text-xs text-gray-500">Total Transactions</p>
             </div>

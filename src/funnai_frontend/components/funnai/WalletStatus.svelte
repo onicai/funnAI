@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { RefreshCw, Copy, Check, LogOut, Wallet } from 'lucide-svelte';
+  import { RefreshCw, Copy, Check, LogOut, Wallet } from '@lucide/svelte';
   import LoginModal from '../login/LoginModal.svelte';
   import { store } from "../../stores/store";
   import { WalletDataService } from "../../helpers/WalletDataService";
@@ -67,13 +67,13 @@
   $: principalText = $store.principal ? $store.principal.toString() : '';
 </script>
 
-<div class="agent-card !bg-agent-surface overflow-hidden">
-  <div class="relative z-[1]">
+<div class="agent-card bg-agent-surface! overflow-hidden">
+  <div class="relative z-1">
     {#if $store.isAuthed && principalText}
       <!-- Identity header -->
       <div class="flex items-start sm:items-center gap-3 sm:gap-4 p-5 sm:p-6 pb-4 sm:pb-5">
-        <div class="relative flex-shrink-0">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#653FC5]/35 bg-[#653FC5]/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+        <div class="relative shrink-0">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-agent-purple/35 bg-agent-purple/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
             <Wallet class="h-5 w-5 text-[#c4b5fd]" />
           </div>
           <span class="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-agent-surface bg-emerald-400"></span>
@@ -91,12 +91,12 @@
           <p class="mt-0.5 text-sm text-gray-500">Your principal on the Internet Computer</p>
         </div>
 
-        <div class="hidden sm:flex items-center gap-1.5 flex-shrink-0">
+        <div class="hidden sm:flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             on:click={getWalletBalances}
             disabled={isRefreshingBalances}
-            class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-gray-300 transition-all hover:border-[#653FC5]/40 hover:bg-[#653FC5]/10 hover:text-white disabled:opacity-40"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/4 text-gray-300 transition-all hover:border-agent-purple/40 hover:bg-agent-purple/10 hover:text-white disabled:opacity-40"
             title={isRefreshingBalances ? 'Refreshing…' : refreshFeedback === 'updated' ? 'Balances updated' : refreshFeedback === 'unchanged' ? 'Balances unchanged' : refreshFeedback === 'failed' ? 'Refresh failed' : 'Refresh balances'}
           >
             <RefreshCw class="h-3.5 w-3.5 {isRefreshingBalances ? 'animate-spin' : ''}" />
@@ -104,7 +104,7 @@
           <button
             type="button"
             on:click={disconnect}
-            class="inline-flex h-9 items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/[0.08] px-3 text-[13px] font-medium text-red-300 transition-all hover:border-red-400/35 hover:bg-red-500/15 hover:text-red-200"
+            class="inline-flex h-9 items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/8 px-3 text-[13px] font-medium text-red-300 transition-all hover:border-red-400/35 hover:bg-red-500/15 hover:text-red-200"
             title="Disconnect"
           >
             <LogOut class="h-3.5 w-3.5" />
@@ -115,7 +115,7 @@
 
       <!-- Principal strip -->
       <div class="px-5 sm:px-6 pb-5 sm:pb-6">
-        <div class="rounded-xl border border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-transparent p-3.5 sm:p-4">
+        <div class="rounded-xl border border-white/8 bg-linear-to-b from-white/4 to-transparent p-3.5 sm:p-4">
           <div class="flex items-center justify-between gap-3 mb-2">
             <span class="text-[11px] font-medium uppercase tracking-[0.16em] text-gray-500">Principal ID</span>
             <div class="flex items-center gap-2">
@@ -129,7 +129,7 @@
               <button
                 type="button"
                 on:click={copyPrincipalId}
-                class="inline-flex h-7 items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 text-[11px] font-medium text-gray-300 transition-all hover:border-[#653FC5]/40 hover:bg-[#653FC5]/10 hover:text-white"
+                class="inline-flex h-7 items-center gap-1.5 rounded-full border border-white/10 bg-white/4 px-2.5 text-[11px] font-medium text-gray-300 transition-all hover:border-agent-purple/40 hover:bg-agent-purple/10 hover:text-white"
                 title={copySuccess ? 'Copied!' : 'Copy principal'}
               >
                 {#if copySuccess}
@@ -169,7 +169,7 @@
             type="button"
             on:click={getWalletBalances}
             disabled={isRefreshingBalances}
-            class="agent-btn-ghost flex-1 !h-9 disabled:opacity-40"
+            class="agent-btn-ghost flex-1 h-9! disabled:opacity-40"
           >
             <RefreshCw class="h-3.5 w-3.5 {isRefreshingBalances ? 'animate-spin' : ''}" />
             {#if isRefreshingBalances}
@@ -187,7 +187,7 @@
           <button
             type="button"
             on:click={disconnect}
-            class="inline-flex flex-1 h-9 items-center justify-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/[0.08] text-[13px] font-medium text-red-300"
+            class="inline-flex flex-1 h-9 items-center justify-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/8 text-[13px] font-medium text-red-300"
           >
             <LogOut class="h-3.5 w-3.5" />
             Exit
@@ -198,13 +198,13 @@
       <!-- Disconnected state -->
       <div class="flex flex-col sm:flex-row sm:items-center gap-5 p-5 sm:p-6">
         <div class="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
-          <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/4">
             <Wallet class="h-5 w-5 text-gray-500" />
           </div>
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
               <p class="agent-eyebrow">Account</p>
-              <span class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-[11px] font-medium text-gray-500">
+              <span class="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/3 px-2 py-0.5 text-[11px] font-medium text-gray-500">
                 <span class="h-1 w-1 rounded-full bg-gray-500"></span>
                 Offline
               </span>
@@ -214,7 +214,7 @@
           </div>
         </div>
 
-        <button type="button" on:click={connect} class="agent-btn-primary w-full sm:w-auto flex-shrink-0">
+        <button type="button" on:click={connect} class="agent-btn-primary w-full sm:w-auto shrink-0">
           <Wallet class="h-4 w-4" />
           Connect wallet
         </button>

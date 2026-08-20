@@ -12,7 +12,7 @@
   export let zIndex: number = 10;
   export let roundedBorders: boolean = true;
   export let roundness: 
-    | "rounded-none" | "rounded-sm" | "rounded" | "rounded-md"
+    | "rounded-none" | "rounded-xs" | "rounded-sm" | "rounded-md"
     | "rounded-lg" | "rounded-xl" | "rounded-2xl" | "rounded-3xl"
     | "rounded-full" | null = null;
   export let unpadded: boolean = false;
@@ -47,8 +47,6 @@
   <div
     class="panel {unpadded ? '' : 'p-4'} {variant} {type} {className} {roundnessClass} {animated ? 'animated' : ''} {isSwapPanel ? 'swap-panel' : ''} {isSidebar ? 'sidebar-panel' : ''} {interactiveClass}"
     style="width: {width}; height: {height}; z-index: {zIndex};"
-    on:click
-    on:keydown
     transition:slide={params}
     >
     <slot>{content}</slot>
@@ -58,8 +56,6 @@
     class="panel {unpadded ? '' : 'p-4'} {variant} {type} {className} {roundnessClass} {animated ? 'animated' : ''} {isSwapPanel ? 'swap-panel' : ''} {isSidebar ? 'sidebar-panel' : ''} {interactiveClass}"
     style="width: {width}; height: {height}; z-index: {zIndex};"
     transition:fade={params}
-    on:click
-    on:keydown
   >
     <slot>{content}</slot>
   </div>
@@ -67,8 +63,6 @@
   <div 
     class="panel {unpadded ? '' : 'p-4'} {variant} {type} {className} {roundnessClass} {animated ? 'animated' : ''} {isSwapPanel ? 'swap-panel' : ''} {isSidebar ? 'sidebar-panel' : ''} {interactiveClass}"
     style="width: {width}; height: {height}; z-index: {zIndex};"
-    on:click
-    on:keydown
   >
     <slot>{content}</slot>
   </div>

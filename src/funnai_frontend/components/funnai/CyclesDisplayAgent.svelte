@@ -35,7 +35,7 @@
   $: formattedCycles = cyclesCount?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "'");
 </script>
 
-<div class="rounded-xl bg-white/[0.03] px-3 py-2.5">
+<div class="rounded-xl bg-white/3 px-3 py-2.5">
   <div class="flex items-center justify-between gap-3">
     <span class="text-sm font-semibold text-white">{label}</span>
     <div class="flex items-baseline gap-1.5 min-w-0">

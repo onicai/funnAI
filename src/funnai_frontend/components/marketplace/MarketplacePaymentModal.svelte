@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import Modal from "../CommonModal.svelte";
-  import { ShoppingBag, Info, AlertCircle, CheckCircle, Loader2 } from 'lucide-svelte';
+  import { ShoppingBag, Info, AlertCircle, CheckCircle, Loader2 } from '@lucide/svelte';
   import { store, canisterIds } from "../../stores/store";
   import { IcrcService } from "../../helpers/IcrcService";
   import BigNumber from "bignumber.js";
@@ -363,11 +363,11 @@
 
       <!-- Progress Steps (shown during purchase process) -->
       {#if currentStep !== 'confirm'}
-        <div class="bg-white/[0.03] rounded-xl p-4 border border-white/10">
+        <div class="bg-white/3 rounded-xl p-4 border border-white/10">
           <div class="space-y-3">
             <!-- Step 1: Reserving -->
             <div class="flex items-center gap-3">
-              <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0
+              <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0
                 {reservingStatus === 'complete' ? 'bg-emerald-500' : 
                  reservingStatus === 'active' ? 'bg-agent-purple' : 
                  reservingStatus === 'error' ? 'bg-red-500' : 'bg-white/10'}">
@@ -386,7 +386,7 @@
             
             <!-- Step 2: Approving -->
             <div class="flex items-center gap-3">
-              <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0
+              <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0
                 {approvingStatus === 'complete' ? 'bg-emerald-500' : 
                  approvingStatus === 'active' ? 'bg-agent-purple' : 
                  approvingStatus === 'error' ? 'bg-red-500' : 'bg-white/10'}">
@@ -405,7 +405,7 @@
             
             <!-- Step 3: Completing -->
             <div class="flex items-center gap-3">
-              <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0
+              <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0
                 {completingStatus === 'complete' ? 'bg-emerald-500' : 
                  completingStatus === 'active' ? 'bg-agent-purple' : 
                  completingStatus === 'error' ? 'bg-red-500' : 'bg-white/10'}">
@@ -425,7 +425,7 @@
 
           <!-- Warning: Do not refresh -->
           <div class="mt-3 flex items-center gap-2 p-2 bg-amber-500/5 rounded-xl border border-amber-500/20">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <p class="text-xs font-medium text-amber-300">
@@ -436,9 +436,9 @@
       {/if}
 
       <!-- mAIner Info -->
-      <div class="bg-white/[0.03] rounded-xl p-4 border border-white/10">
+      <div class="bg-white/3 rounded-xl p-4 border border-white/10">
         <div class="flex items-start space-x-3">
-          <div class="w-10 h-10 bg-agent-purple/15 border border-agent-purple/20 rounded-xl flex items-center justify-center flex-shrink-0">
+          <div class="w-10 h-10 bg-agent-purple/15 border border-agent-purple/20 rounded-xl flex items-center justify-center shrink-0">
             <ShoppingBag class="w-5 h-5 text-agent-purple" />
           </div>
           <div class="flex-1 min-w-0">
@@ -456,7 +456,7 @@
       {#if listing.seller || reservedListingInfo?.seller}
         <div>
           <span class="block text-xs text-gray-400 mb-1.5">Seller</span>
-          <div class="p-2 bg-white/[0.03] rounded-xl border border-white/10">
+          <div class="p-2 bg-white/3 rounded-xl border border-white/10">
             <p class="text-xs font-mono text-gray-300 break-all">{reservedListingInfo?.seller || listing.seller}</p>
           </div>
         </div>
@@ -466,7 +466,7 @@
       {#if currentStep === 'confirm'}
         <div>
           <span class="block text-xs text-gray-400 mb-1.5">Your ICP Balance</span>
-          <div class="p-3 bg-white/[0.03] rounded-xl border border-white/10">
+          <div class="p-3 bg-white/3 rounded-xl border border-white/10">
             {#if isLoadingBalance}
               <div class="flex items-center space-x-2">
                 <div class="w-4 h-4 border-2 border-agent-purple border-t-transparent rounded-full animate-spin"></div>
@@ -487,7 +487,7 @@
       <!-- Payment Breakdown -->
       <div class="space-y-2">
         <span class="block text-xs text-gray-400">Payment Details</span>
-        <div class="bg-white/[0.03] rounded-xl p-3 space-y-2 border border-white/10">
+        <div class="bg-white/3 rounded-xl p-3 space-y-2 border border-white/10">
           <div class="flex justify-between text-sm">
             <span class="text-gray-400">mAIner Price:</span>
             <span class="font-semibold text-white">{priceICP.toFixed(8)} ICP</span>
@@ -506,7 +506,7 @@
       <!-- Info Box (only in confirm step) -->
       {#if currentStep === 'confirm'}
         <div class="flex items-start space-x-2 p-3 bg-sky-500/5 rounded-xl border border-sky-500/20">
-          <Info class="w-4 h-4 text-sky-400 flex-shrink-0 mt-0.5" />
+          <Info class="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
           <div class="text-xs text-sky-300/90">
             <p class="font-medium mb-1 text-sky-200">Secure escrow purchase</p>
             <p>When you confirm, the mAIner will be reserved for you, then ICP will be approved and the protocol will securely complete the transfer.</p>
@@ -525,7 +525,7 @@
       {#if currentStep === 'confirm' && hasInsufficientBalance && !isLoadingBalance}
         <div class="p-3 bg-amber-500/5 rounded-xl border border-amber-500/20">
           <div class="flex items-start space-x-2">
-            <AlertCircle class="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+            <AlertCircle class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <div class="text-sm text-amber-300">
               <p class="font-medium">Insufficient Balance</p>
               <p class="mt-1 text-amber-400/80">You need {totalICPWithFee.toFixed(8)} ICP but only have {formatICP(balance)} ICP</p>

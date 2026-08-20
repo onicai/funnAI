@@ -8,7 +8,7 @@
   import MarketplacePaymentModal from "../components/marketplace/MarketplacePaymentModal.svelte";
   import MarketplaceTransactionHistory from "../components/marketplace/MarketplaceTransactionHistory.svelte";
   import ToastContainer from "../components/common/ToastContainer.svelte";
-  import { Store, TrendingUp, Users, Zap, ShoppingCart, Tag, History } from "lucide-svelte";
+  import { Store, TrendingUp, Users, Zap, ShoppingCart, Tag, History } from "@lucide/svelte";
   import { MarketplaceService } from "../helpers/marketplaceService";
   import type { Principal } from '@dfinity/principal';
   import { MARKETPLACE_DISABLED_MESSAGE, MARKETPLACE_ENABLED } from "../helpers/config/featureFlags";
@@ -544,7 +544,7 @@
 
           <div class="agent-stat">
             <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-center">
+              <div class="w-10 h-10 rounded-xl bg-white/4 border border-white/10 flex items-center justify-center">
                 <Zap class="w-5 h-5 text-gray-300" />
               </div>
               <div>
@@ -556,7 +556,7 @@
 
           <div class="agent-stat">
             <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-center">
+              <div class="w-10 h-10 rounded-xl bg-white/4 border border-white/10 flex items-center justify-center">
                 <TrendingUp class="w-5 h-5 text-gray-300" />
               </div>
               <div>
@@ -568,7 +568,7 @@
 
           <div class="agent-stat">
             <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-center">
+              <div class="w-10 h-10 rounded-xl bg-white/4 border border-white/10 flex items-center justify-center">
                 <Users class="w-5 h-5 text-gray-300" />
               </div>
               <div>

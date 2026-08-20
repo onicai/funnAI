@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { Doughnut } from 'svelte-chartjs';
-  import { theme } from '../../stores/store';
   import { DailyMetricsService, type DailyMetricsData } from '../../helpers/DailyMetricsService';
   import { getBaseChartOptions, generatePieColors, formatChartNumber, getChartTheme } from '../../helpers/chartUtils';
 
@@ -21,7 +20,7 @@
   let latestMetrics: DailyMetricsData | null = null;
 
   // Theme reactivity
-  $: isDark = $theme === 'dark';
+  const isDark = true;
   $: chartTheme = getChartTheme();
   $: chartOptions = {
     responsive: true,
@@ -236,7 +235,7 @@
 
   <!-- Summary stats below the chart -->
   {#if latestMetrics && !loading && !error}
-    <div class="mt-4 pt-4 border-t border-white/[0.08]">
+    <div class="mt-4 pt-4 border-t border-white/8">
       <div class="grid grid-cols-2 gap-4 text-sm">
         <div>
           <span class="text-gray-400">Total Active:</span>

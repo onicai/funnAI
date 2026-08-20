@@ -22,11 +22,11 @@
   }
 </script>
 
-<div class="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-agent-surface font-sans text-gray-200">
+<div class="relative overflow-hidden rounded-2xl border border-white/8 bg-agent-surface font-sans text-gray-200">
   <button
     type="button"
     on:click={toggleAccordion}
-    class="group w-full relative overflow-hidden transition-colors duration-200 {isOpen ? 'rounded-t-2xl' : 'rounded-2xl'} hover:bg-white/[0.02]"
+    class="group w-full relative overflow-hidden transition-colors duration-200 {isOpen ? 'rounded-t-2xl' : 'rounded-2xl'} hover:bg-white/2"
     aria-expanded={isOpen}
   >
     <div class="relative flex items-center justify-between gap-3 px-5 py-4 sm:px-6 sm:py-5">
@@ -48,9 +48,9 @@
         </p>
       </div>
 
-      <div class="flex-shrink-0">
+      <div class="shrink-0">
         <div
-          class="w-9 h-9 rounded-xl border border-white/10 bg-white/[0.04] flex items-center justify-center transition-transform duration-300"
+          class="w-9 h-9 rounded-xl border border-white/10 bg-white/4 flex items-center justify-center transition-transform duration-300"
           style="transform: rotate({isOpen ? 180 : 0}deg)"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
@@ -62,12 +62,12 @@
   </button>
 
   <div class="accordion-content" class:accordion-open={isOpen}>
-    <div class="border-t border-white/[0.06]">
+    <div class="border-t border-white/6">
       <div class="p-4 sm:p-5 space-y-4">
         <CyclesDisplay cycles={21246900000000} {showAllEvents} />
 
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <p class="text-xs font-normal text-gray-500 min-h-[1.25rem]">
+          <p class="text-xs font-normal text-gray-500 min-h-5">
             {#if !$store.isAuthed}
               {showAllEvents
                 ? 'Major events across the protocol'
@@ -79,15 +79,15 @@
             {/if}
           </p>
 
-          <div class="inline-flex items-center self-start rounded-full border border-white/10 bg-white/[0.03] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+          <div class="inline-flex items-center self-start rounded-full border border-white/10 bg-white/3 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
             <button
               type="button"
               class="relative px-3.5 py-1.5 text-[13px] font-medium rounded-full transition-all duration-200
                      {!showAllEvents
-                       ? 'bg-[#653FC5] text-white shadow-sm'
+                       ? 'bg-agent-purple text-white shadow-xs'
                        : 'text-gray-400 hover:text-gray-200'}
                      {!$store.isAuthed ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
-                     focus:outline-none focus:ring-2 focus:ring-[#653FC5]/40"
+                     focus:outline-hidden focus:ring-2 focus:ring-[#653FC5]/40"
               disabled={!$store.isAuthed}
               on:click|stopPropagation={() => {
                 if (!showAllEvents) return;
@@ -100,9 +100,9 @@
               type="button"
               class="relative px-3.5 py-1.5 text-[13px] font-medium rounded-full transition-all duration-200 cursor-pointer
                      {showAllEvents
-                       ? 'bg-[#653FC5] text-white shadow-sm'
+                       ? 'bg-agent-purple text-white shadow-xs'
                        : 'text-gray-400 hover:text-gray-200'}
-                     focus:outline-none focus:ring-2 focus:ring-[#653FC5]/40"
+                     focus:outline-hidden focus:ring-2 focus:ring-[#653FC5]/40"
               on:click|stopPropagation={() => {
                 if (showAllEvents) return;
                 handleToggleChange();
@@ -114,7 +114,7 @@
         </div>
       </div>
 
-      <div class="h-[min(28rem,55vh)] border-t border-white/[0.06] overflow-hidden">
+      <div class="h-[min(28rem,55vh)] border-t border-white/6 overflow-hidden">
         {#if isOpen}
           <MainerFeed {showAllEvents} />
         {/if}

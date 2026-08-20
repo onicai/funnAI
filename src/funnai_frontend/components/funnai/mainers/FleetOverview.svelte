@@ -26,11 +26,11 @@
   );
 </script>
 
-<div class="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-agent-surface font-sans">
+<div class="relative overflow-hidden rounded-2xl border border-white/8 bg-agent-surface font-sans">
   <button
     type="button"
     on:click={toggleAccordion}
-    class="group w-full relative overflow-hidden transition-colors duration-200 {isOpen ? 'rounded-t-2xl' : 'rounded-2xl'} hover:bg-white/[0.02]"
+    class="group w-full relative overflow-hidden transition-colors duration-200 {isOpen ? 'rounded-t-2xl' : 'rounded-2xl'} hover:bg-white/2"
     aria-expanded={isOpen}
   >
     <div class="relative flex items-center justify-between gap-3 px-5 py-4 sm:px-6 sm:py-5">
@@ -56,9 +56,9 @@
         </p>
       </div>
 
-      <div class="flex-shrink-0">
+      <div class="shrink-0">
         <div
-          class="w-9 h-9 rounded-xl border border-white/10 bg-white/[0.04] flex items-center justify-center transition-transform duration-300"
+          class="w-9 h-9 rounded-xl border border-white/10 bg-white/4 flex items-center justify-center transition-transform duration-300"
           style="transform: rotate({isOpen ? 180 : 0}deg)"
         >
           <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
@@ -70,21 +70,21 @@
   </button>
 
   <div class="accordion-content" class:accordion-open={isOpen}>
-    <div class="border-t border-white/[0.06] p-5 sm:p-6">
+    <div class="border-t border-white/6 p-5 sm:p-6">
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
-        <div class="rounded-xl bg-white/[0.03] p-3.5">
+        <div class="rounded-xl bg-white/3 p-3.5">
           <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Active</p>
           <p class="mt-2 text-2xl font-semibold tracking-tight text-white tabular-nums">{activeMainers}</p>
           <p class="mt-1 text-xs font-normal text-emerald-400/80">Mining</p>
         </div>
 
-        <div class="rounded-xl bg-white/[0.03] p-3.5">
+        <div class="rounded-xl bg-white/3 p-3.5">
           <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Inactive</p>
           <p class="mt-2 text-2xl font-semibold tracking-tight text-white tabular-nums">{inactiveMainers}</p>
           <p class="mt-1 text-xs font-normal text-gray-500">Stopped / low cycles</p>
         </div>
 
-        <div class="rounded-xl bg-white/[0.03] p-3.5 col-span-2 sm:col-span-1">
+        <div class="rounded-xl bg-white/3 p-3.5 col-span-2 sm:col-span-1">
           {#if inactiveMainers > 0}
             <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-amber-400/80">Attention</p>
             <p class="mt-2 text-2xl font-semibold tracking-tight text-amber-400 tabular-nums">{inactiveMainers}</p>
@@ -99,13 +99,13 @@
         </div>
       </div>
 
-      <div class="pt-4 border-t border-white/[0.06]">
+      <div class="pt-4 border-t border-white/6">
         <div class="flex items-center justify-between mb-3">
           <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-agent-purple">Cycle burn rate</p>
           <p class="text-[11px] font-normal text-gray-500">Distribution</p>
         </div>
 
-        <div class="flex h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06] mb-4">
+        <div class="flex h-1.5 w-full overflow-hidden rounded-full bg-white/6 mb-4">
           {#each burnRates as rate}
             {#if rate.value > 0}
               <div

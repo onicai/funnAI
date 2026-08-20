@@ -60,7 +60,7 @@
 
 <div class="space-y-6">
   <!-- Dashboard Header -->
-  <div class="agent-card !bg-agent-surface p-5 sm:p-6">
+  <div class="agent-card bg-agent-surface! p-5 sm:p-6">
     <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
       <div>
         <p class="agent-eyebrow">Metrics</p>
@@ -80,7 +80,7 @@
         {/if}
       </p>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div class="rounded-xl bg-white/[0.03] p-4">
+        <div class="rounded-xl bg-white/3 p-4">
           <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Total mAIners</p>
           <p class="agent-metric-value">
             {#if displayMetrics}
@@ -90,7 +90,7 @@
             {/if}
           </p>
         </div>
-        <div class="rounded-xl bg-white/[0.03] p-4">
+        <div class="rounded-xl bg-white/3 p-4">
           <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Active</p>
           <p class="agent-metric-value">
             {#if displayMetrics}
@@ -107,14 +107,14 @@
             {/if}
           </p>
         </div>
-        <div class="rounded-xl bg-white/[0.03] p-4">
+        <div class="rounded-xl bg-white/3 p-4">
           <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500 flex items-center gap-1">
             FunnAI Index
             <span class="group relative">
               <svg class="w-3.5 h-3.5 text-gray-500 cursor-help" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
               </svg>
-              <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-agent-elevated text-white text-xs rounded-lg border border-white/[0.08] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 w-48 text-center font-normal normal-case tracking-normal">
+              <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-agent-elevated text-white text-xs rounded-lg border border-white/8 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 w-48 text-center font-normal normal-case tracking-normal">
                 FunnAI cycles burned as % of total IC protocol daily burn
               </span>
             </span>
@@ -127,7 +127,7 @@
             {/if}
           </p>
         </div>
-        <div class="rounded-xl bg-white/[0.03] p-4">
+        <div class="rounded-xl bg-white/3 p-4">
           <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Daily burn</p>
           <p class="agent-metric-value-md">
             {#if displayMetrics}
@@ -149,13 +149,13 @@
   </div>
 
   <!-- Additional Metrics Row -->
-  <div class="agent-card !bg-agent-surface p-5 sm:p-6">
+  <div class="agent-card bg-agent-surface! p-5 sm:p-6">
     <div class="flex items-center justify-between mb-4">
       <div>
         <p class="agent-eyebrow">Inventory</p>
         <h3 class="mt-1 text-base font-semibold tracking-tight text-white">Additional metrics</h3>
       </div>
-      <span class="text-xs text-gray-500 min-h-4 min-w-[6rem] text-right">
+      <span class="text-xs text-gray-500 min-h-4 min-w-24 text-right">
         {#if displayMetrics}
           {new Date(displayMetrics.metadata.date + 'T00:00:00').toLocaleDateString()}
         {/if}
@@ -163,7 +163,7 @@
     </div>
     
     <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-      <div class="rounded-xl bg-white/[0.03] p-4">
+      <div class="rounded-xl bg-white/3 p-4">
         <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Total cycles</p>
         <p class="agent-metric-value-md">
           {#if displayMetrics}
@@ -174,7 +174,7 @@
         </p>
       </div>
       
-      <div class="rounded-xl bg-white/[0.03] p-4">
+      <div class="rounded-xl bg-white/3 p-4">
         <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Avg per mAIner</p>
         <p class="agent-metric-value-md">
           {#if displayMetrics}
@@ -185,7 +185,7 @@
         </p>
       </div>
       
-      <div class="rounded-xl bg-white/[0.03] p-4">
+      <div class="rounded-xl bg-white/3 p-4">
         <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Burn per active</p>
         <p class="agent-metric-value-md">
           {#if displayMetrics}
@@ -199,8 +199,8 @@
   </div>
 
   <!-- Historical Charts Section -->
-  <div class="agent-card !bg-agent-surface">
-    <div class="p-5 sm:p-6 border-b border-white/[0.06]">
+  <div class="agent-card bg-agent-surface!">
+    <div class="p-5 sm:p-6 border-b border-white/6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <p class="agent-eyebrow">History</p>

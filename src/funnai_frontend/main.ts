@@ -1,12 +1,15 @@
-import App from "./App.svelte"
-import "./app.css"
-import { startAppVersionPolling } from "./helpers/appVersion"
+import { mount } from "svelte";
+import App from "./App.svelte";
+import "./app.css";
+import { startAppVersionPolling } from "./helpers/appVersion";
 
-const app = new App({
-  target: document.getElementById("root"),
-})
+const target = document.getElementById("root");
+if (!target) {
+  throw new Error("Missing #root element");
+}
 
-startAppVersionPolling()
+const app = mount(App, { target });
 
-export default app
+startAppVersionPolling();
 
+export default app;

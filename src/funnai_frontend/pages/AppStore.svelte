@@ -1,7 +1,6 @@
 <script lang="ts">
 
-  import { theme } from "../stores/store";
-  import { ExternalLink, Star, MessageSquare } from "lucide-svelte";
+  import { ExternalLink, Star, MessageSquare } from "@lucide/svelte";
   import { link } from 'svelte-spa-router';
   import { onMount } from 'svelte';
   import Footer from "../components/funnai/Footer.svelte";
@@ -386,7 +385,7 @@
               All Apps
             </h2>
             {#if error}
-              <span class="border border-white/10 bg-white/[0.04] text-gray-400 text-xs px-2 py-1 rounded-full">
+              <span class="border border-white/10 bg-white/4 text-gray-400 text-xs px-2 py-1 rounded-full">
                 Cached
               </span>
             {:else}
@@ -437,7 +436,7 @@
                       <img 
                         src={app.logo} 
                         alt={app.name}
-                        class="w-8 h-8 rounded border border-white/10"
+                        class="w-8 h-8 rounded-sm border border-white/10"
                       />
                     {/if}
                     <h3 class="font-semibold text-white text-sm group-hover:text-agent-purple transition-colors duration-200">

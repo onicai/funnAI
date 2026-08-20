@@ -5,7 +5,7 @@
   $: toasts = $toastStore;
 </script>
 
-<div class="fixed top-4 right-4 z-[100000] space-y-2 pointer-events-none">
+<div class="fixed top-4 right-4 z-100000 space-y-2 pointer-events-none">
   {#each toasts as toast (toast.id)}
     <div class="pointer-events-auto">
       <Toast

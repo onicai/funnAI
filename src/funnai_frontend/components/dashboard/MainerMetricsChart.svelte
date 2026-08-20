@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { Line } from 'svelte-chartjs';
-  import { theme } from '../../stores/store';
   import { DailyMetricsService, type DailyMetricsData, type TimeFilter } from '../../helpers/DailyMetricsService';
   import { getBaseChartOptions, createDataset, formatDateLabel, formatChartNumber } from '../../helpers/chartUtils';
 
@@ -20,7 +19,7 @@
   let updateInterval: NodeJS.Timer;
 
   // Theme reactivity
-  $: isDark = $theme === 'dark';
+  const isDark = true;
   $: chartOptions = {
     ...getBaseChartOptions(isDark),
     plugins: {

@@ -12,7 +12,8 @@
       "source": [
         "dist/"
       ],
-      "type": "assets"
+      "type": "assets",
+      "build": "npm run build"
     },
     "game_state_canister": {
       "main": "PoAIW/src/GameState/src/Main.mo",

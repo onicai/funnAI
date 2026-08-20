@@ -2,7 +2,7 @@
   import { store } from "../../stores/store";
   import { onMount } from "svelte";
   import { getMainerVisualIdentity } from "../../helpers/utils/mainerIdentity";
-  import { Check, ShoppingCart, Sparkles, AlertTriangle } from "lucide-svelte";
+  import { Check, ShoppingCart, Sparkles, AlertTriangle } from "@lucide/svelte";
   import LoginModal from "../login/LoginModal.svelte";
 
   export let onListToMarketplace: (mainerIds: string[], prices: Record<string, number>) => Promise<void>;
@@ -158,7 +158,7 @@
 
 <div class="agent-card">
   <!-- Header -->
-  <div class="border-b border-white/[0.08] px-6 py-4">
+  <div class="border-b border-white/8 px-6 py-4">
     <div class="flex items-center space-x-3">
       <div class="w-10 h-10 rounded-xl bg-agent-purple/15 border border-agent-purple/20 flex items-center justify-center">
         <ShoppingCart class="w-5 h-5 text-agent-purple" />
@@ -208,19 +208,19 @@
                      ? 'border-amber-500/25 bg-amber-500/5 cursor-not-allowed opacity-75' 
                      : isSelected 
                        ? 'border-agent-purple/50 bg-agent-purple/10 cursor-pointer' 
-                       : 'border-white/10 bg-white/[0.03] hover:border-agent-purple/40 cursor-pointer'}"
+                       : 'border-white/10 bg-white/3 hover:border-agent-purple/40 cursor-pointer'}"
             role="button"
             tabindex={isDisabled ? -1 : 0}
             on:click={() => toggleMainerSelection(mainer.id, mainer.hasLowCycles)}
             on:keydown={(e) => e.key === 'Enter' || e.key === ' ' ? toggleMainerSelection(mainer.id, mainer.hasLowCycles) : null}
           >
             <!-- Soft identity tint -->
-            <div class="absolute inset-0 bg-gradient-to-br {identity.colors.bg} opacity-[0.04]"></div>
+            <div class="absolute inset-0 bg-linear-to-br {identity.colors.bg} opacity-[0.04]"></div>
             
             <div class="relative p-4">
               <div class="flex items-start space-x-4">
                 <!-- Checkbox / Warning -->
-                <div class="flex-shrink-0 pt-1">
+                <div class="shrink-0 pt-1">
                   {#if isDisabled}
                     <div class="w-6 h-6 rounded-md border border-amber-500/40 bg-amber-500/10 flex items-center justify-center">
                       <AlertTriangle class="w-4 h-4 text-amber-400" />
@@ -257,7 +257,7 @@
                     </div>
 
                     <!-- Status & Cycles -->
-                    <div class="flex-shrink-0 flex flex-col items-end gap-1">
+                    <div class="shrink-0 flex flex-col items-end gap-1">
                       {#if isDisabled}
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 border border-amber-500/25 text-amber-300">
                           <span class="w-1.5 h-1.5 rounded-full mr-1.5 bg-amber-400"></span>
@@ -267,7 +267,7 @@
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border
                                      {mainer.status === 'active' 
                                        ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-300' 
-                                       : 'bg-white/[0.04] border-white/10 text-gray-300'}">
+                                       : 'bg-white/4 border-white/10 text-gray-300'}">
                           <span class="w-1.5 h-1.5 rounded-full mr-1.5 {mainer.status === 'active' ? 'bg-emerald-400' : 'bg-gray-500'}"></span>
                           {mainer.status}
                         </span>
@@ -326,7 +326,7 @@
 
       <!-- Action Button -->
       {#if selectedMainer}
-        <div class="border-t border-white/[0.08] pt-6">
+        <div class="border-t border-white/8 pt-6">
           <div class="flex items-center justify-between mb-4">
             <div>
               <p class="text-sm text-gray-400">

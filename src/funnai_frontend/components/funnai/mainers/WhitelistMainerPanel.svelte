@@ -27,7 +27,7 @@
             <!-- Left side content -->
             <div class="flex-1">
               <div class="flex items-center space-x-3 mb-3">
-                <div class="flex-shrink-0 w-10 h-10 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-center">
+                <div class="shrink-0 w-10 h-10 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-center">
                   <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                   </svg>
@@ -58,8 +58,8 @@
             </div>
             
             <!-- Right side - Savings highlight -->
-            <div class="flex-shrink-0 sm:ml-6">
-              <div class="rounded-xl p-4 text-center border border-white/10 bg-white/[0.03]">
+            <div class="shrink-0 sm:ml-6">
+              <div class="rounded-xl p-4 text-center border border-white/10 bg-white/3">
                 <div class="text-2xl sm:text-3xl font-semibold text-white mb-1">
                   {Math.round(((currentMainerPrice || 10) - (currentWhitelistPrice || 5)) / (currentMainerPrice || 10) * 100)}%
                 </div>
@@ -79,13 +79,13 @@
     <!-- Unlocked mAIners List -->
     <div class="space-y-3">
       {#each unlockedMainers as unlockedMainer, index}
-        <div class="rounded-xl border border-white/10 bg-white/[0.03] hover:border-amber-500/30 transition-colors duration-200">
+        <div class="rounded-xl border border-white/10 bg-white/3 hover:border-amber-500/30 transition-colors duration-200">
           <div class="relative p-3 md:p-4">
             <div class="flex flex-col space-y-3 xl:flex-row xl:items-center xl:justify-between xl:space-y-0">
               <!-- Left side - mAIner info -->
               <div class="flex items-start space-x-3 min-w-0 flex-1">
                 <!-- Icon -->
-                <div class="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-center">
+                <div class="shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-center">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                   </svg>
@@ -133,7 +133,7 @@
               </div>
               
               <!-- Right side - Action button -->
-              <div class="flex-shrink-0 xl:ml-4">
+              <div class="shrink-0 xl:ml-4">
                 <button
                   on:click={() => onCreateWhitelistAgent(unlockedMainer)}
                   disabled={isPauseWhitelistMainerCreation || stopMainerCreation || !isProtocolActive || whitelistMainersBeingCreated.has(unlockedMainer.id || unlockedMainer.name || `unlocked-${unlockedMainer.originalCanisterInfo?.address || index}`)}
@@ -168,7 +168,7 @@
         <div class="relative p-4 sm:p-6">
           <div class="flex flex-col items-center text-center space-y-4 sm:space-y-5 max-w-lg mx-auto">
             <!-- Icon -->
-            <div class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-xl border border-emerald-500/30 bg-emerald-500/10 flex items-center justify-center">
+            <div class="shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-xl border border-emerald-500/30 bg-emerald-500/10 flex items-center justify-center">
               <svg class="w-7 h-7 sm:w-8 sm:h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
               </svg>
@@ -197,7 +197,7 @@
               </div>
               
               <!-- Additional info -->
-              <div class="text-xs text-gray-500 border border-white/10 bg-white/[0.03] rounded-xl px-3 py-2">
+              <div class="text-xs text-gray-500 border border-white/10 bg-white/3 rounded-xl px-3 py-2">
                 <div class="flex items-center justify-center">
                   <span class="font-medium">You're part of the exclusive genesis funnAI community with {totalMainers} mAIner{totalMainers === 1 ? '' : 's'}</span>
                 </div>
@@ -213,7 +213,7 @@
       <div class="agent-card">
         <div class="relative p-6 sm:p-8 text-center">
           <!-- Icon -->
-          <div class="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-xl border border-white/10 bg-white/[0.03] mx-auto mb-4">
+          <div class="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-xl border border-white/10 bg-white/3 mx-auto mb-4">
             <svg class="w-7 h-7 sm:w-8 sm:h-8 text-agent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
@@ -255,7 +255,7 @@
             </p>
             
             <!-- Notification signup hint -->
-            <div class="inline-flex items-center space-x-2 px-3 py-2 rounded-full border border-white/10 bg-white/[0.03]">
+            <div class="inline-flex items-center space-x-2 px-3 py-2 rounded-full border border-white/10 bg-white/3">
               <svg class="w-4 h-4 text-agent-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
               </svg>
@@ -266,7 +266,7 @@
           <!-- Debug info - only show in development -->
           {#if import.meta.env.DEV}
             <details class="mt-4 text-left">
-              <div class="mt-2 p-2 rounded-xl border border-white/10 bg-white/[0.03] text-xs text-gray-500">
+              <div class="mt-2 p-2 rounded-xl border border-white/10 bg-white/3 text-xs text-gray-500">
                 Total mAIners loaded: {agentCanistersInfo.length}<br>
                 Unlocked for you: {unlockedMainers.length}<br>
                 Total mAIners: {totalMainers}
@@ -283,7 +283,7 @@
       <div class="relative h-full flex items-center justify-center p-4 sm:p-6">
         <div class="flex flex-col items-center text-center space-y-4 sm:space-y-5 max-w-lg mx-auto">
           <!-- Icon -->
-          <div class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-center">
+          <div class="shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-center">
             <svg class="w-7 h-7 sm:w-8 sm:h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
             </svg>
@@ -315,7 +315,7 @@
             </div>
             
             <!-- Additional info -->
-            <div class="text-xs text-gray-500 border border-white/10 bg-white/[0.03] rounded-xl px-3 py-2">
+            <div class="text-xs text-gray-500 border border-white/10 bg-white/3 rounded-xl px-3 py-2">
               <div class="flex items-center justify-center">
                 <span class="font-medium">Get access to mAIners with exclusive whitelist pricing</span>
               </div>

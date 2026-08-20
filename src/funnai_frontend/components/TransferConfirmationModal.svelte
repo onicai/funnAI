@@ -3,7 +3,7 @@
   import BigNumber from "bignumber.js";
   import Modal from "./CommonModal.svelte";
   import { formatBalance } from "../helpers/utils/numberFormatUtils";
-  import { ArrowRight, Check, AlertTriangle } from "lucide-svelte";
+  import { ArrowRight, Check, AlertTriangle } from "@lucide/svelte";
   import { fly, fade } from 'svelte/transition';
 
   // Props
@@ -142,7 +142,7 @@
         <p class="text-lg font-semibold tracking-tight text-white">Transfer confirmed</p>
       </div>
     {:else}
-      <div class="rounded-xl border border-white/10 bg-white/[0.03] p-4 space-y-3">
+      <div class="rounded-xl border border-white/10 bg-white/3 p-4 space-y-3">
         <h3 class="text-[13px] font-medium text-gray-300">Transfer details</h3>
 
         <div class="flex justify-between items-center">
@@ -155,7 +155,7 @@
           <span class="text-sm text-gray-200 tabular-nums">{formattedFee} {token.symbol}</span>
         </div>
 
-        <div class="flex justify-between items-center pt-2 border-t border-white/[0.06]">
+        <div class="flex justify-between items-center pt-2 border-t border-white/6">
           <span class="text-sm font-medium text-white">Total</span>
           <div class="text-right">
             <div class="text-sm font-medium text-white tabular-nums">{totalAmount} {token.symbol}</div>
@@ -166,15 +166,15 @@
         </div>
       </div>
 
-      <div class="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+      <div class="rounded-xl border border-white/10 bg-white/3 p-4">
         <h3 class="text-[13px] font-medium text-gray-300 mb-2">Sending to</h3>
-        <div class="font-mono text-sm text-gray-200 bg-white/[0.03] p-2.5 rounded-xl border border-white/10 break-all">
+        <div class="font-mono text-sm text-gray-200 bg-white/3 p-2.5 rounded-xl border border-white/10 break-all">
           {truncatedAddress}
         </div>
       </div>
 
       <div class="flex items-start gap-3 p-3 rounded-xl border border-amber-500/25 bg-amber-500/10">
-        <AlertTriangle size={16} class="text-amber-400 mt-0.5 flex-shrink-0" />
+        <AlertTriangle size={16} class="text-amber-400 mt-0.5 shrink-0" />
         <div class="text-sm">
           <p class="text-amber-200 font-medium">Double-check the recipient address</p>
           <p class="text-amber-200/70 mt-1">Transfers cannot be reversed once confirmed.</p>
@@ -185,7 +185,7 @@
         <button
           type="button"
           on:click={onClose}
-          class="agent-btn-ghost flex-1 !h-10 disabled:opacity-50"
+          class="agent-btn-ghost flex-1 h-10! disabled:opacity-50"
           disabled={isProcessing}
         >
           Cancel
@@ -193,7 +193,7 @@
         <button
           type="button"
           on:click={handleConfirm}
-          class="agent-btn-primary flex-1 !h-10 disabled:opacity-50"
+          class="agent-btn-primary flex-1 h-10! disabled:opacity-50"
           disabled={isProcessing}
         >
           {#if isProcessing}

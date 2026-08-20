@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "target": "esnext",
     "module": "esnext",
     /**
@@ -16,7 +16,7 @@
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
     "checkJs": true,
-    "types": ["vite/client", "svelte", "node", "vite-plugin-pwa/svelte"],
+    "types": ["vite/client", "svelte", "node"],
     "baseUrl": ".",
     "paths": { "canisters/*": [".dfx/local/canisters/*"] }
   },

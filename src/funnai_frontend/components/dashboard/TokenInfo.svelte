@@ -67,15 +67,15 @@
 </script>
 
 <!-- Token canisters -->
-<div class="agent-card !bg-agent-surface p-5 sm:p-6">
-  <div class="relative z-[1] mb-5">
+<div class="agent-card bg-agent-surface! p-5 sm:p-6">
+  <div class="relative z-1 mb-5">
     <p class="agent-eyebrow">Canisters</p>
     <h3 class="mt-1 text-base font-semibold tracking-tight text-white">Token infrastructure</h3>
     <p class="mt-0.5 text-sm text-gray-500">Ledger and index principals for FUNNAI</p>
   </div>
 
-  <div class="relative z-[1] grid grid-cols-1 lg:grid-cols-2 gap-3">
-    <div class="rounded-xl bg-white/[0.03] p-4">
+  <div class="relative z-1 grid grid-cols-1 lg:grid-cols-2 gap-3">
+    <div class="rounded-xl bg-white/3 p-4">
       <div class="flex items-center justify-between gap-2 mb-3">
         <div>
           <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Ledger</p>
@@ -87,13 +87,13 @@
         </span>
       </div>
       <div class="flex items-center gap-2">
-        <code class="flex-1 min-w-0 text-xs font-mono text-gray-300 break-all rounded-lg bg-white/[0.03] px-2.5 py-2 border border-white/[0.06]">
+        <code class="flex-1 min-w-0 text-xs font-mono text-gray-300 break-all rounded-lg bg-white/3 px-2.5 py-2 border border-white/6">
           {tokenLedger.canisterId}
         </code>
         <button
           type="button"
           on:click={() => copyToClipboard(tokenLedger.canisterId, "Ledger")}
-          class="agent-btn-ghost !h-8 !px-2.5 flex-shrink-0"
+          class="agent-btn-ghost h-8! px-2.5! shrink-0"
           title="Copy canister ID"
         >
           Copy
@@ -102,14 +102,14 @@
       <div class="mt-3 flex flex-wrap items-center gap-1.5">
         <span class="text-xs text-gray-500">Decimals {tokenLedger.decimals}</span>
         {#each tokenLedger.tokenTypes as tokenType}
-          <span class="inline-flex items-center rounded-full bg-[#653FC5]/15 px-2 py-0.5 text-[10px] font-medium text-[#c4b5fd]">
+          <span class="inline-flex items-center rounded-full bg-agent-purple/15 px-2 py-0.5 text-[10px] font-medium text-[#c4b5fd]">
             {tokenType}
           </span>
         {/each}
       </div>
     </div>
 
-    <div class="rounded-xl bg-white/[0.03] p-4">
+    <div class="rounded-xl bg-white/3 p-4">
       <div class="flex items-center justify-between gap-2 mb-3">
         <div>
           <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Index</p>
@@ -121,13 +121,13 @@
         </span>
       </div>
       <div class="flex items-center gap-2">
-        <code class="flex-1 min-w-0 text-xs font-mono text-gray-300 break-all rounded-lg bg-white/[0.03] px-2.5 py-2 border border-white/[0.06]">
+        <code class="flex-1 min-w-0 text-xs font-mono text-gray-300 break-all rounded-lg bg-white/3 px-2.5 py-2 border border-white/6">
           {tokenIndex.canisterId}
         </code>
         <button
           type="button"
           on:click={() => copyToClipboard(tokenIndex.canisterId, "Index")}
-          class="agent-btn-ghost !h-8 !px-2.5 flex-shrink-0"
+          class="agent-btn-ghost h-8! px-2.5! shrink-0"
           title="Copy canister ID"
         >
           Copy

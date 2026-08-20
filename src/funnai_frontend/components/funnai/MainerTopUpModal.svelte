@@ -3,7 +3,7 @@
   import Modal from "../CommonModal.svelte";
   import TokenImages from "../TokenImages.svelte";
 
-  import { ArrowUp, Info, Check } from 'lucide-svelte';
+  import { ArrowUp, Info, Check } from '@lucide/svelte';
   import { MEMO_PAYMENT_PROTOCOL, store, canisterIDLs } from "../../stores/store";
   import { IcrcService } from "../../helpers/IcrcService";
   import BigNumber from "bignumber.js";
@@ -14,7 +14,7 @@
   import { MIN_AMOUNT, MAX_AMOUNT, CELEBRATION_DURATION, CELEBRATION_ENABLED } from "../../helpers/config/topUpConfig";
   import { getIsProtocolActive } from "../../helpers/gameState";
   import { mainerHealthService } from "../../helpers/mainerHealthService";
-  import ICPSwapService, { SwapArgs, DepositAndSwapArgs } from "../../helpers/icpswapService";
+  import ICPSwapService, { type SwapArgs, type DepositAndSwapArgs } from "../../helpers/icpswapService";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
@@ -814,10 +814,10 @@
           {#each availableTokens as token}
             <button
                type="button"
-               class="flex items-center gap-2 p-2.5 rounded-xl border transition-colors {selectedToken?.symbol === token.symbol ? 'border-agent-purple/50 bg-agent-purple/10 text-gray-100' : 'bg-white/[0.03] border-white/10 text-gray-300 hover:border-agent-purple/30'}"
+               class="flex items-center gap-2 p-2.5 rounded-xl border transition-colors {selectedToken?.symbol === token.symbol ? 'border-agent-purple/50 bg-agent-purple/10 text-gray-100' : 'bg-white/3 border-white/10 text-gray-300 hover:border-agent-purple/30'}"
                on:click={() => handleTokenChange(token.symbol)}
              >
-              <div class="w-7 h-7 rounded-xl bg-white/[0.04] border border-white/10 flex-shrink-0 overflow-hidden">
+              <div class="w-7 h-7 rounded-xl bg-white/4 border border-white/10 shrink-0 overflow-hidden">
                 <TokenImages tokens={[token]} size={26} showSymbolFallback={true} />
               </div>
               <div class="flex flex-col min-w-0 flex-1 text-left">
@@ -825,7 +825,7 @@
                 <div class="text-xs text-gray-500 truncate">{token.name}</div>
               </div>
               {#if selectedToken?.symbol === token.symbol}
-                <Check size={14} class="text-agent-purple flex-shrink-0" />
+                <Check size={14} class="text-agent-purple shrink-0" />
               {/if}
             </button>
           {/each}
@@ -834,8 +834,8 @@
 
       <!-- Selected Token Info Banner -->
       {#if selectedToken}
-        <div class="flex items-center gap-2 sm:gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/10">
-          <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-agent-purple/15 border border-agent-purple/20 flex-shrink-0 overflow-hidden">
+        <div class="flex items-center gap-2 sm:gap-3 p-3 rounded-xl bg-white/3 border border-white/10">
+          <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-agent-purple/15 border border-agent-purple/20 shrink-0 overflow-hidden">
             <div class="sm:hidden">
               <TokenImages tokens={[selectedToken]} size={32} showSymbolFallback={true} />
             </div>
@@ -919,27 +919,27 @@
         <!-- Cycles Conversion Display -->
         <div class="p-3 rounded-xl bg-sky-500/5 border border-sky-500/20 text-sky-300/90 text-xs sm:text-sm flex flex-col gap-2">
           <div class="flex items-center gap-1.5">
-            <Info size={14} class="text-sky-400 flex-shrink-0" />
+            <Info size={14} class="text-sky-400 shrink-0" />
             <span class="font-medium text-sky-200">Cycles Conversion</span>
             {#if isLoadingConversionRate}
-              <span class="w-3 h-3 ml-2 border-2 border-sky-400/30 border-t-sky-400 rounded-full animate-spin flex-shrink-0"></span>
+              <span class="w-3 h-3 ml-2 border-2 border-sky-400/30 border-t-sky-400 rounded-full animate-spin shrink-0"></span>
             {/if}
           </div>
           
           {#if !isLoadingConversionRate}
             <div class="flex justify-between items-center gap-2">
               <span class="truncate text-sky-300/80">Conversion (gross)</span>
-              <span class="font-medium text-right flex-shrink-0 text-white">≈ {grossCyclesAmount} T cycles</span>
+              <span class="font-medium text-right shrink-0 text-white">≈ {grossCyclesAmount} T cycles</span>
             </div>
             {#if showTopupBonus && Number(bonusCyclesAmount) > 0}
               <div class="flex justify-between items-center gap-2 text-emerald-400">
                 <span>+{bonusCyclesTopupInPercent}% bonus</span>
-                <span class="font-medium text-right flex-shrink-0">+ {bonusCyclesAmount} T</span>
+                <span class="font-medium text-right shrink-0">+ {bonusCyclesAmount} T</span>
               </div>
             {/if}
             <div class="flex justify-between items-center gap-2 pt-1 border-t border-sky-500/20">
               <span class="truncate text-sky-200">Estimated to credit</span>
-              <span class="font-medium text-right flex-shrink-0 text-white">≈ {cyclesAmount} T cycles</span>
+              <span class="font-medium text-right shrink-0 text-white">≈ {cyclesAmount} T cycles</span>
             </div>
             <div class="text-sky-400/70 text-xs">
               The mAIner is credited the net amount after protocol conversion
@@ -954,7 +954,7 @@
 
         <!-- Swap progress panel -->
         {#if isValidating && validatingMessage !== "Processing..."}
-          <div class="p-3 rounded-xl bg-white/[0.03] border border-white/10">
+          <div class="p-3 rounded-xl bg-white/3 border border-white/10">
             <div class="flex items-center gap-2">
               <span class="w-4 h-4 border-2 border-agent-purple/30 border-t-agent-purple rounded-full animate-spin"></span>
               <span class="text-sm font-medium text-gray-200">{validatingMessage}</span>

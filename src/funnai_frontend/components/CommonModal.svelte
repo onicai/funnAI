@@ -4,8 +4,8 @@
   import Panel from "./Panel.svelte";
   import { fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
-  import Portal from "svelte-portal";
-  import { X } from "lucide-svelte";
+  import Portal from "./Portal.svelte";
+  import { X } from "@lucide/svelte";
   import { modalStack } from "../stores/modalStore";
 
   // Props
@@ -333,9 +333,9 @@
             ></div>
 
             <header
-              class="flex justify-between items-center flex-shrink-0 pb-4"
+              class="flex justify-between items-center shrink-0 pb-4"
             >
-              <div class="flex-grow min-w-0">
+              <div class="grow min-w-0">
                 <slot name="title">
                   <h2 class="text-base font-semibold tracking-tight modal-title text-white">
                     {#if typeof title === "string"}
@@ -346,7 +346,7 @@
               </div>
               <button
                 type="button"
-                class="!flex !items-center !justify-center !h-8 !w-8 !rounded-full !border !border-white/10 !bg-white/[0.04] !shadow-none ml-2 text-gray-400 hover:text-white hover:border-white/20 transition-colors"
+                class="flex! items-center! justify-center! h-8! w-8! rounded-full! border! border-white/10! bg-white/4! shadow-none! ml-2 text-gray-400 hover:text-white hover:border-white/20 transition-colors"
                 on:click={(e) => handleClose(e)}
                 aria-label="Close modal"
               >
