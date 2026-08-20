@@ -1746,6 +1746,101 @@ If you want to do it all manually, follow these steps:
 
 ## IMPORTANT: Also upload wasm to mAInerCreator
 
+## How the upgrade installs the wasm (NOT `dfx deploy`)
+
+Since 2026-08-20 `upgrade_mainers.py` drives the upgrade through the protocol
+instead of `dfx deploy`:
+
+```
+GameState.upgradeMainerControllerAdmin({ canisterAddress })
+  -> mAInerCreator.upgradeMainerctrl
+     -> install_chunked_code of the wasm STORED ON mAInerCreator
+```
+
+What lands is therefore the reproducible Docker artifact uploaded in
+"IMPORTANT: Also upload wasm to mAInerCreator" above. **`dfx deploy` compiles
+`src/Main.mo` with the local `moc`**, which produces a different hash that can
+never match `--target-hash`. That is why the dfx path was removed for upgrades and
+`--reinstall` now errors out.
+
+Two behavioural consequences:
+
+- The canister must be **Running** and **out of maintenance** when GameState is
+  called. `upgradeMainerctrl` awaits `health()` plus `setMainerCanisterType`,
+  `setGameStateCanisterId` and `setShareServiceCanisterId` on the mAIner *after*
+  installing, and `health()` returns `#Err` while the maintenance flag is set.
+  The script sequences this: the stop now only wraps the snapshot, then it starts
+  the canister and clears maintenance before calling GameState.
+- GameState forwards with `ignore`, so its `#Ok` means only *request accepted*.
+  The module hash changing is the only real completion signal; the script polls
+  `dfx canister info` for up to 10 minutes. A silent failure therefore shows up as
+  a hash that never moves, not as an error.
+
+`mAInerCreator` must be on a build that passes
+`#upgrade(?{wasm_memory_persistence = ?#keep; ...})`. These canisters are built
+with `--enhanced-orthogonal-persistence`, and for an EOP module the IC **requires**
+that option - `#upgrade(null)` is rejected with `IC0504 Missing upgrade option`.
+An older mAInerCreator passing `null` cannot upgrade any mAIner.
+
+## Cycles accounting for a mAIner upgrade
+
+This path costs GameState cycles that `dfx deploy` never did:
+
+| leg | amount |
+| ------------------------------------------------------------ | ---------------- |
+| GameState -> mAInerCreator (`cyclesUpgradeMainerctrlGsMc`)    | (10 B + 1 B) x 1.10 = **12.1 B** |
+| mAInerCreator -> mAIner (`cyclesUpgradeMainerctrlMcMainerctrl`) | 10 B |
+
+`costUpgradeMainerCtrl` = 10 B, `costUpgradeMcMainerCtrl` = 1 B and `marginCost`
+= 10% are compile-time defaults with **no setter**, so they are identical on every
+network (`GameState/src/Main.mo:1449,1451,1548`). At ~750 mAIners that is roughly
+**9 T** leaving GameState, which must come from the balance *above* the freezing
+threshold:
+
+```bash
+dfx canister --network $NETWORK status $SUBNET_0_1_GAMESTATE | grep -Ei 'Freezing threshold|Idle cycles|^Balance'
+```
+
+```
+freeze reserve = idle_cycles_per_day x (freezing_threshold_seconds / 86400)
+spendable      = balance - freeze reserve
+```
+
+### Why the 10 B deposit does not trigger the 90% unofficial-topup penalty
+
+The 10 B arrives via `IC0.deposit_cycles`, a **management-canister** call. It never
+invokes the mAIner's code, so `addCycles()` does not run and
+`officialCyclesBalance` is **not** credited (it is credited only for
+`msg.caller == GameState`, `mAIner/src/Main.mo:162`). That is exactly the shape of
+an owner's unofficial top-up, which `storeAndSubmitResponse` penalises at
+`(actual - official) x (protocolOperationFeesCut x 9) / 100` = **90%** at the live
+`feesCut` of 10.
+
+It does not fire, purely because of **ordering**:
+
+| | file |
+| ---------------------------------------------------- | --------------------------------- |
+| 1. `IC0.deposit_cycles` - the 10 B lands             | `mAInerCreator/src/Main.mo:1447` |
+| 2. `install_code`, inside which `postupgrade()` runs  | `mAInerCreator/src/Main.mo:1491` |
+| 3. `officialCyclesBalance := Cycles.balance() + INSTALL_CODE_REFUND_BUFFER` | `mAIner/src/Main.mo:2929` |
+
+By step 3 the deposit is already part of `Cycles.balance()`, so it is absorbed into
+the new baseline rather than becoming a gap.
+
+🚨 **That `postupgrade` reset is load-bearing - do not remove it as redundant.**
+Without it every mAIner would be penalised 90% of ~10 B on its next submission
+(~6.8 T across 750 mAIners), for cycles the protocol itself deposited.
+
+Expect two benign signals per mAIner in the script output:
+
+- `officialCyclesBalance` jumping **~+843 B** - the 1 T `INSTALL_CODE_REFUND_BUFFER`
+  less the ~300 B `install_code` prepay dip. It leaves official *above* actual,
+  the safe direction, and self-corrects on the first successful submit via
+  `officialCyclesBalance := currentCyclesBalance - cyclesToSend`.
+- `Cycles.balance()` rising **~4.78 B** net, which the script flags as
+  `WARNING: Cycles.balance() ROSE`. Expected on the `after install` sample: the
+  10 B deposit less what the install itself spent.
+
 ## Using script
 
 The following script is used to upgrade ALL or selected mAIners.

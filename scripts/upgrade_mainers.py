@@ -4,6 +4,57 @@ mAIner Upgrade Script
 
 This script safely upgrades mAIner canisters with health checks, snapshots, and rollback capability.
 
+HOW THE WASM IS INSTALLED
+-------------------------
+Not with `dfx deploy`. The upgrade is driven through the protocol:
+
+    GameState.upgradeMainerControllerAdmin({ canisterAddress })
+      -> mAInerCreator.upgradeMainerctrl
+         -> install_chunked_code of the wasm STORED ON mAInerCreator
+
+so what lands is the reproducible Docker artifact uploaded with
+upload_mainer_controller_canister. `dfx deploy` compiles src/Main.mo with the
+LOCAL moc, which yields a different hash that can never match --target-hash;
+that is why the dfx path is gone for upgrades and --reinstall is disabled.
+
+Two consequences:
+
+  * The canister must be RUNNING and OUT OF MAINTENANCE when GameState is
+    called. upgradeMainerctrl awaits health() plus three setters on the mAIner
+    after installing, and health() returns #Err while the maintenance flag is
+    set. This script sequences that: stop only wraps the snapshot, then it
+    starts the canister and clears maintenance before calling GameState.
+
+  * GameState forwards with `ignore`, so its #Ok means only "request accepted".
+    The module hash changing is the only real completion signal, so the script
+    polls `dfx canister info` for up to 10 minutes.
+
+CYCLES ACCOUNTING
+-----------------
+Each upgrade costs GameState cyclesUpgradeMainerctrlGsMc =
+(costUpgradeMainerCtrl 10 B + costUpgradeMcMainerCtrl 1 B) x 1.10 = 12.1 B, and
+mAInerCreator deposits costUpgradeMainerCtrl = 10 B into the mAIner. These are
+compile-time defaults with no setter, so they are identical on every network
+(GameState/src/Main.mo:1449,1451,1548). Budget balance-minus-freeze-reserve in
+GameState accordingly before a large rollout - `dfx deploy` funded none of this.
+
+That 10 B arrives via IC0.deposit_cycles, a management-canister call, so it
+bypasses addCycles() and never credits officialCyclesBalance - the same shape as
+an owner's unofficial top-up, which the protocol penalises at 90%. It does not
+fire, because of ordering: the deposit lands BEFORE install_code, and the
+mAIner's postupgrade() then sets
+    officialCyclesBalance := Cycles.balance() + INSTALL_CODE_REFUND_BUFFER
+with the deposit already included. See mAIner/src/Main.mo:2929 and
+mAInerCreator/src/Main.mo:1447,1491. Do not remove that postupgrade reset as
+"redundant" - without it every mAIner is penalised 90% of ~10 B on its next
+submission.
+
+Expect two benign log signals per mAIner: officialCyclesBalance jumping by
+~+843 B (the 1 T buffer, minus the ~300 B install_code prepay dip), and
+Cycles.balance() rising ~4.78 B net (the 10 B deposit less what the install
+spent). The buffer self-corrects on the first successful storeAndSubmitResponse,
+which sets officialCyclesBalance := currentCyclesBalance - cyclesToSend.
+
 To run the upgrade in a safe sequence:
     # from the folder: funnAI
     conda activate funnAI
@@ -621,6 +672,29 @@ def sample_cycle_state(
             f"Investigate: is this a late refund, auto-topup, or other unattributed deposit?",
             "WARNING",
         )
+        if label == "after install":
+            # EXPECTED on this label, ~10 B. mAInerCreator.upgradeMainerctrl calls
+            # IC0.deposit_cycles(costUpgradeMainerCtrl = 10 B) into the mAIner
+            # before installing. That is a management-canister deposit, so it
+            # bypasses addCycles() and never credits officialCyclesBalance -
+            # exactly the shape of an owner's unofficial top-up.
+            #
+            # It does NOT trigger the 90% unofficial-topup penalty, because of
+            # ordering: the deposit lands BEFORE install_code, and the mAIner's
+            # postupgrade() then re-baselines
+            #     officialCyclesBalance := Cycles.balance() + INSTALL_CODE_REFUND_BUFFER
+            # with the deposit already included in that balance. See
+            # mAIner/src/Main.mo:2929 and mAInerCreator/src/Main.mo:1447,1491.
+            #
+            # That postupgrade reset is load-bearing. Without it every mAIner
+            # would be penalised 90% of ~10 B on its next submission.
+            log_message(
+                f"[CYCLES][{label}] ^ EXPECTED: mAInerCreator deposits ~10 B "
+                f"(costUpgradeMainerCtrl) before installing. postupgrade() "
+                f"re-baselines officialCyclesBalance afterwards, with the deposit "
+                f"already counted, so the unofficial-topup penalty cannot fire.",
+                "INFO",
+            )
 
     _prev_cycle_state[canister_id] = {"official": official, "current": current}
 
