@@ -98,6 +98,8 @@
   let balance: bigint = BigInt(0);
   let amount: string = "";
   let cyclesAmount: string = "0";
+  let grossCyclesAmount: string = "0";
+  let bonusCyclesAmount: string = "0";
   let conversionRate: BigNumber | null = null;
   
   // FUNNAI limits - loaded dynamically from backend
@@ -456,12 +458,16 @@
   function calculateCycles() {
     if (!conversionRate || !amount || isNaN(Number(amount)) || Number(amount) <= 0 || !selectedToken) {
       cyclesAmount = "0";
+      grossCyclesAmount = "0";
+      bonusCyclesAmount = "0";
       return;
     }
     
     // Special handling for FUNNAI when rate is 0 (not available)
     if (selectedTokenSymbol === 'FUNNAI' && conversionRate.isZero()) {
       cyclesAmount = "0";
+      grossCyclesAmount = "0";
+      bonusCyclesAmount = "0";
       return;
     }
     
@@ -476,21 +482,26 @@
       // Calculate smallest unit to cycles ratio
       const smallestUnitToCycleRatio = conversionRate.div(E8S_PER_TOKEN);
       
-      // Calculate cycles
-      let cycles = smallestUnitAmount.times(smallestUnitToCycleRatio);
+      // Gross cycles from the conversion rate (what CMC/protocol conversion is based on)
+      const grossCycles = smallestUnitAmount.times(smallestUnitToCycleRatio);
+      let bonusCycles = new BigNumber(0);
 
-      // Apply protocol top-up bonus for non-FUNNAI tokens
       if (selectedTokenSymbol !== 'FUNNAI' && bonusCyclesTopupInPercent > 0) {
-        cycles = cycles.times(bonusMultiplier);
+        bonusCycles = grossCycles.times(bonusCyclesTopupInPercent / 100);
       }
+
+      const netCycles = grossCycles.plus(bonusCycles);
+
+      grossCyclesAmount = formatLargeNumber(grossCycles.toNumber() / 1_000_000_000_000, 4, false);
+      bonusCyclesAmount = formatLargeNumber(bonusCycles.toNumber() / 1_000_000_000_000, 4, false);
+      cyclesAmount = formatLargeNumber(netCycles.toNumber() / 1_000_000_000_000, 4, false);
       
-      // Use formatLargeNumber to format trillions
-      cyclesAmount = formatLargeNumber(cycles.toNumber() / 1_000_000_000_000, 4, false);
-      
-      console.log(`${amount} ${selectedToken.symbol} equals ${cyclesAmount} Trillion (${cycles.toString()}) cycles`);
+      console.log(`${amount} ${selectedToken.symbol} equals ${cyclesAmount} Trillion net (${netCycles.toString()}) cycles`);
     } catch (error) {
       console.error("Error calculating cycles:", error);
       cyclesAmount = "0";
+      grossCyclesAmount = "0";
+      bonusCyclesAmount = "0";
     }
   }
 
@@ -500,6 +511,8 @@
     // Reset amount when switching tokens to avoid confusion
     amount = "";
     cyclesAmount = "0";
+    grossCyclesAmount = "0";
+    bonusCyclesAmount = "0";
     errorMessage = "";
   }
 
@@ -883,7 +896,9 @@
               <span class="pr-2 sm:pr-3 text-xs sm:text-sm text-gray-400">{selectedToken?.symbol || 'Token'}</span>
             </div>
           </div>
-          <div class="mt-1 text-xs text-gray-400">Protocol fees included</div>
+          <div class="mt-1 text-xs text-gray-400">
+            Estimate before protocol conversion. Credited cycles can be slightly lower.
+          </div>
           {#if isBelowMinimum}
             <div class="mt-1 text-xs text-amber-400">
               Minimum amount: {currentMinAmount} {selectedToken?.symbol || 'Token'}
@@ -913,14 +928,25 @@
           
           {#if !isLoadingConversionRate}
             <div class="flex justify-between items-center gap-2">
-              <span class="truncate text-sky-300/80">{amount || '0'} {selectedToken?.symbol || 'Token'}</span>
-              <span class="font-medium text-right flex-shrink-0 text-white">≈ {cyclesAmount} Trillion Cycles</span>
+              <span class="truncate text-sky-300/80">Conversion (gross)</span>
+              <span class="font-medium text-right flex-shrink-0 text-white">≈ {grossCyclesAmount} T cycles</span>
             </div>
-            {#if showTopupBonus}
-              <div class="text-emerald-400 text-xs">
-                Includes +{bonusCyclesTopupInPercent}% bonus cycles on {selectedToken?.symbol || 'token'} top-ups
+            {#if showTopupBonus && Number(bonusCyclesAmount) > 0}
+              <div class="flex justify-between items-center gap-2 text-emerald-400">
+                <span>+{bonusCyclesTopupInPercent}% bonus</span>
+                <span class="font-medium text-right flex-shrink-0">+ {bonusCyclesAmount} T</span>
               </div>
             {/if}
+            <div class="flex justify-between items-center gap-2 pt-1 border-t border-sky-500/20">
+              <span class="truncate text-sky-200">Estimated to credit</span>
+              <span class="font-medium text-right flex-shrink-0 text-white">≈ {cyclesAmount} T cycles</span>
+            </div>
+            <div class="text-sky-400/70 text-xs">
+              The mAIner is credited the net amount after protocol conversion
+              {#if selectedTokenSymbol !== 'ICP' && selectedTokenSymbol !== 'FUNNAI'}
+                and any swap/ledger fees
+              {/if}.
+            </div>
           {:else}
             <div class="text-sky-400/70">Loading conversion rate...</div>
           {/if}
