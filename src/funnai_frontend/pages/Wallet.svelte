@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
+  import { RefreshCw } from 'lucide-svelte';
 
   import WalletStatus from '../components/funnai/WalletStatus.svelte';
   import LoginModal from '../components/login/LoginModal.svelte';
@@ -15,6 +16,9 @@
   let isLoading = false;
   let isLoadingHistory = false;
   let loadingError: string | null = null;
+  let isRefreshingHoldings = false;
+  let holdingsRefreshFeedback: 'updated' | 'unchanged' | 'failed' | null = null;
+  let holdingsRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   let walletData;
   walletDataStore.subscribe((value) => walletData = value);
@@ -24,11 +28,34 @@
     isLoadingHistory ||
     walletData.isLoading;
 
+  $: hasHoldingsData = (walletData?.tokens?.length ?? 0) > 0;
+  $: showHoldingsSkeleton = isDataLoading && !hasHoldingsData && !isRefreshingHoldings;
+
   $: listedCount = walletData?.tokens?.length ?? 0;
   $: holdingCount = walletData?.tokens?.filter((token) => {
     const balance = walletData.balances[token.canister_id];
     return balance && Number(balance.in_tokens || "0") > 0;
   }).length ?? 0;
+
+  async function refreshHoldings() {
+    if (!$store.principal || !$store.isAuthed || isRefreshingHoldings) return;
+
+    isRefreshingHoldings = true;
+    holdingsRefreshFeedback = null;
+    try {
+      const result = await WalletDataService.refreshBalances(true);
+      holdingsRefreshFeedback = result;
+      if (holdingsRefreshTimer) clearTimeout(holdingsRefreshTimer);
+      holdingsRefreshTimer = setTimeout(() => {
+        holdingsRefreshFeedback = null;
+      }, 4000);
+    } catch (error) {
+      console.error("Failed to refresh holdings:", error);
+      holdingsRefreshFeedback = 'failed';
+    } finally {
+      isRefreshingHoldings = false;
+    }
+  }
 
   async function loadTokensOnly(principalId: string) {
     if (isLoading || !principalId) return;
@@ -88,7 +115,7 @@
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
                 <p class="agent-eyebrow">Holdings</p>
-                {#if $store.isAuthed && !isDataLoading && listedCount > 0}
+                {#if $store.isAuthed && !showHoldingsSkeleton && listedCount > 0}
                   <span class="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[11px] font-medium text-gray-400">
                     {holdingCount} with balance
                     {#if listedCount !== holdingCount}
@@ -99,11 +126,33 @@
               </div>
               <h2 class="mt-1 text-base font-semibold tracking-tight text-white">Your assets</h2>
               <p class="mt-0.5 text-sm text-gray-500">Tokens you can send and receive in this wallet</p>
+              {#if $store.isAuthed}
+                {#if isRefreshingHoldings}
+                  <p class="mt-1.5 text-xs text-[#c4b5fd]">Refreshing holdings…</p>
+                {:else if holdingsRefreshFeedback === 'updated'}
+                  <p class="mt-1.5 text-xs text-emerald-400">Holdings updated.</p>
+                {:else if holdingsRefreshFeedback === 'unchanged'}
+                  <p class="mt-1.5 text-xs text-gray-400">Holdings unchanged. If a credit is still pending, it may take a moment to appear.</p>
+                {:else if holdingsRefreshFeedback === 'failed'}
+                  <p class="mt-1.5 text-xs text-red-300">Couldn't refresh holdings. Please try again.</p>
+                {/if}
+              {/if}
             </div>
+            {#if $store.isAuthed}
+              <button
+                type="button"
+                on:click={refreshHoldings}
+                disabled={isRefreshingHoldings || showHoldingsSkeleton}
+                class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-gray-300 transition-all hover:border-[#653FC5]/40 hover:bg-[#653FC5]/10 hover:text-white disabled:opacity-40"
+                title={isRefreshingHoldings ? 'Refreshing…' : holdingsRefreshFeedback === 'updated' ? 'Holdings updated' : holdingsRefreshFeedback === 'unchanged' ? 'Holdings unchanged' : holdingsRefreshFeedback === 'failed' ? 'Refresh failed' : 'Refresh holdings'}
+              >
+                <RefreshCw class="h-3.5 w-3.5 {isRefreshingHoldings ? 'animate-spin' : ''}" />
+              </button>
+            {/if}
           </div>
 
           {#if $store.isAuthed}
-            {#if isDataLoading}
+            {#if showHoldingsSkeleton}
               <TokenListSkeleton rows={4} />
             {:else if loadingError && Object.keys(walletData.balances || {}).length === 0}
               <div class="rounded-xl border border-red-500/20 bg-red-500/[0.08] px-4 py-8 text-center">
@@ -122,22 +171,22 @@
                 <p class="text-sm text-gray-400">No tokens available yet</p>
               </div>
             {:else}
-              {#if loadingError}
+              {#if loadingError && !isRefreshingHoldings}
                 <div class="mb-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.08] px-4 py-3 text-sm text-amber-200">
                   {loadingError}. Showing last known balances.
                   <button
                     type="button"
                     class="ml-2 underline"
-                    on:click={() => WalletDataService.refreshBalances(true)}
+                    on:click={refreshHoldings}
                   >Retry</button>
                 </div>
               {/if}
-              {#key walletData}
+              {#key walletData.lastUpdated}
                 <WalletTokenList
                   tokens={walletData.tokens}
                   showHeader={false}
                   showOnlyWithBalance={false}
-                  isLoading={isDataLoading}
+                  isLoading={false}
                 />
               {/key}
             {/if}
@@ -167,7 +216,7 @@
 {/if}
 
 <svelte:head>
-  <title>{$store.isAuthed ? `Token balances for ${$store.principal}` : 'Connect to View Wallet'}</title>
+  <title>onicai</title>
 </svelte:head>
 
 <script context="module">

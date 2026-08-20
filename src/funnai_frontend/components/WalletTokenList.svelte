@@ -114,7 +114,7 @@
   {/if}
 
   <div class="max-h-[600px] overflow-y-auto">
-    {#if isLoadingBalances}
+    {#if isLoadingBalances && formattedTokens.length === 0}
       <div class="text-center py-8">
         <LoadingIndicator text="Loading token balances..." size={24} />
       </div>
