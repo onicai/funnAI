@@ -400,6 +400,18 @@
         Your balance: {userFunnaiBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} FUNNAI
       </p>
     </div>
+  {:else if $store.userMainersLoadStatus === 'error'}
+    <div class="text-center py-8">
+      <p class="text-sm text-amber-200 mb-2">Couldn't load your mAIners</p>
+      <p class="text-xs text-gray-500 mb-4">This is not an empty list — the query failed.</p>
+      <button
+        type="button"
+        class="agent-btn-ghost !h-8 !px-3 !text-xs"
+        on:click={() => store.loadUserMainerCanisters()}
+      >
+        Retry
+      </button>
+    </div>
   {:else if leaderboardData.length === 0 && !loading}
     <div class="text-center py-8">
       <div class="text-gray-500 mb-2">

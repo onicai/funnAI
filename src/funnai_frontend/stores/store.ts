@@ -255,6 +255,8 @@ type State = {
   apiCanisterActor: typeof api_canister | null;
   userMainerCanisterActors: any[];
   userMainerAgentCanistersInfo: any[];
+  userMainersLoadStatus: "idle" | "loading" | "success" | "error";
+  userMainersLoadError: string | null;
   sessionExpiry: bigint | null; // Track session expiration time
   sessionRefreshTimer: NodeJS.Timeout | null; // Timer for automatic session refresh
   // mAIner creation progress state
@@ -287,6 +289,8 @@ const defaultState: State = {
   }) : null,
   userMainerCanisterActors: [],
   userMainerAgentCanistersInfo: [],
+  userMainersLoadStatus: "idle",
+  userMainersLoadError: null,
   sessionExpiry: null,
   sessionRefreshTimer: null,
   // mAIner creation progress state
@@ -862,15 +866,25 @@ export const createStore = ({
         
         console.log(`Successfully enriched ${enrichedUserCanisters.length} mAIner canisters with status information`);
         
-        return { mainerActors, userCanisters: enrichedUserCanisters };
+        return { mainerActors, userCanisters: enrichedUserCanisters, error: null as string | null };
       } else {
         // @ts-ignore
-        console.error("Error retrieving user mAIner agent canisters: ", getMainersResult.Err);
+        const errDetail = getMainersResult.Err;
+        console.error("Error retrieving user mAIner agent canisters: ", errDetail);
+        return {
+          mainerActors,
+          userCanisters: enrichedUserCanisters,
+          error: "Couldn't load your mAIners. Check your connection and try again.",
+        };
       };
     } catch (error) {
       console.error("Error in initializeUserMainerAgentCanisters: ", error);
+      return {
+        mainerActors,
+        userCanisters: enrichedUserCanisters,
+        error: "Couldn't load your mAIners. Check your connection and try again.",
+      };
     };
-    return { mainerActors, userCanisters: enrichedUserCanisters };
   };
 
   const nfidConnect = async (isSessionRestore = false) => {
@@ -1010,9 +1024,9 @@ export const createStore = ({
       };
 
       // Initialize user's mAIner agent (controller) canisters
-      const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "nfid", identity);
-      const userMainerCanisterActors = mainerActors;
-      const userMainerAgentCanistersInfo = userCanisters;
+      const { mainerActors, userCanisters, error: mainersError } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "nfid", identity);
+      const userMainerCanisterActors = mainersError ? [] : mainerActors;
+      const userMainerAgentCanistersInfo = mainersError ? [] : userCanisters;
 
       //let accounts = JSON.parse(await identity.accounts());
 
@@ -1033,6 +1047,8 @@ export const createStore = ({
         apiCanisterActor,
         userMainerCanisterActors,
         userMainerAgentCanistersInfo,
+        userMainersLoadStatus: mainersError ? "error" : "success",
+        userMainersLoadError: mainersError,
         sessionExpiry
       }));
 
@@ -1120,10 +1136,10 @@ export const createStore = ({
     };
 
     // Initialize user's mAIner agent (controller) canisters
-    const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "internetidentity", identity);
+    const { mainerActors, userCanisters, error: mainersError } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, "internetidentity", identity);
     
-    const userMainerCanisterActors = mainerActors;
-    const userMainerAgentCanistersInfo = userCanisters;
+    const userMainerCanisterActors = mainersError ? [] : mainerActors;
+    const userMainerAgentCanistersInfo = mainersError ? [] : userCanisters;
 
     //let accounts = JSON.parse(await identity.accounts());
 
@@ -1144,6 +1160,8 @@ export const createStore = ({
       apiCanisterActor,
       userMainerCanisterActors,
       userMainerAgentCanistersInfo,
+      userMainersLoadStatus: mainersError ? "error" : "success",
+      userMainersLoadError: mainersError,
       sessionExpiry
     }));
 
@@ -1439,13 +1457,30 @@ export const createStore = ({
       }
       
       // Reload user's mAIner agent canisters
-      const { mainerActors, userCanisters } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, isAuthed, identity);
+      update((state) => ({
+        ...state,
+        userMainersLoadStatus: "loading",
+        userMainersLoadError: null,
+      }));
+
+      const { mainerActors, userCanisters, error: mainersError } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, isAuthed, identity);
+
+      if (mainersError) {
+        update((state) => ({
+          ...state,
+          userMainersLoadStatus: "error",
+          userMainersLoadError: mainersError,
+        }));
+        console.error("Keeping last-known mAIner list after load failure");
+        return;
+      }
       
-      // Update the store with new data
       update((state) => ({
         ...state,
         userMainerCanisterActors: mainerActors,
-        userMainerAgentCanistersInfo: userCanisters
+        userMainerAgentCanistersInfo: userCanisters,
+        userMainersLoadStatus: "success",
+        userMainersLoadError: null,
       }));
       
       console.log("User mAIner canisters reloaded successfully");
