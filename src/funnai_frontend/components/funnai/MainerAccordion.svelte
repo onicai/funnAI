@@ -613,13 +613,13 @@
             addProgressMessage("mAIner successfully created!", true);
             setTimeout(() => {
               // Refresh the list of agents to show the newly created one
-              store.loadUserMainerCanisters().then(() => {
-                // Reload agents to get the updated list
+              refreshMainersUntilListed().then((found) => {
+                if (!found) {
+                  addProgressMessage("mAIner created — if it does not appear yet, it is still setting up.");
+                }
                 loadAgents().then((updatedAgents) => {
                   agents = updatedAgents;
-                  // Wait for the reactive update to complete, then open the first mAIner
                   setTimeout(() => {
-                    // Force open the first mAIner accordion (newest one since we reverse the order)
                     if (agents.length > 0) {
                       const firstAgent = agents[0];
                       const sanitizedId = firstAgent.id.replace(/[^a-zA-Z0-9-_]/g, '_');
@@ -631,16 +631,11 @@
                         icon.style.transform = 'rotate(0deg)';
                       }
                     }
-                    // Reset the terminal after opening the accordion
                     setTimeout(() => {
                       store.completeMainerCreation();
                     }, 4000);
-                  }, 1000); // Increased timeout for better reliability
+                  }, 1000);
                 });
-              }).catch((error) => {
-                console.error("Error refreshing mAIner list:", error);
-                addProgressMessage("Warning: mAIner created but list refresh failed. Please refresh manually.");
-                store.completeMainerCreation();
               });
             }, 14000);
           }, 9000);
@@ -749,15 +744,16 @@
             addProgressMessage("mAIner successfully created!", true);
             setTimeout(() => {
               // Refresh the list of agents to show the newly created one
-              store.loadUserMainerCanisters().then(() => {
-                // Wait for the reactive update to complete, then open the first mAIner (newest one)
+              refreshMainersUntilListed().then((found) => {
+                if (!found) {
+                  addProgressMessage("mAIner created — if it does not appear yet, it is still setting up.");
+                }
                 setTimeout(() => {
                   openFirstMainerAccordion();
-                  // Reset the terminal after opening the accordion
                   setTimeout(() => {
                     store.completeMainerCreation();
                   }, 4000);
-                }, 4000); // Increased timeout for better reliability
+                }, 1000);
               });
             }, 14000);
           }, 9000);
@@ -974,12 +970,23 @@
   // (unconditional remap caused constant re-renders with many mainers and modal scroll flicker)
   $: if (agents && agents.length > 0 && $mainerHealthStatuses) {
     let changed = false;
+    const now = Date.now();
+    const PROVISIONING_WINDOW_MS = 5 * 60 * 1000;
     const nextAgents = agents.map(agent => {
       const healthStatus = $mainerHealthStatuses.get(agent.id);
+      const stillProvisioning = Boolean(
+        agent.createdAt && now - agent.createdAt < PROVISIONING_WINDOW_MS
+      );
 
-      if (healthStatus && !healthStatus.isHealthy && agent.uiStatus !== 'inactive') {
-        changed = true;
-        return { ...agent, uiStatus: 'inactive' };
+      if (healthStatus && !healthStatus.isHealthy) {
+        if (stillProvisioning && agent.uiStatus !== 'setting-up') {
+          changed = true;
+          return { ...agent, uiStatus: 'setting-up' };
+        }
+        if (!stillProvisioning && agent.uiStatus !== 'inactive') {
+          changed = true;
+          return { ...agent, uiStatus: 'inactive' };
+        }
       }
 
       return agent;
@@ -990,9 +997,23 @@
     }
   }
 
-  // Auto-open logic is now handled by MainerCreationPanel component via shouldAutoOpen prop
-
-  // Add refresh balance function
+  async function refreshMainersUntilListed(attempts = 6, delayMs = 4000) {
+    for (let i = 0; i < attempts; i++) {
+      try {
+        await store.loadUserMainerCanisters();
+        agents = await loadAgents();
+        if (agents.length > 0) {
+          return true;
+        }
+      } catch (error) {
+        console.error("Error refreshing mAIner list after creation:", error);
+      }
+      if (i < attempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+    return false;
+  }
   async function refreshAgentBalance(agent) {
     // Add this agent to the refreshing set
     agentsBeingRefreshed.add(agent.id);
@@ -1316,7 +1337,7 @@
               
               <!-- Status indicator dot -->
               <div class="absolute -bottom-1 -left-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-agent-surface bg-agent-elevated flex items-center justify-center">
-                <div class={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${agent.uiStatus === 'active' ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
+                <div class={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${agent.uiStatus === 'active' ? 'bg-emerald-400' : agent.uiStatus === 'setting-up' ? 'bg-amber-400' : 'bg-red-400'}`}></div>
               </div>
             </div>
             
@@ -1326,9 +1347,11 @@
                 <!-- Status badge -->
                 <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${agent.uiStatus === 'active' 
                   ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' 
+                  : agent.uiStatus === 'setting-up'
+                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
                   : 'bg-red-500/15 text-red-300 border-red-500/30'}`}>
-                  <div class={`w-2 h-2 rounded-full mr-1 ${agent.uiStatus === 'active' ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
-                  {agent.uiStatus}
+                  <div class={`w-2 h-2 rounded-full mr-1 ${agent.uiStatus === 'active' ? 'bg-emerald-400' : agent.uiStatus === 'setting-up' ? 'bg-amber-400' : 'bg-red-400'}`}></div>
+                  {agent.uiStatus === 'setting-up' ? 'setting up' : agent.uiStatus}
                 </span>
                 
                 <!-- Daily Burn Rate badge (only show if active) -->
