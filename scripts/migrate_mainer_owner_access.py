@@ -224,6 +224,9 @@ def main():
                         choices=["local", "ic", "testing", "demo", "development", "prd"])
     parser.add_argument("--num", type=int, default=None,
                         help="Process at most this many mAIners (default: all)")
+    parser.add_argument("--mainer", default=None,
+                        help="Migrate only this mAIner canister id. Use it to do the "
+                             "first one on its own before running a batch.")
     parser.add_argument("--target-hash", default=None,
                         help="Only migrate mAIners already on this wasm hash. "
                              "WITH the 0x prefix, as printed by `dfx canister info`. "
@@ -258,6 +261,7 @@ def main():
         rbac.log_message(f"Canonical controllers ({len(canonical)}): {sorted(canonical)}", "INFO")
         rbac.log_message(f"Target wasm hash: {args.target_hash or 'NOT SET - guard disabled'}",
                          "INFO" if args.target_hash else "WARNING")
+        rbac.log_message(f"Specific mAIner: {args.mainer or 'None - all'}", "INFO")
         rbac.log_message(f"Dry Run: {args.dry_run}", "INFO")
         rbac.log_message("=" * 60, "INFO")
 
@@ -271,6 +275,18 @@ def main():
                 sys.exit(0)
 
         mainers = [m for m in rbac.get_mainers(args.network) if m.get("address")]
+
+        if args.mainer:
+            # Filter before --num so the two compose predictably.
+            mainers = [m for m in mainers if m["address"] == args.mainer]
+            if not mainers:
+                rbac.log_message(
+                    f"{args.mainer} is not a mAIner registered with GameState on "
+                    f"{args.network}. Nothing to do.",
+                    "ERROR",
+                )
+                sys.exit(1)
+
         if args.num is not None:
             mainers = mainers[: args.num]
 
