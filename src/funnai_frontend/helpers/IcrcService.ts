@@ -152,12 +152,14 @@ export class IcrcService {
         `${token.canister_id}-${principal.toString()}-${Date.now() - (Date.now() % 5000)}`,
     );
 
+    const bypassCache = tokens.some((token) => Boolean((token as FE.Token & { timestamp?: number }).timestamp));
+
     // Check if any of these exact tokens are already being fetched
     const pendingPromises = requestKeys
       .map((key) => this.pendingRequests.get(key))
       .filter(Boolean);
 
-    if (pendingPromises.length === tokens.length) {
+    if (!bypassCache && pendingPromises.length === tokens.length) {
       // All tokens are already being fetched, wait for them
       const results = await Promise.all(pendingPromises);
       return new Map([...results.flatMap((m) => [...m.entries()])]);

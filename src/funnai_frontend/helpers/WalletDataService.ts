@@ -217,22 +217,23 @@ export class WalletDataService {
    * Refresh only the balances for the current wallet without reloading tokens
    * This is useful for updating balances after transactions
    */
-  public static async refreshBalances(forceRefresh = false): Promise<void> {
+  public static async refreshBalances(forceRefresh = false): Promise<'updated' | 'unchanged' | 'failed'> {
     const currentState = get(walletDataStore);
     const principalId = currentState.currentWallet;
     
     if (!principalId || isAnonymousPrincipal(principalId)) {
       console.log('No wallet to refresh balances for (missing or anonymous principal)');
-      return;
+      return 'failed';
     }
     
-    if (currentState.isLoading) {
+    if (currentState.isLoading && !forceRefresh) {
       console.log('Already loading data, skipping balance refresh');
-      return;
+      return 'unchanged';
     }
     
+    const previousBalances = currentState.balances;
+
     try {
-      // Update loading state
       walletDataStore.update(state => ({
         ...state,
         isLoading: true,
@@ -242,7 +243,6 @@ export class WalletDataService {
       
       console.log(`Refreshing balances for wallet ${principalId}`);
       
-      // Use existing tokens from the store
       const tokens = currentState.tokens;
       
       if (tokens.length > 0) {
@@ -251,8 +251,13 @@ export class WalletDataService {
           tokens, 
           { forceRefresh }
         );
+
+        const changed = JSON.stringify(
+          Object.fromEntries(Object.entries(previousBalances).map(([id, b]) => [id, b.in_tokens.toString()]))
+        ) !== JSON.stringify(
+          Object.fromEntries(Object.entries(balances).map(([id, b]) => [id, b.in_tokens.toString()]))
+        );
         
-        // Update store with new balances
         walletDataStore.update(state => ({
           ...state,
           balances,
@@ -263,15 +268,15 @@ export class WalletDataService {
         }));
         
         console.log(`Successfully refreshed balances for ${principalId}`);
+        return changed ? 'updated' : 'unchanged';
       } else {
-        // If no tokens, we need to initialize completely
         console.log('No tokens available, initializing wallet data');
-        await this.initializeWallet(principalId);
+        await this.initializeWallet(principalId, true);
+        return 'updated';
       }
     } catch (error) {
       console.error("Error refreshing balances:", error);
       
-      // Update store with error
       walletDataStore.update(state => ({
         ...state,
         isLoading: false,
@@ -280,6 +285,7 @@ export class WalletDataService {
           ? `Couldn't refresh balances: ${error.message}` 
           : "Couldn't refresh balances"
       }));
+      return 'failed';
     }
   };
 
