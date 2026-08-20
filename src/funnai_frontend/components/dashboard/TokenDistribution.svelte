@@ -196,6 +196,8 @@
       const decimals = funnaiToken?.decimals || 8;
       const formattedBalance = formatBalance(funnaiBalance.in_tokens.toString(), decimals);
       userBalance = parseFloat(formattedBalance.replace(/,/g, ''));
+    } else if (walletData.balancesStatus === 'error') {
+      return;
     } else {
       userBalance = 0;
     }

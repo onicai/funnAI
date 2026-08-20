@@ -18,6 +18,7 @@ export interface WalletData {
   error: string | null;
   lastUpdated: number | null;
   currentWallet: string | null;
+  balancesStatus: 'idle' | 'loading' | 'success' | 'error';
 }
 
 // Create stores
@@ -28,6 +29,7 @@ const initialState: WalletData = {
   error: null,
   lastUpdated: null,
   currentWallet: null,
+  balancesStatus: 'idle',
 };
 
 // Create the store
@@ -65,7 +67,7 @@ export class WalletDataService {
    * Initialize wallet data for a specific principal ID
    * This loads both tokens and balances if available
    */
-  public static async initializeWallet(principalId: string): Promise<void> {
+  public static async initializeWallet(principalId: string, forceRefresh = false): Promise<void> {
     // IMPORTANT: Check for missing principal OR anonymous principal (2vxsx-fae)
     // to prevent operations with the wrong identity
     if (!principalId || isAnonymousPrincipal(principalId)) {
@@ -94,9 +96,15 @@ export class WalletDataService {
       return initializationPromise;
     }
     
-    // Prevent starting a new initialization if we're already loading for this wallet
-    if (currentState.isLoading && currentState.currentWallet === principalId) {
-      console.log(`Already loading wallet data for ${principalId}, skipping redundant initialization`);
+    // Already initialized this wallet — skip unless a later refresh is requested.
+    // Wallet.svelte's `$store` subscription otherwise re-inits on every store write.
+    if (
+      !forceRefresh &&
+      lastInitializedWallet === principalId &&
+      currentState.currentWallet === principalId &&
+      currentState.lastUpdated &&
+      !currentState.isLoading
+    ) {
       return;
     }
 
@@ -110,9 +118,8 @@ export class WalletDataService {
       isLoading: true,
       error: null,
       currentWallet: principalId, // Set current wallet immediately
-      // Preserve tokens if available, clear balances
       tokens: state.tokens.length > 0 ? state.tokens : [],
-      balances: {}
+      balancesStatus: 'loading',
     }));
 
     // Create a promise for this initialization
@@ -156,17 +163,19 @@ export class WalletDataService {
             walletDataStore.update(state => ({
               ...state,
               balances,
-              lastUpdated: Date.now()
+              lastUpdated: Date.now(),
+              error: null,
+              balancesStatus: 'success',
             }));
           } catch (balanceError) {
             console.warn("Error loading balances, but continuing with tokens:", balanceError);
             
-            // Set a more specific error for balances, but don't fail completely
             walletDataStore.update(state => ({
               ...state,
               error: balanceError instanceof Error 
-                ? `Balance loading error: ${balanceError.message}` 
-                : "Failed to load token balances"
+                ? `Couldn't load balances: ${balanceError.message}` 
+                : "Couldn't load token balances",
+              balancesStatus: 'error',
             }));
           }
         };
@@ -189,7 +198,9 @@ export class WalletDataService {
         walletDataStore.update(state => ({
           ...state,
           isLoading: false,
-          error: errorMessage
+          error: errorMessage,
+          lastUpdated: Date.now(),
+          balancesStatus: 'error',
         }));
       } finally {
         // Reset initialization flags
@@ -225,7 +236,8 @@ export class WalletDataService {
       walletDataStore.update(state => ({
         ...state,
         isLoading: true,
-        error: null
+        error: null,
+        balancesStatus: 'loading',
       }));
       
       console.log(`Refreshing balances for wallet ${principalId}`);
@@ -245,7 +257,9 @@ export class WalletDataService {
           ...state,
           balances,
           lastUpdated: Date.now(),
-          isLoading: false
+          isLoading: false,
+          error: null,
+          balancesStatus: 'success',
         }));
         
         console.log(`Successfully refreshed balances for ${principalId}`);
@@ -261,9 +275,10 @@ export class WalletDataService {
       walletDataStore.update(state => ({
         ...state,
         isLoading: false,
+        balancesStatus: 'error',
         error: error instanceof Error 
-          ? `Balance refresh failed: ${error.message}` 
-          : "Failed to refresh balances"
+          ? `Couldn't refresh balances: ${error.message}` 
+          : "Couldn't refresh balances"
       }));
     }
   };
@@ -432,6 +447,10 @@ export class WalletDataService {
         }
       }
       
+      if (tokens.length > 0 && Object.keys(allBalances).length === 0) {
+        throw new Error("Balance query failed");
+      }
+
       // Filter out zero balances
       const nonZeroBalances = Object.entries(allBalances)
         .filter(([_, balance]) => {
