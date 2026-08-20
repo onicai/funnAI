@@ -15,9 +15,20 @@ ORDER MATTERS
     Grant #AdminQuery BEFORE removing the controller, per mAIner, so an owner is never
     left without access mid-migration.
 
-PREREQUISITE
-    The new mAIner wasm (with the updateAgentSettings ownership check) must already be
-    deployed to every mAIner. Run this only after that upgrade has completed.
+PREREQUISITE, ENFORCED
+    A mAIner must already run the new wasm before its owner is removed as a controller.
+    On the OLD wasm, updateAgentSettings is gated on #AdminUpdate - which we deliberately
+    never grant - so removing the owner as controller there would strand them, unable to
+    change their own burn rate.
+
+    Pass --target-hash to enforce this: any mAIner whose module hash differs is skipped.
+    That makes this script safely interleavable with upgrade_mainers.sh over a multi-day
+    rollout - run either, repeatedly, in any order:
+
+        upgrade_mainers.sh   moves mAIners onto the target hash
+        this script          only touches mAIners already on it
+
+    Both are idempotent, so it is impossible to strand an owner.
 
 END STATE
     Every mAIner has exactly three controllers - mAInerCreator plus the two
@@ -27,7 +38,8 @@ To run:
     # from the folder: funnAI
     conda activate funnAI
 
-    scripts/migrate_mainer_owner_access.sh --network $NETWORK [--num 10] [--dry-run]
+    TARGET_HASH=0x...   # the wasm every mAIner must be on, WITH the 0x prefix
+    scripts/migrate_mainer_owner_access.sh --network $NETWORK --target-hash $TARGET_HASH [--num 10] [--dry-run]
 """
 
 import argparse
@@ -39,6 +51,9 @@ from dotenv import dotenv_values
 
 # Reuse the tested helpers rather than duplicating retry/logging/verification logic.
 from . import update_admin_rbac_mainers as rbac
+# Same hash reader the upgrade script uses, so the comparison semantics match exactly
+# (it returns `dfx canister info` output verbatim, i.e. WITH the 0x prefix).
+from .upgrade_mainers import get_canister_wasm_hash
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
 
@@ -104,7 +119,8 @@ def remove_controller(network: str, canister_id: str, principal: str, dry_run: b
         return False
 
 
-def migrate_mainer(network: str, mainer: dict, canonical: set, dry_run: bool) -> bool:
+def migrate_mainer(network: str, mainer: dict, canonical: set, dry_run: bool,
+                   target_hash: str = None) -> bool:
     address = mainer.get("address", "")
     owner = mainer.get("ownedBy", "")
 
@@ -115,6 +131,23 @@ def migrate_mainer(network: str, mainer: dict, canonical: set, dry_run: bool) ->
         rbac.log_message("No ownedBy recorded - skipping", "WARNING")
         rbac.update_mainer_status(address, "skipped", "no ownedBy")
         return True
+
+    # --- Guard: never migrate a mAIner that is not yet on the new wasm ---
+    # On the old wasm updateAgentSettings needs #AdminUpdate, which we never grant, so
+    # removing the owner as controller there would leave them unable to change settings.
+    if target_hash:
+        current_hash = get_canister_wasm_hash(network, address)
+        if current_hash is None:
+            rbac.log_message("Could not read the module hash - skipping", "WARNING")
+            rbac.update_mainer_status(address, "skipped", "module hash unreadable")
+            return True
+        if current_hash != target_hash:
+            rbac.log_message(
+                f"Not on the target wasm yet - skipping. Has {current_hash}, needs {target_hash}",
+                "WARNING")
+            rbac.update_mainer_status(address, "skipped", "not on target wasm")
+            return True
+        rbac.log_message(f"On the target wasm ({current_hash}) - safe to migrate", "INFO")
 
     # --- Step 1: grant #AdminQuery to the owner (BEFORE touching controllers) ---
     rbac.log_message("Step 1: ensuring owner holds #AdminQuery...", "INFO")
@@ -191,8 +224,21 @@ def main():
                         choices=["local", "ic", "testing", "demo", "development", "prd"])
     parser.add_argument("--num", type=int, default=None,
                         help="Process at most this many mAIners (default: all)")
+    parser.add_argument("--target-hash", default=None,
+                        help="Only migrate mAIners already on this wasm hash. "
+                             "WITH the 0x prefix, as printed by `dfx canister info`. "
+                             "Required on prd.")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
+
+    # On prd the guard is not optional: a stranded owner there is a real user.
+    if args.network == "prd" and not args.target_hash:
+        parser.error("--target-hash is required on prd. Without it this script could "
+                     "remove an owner as controller from a mAIner still running the old "
+                     "wasm, leaving them unable to change their own settings.")
+    if args.target_hash and not args.target_hash.startswith("0x"):
+        parser.error(f"--target-hash must start with 0x (got {args.target_hash}). It is "
+                     "compared verbatim against `dfx canister info` output.")
 
     # Point the reused logging at this script's log file.
     rbac.LOG_FILE_PATH = LOG_FILE_PATH
@@ -210,6 +256,8 @@ def main():
         rbac.log_message("Migrate mAIner owner access", "INFO")
         rbac.log_message(f"Network: {args.network}", "INFO")
         rbac.log_message(f"Canonical controllers ({len(canonical)}): {sorted(canonical)}", "INFO")
+        rbac.log_message(f"Target wasm hash: {args.target_hash or 'NOT SET - guard disabled'}",
+                         "INFO" if args.target_hash else "WARNING")
         rbac.log_message(f"Dry Run: {args.dry_run}", "INFO")
         rbac.log_message("=" * 60, "INFO")
 
@@ -239,7 +287,8 @@ def main():
                 rbac.log_message("Interrupted by user", "WARNING")
                 break
             try:
-                if not migrate_mainer(args.network, mainer, canonical, args.dry_run):
+                if not migrate_mainer(args.network, mainer, canonical, args.dry_run,
+                                      args.target_hash):
                     rbac.log_message(f"Failed on mAIner {i}. Stopping.", "ERROR")
                     break
             except Exception as e:
