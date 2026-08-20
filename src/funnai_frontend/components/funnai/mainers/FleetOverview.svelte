@@ -50,9 +50,9 @@
             </span>
           {/if}
         </div>
-        <h2 class="text-base sm:text-lg font-semibold tracking-tight text-white">Flock overview</h2>
+        <h2 class="text-base sm:text-lg font-semibold tracking-tight text-white">Fleet overview</h2>
         <p class="mt-0.5 text-sm font-normal text-gray-400">
-          {totalMainers} mAIner{totalMainers === 1 ? '' : 's'} in your flock
+          {totalMainers} mAIner{totalMainers === 1 ? '' : 's'} in your fleet
         </p>
       </div>
 

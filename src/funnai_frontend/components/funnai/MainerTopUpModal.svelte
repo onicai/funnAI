@@ -792,6 +792,11 @@
       <!-- Token Selector -->
       <div class="flex flex-col gap-2">
         <span class="block text-xs text-gray-400 mb-1">Select Payment Token</span>
+        {#if bonusCyclesTopupInPercent > 0}
+          <p class="text-[11px] text-emerald-400 -mt-1 mb-0.5">
+            Non-FUNNAI tokens include +{bonusCyclesTopupInPercent}% bonus cycles
+          </p>
+        {/if}
         <div class="grid grid-cols-2 gap-2">
           {#each availableTokens as token}
             <button
@@ -805,9 +810,6 @@
               <div class="flex flex-col min-w-0 flex-1 text-left">
                 <div class="font-medium text-xs truncate text-white">{token.symbol}</div>
                 <div class="text-xs text-gray-500 truncate">{token.name}</div>
-                {#if token.symbol !== 'FUNNAI' && bonusCyclesTopupInPercent > 0}
-                  <div class="text-[10px] font-medium text-emerald-400 truncate">+{bonusCyclesTopupInPercent}% bonus</div>
-                {/if}
               </div>
               {#if selectedToken?.symbol === token.symbol}
                 <Check size={14} class="text-agent-purple flex-shrink-0" />
@@ -881,12 +883,7 @@
               <span class="pr-2 sm:pr-3 text-xs sm:text-sm text-gray-400">{selectedToken?.symbol || 'Token'}</span>
             </div>
           </div>
-          <div class="mt-1 text-xs text-gray-400">
-            Protocol fees included
-            {#if showTopupBonus}
-              <span class="text-emerald-400"> · +{bonusCyclesTopupInPercent}% bonus cycles included</span>
-            {/if}
-          </div>
+          <div class="mt-1 text-xs text-gray-400">Protocol fees included</div>
           {#if isBelowMinimum}
             <div class="mt-1 text-xs text-amber-400">
               Minimum amount: {currentMinAmount} {selectedToken?.symbol || 'Token'}

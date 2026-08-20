@@ -2,7 +2,7 @@
   import { onMount, afterUpdate, onDestroy } from 'svelte';
   import CyclesDisplayAgent from './CyclesDisplayAgent.svelte';
   import DailyBurnRatePanel from './DailyBurnRatePanel.svelte';
-  import FlockOverview from './mainers/FlockOverview.svelte';
+  import FleetOverview from './mainers/FleetOverview.svelte';
   import MainerCreationPanel from './mainers/MainerCreationPanel.svelte';
   import WhitelistMainerPanel from './mainers/WhitelistMainerPanel.svelte';
   import ReverseAuctionPanel from './mainers/ReverseAuctionPanel.svelte';
@@ -22,6 +22,7 @@
   import { mainerHealthService, mainerHealthStatuses } from "../../helpers/mainerHealthService";
   import { MarketplaceService } from "../../helpers/marketplaceService";
   import { MARKETPLACE_ENABLED } from "../../helpers/config/featureFlags";
+  import { ArrowUp } from 'lucide-svelte';
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -1254,7 +1255,7 @@
 {/if}
 
 {#if totalMainers > 0}
-  <FlockOverview 
+  <FleetOverview 
     {totalMainers}
     {activeMainers}
     {inactiveMainers}
@@ -1394,8 +1395,8 @@
       </button>
       <div id="content-{sanitizedId}" class="accordion-content">
         <div class="text-xs sm:text-sm text-gray-300 p-3 space-y-2 border-t border-white/[0.06]">
-            <div class="rounded-xl bg-white/[0.03] p-3">
-              <div class="flex items-center justify-between gap-2 mb-2.5">
+            <div class="rounded-xl bg-white/[0.03] p-4">
+              <div class="flex items-center justify-between gap-2 mb-3">
                 <div class="flex items-center gap-2 min-w-0">
                   <h2 class="text-sm font-semibold text-white">Cycles</h2>
                   {#if agent.cycleBalance > 5_000_000_000_000}
@@ -1411,22 +1412,6 @@
                   <span class="text-[11px] font-medium text-amber-300 truncate max-w-[55%]">
                     {$mainerHealthStatuses.get(agent.id)?.maintenanceMessage || 'Checking status…'}
                   </span>
-                {:else}
-                  <button
-                    type="button"
-                    class="agent-btn-primary h-8 px-3 text-xs"
-                    class:opacity-50={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
-                    class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
-                    disabled={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
-                    on:click={() => openTopUpModal(agent)}
-                  >
-                    {#if agentsBeingToppedUp.has(agent.id)}
-                      <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                      <span>Processing…</span>
-                    {:else}
-                      <span>Top up</span>
-                    {/if}
-                  </button>
                 {/if}
               </div>
 
@@ -1471,7 +1456,26 @@
                 </button>
               </div>
 
-              <p class="mt-2 text-[11px] leading-snug text-amber-200/90">
+              {#if $mainerHealthStatuses.get(agent.id)?.isHealthy === true}
+                <button
+                  type="button"
+                  class="mt-4 w-full agent-btn-neon !h-12 !rounded-xl text-sm font-semibold"
+                  class:opacity-50={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
+                  class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
+                  disabled={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
+                  on:click={() => openTopUpModal(agent)}
+                >
+                  {#if agentsBeingToppedUp.has(agent.id)}
+                    <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    <span>Processing…</span>
+                  {:else}
+                    <ArrowUp size={18} />
+                    <span>Top up</span>
+                  {/if}
+                </button>
+              {/if}
+
+              <p class="mt-2.5 text-[11px] leading-snug text-amber-200/90">
                 Top up only in this app — direct canister transfers incur high fees.
               </p>
             </div>
