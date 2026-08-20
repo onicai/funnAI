@@ -289,7 +289,7 @@ dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
 # The wasm will be uploaded to the SNS and a deploy proposal will be created
 # for the community to vote on. Once the proposal passes, the SNS automatically
 # upgrades the canister.
-dfx canister install --wasm out/mainer_service_canister.wasm \
+dfx canister install --wasm out/mainer_canister.wasm \
     --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
     $SUBNET_0_1_SHARE_SERVICE
 
@@ -377,7 +377,7 @@ make docker-build-wasm
 dfx canister --network $NETWORK stop $SUBNET_0_1_SHARE_SERVICE
 dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
 #
-dfx canister install --wasm out/mainer_service_canister.wasm \
+dfx canister install --wasm out/mainer_canister.wasm \
     --network $NETWORK --mode reinstall --wasm-memory-persistence keep \
     $SUBNET_0_1_SHARE_SERVICE
 
@@ -940,11 +940,20 @@ dfx canister --network $NETWORK call   $SUBNET_0_1_MAINER_CREATOR health
 # ensure the correct wasm & did files are in this folder 
 # -> PoAIW/src/mAInerCreator/files
 #
-# If you just did a mAIner upgrade, you can do this:
+# PROMOTE a build to be the ShareAgent wasm.
 # From folder: PoAIW/src/mAIner
-shasum -a 256 .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.wasm # confirm it is the TARGET_HASH
-cp .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.did ../mAInerCreator/files/mainer_ctrlb_canister.did
-cp .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.wasm ../mAInerCreator/files/mainer_ctrlb_canister.wasm
+#
+# `make docker-build-wasm` emits ONE role-neutral artifact, out/mainer_canister.wasm,
+# used for both the ShareService and the ShareAgents. Copying it into
+# mAInerCreator/files is the promotion gate: the moment this build becomes what
+# ShareAgents run. It keeps the role-specific name there because mAInerCreator
+# deliberately holds a pinned, older build than the ShareService.
+#
+# (The old commands here referenced .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/,
+#  a path the build never produces - the Makefile only builds mainer_service_canister.)
+shasum -a 256 out/mainer_canister.wasm # confirm it is the TARGET_HASH
+cp out/mainer_canister.did  ../mAInerCreator/files/mainer_ctrlb_canister.did
+cp out/mainer_canister.wasm ../mAInerCreator/files/mainer_ctrlb_canister.wasm
 #
 # From folder: PoAIW/llms/llama_cpp_canister/build
 shasum -a 256 llama_cpp.wasm # confirm it is the deployed llm wasm
