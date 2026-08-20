@@ -60,8 +60,17 @@
         <div class="shrink-0 mt-0.5">
           {@html getIcon(notification.type)}
         </div>
-        <div class="flex-1 text-sm font-medium">
-          {notification.message}
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium">{notification.message}</p>
+          {#if notification.action}
+            <button
+              type="button"
+              class="mt-2 inline-flex items-center rounded-full border border-current/40 px-3 py-1 text-xs font-semibold tracking-tight hover:bg-white/10"
+              on:click={notification.action.onClick}
+            >
+              {notification.action.label}
+            </button>
+          {/if}
         </div>
         <button
           on:click={() => close(notification.id)}

@@ -31,9 +31,13 @@ export function startAppVersionPolling(intervalMs = 5 * 60 * 1000): void {
       if (published && published !== installed) {
         prompted = true;
         notificationStore.add(
-          "A new version of funnAI is available. Reload the page to use it.",
+          "A new version of the onicai app is available.",
           "info",
           0,
+          {
+            label: "Refresh page",
+            onClick: () => window.location.reload(),
+          },
         );
       }
     } catch (error) {
