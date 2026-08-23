@@ -15,6 +15,7 @@
   import { getIsProtocolActive } from "../../helpers/gameState";
   import { mainerHealthService } from "../../helpers/mainerHealthService";
   import ICPSwapService, { type SwapArgs, type DepositAndSwapArgs } from "../../helpers/icpswapService";
+  import { WalletDataService } from "../../helpers/WalletDataService";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
@@ -739,6 +740,12 @@
         // Close modal immediately and pass promise to parent
         onSuccess(txId, canisterId, backendPromise);
         handleClose();
+
+        // The wallet tab skips refetch when it already has cached balances.
+        // Refresh now so the spent ICP/token amount is visible without a manual refresh.
+        WalletDataService.refreshBalances(true).catch((error) => {
+          console.error("Error refreshing wallet balances after top-up:", error);
+        });
         
         // Trigger celebration if needed (after modal closes) - only for ICP
         if (shouldCelebrate) {
