@@ -175,7 +175,7 @@
     }
   }
 
-  // Reactive: reload user listings when auth state changes
+  // Reload user listings when auth state changes
   $: if ($store.isAuthed) {
     loadUserListings();
   } else {
@@ -183,10 +183,11 @@
     hasRunCleanup = false; // Reset cleanup flag when user logs out
   }
 
-  // Reactive: reload when switching to sell tab
-  $: if (activeTab === 'sell' && $store.isAuthed) {
+  let lastSellRefreshKey = "";
+  $: sellRefreshKey = `${activeTab}:${$store.isAuthed ? "1" : "0"}`;
+  $: if (activeTab === 'sell' && $store.isAuthed && sellRefreshKey !== lastSellRefreshKey) {
+    lastSellRefreshKey = sellRefreshKey;
     loadUserListings();
-    // Also refresh user's mAIner canisters to catch any that were sold
     store.loadUserMainerCanisters();
   }
 

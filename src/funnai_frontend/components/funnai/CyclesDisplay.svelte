@@ -55,7 +55,6 @@
       newCycles = await getProtocolCycles();
       label = "Protocol burned cycles";
     } else {
-      await store.loadUserMainerCanisters();
       newCycles = getUserMainersCycles();
       label = "My mAIners burned cycles";
     }

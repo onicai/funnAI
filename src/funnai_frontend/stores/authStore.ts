@@ -638,13 +638,31 @@ export const createStore = ({
     return enrichedInfo;
   };
 
+  const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const fetchMainerCanistersForUser = async (gameStateCanisterActor: typeof game_state_canister, attempts = 3) => {
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        return await gameStateCanisterActor.getMainerAgentCanistersForUser();
+      } catch (error) {
+        lastError = error;
+        console.warn(`getMainerAgentCanistersForUser failed (attempt ${attempt}/${attempts}):`, error);
+        if (attempt < attempts) {
+          await delay(250 * attempt);
+        }
+      }
+    }
+    throw lastError;
+  };
+
   const initializeUserMainerAgentCanisters = async (gameStateCanisterActor: typeof game_state_canister, loginType, identity: Identity) => {
     let userCanisters = [];
     let mainerActors = [];
     let enrichedUserCanisters = [];
     
     try {
-      const getMainersResult = await gameStateCanisterActor.getMainerAgentCanistersForUser();
+      const getMainersResult = await fetchMainerCanistersForUser(gameStateCanisterActor);
       // @ts-ignore
       if (getMainersResult && 'Ok' in getMainersResult) {
         // @ts-ignore
@@ -1238,6 +1256,8 @@ export const createStore = ({
     return sessionRestorePromise;
   };
 
+  let mainerLoadGeneration = 0;
+
   const loadUserMainerCanisters = async () => {
     try {
       // Check authentication status from store first
@@ -1278,17 +1298,31 @@ export const createStore = ({
         console.warn("Unknown auth type:", isAuthed);
         return;
       }
-      
-      // Reload user's mAIner agent canisters
-      update((state) => ({
-        ...state,
-        userMainersLoadStatus: "loading",
-        userMainersLoadError: null,
-      }));
+
+      const generation = ++mainerLoadGeneration;
+      const hadSuccessfulLoad = globalState.userMainersLoadStatus === "success";
+
+      if (!hadSuccessfulLoad) {
+        update((state) => ({
+          ...state,
+          userMainersLoadStatus: "loading",
+          userMainersLoadError: null,
+        }));
+      }
 
       const { mainerActors, userCanisters, error: mainersError } = await initializeUserMainerAgentCanisters(gameStateCanisterActor, isAuthed, identity);
 
+      if (generation !== mainerLoadGeneration) {
+        return;
+      }
+
       if (mainersError) {
+        const unauthorized = mainersError.includes("reconnect");
+        if (hadSuccessfulLoad && !unauthorized) {
+          console.warn("mAIner refresh failed; keeping last-known list");
+          return;
+        }
+
         update((state) => ({
           ...state,
           userMainersLoadStatus: "error",
