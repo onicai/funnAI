@@ -666,12 +666,15 @@ export const createStore = ({
       if (!prev) return canister;
 
       const statsMissing = !canister.cycleBalanceLoaded;
+      const implausibleZero =
+        (canister.cycleBalance || 0) === 0 && (prev.cycleBalance || 0) > 0;
+      const keepPreviousCycles = statsMissing || implausibleZero;
       const keepPreviousStatus = canister.hasError && prev.uiStatus && prev.uiStatus !== canister.uiStatus;
 
       return {
         ...canister,
-        cycleBalance: statsMissing && prev.cycleBalance ? prev.cycleBalance : canister.cycleBalance,
-        burnedCycles: statsMissing && prev.burnedCycles ? prev.burnedCycles : canister.burnedCycles,
+        cycleBalance: keepPreviousCycles && prev.cycleBalance ? prev.cycleBalance : canister.cycleBalance,
+        burnedCycles: keepPreviousCycles && prev.burnedCycles ? prev.burnedCycles : canister.burnedCycles,
         cycleBalanceLoaded: canister.cycleBalanceLoaded || Boolean(prev.cycleBalanceLoaded) || (prev.cycleBalance || 0) > 0,
         uiStatus: keepPreviousStatus ? prev.uiStatus : canister.uiStatus,
       };

@@ -275,12 +275,10 @@
         userListedMainerAddresses = result.listings.map(listing => listing.address);
         console.log(`✅ User has ${userListedMainerAddresses.length} mAIners listed:`, userListedMainerAddresses);
       } else {
-        console.error("Failed to load user listings:", result.error);
-        userListedMainerAddresses = [];
+        console.error("Failed to load user listings; keeping last-known list:", result.error);
       }
     } catch (error) {
-      console.error("Error loading user listings:", error);
-      userListedMainerAddresses = [];
+      console.error("Error loading user listings; keeping last-known list:", error);
     }
   }
 
@@ -298,6 +296,8 @@
         
         if (result.success) {
           successCount++;
+          // Optimistic hide so the sell list doesn't flash the listed card back.
+          userListedMainerAddresses = [...new Set([...userListedMainerAddresses, mainerId])];
           console.log(`Successfully listed ${mainerId} for ${price} ICP`);
         } else {
           errorCount++;
@@ -320,12 +320,11 @@
           );
         }
         
-        // Refresh marketplace data, user listings, and mAIner canisters
-        await Promise.all([
-          loadMarketplaceStats(),
-          loadUserListings(),
-          store.loadUserMainerCanisters()
-        ]);
+        // Listings first so the sell list can hide the new cards, then stats.
+        // Skip a canister refresh here: it races the listing update and can
+        // flash the listed mAIner back with a stale low-cycles warning.
+        await loadUserListings();
+        await loadMarketplaceStats();
       } else {
         throw new Error(`Failed to list all mAIners. ${errors.join('; ')}`);
       }

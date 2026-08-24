@@ -36,6 +36,11 @@
   }
 
   function loadMyMainers() {
+    // Listing is a long canister update. Background refreshes would rebuild this
+    // list mid-flight: the selected mAIner drops out, then flashes back with a
+    // stale low-cycles warning. Freeze until the listing call finishes.
+    if (isSubmitting) return;
+
     if (!agentCanistersInfo || agentCanistersInfo.length === 0) {
       myMainers = [];
       return;
@@ -90,8 +95,7 @@
   }
 
   function toggleMainerSelection(mainerId: string, hasLowCycles: boolean) {
-    // Don't allow selection of mAIners with low cycles
-    if (hasLowCycles) {
+    if (isSubmitting || hasLowCycles) {
       return;
     }
     
@@ -148,6 +152,7 @@
       console.error("Error listing mAIner:", error);
     } finally {
       isSubmitting = false;
+      loadMyMainers();
     }
   }
 
@@ -216,16 +221,21 @@
           {@const identity = getMainerVisualIdentity(mainer.id)}
           {@const isSelected = selectedMainer === mainer.id}
           {@const isDisabled = mainer.hasLowCycles}
+          {@const isListingThis = isSubmitting && isSelected}
           
           <div 
             class="group relative overflow-hidden rounded-xl border transition-all duration-300
                    {isDisabled 
                      ? 'border-amber-500/25 bg-amber-500/5 cursor-not-allowed opacity-75' 
+                     : isListingThis
+                       ? 'border-agent-purple/50 bg-agent-purple/10 cursor-wait'
                      : isSelected 
                        ? 'border-agent-purple/50 bg-agent-purple/10 cursor-pointer' 
-                       : 'border-white/10 bg-white/3 hover:border-agent-purple/40 cursor-pointer'}"
+                       : isSubmitting
+                         ? 'border-white/10 bg-white/3 opacity-60 cursor-not-allowed'
+                         : 'border-white/10 bg-white/3 hover:border-agent-purple/40 cursor-pointer'}"
             role="button"
-            tabindex={isDisabled ? -1 : 0}
+            tabindex={isDisabled || isSubmitting ? -1 : 0}
             on:click={() => toggleMainerSelection(mainer.id, mainer.hasLowCycles)}
             on:keydown={(e) => e.key === 'Enter' || e.key === ' ' ? toggleMainerSelection(mainer.id, mainer.hasLowCycles) : null}
           >
@@ -273,7 +283,12 @@
 
                     <!-- Status & Cycles -->
                     <div class="shrink-0 flex flex-col items-end gap-1">
-                      {#if isDisabled}
+                      {#if isListingThis}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-agent-purple/15 border border-agent-purple/30 text-agent-purple">
+                          <span class="w-1.5 h-1.5 rounded-full mr-1.5 bg-agent-purple animate-pulse"></span>
+                          Listing...
+                        </span>
+                      {:else if isDisabled}
                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 border border-amber-500/25 text-amber-300">
                           <span class="w-1.5 h-1.5 rounded-full mr-1.5 bg-amber-400"></span>
                           Please contact onicai team
@@ -321,6 +336,7 @@
                           min="0.01"
                           placeholder="0.00"
                           value={price}
+                          disabled={isSubmitting}
                           on:input={(e) => handlePriceInput(e.currentTarget.value)}
                           on:wheel={(e) => e.preventDefault()}
                           class="agent-input flex-1 {priceError ? 'border-red-500/50 focus:ring-red-500/30 focus:border-red-500/50' : ''}"
