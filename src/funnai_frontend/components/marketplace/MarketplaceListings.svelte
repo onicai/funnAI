@@ -3,7 +3,7 @@
   import { toastStore } from "../../stores/toastStore";
   import { onMount, onDestroy } from "svelte";
   import { getMainerVisualIdentity } from "../../helpers/utils/mainerIdentity";
-  import { ShoppingBag, Crown, X, Eye, Tag, Clock, RefreshCw } from "@lucide/svelte";
+  import { ShoppingBag, Crown, X, Eye, Tag, RefreshCw } from "@lucide/svelte";
   import { MarketplaceService } from "../../helpers/marketplaceService";
   import { Principal } from '@dfinity/principal';
   import LoginModal from "../login/LoginModal.svelte";
@@ -278,7 +278,7 @@
   }
 
   async function handleBuy(listing: MarketplaceListing) {
-    if (isProcessing) return;
+    if (isProcessing || listing.isOwnListing) return;
     
     // Pause auto-refresh during purchase to avoid UI changes mid-transaction
     stopAutoRefresh();
@@ -352,16 +352,18 @@
     return price.toFixed(8).replace(/\.?0+$/, '');
   }
 
-  $: ownListings = listings.filter(l => l.isOwnListing);
-  $: otherListings = listings.filter(l => !l.isOwnListing);
+  $: ownListings = listings
+    .filter(l => !!(currentUserPrincipal && l.seller === currentUserPrincipal))
+    .map(l => ({ ...l, isOwnListing: true }));
+  $: otherListings = listings
+    .filter(l => !(currentUserPrincipal && l.seller === currentUserPrincipal))
+    .map(l => ({ ...l, isOwnListing: false }));
+  $: browseListings = [...ownListings, ...otherListings];
   
-  // Apply pagination to other listings (no sorting)
-  // $: sortedOtherListings = sortListings(otherListings);
-  $: sortedOtherListings = otherListings; // Default to price-low sort (cheapest first)
-  $: totalPages = Math.ceil(sortedOtherListings.length / itemsPerPage);
+  $: totalPages = Math.ceil(browseListings.length / itemsPerPage);
   $: startIndex = (currentPage - 1) * itemsPerPage;
-  $: endIndex = Math.min(startIndex + itemsPerPage, sortedOtherListings.length);
-  $: paginatedListings = sortedOtherListings.slice(startIndex, endIndex);
+  $: endIndex = Math.min(startIndex + itemsPerPage, browseListings.length);
+  $: paginatedListings = browseListings.slice(startIndex, endIndex);
   
   // Reset to page 1 if current page exceeds total pages (e.g., after filtering)
   $: if (currentPage > totalPages && totalPages > 0) {
@@ -418,94 +420,6 @@
 </script>
 
 <div class="space-y-6">
-  <!-- Own Listings Section (if any) -->
-  {#if ownListings.length > 0}
-    <div class="agent-card">
-      <!-- Header -->
-      <div class="border-b border-white/8 px-6 py-4">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-            <Crown class="w-5 h-5 text-amber-400" />
-          </div>
-          <div>
-            <p class="agent-eyebrow">Yours</p>
-            <h2 class="text-lg font-semibold tracking-tight text-white">My Listings</h2>
-            <p class="text-sm text-gray-400">Manage your mAIners on sale</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Own Listings Grid -->
-      <div class="p-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {#each ownListings as listing}
-            {@const identity = getMainerVisualIdentity(listing.mainerId)}
-
-            <div class="group relative overflow-hidden rounded-xl border border-amber-500/25 bg-white/3 hover:border-amber-500/40 transition-all duration-300">
-              <!-- Soft identity tint -->
-              <div class="absolute inset-0 bg-linear-to-br {identity.colors.bg} opacity-[0.04]"></div>
-
-              <!-- Featured Badge -->
-              <div class="absolute top-3 right-3 z-10">
-                <div class="flex items-center space-x-1 px-2 py-1 bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-medium rounded-full">
-                  <Crown class="w-3 h-3" />
-                  <span>YOURS</span>
-                </div>
-              </div>
-
-              <div class="relative p-4">
-                <!-- mAIner Avatar & Info -->
-                <div class="flex items-start space-x-3 mb-4">
-                  <div class="w-14 h-14 rounded-xl overflow-hidden border border-white/10 bg-agent-elevated [&>svg]:w-full [&>svg]:h-full [&>svg]:block">
-                    {@html identity.icon}
-                  </div>
-
-                  <div class="flex-1 min-w-0">
-                    <h3 class="font-semibold text-white truncate">{listing.mainerName}</h3>
-                  </div>
-                </div>
-
-                <!-- Stats -->
-                <div class="space-y-2 mb-4">
-                  <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-400">Listed:</span>
-                    <span class="font-medium text-gray-200">
-                      {formatTimeAgo(listing.listedAt)}
-                    </span>
-                  </div>
-                </div>
-
-                <!-- Price & Actions -->
-                <div class="border-t border-white/10 pt-4">
-                  <div class="flex items-center justify-between mb-3">
-                    <span class="text-sm text-gray-400">Price:</span>
-                    <span class="text-2xl font-semibold text-amber-400">
-                      {formatPrice(listing.price)} ICP
-                    </span>
-                  </div>
-
-                  <button
-                    on:click={() => handleCancelListing(listing)}
-                    disabled={isProcessing || cancelingListingId === listing.id}
-                    class="w-full agent-btn-ghost border-red-500/30 text-red-300 hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {#if cancelingListingId === listing.id}
-                      <div class="w-4 h-4 border-2 border-red-300 border-t-transparent rounded-full spinner"></div>
-                      <span>Canceling...</span>
-                    {:else}
-                      <X class="w-4 h-4" />
-                      <span>Cancel Listing</span>
-                    {/if}
-                  </button>
-                </div>
-              </div>
-            </div>
-          {/each}
-        </div>
-      </div>
-    </div>
-  {/if}
-
   <!-- All Marketplace Listings -->
   <div class="agent-card">
     <!-- Header -->
@@ -518,7 +432,13 @@
           <div>
             <p class="agent-eyebrow">Browse</p>
             <h2 class="text-lg font-semibold tracking-tight text-white">Marketplace Listings</h2>
-            <p class="text-sm text-gray-400">Browse and purchase mAIners</p>
+            <p class="text-sm text-gray-400">
+              {#if ownListings.length > 0}
+                Your mAIners show here too — tagged, and not for you to buy
+              {:else}
+                Browse and purchase mAIners
+              {/if}
+            </p>
           </div>
         </div>
 
@@ -543,15 +463,17 @@
           </div>
 
           <div class="text-right">
-            <p class="text-2xl font-semibold text-white">{otherListings.length}</p>
-            <p class="text-xs text-gray-400">Available</p>
+            <p class="text-2xl font-semibold text-white">{listings.length}</p>
+            <p class="text-xs text-gray-400">
+              Listed{ownListings.length > 0 ? ` · ${ownListings.length} yours` : ''}
+            </p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Sorting & Pagination Controls -->
-    {#if !isLoading && otherListings.length > 0}
+    {#if !isLoading && browseListings.length > 0}
       <div class="px-6 py-3 border-b border-white/8 bg-white/2">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <!-- Sort controls - removed -->
@@ -573,7 +495,7 @@
           
           <!-- Page info -->
           <div class="text-sm text-gray-400">
-            Showing <span class="font-medium text-white">{startIndex + 1}-{endIndex}</span> of <span class="font-medium text-white">{otherListings.length}</span>
+            Showing <span class="font-medium text-white">{startIndex + 1}-{endIndex}</span> of <span class="font-medium text-white">{browseListings.length}</span>
           </div>
         </div>
       </div>
@@ -585,7 +507,7 @@
         <div class="flex items-center justify-center py-20">
           <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-agent-purple"></div>
         </div>
-      {:else if otherListings.length === 0}
+      {:else if browseListings.length === 0}
         <div class="text-center py-12">
           <ShoppingBag class="w-8 h-8 text-gray-500 mx-auto mb-4" />
           <p class="text-gray-400 mb-2">No listings available</p>
@@ -596,12 +518,21 @@
         <div class="relative">
           <!-- Sorting overlay removed -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {#each paginatedListings as listing}
+            {#each paginatedListings as listing (listing.id)}
             {@const identity = getMainerVisualIdentity(listing.mainerId)}
             
-            <div class="group relative overflow-hidden rounded-xl border border-white/10 bg-white/3 hover:border-agent-purple/40 transition-all duration-300">
+            <div class="group relative overflow-hidden rounded-xl border bg-white/3 transition-all duration-300 {listing.isOwnListing ? 'border-amber-500/30 hover:border-amber-500/50' : 'border-white/10 hover:border-agent-purple/40'}">
               <!-- Soft identity tint -->
               <div class="absolute inset-0 bg-linear-to-br {identity.colors.bg} opacity-[0.04]"></div>
+
+              {#if listing.isOwnListing}
+                <div class="absolute top-3 right-3 z-10">
+                  <div class="flex items-center space-x-1 px-2 py-1 bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-medium rounded-full">
+                    <Crown class="w-3 h-3" />
+                    <span>My mAIner</span>
+                  </div>
+                </div>
+              {/if}
               
               <div class="relative p-5">
                 <!-- mAIner Avatar & Info -->
@@ -610,7 +541,7 @@
                     {@html identity.icon}
                   </div>
                   
-                  <div class="flex-1 min-w-0">
+                  <div class="flex-1 min-w-0 {listing.isOwnListing ? 'pr-24' : ''}">
                     <h3 class="font-semibold text-white truncate">{listing.mainerName}</h3>
                   </div>
                 </div>
@@ -620,7 +551,7 @@
                   <div class="flex items-center justify-between text-sm">
                     <span class="text-gray-400">Seller:</span>
                     <span class="font-mono text-xs text-gray-300">
-                      {shortenPrincipal(listing.seller)}
+                      {listing.isOwnListing ? 'You' : shortenPrincipal(listing.seller)}
                     </span>
                   </div>
                 </div>
@@ -632,7 +563,7 @@
                       <Tag class="w-4 h-4" />
                       <span>Price:</span>
                     </div>
-                    <span class="text-2xl font-semibold text-agent-purple">
+                    <span class="text-2xl font-semibold {listing.isOwnListing ? 'text-amber-400' : 'text-agent-purple'}">
                       {formatPrice(listing.price)} ICP
                     </span>
                   </div>
@@ -645,23 +576,40 @@
                       <Eye class="w-4 h-4" />
                       <span>Details</span>
                     </button>
-                    
-                    <button
-                      on:click={() => $store.isAuthed ? handleBuy(listing) : toggleModal()}
-                      disabled={isProcessing}
-                      class="agent-btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={!$store.isAuthed ? 'Please connect your wallet to purchase' : ''}
-                    >
-                      {#if $store.isAuthed}
-                        <ShoppingBag class="w-4 h-4" />
-                        <span>Buy</span>
-                      {:else}
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                        </svg>
-                        <span>Connect Wallet</span>
-                      {/if}
-                    </button>
+
+                    {#if listing.isOwnListing}
+                      <button
+                        on:click={() => handleCancelListing(listing)}
+                        disabled={isProcessing || cancelingListingId === listing.id}
+                        class="agent-btn-ghost w-full border-red-500/30 text-red-300 hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="You can't buy your own listing"
+                      >
+                        {#if cancelingListingId === listing.id}
+                          <div class="w-4 h-4 border-2 border-red-300 border-t-transparent rounded-full spinner"></div>
+                          <span>Canceling...</span>
+                        {:else}
+                          <X class="w-4 h-4" />
+                          <span>Cancel</span>
+                        {/if}
+                      </button>
+                    {:else}
+                      <button
+                        on:click={() => $store.isAuthed ? handleBuy(listing) : toggleModal()}
+                        disabled={isProcessing}
+                        class="agent-btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={!$store.isAuthed ? 'Please connect your wallet to purchase' : ''}
+                      >
+                        {#if $store.isAuthed}
+                          <ShoppingBag class="w-4 h-4" />
+                          <span>Buy</span>
+                        {:else}
+                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                          </svg>
+                          <span>Connect Wallet</span>
+                        {/if}
+                      </button>
+                    {/if}
                   </div>
                 </div>
               </div>
@@ -764,9 +712,23 @@
               {@html identity.icon}
             </div>
             <div>
-              <p class="agent-eyebrow">Details</p>
+              <div class="flex items-center gap-2">
+                <p class="agent-eyebrow">Details</p>
+                {#if selectedListing.isOwnListing}
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-medium rounded-full uppercase tracking-wide">
+                    <Crown class="w-3 h-3" />
+                    My mAIner
+                  </span>
+                {/if}
+              </div>
               <h3 class="text-lg font-semibold tracking-tight text-white">{selectedListing.mainerName}</h3>
-              <p class="text-sm text-gray-400">mAIner Details</p>
+              <p class="text-sm text-gray-400">
+                {#if selectedListing.isOwnListing}
+                  Your listing
+                {:else}
+                  mAIner Details
+                {/if}
+              </p>
             </div>
           </div>
           
@@ -812,6 +774,7 @@
 
         <!-- Actions -->
         {#if selectedListing.isOwnListing}
+          <p class="text-sm text-amber-300/90 text-center">This is your mAIner — you can't buy it from yourself.</p>
           <button
             on:click={() => handleCancelListing(selectedListing)}
             disabled={isProcessing || cancelingListingId === selectedListing.id}
