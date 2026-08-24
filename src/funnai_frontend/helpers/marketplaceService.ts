@@ -655,12 +655,24 @@ export class MarketplaceService {
       if (!$store.gameStateCanisterActor) {
         throw new Error('Game State canister not initialized');
       }
+
+      const actor = $store.gameStateCanisterActor;
       
-      // Get actual sales statistics from backend
-      const salesStats = await $store.gameStateCanisterActor.getMarketplaceSalesStats();
-      
-      // Get current number of listings
-      const totalListings = await $store.gameStateCanisterActor.icrc7_total_supply();
+      // Sales stats + live listing count in parallel.
+      // Active listings must come from marketplace listings — icrc7_total_supply
+      // is NFT supply and stays 0 even when mAIners are listed for sale.
+      const [salesStats, listingsResult] = await Promise.all([
+        actor.getMarketplaceSalesStats(),
+        actor.getMarketplaceMainerListings(),
+      ]);
+
+      let totalListings = 0;
+      if (listingsResult && typeof listingsResult === 'object' && 'Ok' in listingsResult) {
+        totalListings = Array.isArray(listingsResult.Ok) ? listingsResult.Ok.length : 0;
+      } else if (listingsResult && typeof listingsResult === 'object' && 'Err' in listingsResult) {
+        console.warn('getMarketplaceMainerListings failed for stats; falling back to icrc7_total_supply', listingsResult.Err);
+        totalListings = Number(await actor.icrc7_total_supply());
+      }
       
       // Convert total volume from e8s to ICP
       const totalVolumeICP = (Number(salesStats.totalVolumeE8S) / 100_000_000).toFixed(2);
@@ -672,7 +684,7 @@ export class MarketplaceService {
       return {
         success: true,
         stats: {
-          totalListings: Number(totalListings),
+          totalListings,
           totalSales: Number(salesStats.totalSales),
           totalVolume: totalVolumeICP,
           activeTraders: totalTraders

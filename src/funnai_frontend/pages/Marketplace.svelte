@@ -178,17 +178,28 @@
     }
   }
 
-  // Reload user listings when auth actually changes — not on every store write
+  // Reload user listings / stats when auth actually changes — not on every store write
   $: authListingsKey = $store.isAuthed ? "1" : "0";
   $: if (authListingsKey !== lastAuthListingsKey) {
     lastAuthListingsKey = authListingsKey;
     if ($store.isAuthed) {
       loadUserListings();
+      loadMarketplaceStats();
     } else {
       userListedMainerAddresses = [];
       staleReservation = null;
       hasRunCleanup = false; // Reset cleanup flag when user logs out
     }
+  }
+
+  // Retry stats once the game-state actor appears (login often races first paint)
+  let lastStatsActorReady = false;
+  $: statsActorReady = Boolean($store.gameStateCanisterActor);
+  $: if (statsActorReady && !lastStatsActorReady) {
+    lastStatsActorReady = true;
+    loadMarketplaceStats();
+  } else if (!statsActorReady) {
+    lastStatsActorReady = false;
   }
 
   let lastSellRefreshKey = "";
@@ -213,16 +224,11 @@
 
   async function initialize() {
     isLoading = true;
-    
-    // If user is already authenticated on page load, run cleanup immediately
-    if ($store.isAuthed && !hasRunCleanup) {
-      console.log('🔄 User already authenticated on load, running cleanup...');
-      await clearStaleReservationsOnAuth();
-    }
-    
+
     try {
-      await loadMarketplaceStats();
-      await loadUserListings();
+      // Don't await reservation cleanup here — it can stall first paint for a long time.
+      // The reactive auth cleanup above handles that in the background.
+      await Promise.all([loadMarketplaceStats(), loadUserListings()]);
     } catch (error) {
       console.error("Error initializing marketplace:", error);
     } finally {
@@ -249,14 +255,8 @@
     if (result.success && result.stats) {
       stats = result.stats;
     } else {
-      console.error("Failed to load marketplace stats:", result.error);
-      // Keep default values
-      stats = {
-        totalListings: 0,
-        totalSales: 0,
-        totalVolume: "0",
-        activeTraders: 0,
-      };
+      // Keep last-known tiles — a login/actor blip used to wipe real numbers to 0
+      console.error("Failed to load marketplace stats; keeping last-known values:", result.error);
     }
   }
 

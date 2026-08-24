@@ -190,8 +190,10 @@
 
   $: currentUserPrincipal = $store.principal?.toString();
 
+  let listingsLoadGeneration = 0;
+  let lastListingsPrincipalKey: string | null | undefined = undefined;
+
   onMount(() => {
-    loadListings();
     startAutoRefresh();
     
     // Listen for visibility changes to refresh when user returns to tab
@@ -203,15 +205,29 @@
     document.removeEventListener('visibilitychange', handleVisibilityChange);
   });
 
-  // Reload when user changes
-  $: if ($store.principal) {
-    loadListings();
+  // Reload only when the signed-in principal actually changes.
+  // `$store` updates constantly during login/mainer enrich; reacting to the
+  // whole store was re-running a full spinner load for ~30s after connect.
+  $: listingsPrincipalKey = $store.principal?.toString() ?? null;
+  $: if (listingsPrincipalKey !== lastListingsPrincipalKey) {
+    const soft = lastListingsPrincipalKey !== undefined && listings.length > 0;
+    lastListingsPrincipalKey = listingsPrincipalKey;
+    loadListings({ soft });
   }
 
-  async function loadListings() {
-    isLoading = true;
+  async function loadListings(options: { soft?: boolean } = {}) {
+    const soft = Boolean(options.soft);
+    const generation = ++listingsLoadGeneration;
+
+    if (soft) {
+      isRefreshing = true;
+    } else {
+      isLoading = true;
+    }
+
     try {
       const result = await MarketplaceService.getAllListings();
+      if (generation !== listingsLoadGeneration) return;
       
       if (result.success && result.listings) {
         // Convert backend listings to frontend format
@@ -257,13 +273,22 @@
         console.log(`Loaded ${listings.length} marketplace listings`);
       } else {
         console.error("Failed to load listings:", result.error);
-        listings = [];
+        // Keep last-known cards on a soft refresh so login churn doesn't blank the grid
+        if (!soft) {
+          listings = [];
+        }
       }
     } catch (error) {
       console.error("Error loading listings:", error);
-      listings = [];
+      if (!soft) {
+        listings = [];
+      }
     } finally {
-      isLoading = false;
+      if (generation === listingsLoadGeneration) {
+        isLoading = false;
+        isRefreshing = false;
+        lastRefreshTime = Date.now();
+      }
     }
   }
 
