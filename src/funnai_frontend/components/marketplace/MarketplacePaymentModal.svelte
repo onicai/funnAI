@@ -456,8 +456,8 @@
       {#if listing.seller || reservedListingInfo?.seller}
         <div>
           <span class="block text-xs text-gray-400 mb-1.5">Seller</span>
-          <div class="p-2 bg-white/3 rounded-xl border border-white/10">
-            <p class="text-xs font-mono text-gray-300 break-all">{reservedListingInfo?.seller || listing.seller}</p>
+          <div class="p-2 bg-white/3 rounded-xl border border-white/10 overflow-x-auto">
+            <p class="text-xs font-mono text-gray-300 whitespace-nowrap">{reservedListingInfo?.seller || listing.seller}</p>
           </div>
         </div>
       {/if}
