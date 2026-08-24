@@ -45,8 +45,8 @@
     console.log('  Total canisters:', agentCanistersInfo.length);
     console.log('  Listed mAIners to filter:', listedMainers);
 
-    // Filter out unlocked mAIners, already-listed mAIners, and only show active ones that can be sold
-    myMainers = agentCanistersInfo
+    // Filter out unlocked mAIners, already-listed mAIners, and only show those that can be sold
+    const nextMainers = agentCanistersInfo
       .filter(canister => {
         const isUnlocked = canister.status && 'Unlocked' in canister.status;
         const isAlreadyListed = listedMainers.includes(canister.address);
@@ -58,8 +58,9 @@
         
         return shouldShow;
       })
-      .map((canister, index) => {
+      .map((canister) => {
         const cycleBalance = canister.cycleBalance || 0;
+        const cyclesKnown = canister.cycleBalanceLoaded === true || cycleBalance > 0;
         return {
           id: canister.address,
           name: `mAIner ${canister.address?.slice(0, 5)}`,
@@ -67,11 +68,25 @@
           createdAt: canister.creationTimestamp ? Number(canister.creationTimestamp / 1000000n) : null,
           burnedCycles: canister.burnedCycles || 0,
           cycleBalance,
-          hasLowCycles: cycleBalance < MIN_CYCLES_TO_LIST,
+          hasLowCycles: cyclesKnown && cycleBalance < MIN_CYCLES_TO_LIST,
         };
       });
     
-    console.log(`  ✅ Showing ${myMainers.length} available mAIners for sale`);
+    console.log(`  ✅ Showing ${nextMainers.length} available mAIners for sale`);
+    const unchanged =
+      nextMainers.length === myMainers.length &&
+      nextMainers.every((mainer, index) => {
+        const current = myMainers[index];
+        return (
+          current &&
+          current.id === mainer.id &&
+          current.status === mainer.status &&
+          current.cycleBalance === mainer.cycleBalance &&
+          current.hasLowCycles === mainer.hasLowCycles
+        );
+      });
+    if (unchanged) return;
+    myMainers = nextMainers;
   }
 
   function toggleMainerSelection(mainerId: string, hasLowCycles: boolean) {
@@ -197,7 +212,7 @@
     {:else}
       <!-- mAIner List -->
       <div class="space-y-3 mb-6">
-        {#each myMainers as mainer, index}
+        {#each myMainers as mainer (mainer.id)}
           {@const identity = getMainerVisualIdentity(mainer.id)}
           {@const isSelected = selectedMainer === mainer.id}
           {@const isDisabled = mainer.hasLowCycles}

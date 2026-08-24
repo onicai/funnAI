@@ -54,6 +54,9 @@
   let hasRunCleanup = false;
   let isCleaningReservation = false;
   let reservationRefreshKey = 0; // Key to force re-check of reservation banner
+  let staleReservation: { address: string } | null = null;
+  let lastAuthListingsKey = "";
+  let lastReservationCheckKey = "";
 
   onMount(() => {
     if (!MARKETPLACE_ENABLED) {
@@ -175,12 +178,17 @@
     }
   }
 
-  // Reload user listings when auth state changes
-  $: if ($store.isAuthed) {
-    loadUserListings();
-  } else {
-    userListedMainerAddresses = [];
-    hasRunCleanup = false; // Reset cleanup flag when user logs out
+  // Reload user listings when auth actually changes — not on every store write
+  $: authListingsKey = $store.isAuthed ? "1" : "0";
+  $: if (authListingsKey !== lastAuthListingsKey) {
+    lastAuthListingsKey = authListingsKey;
+    if ($store.isAuthed) {
+      loadUserListings();
+    } else {
+      userListedMainerAddresses = [];
+      staleReservation = null;
+      hasRunCleanup = false; // Reset cleanup flag when user logs out
+    }
   }
 
   let lastSellRefreshKey = "";
@@ -191,8 +199,15 @@
     store.loadUserMainerCanisters();
   }
 
-  // Reactive: refresh stats when switching tabs (keeps numbers up-to-date)
-  $: if (activeTab) {
+  $: reservationCheckKey = `${$store.isAuthed ? "1" : "0"}:${reservationRefreshKey}`;
+  $: if (MARKETPLACE_ENABLED && reservationCheckKey !== lastReservationCheckKey) {
+    lastReservationCheckKey = reservationCheckKey;
+    refreshReservationBanner();
+  }
+
+  let lastStatsTab = "";
+  $: if (activeTab && activeTab !== lastStatsTab) {
+    lastStatsTab = activeTab;
     loadMarketplaceStats();
   }
 
@@ -212,6 +227,19 @@
       console.error("Error initializing marketplace:", error);
     } finally {
       isLoading = false;
+    }
+  }
+
+  async function refreshReservationBanner() {
+    if (!$store.isAuthed) {
+      staleReservation = null;
+      return;
+    }
+    try {
+      const result = await MarketplaceService.getUserReservation();
+      staleReservation = result.success && result.reservation ? result.reservation : null;
+    } catch (error) {
+      console.warn("Reservation check failed; keeping current banner state", error);
     }
   }
 
@@ -495,10 +523,7 @@
         </div>
       {:else}
       <!-- Stale Reservation Warning Banner -->
-      {#if $store.isAuthed}
-        {#key reservationRefreshKey}
-          {#await MarketplaceService.getUserReservation() then reservationCheck}
-            {#if reservationCheck.success && reservationCheck.reservation}
+      {#if $store.isAuthed && staleReservation}
               <div class="mt-6 p-4 agent-card border-amber-500/30 bg-amber-500/5">
                 <div class="relative flex items-start gap-3">
                   <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10">
@@ -513,7 +538,7 @@
                       A pending reservation from a previous session is blocking new purchases.
                     </p>
                     <p class="mt-2 text-xs font-mono text-gray-500 truncate">
-                      mAIner: {reservationCheck.reservation.address}
+                      mAIner: {staleReservation.address}
                     </p>
                     <div class="mt-4 flex flex-wrap items-center gap-3">
                       <button
@@ -535,9 +560,6 @@
                   </div>
                 </div>
               </div>
-            {/if}
-          {/await}
-        {/key}
       {/if}
 
       <!-- Stats Cards -->

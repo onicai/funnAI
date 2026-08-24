@@ -545,7 +545,8 @@ export const createStore = ({
       cyclesBurnRateSetting: "Medium",
       llmCanisters: [],
       llmSetupStatus: '',
-      hasError: false
+      hasError: false,
+      cycleBalanceLoaded: false,
     };
 
     // Check if this is an unlocked mAIner (no address and status is Unlocked)
@@ -592,6 +593,7 @@ export const createStore = ({
         enrichedInfo.burnedCycles = Number(statsResult.Ok.totalCyclesBurnt);
         enrichedInfo.cycleBalance = Number(statsResult.Ok.cycleBalance);
         enrichedInfo.cyclesBurnRate = statsResult.Ok.cyclesBurnRate;
+        enrichedInfo.cycleBalanceLoaded = true;
         
         // Convert burn rate to setting label
         try {
@@ -656,6 +658,26 @@ export const createStore = ({
     throw lastError;
   };
 
+  const mergeMainerCanisterInfo = (previous: any[] = [], next: any[] = []) => {
+    if (!previous.length) return next;
+
+    return next.map((canister) => {
+      const prev = previous.find((item) => item.address === canister.address);
+      if (!prev) return canister;
+
+      const statsMissing = !canister.cycleBalanceLoaded;
+      const keepPreviousStatus = canister.hasError && prev.uiStatus && prev.uiStatus !== canister.uiStatus;
+
+      return {
+        ...canister,
+        cycleBalance: statsMissing && prev.cycleBalance ? prev.cycleBalance : canister.cycleBalance,
+        burnedCycles: statsMissing && prev.burnedCycles ? prev.burnedCycles : canister.burnedCycles,
+        cycleBalanceLoaded: canister.cycleBalanceLoaded || Boolean(prev.cycleBalanceLoaded) || (prev.cycleBalance || 0) > 0,
+        uiStatus: keepPreviousStatus ? prev.uiStatus : canister.uiStatus,
+      };
+    });
+  };
+
   const initializeUserMainerAgentCanisters = async (gameStateCanisterActor: typeof game_state_canister, loginType, identity: Identity) => {
     let userCanisters = [];
     let mainerActors = [];
@@ -698,6 +720,11 @@ export const createStore = ({
         enrichedUserCanisters = await Promise.all(enrichPromises);
         
         console.log(`Successfully enriched ${enrichedUserCanisters.length} mAIner canisters with status information`);
+
+        enrichedUserCanisters = mergeMainerCanisterInfo(
+          globalState.userMainerAgentCanistersInfo,
+          enrichedUserCanisters,
+        );
         
         return { mainerActors, userCanisters: enrichedUserCanisters, error: null as string | null };
       }
