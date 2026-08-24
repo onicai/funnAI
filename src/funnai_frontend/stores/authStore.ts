@@ -734,7 +734,7 @@ export const createStore = ({
 
       // A returned Err is not a transport failure — the query reached the canister.
       // "No canisters for this caller/user" is how the backend currently represents
-      // an empty flock. Treat any non-Unauthorized Err as empty rather than a load failure.
+      // an empty fleet. Treat any non-Unauthorized Err as empty rather than a load failure.
       // @ts-ignore
       const errDetail = getMainersResult && 'Err' in getMainersResult ? getMainersResult.Err : getMainersResult;
       if (errDetail && typeof errDetail === 'object' && 'Unauthorized' in errDetail) {
@@ -746,7 +746,7 @@ export const createStore = ({
         };
       }
 
-      console.warn("getMainerAgentCanistersForUser returned Err; treating as empty flock:", errDetail);
+      console.warn("getMainerAgentCanistersForUser returned Err; treating as empty fleet:", errDetail);
       return { mainerActors, userCanisters: enrichedUserCanisters, error: null as string | null };
     } catch (error) {
       console.error("Error in initializeUserMainerAgentCanisters: ", error);

@@ -3,7 +3,7 @@
   import CyclesDisplayAgent from './CyclesDisplayAgent.svelte';
   import DailyBurnRatePanel from './DailyBurnRatePanel.svelte';
   import FleetOverview from './mainers/FleetOverview.svelte';
-  import EmptyFlockBanner from './mainers/EmptyFlockBanner.svelte';
+  import EmptyFleetBanner from './mainers/EmptyFleetBanner.svelte';
   import MainerCreationPanel from './mainers/MainerCreationPanel.svelte';
   import WhitelistMainerPanel from './mainers/WhitelistMainerPanel.svelte';
   import ReverseAuctionPanel from './mainers/ReverseAuctionPanel.svelte';
@@ -1285,7 +1285,7 @@
       {#if agents.length > 0}
         Showing last known list.
       {:else}
-        This is not an empty flock — the query failed.
+        This is not an empty fleet — the query failed.
       {/if}
     </p>
     <button
@@ -1300,7 +1300,7 @@
 
 {#if isAuthenticated && MARKETPLACE_ENABLED && !isCreatingMainer && totalMainers === 0 && mainersLoadStatus === 'success'}
   <div class="mt-4">
-    <EmptyFlockBanner />
+    <EmptyFleetBanner />
   </div>
 {/if}
 
