@@ -2,6 +2,9 @@
   import { link } from "svelte-spa-router";
   import { ShoppingCart, Sparkles } from "@lucide/svelte";
   import { fly } from "svelte/transition";
+
+  /** When true, copy targets users who already own mAIners (vs an empty fleet). */
+  export let hasMainers: boolean = false;
 </script>
 
 <div
@@ -22,10 +25,17 @@
 
     <div class="min-w-0 flex-1">
       <p class="agent-eyebrow mb-1">Marketplace</p>
-      <h2 class="text-lg font-semibold tracking-tight text-white sm:text-xl">Your fleet is empty</h2>
-      <p class="mt-1 max-w-lg text-sm leading-relaxed text-gray-400">
-        Buy your first mAIner on the marketplace and start mining on the network.
-      </p>
+      {#if hasMainers}
+        <h2 class="text-lg font-semibold tracking-tight text-white sm:text-xl">Grow your fleet</h2>
+        <p class="mt-1 max-w-lg text-sm leading-relaxed text-gray-400">
+          Direct creation is at capacity — buy another mAIner on the marketplace to expand your fleet.
+        </p>
+      {:else}
+        <h2 class="text-lg font-semibold tracking-tight text-white sm:text-xl">Your fleet is empty</h2>
+        <p class="mt-1 max-w-lg text-sm leading-relaxed text-gray-400">
+          Buy your first mAIner on the marketplace and start mining on the network.
+        </p>
+      {/if}
     </div>
 
     <a
@@ -34,7 +44,7 @@
       class="agent-btn-neon agent-btn-neon-pink no-underline w-full sm:w-auto sm:shrink-0"
     >
       <ShoppingCart class="h-3.5 w-3.5 stroke-[1.75]" />
-      <span>Buy your first mAIner</span>
+      <span>{hasMainers ? 'Buy a mAIner' : 'Buy your first mAIner'}</span>
     </a>
   </div>
 </div>

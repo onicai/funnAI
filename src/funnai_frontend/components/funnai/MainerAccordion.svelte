@@ -4,10 +4,10 @@
   import DailyBurnRatePanel from './DailyBurnRatePanel.svelte';
   import FleetOverview from './mainers/FleetOverview.svelte';
   import EmptyFleetBanner from './mainers/EmptyFleetBanner.svelte';
+  import NetworkCapacityPanel from './mainers/NetworkCapacityPanel.svelte';
   import MainerCreationPanel from './mainers/MainerCreationPanel.svelte';
   import WhitelistMainerPanel from './mainers/WhitelistMainerPanel.svelte';
   import ReverseAuctionPanel from './mainers/ReverseAuctionPanel.svelte';
-  import NetworkCapacityPanel from './mainers/NetworkCapacityPanel.svelte';
   import AnnouncementPanel from './mainers/AnnouncementPanel.svelte';
   import CanisterInfo from './CanisterInfo.svelte';
   import { get } from 'svelte/store';
@@ -106,6 +106,7 @@
 
   let isMainerCreationStoppedFlag = cachedProtocolFlags?.isMainerCreationStopped ?? false;
   $: stopMainerCreation = isMainerCreationStoppedFlag;
+  $: canCreateMainer = isProtocolActive && !stopMainerCreation;
 
   // Whitelist phase variables
   let isWhitelistPhaseActiveFlag = cachedProtocolFlags?.isWhitelistPhaseActive ?? false;
@@ -1138,24 +1139,32 @@
 />
 -->
 
-<!-- Create Agent Accordion (only show when not in whitelist phase AND not in auction mode) -->
+<!-- Create Agent Accordion (only when creation is open and not in whitelist/auction mode) -->
 {#if !isWhitelistPhaseActive && !isAuctionActive}
-  <MainerCreationPanel
-    {isAuthenticated}
-    {isProtocolActive}
-    {stopMainerCreation}
-    {isCreatingMainer}
-    {mainerCreationProgress}
-    {mainerPrice}
-    {modelType}
-    {selectedModel}
-    {addressCopied}
-    shouldAutoOpen={false}
-    onCreateAgent={createAgent}
-    onToggleLoginModal={toggleLoginModal}
-    onToggleAccordion={toggleAccordion}
-    onModelTypeChange={(type) => modelType = type}
-  />
+  {#if canCreateMainer}
+    <MainerCreationPanel
+      {isAuthenticated}
+      {isProtocolActive}
+      {stopMainerCreation}
+      {isCreatingMainer}
+      {mainerCreationProgress}
+      {mainerPrice}
+      {modelType}
+      {selectedModel}
+      {addressCopied}
+      shouldAutoOpen={false}
+      onCreateAgent={createAgent}
+      onToggleLoginModal={toggleLoginModal}
+      onToggleAccordion={toggleAccordion}
+      onModelTypeChange={(type) => modelType = type}
+    />
+  {:else if !protocolFlagsLoading && !isCreatingMainer && mainersLoadStatus === 'success'}
+    {#if MARKETPLACE_ENABLED}
+      <EmptyFleetBanner hasMainers={totalMainers > 0} />
+    {:else}
+      <NetworkCapacityPanel isVisible={true} />
+    {/if}
+  {/if}
 {/if}
 
 
@@ -1295,12 +1304,6 @@
     >
       Retry
     </button>
-  </div>
-{/if}
-
-{#if isAuthenticated && MARKETPLACE_ENABLED && !isCreatingMainer && totalMainers === 0 && mainersLoadStatus === 'success'}
-  <div class="mt-4">
-    <EmptyFleetBanner />
   </div>
 {/if}
 
