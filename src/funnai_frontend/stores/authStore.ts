@@ -646,7 +646,7 @@ export const createStore = ({
     try {
       const getMainersResult = await gameStateCanisterActor.getMainerAgentCanistersForUser();
       // @ts-ignore
-      if (getMainersResult.Ok) {
+      if (getMainersResult && 'Ok' in getMainersResult) {
         // @ts-ignore
         const rawUserCanisters = getMainersResult.Ok;
         
@@ -682,16 +682,24 @@ export const createStore = ({
         console.log(`Successfully enriched ${enrichedUserCanisters.length} mAIner canisters with status information`);
         
         return { mainerActors, userCanisters: enrichedUserCanisters, error: null as string | null };
-      } else {
-        // @ts-ignore
-        const errDetail = getMainersResult.Err;
-        console.error("Error retrieving user mAIner agent canisters: ", errDetail);
+      }
+
+      // A returned Err is not a transport failure — the query reached the canister.
+      // "No canisters for this caller/user" is how the backend currently represents
+      // an empty flock. Treat any non-Unauthorized Err as empty rather than a load failure.
+      // @ts-ignore
+      const errDetail = getMainersResult && 'Err' in getMainersResult ? getMainersResult.Err : getMainersResult;
+      if (errDetail && typeof errDetail === 'object' && 'Unauthorized' in errDetail) {
+        console.warn("getMainerAgentCanistersForUser: unauthorized", errDetail);
         return {
           mainerActors,
           userCanisters: enrichedUserCanisters,
-          error: "Couldn't load your mAIners. Check your connection and try again.",
+          error: "Couldn't load your mAIners. Please reconnect your wallet.",
         };
-      };
+      }
+
+      console.warn("getMainerAgentCanistersForUser returned Err; treating as empty flock:", errDetail);
+      return { mainerActors, userCanisters: enrichedUserCanisters, error: null as string | null };
     } catch (error) {
       console.error("Error in initializeUserMainerAgentCanisters: ", error);
       return {
