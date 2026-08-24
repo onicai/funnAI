@@ -15,6 +15,19 @@
 
   let isLoading = true;
   let activeTab: 'sell' | 'buy' | 'history' = 'buy';
+
+  const marketplaceTabs = [
+    { id: 'buy' as const, label: 'Buy', icon: ShoppingCart, description: 'Browse listings' },
+    { id: 'sell' as const, label: 'Sell', icon: Tag, description: 'List a mAIner' },
+    { id: 'history' as const, label: 'History', icon: History, description: 'Your trades' },
+  ];
+
+  $: marketplaceSubtitle =
+    activeTab === 'sell'
+      ? 'List your mAIners for sale on the network'
+      : activeTab === 'history'
+        ? 'Purchases and sales from your account'
+        : 'Buy and sell autonomous mAIner agents on the network';
   let stats = {
     totalListings: 0,
     totalSales: 0,
@@ -409,9 +422,8 @@
   <div class="agent-container">
     <!-- Header Section -->
     <div class="mb-8">
-      <!-- Header -->
-      <div class="flex items-center space-x-3 sm:space-x-4 mb-6">
-        <div>
+      <div class="mb-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div class="min-w-0">
           <p class="agent-eyebrow mb-2">Trade</p>
           <div class="flex items-center gap-2 sm:gap-3">
             <h1 class="agent-title">Marketplace</h1>
@@ -422,9 +434,38 @@
             {/if}
           </div>
           <p class="agent-subtitle mt-1 hidden sm:block">
-            Buy and sell autonomous mAIner agents on the network
+            {MARKETPLACE_ENABLED ? marketplaceSubtitle : 'Buy and sell autonomous mAIner agents on the network'}
           </p>
         </div>
+
+        {#if MARKETPLACE_ENABLED}
+          <div
+            role="tablist"
+            aria-label="Marketplace views"
+            class="grid w-full grid-cols-3 rounded-2xl border border-white/10 bg-white/[0.03] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:max-w-md lg:w-[22.5rem] lg:shrink-0"
+          >
+            {#each marketplaceTabs as tab}
+              {@const Icon = tab.icon}
+              <button
+                type="button"
+                role="tab"
+                id="marketplace-tab-{tab.id}"
+                aria-selected={activeTab === tab.id}
+                aria-controls="marketplace-panel"
+                tabindex={activeTab === tab.id ? 0 : -1}
+                title={tab.description}
+                on:click={() => activeTab = tab.id}
+                class="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-[13px] font-medium tracking-tight transition-all duration-200 sm:gap-2 sm:px-3
+                  {activeTab === tab.id
+                    ? 'bg-agent-purple text-white shadow-xs'
+                    : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'}"
+              >
+                <Icon class="h-4 w-4 shrink-0 {activeTab === tab.id ? 'text-white' : 'text-gray-500'}" />
+                <span class="truncate">{tab.label}</span>
+              </button>
+            {/each}
+          </div>
+        {/if}
       </div>
 
       {#if !MARKETPLACE_ENABLED}
@@ -452,35 +493,6 @@
           </div>
         </div>
       {:else}
-      <!-- Tab Navigation -->
-      <div class="flex justify-end mb-4">
-        <div class="agent-tab-track w-full sm:w-auto">
-          <button
-            on:click={() => activeTab = 'buy'}
-            class="agent-tab flex-1 sm:flex-none inline-flex items-center justify-center gap-2 {activeTab === 'buy' ? 'agent-tab-active' : ''}"
-          >
-            <ShoppingCart class="w-4 h-4" />
-            <span>Buy</span>
-          </button>
-          
-          <button
-            on:click={() => activeTab = 'sell'}
-            class="agent-tab flex-1 sm:flex-none inline-flex items-center justify-center gap-2 {activeTab === 'sell' ? 'agent-tab-active' : ''}"
-          >
-            <Tag class="w-4 h-4" />
-            <span>Sell</span>
-          </button>
-
-          <button
-            on:click={() => activeTab = 'history'}
-            class="agent-tab flex-1 sm:flex-none inline-flex items-center justify-center gap-2 {activeTab === 'history' ? 'agent-tab-active' : ''}"
-          >
-            <History class="w-4 h-4" />
-            <span>History</span>
-          </button>
-        </div>
-      </div>
-
       <!-- Stale Reservation Warning Banner -->
       {#if $store.isAuthed}
         {#key reservationRefreshKey}
@@ -592,6 +604,7 @@
       </div>
     {:else}
       <!-- Tab Content -->
+      <div id="marketplace-panel" role="tabpanel" aria-labelledby="marketplace-tab-{activeTab}">
       {#if activeTab === 'sell'}
         <MyMainersForSale 
           onListToMarketplace={handleListToMarketplace}
@@ -608,6 +621,7 @@
           />
         {/key}
       {/if}
+      </div>
     {/if}
     {/if}
   </div>
