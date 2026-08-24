@@ -3,6 +3,7 @@
   import CyclesDisplayAgent from './CyclesDisplayAgent.svelte';
   import DailyBurnRatePanel from './DailyBurnRatePanel.svelte';
   import FleetOverview from './mainers/FleetOverview.svelte';
+  import EmptyFlockBanner from './mainers/EmptyFlockBanner.svelte';
   import MainerCreationPanel from './mainers/MainerCreationPanel.svelte';
   import WhitelistMainerPanel from './mainers/WhitelistMainerPanel.svelte';
   import ReverseAuctionPanel from './mainers/ReverseAuctionPanel.svelte';
@@ -1294,6 +1295,12 @@
     >
       Retry
     </button>
+  </div>
+{/if}
+
+{#if isAuthenticated && MARKETPLACE_ENABLED && !isCreatingMainer && totalMainers === 0 && mainersLoadStatus === 'success'}
+  <div class="mt-4">
+    <EmptyFlockBanner />
   </div>
 {/if}
 
