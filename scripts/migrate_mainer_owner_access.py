@@ -276,6 +276,27 @@ def main():
 
         mainers = [m for m in rbac.get_mainers(args.network) if m.get("address")]
 
+        # Only ShareAgents. GameState's registry also returns the ShareService,
+        # which must NOT be migrated: it runs a different wasm and #AdminUpdate is
+        # load-bearing there (mAInerCreator holds it to register ShareAgents and
+        # is not a controller of it). Until this filter existed, the ShareService
+        # was excluded only incidentally, because --target-hash happened not to
+        # match its wasm - which is not a guarantee worth relying on.
+        # Matches the filter in upgrade_mainers.py.
+        share_agents = []
+        for m in mainers:
+            subtype_dict = m.get("canisterType", {}).get("MainerAgent", {})
+            subtype = list(subtype_dict.keys())[0] if subtype_dict else ""
+            if subtype == "ShareAgent":
+                share_agents.append(m)
+            else:
+                rbac.log_message(
+                    f"Skipping {m['address']} - canisterType is "
+                    f"{subtype or m.get('canisterType')}, not ShareAgent",
+                    "INFO",
+                )
+        mainers = share_agents
+
         if args.mainer:
             # Filter before --num so the two compose predictably.
             mainers = [m for m in mainers if m["address"] == args.mainer]
