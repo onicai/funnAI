@@ -32,11 +32,14 @@
   let feedItems: FeedItem[] = [];
   let allItems: FeedItem[] = [];
   let loading = true;
+  let hasLoadedOnce = false;
   let interval: NodeJS.Timer;
   let currentIndex = 0;
   let updating = false;
+  let updateInFlight = false;
   let updateCounter = 0;
   let lastFetchTimestamp = 0;
+  let lastMainerSourceKey = "";
 
   // Storage keys for persistence - separate caches for different modes
   const FEED_STORAGE_KEY_MY_MAINERS = 'mainer_feed_items_my_mainers';
@@ -437,64 +440,86 @@
   }
 
   async function updateFeed(forceUpdate = false) {
-    updating = true;
-    
-    // Load cached items first for instant display
+    // Load cached items first for instant display (no spinner flicker)
     if (!forceUpdate && allItems.length === 0) {
       const cachedItems = loadCachedFeedItems();
       if (cachedItems.length > 0) {
         allItems = cachedItems;
         feedItems = [...allItems];
         loading = false;
+        hasLoadedOnce = true;
       }
     }
-    
+
     // Check if we should fetch new data
     const lastFetch = getLastFetchTimestamp();
     const timeSinceLastFetch = Date.now() - lastFetch;
-    const shouldFetch = forceUpdate || 
+    const shouldFetch = forceUpdate ||
                        updateCounter % 6 === 0 || // Every 6th time (e.g. 6 * 10sec = 1min)
                        timeSinceLastFetch > 5 * 60 * 1000; // Or every 5 minutes
-    
-    if (shouldFetch) {
-      try {
-        const newItems = await getFeedData(!showAllEvents);
-        
-        // Merge new items with existing cached items
-        const mergedItems = allItems.length > 0 ? mergeItems(allItems, newItems) : newItems;
-        allItems = mergedItems;
-        feedItems = [...allItems];
-        
-        // Save to cache
-        saveFeedItemsToCache(allItems);
-        
-        currentIndex = allItems.length; // Mark all items as displayed
-      } catch (error) {
-        console.error("Error updating feed:", error);
-        // If fetch fails, keep showing cached items
-      }
+
+    if (!shouldFetch) {
+      loading = false;
+      updateCounter++;
+      return;
     }
-    
-    loading = false;
-    updating = false;
-    updateCounter++;
+
+    if (updateInFlight) return;
+    updateInFlight = true;
+
+    // Only show the overlay spinner when there is already content.
+    // An empty feed must keep its empty state visible — flipping `updating`
+    // was hiding/showing that card every poll and looking like a flicker.
+    if (feedItems.length > 0) {
+      updating = true;
+    }
+
+    try {
+      const newItems = await getFeedData(!showAllEvents);
+
+      // Merge new items with existing cached items
+      const mergedItems = allItems.length > 0 ? mergeItems(allItems, newItems) : newItems;
+      allItems = mergedItems;
+      feedItems = [...allItems];
+
+      // Save to cache
+      saveFeedItemsToCache(allItems);
+
+      currentIndex = allItems.length; // Mark all items as displayed
+    } catch (error) {
+      console.error("Error updating feed:", error);
+      // If fetch fails, keep showing cached items / empty state
+    } finally {
+      loading = false;
+      updating = false;
+      updateInFlight = false;
+      hasLoadedOnce = true;
+      updateCounter++;
+    }
   }
 
-  // Handle toggle changes
-  $: if (showAllEvents !== undefined) {
-    currentIndex = 0;
-    feedItems = [];
-    allItems = [];
-    // Clear cache when switching modes since data structure changes
-    try {
-      localStorage.removeItem(FEED_STORAGE_KEY_MY_MAINERS);
-      localStorage.removeItem(FEED_STORAGE_KEY_ALL_EVENTS);
-      localStorage.removeItem(LAST_FETCH_KEY_MY_MAINERS);
-      localStorage.removeItem(LAST_FETCH_KEY_ALL_EVENTS);
-    } catch (error) {
-      console.error('Error clearing cache:', error);
+  // Handle toggle changes only — not every remount
+  let lastShowAllEvents: boolean | undefined = undefined;
+  $: if (showAllEvents !== lastShowAllEvents) {
+    const isFirst = lastShowAllEvents === undefined;
+    lastShowAllEvents = showAllEvents;
+    if (!isFirst) {
+      currentIndex = 0;
+      feedItems = [];
+      allItems = [];
+      hasLoadedOnce = false;
+      loading = true;
+      // Clear cache when switching modes since data structure changes
+      try {
+        localStorage.removeItem(FEED_STORAGE_KEY_MY_MAINERS);
+        localStorage.removeItem(FEED_STORAGE_KEY_ALL_EVENTS);
+        localStorage.removeItem(LAST_FETCH_KEY_MY_MAINERS);
+        localStorage.removeItem(LAST_FETCH_KEY_ALL_EVENTS);
+      } catch (error) {
+        console.error('Error clearing cache:', error);
+      }
+      updateFeed(true);
     }
-    updateFeed(true);
   }
 
   // Reset state when authentication status changes
@@ -504,6 +529,8 @@
     currentIndex = 0;
     loading = false;
     updating = false;
+    hasLoadedOnce = false;
+    lastMainerSourceKey = "";
     // Clear cache when user logs out
     try {
       localStorage.removeItem(FEED_STORAGE_KEY_MY_MAINERS);
@@ -515,16 +542,14 @@
     }
   }
 
-  $: {
-    console.log("MainerFeed reactive agentCanisterActors", agentCanisterActors);
-    console.log("MainerFeed reactive agentCanistersInfo", agentCanistersInfo);
-
-    // Only update feed if authenticated
-    if ($store.isAuthed) {
-      (async () => {
-        await updateFeed(true);
-      })();
-    }
+  // Refresh only when the user's mAIner set actually changes — not on every
+  // store write during login enrich (that forced a full feed reload for ~30s).
+  $: mainerSourceKey = $store.isAuthed
+    ? `${agentCanisterActors?.length ?? 0}:${(agentCanistersInfo || []).map((c) => c.address || "").join(",")}`
+    : "";
+  $: if ($store.isAuthed && mainerSourceKey !== lastMainerSourceKey) {
+    lastMainerSourceKey = mainerSourceKey;
+    updateFeed(true);
   }
 
   // Cleanup old cached items
@@ -582,16 +607,16 @@
 </script>
 
 <div class="relative h-full min-h-0 bg-agent-surface text-white flex flex-col font-sans overflow-hidden">
-  <!-- Overlay loader — does not affect layout height -->
+  <!-- Overlay loader — only when content already exists (empty state stays put) -->
   <div
     class="absolute top-2 left-1/2 z-20 -translate-x-1/2 transition-opacity duration-300
-           {updating && $store.isAuthed ? 'opacity-100' : 'opacity-0 pointer-events-none'}"
-    aria-hidden={!(updating && $store.isAuthed)}
+           {updating && $store.isAuthed && feedItems.length > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'}"
+    aria-hidden={!(updating && $store.isAuthed && feedItems.length > 0)}
   >
     <div class="animate-spin h-5 w-5 border-2 border-agent-purple rounded-full border-t-transparent"></div>
   </div>
 
-  {#if (!$store.isAuthed) || (feedItems.length === 0 && !loading && !updating)}
+  {#if (!$store.isAuthed) || (feedItems.length === 0 && !loading)}
     <div class="absolute inset-0 z-10 flex flex-col justify-center items-center px-5 py-8 overflow-y-auto">
       <div class="relative w-full max-w-md overflow-hidden rounded-xl border border-white/6 bg-agent-surface px-6 py-8 text-left">
         <div class="relative">
@@ -622,7 +647,13 @@
             </p>
           {:else}
             <p class="mt-5 text-xs font-normal text-gray-600">
-              {showAllEvents ? 'No recent activity in the protocol.' : 'Loading activity from your mAIners.'}
+              {#if showAllEvents}
+                No recent activity in the protocol.
+              {:else if hasLoadedOnce}
+                No activity yet. Once your mAIner submits its first response, it will show up here.
+              {:else}
+                Loading activity from your mAIners.
+              {/if}
             </p>
           {/if}
         </div>
