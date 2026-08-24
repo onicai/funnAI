@@ -1737,7 +1737,18 @@ def prepare_for_deployment(network: str, dry_run: bool = False) -> bool:
         return True
 
     try:
-        result = run_command(command, capture_output=False)
+        result = run_command(command, capture_output=True)
+        output = (result.stdout or "") + (result.stderr or "")
+        # get_mainers.sh exits 0 even when the Python inside it dies, so the exit
+        # code alone reports success on a stale config. Look at the output.
+        if "Traceback" in output or "ModuleNotFoundError" in output:
+            log_message("get_mainers.sh FAILED - canister_ids.json / dfx.json were NOT updated", "WARNING")
+            if "No module named 'pandas'" in output:
+                log_message("Cause: `pandas` is missing from the active conda env. "
+                            "Fix with: conda install -n funnAI pandas", "WARNING")
+            log_message("Upgrades still work (they address canisters by principal), but "
+                        "--reinstall and any name-based dfx command will not.", "WARNING")
+            return True
         log_message("Configuration files updated", "SUCCESS")
         return True
     except Exception as e:
@@ -1836,16 +1847,27 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
     # Mark as in progress
     update_mainer_status(address, MainerStatus.IN_PROGRESS)
 
-    # Find the actual canister name from canister_ids.json
+    # Find the actual canister name from canister_ids.json.
+    #
+    # Only --reinstall needs this: it goes through `dfx deploy <name>`. The
+    # upgrade path calls GameState.upgradeMainerControllerAdmin, which addresses
+    # the canister by PRINCIPAL, so a missing canister_ids.json entry is not
+    # fatal. It just means get_mainers.sh has not been run since this mAIner was
+    # created (and note that get_mainers.sh fails silently if `pandas` is not
+    # installed in the active conda env - see prepare_for_deployment).
     canister_name = get_canister_name_from_address(address, network)
 
     if not canister_name:
-        log_message(f"Cannot find canister name for {address} in canister_ids.json", "ERROR")
-        log_message("Make sure to run get_mainers.sh first to update the configuration files", "WARNING")
-        update_mainer_status(address, MainerStatus.FAILED_OTHER, "Canister name not found in canister_ids.json")
-        return False
-
-    log_message(f"canister_ids.json key: {canister_name}", "INFO")
+        if reinstall:
+            log_message(f"Cannot find canister name for {address} in canister_ids.json", "ERROR")
+            log_message("Reinstall goes through `dfx deploy <name>` and cannot proceed without it. "
+                        "Run get_mainers.sh first.", "ERROR")
+            update_mainer_status(address, MainerStatus.FAILED_OTHER, "Canister name not found in canister_ids.json")
+            return False
+        log_message(f"No canister_ids.json entry for {address} - continuing anyway, the "
+                    f"upgrade addresses it by principal", "WARNING")
+    else:
+        log_message(f"canister_ids.json key: {canister_name}", "INFO")
 
     # Get pre-upgrade hash for verification later
     pre_upgrade_hash = None
