@@ -1,7 +1,8 @@
 <script lang="ts">
   import { notificationStore, type Notification } from '../stores/notificationStore';
-  import { fade, fly } from 'svelte/transition';
+  import { fly } from 'svelte/transition';
   import { quintOut } from 'svelte/easing';
+  import Portal from './Portal.svelte';
 
   let notifications: Notification[] = [];
   
@@ -30,16 +31,42 @@
     }
   }
 
-  function getClasses(type: Notification['type']) {
+  function getPanelClasses(type: Notification['type']) {
     switch (type) {
       case 'success':
-        return 'bg-green-100 border-green-400 text-green-800 bg-green-900/30 border-green-700 text-green-300';
+        return 'bg-emerald-950/95 border-emerald-500/45 text-emerald-50 shadow-[0_8px_32px_-8px_rgba(16,185,129,0.35)]';
       case 'error':
-        return 'bg-red-100 border-red-400 text-red-800 bg-red-900/30 border-red-700 text-red-300';
+        return 'bg-red-950/95 border-red-500/45 text-red-50 shadow-[0_8px_32px_-8px_rgba(239,68,68,0.35)]';
       case 'warning':
-        return 'bg-yellow-100 border-yellow-400 text-yellow-800 bg-yellow-900/30 border-yellow-700 text-yellow-300';
+        return 'bg-amber-950/95 border-amber-500/45 text-amber-50 shadow-[0_8px_32px_-8px_rgba(245,158,11,0.35)]';
       case 'info':
-        return 'bg-blue-100 border-blue-400 text-blue-800 bg-blue-900/30 border-blue-700 text-blue-300';
+        return 'bg-slate-900/95 border-sky-500/45 text-slate-100 shadow-[0_8px_32px_-8px_rgba(56,189,248,0.25)]';
+    }
+  }
+
+  function getIconClasses(type: Notification['type']) {
+    switch (type) {
+      case 'success':
+        return 'text-emerald-400';
+      case 'error':
+        return 'text-red-400';
+      case 'warning':
+        return 'text-amber-400';
+      case 'info':
+        return 'text-sky-400';
+    }
+  }
+
+  function getActionClasses(type: Notification['type']) {
+    switch (type) {
+      case 'success':
+        return 'border-emerald-400/55 text-emerald-100 hover:bg-emerald-500/15';
+      case 'error':
+        return 'border-red-400/55 text-red-100 hover:bg-red-500/15';
+      case 'warning':
+        return 'border-amber-400/55 text-amber-100 hover:bg-amber-500/15';
+      case 'info':
+        return 'border-sky-400/55 text-sky-100 hover:bg-sky-500/15';
     }
   }
 
@@ -49,40 +76,42 @@
 </script>
 
 {#if notifications.length > 0}
-  <div
-    class="fixed z-100 flex flex-col gap-2 left-1/2 -translate-x-1/2 bottom-6 w-[min(calc(100%-2rem),28rem)] md:left-auto md:right-4 md:translate-x-0 md:bottom-4 md:w-auto md:max-w-md"
-  >
-    {#each notifications as notification (notification.id)}
-      <div
-        transition:fly={{ y: 50, duration: 300, easing: quintOut }}
-        class="flex items-start gap-3 p-4 rounded-lg shadow-lg border-2 {getClasses(notification.type)} backdrop-blur-xs"
-      >
-        <div class="shrink-0 mt-0.5">
-          {@html getIcon(notification.type)}
-        </div>
-        <div class="flex-1 min-w-0">
-          <p class="text-sm font-medium">{notification.message}</p>
-          {#if notification.action}
-            <button
-              type="button"
-              class="mt-2 inline-flex items-center rounded-full border border-current/40 px-3 py-1 text-xs font-semibold tracking-tight hover:bg-white/10"
-              on:click={notification.action.onClick}
-            >
-              {notification.action.label}
-            </button>
-          {/if}
-        </div>
-        <button
-          on:click={() => close(notification.id)}
-          class="shrink-0 ml-2 hover:opacity-70 transition-opacity"
-          aria-label="Close notification"
+  <Portal target="#portal-target">
+    <div
+      class="fixed flex flex-col gap-2 left-1/2 -translate-x-1/2 bottom-6 w-[min(calc(100%-2rem),28rem)] md:left-auto md:right-4 md:translate-x-0 md:bottom-4 md:w-auto md:max-w-md pointer-events-none"
+      style="z-index: 100000;"
+    >
+      {#each notifications as notification (notification.id)}
+        <div
+          transition:fly={{ y: 50, duration: 300, easing: quintOut }}
+          class="pointer-events-auto flex items-start gap-3 p-4 rounded-xl border backdrop-blur-md {getPanelClasses(notification.type)}"
         >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-    {/each}
-  </div>
+          <div class="shrink-0 mt-0.5 {getIconClasses(notification.type)}">
+            {@html getIcon(notification.type)}
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium leading-snug text-inherit">{notification.message}</p>
+            {#if notification.action}
+              <button
+                type="button"
+                class="mt-2.5 inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold tracking-tight transition-colors {getActionClasses(notification.type)}"
+                on:click={notification.action.onClick}
+              >
+                {notification.action.label}
+              </button>
+            {/if}
+          </div>
+          <button
+            on:click={() => close(notification.id)}
+            class="shrink-0 ml-1 rounded-md p-0.5 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Close notification"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      {/each}
+    </div>
+  </Portal>
 {/if}
-

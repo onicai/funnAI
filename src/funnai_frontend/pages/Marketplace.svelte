@@ -4,6 +4,7 @@
   import { toastStore } from "../stores/toastStore";
   import Footer from "../components/funnai/Footer.svelte";
   import MyMainersForSale from "../components/marketplace/MyMainersForSale.svelte";
+  import MyActiveListings from "../components/marketplace/MyActiveListings.svelte";
   import MarketplaceListings from "../components/marketplace/MarketplaceListings.svelte";
   import MarketplacePaymentModal from "../components/marketplace/MarketplacePaymentModal.svelte";
   import MarketplaceTransactionHistory from "../components/marketplace/MarketplaceTransactionHistory.svelte";
@@ -50,6 +51,8 @@
   
   // Reactive key to force MarketplaceListings to refresh
   let listingsRefreshKey = 0;
+  // Refresh Sell-tab "My Listings" after list/cancel
+  let activeListingsRefreshKey = 0;
 
   let hasRunCleanup = false;
   let isCleaningReservation = false;
@@ -325,6 +328,8 @@
         // flash the listed mAIner back with a stale low-cycles warning.
         await loadUserListings();
         await loadMarketplaceStats();
+        activeListingsRefreshKey++;
+        listingsRefreshKey++;
       } else {
         throw new Error(`Failed to list all mAIners. ${errors.join('; ')}`);
       }
@@ -429,12 +434,17 @@
       
       if (result.success) {
         toastStore.success("Successfully canceled listing!", 5000);
+
+        // Optimistic: show the mAIner again in the sell-to-list grid
+        userListedMainerAddresses = userListedMainerAddresses.filter((a) => a !== mainerId);
         
         // Refresh marketplace data and user listings
         await Promise.all([
           loadMarketplaceStats(),
           loadUserListings()
         ]);
+        activeListingsRefreshKey++;
+        listingsRefreshKey++;
       } else {
         throw new Error(result.error || 'Failed to cancel listing');
       }
@@ -628,10 +638,16 @@
       <!-- Tab Content -->
       <div id="marketplace-panel" role="tabpanel" aria-labelledby="marketplace-tab-{activeTab}">
       {#if activeTab === 'sell'}
-        <MyMainersForSale 
-          onListToMarketplace={handleListToMarketplace}
-          listedMainers={userListedMainerAddresses}
-        />
+        <div class="space-y-6">
+          <MyActiveListings
+            onCancelListing={handleCancelListing}
+            refreshKey={activeListingsRefreshKey}
+          />
+          <MyMainersForSale 
+            onListToMarketplace={handleListToMarketplace}
+            listedMainers={userListedMainerAddresses}
+          />
+        </div>
       {:else if activeTab === 'history'}
         <MarketplaceTransactionHistory />
       {:else}
