@@ -1,0 +1,18 @@
+# Python dependencies for the scripts/ tooling (audit, migration, upgrade, metrics).
+#
+# Installed into the same `funnAI` conda env as PoAIW/requirements.txt, so the two
+# must stay jointly resolvable.
+
+# Internet Computer agent/candid SDK.
+#
+# scripts/ledgers/ and scripts/scripts_whitelist/ imported the `ic` namespace of the
+# older `ic-py` package until 2026-08-25. That package was never declared here, so a
+# fresh env got `ModuleNotFoundError: No module named 'ic'` - which get_mainers.sh
+# swallows (it exits 0 regardless), leaving canister_ids.json / dfx.json silently
+# stale. `icp-py-core` is the maintained successor; the imports now use its module
+# names (icp_agent, icp_identity, icp_principal, icp_canister).
+icp-py-core>=2.3.0
+
+python-dotenv
+pandas
+requests

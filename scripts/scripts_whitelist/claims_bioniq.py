@@ -8,7 +8,7 @@ import argparse
 # from ic.identity import Identity
 # from ic.canister import Canister
 # from ic.candid import IDL
-from ic.principal import Principal
+from icp_principal import Principal
 from pathlib import Path
 from .ic_py_canister import get_canister, run_dfx_command
 from .ckbtc import check_ckbtc_transaction
