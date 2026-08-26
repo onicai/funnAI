@@ -43,6 +43,7 @@ To run:
 """
 
 import argparse
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -119,6 +120,55 @@ def remove_controller(network: str, canister_id: str, principal: str, dry_run: b
         return False
 
 
+def get_admin_roles_certified(network: str, canister_id: str):
+    """
+    Read admin roles through a CERTIFIED (update) call.
+
+    `getAdminRoles` is declared `public shared query` (mAIner/src/Main.mo:420), so an
+    ordinary `dfx canister call` takes the query path - answered by a single replica
+    without consensus. A query issued right after an update can therefore hit a replica
+    that has not applied it yet. `--update` routes the same method through consensus,
+    which is guaranteed to observe prior state.
+    """
+    try:
+        result = rbac.run_command([
+            "dfx", "canister", "--network", network, "call", "--update",
+            canister_id, "getAdminRoles", "--output", "json",
+        ], retry_on_transient_errors=True, max_retries=3, retry_delay=2.0)
+        return json.loads(result.stdout).get("Ok")
+    except Exception as e:
+        rbac.log_message(f"Certified getAdminRoles failed for {canister_id}: {e}", "WARNING")
+        return None
+
+
+def verify_role_landed(network: str, address: str, owner: str) -> bool:
+    """
+    Confirm the owner holds a role after assignAdminRole returned #Ok.
+
+    Fast path is the ordinary query. On a miss we do NOT conclude the grant failed -
+    on 2026-08-26 ajk7h-byaaa-aaaaa-qbhba-cai stopped the prd run this way: the assign
+    succeeded, the query one second later did not see it, and the role was plainly
+    there afterwards. A stale query read is not a failed write.
+
+    So a miss escalates to a certified read, which settles it definitively. Only if
+    THAT does not show the role do we refuse to remove the controller.
+    """
+    roles = rbac.get_admin_roles(network, address)
+    if roles is not None and rbac.principal_has_role(roles, owner):
+        return True
+
+    rbac.log_message(
+        "Role not visible on the query read - re-checking with a certified "
+        "(--update) call before concluding anything...",
+        "WARNING",
+    )
+    roles = get_admin_roles_certified(network, address)
+    if roles is not None and rbac.principal_has_role(roles, owner):
+        rbac.log_message("Certified read confirms the role landed", "SUCCESS")
+        return True
+    return False
+
+
 def migrate_mainer(network: str, mainer: dict, canonical: set, dry_run: bool,
                    target_hash: str = None) -> bool:
     address = mainer.get("address", "")
@@ -164,9 +214,9 @@ def migrate_mainer(network: str, mainer: dict, canonical: set, dry_run: bool,
             rbac.update_mainer_status(address, "failed", "could not assign #AdminQuery")
             return False
         if not dry_run:
-            roles_after = rbac.get_admin_roles(network, address)
-            if roles_after is None or not rbac.principal_has_role(roles_after, owner):
-                rbac.log_message("Could not verify the role landed - NOT removing controller", "ERROR")
+            if not verify_role_landed(network, address, owner):
+                rbac.log_message("Could not verify the role landed, even with a certified "
+                                 "read - NOT removing controller", "ERROR")
                 rbac.update_mainer_status(address, "failed", "role not verified")
                 return False
             rbac.log_message("Role assignment verified", "SUCCESS")
