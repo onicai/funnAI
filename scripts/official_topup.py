@@ -60,6 +60,8 @@ import os
 import re
 import subprocess
 import sys
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from dotenv import dotenv_values
@@ -89,6 +91,12 @@ DEFAULT_TARGET_SPENDABLE = 600_000_000_000
 # its snapshot (30.3 MB -> 64.7 MB, 1.639 -> 2.517 B/day) and validated against
 # qjfug at 408.9 MB (predicted 11.31 vs actual 11.31 B/day).
 IDLE_CYCLES_PER_MB_PER_DAY = 0.0255e9
+
+# Pre-flight scans one `dfx canister status` per mAIner. Sequentially that is ~1.3s
+# each, i.e. ~16 minutes over 754. Run them concurrently, and report progress often
+# enough that a long scan does not look like a hang.
+PREFLIGHT_WORKERS = 8
+PREFLIGHT_PROGRESS_EVERY = 25
 
 # Round payments up to this granularity, and never send more than the cap in one go.
 ICP_GRANULARITY = 0.05
@@ -463,11 +471,36 @@ def preflight_topup_budget(network: str, gamestate: str, addresses: list,
         log_message(f"Pre-flight: could not read conversion rate/bonus: {e}", "WARNING")
         return True, {"skipped": True}
 
+    # Scan concurrently - this is read-only and the wall-clock difference over 754
+    # canisters is minutes, not seconds.
+    total = len(addresses)
+    states, done, started = {}, 0, time.time()
+    with ThreadPoolExecutor(max_workers=PREFLIGHT_WORKERS) as pool:
+        futures = {pool.submit(get_canister_cycle_state, network, a): a for a in addresses}
+        for fut in as_completed(futures):
+            addr = futures[fut]
+            try:
+                states[addr] = fut.result()
+            except Exception as e:
+                log_message(f"Pre-flight: {addr} scan raised {e}", "WARNING")
+                states[addr] = None
+            done += 1
+            if done % PREFLIGHT_PROGRESS_EVERY == 0 or done == total:
+                elapsed = time.time() - started
+                eta = (total - done) * (elapsed / done)
+                bar_len = 30
+                filled = int(bar_len * done / total)
+                bar = "#" * filled + "-" * (bar_len - filled)
+                log_message(
+                    f"Pre-flight: [{bar}] {done}/{total} ({done * 100 // total}%) "
+                    f"~{eta:,.0f}s left",
+                    "INFO",
+                )
+
+    # Report in the original order so the output is deterministic across runs.
     need_topup, unreadable, total_icp = [], [], 0.0
-    for i, addr in enumerate(addresses, 1):
-        if i % 100 == 0:
-            log_message(f"Pre-flight: scanned {i}/{len(addresses)}...", "INFO")
-        state = get_canister_cycle_state(network, addr)
+    for addr in addresses:
+        state = states.get(addr)
         if state is None:
             unreadable.append(addr)
             continue
