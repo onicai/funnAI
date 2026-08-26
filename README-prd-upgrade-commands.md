@@ -1841,6 +1841,161 @@ Expect two benign signals per mAIner in the script output:
   `WARNING: Cycles.balance() ROSE`. Expected on the `after install` sample: the
   10 B deposit less what the install itself spent.
 
+## Topping up a mAIner: use the OFFICIAL flow, never `dfx wallet send`
+
+A mAIner can hold a healthy-looking balance and still be unable to upgrade, because
+the IC never spends into the **freezing reserve**:
+
+```
+freeze reserve = idle_cycles_per_day x (freezing_threshold_seconds / 86400)
+spendable      = balance - freeze reserve
+```
+
+`install_code` needs roughly **300 B of spendable cycles**. On 2026-08-25
+`qjfug-yiaaa-aaaaa-qbema-cai` failed with 578 B in the bank: 205 MB of memory drove a
+339 B reserve, leaving 238.7 B, and the IC asked for 61.2 B more.
+
+Two traps when judging whether a mAIner can upgrade:
+
+- **Judge on `spendable`, not on `Balance`.** They diverge with memory size.
+- **Model the state AFTER the snapshot the upgrade itself takes.** A snapshot counts
+  toward `Memory Size` and is charged in the idle burn, so it inflates the reserve.
+  Idle burn grows about **0.0255 B/day per MB**, i.e. ~0.77 B of reserve per MB at the
+  standard 30-day threshold.
+
+### Why not `dfx wallet send`
+
+A direct `dfx wallet send` / `IC0.deposit_cycles` is a management-canister call. It
+never runs the mAIner's `addCycles()`, so `officialCyclesBalance` is **not** credited.
+The next `storeAndSubmitResponse` reads the gap as an owner's unofficial top-up and
+burns **90%** of it (`(actual - official) x (protocolOperationFeesCut x 9) / 100` at the
+live `feesCut` of 10).
+
+An upgrade normally hides this, because `postupgrade` re-baselines
+`officialCyclesBalance` afterwards. But a top-up done to rescue a **failed** upgrade
+never reaches `postupgrade` - so there the penalty stands. The direct path is at its
+most dangerous exactly when it is most needed.
+
+### The official flow
+
+```
+icrc1_transfer  ICP -> GameState, memo = 0xAD || target_principal_bytes   (11 bytes)
+       |  returns the ledger block index
+GameState.topUpCyclesForAnyMainerAgent({ mainerAgentAddress; paymentTransactionBlockId })
+       |  verifies the payment and the memo binding, applies the top-up bonus
+GameState -> Cycles.add -> mAIner.addCycles()  ->  officialCyclesBalance += amount
+```
+
+`dfx` cannot send the transfer: the bound memo is 11 bytes, `dfx ledger transfer` takes
+only an 8-byte Nat64, and `dfx canister call ... icrc1_transfer` mis-parses the blob
+escapes past the ledger's 32-byte limit. `icp-py-core` encodes it correctly.
+
+### One-time setup: a dedicated top-up identity
+
+`icp-py-core` reads the private key directly, so this must NOT be a maintainer
+identity. Create a dedicated hot key holding only a small balance:
+
+```bash
+dfx identity new funnai-topup --storage-mode plaintext
+```
+
+```bash
+echo "principal : $(dfx --identity funnai-topup identity get-principal)"; echo "account-id: $(dfx --identity funnai-topup ledger account-id)"
+```
+
+Send ICP to the **account-id**. A couple of ICP is plenty - see the arithmetic below,
+which works out at **~2.35 T of official cycles per ICP** on prd.
+
+### What an ICP actually buys
+
+Three factors, in this order:
+
+```
+credited = icp x cmc_rate x (1 - protocolOperationFeesCut/100) x (1 + bonus/100)
+```
+
+- **CMC rate** - `get_icp_xdr_conversion_rate`, ~1.74 T cycles/ICP.
+- **Protocol cut, taken in ICP FIRST** - `protocolOperationFeesCut`, **10%**
+  (`GameState/src/Main.mo:4864`: `amountToKeep = amount * protocolOperationFeesCut / 100`).
+  Easy to miss: `cyclesForProtocol` is later set to 0 with the comment "Protocol
+  already took its cut in ICP".
+- **Top-up bonus, on what remains** - `getBonusCyclesTopupInPercent`, **50%** on prd
+  (not the 10% code default).
+
+Verified on testing 2026-08-26: 0.05 ICP at 1.7402 T/ICP credited exactly **117.5 B**
+= `0.05 x 1.7402e12 x 0.9 x 1.5`. Omitting the cut predicts 130.5 B - 10% high, enough
+to under-fund a computed top-up.
+
+### The bonus is CONDITIONAL on GameState's own cycle balance
+
+This is the one that would be baffling to hit cold. The bonus is not a fixed protocol
+setting - it disappears when GameState has to mint cycles instead of spending its own:
+
+```motoko
+private func effectiveBonusCyclesTopupInPercent() : Nat {
+    if (PROTOCOL_CYCLES_BALANCE_BUFFER > Cycles.balance()) { return 0; };
+    bonusCyclesTopupInPercent
+};
+```
+
+`handleIncomingFunds` branches on the same condition (`GameState/src/Main.mo:4897`):
+
+| GameState `Cycles.balance()` | path | bonus |
+| ---------------------------- | ---- | ----- |
+| **>= buffer** | spends its own cycles (`amountToConvert = 0`) | **applied** |
+| **< buffer** | converts the ICP via the CMC, `cyclesForMainer = cyclesReceived` | **none** |
+
+So the same 1 ICP buys **~2.35 T** normally but only **~1.57 T** when GameState is below
+its buffer - a third less, with nothing in the response to say why.
+
+```bash
+# both numbers, to see which side of the line the protocol is on
+dfx canister --network $NETWORK call --query $SUBNET_0_1_GAMESTATE getProtocolCyclesBalanceBuffer
+dfx canister --network $NETWORK status $SUBNET_0_1_GAMESTATE | grep -E '^Balance'
+```
+
+prd on 2026-08-26: buffer **100 T**, balance **7,344 T** - 73x above, so the bonus is
+stable. It would take GameState losing 98.6% of its cycles to flip.
+
+**No tooling change is needed for this.** `getBonusCyclesTopupInPercent` returns
+`effectiveBonusCyclesTopupInPercent()`, not the raw setting, so it already reports 0 when
+the protocol is below its buffer - and `scripts/official_topup.py` sizes payments from
+whatever that query returns. Do NOT "fix" it by reading `bonusCyclesTopupInPercent`
+directly, or top-ups would be sized 50% high exactly when the protocol is short.
+
+> Note: `dfx ledger balance` refuses to run with a plaintext identity
+> ("not stored securely"). Read it from the ledger instead - `icp-py-core` does not
+> consult dfx's policy:
+> ```bash
+> dfx canister --network $NETWORK call --query ryjl3-tyaaa-aaaaa-aaaba-cai icrc1_balance_of "(record { owner = principal \"$(dfx --identity funnai-topup identity get-principal)\"; subaccount = null })"
+> ```
+
+Only the **transfer** uses this identity. The redeem call runs as whatever identity dfx
+is currently using, because GameState binds the payment to the target mAIner via the
+memo and never compares the payer to `msg.caller`. The maintainer identity is never
+exported.
+
+### Running a top-up
+
+```bash
+# from the folder: funnAI
+conda activate funnAI
+
+# Size the payment from the mAIner's own shortfall (recommended)
+scripts/official_topup.sh --network $NETWORK --mainer <canister-id> --dry-run
+scripts/official_topup.sh --network $NETWORK --mainer <canister-id>
+
+# Or send an exact amount
+scripts/official_topup.sh --network $NETWORK --mainer <canister-id> --icp 0.2
+```
+
+`upgrade_mainers.sh` calls the same code automatically: it tops up any mAIner whose
+post-snapshot spendable is below the install requirement, and **pre-flights the whole
+run** first - scanning every mAIner it is about to process, summing the ICP required,
+and stopping with instructions if the top-up account is short. It stops rather than
+discovering the shortfall at mAIner 400, because a mAIner that fails mid-rollout is
+left with its timer stopped and its owner not earning.
+
 ## Using script
 
 The following script is used to upgrade ALL or selected mAIners.

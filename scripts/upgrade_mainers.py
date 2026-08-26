@@ -101,6 +101,10 @@ import signal
 from pathlib import Path
 from enum import Enum
 
+# Official ICP-based top-up flow. Reused rather than duplicated so the
+# penalty-free path has one implementation.
+from . import official_topup
+
 # Get the directory of this script
 SCRIPT_DIR = Path(__file__).parent.resolve()
 POAIW_MAINER_DIR = (SCRIPT_DIR / "../PoAIW/src/mAIner").resolve()
@@ -112,6 +116,15 @@ GAME_STATE_CANISTER_IDS_PATH = (
 
 # Log file path
 LOG_FILE_PATH = SCRIPT_DIR / "upgrade_mainers.logs"
+
+# Identity that holds the ICP for official top-ups. Deliberately NOT a maintainer
+# identity: its PEM must be readable by icp-py-core, so it is a hot key. Override
+# with --topup-identity.
+TOPUP_IDENTITY = official_topup.DEFAULT_TOPUP_IDENTITY
+
+# Spendable cycles a top-up aims for: 2x what install_code needs, so a canister is
+# not left hovering on the edge for its next upgrade.
+TOPUP_TARGET_SPENDABLE = official_topup.DEFAULT_TARGET_SPENDABLE
 
 # Color codes for output
 RED = '\033[0;31m'
@@ -1893,25 +1906,65 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
     # addCycles() in between — the signature of an unattributed deposit.
     sample_cycle_state(network, address, "entry", dry_run)
 
-    # Proactively top up if balance is low. Covers both IC0406 on self-calls
-    # (upgrade path) and the freezing-threshold + install-code cost of reinstall.
-    MIN_CYCLES_BALANCE = 500_000_000_000  # 500B
-    TOPUP_CYCLES_AMOUNT = "500_000_000_000"  # 500B
-    if cycles_balance is not None and cycles_balance < MIN_CYCLES_BALANCE:
-        log_message(f"Cycles balance ({format_cycles(cycles_balance)}) is below {format_cycles(MIN_CYCLES_BALANCE)} threshold", "WARNING")
-        log_message(f"Sending {TOPUP_CYCLES_AMOUNT} cycles to canister...", "INFO")
-        if not dry_run:
+    # Proactively top up if this canister cannot pay for install_code.
+    #
+    # Gate on SPENDABLE cycles AFTER the snapshot this upgrade is about to take, not
+    # on raw balance. Two reasons the old raw-balance check was wrong:
+    #
+    #   1. The IC never spends into the freezing reserve, so a canister can hold a
+    #      healthy balance and still be refused. qjfug-yiaaa-aaaaa-qbema-cai had 578 B
+    #      on 2026-08-25 - above the old 500 B threshold, so no top-up was attempted -
+    #      but only 238.7 B spendable, and install_code was rejected asking for 61.2 B
+    #      more.
+    #   2. A snapshot counts toward Memory Size and is charged in the idle burn, so
+    #      the snapshot this very function takes inflates the reserve further. Checking
+    #      before the snapshot measures the wrong state.
+    #
+    # The top-up itself goes through the protocol's OFFICIAL ICP flow, never
+    # `dfx wallet send`. A direct deposit is a management-canister call that never runs
+    # the mAIner's addCycles(), so officialCyclesBalance is not credited and the next
+    # storeAndSubmitResponse burns 90% of it as an unofficial top-up. postupgrade
+    # normally re-baselines that away - but a top-up rescuing a FAILED upgrade never
+    # reaches postupgrade, which is exactly the case this code exists for.
+    official_topup.set_logger(log_message)
+    cycle_state = official_topup.get_canister_cycle_state(network, address)
+    if cycle_state is None:
+        log_message("Could not read cycle state; skipping the pre-upgrade top-up check", "WARNING")
+    else:
+        spendable_after = official_topup.predict_spendable_after_snapshot(cycle_state)
+        need = official_topup.INSTALL_CODE_SPENDABLE_NEED
+        log_message(
+            f"Spendable after snapshot: {format_cycles(int(spendable_after))} "
+            f"(install_code needs ~{format_cycles(need)})",
+            "INFO",
+        )
+        if spendable_after < need:
+            log_message(
+                f"Below the install_code requirement - topping up via the official "
+                f"ICP flow (identity: {TOPUP_IDENTITY})...",
+                "WARNING",
+            )
             try:
-                run_command([
-                    "dfx", "wallet", "--network", network, "send", address, TOPUP_CYCLES_AMOUNT
-                ])
-                log_message(f"Successfully sent cycles to {address}", "SUCCESS")
-                time.sleep(10)
-                sample_cycle_state(network, address, "after pre-topup", dry_run)
+                gamestate = official_topup.gamestate_id(network)
             except Exception as e:
-                log_message(f"Failed to send cycles to {address}: {e}", "ERROR")
-                update_mainer_status(address, MainerStatus.FAILED_OTHER, "Could not top up cycles")
+                log_message(f"Cannot resolve GameState for the top-up: {e}", "ERROR")
+                update_mainer_status(address, MainerStatus.FAILED_OTHER,
+                                     "Could not resolve GameState for top-up")
                 return False
+            if not official_topup.official_topup(
+                network, gamestate, address,
+                target_spendable=TOPUP_TARGET_SPENDABLE,
+                identity=TOPUP_IDENTITY,
+                dry_run=dry_run,
+            ):
+                log_message(f"Official top-up did not bring {address} above the "
+                            f"install_code requirement", "ERROR")
+                update_mainer_status(address, MainerStatus.FAILED_OTHER,
+                                     "Could not top up cycles officially")
+                return False
+            if not dry_run:
+                time.sleep(5)
+                sample_cycle_state(network, address, "after official top-up", dry_run)
 
     # If we're reinstalling and the canister is currently Stopped, start it
     # first so pre-reinstall capture queries (burn rate) can succeed. Queries
@@ -2264,6 +2317,22 @@ def main():
         help="Use 'dfx deploy --yes' to skip confirmation prompts"
     )
     parser.add_argument(
+        "--skip-topup-preflight",
+        action="store_true",
+        help="Skip the pre-run scan that checks the top-up account holds enough ICP "
+             "for every mAIner in this run. The scan is read-only and takes a few "
+             "minutes over a large set; skip it on retries where nothing has changed. "
+             "The per-mAIner top-up still runs."
+    )
+    parser.add_argument(
+        "--topup-identity",
+        default=official_topup.DEFAULT_TOPUP_IDENTITY,
+        help="dfx identity holding the ICP used for official top-ups. Deliberately "
+             "not a maintainer identity - its PEM is read directly. Create with: "
+             "dfx identity new <name> --storage-mode plaintext "
+             f"(default: {official_topup.DEFAULT_TOPUP_IDENTITY})"
+    )
+    parser.add_argument(
         "--reinstall",
         action="store_true",
         help="DISABLED - errors out. Reinstall instead of upgrade; WIPES all stable state. "
@@ -2272,6 +2341,9 @@ def main():
     )
 
     args = parser.parse_args()
+
+    global TOPUP_IDENTITY
+    TOPUP_IDENTITY = args.topup_identity
 
     # --reinstall is DISABLED.
     #
@@ -2390,6 +2462,34 @@ def main():
             log_message(f"Will process {max_upgrades} mAIners (--num limit)", "SUCCESS")
         else:
             log_message(f"Will process {total_mainers} ShareAgent mAIners", "SUCCESS")
+
+        # Pre-flight: can the top-up account pay for every mAIner in this run that
+        # cannot currently afford install_code?
+        #
+        # Checking up front rather than discovering it at mAIner 400: a mAIner that
+        # fails mid-rollout is left with its timer stopped and its owner not earning,
+        # and the run halts anyway. The scan is read-only and costs a few minutes
+        # against a rollout measured in hours.
+        if not args.dry_run and not args.skip_topup_preflight:
+            official_topup.set_logger(log_message)
+            try:
+                gamestate_for_topup = official_topup.gamestate_id(args.network)
+            except Exception as e:
+                log_message(f"Could not resolve GameState for the top-up pre-flight: {e}", "ERROR")
+                sys.exit(1)
+            addresses = [m["address"] for m in share_agent_mainers[:max_upgrades]
+                         if m.get("address")]
+            budget_ok, _ = official_topup.preflight_topup_budget(
+                args.network, gamestate_for_topup, addresses,
+                identity=TOPUP_IDENTITY,
+                target_spendable=TOPUP_TARGET_SPENDABLE,
+            )
+            if not budget_ok:
+                sys.exit(1)
+        elif args.skip_topup_preflight and not args.dry_run:
+            log_message("Skipping the top-up budget pre-flight (--skip-topup-preflight). "
+                        "A mAIner that cannot be topped up will still fail individually.",
+                        "WARNING")
 
         # Track results
         successful = 0
