@@ -38,6 +38,8 @@ import argparse
 import json
 import subprocess
 import sys
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -49,6 +51,11 @@ from . import update_admin_rbac_mainers as rbac
 SCRIPT_DIR = Path(__file__).parent.resolve()
 
 LOG_FILE_PATH = SCRIPT_DIR / "logs-admin-rbac" / "audit_mainer_controllers.logs"
+
+# Each mAIner needs two calls (`dfx canister info` + a --query getAdminRoles), ~1.8s
+# sequentially, i.e. ~23 minutes over 754. Both are read-only, so run them concurrently.
+AUDIT_WORKERS = 8
+AUDIT_PROGRESS_EVERY = 25
 
 # Must match MAINTAINER_PRINCIPAL_1 / _2 in PoAIW/src/mAInerCreator/src/Main.mo
 MAINTAINER_PRINCIPALS = [
@@ -222,13 +229,36 @@ def main():
             rbac.log_message("No mAIners to audit", "WARNING")
             sys.exit(0)
 
-        rbac.total_mainers_to_process = len(mainers)
-        results = []
-        for i, m in enumerate(mainers):
-            rbac.current_mainer_index = i
-            results.append(audit_one(args.network, m, canonical))
-        rbac.current_mainer_index = None
-        rbac.total_mainers_to_process = None
+        # Audit concurrently. The per-mAIner index in log_message is meaningless once
+        # the order is non-deterministic, so leave it unset and report a progress bar
+        # from the completion count instead.
+        total = len(mainers)
+        by_address, done, started = {}, 0, time.time()
+        with ThreadPoolExecutor(max_workers=AUDIT_WORKERS) as pool:
+            futures = {pool.submit(audit_one, args.network, m, canonical): m for m in mainers}
+            for fut in as_completed(futures):
+                m = futures[fut]
+                try:
+                    r = fut.result()
+                except Exception as e:
+                    r = {"address": m.get("address", ""), "owner": m.get("owner", ""),
+                         "type": mainer_type(m), "controllers": None, "module_hash": None,
+                         "roles": None, "verdict": "ANOMALY",
+                         "findings": [f"audit raised {e}"]}
+                by_address[r["address"]] = r
+                done += 1
+                if done % AUDIT_PROGRESS_EVERY == 0 or done == total:
+                    elapsed = time.time() - started
+                    eta = (total - done) * (elapsed / done)
+                    filled = int(30 * done / total)
+                    rbac.log_message(
+                        f"[{'#' * filled}{'-' * (30 - filled)}] {done}/{total} "
+                        f"({done * 100 // total}%) ~{eta:,.0f}s left",
+                        "INFO",
+                    )
+
+        # Keep registry order so the report and the JSON are stable across runs.
+        results = [by_address[m["address"]] for m in mainers if m["address"] in by_address]
 
         # ---- module hash outliers (un-upgraded or tampered) ----
         by_hash = defaultdict(list)
