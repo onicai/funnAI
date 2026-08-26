@@ -12,9 +12,9 @@
   export let onCancelListing: (listingId: string, mainerId: string) => Promise<void>;
   export let isProcessing: boolean = false;
   
-  // Export refresh function so parent can trigger updates
+  // Soft refresh so parent updates don't remount or flash a spinner
   export async function forceRefresh() {
-    await loadListings();
+    await loadListings({ soft: true });
   }
 
   let listings: MarketplaceListing[] = [];
@@ -304,19 +304,15 @@
 
   async function handleBuy(listing: MarketplaceListing) {
     if (isProcessing || listing.isOwnListing) return;
-    
-    // Pause auto-refresh during purchase to avoid UI changes mid-transaction
-    stopAutoRefresh();
-    
+
+    // Close details first; parent only opens the payment confirmation modal.
+    // Do not reload listings here — that flashed a spinner under/after the modal.
+    closeDetailsModal();
+
     try {
       await onBuyMainer(listing.id, listing.mainerId, listing.price);
-      closeDetailsModal();
-      await loadListings(); // Refresh listings
     } catch (error) {
       console.error("Error buying mAIner:", error);
-    } finally {
-      // Resume auto-refresh after purchase attempt
-      startAutoRefresh();
     }
   }
 
@@ -327,7 +323,7 @@
     try {
       await onCancelListing(listing.id, listing.mainerId);
       closeDetailsModal();
-      await loadListings(); // Refresh listings
+      await loadListings({ soft: true });
     } catch (error) {
       console.error("Error canceling listing:", error);
     } finally {

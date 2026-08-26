@@ -111,8 +111,9 @@
     reservationActive = false;
     reservedListingInfo = null;
   } else if (!isOpen) {
+    // Stop timers on close, but don't reset UI step here — that flashed
+    // confirm content during the fade-out after success/error.
     stopReservationTimer();
-    currentStep = 'confirm';
     isProcessing = false;
   }
   
@@ -466,16 +467,16 @@
       {#if currentStep === 'confirm'}
         <div>
           <span class="block text-xs text-gray-400 mb-1.5">Your ICP Balance</span>
-          <div class="p-3 bg-white/3 rounded-xl border border-white/10">
+          <div class="p-3 bg-white/3 rounded-xl border border-white/10 min-h-[3.25rem] flex items-center">
             {#if isLoadingBalance}
               <div class="flex items-center space-x-2">
                 <div class="w-4 h-4 border-2 border-agent-purple border-t-transparent rounded-full animate-spin"></div>
                 <span class="text-sm text-gray-400">Loading balance...</span>
               </div>
             {:else}
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between w-full">
                 <span class="text-sm text-gray-400">Available:</span>
-                <span class="text-lg font-semibold text-white">
+                <span class="text-lg font-semibold {hasInsufficientBalance ? 'text-amber-300' : 'text-white'}">
                   {formatICP(balance)} ICP
                 </span>
               </div>
@@ -503,14 +504,28 @@
         </div>
       </div>
 
-      <!-- Info Box (only in confirm step) -->
+      <!-- Info / insufficient warning occupy the same slot so layout doesn't jump when balance loads -->
       {#if currentStep === 'confirm'}
-        <div class="flex items-start space-x-2 p-3 bg-sky-500/5 rounded-xl border border-sky-500/20">
-          <Info class="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
-          <div class="text-xs text-sky-300/90">
-            <p class="font-medium mb-1 text-sky-200">Secure escrow purchase</p>
-            <p>When you confirm, the mAIner will be reserved for you, then ICP will be approved and the protocol will securely complete the transfer.</p>
-          </div>
+        <div class="min-h-[4.75rem]">
+          {#if !isLoadingBalance && hasInsufficientBalance}
+            <div class="p-3 bg-amber-500/5 rounded-xl border border-amber-500/20">
+              <div class="flex items-start space-x-2">
+                <AlertCircle class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                <div class="text-sm text-amber-300">
+                  <p class="font-medium">Insufficient Balance</p>
+                  <p class="mt-1 text-amber-400/80">You need {totalICPWithFee.toFixed(8)} ICP but only have {formatICP(balance)} ICP</p>
+                </div>
+              </div>
+            </div>
+          {:else}
+            <div class="flex items-start space-x-2 p-3 bg-sky-500/5 rounded-xl border border-sky-500/20">
+              <Info class="w-4 h-4 text-sky-400 shrink-0 mt-0.5" />
+              <div class="text-xs text-sky-300/90">
+                <p class="font-medium mb-1 text-sky-200">Secure escrow purchase</p>
+                <p>When you confirm, the mAIner will be reserved for you, then ICP will be approved and the protocol will securely complete the transfer.</p>
+              </div>
+            </div>
+          {/if}
         </div>
       {/if}
 
@@ -518,19 +533,6 @@
       {#if errorMessage}
         <div class="p-3 bg-red-500/10 rounded-xl border border-red-500/25">
           <p class="text-sm text-red-300">{errorMessage}</p>
-        </div>
-      {/if}
-
-      <!-- Insufficient Balance Warning (only in confirm step) -->
-      {#if currentStep === 'confirm' && hasInsufficientBalance && !isLoadingBalance}
-        <div class="p-3 bg-amber-500/5 rounded-xl border border-amber-500/20">
-          <div class="flex items-start space-x-2">
-            <AlertCircle class="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-            <div class="text-sm text-amber-300">
-              <p class="font-medium">Insufficient Balance</p>
-              <p class="mt-1 text-amber-400/80">You need {totalICPWithFee.toFixed(8)} ICP but only have {formatICP(balance)} ICP</p>
-            </div>
-          </div>
         </div>
       {/if}
 

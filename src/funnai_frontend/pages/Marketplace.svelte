@@ -49,8 +49,13 @@
   let buyProcessError: string = '';
   let isCancelingReservation = false;
   
-  // Reactive key to force MarketplaceListings to refresh
-  let listingsRefreshKey = 0;
+  // Soft-refresh buy-tab listings without remounting (avoids spinner flicker)
+  let marketplaceListingsRef: { forceRefresh: () => Promise<void> } | undefined;
+
+  function refreshMarketplaceListings() {
+    void marketplaceListingsRef?.forceRefresh();
+  }
+
   // Refresh Sell-tab "My Listings" after list/cancel
   let activeListingsRefreshKey = 0;
 
@@ -107,7 +112,7 @@
         }
         
         // Refresh listings and banner
-        listingsRefreshKey++;
+        refreshMarketplaceListings();
         reservationRefreshKey++;
       } else {
         console.log('✅ No stale reservations found on auth');
@@ -177,7 +182,7 @@
       reservationRefreshKey++;
       // Also refresh listings in case the mAIner was returned
       await loadMarketplaceStats();
-      listingsRefreshKey++;
+      refreshMarketplaceListings();
     }
   }
 
@@ -329,7 +334,7 @@
         await loadUserListings();
         await loadMarketplaceStats();
         activeListingsRefreshKey++;
-        listingsRefreshKey++;
+        refreshMarketplaceListings();
       } else {
         throw new Error(`Failed to list all mAIners. ${errors.join('; ')}`);
       }
@@ -388,42 +393,42 @@
       8000
     );
     
-    // Reset state
+    // Reset state — keep listing briefly so success/close outro doesn't flash empty
     showPaymentModal = false;
-    selectedListingForPurchase = null;
     isBuyingMainer = false;
     buyProcessStep = 'idle';
+    setTimeout(() => {
+      if (!showPaymentModal) {
+        selectedListingForPurchase = null;
+      }
+    }, 200);
     
     // Small delay to ensure backend has finished all updates
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Refresh marketplace data and user's mAIner list
+    // Soft-refresh marketplace data and user's mAIner list (no remount / spinner)
     await loadMarketplaceStats();
     await store.loadUserMainerCanisters();
-    
-    // Trigger listings refresh to get fresh data from backend
-    listingsRefreshKey++;
-    
-    // Secondary refresh after a delay to catch any race conditions with backend timers
-    // This ensures stale listings are cleared even if there's a timing issue
+    refreshMarketplaceListings();
+
+    // Secondary soft refresh to catch any race with backend timers
     setTimeout(() => {
       console.log("🔄 Secondary marketplace refresh to clear any stale data");
-      listingsRefreshKey++;
+      refreshMarketplaceListings();
     }, 3000);
   }
 
   async function handlePaymentModalClose() {
-    // The modal now handles reservations internally
-    // If user closes before confirming, no reservation was made
-    // If user closes during processing, the modal warns them first
-    
+    // Closing before confirm means no reservation was made — don't reload the grid.
     showPaymentModal = false;
-    selectedListingForPurchase = null;
     isBuyingMainer = false;
     buyProcessStep = 'idle';
-    
-    // Refresh listings in case state changed
-    listingsRefreshKey++;
+    // Keep listing through the fade-out so the modal doesn't flash "No listing selected"
+    setTimeout(() => {
+      if (!showPaymentModal) {
+        selectedListingForPurchase = null;
+      }
+    }, 200);
   }
 
   async function handleCancelListing(listingId: string, mainerId: string) {
@@ -444,7 +449,7 @@
           loadUserListings()
         ]);
         activeListingsRefreshKey++;
-        listingsRefreshKey++;
+        refreshMarketplaceListings();
       } else {
         throw new Error(result.error || 'Failed to cancel listing');
       }
@@ -651,13 +656,12 @@
       {:else if activeTab === 'history'}
         <MarketplaceTransactionHistory />
       {:else}
-        {#key listingsRefreshKey}
-          <MarketplaceListings 
-            onBuyMainer={handleBuyMainer}
-            onCancelListing={handleCancelListing}
-            isProcessing={isBuyingMainer}
-          />
-        {/key}
+        <MarketplaceListings
+          bind:this={marketplaceListingsRef}
+          onBuyMainer={handleBuyMainer}
+          onCancelListing={handleCancelListing}
+          isProcessing={showPaymentModal || isBuyingMainer}
+        />
       {/if}
       </div>
     {/if}

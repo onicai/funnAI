@@ -114,6 +114,14 @@
         const { [modalKey]: _, ...rest } = stack;
         return rest;
       });
+      // Keep body locked through the fade-out; unlock on outroend to avoid page flicker.
+    }
+  }
+
+  function handleOutroEnd() {
+    // Only unlock when no other modals remain open
+    const remaining = Object.keys($modalStack).length;
+    if (remaining === 0) {
       unlockBodyScroll();
     }
   }
@@ -244,11 +252,12 @@
     if (event) {
       event.stopPropagation();
     }
+    // Do not unlock scroll here — wait for fade outro to finish (handleOutroEnd).
+    // Unlocking before the transition causes a visible page jump/flicker.
     modalStack.update((stack) => {
       const { [modalKey]: _, ...rest } = stack;
       return rest;
     });
-    unlockBodyScroll();
     isOpen = false;
     onClose();
   }
@@ -283,13 +292,14 @@
       aria-modal="true"
       aria-labelledby="modal-title"
       style="z-index: {zIndex};"
+      transition:fade={{ duration: 120, easing: cubicOut }}
+      on:outroend={handleOutroEnd}
     >
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <div
         class="fixed inset-0 bg-black/70"
         on:click={handleBackdropClick}
         style="z-index: {zIndex};"
-        transition:fade={{ duration: 120, easing: cubicOut }}
       />
 
       <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -298,7 +308,6 @@
         class="relative max-w-full {isPadded ? 'px-4' : ''} max-h-[min(calc(100vh-40px),calc(100dvh-40px))] flex flex-col overflow-hidden"
         style="width: {modalWidth}; z-index: {zIndex + 1};"
         on:click|stopPropagation
-        transition:fade={{ duration: 150, delay: 100, easing: cubicOut }}
       >
         <Panel
           variant="solid"
