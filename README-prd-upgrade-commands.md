@@ -2,11 +2,13 @@
 # Set NETWORK environment variable
 
 ```bash
-# Maintainer development principals (same for all networks). Needed for admin
-# access post-SNS, when the controller (isController) route belongs only to
+# Maintainer development principals (same for all networks). 
+# Short term this is still needed for limited admin access post-SNS, 
+# when the controller (isController) route belongs only to
 # NNS/SNS root and AdminRBAC is the remaining maintenance path.
-ARJAAN=chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
-PATRICK=cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe
+#
+DEV1=chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
+DEV2=cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe
 
 # One of these... (note: it does not work for 'demo')
 NETWORK=prd
@@ -171,11 +173,11 @@ Grant the maintainer principals `#AdminUpdate` so they keep admin access post-SN
 ```bash
 # verify which principals already have admin roles
 dfx canister --network $NETWORK call game_state_canister getAdminRoles
-# grant #AdminUpdate to the maintainer principals (arjaan, patrick)
-dfx canister --network $NETWORK call game_state_canister assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call game_state_canister assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# grant #AdminUpdate to the maintainer principals (dev1, dev2)
+dfx canister --network $NETWORK call game_state_canister assignAdminRole '( record { "principal" = "'$DEV1'"; role = variant { AdminUpdate }; note = "Maintainer: dev1" } )'
+dfx canister --network $NETWORK call game_state_canister assignAdminRole '( record { "principal" = "'$DEV2'"; role = variant { AdminUpdate }; note = "Maintainer: dev2" } )'
 # if needed, this is how you revoke permissions for a principal
-# dfx canister --network $NETWORK call game_state_canister revokeAdminRole '( "'$ARJAAN'")'
+# dfx canister --network $NETWORK call game_state_canister revokeAdminRole '( "'$DEV1'")'
 ```
 
 # upgrade the Challenger
@@ -248,13 +250,13 @@ NNS/SNS root). One-time per network — the role assignment persists across upgr
 ```bash
 # verify which principals already have admin roles
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getAdminRoles
-# grant #AdminUpdate to the maintainer principals (arjaan, patrick)
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# grant #AdminUpdate to the maintainer principals (dev1, dev2)
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER assignAdminRole '( record { "principal" = "'$DEV1'"; role = variant { AdminUpdate }; note = "Maintainer: dev1" } )'
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER assignAdminRole '( record { "principal" = "'$DEV2'"; role = variant { AdminUpdate }; note = "Maintainer: dev2" } )'
 # verify
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getAdminRoles
 # if needed, revoke
-# dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER revokeAdminRole '( "'$ARJAAN'")'
+# dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER revokeAdminRole '( "'$DEV1'")'
 ```
 
 # upgrade the ShareService
@@ -330,9 +332,9 @@ dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getAdminRoles
 echo "$SUBNET_0_2_API"
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$SUBNET_0_2_API'"; role = variant { AdminQuery }; note = "Daily metrics pull from Api canister" } )'
 
-# grant #AdminUpdate to the maintainer principals (arjaan, patrick) for maintenance (post-SNS)
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# grant #AdminUpdate to the maintainer principals (dev1, dev2) for maintenance (post-SNS)
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$DEV1'"; role = variant { AdminUpdate }; note = "Maintainer: dev1" } )'
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$DEV2'"; role = variant { AdminUpdate }; note = "Maintainer: dev2" } )'
 
 # 🚨 REQUIRED, AND EASY TO MISS: grant #AdminUpdate to the mAInerCreator canister.
 #
@@ -499,13 +501,13 @@ NNS/SNS root). One-time per network — the role assignment persists across upgr
 ```bash
 # verify which principals already have admin roles
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE getAdminRoles
-# grant #AdminUpdate to the maintainer principals (arjaan, patrick)
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# grant #AdminUpdate to the maintainer principals (dev1, dev2)
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE assignAdminRole '( record { "principal" = "'$DEV1'"; role = variant { AdminUpdate }; note = "Maintainer: dev1" } )'
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE assignAdminRole '( record { "principal" = "'$DEV2'"; role = variant { AdminUpdate }; note = "Maintainer: dev2" } )'
 # verify
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE getAdminRoles
 # if needed, revoke
-# dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE revokeAdminRole '( "'$ARJAAN'")'
+# dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE revokeAdminRole '( "'$DEV1'")'
 ```
 
 # upgrade the API canister
@@ -583,11 +585,11 @@ dfx canister --network $NETWORK call $SUBNET_0_2_API getOpenChallengesFromCache 
 ```bash
 # verify which principals already have admin roles
 dfx canister --network $NETWORK call $SUBNET_0_2_API getAdminRoles
-# grant #AdminUpdate to the maintainer principals (arjaan, patrick)
-dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# grant #AdminUpdate to the maintainer principals (dev1, dev2)
+dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$DEV1'"; role = variant { AdminUpdate }; note = "Maintainer: dev1" } )'
+dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$DEV2'"; role = variant { AdminUpdate }; note = "Maintainer: dev2" } )'
 # if needed, this is how you revoke permissions for a principal
-# dfx canister --network $NETWORK call $SUBNET_0_2_API revokeAdminRole '( "'$ARJAAN'")'
+# dfx canister --network $NETWORK call $SUBNET_0_2_API revokeAdminRole '( "'$DEV1'")'
 ```
 
 ## On-chain Daily Metrics setup for the API canister
@@ -1358,10 +1360,10 @@ a `delete_llm.sh` command to clean up.
 
     ```bash
         NETWORK=prd
-        PATRICK="cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"
-        ARJAAN="chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"
-        dfx canister --network $NETWORK update-settings $llm --add-controller $PATRICK
-        dfx canister --network $NETWORK update-settings $llm --add-controller $ARJAAN
+        DEV2="cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"
+        DEV1="chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"
+        dfx canister --network $NETWORK update-settings $llm --add-controller $DEV2
+        dfx canister --network $NETWORK update-settings $llm --add-controller $DEV1
     ```
 
 - Register the canister with CycleOps
@@ -2074,11 +2076,11 @@ scripts/upgrade_mainers.sh --network $NETWORK --target-hash $TARGET_HASH [--dry-
 
 ```bash
 # To assign permissions (run for each maintainer principal)
-scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $ARJAAN [--action assign] [--dry-run]
-scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $PATRICK [--action assign] [--dry-run]
+scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $DEV1 [--action assign] [--dry-run]
+scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $DEV2 [--action assign] [--dry-run]
 
 # To revoke permissions
-scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $ARJAAN --action revoke [--dry-run]
+scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $DEV1 --action revoke [--dry-run]
 ```
 
 #### Manual
@@ -2087,11 +2089,11 @@ scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $ARJAAN --ac
 MAINER=...
 # verify which principals already have admin roles
 dfx canister --network $NETWORK call $MAINER getAdminRoles
-# grant #AdminUpdate to the maintainer principals (arjaan, patrick)
-dfx canister --network $NETWORK call $MAINER assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call $MAINER assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# grant #AdminUpdate to the maintainer principals (dev1, dev2)
+dfx canister --network $NETWORK call $MAINER assignAdminRole '( record { "principal" = "'$DEV1'"; role = variant { AdminUpdate }; note = "Maintainer: dev1" } )'
+dfx canister --network $NETWORK call $MAINER assignAdminRole '( record { "principal" = "'$DEV2'"; role = variant { AdminUpdate }; note = "Maintainer: dev2" } )'
 # if needed, this is how you revoke permissions for a principal
-# dfx canister --network $NETWORK call $MAINER revokeAdminRole '( "'$ARJAAN'")'
+# dfx canister --network $NETWORK call $MAINER revokeAdminRole '( "'$DEV1'")'
 ```
 
 ### Verify mAIners Health & Hash
