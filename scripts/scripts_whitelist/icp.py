@@ -3,11 +3,11 @@ import subprocess
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from datetime import datetime
-from ic.client import Client
-from ic.agent import Agent
-from ic.identity import Identity
-from ic.common.ledger import Ledger
-from ic.principal import Principal
+from icp_agent import Client
+from icp_agent import Agent
+from icp_identity import Identity
+from icp_canister import Ledger
+from icp_principal import Principal
 
 from .ic_py_canister import get_canister, run_dfx_command
 

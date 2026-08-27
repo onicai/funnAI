@@ -5,7 +5,7 @@ This script updates Admin RBAC roles for all mAIner canisters by granting AdminQ
 
 To run:
     # from the folder: funnAI
-    conda activate llama_cpp_canister
+    conda activate funnAI
 
     # Assign AdminQuery role for principal:
     PRINCIPAL=...
@@ -16,7 +16,7 @@ To run:
 
 To run unit tests:
     # from the root of the repository
-    conda activate llama_cpp_canister
+    conda activate funnAI
     pytest scripts/test/test_update_admin_rbac_mainers.py -v
 """
 

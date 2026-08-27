@@ -4,9 +4,60 @@ mAIner Upgrade Script
 
 This script safely upgrades mAIner canisters with health checks, snapshots, and rollback capability.
 
+HOW THE WASM IS INSTALLED
+-------------------------
+Not with `dfx deploy`. The upgrade is driven through the protocol:
+
+    GameState.upgradeMainerControllerAdmin({ canisterAddress })
+      -> mAInerCreator.upgradeMainerctrl
+         -> install_chunked_code of the wasm STORED ON mAInerCreator
+
+so what lands is the reproducible Docker artifact uploaded with
+upload_mainer_controller_canister. `dfx deploy` compiles src/Main.mo with the
+LOCAL moc, which yields a different hash that can never match --target-hash;
+that is why the dfx path is gone for upgrades and --reinstall is disabled.
+
+Two consequences:
+
+  * The canister must be RUNNING and OUT OF MAINTENANCE when GameState is
+    called. upgradeMainerctrl awaits health() plus three setters on the mAIner
+    after installing, and health() returns #Err while the maintenance flag is
+    set. This script sequences that: stop only wraps the snapshot, then it
+    starts the canister and clears maintenance before calling GameState.
+
+  * GameState forwards with `ignore`, so its #Ok means only "request accepted".
+    The module hash changing is the only real completion signal, so the script
+    polls `dfx canister info` for up to 10 minutes.
+
+CYCLES ACCOUNTING
+-----------------
+Each upgrade costs GameState cyclesUpgradeMainerctrlGsMc =
+(costUpgradeMainerCtrl 10 B + costUpgradeMcMainerCtrl 1 B) x 1.10 = 12.1 B, and
+mAInerCreator deposits costUpgradeMainerCtrl = 10 B into the mAIner. These are
+compile-time defaults with no setter, so they are identical on every network
+(GameState/src/Main.mo:1449,1451,1548). Budget balance-minus-freeze-reserve in
+GameState accordingly before a large rollout - `dfx deploy` funded none of this.
+
+That 10 B arrives via IC0.deposit_cycles, a management-canister call, so it
+bypasses addCycles() and never credits officialCyclesBalance - the same shape as
+an owner's unofficial top-up, which the protocol penalises at 90%. It does not
+fire, because of ordering: the deposit lands BEFORE install_code, and the
+mAIner's postupgrade() then sets
+    officialCyclesBalance := Cycles.balance() + INSTALL_CODE_REFUND_BUFFER
+with the deposit already included. See mAIner/src/Main.mo:2929 and
+mAInerCreator/src/Main.mo:1447,1491. Do not remove that postupgrade reset as
+"redundant" - without it every mAIner is penalised 90% of ~10 B on its next
+submission.
+
+Expect two benign log signals per mAIner: officialCyclesBalance jumping by
+~+843 B (the 1 T buffer, minus the ~300 B install_code prepay dip), and
+Cycles.balance() rising ~4.78 B net (the 10 B deposit less what the install
+spent). The buffer self-corrects on the first successful storeAndSubmitResponse,
+which sets officialCyclesBalance := currentCyclesBalance - cyclesToSend.
+
 To run the upgrade in a safe sequence:
     # from the folder: funnAI
-    conda activate llama_cpp_canister
+    conda activate funnAI
     
     # Upgrade 1 mAIner of IConfucius on production network confirmation prompt:
     USER=xijdk-rtoet-smgxl-a4apd-ahchq-bslha-ope4a-zlpaw-ldxat-prh6f-jqe
@@ -34,10 +85,11 @@ To run the upgrade in a safe sequence:
 
 To run unit tests:
     # from the root of the repository
-    conda activate llama_cpp_canister
+    conda activate funnAI
     pytest scripts/test/test_upgrade_mainers.py -v
 """
 
+import re
 import subprocess
 import time
 import argparse
@@ -48,6 +100,10 @@ from typing import List, Dict, Optional, Tuple
 import signal
 from pathlib import Path
 from enum import Enum
+
+# Official ICP-based top-up flow. Reused rather than duplicated so the
+# penalty-free path has one implementation.
+from . import official_topup
 
 # Get the directory of this script
 SCRIPT_DIR = Path(__file__).parent.resolve()
@@ -60,6 +116,15 @@ GAME_STATE_CANISTER_IDS_PATH = (
 
 # Log file path
 LOG_FILE_PATH = SCRIPT_DIR / "upgrade_mainers.logs"
+
+# Identity that holds the ICP for official top-ups. Deliberately NOT a maintainer
+# identity: its PEM must be readable by icp-py-core, so it is a hot key. Override
+# with --topup-identity.
+TOPUP_IDENTITY = official_topup.DEFAULT_TOPUP_IDENTITY
+
+# Spendable cycles a top-up aims for: 2x what install_code needs, so a canister is
+# not left hovering on the edge for its next upgrade.
+TOPUP_TARGET_SPENDABLE = official_topup.DEFAULT_TARGET_SPENDABLE
 
 # Color codes for output
 RED = '\033[0;31m'
@@ -620,6 +685,29 @@ def sample_cycle_state(
             f"Investigate: is this a late refund, auto-topup, or other unattributed deposit?",
             "WARNING",
         )
+        if label == "after install":
+            # EXPECTED on this label, ~10 B. mAInerCreator.upgradeMainerctrl calls
+            # IC0.deposit_cycles(costUpgradeMainerCtrl = 10 B) into the mAIner
+            # before installing. That is a management-canister deposit, so it
+            # bypasses addCycles() and never credits officialCyclesBalance -
+            # exactly the shape of an owner's unofficial top-up.
+            #
+            # It does NOT trigger the 90% unofficial-topup penalty, because of
+            # ordering: the deposit lands BEFORE install_code, and the mAIner's
+            # postupgrade() then re-baselines
+            #     officialCyclesBalance := Cycles.balance() + INSTALL_CODE_REFUND_BUFFER
+            # with the deposit already included in that balance. See
+            # mAIner/src/Main.mo:2929 and mAInerCreator/src/Main.mo:1447,1491.
+            #
+            # That postupgrade reset is load-bearing. Without it every mAIner
+            # would be penalised 90% of ~10 B on its next submission.
+            log_message(
+                f"[CYCLES][{label}] ^ EXPECTED: mAInerCreator deposits ~10 B "
+                f"(costUpgradeMainerCtrl) before installing. postupgrade() "
+                f"re-baselines officialCyclesBalance afterwards, with the deposit "
+                f"already counted, so the unofficial-topup penalty cannot fire.",
+                "INFO",
+            )
 
     _prev_cycle_state[canister_id] = {"official": official, "current": current}
 
@@ -1263,6 +1351,118 @@ def upgrade_canister(network: str, canister_name: str, dry_run: bool = False, de
     log_message(f"Failed to upgrade {canister_name} after {max_attempts} attempts", "ERROR")
     return False
 
+
+def wait_for_module_hash(network: str, canister_id: str, target_hash: str,
+                         timeout: float = 600.0, interval: float = 10.0) -> Optional[str]:
+    """Poll `dfx canister info` until the module hash reaches target_hash.
+
+    GameState.upgradeMainerControllerAdmin forwards to
+    mAInerCreator.upgradeMainerctrl with `ignore` (fire-and-forget), so the
+    accepted response says nothing about whether the install succeeded. The
+    module hash is the only reliable completion signal.
+
+    Returns the final hash observed (== target_hash on success), or the last
+    hash seen on timeout.
+    """
+    deadline = time.time() + timeout
+    attempt = 0
+    last_hash = None
+    while time.time() < deadline:
+        attempt += 1
+        last_hash = get_canister_wasm_hash(network, canister_id)
+        if last_hash == target_hash:
+            log_message(f"Module hash reached target after {attempt} poll(s)", "SUCCESS")
+            return last_hash
+        remaining = int(deadline - time.time())
+        log_message(
+            f"Waiting for upgrade to land (poll {attempt}, {remaining}s left). "
+            f"Have {last_hash}",
+            "INFO",
+        )
+        time.sleep(interval)
+    log_message(f"Timed out after {timeout:.0f}s waiting for {target_hash}", "ERROR")
+    return last_hash
+
+
+def upgrade_canister_via_gamestate(network: str, address: str, target_hash: Optional[str],
+                                   pre_upgrade_hash: Optional[str],
+                                   dry_run: bool = False) -> bool:
+    """Upgrade a mAIner through GameState -> mAInerCreator.
+
+    This installs the wasm *stored on mAInerCreator* (uploaded via
+    upload_mainer_controller_canister_wasm), which is the reproducible Docker
+    build. `dfx deploy` instead compiles src/Main.mo with the local moc and
+    produces a different hash, so it can never reach the target hash and must
+    not be used for mAIner upgrades.
+
+    Preconditions enforced by the caller:
+      - the canister is RUNNING - mAInerCreator.upgradeMainerctrl awaits
+        health(), setMainerCanisterType(), setGameStateCanisterId() and
+        setShareServiceCanisterId() on the mAIner after installing
+      - the maintenance flag is OFF - health() returns #Err while it is set,
+        and upgradeMainerctrl aborts on that error *after* installing the
+        code, silently skipping the re-wiring above
+    """
+    log_message(f"Upgrading {address} via GameState -> mAInerCreator...")
+
+    command = [
+        "dfx", "canister", "--network", network, "call",
+        "game_state_canister", "upgradeMainerControllerAdmin",
+        f'(record {{ canisterAddress = "{address}" }})',
+    ]
+
+    if dry_run:
+        log_message(f"DRY RUN: Would execute: {' '.join(command)}", "INFO")
+        log_message(f"DRY RUN: Would poll module hash until it reaches {target_hash}", "INFO")
+        return True
+
+    try:
+        result = run_command(command, retry_on_transient_errors=True, max_retries=3, retry_delay=10.0)
+    except subprocess.CalledProcessError as e:
+        log_message(f"upgradeMainerControllerAdmin call failed: {e.stderr}", "ERROR")
+        return False
+
+    output = (result.stdout or "") + (result.stderr or "")
+    if "Err" in output:
+        log_message(f"GameState rejected the upgrade request: {output.strip()}", "ERROR")
+        return False
+    log_message(f"Upgrade request accepted by GameState: {output.strip()}", "SUCCESS")
+
+    # The forwarded call is fire-and-forget, so poll for the result.
+    if not target_hash:
+        # Without a target the best available completion signal is "the hash
+        # changed from what it was before the call".
+        log_message(
+            "No --target-hash given; polling for any change from the pre-upgrade hash. "
+            "Pass --target-hash to assert the exact expected wasm.",
+            "WARNING",
+        )
+        if not pre_upgrade_hash:
+            log_message("No pre-upgrade hash either; cannot confirm the upgrade landed", "WARNING")
+            return True
+        deadline = time.time() + 600.0
+        while time.time() < deadline:
+            time.sleep(10.0)
+            now_hash = get_canister_wasm_hash(network, address)
+            if now_hash and now_hash != pre_upgrade_hash:
+                log_message(f"Module hash changed to {now_hash}", "SUCCESS")
+                return True
+        log_message("Module hash never changed - the install did not happen", "ERROR")
+        return False
+
+    final_hash = wait_for_module_hash(network, address, target_hash)
+    if final_hash != target_hash:
+        if final_hash == pre_upgrade_hash:
+            log_message(
+                "Module hash never changed - the install did not happen. Check that "
+                "mAInerCreator holds the wasm (getSha256HashesAdmin) and that its "
+                "stored hash matches --target-hash.",
+                "ERROR",
+            )
+        return False
+    return True
+
+
 def check_health(network: str, canister_id: str, dry_run: bool = False) -> tuple[bool, str]:
     """Check the health of a canister.
 
@@ -1467,6 +1667,73 @@ def turn_off_maintenance_flag(network: str, canister_id: str, dry_run: bool = Fa
         log_message(f"Failed to check/toggle maintenance flag for {canister_id}: {e}", "ERROR")
         return False
 
+
+def verify_mainer_creator_wasm(network: str, target_hash: Optional[str], dry_run: bool = False) -> bool:
+    """Assert mAInerCreator holds exactly the wasm we intend to install.
+
+    The upgrade installs whatever wasm is stored on mAInerCreator, so if that
+    upload is stale or missing every mAIner in the batch would be churned for
+    nothing (or land on the wrong code). Checking once up front is far cheaper
+    than discovering it per canister.
+    """
+    if not target_hash:
+        log_message("No --target-hash given; skipping mAInerCreator wasm pre-flight", "WARNING")
+        return True
+
+    env_path = SCRIPT_DIR / f"canister_ids-{network}.env"
+    if not env_path.exists():
+        log_message(f"Missing {env_path}; cannot resolve mAInerCreator", "ERROR")
+        return False
+
+    mainer_creator = None
+    for line in env_path.read_text().splitlines():
+        if line.strip().startswith("SUBNET_0_1_MAINER_CREATOR"):
+            mainer_creator = line.split("=", 1)[1].strip().strip('"')
+            break
+    if not mainer_creator:
+        log_message(f"SUBNET_0_1_MAINER_CREATOR not set in {env_path}", "ERROR")
+        return False
+
+    # Deliberately runs even under --dry-run: it is a read-only query, and a
+    # dry run that skipped it would not catch a stale upload - the exact failure
+    # this guard exists to prevent.
+    command = [
+        "dfx", "canister", "--network", network, "call", "--query",
+        mainer_creator, "getSha256HashesAdmin",
+    ]
+
+    try:
+        result = run_command(command, retry_on_transient_errors=True, max_retries=3, retry_delay=5.0)
+    except subprocess.CalledProcessError as e:
+        log_message(f"Could not read mAInerCreator wasm hash: {e.stderr}", "ERROR")
+        return False
+
+    match = re.search(r'mainerControllerWasmSha256\s*=\s*"([0-9a-fA-F]*)"', result.stdout or "")
+    if not match:
+        log_message(f"Could not parse mainerControllerWasmSha256 from: {result.stdout}", "ERROR")
+        return False
+
+    stored = match.group(1).lower()
+    expected = target_hash.lower().removeprefix("0x")
+    if not stored:
+        log_message(
+            "mAInerCreator has no wasm hash - the upload was never finished. "
+            "Run finish_upload_mainer_controller_canister_wasm.",
+            "ERROR",
+        )
+        return False
+    if stored != expected:
+        log_message(
+            f"mAInerCreator holds the WRONG wasm. Stored 0x{stored}, expected 0x{expected}. "
+            f"Re-upload the intended wasm before upgrading any mAIner.",
+            "ERROR",
+        )
+        return False
+
+    log_message(f"mAInerCreator holds the expected wasm (0x{stored})", "SUCCESS")
+    return True
+
+
 def prepare_for_deployment(network: str, dry_run: bool = False) -> bool:
     """Step 1: Prepare for deployment by updating files."""
     log_message("=== STEP 1: PREPARING FOR DEPLOYMENT ===", "INFO")
@@ -1483,7 +1750,18 @@ def prepare_for_deployment(network: str, dry_run: bool = False) -> bool:
         return True
 
     try:
-        result = run_command(command, capture_output=False)
+        result = run_command(command, capture_output=True)
+        output = (result.stdout or "") + (result.stderr or "")
+        # get_mainers.sh exits 0 even when the Python inside it dies, so the exit
+        # code alone reports success on a stale config. Look at the output.
+        if "Traceback" in output or "ModuleNotFoundError" in output:
+            log_message("get_mainers.sh FAILED - canister_ids.json / dfx.json were NOT updated", "WARNING")
+            if "No module named 'pandas'" in output:
+                log_message("Cause: `pandas` is missing from the active conda env. "
+                            "Fix with: conda install -n funnAI pandas", "WARNING")
+            log_message("Upgrades still work (they address canisters by principal), but "
+                        "--reinstall and any name-based dfx command will not.", "WARNING")
+            return True
         log_message("Configuration files updated", "SUCCESS")
         return True
     except Exception as e:
@@ -1582,16 +1860,27 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
     # Mark as in progress
     update_mainer_status(address, MainerStatus.IN_PROGRESS)
 
-    # Find the actual canister name from canister_ids.json
+    # Find the actual canister name from canister_ids.json.
+    #
+    # Only --reinstall needs this: it goes through `dfx deploy <name>`. The
+    # upgrade path calls GameState.upgradeMainerControllerAdmin, which addresses
+    # the canister by PRINCIPAL, so a missing canister_ids.json entry is not
+    # fatal. It just means get_mainers.sh has not been run since this mAIner was
+    # created (and note that get_mainers.sh fails silently if `pandas` is not
+    # installed in the active conda env - see prepare_for_deployment).
     canister_name = get_canister_name_from_address(address, network)
 
     if not canister_name:
-        log_message(f"Cannot find canister name for {address} in canister_ids.json", "ERROR")
-        log_message("Make sure to run get_mainers.sh first to update the configuration files", "WARNING")
-        update_mainer_status(address, MainerStatus.FAILED_OTHER, "Canister name not found in canister_ids.json")
-        return False
-
-    log_message(f"canister_ids.json key: {canister_name}", "INFO")
+        if reinstall:
+            log_message(f"Cannot find canister name for {address} in canister_ids.json", "ERROR")
+            log_message("Reinstall goes through `dfx deploy <name>` and cannot proceed without it. "
+                        "Run get_mainers.sh first.", "ERROR")
+            update_mainer_status(address, MainerStatus.FAILED_OTHER, "Canister name not found in canister_ids.json")
+            return False
+        log_message(f"No canister_ids.json entry for {address} - continuing anyway, the "
+                    f"upgrade addresses it by principal", "WARNING")
+    else:
+        log_message(f"canister_ids.json key: {canister_name}", "INFO")
 
     # Get pre-upgrade hash for verification later
     pre_upgrade_hash = None
@@ -1617,25 +1906,65 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
     # addCycles() in between — the signature of an unattributed deposit.
     sample_cycle_state(network, address, "entry", dry_run)
 
-    # Proactively top up if balance is low. Covers both IC0406 on self-calls
-    # (upgrade path) and the freezing-threshold + install-code cost of reinstall.
-    MIN_CYCLES_BALANCE = 500_000_000_000  # 500B
-    TOPUP_CYCLES_AMOUNT = "500_000_000_000"  # 500B
-    if cycles_balance is not None and cycles_balance < MIN_CYCLES_BALANCE:
-        log_message(f"Cycles balance ({format_cycles(cycles_balance)}) is below {format_cycles(MIN_CYCLES_BALANCE)} threshold", "WARNING")
-        log_message(f"Sending {TOPUP_CYCLES_AMOUNT} cycles to canister...", "INFO")
-        if not dry_run:
+    # Proactively top up if this canister cannot pay for install_code.
+    #
+    # Gate on SPENDABLE cycles AFTER the snapshot this upgrade is about to take, not
+    # on raw balance. Two reasons the old raw-balance check was wrong:
+    #
+    #   1. The IC never spends into the freezing reserve, so a canister can hold a
+    #      healthy balance and still be refused. qjfug-yiaaa-aaaaa-qbema-cai had 578 B
+    #      on 2026-08-25 - above the old 500 B threshold, so no top-up was attempted -
+    #      but only 238.7 B spendable, and install_code was rejected asking for 61.2 B
+    #      more.
+    #   2. A snapshot counts toward Memory Size and is charged in the idle burn, so
+    #      the snapshot this very function takes inflates the reserve further. Checking
+    #      before the snapshot measures the wrong state.
+    #
+    # The top-up itself goes through the protocol's OFFICIAL ICP flow, never
+    # `dfx wallet send`. A direct deposit is a management-canister call that never runs
+    # the mAIner's addCycles(), so officialCyclesBalance is not credited and the next
+    # storeAndSubmitResponse burns 90% of it as an unofficial top-up. postupgrade
+    # normally re-baselines that away - but a top-up rescuing a FAILED upgrade never
+    # reaches postupgrade, which is exactly the case this code exists for.
+    official_topup.set_logger(log_message)
+    cycle_state = official_topup.get_canister_cycle_state(network, address)
+    if cycle_state is None:
+        log_message("Could not read cycle state; skipping the pre-upgrade top-up check", "WARNING")
+    else:
+        spendable_after = official_topup.predict_spendable_after_snapshot(cycle_state)
+        need = official_topup.INSTALL_CODE_SPENDABLE_NEED
+        log_message(
+            f"Spendable after snapshot: {format_cycles(int(spendable_after))} "
+            f"(install_code needs ~{format_cycles(need)})",
+            "INFO",
+        )
+        if spendable_after < need:
+            log_message(
+                f"Below the install_code requirement - topping up via the official "
+                f"ICP flow (identity: {TOPUP_IDENTITY})...",
+                "WARNING",
+            )
             try:
-                run_command([
-                    "dfx", "wallet", "--network", network, "send", address, TOPUP_CYCLES_AMOUNT
-                ])
-                log_message(f"Successfully sent cycles to {address}", "SUCCESS")
-                time.sleep(10)
-                sample_cycle_state(network, address, "after pre-topup", dry_run)
+                gamestate = official_topup.gamestate_id(network)
             except Exception as e:
-                log_message(f"Failed to send cycles to {address}: {e}", "ERROR")
-                update_mainer_status(address, MainerStatus.FAILED_OTHER, "Could not top up cycles")
+                log_message(f"Cannot resolve GameState for the top-up: {e}", "ERROR")
+                update_mainer_status(address, MainerStatus.FAILED_OTHER,
+                                     "Could not resolve GameState for top-up")
                 return False
+            if not official_topup.official_topup(
+                network, gamestate, address,
+                target_spendable=TOPUP_TARGET_SPENDABLE,
+                identity=TOPUP_IDENTITY,
+                dry_run=dry_run,
+            ):
+                log_message(f"Official top-up did not bring {address} above the "
+                            f"install_code requirement", "ERROR")
+                update_mainer_status(address, MainerStatus.FAILED_OTHER,
+                                     "Could not top up cycles officially")
+                return False
+            if not dry_run:
+                time.sleep(5)
+                sample_cycle_state(network, address, "after official top-up", dry_run)
 
     # If we're reinstalling and the canister is currently Stopped, start it
     # first so pre-reinstall capture queries (burn rate) can succeed. Queries
@@ -1710,24 +2039,51 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
         update_mainer_status(address, MainerStatus.FAILED_SNAPSHOT, "Could not create snapshot")
         return False
 
-    # Step 2g: Deploy upgrade (or reinstall)
-    if not upgrade_canister(network, canister_name, dry_run, deploy_with_yes, reinstall):
-        log_message(f"Failed to {'reinstall' if reinstall else 'upgrade'} canister. Snapshot ID for rollback: {snapshot_id}", "ERROR")
-        # Don't auto-rollback, let admin decide
-        update_mainer_status(address, MainerStatus.FAILED_UPGRADE, f"{'Reinstall' if reinstall else 'Upgrade'} failed. Snapshot: {snapshot_id}")
-        return False
-
-    # Step 2h: Start canister
+    # Step 2g: Start canister
+    #
+    # For upgrades this happens BEFORE the install, not after. The upgrade is
+    # driven by mAInerCreator.upgradeMainerctrl, which after install_code awaits
+    # health(), setMainerCanisterType(), setGameStateCanisterId() and
+    # setShareServiceCanisterId() on the mAIner - all of which need it Running.
+    # Only the snapshot required it stopped.
     if not start_canister(network, address, dry_run):
         log_message(f"Failed to start canister. Snapshot ID for rollback: {snapshot_id}", "ERROR")
         update_mainer_status(address, MainerStatus.FAILED_START, f"Could not start canister. Snapshot: {snapshot_id}")
         return False
 
+    if not reinstall:
+        # Step 2g.1: Maintenance flag OFF before the install.
+        #
+        # health() returns #Err while MAINTENANCE is set, and upgradeMainerctrl
+        # aborts on that error *after* installing the code - the wasm would land
+        # but the re-wiring above would be skipped, and because GameState
+        # forwards with `ignore` the failure would be invisible. The timer is
+        # already stopped, so the mAIner stays idle regardless.
+        if not turn_off_maintenance_flag(network, address, dry_run):
+            log_message(f"Failed to turn off maintenance flag before upgrade. Snapshot: {snapshot_id}", "ERROR")
+            update_mainer_status(address, MainerStatus.FAILED_MAINTENANCE, f"Could not turn off maintenance flag. Snapshot: {snapshot_id}")
+            return False
+
+        # Step 2g.2: Upgrade via GameState -> mAInerCreator (reproducible wasm)
+        if not upgrade_canister_via_gamestate(network, address, target_hash, pre_upgrade_hash, dry_run):
+            log_message(f"Failed to upgrade canister. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+            # Don't auto-rollback, let admin decide
+            update_mainer_status(address, MainerStatus.FAILED_UPGRADE, f"Upgrade failed. Snapshot: {snapshot_id}")
+            return False
+    else:
+        # Reinstall still goes through dfx: it deliberately wipes stable state,
+        # which the mAInerCreator path does not do. Note this installs a LOCALLY
+        # built wasm, so its hash will not match a Docker/reproducible build.
+        if not upgrade_canister(network, canister_name, dry_run, deploy_with_yes, reinstall):
+            log_message(f"Failed to reinstall canister. Snapshot ID for rollback: {snapshot_id}", "ERROR")
+            update_mainer_status(address, MainerStatus.FAILED_UPGRADE, f"Reinstall failed. Snapshot: {snapshot_id}")
+            return False
+
     # First sample after the canister is Running again (post stop+snapshot+reinstall).
     # The Δcurrent here is dominated by the install_code prepay/refund (~300 B
     # added) plus snapshot create refund (~130 B added) — see Main.mo
     # INSTALL_CODE_REFUND_BUFFER comment.
-    sample_cycle_state(network, address, "after dfx start (post-reinstall)", dry_run)
+    sample_cycle_state(network, address, "after install", dry_run)
 
     # Step 2h.1: Immediately ensure the maintenance flag is ON. After --mode
     # reinstall, stable state is wiped and the flag defaults to OFF — without
@@ -1735,7 +2091,10 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
     # before we re-apply configuration. After --mode upgrade the flag should
     # already be ON from Step 2b; turn_on_maintenance_flag is idempotent
     # (checks current state, toggles only when OFF) so it's a no-op then.
-    if not turn_on_maintenance_flag(network, address, dry_run):
+    # Upgrades manage the flag themselves (Step 2g.1 turns it OFF so the
+    # health() call inside upgradeMainerctrl passes) and the timer is stopped,
+    # so re-arming it here would only add churn. Reinstall still needs it.
+    if reinstall and not turn_on_maintenance_flag(network, address, dry_run):
         log_message(
             f"Failed to turn on maintenance flag immediately after restart. Snapshot: {snapshot_id}",
             "ERROR",
@@ -1768,7 +2127,7 @@ def upgrade_mainer(network: str, mainer: Dict, target_hash: Optional[str],
     # Step 2i: Check maintenance flag (endpoint must now be available and return true)
     # Retry logic: canister may need time to fully initialize after upgrade
     # If flag is False, call endpoint to turn it on
-    if not dry_run:
+    if not dry_run and reinstall:
         max_retries = 10
         retry_delay = 15.0
         flag_value = None
@@ -1958,13 +2317,52 @@ def main():
         help="Use 'dfx deploy --yes' to skip confirmation prompts"
     )
     parser.add_argument(
+        "--skip-topup-preflight",
+        action="store_true",
+        help="Skip the pre-run scan that checks the top-up account holds enough ICP "
+             "for every mAIner in this run. The scan is read-only and takes a few "
+             "minutes over a large set; skip it on retries where nothing has changed. "
+             "The per-mAIner top-up still runs."
+    )
+    parser.add_argument(
+        "--topup-identity",
+        default=official_topup.DEFAULT_TOPUP_IDENTITY,
+        help="dfx identity holding the ICP used for official top-ups. Deliberately "
+             "not a maintainer identity - its PEM is read directly. Create with: "
+             "dfx identity new <name> --storage-mode plaintext "
+             f"(default: {official_topup.DEFAULT_TOPUP_IDENTITY})"
+    )
+    parser.add_argument(
         "--reinstall",
         action="store_true",
-        help="Reinstall instead of upgrade. WIPES all stable state on each canister. "
-             "Use to reset accumulated memory after capping unbounded stable lists."
+        help="DISABLED - errors out. Reinstall instead of upgrade; WIPES all stable state. "
+             "Still routed through `dfx deploy`, which builds a non-reproducible local wasm, "
+             "so it cannot reach the hash stored on mAInerCreator."
     )
 
     args = parser.parse_args()
+
+    global TOPUP_IDENTITY
+    TOPUP_IDENTITY = args.topup_identity
+
+    # --reinstall is DISABLED.
+    #
+    # It is the only path still routed through `dfx deploy`, which compiles
+    # src/Main.mo with the LOCAL moc. That produces a different wasm than the
+    # reproducible Docker build stored on mAInerCreator, so a reinstalled
+    # canister ends up on a hash that matches neither the intended artifact nor
+    # any other mAIner. Upgrades go via GameState -> mAInerCreator instead
+    # (see upgrade_canister_via_gamestate).
+    #
+    # The implementation below is left intact. To re-enable, route it through
+    # mAInerCreator.reinstallMainerctrl / GameState.reinstallMainerControllerAdmin
+    # so it installs the stored wasm, then remove this block.
+    if args.reinstall:
+        parser.error(
+            "--reinstall is disabled: it installs a locally built wasm via `dfx deploy`, "
+            "which cannot match the reproducible build stored on mAInerCreator. "
+            "Route it through GameState.reinstallMainerControllerAdmin before re-enabling."
+        )
 
     # Open log file
     global log_file_handle
@@ -2007,6 +2405,13 @@ def main():
                 sys.exit(1)
         else:
             log_message("Skipping preparation step", "INFO")
+
+        # Step 1b: mAIner upgrades install the wasm stored on mAInerCreator, so
+        # confirm that upload is the one we intend before touching any canister.
+        if not args.reinstall:
+            if not verify_mainer_creator_wasm(args.network, args.target_hash, args.dry_run):
+                log_message("mAInerCreator wasm pre-flight failed", "ERROR")
+                sys.exit(1)
 
         # Get all mAIners
         mainers = get_mainers(args.network)
@@ -2057,6 +2462,34 @@ def main():
             log_message(f"Will process {max_upgrades} mAIners (--num limit)", "SUCCESS")
         else:
             log_message(f"Will process {total_mainers} ShareAgent mAIners", "SUCCESS")
+
+        # Pre-flight: can the top-up account pay for every mAIner in this run that
+        # cannot currently afford install_code?
+        #
+        # Checking up front rather than discovering it at mAIner 400: a mAIner that
+        # fails mid-rollout is left with its timer stopped and its owner not earning,
+        # and the run halts anyway. The scan is read-only and costs a few minutes
+        # against a rollout measured in hours.
+        if not args.dry_run and not args.skip_topup_preflight:
+            official_topup.set_logger(log_message)
+            try:
+                gamestate_for_topup = official_topup.gamestate_id(args.network)
+            except Exception as e:
+                log_message(f"Could not resolve GameState for the top-up pre-flight: {e}", "ERROR")
+                sys.exit(1)
+            addresses = [m["address"] for m in share_agent_mainers[:max_upgrades]
+                         if m.get("address")]
+            budget_ok, _ = official_topup.preflight_topup_budget(
+                args.network, gamestate_for_topup, addresses,
+                identity=TOPUP_IDENTITY,
+                target_spendable=TOPUP_TARGET_SPENDABLE,
+            )
+            if not budget_ok:
+                sys.exit(1)
+        elif args.skip_topup_preflight and not args.dry_run:
+            log_message("Skipping the top-up budget pre-flight (--skip-topup-preflight). "
+                        "A mAIner that cannot be topped up will still fail individually.",
+                        "WARNING")
 
         # Track results
         successful = 0

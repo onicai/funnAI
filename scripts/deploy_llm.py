@@ -227,7 +227,7 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         print(f"   1. Deploy {llm_name} to subnet {subnet}")
         print(f"   2. Health check (3 retries)")
         print(f"   3. Verify correct subnet")
-        print(f"   4. Add admin controllers (Patrick, Arjaan)")
+        print(f"   4. Add admin controllers (DEV2, DEV1)")
         print(f"   5. Deposit {INITIAL_TOPUP_CYCLES // 10**12} T cycles into canister")
         print(f"   6. Upload model: {MODEL}")
         print(f"   7. Load model")
@@ -326,25 +326,25 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
             completed_steps.append("Verify subnet")
 
         # Add admin controllers
-        PATRICK = "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"
-        ARJAAN = "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"
+        DEV2 = "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"
+        DEV1 = "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"
 
-        print(f"\n- Adding Patrick as dfx controller")
+        print(f"\n- Adding DEV2 as dfx controller")
         cmd = [
             "dfx", "canister", "update-settings", llm_name,
-            "--add-controller", PATRICK,
+            "--add-controller", DEV2,
             "--network", network,
         ]
         run_this_cmd(cmd, llm_cwd, confirm=False)
 
-        print(f"\n- Adding Arjaan as dfx controller")
+        print(f"\n- Adding DEV1 as dfx controller")
         cmd = [
             "dfx", "canister", "update-settings", llm_name,
-            "--add-controller", ARJAAN,
+            "--add-controller", DEV1,
             "--network", network,
         ]
         run_this_cmd(cmd, llm_cwd, confirm=False)
-        completed_steps.append("Add admin controllers (Patrick, Arjaan)")
+        completed_steps.append("Add admin controllers (DEV2, DEV1)")
 
         # Deposit cycles before the model is loaded into the wasm heap.
         # load_model needs to grow the heap by ~670 MB, which requires ~135 B
@@ -432,7 +432,7 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         ]
         run_this_cmd(cmd, llm_cwd, confirm=False)
 
-        print(f"\n- Assigning admin role to maintainer (Arjaan) for {llm_name} ({canister_id})")
+        print(f"\n- Assigning admin role to maintainer (DEV1) for {llm_name} ({canister_id})")
         cmd = [
             "dfx", "canister", "--network", network, "call", canister_id,
             "assignAdminRole",
@@ -440,7 +440,7 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         ]
         run_this_cmd(cmd, llm_cwd, confirm=False)
 
-        print(f"\n- Assigning admin role to maintainer (Patrick) for {llm_name} ({canister_id})")
+        print(f"\n- Assigning admin role to maintainer (DEV2) for {llm_name} ({canister_id})")
         cmd = [
             "dfx", "canister", "--network", network, "call", canister_id,
             "assignAdminRole",

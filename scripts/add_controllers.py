@@ -14,11 +14,11 @@ SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 CONTROLLERS = [
     {
-        "name" : "patrick",
+        "name" : "dev2",
         "principal" : "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"
     },
     {
-        "name" : "arjaan",
+        "name" : "dev1",
         "principal" : "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"
     } 
 ]
