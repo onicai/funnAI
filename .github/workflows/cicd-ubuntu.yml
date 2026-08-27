@@ -68,7 +68,14 @@ jobs:
         run: |
           set -euo pipefail
           pip install --upgrade pip
-          pip install icpp-pro
+          # Cap icpp-pro below 5.5.0, which switched the smoketest framework from dfx
+          # to icp-cli. This job installs dfx (not icp-cli) and `make smoketest` shells
+          # out to `dfx identity get-principal`, so 5.5.0+ dies before the first test
+          # with "no test identity configured".
+          # KEEP IN SYNC with PoAIW/requirements.txt and
+          # PoAIW/llms/llama_cpp_canister/requirements.txt. Lift as part of the
+          # dfx -> icp-cli migration.
+          pip install 'icpp-pro>=5.3.1,<5.5.0'
 
       - name: install mops to manage motoko dependencies
         run: npm install -g ic-mops

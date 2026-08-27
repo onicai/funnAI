@@ -31,10 +31,10 @@ def claims_odin(claims: list, wl_allocs: dict, total_wl_allocs: dict):
     # PROCESS ODIN CLAIMS
     print(f"-------------------------------------------------------")
     ICONFUCIUS_AGENT_PRINCIPAL = "xijdk-rtoet-smgxl-a4apd-ahchq-bslha-ope4a-zlpaw-ldxat-prh6f-jqe"
-    ABHISHEK_PRINCIPAL = "2n6cp-b2ooy-4rphf-5b6qh-v2fou-6zuhq-5ud23-kvkhf-weahy-dwxq4-3qe"
-    ARJAAN_PRINCIPAL = "2fkbl-w6vfw-vjumq-teego-arg7t-hil5u-dyq7d-ted5t-33cuw-rked4-uqe"
-    NUNO_PRINCIPAL = "wn7rp-bfj4y-lc4uy-pgt7p-3p7ev-qdf67-qnqhz-d23qu-jxvht-cc6uu-bqe"
-    PATRICK_PRICIPAL = "qcrrl-k4uug-tgnhv-wj5st-l46cy-tyx7o-fpudp-6p73z-jhjlo-shqy5-7qe"
+    DEV3_PRINCIPAL = "2n6cp-b2ooy-4rphf-5b6qh-v2fou-6zuhq-5ud23-kvkhf-weahy-dwxq4-3qe"
+    DEV1_PRINCIPAL = "2fkbl-w6vfw-vjumq-teego-arg7t-hil5u-dyq7d-ted5t-33cuw-rked4-uqe"
+    DEV4_PRINCIPAL = "wn7rp-bfj4y-lc4uy-pgt7p-3p7ev-qdf67-qnqhz-d23qu-jxvht-cc6uu-bqe"
+    DEV2_PRICIPAL = "qcrrl-k4uug-tgnhv-wj5st-l46cy-tyx7o-fpudp-6p73z-jhjlo-shqy5-7qe"
     AIRA_NAME_PRINCIPAL = "phr5l-giue6-i7ng7-d2g22-piknz-eatvg-vdm62-3m35b-muwfk-ydxcn-sqe"  # Aira name contest winner principal
 
     for claim in claims:
@@ -83,8 +83,8 @@ def claims_odin(claims: list, wl_allocs: dict, total_wl_allocs: dict):
         
         alloc_iconfucius_lp = alloc_rule_iconfucius_lp(iconfucius_lp_share, cap=5)
 
-        if funnai_principal == ABHISHEK_PRINCIPAL:
-            alloc_iconfucius = max(alloc_iconfucius, 4)  # Abhishek gets at least 4
+        if funnai_principal == DEV3_PRINCIPAL:
+            alloc_iconfucius = max(alloc_iconfucius, 4)  # DEV3 gets at least 4
 
         if funnai_principal == AIRA_NAME_PRINCIPAL:
             alloc_iconfucius += 1  # Aira name contest winner gets another one for the name contest

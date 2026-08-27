@@ -2,11 +2,13 @@
 # Set NETWORK environment variable
 
 ```bash
-# Maintainer development principals (same for all networks). Needed for admin
-# access post-SNS, when the controller (isController) route belongs only to
+# Maintainer development principals (same for all networks). 
+# Short term this is still needed for limited admin access post-SNS, 
+# when the controller (isController) route belongs only to
 # NNS/SNS root and AdminRBAC is the remaining maintenance path.
-ARJAAN=chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
-PATRICK=cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe
+#
+DEV1=chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
+DEV2=cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe
 
 # One of these... (note: it does not work for 'demo')
 NETWORK=prd
@@ -107,9 +109,25 @@ dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE health
 # verify that it is still paused
 dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE getPauseProtocolFlag
 
-# Update the wasm-hash, using the Admin owned test mAIner ShareAgent
-echo $MAINER_SHARE_AGENT_0001
-dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE deriveNewMainerAgentCanisterWasmHashAdmin "(record {address=\"$MAINER_SHARE_AGENT_0001\"; textNote=\"Protocol upgrade\"})"
+# Clear orphaned marketplace reservations.
+#
+# marketplaceReservationTimers is `transient` (GameState/src/Main.mo:9309), so every
+# GameState upgrade kills the expiry timer of any pending reservation. The entry
+# survives in marketplaceReservedMainerAgentsStorage with nothing left to expire it,
+# which silently blocks that mAIner from ever being sold.
+#
+# Call this unconditionally after every GameState upgrade. It is controller-only and
+# idempotent: it walks all reservations, cancels their timers, returns each mAIner to
+# the listings, and reports how many it cleared. With none pending it clears 0.
+#
+# There is no admin endpoint to enumerate reservations first
+# (getUserMarketplaceReservation is per-caller only), so clearing blind is correct.
+dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE clearMarketplaceReservationsAdmin
+
+# Update the mAIner wasm-hash?
+# -> NOT HERE. See "Update the official mAIner wasm hash" at the end of the
+#    "Upgrade the mAIners" section. Deriving it here would record the hash of a
+#    mAIner that has not been upgraded yet.
 
 # If needed, initialize the openSubmissionsQueue. 
 # -> Tyically not needed. Was created during introduction of new openSubmissionsQueue
@@ -155,11 +173,11 @@ Grant the maintainer principals `#AdminUpdate` so they keep admin access post-SN
 ```bash
 # verify which principals already have admin roles
 dfx canister --network $NETWORK call game_state_canister getAdminRoles
-# grant #AdminUpdate to the maintainer principals (arjaan, patrick)
-dfx canister --network $NETWORK call game_state_canister assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call game_state_canister assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# grant #AdminUpdate to the maintainer principals (dev1, dev2)
+dfx canister --network $NETWORK call game_state_canister assignAdminRole '( record { "principal" = "'$DEV1'"; role = variant { AdminUpdate }; note = "Maintainer: dev1" } )'
+dfx canister --network $NETWORK call game_state_canister assignAdminRole '( record { "principal" = "'$DEV2'"; role = variant { AdminUpdate }; note = "Maintainer: dev2" } )'
 # if needed, this is how you revoke permissions for a principal
-# dfx canister --network $NETWORK call game_state_canister revokeAdminRole '( "'$ARJAAN'")'
+# dfx canister --network $NETWORK call game_state_canister revokeAdminRole '( "'$DEV1'")'
 ```
 
 # upgrade the Challenger
@@ -232,13 +250,13 @@ NNS/SNS root). One-time per network — the role assignment persists across upgr
 ```bash
 # verify which principals already have admin roles
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getAdminRoles
-# grant #AdminUpdate to the maintainer principals (arjaan, patrick)
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# grant #AdminUpdate to the maintainer principals (dev1, dev2)
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER assignAdminRole '( record { "principal" = "'$DEV1'"; role = variant { AdminUpdate }; note = "Maintainer: dev1" } )'
+dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER assignAdminRole '( record { "principal" = "'$DEV2'"; role = variant { AdminUpdate }; note = "Maintainer: dev2" } )'
 # verify
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER getAdminRoles
 # if needed, revoke
-# dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER revokeAdminRole '( "'$ARJAAN'")'
+# dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER revokeAdminRole '( "'$DEV1'")'
 ```
 
 # upgrade the ShareService
@@ -273,7 +291,7 @@ dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
 # The wasm will be uploaded to the SNS and a deploy proposal will be created
 # for the community to vote on. Once the proposal passes, the SNS automatically
 # upgrades the canister.
-dfx canister install --wasm out/mainer_service_canister.wasm \
+dfx canister install --wasm out/mainer_canister.wasm \
     --network $NETWORK --mode upgrade --wasm-memory-persistence keep \
     $SUBNET_0_1_SHARE_SERVICE
 
@@ -314,9 +332,9 @@ dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE getAdminRoles
 echo "$SUBNET_0_2_API"
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$SUBNET_0_2_API'"; role = variant { AdminQuery }; note = "Daily metrics pull from Api canister" } )'
 
-# grant #AdminUpdate to the maintainer principals (arjaan, patrick) for maintenance (post-SNS)
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# grant #AdminUpdate to the maintainer principals (dev1, dev2) for maintenance (post-SNS)
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$DEV1'"; role = variant { AdminUpdate }; note = "Maintainer: dev1" } )'
+dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE assignAdminRole '( record { "principal" = "'$DEV2'"; role = variant { AdminUpdate }; note = "Maintainer: dev2" } )'
 
 # 🚨 REQUIRED, AND EASY TO MISS: grant #AdminUpdate to the mAInerCreator canister.
 #
@@ -361,7 +379,7 @@ make docker-build-wasm
 dfx canister --network $NETWORK stop $SUBNET_0_1_SHARE_SERVICE
 dfx canister --network $NETWORK snapshot create $SUBNET_0_1_SHARE_SERVICE
 #
-dfx canister install --wasm out/mainer_service_canister.wasm \
+dfx canister install --wasm out/mainer_canister.wasm \
     --network $NETWORK --mode reinstall --wasm-memory-persistence keep \
     $SUBNET_0_1_SHARE_SERVICE
 
@@ -483,13 +501,13 @@ NNS/SNS root). One-time per network — the role assignment persists across upgr
 ```bash
 # verify which principals already have admin roles
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE getAdminRoles
-# grant #AdminUpdate to the maintainer principals (arjaan, patrick)
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# grant #AdminUpdate to the maintainer principals (dev1, dev2)
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE assignAdminRole '( record { "principal" = "'$DEV1'"; role = variant { AdminUpdate }; note = "Maintainer: dev1" } )'
+dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE assignAdminRole '( record { "principal" = "'$DEV2'"; role = variant { AdminUpdate }; note = "Maintainer: dev2" } )'
 # verify
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE getAdminRoles
 # if needed, revoke
-# dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE revokeAdminRole '( "'$ARJAAN'")'
+# dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE revokeAdminRole '( "'$DEV1'")'
 ```
 
 # upgrade the API canister
@@ -567,11 +585,11 @@ dfx canister --network $NETWORK call $SUBNET_0_2_API getOpenChallengesFromCache 
 ```bash
 # verify which principals already have admin roles
 dfx canister --network $NETWORK call $SUBNET_0_2_API getAdminRoles
-# grant #AdminUpdate to the maintainer principals (arjaan, patrick)
-dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# grant #AdminUpdate to the maintainer principals (dev1, dev2)
+dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$DEV1'"; role = variant { AdminUpdate }; note = "Maintainer: dev1" } )'
+dfx canister --network $NETWORK call $SUBNET_0_2_API assignAdminRole '( record { "principal" = "'$DEV2'"; role = variant { AdminUpdate }; note = "Maintainer: dev2" } )'
 # if needed, this is how you revoke permissions for a principal
-# dfx canister --network $NETWORK call $SUBNET_0_2_API revokeAdminRole '( "'$ARJAAN'")'
+# dfx canister --network $NETWORK call $SUBNET_0_2_API revokeAdminRole '( "'$DEV1'")'
 ```
 
 ## On-chain Daily Metrics setup for the API canister
@@ -924,11 +942,20 @@ dfx canister --network $NETWORK call   $SUBNET_0_1_MAINER_CREATOR health
 # ensure the correct wasm & did files are in this folder 
 # -> PoAIW/src/mAInerCreator/files
 #
-# If you just did a mAIner upgrade, you can do this:
+# PROMOTE a build to be the ShareAgent wasm.
 # From folder: PoAIW/src/mAIner
-shasum -a 256 .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.wasm # confirm it is the TARGET_HASH
-cp .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.did ../mAInerCreator/files/mainer_ctrlb_canister.did
-cp .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/mainer_ctrlb_canister_0.wasm ../mAInerCreator/files/mainer_ctrlb_canister.wasm
+#
+# `make docker-build-wasm` emits ONE role-neutral artifact, out/mainer_canister.wasm,
+# used for both the ShareService and the ShareAgents. Copying it into
+# mAInerCreator/files is the promotion gate: the moment this build becomes what
+# ShareAgents run. It keeps the role-specific name there because mAInerCreator
+# deliberately holds a pinned, older build than the ShareService.
+#
+# (The old commands here referenced .dfx/$NETWORK/canisters/mainer_ctrlb_canister_0/,
+#  a path the build never produces - the Makefile only builds mainer_service_canister.)
+shasum -a 256 out/mainer_canister.wasm # confirm it is the TARGET_HASH
+cp out/mainer_canister.did  ../mAInerCreator/files/mainer_ctrlb_canister.did
+cp out/mainer_canister.wasm ../mAInerCreator/files/mainer_ctrlb_canister.wasm
 #
 # From folder: PoAIW/llms/llama_cpp_canister/build
 shasum -a 256 llama_cpp.wasm # confirm it is the deployed llm wasm
@@ -1252,7 +1279,7 @@ log viewers, and tests the LLM.
 ```bash
 # from folder: funnAI
 # Activate the conda environment
-conda activate llama_cpp_canister
+conda activate funnAI
 
 # Dry run first to see what will happen
 scripts/deploy_llm.sh --network $NETWORK --llm-type <challenger|judge|share_service> [--subnet <subnet-id>] --dry-run
@@ -1333,10 +1360,10 @@ a `delete_llm.sh` command to clean up.
 
     ```bash
         NETWORK=prd
-        PATRICK="cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"
-        ARJAAN="chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"
-        dfx canister --network $NETWORK update-settings $llm --add-controller $PATRICK
-        dfx canister --network $NETWORK update-settings $llm --add-controller $ARJAAN
+        DEV2="cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe"
+        DEV1="chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae"
+        dfx canister --network $NETWORK update-settings $llm --add-controller $DEV2
+        dfx canister --network $NETWORK update-settings $llm --add-controller $DEV1
     ```
 
 - Register the canister with CycleOps
@@ -1721,6 +1748,256 @@ If you want to do it all manually, follow these steps:
 
 ## IMPORTANT: Also upload wasm to mAInerCreator
 
+## How the upgrade installs the wasm (NOT `dfx deploy`)
+
+Since 2026-08-20 `upgrade_mainers.py` drives the upgrade through the protocol
+instead of `dfx deploy`:
+
+```
+GameState.upgradeMainerControllerAdmin({ canisterAddress })
+  -> mAInerCreator.upgradeMainerctrl
+     -> install_chunked_code of the wasm STORED ON mAInerCreator
+```
+
+What lands is therefore the reproducible Docker artifact uploaded in
+"IMPORTANT: Also upload wasm to mAInerCreator" above. **`dfx deploy` compiles
+`src/Main.mo` with the local `moc`**, which produces a different hash that can
+never match `--target-hash`. That is why the dfx path was removed for upgrades and
+`--reinstall` now errors out.
+
+Two behavioural consequences:
+
+- The canister must be **Running** and **out of maintenance** when GameState is
+  called. `upgradeMainerctrl` awaits `health()` plus `setMainerCanisterType`,
+  `setGameStateCanisterId` and `setShareServiceCanisterId` on the mAIner *after*
+  installing, and `health()` returns `#Err` while the maintenance flag is set.
+  The script sequences this: the stop now only wraps the snapshot, then it starts
+  the canister and clears maintenance before calling GameState.
+- GameState forwards with `ignore`, so its `#Ok` means only *request accepted*.
+  The module hash changing is the only real completion signal; the script polls
+  `dfx canister info` for up to 10 minutes. A silent failure therefore shows up as
+  a hash that never moves, not as an error.
+
+`mAInerCreator` must be on a build that passes
+`#upgrade(?{wasm_memory_persistence = ?#keep; ...})`. These canisters are built
+with `--enhanced-orthogonal-persistence`, and for an EOP module the IC **requires**
+that option - `#upgrade(null)` is rejected with `IC0504 Missing upgrade option`.
+An older mAInerCreator passing `null` cannot upgrade any mAIner.
+
+## Cycles accounting for a mAIner upgrade
+
+This path costs GameState cycles that `dfx deploy` never did:
+
+| leg | amount |
+| ------------------------------------------------------------ | ---------------- |
+| GameState -> mAInerCreator (`cyclesUpgradeMainerctrlGsMc`)    | (10 B + 1 B) x 1.10 = **12.1 B** |
+| mAInerCreator -> mAIner (`cyclesUpgradeMainerctrlMcMainerctrl`) | 10 B |
+
+`costUpgradeMainerCtrl` = 10 B, `costUpgradeMcMainerCtrl` = 1 B and `marginCost`
+= 10% are compile-time defaults with **no setter**, so they are identical on every
+network (`GameState/src/Main.mo:1449,1451,1548`). At ~750 mAIners that is roughly
+**9 T** leaving GameState, which must come from the balance *above* the freezing
+threshold:
+
+```bash
+dfx canister --network $NETWORK status $SUBNET_0_1_GAMESTATE | grep -Ei 'Freezing threshold|Idle cycles|^Balance'
+```
+
+```
+freeze reserve = idle_cycles_per_day x (freezing_threshold_seconds / 86400)
+spendable      = balance - freeze reserve
+```
+
+### Why the 10 B deposit does not trigger the 90% unofficial-topup penalty
+
+The 10 B arrives via `IC0.deposit_cycles`, a **management-canister** call. It never
+invokes the mAIner's code, so `addCycles()` does not run and
+`officialCyclesBalance` is **not** credited (it is credited only for
+`msg.caller == GameState`, `mAIner/src/Main.mo:162`). That is exactly the shape of
+an owner's unofficial top-up, which `storeAndSubmitResponse` penalises at
+`(actual - official) x (protocolOperationFeesCut x 9) / 100` = **90%** at the live
+`feesCut` of 10.
+
+It does not fire, purely because of **ordering**:
+
+| | file |
+| ---------------------------------------------------- | --------------------------------- |
+| 1. `IC0.deposit_cycles` - the 10 B lands             | `mAInerCreator/src/Main.mo:1447` |
+| 2. `install_code`, inside which `postupgrade()` runs  | `mAInerCreator/src/Main.mo:1491` |
+| 3. `officialCyclesBalance := Cycles.balance() + INSTALL_CODE_REFUND_BUFFER` | `mAIner/src/Main.mo:2929` |
+
+By step 3 the deposit is already part of `Cycles.balance()`, so it is absorbed into
+the new baseline rather than becoming a gap.
+
+🚨 **That `postupgrade` reset is load-bearing - do not remove it as redundant.**
+Without it every mAIner would be penalised 90% of ~10 B on its next submission
+(~6.8 T across 750 mAIners), for cycles the protocol itself deposited.
+
+Expect two benign signals per mAIner in the script output:
+
+- `officialCyclesBalance` jumping **~+843 B** - the 1 T `INSTALL_CODE_REFUND_BUFFER`
+  less the ~300 B `install_code` prepay dip. It leaves official *above* actual,
+  the safe direction, and self-corrects on the first successful submit via
+  `officialCyclesBalance := currentCyclesBalance - cyclesToSend`.
+- `Cycles.balance()` rising **~4.78 B** net, which the script flags as
+  `WARNING: Cycles.balance() ROSE`. Expected on the `after install` sample: the
+  10 B deposit less what the install itself spent.
+
+## Topping up a mAIner: use the OFFICIAL flow, never `dfx wallet send`
+
+A mAIner can hold a healthy-looking balance and still be unable to upgrade, because
+the IC never spends into the **freezing reserve**:
+
+```
+freeze reserve = idle_cycles_per_day x (freezing_threshold_seconds / 86400)
+spendable      = balance - freeze reserve
+```
+
+`install_code` needs roughly **300 B of spendable cycles**. On 2026-08-25
+`qjfug-yiaaa-aaaaa-qbema-cai` failed with 578 B in the bank: 205 MB of memory drove a
+339 B reserve, leaving 238.7 B, and the IC asked for 61.2 B more.
+
+Two traps when judging whether a mAIner can upgrade:
+
+- **Judge on `spendable`, not on `Balance`.** They diverge with memory size.
+- **Model the state AFTER the snapshot the upgrade itself takes.** A snapshot counts
+  toward `Memory Size` and is charged in the idle burn, so it inflates the reserve.
+  Idle burn grows about **0.0255 B/day per MB**, i.e. ~0.77 B of reserve per MB at the
+  standard 30-day threshold.
+
+### Why not `dfx wallet send`
+
+A direct `dfx wallet send` / `IC0.deposit_cycles` is a management-canister call. It
+never runs the mAIner's `addCycles()`, so `officialCyclesBalance` is **not** credited.
+The next `storeAndSubmitResponse` reads the gap as an owner's unofficial top-up and
+burns **90%** of it (`(actual - official) x (protocolOperationFeesCut x 9) / 100` at the
+live `feesCut` of 10).
+
+An upgrade normally hides this, because `postupgrade` re-baselines
+`officialCyclesBalance` afterwards. But a top-up done to rescue a **failed** upgrade
+never reaches `postupgrade` - so there the penalty stands. The direct path is at its
+most dangerous exactly when it is most needed.
+
+### The official flow
+
+```
+icrc1_transfer  ICP -> GameState, memo = 0xAD || target_principal_bytes   (11 bytes)
+       |  returns the ledger block index
+GameState.topUpCyclesForAnyMainerAgent({ mainerAgentAddress; paymentTransactionBlockId })
+       |  verifies the payment and the memo binding, applies the top-up bonus
+GameState -> Cycles.add -> mAIner.addCycles()  ->  officialCyclesBalance += amount
+```
+
+`dfx` cannot send the transfer: the bound memo is 11 bytes, `dfx ledger transfer` takes
+only an 8-byte Nat64, and `dfx canister call ... icrc1_transfer` mis-parses the blob
+escapes past the ledger's 32-byte limit. `icp-py-core` encodes it correctly.
+
+### One-time setup: a dedicated top-up identity
+
+`icp-py-core` reads the private key directly, so this must NOT be a maintainer
+identity. Create a dedicated hot key holding only a small balance:
+
+```bash
+dfx identity new funnai-topup --storage-mode plaintext
+```
+
+```bash
+echo "principal : $(dfx --identity funnai-topup identity get-principal)"; echo "account-id: $(dfx --identity funnai-topup ledger account-id)"
+```
+
+Send ICP to the **account-id**. A couple of ICP is plenty - see the arithmetic below,
+which works out at **~2.35 T of official cycles per ICP** on prd.
+
+### What an ICP actually buys
+
+Three factors, in this order:
+
+```
+credited = icp x cmc_rate x (1 - protocolOperationFeesCut/100) x (1 + bonus/100)
+```
+
+- **CMC rate** - `get_icp_xdr_conversion_rate`, ~1.74 T cycles/ICP.
+- **Protocol cut, taken in ICP FIRST** - `protocolOperationFeesCut`, **10%**
+  (`GameState/src/Main.mo:4864`: `amountToKeep = amount * protocolOperationFeesCut / 100`).
+  Easy to miss: `cyclesForProtocol` is later set to 0 with the comment "Protocol
+  already took its cut in ICP".
+- **Top-up bonus, on what remains** - `getBonusCyclesTopupInPercent`, **50%** on prd
+  (not the 10% code default).
+
+Verified on testing 2026-08-26: 0.05 ICP at 1.7402 T/ICP credited exactly **117.5 B**
+= `0.05 x 1.7402e12 x 0.9 x 1.5`. Omitting the cut predicts 130.5 B - 10% high, enough
+to under-fund a computed top-up.
+
+### The bonus is CONDITIONAL on GameState's own cycle balance
+
+This is the one that would be baffling to hit cold. The bonus is not a fixed protocol
+setting - it disappears when GameState has to mint cycles instead of spending its own:
+
+```motoko
+private func effectiveBonusCyclesTopupInPercent() : Nat {
+    if (PROTOCOL_CYCLES_BALANCE_BUFFER > Cycles.balance()) { return 0; };
+    bonusCyclesTopupInPercent
+};
+```
+
+`handleIncomingFunds` branches on the same condition (`GameState/src/Main.mo:4897`):
+
+| GameState `Cycles.balance()` | path | bonus |
+| ---------------------------- | ---- | ----- |
+| **>= buffer** | spends its own cycles (`amountToConvert = 0`) | **applied** |
+| **< buffer** | converts the ICP via the CMC, `cyclesForMainer = cyclesReceived` | **none** |
+
+So the same 1 ICP buys **~2.35 T** normally but only **~1.57 T** when GameState is below
+its buffer - a third less, with nothing in the response to say why.
+
+```bash
+# both numbers, to see which side of the line the protocol is on
+dfx canister --network $NETWORK call --query $SUBNET_0_1_GAMESTATE getProtocolCyclesBalanceBuffer
+dfx canister --network $NETWORK status $SUBNET_0_1_GAMESTATE | grep -E '^Balance'
+```
+
+prd on 2026-08-26: buffer **100 T**, balance **7,344 T** - 73x above, so the bonus is
+stable. It would take GameState losing 98.6% of its cycles to flip.
+
+**No tooling change is needed for this.** `getBonusCyclesTopupInPercent` returns
+`effectiveBonusCyclesTopupInPercent()`, not the raw setting, so it already reports 0 when
+the protocol is below its buffer - and `scripts/official_topup.py` sizes payments from
+whatever that query returns. Do NOT "fix" it by reading `bonusCyclesTopupInPercent`
+directly, or top-ups would be sized 50% high exactly when the protocol is short.
+
+> Note: `dfx ledger balance` refuses to run with a plaintext identity
+> ("not stored securely"). Read it from the ledger instead - `icp-py-core` does not
+> consult dfx's policy:
+> ```bash
+> dfx canister --network $NETWORK call --query ryjl3-tyaaa-aaaaa-aaaba-cai icrc1_balance_of "(record { owner = principal \"$(dfx --identity funnai-topup identity get-principal)\"; subaccount = null })"
+> ```
+
+Only the **transfer** uses this identity. The redeem call runs as whatever identity dfx
+is currently using, because GameState binds the payment to the target mAIner via the
+memo and never compares the payer to `msg.caller`. The maintainer identity is never
+exported.
+
+### Running a top-up
+
+```bash
+# from the folder: funnAI
+conda activate funnAI
+
+# Size the payment from the mAIner's own shortfall (recommended)
+scripts/official_topup.sh --network $NETWORK --mainer <canister-id> --dry-run
+scripts/official_topup.sh --network $NETWORK --mainer <canister-id>
+
+# Or send an exact amount
+scripts/official_topup.sh --network $NETWORK --mainer <canister-id> --icp 0.2
+```
+
+`upgrade_mainers.sh` calls the same code automatically: it tops up any mAIner whose
+post-snapshot spendable is below the install requirement, and **pre-flights the whole
+run** first - scanning every mAIner it is about to process, summing the ICP required,
+and stopping with instructions if the top-up account is short. It stops rather than
+discovering the shortfall at mAIner 400, because a mAIner that fails mid-rollout is
+left with its timer stopped and its owner not earning.
+
 ## Using script
 
 The following script is used to upgrade ALL or selected mAIners.
@@ -1758,7 +2035,7 @@ scripts/upgrade_mainers.sh --network $NETWORK --reinstall --num 10
 # (Top-up of low-balance canisters happens automatically before each (re)install.)
 
 # from the folder: funnAI
-conda activate llama_cpp_canister
+conda activate funnAI
 
 # Option 1: Upgrade a specific mAIner of IConfucius
 # -> eg: nkftb-zqaaa-aaaaa-qbbxa-cai is running at VeryHigh
@@ -1799,11 +2076,11 @@ scripts/upgrade_mainers.sh --network $NETWORK --target-hash $TARGET_HASH [--dry-
 
 ```bash
 # To assign permissions (run for each maintainer principal)
-scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $ARJAAN [--action assign] [--dry-run]
-scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $PATRICK [--action assign] [--dry-run]
+scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $DEV1 [--action assign] [--dry-run]
+scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $DEV2 [--action assign] [--dry-run]
 
 # To revoke permissions
-scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $ARJAAN --action revoke [--dry-run]
+scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $DEV1 --action revoke [--dry-run]
 ```
 
 #### Manual
@@ -1812,11 +2089,11 @@ scripts/update_admin_rbac_mainers.sh --network $NETWORK --principal $ARJAAN --ac
 MAINER=...
 # verify which principals already have admin roles
 dfx canister --network $NETWORK call $MAINER getAdminRoles
-# grant #AdminUpdate to the maintainer principals (arjaan, patrick)
-dfx canister --network $NETWORK call $MAINER assignAdminRole '( record { "principal" = "'$ARJAAN'"; role = variant { AdminUpdate }; note = "Maintainer: arjaan" } )'
-dfx canister --network $NETWORK call $MAINER assignAdminRole '( record { "principal" = "'$PATRICK'"; role = variant { AdminUpdate }; note = "Maintainer: patrick" } )'
+# grant #AdminUpdate to the maintainer principals (dev1, dev2)
+dfx canister --network $NETWORK call $MAINER assignAdminRole '( record { "principal" = "'$DEV1'"; role = variant { AdminUpdate }; note = "Maintainer: dev1" } )'
+dfx canister --network $NETWORK call $MAINER assignAdminRole '( record { "principal" = "'$DEV2'"; role = variant { AdminUpdate }; note = "Maintainer: dev2" } )'
 # if needed, this is how you revoke permissions for a principal
-# dfx canister --network $NETWORK call $MAINER revokeAdminRole '( "'$ARJAAN'")'
+# dfx canister --network $NETWORK call $MAINER revokeAdminRole '( "'$DEV1'")'
 ```
 
 ### Verify mAIners Health & Hash
@@ -1827,6 +2104,32 @@ After upgrade is completed, verify every mAIner is healthy and has correct modul
 TARGET_HASH=0x...
 scripts/get_mainers_health.sh --network $NETWORK --target-hash $TARGET_HASH
 ```
+
+### Update the official mAIner wasm hash
+
+Run this **after** the mAIner rollout has completed, against a mAIner that is
+already on the new wasm. It records the hash GameState treats as canonical.
+
+Doing it earlier - for example during the GameState upgrade, where this call used
+to live - records the hash of a mAIner that has not been upgraded yet, and nothing
+later re-derives it.
+
+```bash
+# Verify correct network & canister settings !
+echo $NETWORK
+echo $MAINER_SHARE_AGENT_0001   # an Admin owned test mAIner ShareAgent
+
+# confirm it is already at the new hash before deriving from it
+dfx canister --network $NETWORK info $MAINER_SHARE_AGENT_0001
+
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE deriveNewMainerAgentCanisterWasmHashAdmin "(record {address=\"$MAINER_SHARE_AGENT_0001\"; textNote=\"Protocol upgrade\"})"
+```
+
+> Note: the runtime wasm-hash check in `submitChallengeResponse` is currently
+> patched out - the `IC0.canister_info` call is commented out and the hash hardcoded
+> because the call takes ~30 seconds (`GameState/src/Main.mo` ~8012). So this records
+> state that is not presently enforced. Do it anyway, so the value is correct for
+> when that check is re-enabled.
 
 ### Delete mAIners snapshots
 
