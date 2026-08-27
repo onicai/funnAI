@@ -20,7 +20,9 @@ WHAT IT CHECKS, per mAIner
                       #AdminUpdate, which must never be granted on a ctrlb canister.
 
 VERDICTS
-    PRE_MIGRATION  canonical + owner as controller, owner has no role yet
+    PRE_MIGRATION  canonical + the owner is a controller BEYOND the canonical set.
+                   A maintainer who owns a mAIner does not count - they are a
+                   controller either way, so there is nothing to remove.
     MIGRATED       canonical only, owner holds #AdminQuery
     ANOMALY        shadow controller, missing canonical, #AdminUpdate granted,
                    or a module-hash outlier
@@ -172,12 +174,29 @@ def audit_one(network: str, mainer: dict, canonical: set) -> dict:
             if role_name == "AdminUpdate":
                 findings.append(f"#AdminUpdate granted to {r.get('principal')} - must never be set on a ctrlb canister")
 
+    # A maintainer who happens to OWN a mAIner is a controller by virtue of being a
+    # maintainer, not by virtue of being the owner. There is nothing to remove and
+    # nothing to fix, so such a mAIner must not read as un-migrated.
+    #
+    # Judge on whether the owner is a controller BEYOND the canonical set. Before this
+    # distinction existed, vg3fp-pyaaa-aaaaa-qavba-cai (owned by a maintainer) reported
+    # PRE_MIGRATION on a fully migrated prd fleet - 753 MIGRATED and one apparent
+    # straggler that was actually complete.
+    owner_is_canonical = bool(owner) and owner in canonical
+    owner_is_extra_controller = owner_is_controller and not owner_is_canonical
+
     if findings:
         verdict = "ANOMALY"
-    elif owner_is_controller:
+    elif owner_is_extra_controller:
         verdict = "PRE_MIGRATION"
     elif owner_role == "AdminQuery":
         verdict = "MIGRATED"
+    elif owner_is_canonical:
+        # Still reachable - they are a controller - but the end state says every owner
+        # holds #AdminQuery, so a missing role is a real gap, just not a lockout.
+        verdict = "ANOMALY"
+        findings.append("owner is a maintainer but holds no #AdminQuery - not locked "
+                        "out (still a controller), but the role is missing")
     else:
         verdict = "ANOMALY"
         findings.append("owner is neither a controller nor holds #AdminQuery - locked out")
@@ -185,6 +204,8 @@ def audit_one(network: str, mainer: dict, canonical: set) -> dict:
     return {
         "address": address, "owner": owner, "type": mainer_type(mainer),
         "controllers": sorted(controllers), "owner_is_controller": owner_is_controller,
+        "owner_is_canonical": owner_is_canonical,
+        "owner_is_extra_controller": owner_is_extra_controller,
         "module_hash": module_hash, "owner_role": owner_role,
         "roles": roles, "verdict": verdict, "findings": findings,
     }
