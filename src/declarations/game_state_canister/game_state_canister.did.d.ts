@@ -753,6 +753,7 @@ export interface GameStateCanister {
   'icrc7_tokens' : ActorMethod<[[] | [bigint], [] | [bigint]], Array<bigint>>,
   'icrc7_total_supply' : ActorMethod<[], bigint>,
   'initializeOpenSubmissionsQueueAdmin' : ActorMethod<[], AuthRecordResult>,
+  'isCallerMainerOwnedBy' : ActorMethod<[Principal], boolean>,
   'isMainerReservedOnMarketplaceAdmin' : ActorMethod<[string], boolean>,
   'migrateArchivedChallengesAdmin' : ActorMethod<[], NatResult>,
   'migrateScoredResponsesForChallengeAdmin' : ActorMethod<
@@ -764,6 +765,7 @@ export interface GameStateCanister {
     [Array<string>],
     AuthRecordResult
   >,
+  'notifyMainerTopUp' : ActorMethod<[PaymentTransactionBlockId], TopUpResult>,
   'rebuildUserMainerMappingAdmin' : ActorMethod<[], AuthRecordResult>,
   'reinstallMainerControllerAdmin' : ActorMethod<
     [MainerctrlReinstallInput],
@@ -793,6 +795,7 @@ export interface GameStateCanister {
     StatusCodeRecordResult
   >,
   'resetRoundRobinTopicIndexAdmin' : ActorMethod<[], StatusCodeRecordResult>,
+  'resolveMainerByPrefixAdmin' : ActorMethod<[string], TextResult>,
   'resolveMainerTransferFailureAdmin' : ActorMethod<
     [ResolveMainerTransferFailureInput],
     boolean
