@@ -3,7 +3,7 @@
   import Modal from "../CommonModal.svelte";
   import TokenImages from "../TokenImages.svelte";
 
-  import { ArrowUp, Info, Check } from 'lucide-svelte';
+  import { ArrowUp, Info, Check } from '@lucide/svelte';
   import { MEMO_PAYMENT_PROTOCOL, store, canisterIDLs } from "../../stores/store";
   import { IcrcService } from "../../helpers/IcrcService";
   import BigNumber from "bignumber.js";
@@ -14,7 +14,8 @@
   import { MIN_AMOUNT, MAX_AMOUNT, CELEBRATION_DURATION, CELEBRATION_ENABLED } from "../../helpers/config/topUpConfig";
   import { getIsProtocolActive } from "../../helpers/gameState";
   import { mainerHealthService } from "../../helpers/mainerHealthService";
-  import ICPSwapService, { SwapArgs, DepositAndSwapArgs } from "../../helpers/icpswapService";
+  import ICPSwapService, { type SwapArgs, type DepositAndSwapArgs } from "../../helpers/icpswapService";
+  import { WalletDataService } from "../../helpers/WalletDataService";
 
   export let isOpen: boolean = false;
   export let onClose: () => void = () => {};
@@ -98,6 +99,8 @@
   let balance: bigint = BigInt(0);
   let amount: string = "";
   let cyclesAmount: string = "0";
+  let grossCyclesAmount: string = "0";
+  let bonusCyclesAmount: string = "0";
   let conversionRate: BigNumber | null = null;
   
   // FUNNAI limits - loaded dynamically from backend
@@ -456,12 +459,16 @@
   function calculateCycles() {
     if (!conversionRate || !amount || isNaN(Number(amount)) || Number(amount) <= 0 || !selectedToken) {
       cyclesAmount = "0";
+      grossCyclesAmount = "0";
+      bonusCyclesAmount = "0";
       return;
     }
     
     // Special handling for FUNNAI when rate is 0 (not available)
     if (selectedTokenSymbol === 'FUNNAI' && conversionRate.isZero()) {
       cyclesAmount = "0";
+      grossCyclesAmount = "0";
+      bonusCyclesAmount = "0";
       return;
     }
     
@@ -476,21 +483,26 @@
       // Calculate smallest unit to cycles ratio
       const smallestUnitToCycleRatio = conversionRate.div(E8S_PER_TOKEN);
       
-      // Calculate cycles
-      let cycles = smallestUnitAmount.times(smallestUnitToCycleRatio);
+      // Gross cycles from the conversion rate (what CMC/protocol conversion is based on)
+      const grossCycles = smallestUnitAmount.times(smallestUnitToCycleRatio);
+      let bonusCycles = new BigNumber(0);
 
-      // Apply protocol top-up bonus for non-FUNNAI tokens
       if (selectedTokenSymbol !== 'FUNNAI' && bonusCyclesTopupInPercent > 0) {
-        cycles = cycles.times(bonusMultiplier);
+        bonusCycles = grossCycles.times(bonusCyclesTopupInPercent / 100);
       }
+
+      const netCycles = grossCycles.plus(bonusCycles);
+
+      grossCyclesAmount = formatLargeNumber(grossCycles.toNumber() / 1_000_000_000_000, 4, false);
+      bonusCyclesAmount = formatLargeNumber(bonusCycles.toNumber() / 1_000_000_000_000, 4, false);
+      cyclesAmount = formatLargeNumber(netCycles.toNumber() / 1_000_000_000_000, 4, false);
       
-      // Use formatLargeNumber to format trillions
-      cyclesAmount = formatLargeNumber(cycles.toNumber() / 1_000_000_000_000, 4, false);
-      
-      console.log(`${amount} ${selectedToken.symbol} equals ${cyclesAmount} Trillion (${cycles.toString()}) cycles`);
+      console.log(`${amount} ${selectedToken.symbol} equals ${cyclesAmount} Trillion net (${netCycles.toString()}) cycles`);
     } catch (error) {
       console.error("Error calculating cycles:", error);
       cyclesAmount = "0";
+      grossCyclesAmount = "0";
+      bonusCyclesAmount = "0";
     }
   }
 
@@ -500,6 +512,8 @@
     // Reset amount when switching tokens to avoid confusion
     amount = "";
     cyclesAmount = "0";
+    grossCyclesAmount = "0";
+    bonusCyclesAmount = "0";
     errorMessage = "";
   }
 
@@ -726,6 +740,12 @@
         // Close modal immediately and pass promise to parent
         onSuccess(txId, canisterId, backendPromise);
         handleClose();
+
+        // The wallet tab skips refetch when it already has cached balances.
+        // Refresh now so the spent ICP/token amount is visible without a manual refresh.
+        WalletDataService.refreshBalances(true).catch((error) => {
+          console.error("Error refreshing wallet balances after top-up:", error);
+        });
         
         // Trigger celebration if needed (after modal closes) - only for ICP
         if (shouldCelebrate) {
@@ -783,34 +803,36 @@
   closeOnClickOutside={true}
   isPadded={true}
 >
-  <div class="px-2 sm:px-4 py-4 flex flex-col gap-3 sm:gap-4">
+  <div class="space-y-4">
     {#if isTokenLoading}
       <div class="flex justify-center py-4">
-        <span class="w-6 h-6 border-2 border-gray-400/30 border-t-gray-400 dark:border-gray-400/30 dark:border-t-gray-400 rounded-full animate-spin"></span>
+        <span class="w-6 h-6 border-2 border-agent-purple/30 border-t-agent-purple rounded-full animate-spin"></span>
       </div>
     {:else}
       <!-- Token Selector -->
       <div class="flex flex-col gap-2">
-        <div class="block text-xs text-gray-600 mb-1 dark:text-gray-400">Select Payment Token</div>
+        <span class="block text-xs text-gray-400 mb-1">Select Payment Token</span>
+        {#if bonusCyclesTopupInPercent > 0}
+          <p class="text-[11px] text-emerald-400 -mt-1 mb-0.5">
+            Non-FUNNAI tokens include +{bonusCyclesTopupInPercent}% bonus cycles
+          </p>
+        {/if}
         <div class="grid grid-cols-2 gap-2">
           {#each availableTokens as token}
             <button
                type="button"
-               class="flex items-center gap-2 p-2.5 rounded-lg border transition-colors {selectedToken?.symbol === token.symbol ? 'bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-900 dark:bg-opacity-20 dark:border-purple-600 dark:border-opacity-30 dark:text-purple-300' : 'bg-gray-50 border-gray-300 text-gray-700 dark:bg-gray-800 dark:bg-opacity-50 dark:border-gray-600 dark:border-opacity-30 dark:text-gray-300'}"
+               class="flex items-center gap-2 p-2.5 rounded-xl border transition-colors {selectedToken?.symbol === token.symbol ? 'border-agent-purple/50 bg-agent-purple/10 text-gray-100' : 'bg-white/3 border-white/10 text-gray-300 hover:border-agent-purple/30'}"
                on:click={() => handleTokenChange(token.symbol)}
              >
-              <div class="w-7 h-7 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-700 dark:border-gray-600">
+              <div class="w-7 h-7 rounded-xl bg-white/4 border border-white/10 shrink-0 overflow-hidden">
                 <TokenImages tokens={[token]} size={26} showSymbolFallback={true} />
               </div>
               <div class="flex flex-col min-w-0 flex-1 text-left">
-                <div class="font-medium text-xs truncate">{token.symbol}</div>
-                <div class="text-xs opacity-60 truncate">{token.name}</div>
-                {#if token.symbol !== 'FUNNAI' && bonusCyclesTopupInPercent > 0}
-                  <div class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 truncate">+{bonusCyclesTopupInPercent}% bonus</div>
-                {/if}
+                <div class="font-medium text-xs truncate text-white">{token.symbol}</div>
+                <div class="text-xs text-gray-500 truncate">{token.name}</div>
               </div>
               {#if selectedToken?.symbol === token.symbol}
-                <Check size={14} class="text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                <Check size={14} class="text-agent-purple shrink-0" />
               {/if}
             </button>
           {/each}
@@ -819,8 +841,8 @@
 
       <!-- Selected Token Info Banner -->
       {#if selectedToken}
-        <div class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100">
-          <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
+        <div class="flex items-center gap-2 sm:gap-3 p-3 rounded-xl bg-white/3 border border-white/10">
+          <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-agent-purple/15 border border-agent-purple/20 shrink-0 overflow-hidden">
             <div class="sm:hidden">
               <TokenImages tokens={[selectedToken]} size={32} showSymbolFallback={true} />
             </div>
@@ -829,36 +851,36 @@
             </div>
           </div>
           <div class="flex flex-col min-w-0 flex-1">
-            <div class="text-gray-900 font-medium dark:text-gray-100 text-sm sm:text-base truncate">{selectedToken.name}</div>
-            <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Balance: {formatBalance(balance.toString(), selectedToken.decimals)} {selectedToken.symbol}</div>
+            <div class="text-white font-medium text-sm sm:text-base truncate">{selectedToken.name}</div>
+            <div class="text-xs sm:text-sm text-gray-400 truncate">Balance: {formatBalance(balance.toString(), selectedToken.decimals)} {selectedToken.symbol}</div>
           </div>
         </div>
       {/if}
 
       <!-- Top-up Info -->
-      <div class="flex flex-col gap-2 sm:gap-3">
+      <div class="flex flex-col gap-3">
         <!-- Canister ID -->
         <div>
-          <div class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">mAIner canister</div>
+          <span class="block text-xs text-gray-400 mb-1.5">mAIner canister</span>
           <div class="relative">
             <input
               type="text"
-              class="w-full py-2 px-2 sm:px-3 bg-white border border-gray-300 rounded-md text-xs sm:text-sm text-gray-900 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+              class="agent-input w-full text-xs sm:text-sm"
               value={canisterName ? `${canisterName} (${canisterId})` : canisterId}
               disabled
             />
           </div>
-          <div class="mt-1 text-xs text-gray-600 dark:text-gray-500">mAIner to be topped up</div>
+          <div class="mt-1 text-xs text-gray-500">mAIner to be topped up</div>
         </div>
 
         <!-- Amount -->
         <div>
           <div class="flex justify-between items-center mb-1.5">
-            <label for="amount-input" class="block text-xs text-gray-600 dark:text-gray-400">{selectedToken?.symbol || 'Token'} Amount</label>
+            <label for="amount-input" class="block text-xs text-gray-400">{selectedToken?.symbol || 'Token'} Amount</label>
             {#if currentMaxAmount > 0}
               <button
                 type="button"
-                class="text-xs text-purple-600 hover:text-purple-800 dark:text-purple-500 dark:hover:text-purple-400 font-medium"
+                class="text-xs text-agent-purple hover:text-agent-purple/80 font-medium"
                 on:click={() => amount = String(currentMaxAmount)}
               >
                 Top up Max ({currentMaxAmount} {selectedToken?.symbol || 'Token'})
@@ -872,95 +894,98 @@
               id="amount-input"
               type="text"
               inputmode="decimal"
-              class="w-full py-2 px-2 sm:px-3 bg-white border rounded-md text-xs sm:text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-100 pr-12 sm:pr-16"
-              class:border-green-400={hasEnoughBalance && isValidAmount}
-              class:border-red-400={(!hasEnoughBalance && isValidAmount) || isAboveMaximum}
-              class:border-yellow-400={isBelowMinimum}
-              class:border-purple-500={isMaxAmount && hasEnoughBalance}
-              class:border-gray-300={!isValidAmount && !isBelowMinimum && !isAboveMaximum}
-              class:dark:border-gray-600={!isValidAmount && !isBelowMinimum && !isAboveMaximum}
+              class="agent-input w-full pr-12 sm:pr-16 text-xs sm:text-sm {hasEnoughBalance && isValidAmount ? 'border-emerald-500/50' : ''} {(!hasEnoughBalance && isValidAmount) || isAboveMaximum ? 'border-red-500/50' : ''} {isBelowMinimum ? 'border-amber-500/50' : ''} {isMaxAmount && hasEnoughBalance ? 'border-agent-purple/50' : ''}"
               placeholder="Enter {selectedToken?.symbol || 'token'} amount to top up"
               bind:value={amount}
               on:input={handleAmountInput}
             />
             <div class="absolute inset-y-0 right-0 flex items-center">
-              <span class="pr-2 sm:pr-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">{selectedToken?.symbol || 'Token'}</span>
+              <span class="pr-2 sm:pr-3 text-xs sm:text-sm text-gray-400">{selectedToken?.symbol || 'Token'}</span>
             </div>
           </div>
-          <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
-            Protocol fees included
-            {#if showTopupBonus}
-              <span class="text-emerald-600 dark:text-emerald-400"> · +{bonusCyclesTopupInPercent}% bonus cycles included</span>
-            {/if}
+          <div class="mt-1 text-xs text-gray-400">
+            Estimate before protocol conversion. Credited cycles can be slightly lower.
           </div>
           {#if isBelowMinimum}
-            <div class="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
+            <div class="mt-1 text-xs text-amber-400">
               Minimum amount: {currentMinAmount} {selectedToken?.symbol || 'Token'}
             </div>
           {/if}
           {#if isAboveMaximum}
-            <div class="mt-1 text-xs text-red-600 dark:text-red-400">
+            <div class="mt-1 text-xs text-red-400">
               Maximum amount: {currentMaxAmount} {selectedToken?.symbol || 'Token'}
             </div>
           {/if}
           {#if isMaxAmount && hasEnoughBalance && selectedTokenSymbol !== 'FUNNAI'}
-            <div class="mt-1 text-xs text-purple-600 dark:text-purple-400 font-medium animate-pulse">
-              🎉 Maximum amount! Get ready for something special! 🎉
+            <div class="mt-1 text-xs text-agent-purple font-medium">
+              Maximum amount selected
             </div>
           {/if}
         </div>
         
         <!-- Cycles Conversion Display -->
-        <div class="p-2 sm:p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-xs sm:text-sm flex flex-col gap-2 dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200">
-          <div class="flex items-center gap-1">
-            <Info size={12} class="sm:hidden flex-shrink-0" />
-            <Info size={14} class="hidden sm:block flex-shrink-0" />
-            <span class="font-medium">Cycles Conversion</span>
+        <div class="p-3 rounded-xl bg-sky-500/5 border border-sky-500/20 text-sky-300/90 text-xs sm:text-sm flex flex-col gap-2">
+          <div class="flex items-center gap-1.5">
+            <Info size={14} class="text-sky-400 shrink-0" />
+            <span class="font-medium text-sky-200">Cycles Conversion</span>
             {#if isLoadingConversionRate}
-              <span class="w-3 h-3 ml-2 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin dark:border-blue-400/30 dark:border-t-blue-400 flex-shrink-0"></span>
+              <span class="w-3 h-3 ml-2 border-2 border-sky-400/30 border-t-sky-400 rounded-full animate-spin shrink-0"></span>
             {/if}
           </div>
           
           {#if !isLoadingConversionRate}
             <div class="flex justify-between items-center gap-2">
-              <span class="truncate">{amount || '0'} {selectedToken?.symbol || 'Token'}</span>
-              <span class="font-medium text-right flex-shrink-0">≈ {cyclesAmount} Trillion Cycles</span>
+              <span class="truncate text-sky-300/80">Conversion (gross)</span>
+              <span class="font-medium text-right shrink-0 text-white">≈ {grossCyclesAmount} T cycles</span>
             </div>
-            {#if showTopupBonus}
-              <div class="text-emerald-700 dark:text-emerald-300 text-xs">
-                Includes +{bonusCyclesTopupInPercent}% bonus cycles on {selectedToken?.symbol || 'token'} top-ups
+            {#if showTopupBonus && Number(bonusCyclesAmount) > 0}
+              <div class="flex justify-between items-center gap-2 text-emerald-400">
+                <span>+{bonusCyclesTopupInPercent}% bonus</span>
+                <span class="font-medium text-right shrink-0">+ {bonusCyclesAmount} T</span>
               </div>
             {/if}
+            <div class="flex justify-between items-center gap-2 pt-1 border-t border-sky-500/20">
+              <span class="truncate text-sky-200">Estimated to credit</span>
+              <span class="font-medium text-right shrink-0 text-white">≈ {cyclesAmount} T cycles</span>
+            </div>
+            <div class="text-sky-400/70 text-xs">
+              The mAIner is credited the net amount after protocol conversion
+              {#if selectedTokenSymbol !== 'ICP' && selectedTokenSymbol !== 'FUNNAI'}
+                and any swap/ledger fees
+              {/if}.
+            </div>
           {:else}
-            <div class="text-blue-600/70 dark:text-blue-300/70">Loading conversion rate...</div>
+            <div class="text-sky-400/70">Loading conversion rate...</div>
           {/if}
         </div>
 
         <!-- Swap progress panel -->
         {#if isValidating && validatingMessage !== "Processing..."}
-          <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-200">
+          <div class="p-3 rounded-xl bg-white/3 border border-white/10">
             <div class="flex items-center gap-2">
-              <span class="w-4 h-4 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin dark:border-blue-400/30 dark:border-t-blue-400"></span>
-              <span class="text-sm font-medium">{validatingMessage}</span>
+              <span class="w-4 h-4 border-2 border-agent-purple/30 border-t-agent-purple rounded-full animate-spin"></span>
+              <span class="text-sm font-medium text-gray-200">{validatingMessage}</span>
             </div>
           </div>
         {/if}
 
         <!-- Error message -->
         {#if errorMessage}
-          <div class="mt-1 p-2 rounded bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-400">
-            {errorMessage}
+          <div class="p-3 bg-red-500/10 rounded-xl border border-red-500/25">
+            <p class="text-sm text-red-300">{errorMessage}</p>
           </div>
         {/if}
 
         <!-- FUNNAI unavailable message -->
         {#if isFunnaiUnavailable}
-          <div class="mt-1 p-2 rounded bg-yellow-50 border border-yellow-200 text-yellow-700 text-xs sm:text-sm dark:bg-yellow-900/30 dark:border-yellow-900/50 dark:text-yellow-400">
-            {#if selectedTokenSymbol === 'FUNNAI' && currentMaxAmount === 0}
-              FUNNAI top-ups are currently disabled by the backend. Please try again later or use ICP.
-            {:else}
-              FUNNAI top-ups are currently not available. Please try again later or use ICP.
-            {/if}
+          <div class="p-3 bg-amber-500/5 rounded-xl border border-amber-500/20">
+            <p class="text-sm text-amber-300">
+              {#if selectedTokenSymbol === 'FUNNAI' && currentMaxAmount === 0}
+                FUNNAI top-ups are currently disabled by the backend. Please try again later or use ICP.
+              {:else}
+                FUNNAI top-ups are currently not available. Please try again later or use ICP.
+              {/if}
+            </p>
           </div>
         {/if}
 
@@ -968,21 +993,15 @@
         <button
           type="button"
           on:click={handleSubmit}
-          class="mt-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-md text-white font-medium flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
-          class:bg-purple-600={canSubmit}
-          class:hover:bg-purple-500={canSubmit}
-          class:bg-gray-400={!canSubmit}
-          class:cursor-not-allowed={!canSubmit}
-          class:dark:bg-gray-700={!canSubmit}
+          class="w-full agent-btn-primary disabled:opacity-50 disabled:cursor-not-allowed {!canSubmit ? 'bg-white/10 hover:bg-white/10 text-gray-500 shadow-none' : ''}"
           disabled={!canSubmit}
         >
           {#if isValidating}
             <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-            Processing...
+            <span>Processing...</span>
           {:else}
-            <ArrowUp size={14} class="sm:hidden" />
-            <ArrowUp size={16} class="hidden sm:block" />
-            Top up {amount || '0'} {selectedToken?.symbol || 'Token'}
+            <ArrowUp size={16} />
+            <span>Top up {amount || '0'} {selectedToken?.symbol || 'Token'}</span>
           {/if}
         </button>
       </div>
@@ -990,13 +1009,17 @@
   </div>
 </Modal>
 
-
-
 <style>
   :global(.mainer-topup-modal) {
     max-width: min(480px, calc(100vw - 2rem));
-    position: relative;
-    z-index: 100000;
+  }
+
+  :global(.modal-panel.mainer-topup-modal),
+  :global(.mainer-topup-modal.modal-panel) {
+    background: #15141B !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 1rem !important;
+    color: #e5e7eb !important;
   }
   
   /* Ensure proper text wrapping on mobile */

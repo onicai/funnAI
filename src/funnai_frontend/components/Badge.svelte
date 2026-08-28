@@ -25,12 +25,12 @@
 
   // Computed styles based on variant
   const variantStyles = {
-    blue: "bg-blue-100 text-blue-600",
-    green: "bg-green-100 text-green-600",
-    red: "bg-red-100 text-red-600",
-    yellow: "bg-yellow-100 text-yellow-600",
-    purple: "bg-purple-100 text-purple-600",
-    gray: "bg-gray-200 text-gray-600"
+    blue: "bg-blue-900/30 text-blue-300",
+    green: "bg-green-900/30 text-green-300",
+    red: "bg-red-900/30 text-red-300",
+    yellow: "bg-yellow-900/30 text-yellow-300",
+    purple: "bg-purple-900/30 text-purple-300",
+    gray: "bg-gray-800 text-gray-300"
   };
 
   // Size styles
@@ -46,7 +46,7 @@
     inline-flex items-center gap-1 
     ${variantStyles[variant] || variantStyles.blue} 
     ${sizeStyles[size] || sizeStyles.sm} 
-    ${pill ? 'rounded-full' : 'rounded'} 
+    ${pill ? 'rounded-full' : 'rounded-sm'} 
     font-medium
     ${tooltipText ? 'cursor-help' : ''}
     ${className}

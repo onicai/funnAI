@@ -66,120 +66,76 @@
   }
 </script>
 
-<!-- Responsive Grid: 2 columns on desktop, 1 column on mobile -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      
-      <!-- Token Ledger Card -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center space-x-2">
-            <div class="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded">
-              <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <div>
-              <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
-                {tokenLedger.title}
-              </h4>
-            </div>
-          </div>
-          <div class="flex items-center space-x-1">
-            <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-            <span class="text-xs text-green-600 dark:text-green-400 font-medium">Active</span>
-          </div>
-        </div>
+<!-- Token canisters -->
+<div class="agent-card bg-agent-surface! p-5 sm:p-6">
+  <div class="relative z-1 mb-5">
+    <p class="agent-eyebrow">Canisters</p>
+    <h3 class="mt-1 text-base font-semibold tracking-tight text-white">Token infrastructure</h3>
+    <p class="mt-0.5 text-sm text-gray-500">Ledger and index principals for FUNNAI</p>
+  </div>
 
-        <!-- Canister ID with Copy Button -->
-        <div class="mb-3">
-          <div class="flex items-center space-x-2">
-            <div class="flex-1 bg-white dark:bg-gray-800 rounded px-2 py-1.5 border border-gray-300 dark:border-gray-600">
-              <code class="text-xs font-mono text-gray-900 dark:text-gray-100 break-all">
-                {tokenLedger.canisterId}
-              </code>
-            </div>
-            <button
-              on:click={() => copyToClipboard(tokenLedger.canisterId, "Ledger")}
-              class="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:focus:ring-offset-gray-800"
-              title="Copy canister ID"
-            >
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
+  <div class="relative z-1 grid grid-cols-1 lg:grid-cols-2 gap-3">
+    <div class="rounded-xl bg-white/3 p-4">
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <div>
+          <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Ledger</p>
+          <h4 class="mt-0.5 text-sm font-semibold tracking-tight text-white">{tokenLedger.title}</h4>
         </div>
-
-        <!-- Token Details -->
-        <div class="flex items-center justify-between text-xs">
-          <div class="flex items-center space-x-3">
-            <span class="text-gray-600 dark:text-gray-400">
-              Decimals: <span class="font-medium text-gray-900 dark:text-gray-100">{tokenLedger.decimals}</span>
-            </span>
-          </div>
-          <div class="flex gap-1">
-            {#each tokenLedger.tokenTypes as tokenType}
-              <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
-                {tokenType}
-              </span>
-            {/each}
-          </div>
-        </div>
+        <span class="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-300">
+          <span class="h-1 w-1 rounded-full bg-emerald-400"></span>
+          Active
+        </span>
       </div>
-
-      <!-- Token Index Card -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 border border-gray-200 dark:border-gray-700">
-        <div class="flex items-center justify-between mb-3">
-          <div class="flex items-center space-x-2">
-            <div class="p-1.5 bg-green-100 dark:bg-green-900/30 rounded">
-              <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-            <div>
-              <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
-                {tokenIndex.title}
-              </h4>
-            </div>
-          </div>
-          <div class="flex items-center space-x-1">
-            <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-            <span class="text-xs text-green-600 dark:text-green-400 font-medium">Active</span>
-          </div>
-        </div>
-
-        <!-- Canister ID with Copy Button -->
-        <div class="mb-3">
-          <div class="flex items-center space-x-2">
-            <div class="flex-1 bg-white dark:bg-gray-800 rounded px-2 py-1.5 border border-gray-300 dark:border-gray-600">
-              <code class="text-xs font-mono text-gray-900 dark:text-gray-100 break-all">
-                {tokenIndex.canisterId}
-              </code>
-            </div>
-            <button
-              on:click={() => copyToClipboard(tokenIndex.canisterId, "Index")}
-              class="p-1.5 bg-green-600 hover:bg-green-700 text-white rounded transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 dark:focus:ring-offset-gray-800"
-              title="Copy canister ID"
-            >
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Index Details -->
-        <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded p-2">
-          <div class="flex items-center space-x-2">
-            <svg class="h-3 w-3 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-            </svg>
-            <div>
-              <p class="text-xs text-green-700 dark:text-green-300 mt-0.5">Index canister is active and ready</p>
-            </div>
-          </div>
-        </div>
+      <div class="flex items-center gap-2">
+        <code class="flex-1 min-w-0 text-xs font-mono text-gray-300 break-all rounded-lg bg-white/3 px-2.5 py-2 border border-white/6">
+          {tokenLedger.canisterId}
+        </code>
+        <button
+          type="button"
+          on:click={() => copyToClipboard(tokenLedger.canisterId, "Ledger")}
+          class="agent-btn-ghost h-8! px-2.5! shrink-0"
+          title="Copy canister ID"
+        >
+          Copy
+        </button>
       </div>
+      <div class="mt-3 flex flex-wrap items-center gap-1.5">
+        <span class="text-xs text-gray-500">Decimals {tokenLedger.decimals}</span>
+        {#each tokenLedger.tokenTypes as tokenType}
+          <span class="inline-flex items-center rounded-full bg-agent-purple/15 px-2 py-0.5 text-[10px] font-medium text-[#c4b5fd]">
+            {tokenType}
+          </span>
+        {/each}
+      </div>
+    </div>
+
+    <div class="rounded-xl bg-white/3 p-4">
+      <div class="flex items-center justify-between gap-2 mb-3">
+        <div>
+          <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Index</p>
+          <h4 class="mt-0.5 text-sm font-semibold tracking-tight text-white">{tokenIndex.title}</h4>
+        </div>
+        <span class="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-300">
+          <span class="h-1 w-1 rounded-full bg-emerald-400"></span>
+          Active
+        </span>
+      </div>
+      <div class="flex items-center gap-2">
+        <code class="flex-1 min-w-0 text-xs font-mono text-gray-300 break-all rounded-lg bg-white/3 px-2.5 py-2 border border-white/6">
+          {tokenIndex.canisterId}
+        </code>
+        <button
+          type="button"
+          on:click={() => copyToClipboard(tokenIndex.canisterId, "Index")}
+          class="agent-btn-ghost h-8! px-2.5! shrink-0"
+          title="Copy canister ID"
+        >
+          Copy
+        </button>
+      </div>
+      <p class="mt-3 text-xs text-gray-500">Index canister is active and ready</p>
+    </div>
+  </div>
 </div>
 
 <!-- Toast Notification -->

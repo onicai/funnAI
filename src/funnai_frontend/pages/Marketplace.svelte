@@ -4,17 +4,31 @@
   import { toastStore } from "../stores/toastStore";
   import Footer from "../components/funnai/Footer.svelte";
   import MyMainersForSale from "../components/marketplace/MyMainersForSale.svelte";
+  import MyActiveListings from "../components/marketplace/MyActiveListings.svelte";
   import MarketplaceListings from "../components/marketplace/MarketplaceListings.svelte";
   import MarketplacePaymentModal from "../components/marketplace/MarketplacePaymentModal.svelte";
   import MarketplaceTransactionHistory from "../components/marketplace/MarketplaceTransactionHistory.svelte";
   import ToastContainer from "../components/common/ToastContainer.svelte";
-  import { Store, TrendingUp, Users, Zap, ShoppingCart, Tag, History } from "lucide-svelte";
+  import { Store, TrendingUp, Users, Zap, ShoppingCart, Tag, History } from "@lucide/svelte";
   import { MarketplaceService } from "../helpers/marketplaceService";
   import type { Principal } from '@dfinity/principal';
   import { MARKETPLACE_DISABLED_MESSAGE, MARKETPLACE_ENABLED } from "../helpers/config/featureFlags";
 
   let isLoading = true;
   let activeTab: 'sell' | 'buy' | 'history' = 'buy';
+
+  const marketplaceTabs = [
+    { id: 'buy' as const, label: 'Buy', icon: ShoppingCart, description: 'Browse listings' },
+    { id: 'sell' as const, label: 'Sell', icon: Tag, description: 'List a mAIner' },
+    { id: 'history' as const, label: 'History', icon: History, description: 'Your trades' },
+  ];
+
+  $: marketplaceSubtitle =
+    activeTab === 'sell'
+      ? 'List your mAIners for sale on the network'
+      : activeTab === 'history'
+        ? 'Purchases and sales from your account'
+        : 'Buy and sell autonomous mAIner agents on the network';
   let stats = {
     totalListings: 0,
     totalSales: 0,
@@ -35,12 +49,22 @@
   let buyProcessError: string = '';
   let isCancelingReservation = false;
   
-  // Reactive key to force MarketplaceListings to refresh
-  let listingsRefreshKey = 0;
+  // Soft-refresh buy-tab listings without remounting (avoids spinner flicker)
+  let marketplaceListingsRef: { forceRefresh: () => Promise<void> } | undefined;
+
+  function refreshMarketplaceListings() {
+    void marketplaceListingsRef?.forceRefresh();
+  }
+
+  // Refresh Sell-tab "My Listings" after list/cancel
+  let activeListingsRefreshKey = 0;
 
   let hasRunCleanup = false;
   let isCleaningReservation = false;
   let reservationRefreshKey = 0; // Key to force re-check of reservation banner
+  let staleReservation: { address: string } | null = null;
+  let lastAuthListingsKey = "";
+  let lastReservationCheckKey = "";
 
   onMount(() => {
     if (!MARKETPLACE_ENABLED) {
@@ -88,7 +112,7 @@
         }
         
         // Refresh listings and banner
-        listingsRefreshKey++;
+        refreshMarketplaceListings();
         reservationRefreshKey++;
       } else {
         console.log('✅ No stale reservations found on auth');
@@ -158,46 +182,78 @@
       reservationRefreshKey++;
       // Also refresh listings in case the mAIner was returned
       await loadMarketplaceStats();
-      listingsRefreshKey++;
+      refreshMarketplaceListings();
     }
   }
 
-  // Reactive: reload user listings when auth state changes
-  $: if ($store.isAuthed) {
-    loadUserListings();
-  } else {
-    userListedMainerAddresses = [];
-    hasRunCleanup = false; // Reset cleanup flag when user logs out
+  // Reload user listings / stats when auth actually changes — not on every store write
+  $: authListingsKey = $store.isAuthed ? "1" : "0";
+  $: if (authListingsKey !== lastAuthListingsKey) {
+    lastAuthListingsKey = authListingsKey;
+    if ($store.isAuthed) {
+      loadUserListings();
+      loadMarketplaceStats();
+    } else {
+      userListedMainerAddresses = [];
+      staleReservation = null;
+      hasRunCleanup = false; // Reset cleanup flag when user logs out
+    }
   }
 
-  // Reactive: reload when switching to sell tab
-  $: if (activeTab === 'sell' && $store.isAuthed) {
+  // Retry stats once the game-state actor appears (login often races first paint)
+  let lastStatsActorReady = false;
+  $: statsActorReady = Boolean($store.gameStateCanisterActor);
+  $: if (statsActorReady && !lastStatsActorReady) {
+    lastStatsActorReady = true;
+    loadMarketplaceStats();
+  } else if (!statsActorReady) {
+    lastStatsActorReady = false;
+  }
+
+  let lastSellRefreshKey = "";
+  $: sellRefreshKey = `${activeTab}:${$store.isAuthed ? "1" : "0"}`;
+  $: if (activeTab === 'sell' && $store.isAuthed && sellRefreshKey !== lastSellRefreshKey) {
+    lastSellRefreshKey = sellRefreshKey;
     loadUserListings();
-    // Also refresh user's mAIner canisters to catch any that were sold
     store.loadUserMainerCanisters();
   }
 
-  // Reactive: refresh stats when switching tabs (keeps numbers up-to-date)
-  $: if (activeTab) {
+  $: reservationCheckKey = `${$store.isAuthed ? "1" : "0"}:${reservationRefreshKey}`;
+  $: if (MARKETPLACE_ENABLED && reservationCheckKey !== lastReservationCheckKey) {
+    lastReservationCheckKey = reservationCheckKey;
+    refreshReservationBanner();
+  }
+
+  let lastStatsTab = "";
+  $: if (activeTab && activeTab !== lastStatsTab) {
+    lastStatsTab = activeTab;
     loadMarketplaceStats();
   }
 
   async function initialize() {
     isLoading = true;
-    
-    // If user is already authenticated on page load, run cleanup immediately
-    if ($store.isAuthed && !hasRunCleanup) {
-      console.log('🔄 User already authenticated on load, running cleanup...');
-      await clearStaleReservationsOnAuth();
-    }
-    
+
     try {
-      await loadMarketplaceStats();
-      await loadUserListings();
+      // Don't await reservation cleanup here — it can stall first paint for a long time.
+      // The reactive auth cleanup above handles that in the background.
+      await Promise.all([loadMarketplaceStats(), loadUserListings()]);
     } catch (error) {
       console.error("Error initializing marketplace:", error);
     } finally {
       isLoading = false;
+    }
+  }
+
+  async function refreshReservationBanner() {
+    if (!$store.isAuthed) {
+      staleReservation = null;
+      return;
+    }
+    try {
+      const result = await MarketplaceService.getUserReservation();
+      staleReservation = result.success && result.reservation ? result.reservation : null;
+    } catch (error) {
+      console.warn("Reservation check failed; keeping current banner state", error);
     }
   }
 
@@ -207,14 +263,8 @@
     if (result.success && result.stats) {
       stats = result.stats;
     } else {
-      console.error("Failed to load marketplace stats:", result.error);
-      // Keep default values
-      stats = {
-        totalListings: 0,
-        totalSales: 0,
-        totalVolume: "0",
-        activeTraders: 0,
-      };
+      // Keep last-known tiles — a login/actor blip used to wipe real numbers to 0
+      console.error("Failed to load marketplace stats; keeping last-known values:", result.error);
     }
   }
 
@@ -233,12 +283,10 @@
         userListedMainerAddresses = result.listings.map(listing => listing.address);
         console.log(`✅ User has ${userListedMainerAddresses.length} mAIners listed:`, userListedMainerAddresses);
       } else {
-        console.error("Failed to load user listings:", result.error);
-        userListedMainerAddresses = [];
+        console.error("Failed to load user listings; keeping last-known list:", result.error);
       }
     } catch (error) {
-      console.error("Error loading user listings:", error);
-      userListedMainerAddresses = [];
+      console.error("Error loading user listings; keeping last-known list:", error);
     }
   }
 
@@ -256,6 +304,8 @@
         
         if (result.success) {
           successCount++;
+          // Optimistic hide so the sell list doesn't flash the listed card back.
+          userListedMainerAddresses = [...new Set([...userListedMainerAddresses, mainerId])];
           console.log(`Successfully listed ${mainerId} for ${price} ICP`);
         } else {
           errorCount++;
@@ -278,12 +328,13 @@
           );
         }
         
-        // Refresh marketplace data, user listings, and mAIner canisters
-        await Promise.all([
-          loadMarketplaceStats(),
-          loadUserListings(),
-          store.loadUserMainerCanisters()
-        ]);
+        // Listings first so the sell list can hide the new cards, then stats.
+        // Skip a canister refresh here: it races the listing update and can
+        // flash the listed mAIner back with a stale low-cycles warning.
+        await loadUserListings();
+        await loadMarketplaceStats();
+        activeListingsRefreshKey++;
+        refreshMarketplaceListings();
       } else {
         throw new Error(`Failed to list all mAIners. ${errors.join('; ')}`);
       }
@@ -342,42 +393,42 @@
       8000
     );
     
-    // Reset state
+    // Reset state — keep listing briefly so success/close outro doesn't flash empty
     showPaymentModal = false;
-    selectedListingForPurchase = null;
     isBuyingMainer = false;
     buyProcessStep = 'idle';
+    setTimeout(() => {
+      if (!showPaymentModal) {
+        selectedListingForPurchase = null;
+      }
+    }, 200);
     
     // Small delay to ensure backend has finished all updates
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Refresh marketplace data and user's mAIner list
+    // Soft-refresh marketplace data and user's mAIner list (no remount / spinner)
     await loadMarketplaceStats();
     await store.loadUserMainerCanisters();
-    
-    // Trigger listings refresh to get fresh data from backend
-    listingsRefreshKey++;
-    
-    // Secondary refresh after a delay to catch any race conditions with backend timers
-    // This ensures stale listings are cleared even if there's a timing issue
+    refreshMarketplaceListings();
+
+    // Secondary soft refresh to catch any race with backend timers
     setTimeout(() => {
       console.log("🔄 Secondary marketplace refresh to clear any stale data");
-      listingsRefreshKey++;
+      refreshMarketplaceListings();
     }, 3000);
   }
 
   async function handlePaymentModalClose() {
-    // The modal now handles reservations internally
-    // If user closes before confirming, no reservation was made
-    // If user closes during processing, the modal warns them first
-    
+    // Closing before confirm means no reservation was made — don't reload the grid.
     showPaymentModal = false;
-    selectedListingForPurchase = null;
     isBuyingMainer = false;
     buyProcessStep = 'idle';
-    
-    // Refresh listings in case state changed
-    listingsRefreshKey++;
+    // Keep listing through the fade-out so the modal doesn't flash "No listing selected"
+    setTimeout(() => {
+      if (!showPaymentModal) {
+        selectedListingForPurchase = null;
+      }
+    }, 200);
   }
 
   async function handleCancelListing(listingId: string, mainerId: string) {
@@ -388,12 +439,17 @@
       
       if (result.success) {
         toastStore.success("Successfully canceled listing!", 5000);
+
+        // Optimistic: show the mAIner again in the sell-to-list grid
+        userListedMainerAddresses = userListedMainerAddresses.filter((a) => a !== mainerId);
         
         // Refresh marketplace data and user listings
         await Promise.all([
           loadMarketplaceStats(),
           loadUserListings()
         ]);
+        activeListingsRefreshKey++;
+        refreshMarketplaceListings();
       } else {
         throw new Error(result.error || 'Failed to cancel listing');
       }
@@ -405,185 +461,168 @@
   }
 </script>
 
-<div class="min-h-screen bg-gradient-to-br from-gray-50 via-purple-50 to-blue-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20">
-  <div class="container mx-auto px-4 py-8">
+<div class="agent-page">
+  <div class="agent-container">
     <!-- Header Section -->
     <div class="mb-8">
-      <!-- Header -->
-      <div class="flex items-center space-x-3 sm:space-x-4 mb-4">
-        <div>
+      <div class="mb-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div class="min-w-0">
+          <p class="agent-eyebrow mb-2">Trade</p>
           <div class="flex items-center gap-2 sm:gap-3">
-            <h1 class="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-white">Marketplace</h1>
-            {#if MARKETPLACE_ENABLED}
-              <span class="px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm font-semibold bg-gradient-to-r from-yellow-500 to-orange-500 text-black rounded-full shadow-md">
-                Beta
-              </span>
-            {:else}
-              <span class="px-2 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm font-semibold bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700 rounded-full">
+            <h1 class="agent-title">Marketplace</h1>
+            {#if !MARKETPLACE_ENABLED}
+              <span class="px-2.5 py-0.5 text-[11px] font-semibold tracking-tight rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-300">
                 Temporarily unavailable
               </span>
             {/if}
           </div>
-          <p class="text-sm sm:text-lg text-gray-600 dark:text-gray-400 hidden sm:block">
-            Buy and sell funnAI mAIner agents
+          <p class="agent-subtitle mt-1 hidden sm:block">
+            {MARKETPLACE_ENABLED ? marketplaceSubtitle : 'Buy and sell autonomous mAIner agents on the network'}
           </p>
         </div>
+
+        {#if MARKETPLACE_ENABLED}
+          <div
+            role="tablist"
+            aria-label="Marketplace views"
+            class="grid w-full grid-cols-3 rounded-2xl border border-white/10 bg-white/[0.03] p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:max-w-md lg:w-[22.5rem] lg:shrink-0"
+          >
+            {#each marketplaceTabs as tab}
+              {@const Icon = tab.icon}
+              <button
+                type="button"
+                role="tab"
+                id="marketplace-tab-{tab.id}"
+                aria-selected={activeTab === tab.id}
+                aria-controls="marketplace-panel"
+                tabindex={activeTab === tab.id ? 0 : -1}
+                title={tab.description}
+                on:click={() => activeTab = tab.id}
+                class="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-[13px] font-medium tracking-tight transition-all duration-200 sm:gap-2 sm:px-3
+                  {activeTab === tab.id
+                    ? 'bg-agent-purple text-white shadow-xs'
+                    : 'text-gray-400 hover:bg-white/5 hover:text-gray-200'}"
+              >
+                <Icon class="h-4 w-4 shrink-0 {activeTab === tab.id ? 'text-white' : 'text-gray-500'}" />
+                <span class="truncate">{tab.label}</span>
+              </button>
+            {/each}
+          </div>
+        {/if}
       </div>
 
       {#if !MARKETPLACE_ENABLED}
-        <div class="mt-6 relative overflow-hidden bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-900/20 dark:via-orange-900/20 dark:to-yellow-900/20 border border-amber-200/60 dark:border-amber-700/60 rounded-xl shadow-sm">
-          <div class="relative p-6 sm:p-8">
-            <div class="flex flex-col sm:flex-row items-start gap-4">
-              <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg flex items-center justify-center">
-                <Store class="w-6 h-6 text-white" />
-              </div>
-              <div class="flex-1">
-                <h2 class="text-xl font-bold text-amber-900 dark:text-amber-100 mb-2">
-                  Marketplace will return soon
-                </h2>
-                <p class="text-sm sm:text-base text-amber-800 dark:text-amber-200/90 leading-relaxed">
-                  {MARKETPLACE_DISABLED_MESSAGE} Buying and selling are paused while we complete maintenance. Check back shortly.
-                </p>
-                <p class="mt-3 text-xs sm:text-sm text-amber-700 dark:text-amber-300">
-                  Updates on
-                  <a href="https://x.com/onicaiHQ" target="_blank" rel="noopener noreferrer" class="underline hover:text-amber-900 dark:hover:text-amber-100">X</a>
-                  or
-                  <a href="https://oc.app/community/mepna-eqaaa-aaaar-bclua-cai/channel/2881126157/" target="_blank" rel="noopener noreferrer" class="underline hover:text-amber-900 dark:hover:text-amber-100">OpenChat</a>.
-                </p>
-              </div>
+        <div class="agent-card relative overflow-hidden p-6 sm:p-8">
+          <div class="absolute -top-16 right-0 h-40 w-56 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" aria-hidden="true"></div>
+          <div class="relative flex flex-col sm:flex-row items-start gap-4">
+            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-amber-500/25 bg-amber-500/10">
+              <Store class="w-6 h-6 text-amber-300" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-amber-400/80">Maintenance</p>
+              <h2 class="mt-1 text-xl font-semibold tracking-tight text-white">
+                Marketplace will return soon
+              </h2>
+              <p class="mt-2 text-sm text-gray-400 leading-relaxed">
+                {MARKETPLACE_DISABLED_MESSAGE} Buying and selling are paused while we complete maintenance. Check back shortly.
+              </p>
+              <p class="mt-4 text-xs text-gray-500">
+                Updates on
+                <a href="https://x.com/onicaiHQ" target="_blank" rel="noopener noreferrer" class="text-gray-300 underline decoration-white/20 underline-offset-2 hover:text-white transition-colors">X</a>
+                or
+                <a href="https://oc.app/community/mepna-eqaaa-aaaar-bclua-cai/channel/2881126157/" target="_blank" rel="noopener noreferrer" class="text-gray-300 underline decoration-white/20 underline-offset-2 hover:text-white transition-colors">OpenChat</a>.
+              </p>
             </div>
           </div>
         </div>
       {:else}
-      <!-- Tab Navigation -->
-      <div class="flex justify-end gap-2 mb-4">
-        <button
-          on:click={() => activeTab = 'buy'}
-          class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border transition-all duration-200 flex items-center justify-center gap-2
-                 {activeTab === 'buy' 
-                   ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white border-transparent shadow-md' 
-                   : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
-        >
-          <ShoppingCart class="w-4 h-4" />
-          <span class="font-semibold text-sm">Buy</span>
-        </button>
-        
-        <button
-          on:click={() => activeTab = 'sell'}
-          class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border transition-all duration-200 flex items-center justify-center gap-2
-                 {activeTab === 'sell' 
-                   ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white border-transparent shadow-md' 
-                   : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
-        >
-          <Tag class="w-4 h-4" />
-          <span class="font-semibold text-sm">Sell</span>
-        </button>
-
-        <button
-          on:click={() => activeTab = 'history'}
-          class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border transition-all duration-200 flex items-center justify-center gap-2
-                 {activeTab === 'history' 
-                   ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-md' 
-                   : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}"
-        >
-          <History class="w-4 h-4" />
-          <span class="font-semibold text-sm">History</span>
-        </button>
-      </div>
-
       <!-- Stale Reservation Warning Banner -->
-      {#if $store.isAuthed}
-        {#key reservationRefreshKey}
-          {#await MarketplaceService.getUserReservation() then reservationCheck}
-            {#if reservationCheck.success && reservationCheck.reservation}
-              <div class="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg">
-                <div class="flex items-start space-x-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <div class="flex-1">
-                    <h3 class="text-lg font-semibold text-yellow-900 dark:text-yellow-200">Stale Reservation Detected</h3>
-                    <p class="text-sm text-yellow-800 dark:text-yellow-300 mt-1">
-                      You have a pending reservation from a previous session. This prevents you from purchasing other mAIners.
+      {#if $store.isAuthed && staleReservation}
+              <div class="mt-6 p-4 agent-card border-amber-500/30 bg-amber-500/5">
+                <div class="relative flex items-start gap-3">
+                  <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-amber-400/80">Reservation</p>
+                    <h3 class="mt-1 text-base font-semibold tracking-tight text-white">Stale reservation detected</h3>
+                    <p class="mt-1 text-sm font-normal text-gray-400">
+                      A pending reservation from a previous session is blocking new purchases.
                     </p>
-                    <p class="text-xs text-yellow-700 dark:text-yellow-400 mt-1 font-mono bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded inline-block">
-                      mAIner: {reservationCheck.reservation.address?.slice(0, 15)}...
+                    <p class="mt-2 text-xs font-mono text-gray-500 truncate">
+                      mAIner: {staleReservation.address}
                     </p>
-                    <div class="mt-3 flex flex-wrap gap-2">
+                    <div class="mt-4 flex flex-wrap items-center gap-3">
                       <button
                         on:click={manualClearReservation}
                         disabled={isCleaningReservation}
-                        class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                        class="agent-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {#if isCleaningReservation}
-                          <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Clearing...</span>
+                          <div class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>Clearing…</span>
                         {:else}
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                          <span>Clear Reservation & Return mAIner</span>
+                          <span>Clear reservation</span>
                         {/if}
                       </button>
-                      <p class="text-xs text-yellow-600 dark:text-yellow-400 self-center">
-                        (This will return the mAIner to the marketplace for others to buy)
+                      <p class="text-xs text-gray-500">
+                        Returns the mAIner to the marketplace
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
-            {/if}
-          {/await}
-        {/key}
       {/if}
 
       <!-- Stats Cards -->
       {#if !isLoading}
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-          <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div class="agent-stat">
             <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-                <Store class="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <div class="w-10 h-10 rounded-xl bg-agent-purple/15 border border-agent-purple/20 flex items-center justify-center">
+                <Store class="w-5 h-5 text-agent-purple" />
               </div>
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">Active Listings</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalListings}</p>
+                <p class="text-sm text-gray-400">Active Listings</p>
+                <p class="text-2xl font-semibold text-white">{stats.totalListings}</p>
               </div>
             </div>
           </div>
 
-          <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div class="agent-stat">
             <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
-                <Zap class="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <div class="w-10 h-10 rounded-xl bg-white/4 border border-white/10 flex items-center justify-center">
+                <Zap class="w-5 h-5 text-gray-300" />
               </div>
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">Total Sales</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalSales}</p>
+                <p class="text-sm text-gray-400">Total Sales</p>
+                <p class="text-2xl font-semibold text-white">{stats.totalSales}</p>
               </div>
             </div>
           </div>
 
-          <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div class="agent-stat">
             <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                <TrendingUp class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <div class="w-10 h-10 rounded-xl bg-white/4 border border-white/10 flex items-center justify-center">
+                <TrendingUp class="w-5 h-5 text-gray-300" />
               </div>
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">Sales Volume</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalVolume} ICP</p>
+                <p class="text-sm text-gray-400">Sales Volume</p>
+                <p class="text-2xl font-semibold text-white">{stats.totalVolume} ICP</p>
               </div>
             </div>
           </div>
 
-          <div class="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+          <div class="agent-stat">
             <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                <Users class="w-5 h-5 text-green-600 dark:text-green-400" />
+              <div class="w-10 h-10 rounded-xl bg-white/4 border border-white/10 flex items-center justify-center">
+                <Users class="w-5 h-5 text-gray-300" />
               </div>
               <div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">Total Traders</p>
-                <p class="text-2xl font-bold text-gray-900 dark:text-white">{stats.activeTraders}</p>
+                <p class="text-sm text-gray-400">Total Traders</p>
+                <p class="text-2xl font-semibold text-white">{stats.activeTraders}</p>
               </div>
             </div>
           </div>
@@ -596,28 +635,35 @@
     {#if isLoading}
       <div class="flex items-center justify-center py-20">
         <div class="text-center">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p class="text-gray-600 dark:text-gray-400">Loading marketplace...</p>
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-agent-purple mx-auto mb-4"></div>
+          <p class="text-gray-400">Loading marketplace...</p>
         </div>
       </div>
     {:else}
       <!-- Tab Content -->
+      <div id="marketplace-panel" role="tabpanel" aria-labelledby="marketplace-tab-{activeTab}">
       {#if activeTab === 'sell'}
-        <MyMainersForSale 
-          onListToMarketplace={handleListToMarketplace}
-          listedMainers={userListedMainerAddresses}
-        />
+        <div class="space-y-6">
+          <MyActiveListings
+            onCancelListing={handleCancelListing}
+            refreshKey={activeListingsRefreshKey}
+          />
+          <MyMainersForSale 
+            onListToMarketplace={handleListToMarketplace}
+            listedMainers={userListedMainerAddresses}
+          />
+        </div>
       {:else if activeTab === 'history'}
         <MarketplaceTransactionHistory />
       {:else}
-        {#key listingsRefreshKey}
-          <MarketplaceListings 
-            onBuyMainer={handleBuyMainer}
-            onCancelListing={handleCancelListing}
-            isProcessing={isBuyingMainer}
-          />
-        {/key}
+        <MarketplaceListings
+          bind:this={marketplaceListingsRef}
+          onBuyMainer={handleBuyMainer}
+          onCancelListing={handleCancelListing}
+          isProcessing={showPaymentModal || isBuyingMainer}
+        />
       {/if}
+      </div>
     {/if}
     {/if}
   </div>

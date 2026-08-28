@@ -94,7 +94,7 @@ export function tooltip(node: HTMLElement, options: TooltipOptions = { direction
     tooltipEl.classList.add(
       'absolute',
       'z-50',
-      'rounded',
+      'rounded-sm',
       'shadow-lg',
       'pointer-events-none',
       'transition-opacity',

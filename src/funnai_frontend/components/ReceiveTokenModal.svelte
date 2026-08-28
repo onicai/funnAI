@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Check, Copy, QrCode, X } from 'lucide-svelte';
+  import { Check, Copy, QrCode, X } from '@lucide/svelte';
   import { fade } from 'svelte/transition';
-  import Portal from 'svelte-portal';
+  import Portal from './Portal.svelte';
   import QRCode from 'qrcode';
 
   import Modal from "./CommonModal.svelte";
@@ -126,13 +126,12 @@
   className="receive-token-modal"
   isPadded={true}
 >
-  <div class="px-2 sm:px-4 py-4 flex flex-col gap-3 sm:gap-4">
-    <!-- Token Info Banner -->
-    <div 
-      class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100 transition-all duration-300"
+  <div class="px-1 sm:px-2 py-2 flex flex-col gap-3 sm:gap-4">
+    <div
+      class="flex items-center gap-2 sm:gap-3 p-3 rounded-xl border border-white/10 bg-white/3 transition-all duration-300"
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '10px')});"
     >
-      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
+      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 bg-white/4 shrink-0 overflow-hidden">
         <div class="sm:hidden">
           <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
         </div>
@@ -141,106 +140,95 @@
         </div>
       </div>
       <div class="flex flex-col min-w-0 flex-1">
-        <div class="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base truncate">{token.name}</div>
-        <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Your receive address information</div>
+        <div class="font-medium text-white text-sm sm:text-base truncate">{token.name}</div>
+        <div class="text-xs sm:text-sm text-gray-400 truncate">Your receive address</div>
       </div>
     </div>
 
-    <!-- Address Information -->
-    <div 
+    <div
       class="flex flex-col gap-3 sm:gap-4 transition-all duration-300"
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '20px')});"
     >
-      <!-- Principal ID -->
-      <div class="rounded-lg border border-gray-300 bg-gray-50 p-3 sm:p-4 dark:border-gray-600/50 dark:bg-gray-800/30">
-        <div class="flex justify-between items-center mb-2">
-          <h3 class="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-200">Principal ID</h3>
+      <div class="rounded-xl border border-white/10 bg-white/3 p-3 sm:p-4">
+        <div class="flex justify-between items-center mb-2.5 gap-3">
+          <h3 class="text-[13px] font-medium text-gray-300">Principal ID</h3>
           {#if principalQrCode}
-            <div class="flex">
-              <img 
-                src={principalQrCode} 
-                alt="Principal QR Code" 
-                class="w-12 h-12 sm:w-16 sm:h-16 cursor-pointer hover:opacity-80 transition-opacity bg-white rounded-md" 
-                on:click={() => enlargeQrCode(principalQrCode, "Principal ID QR Code")}
-              />
-            </div>
+            <img
+              src={principalQrCode}
+              alt="Principal QR Code"
+              class="w-12 h-12 sm:w-16 sm:h-16 cursor-pointer hover:opacity-90 transition-opacity bg-white rounded-lg p-0.5"
+              on:click={() => enlargeQrCode(principalQrCode, "Principal ID QR Code")}
+            />
           {/if}
         </div>
         <div class="relative">
-          <div class="rounded border border-gray-300 bg-white p-2 sm:p-2.5 pr-8 sm:pr-10 text-xs sm:text-sm break-all font-mono text-gray-900 dark:border-gray-600 dark:bg-gray-700/30 dark:text-gray-200">
-            {principal || "Loading..."}
+          <div class="rounded-xl border border-white/10 bg-white/3 p-2.5 pr-10 text-xs sm:text-sm break-all font-mono text-gray-200">
+            {principal || "Loading…"}
           </div>
-          <button 
-            class="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 p-1 sm:p-1.5 transition-colors text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+          <button
+            type="button"
+            class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-colors text-gray-500 hover:text-[#a78bfa]"
             on:click={() => copyToClipboard(principal, 'principal')}
             use:tooltip={{ text: principalCopied ? "Copied!" : "Copy to clipboard", direction: "top" }}
           >
             {#if principalCopied}
-              <Check size={14} class="sm:hidden text-green-500" />
-              <Check size={16} class="hidden sm:block text-green-500" />
+              <Check size={16} class="text-emerald-400" />
             {:else}
-              <Copy size={14} class="sm:hidden" />
-              <Copy size={16} class="hidden sm:block" />
+              <Copy size={16} />
             {/if}
           </button>
         </div>
-        <p class="text-xs mt-2 text-gray-600 dark:text-gray-400">
+        <p class="text-xs mt-2 text-gray-500">
           Use this Principal ID to receive tokens
         </p>
       </div>
 
-      <!-- ICP Account ID (only show for ICP) -->
       {#if token.symbol === "ICP"}
-        <div class="rounded-lg border border-gray-300 bg-gray-50 p-3 sm:p-4 dark:border-gray-600/50 dark:bg-gray-800/30">
-          <div class="flex justify-between items-center mb-2">
-            <h3 class="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-200">Account ID</h3>
+        <div class="rounded-xl border border-white/10 bg-white/3 p-3 sm:p-4">
+          <div class="flex justify-between items-center mb-2.5 gap-3">
+            <h3 class="text-[13px] font-medium text-gray-300">Account ID</h3>
             {#if accountIdQrCode}
-              <div class="flex">
-                <img 
-                  src={accountIdQrCode} 
-                  alt="Account ID QR Code" 
-                  class="w-12 h-12 sm:w-16 sm:h-16 cursor-pointer hover:opacity-80 transition-opacity bg-white rounded-md" 
-                  on:click={() => enlargeQrCode(accountIdQrCode, "Account ID QR Code")}
-                />
-              </div>
+              <img
+                src={accountIdQrCode}
+                alt="Account ID QR Code"
+                class="w-12 h-12 sm:w-16 sm:h-16 cursor-pointer hover:opacity-90 transition-opacity bg-white rounded-lg p-0.5"
+                on:click={() => enlargeQrCode(accountIdQrCode, "Account ID QR Code")}
+              />
             {/if}
           </div>
           <div class="relative">
-            <div class="rounded border border-gray-300 bg-white p-2 sm:p-2.5 pr-8 sm:pr-10 text-xs sm:text-sm break-all font-mono text-gray-900 dark:border-gray-600 dark:bg-gray-700/30 dark:text-gray-200">
-              {accountId || "Loading..."}
+            <div class="rounded-xl border border-white/10 bg-white/3 p-2.5 pr-10 text-xs sm:text-sm break-all font-mono text-gray-200">
+              {accountId || "Loading…"}
             </div>
-            <button 
-              class="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 p-1 sm:p-1.5 transition-colors text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+            <button
+              type="button"
+              class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 transition-colors text-gray-500 hover:text-[#a78bfa]"
               on:click={() => copyToClipboard(accountId, 'accountId')}
               use:tooltip={{ text: accountIdCopied ? "Copied!" : "Copy to clipboard", direction: "top" }}
             >
               {#if accountIdCopied}
-                <Check size={14} class="sm:hidden text-green-500" />
-                <Check size={16} class="hidden sm:block text-green-500" />
+                <Check size={16} class="text-emerald-400" />
               {:else}
-                <Copy size={14} class="sm:hidden" />
-                <Copy size={16} class="hidden sm:block" />
+                <Copy size={16} />
               {/if}
             </button>
           </div>
-          <p class="text-xs mt-2 text-gray-600 dark:text-gray-400">
+          <p class="text-xs mt-2 text-gray-500">
             Use this Account ID for legacy ICP transfers
           </p>
         </div>
       {/if}
 
-      <!-- Information box -->
-      <div class="rounded-lg border border-gray-300 bg-gray-50 p-3 text-xs sm:text-sm dark:border-gray-600/50 dark:bg-gray-800/30">
+      <div class="rounded-xl border border-white/10 bg-white/3 p-3 text-xs sm:text-sm">
         <div class="flex items-center gap-2 mb-1.5">
-          <QrCode size={14} class="sm:hidden text-gray-600 dark:text-gray-300 flex-shrink-0" />
-          <QrCode size={16} class="hidden sm:block text-gray-600 dark:text-gray-300 flex-shrink-0" />
-          <span class="text-gray-900 dark:text-gray-200 font-medium">How to receive {token.symbol}</span>
+          <QrCode size={16} class="text-[#a78bfa] shrink-0" />
+          <span class="text-gray-200 font-medium">How to receive {token.symbol}</span>
         </div>
-        <p class="ml-6 text-gray-600 dark:text-gray-400">
+        <p class="ml-6 text-gray-500">
           {#if token.symbol === "ICP"}
-            Send ICP to your address. Copy the address or click the QR code to scan it.
+            Send ICP to your address. Copy the address or tap the QR code to enlarge it for scanning.
           {:else}
-            Send {token.symbol} to your address. Make sure the sender is sending the correct token type. Copy the address or click the QR code to scan it.
+            Send {token.symbol} to your address. Make sure the sender uses the correct token type. Copy the address or tap the QR code to enlarge it.
           {/if}
         </p>
       </div>
@@ -248,21 +236,20 @@
   </div>
 </Modal>
 
-<!-- Enlarged QR Code Overlay -->
 {#if enlargedQrCode}
   <Portal target="body">
-    <div 
-      class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-[100001]"
+    <div
+      class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-100001"
       on:click={closeEnlargedQrCode}
       transition:fade={{ duration: 200 }}
     >
-      <div 
-        class="rounded-lg bg-white p-2 shadow-2xl max-w-full max-h-full"
+      <div
+        class="rounded-2xl bg-white p-3 shadow-2xl max-w-full max-h-full"
         on:click|stopPropagation
       >
-        <img 
-          src={enlargedQrCode.src} 
-          alt={enlargedQrCode.alt} 
+        <img
+          src={enlargedQrCode.src}
+          alt={enlargedQrCode.alt}
           class="max-w-full max-h-[80vh]"
         />
       </div>

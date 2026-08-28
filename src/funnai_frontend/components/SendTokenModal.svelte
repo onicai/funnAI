@@ -11,7 +11,7 @@
     ArrowUp,
     X, 
     Check 
-  } from 'lucide-svelte';
+  } from '@lucide/svelte';
   import { tooltip } from "../helpers/utils/tooltip";
   import { store } from "../stores/store";
   import { IcrcService } from "../helpers/IcrcService";
@@ -48,6 +48,8 @@
   let isValidating: boolean = false;
   let errorMessage: string = "";
   let tokenFee: bigint = BigInt(0);
+  let feeLoaded: boolean = false;
+  let feeLoadError: string = "";
   let showScanner: boolean = false;
   let hasCamera: boolean = false;
   let accounts: { subaccount: string; main: string } = { subaccount: "", main: "" };
@@ -84,13 +86,16 @@
     }, 200);
   }
 
-  // Load token fee
+  // Load token fee from the ledger. Never guess — a stale/default fee causes BadFee.
   async function loadTokenFee() {
+    feeLoaded = false;
+    feeLoadError = "";
     try {
       tokenFee = await IcrcService.getTokenFee(token);
+      feeLoaded = true;
     } catch (error) {
       console.error("Error loading token fee:", error);
-      tokenFee = BigInt(10000); // Fallback to default fee
+      feeLoadError = "Could not load the current transfer fee. Please try again.";
     }
   }
 
@@ -230,13 +235,19 @@
         throw new Error("Authentication not initialized");
       }
 
+      // Re-read the live ledger fee immediately before signing so a stale
+      // token.fee_fixed cannot cause BadFee.
+      tokenFee = await IcrcService.getTokenFee(token);
+      feeLoaded = true;
+      if (transferDetails) {
+        transferDetails = { ...transferDetails, tokenFee };
+      }
+
       const result = await IcrcService.transfer(
         token,
         recipientAddress,
         amountBigInt,
-        {
-          fee: token.fee_fixed ? BigInt(token.fee_fixed) : tokenFee
-        }
+        { fee: tokenFee }
       );
 
       //@ts-ignore
@@ -317,6 +328,8 @@
     amount &&
     recipientAddress &&
     !errorMessage &&
+    !feeLoadError &&
+    feeLoaded &&
     addressValidation.addressType !== null &&
     addressValidation.isValid &&
     amountValidation.isValid
@@ -326,7 +339,9 @@
   function getTooltipMessage(): string {
     if (!recipientAddress) return "Enter recipient address";
     if (!amount) return "Enter amount";
+    if (feeLoadError) return feeLoadError;
     if (errorMessage) return errorMessage;
+    if (!feeLoaded) return "Loading transfer fee…";
     return "Send tokens";
   }
 
@@ -348,13 +363,12 @@
   className="send-token-modal"
   isPadded={true}
 >
-  <div class="px-2 sm:px-4 py-4 flex flex-col gap-3 sm:gap-4">
-    <!-- Token Info Banner -->
-    <div 
-      class="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 dark:bg-gray-700/20 dark:border-gray-600/30 dark:text-gray-100 transition-all duration-300"
+  <div class="px-1 sm:px-2 py-2 flex flex-col gap-3 sm:gap-4">
+    <div
+      class="flex items-center gap-2 sm:gap-3 p-3 rounded-xl border border-white/10 bg-white/3 transition-all duration-300"
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '10px')});"
     >
-      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-200 border border-gray-300 flex-shrink-0 dark:bg-gray-800 dark:border-gray-700">
+      <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/10 bg-white/4 shrink-0 overflow-hidden">
         <div class="sm:hidden">
           <TokenImages tokens={[token]} size={32} showSymbolFallback={true} />
         </div>
@@ -363,79 +377,73 @@
         </div>
       </div>
       <div class="flex flex-col min-w-0 flex-1">
-        <div class="text-gray-900 font-medium dark:text-gray-100 text-sm sm:text-base truncate">{token.name}</div>
-        <div class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 truncate">Balance: {formatBalance(balances.default.toString(), token.decimals)} {token.symbol}</div>
+        <div class="text-white font-medium text-sm sm:text-base truncate">{token.name}</div>
+        <div class="text-xs sm:text-sm text-gray-400 truncate">
+          Balance: {formatBalance(balances.default.toString(), token.decimals)} {token.symbol}
+        </div>
       </div>
     </div>
 
-    <!-- Send Form -->
-    <form 
+    <form
       on:submit|preventDefault={handleSubmit}
-      class="flex flex-col gap-2 sm:gap-3 transition-all duration-300"
+      class="flex flex-col gap-3 transition-all duration-300"
       style="opacity: {closing ? 0 : (mounted ? 1 : 0)}; transform: translateY({closing ? '-10px' : (mounted ? 0 : '20px')});"
     >
-      <!-- Recipient Address Input -->
       <div>
-        <label for="recipient-address" class="block text-xs text-gray-600 mb-1.5 dark:text-gray-400">Recipient Address</label>
+        <label for="recipient-address" class="block text-[13px] font-medium text-gray-400 mb-1.5">Recipient address</label>
         <div class="relative">
           <input
             id="recipient-address"
             type="text"
-            class="w-full py-2 px-2 sm:px-3 bg-white border rounded-md text-xs sm:text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-100 pr-16 sm:pr-20"
-            class:border-green-400={addressValidation.isValid}
-            class:border-red-400={!addressValidation.isValid && recipientAddress}
-            class:border-gray-300={!recipientAddress}
-            class:dark:border-gray-600={!recipientAddress}
-            placeholder="Enter Canister ID, Principal ID, or Account ID"
+            class="agent-input pr-16! sm:pr-20! text-xs! sm:text-sm! font-mono
+              {addressValidation.isValid ? 'border-emerald-500/50! focus:ring-emerald-500/30!' : ''}
+              {!addressValidation.isValid && recipientAddress ? 'border-red-500/50! focus:ring-red-500/30!' : ''}"
+            placeholder="Principal ID, Account ID, or Canister ID"
             bind:value={recipientAddress}
             on:input={handleAddressInput}
           />
-          <div class="absolute inset-y-0 right-0 flex items-center gap-0.5">
+          <div class="absolute inset-y-0 right-0 flex items-center gap-0.5 pr-1">
             {#if addressValidation.isValid}
-              <div class="p-1 sm:p-1.5 text-green-500">
-                <Check size={14} class="sm:hidden" />
-                <Check size={16} class="hidden sm:block" />
+              <div class="p-1.5 text-emerald-400">
+                <Check size={16} />
               </div>
             {/if}
             <button
               type="button"
-              class="p-1 sm:p-1.5 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
+              class="p-1.5 text-gray-500 hover:text-[#a78bfa] transition-colors"
               on:click={handleAddressPaste}
               use:tooltip={{ text: "Paste from clipboard", direction: "top" }}
             >
-              <Clipboard size={14} class="sm:hidden" />
-              <Clipboard size={16} class="hidden sm:block" />
+              <Clipboard size={16} />
             </button>
             {#if hasCamera}
               <button
                 type="button"
-                class="p-1 sm:p-1.5 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
+                class="p-1.5 text-gray-500 hover:text-[#a78bfa] transition-colors"
                 on:click={handleScanClick}
                 use:tooltip={{ text: "Scan QR code", direction: "top" }}
               >
-                <Camera size={14} class="sm:hidden" />
-                <Camera size={16} class="hidden sm:block" />
+                <Camera size={16} />
               </button>
             {/if}
           </div>
         </div>
         {#if addressValidation.addressType && addressValidation.isValid}
-          <div class="mt-1 text-xs text-green-600 dark:text-green-500">
+          <div class="mt-1.5 text-xs text-emerald-400">
             Valid {addressValidation.addressType} address
           </div>
         {/if}
       </div>
 
-      <!-- Amount Input -->
       <div>
         <div class="flex justify-between items-center mb-1.5">
-          <label for="amount-input" class="block text-xs text-gray-600 dark:text-gray-400">Amount</label>
+          <label for="amount-input" class="block text-[13px] font-medium text-gray-400">Amount</label>
           <button
             type="button"
-            class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-500 dark:hover:text-blue-400"
+            class="text-xs font-medium text-[#a78bfa] hover:text-white transition-colors"
             on:click={handleSendMax}
           >
-            Send Max
+            Send max
           </button>
         </div>
         <div class="relative">
@@ -443,51 +451,45 @@
             id="amount-input"
             type="text"
             inputmode="decimal"
-            class="w-full py-2 px-2 sm:px-3 bg-white border rounded-md text-xs sm:text-sm text-gray-900 dark:bg-gray-800 dark:text-gray-100 pr-12 sm:pr-16"
-            class:border-green-400={amountValidation.isValid && amount}
-            class:border-red-400={!amountValidation.isValid && amount}
-            class:border-gray-300={!amount}
-            class:dark:border-gray-600={!amount}
+            class="agent-input pr-14! sm:pr-16! text-xs! sm:text-sm! tabular-nums
+              {amountValidation.isValid && amount ? 'border-emerald-500/50! focus:ring-emerald-500/30!' : ''}
+              {!amountValidation.isValid && amount ? 'border-red-500/50! focus:ring-red-500/30!' : ''}"
             placeholder={`Enter amount of ${token.symbol}`}
             bind:value={amount}
             on:input={handleAmountInput}
           />
           <div class="absolute inset-y-0 right-0 flex items-center">
-            <span class="pr-2 sm:pr-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">{token.symbol}</span>
+            <span class="pr-3 text-xs sm:text-sm text-gray-500">{token.symbol}</span>
           </div>
         </div>
         {#if Number(amount) > 0}
-          <div class="mt-1 text-xs text-gray-600 dark:text-gray-400">
+          <div class="mt-1.5 text-xs text-gray-500">
             Fee: {formatBalance(String(tokenFee), token.decimals)} {token.symbol}
           </div>
         {/if}
       </div>
 
-      <!-- Error message -->
-      {#if errorMessage}
-        <div class="mt-1 p-2 rounded bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm dark:bg-red-900/30 dark:border-red-900/50 dark:text-red-400">
+      {#if feeLoadError}
+        <div class="p-2.5 rounded-xl border border-red-500/25 bg-red-500/10 text-red-300 text-xs sm:text-sm">
+          {feeLoadError}
+        </div>
+      {:else if errorMessage}
+        <div class="p-2.5 rounded-xl border border-red-500/25 bg-red-500/10 text-red-300 text-xs sm:text-sm">
           {errorMessage}
         </div>
       {/if}
 
-      <!-- Send Button -->
       <button
         type="submit"
-        class="mt-2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-md text-white font-medium flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
-        class:bg-blue-600={isFormValid && !isValidating}
-        class:hover:bg-blue-500={isFormValid && !isValidating}
-        class:bg-gray-400={!isFormValid || isValidating}
-        class:dark:bg-gray-700={!isFormValid || isValidating}
-        class:cursor-not-allowed={!isFormValid || isValidating}
+        class="mt-1 w-full agent-btn-primary h-10! disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-agent-purple"
         disabled={!isFormValid || isValidating}
         use:tooltip={{ text: getTooltipMessage(), direction: "top" }}
       >
         {#if isValidating}
           <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-          Processing...
+          Processing…
         {:else}
-          <ArrowUp size={14} class="sm:hidden" />
-          <ArrowUp size={16} class="hidden sm:block" />
+          <ArrowUp size={16} />
           Send {token.symbol}
         {/if}
       </button>
@@ -495,13 +497,12 @@
   </div>
 </Modal>
 
-<!-- QR Scanner Modal -->
 {#if showScanner && QrScanner}
-  <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[100001]" transition:fade={{ duration: 200 }}>
-    <div class="relative bg-gray-900 rounded-lg shadow-xl overflow-hidden w-full max-w-md mx-4">
-      <div class="p-4 flex justify-between items-center border-b border-gray-700">
-        <h3 class="font-medium text-gray-100">Scan QR Code</h3>
-        <button class="text-gray-400 hover:text-gray-300" on:click={() => showScanner = false}>
+  <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-100001" transition:fade={{ duration: 200 }}>
+    <div class="relative agent-card bg-agent-surface! rounded-2xl overflow-hidden w-full max-w-md mx-4">
+      <div class="relative z-1 p-4 flex justify-between items-center border-b border-white/6">
+        <h3 class="font-medium text-white">Scan QR code</h3>
+        <button type="button" class="text-gray-400 hover:text-white transition-colors" on:click={() => showScanner = false}>
           <X size={20} />
         </button>
       </div>

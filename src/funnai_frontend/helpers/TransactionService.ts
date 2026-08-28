@@ -554,32 +554,32 @@ export class TransactionService {
       case "mint":
         return {
           icon: "↓",
-          color: "text-green-600 dark:text-green-400",
-          bgColor: "bg-green-100 dark:bg-green-900/30"
+          color: "text-green-400",
+          bgColor: "bg-green-900/30"
         };
       case "transfer":
         return {
           icon: "↔",
-          color: "text-blue-600 dark:text-blue-400",
-          bgColor: "bg-blue-100 dark:bg-blue-900/30"
+          color: "text-blue-400",
+          bgColor: "bg-blue-900/30"
         };
       case "burn":
         return {
           icon: "🔥",
-          color: "text-red-600 dark:text-red-400",
-          bgColor: "bg-red-100 dark:bg-red-900/30"
+          color: "text-red-400",
+          bgColor: "bg-red-900/30"
         };
       case "approve":
         return {
           icon: "✓",
-          color: "text-purple-600 dark:text-purple-400",
-          bgColor: "bg-purple-100 dark:bg-purple-900/30"
+          color: "text-purple-400",
+          bgColor: "bg-purple-900/30"
         };
       default:
         return {
           icon: "?",
-          color: "text-gray-600 dark:text-gray-400",
-          bgColor: "bg-gray-100 dark:bg-gray-900/30"
+          color: "text-gray-400",
+          bgColor: "bg-gray-900/30"
         };
     }
   }

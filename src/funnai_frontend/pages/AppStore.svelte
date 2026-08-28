@@ -1,7 +1,6 @@
 <script lang="ts">
 
-  import { theme } from "../stores/store";
-  import { ExternalLink, Star, MessageSquare } from "lucide-svelte";
+  import { ExternalLink, Star, MessageSquare } from "@lucide/svelte";
   import { link } from 'svelte-spa-router';
   import { onMount } from 'svelte';
   import Footer from "../components/funnai/Footer.svelte";
@@ -196,30 +195,33 @@
   }
 </script>
 
-<div class="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-900">
+<div class="agent-page">
   <!-- Main Content -->
-  <div class="flex-1 p-6 pb-24">
+  <div class="agent-container pb-24">
     <!-- Header -->
     <div class="mb-8">
-      <div class="flex items-center justify-between mb-2">
-        <h1 class="text-4xl font-bold text-gray-900 dark:text-white">
-          funnAI App Store
-        </h1>
+      <div class="flex items-center justify-between mb-2 gap-4">
+        <div>
+          <p class="agent-eyebrow mb-2">Discover</p>
+          <h1 class="agent-title">
+            funnAI App Store
+          </h1>
+        </div>
         <button
           on:click={loadStoreData}
           disabled={isLoading}
-          class="flex items-center gap-2 px-4 py-2 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="agent-btn-ghost disabled:opacity-50 disabled:cursor-not-allowed"
           title="Refresh apps from remote source"
         >
           <svg class="w-4 h-4 {isLoading ? 'animate-spin' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
-          <span class="text-sm font-medium">
+          <span>
             {isLoading ? 'Loading...' : 'Refresh'}
           </span>
         </button>
       </div>
-      <p class="text-lg text-gray-600 dark:text-gray-400">
+      <p class="agent-subtitle">
         Discover amazing funnAI decentralized applications
       </p>
     </div>
@@ -227,51 +229,53 @@
     {#if isLoading}
       <!-- Loading State -->
       <div class="flex items-center justify-center py-12">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-        <span class="ml-3 text-gray-600 dark:text-gray-400">Loading apps...</span>
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-agent-purple"></div>
+        <span class="ml-3 text-gray-400">Loading apps...</span>
       </div>
     {:else if error}
       <!-- Error State -->
-      <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center">
-        <div class="w-12 h-12 mx-auto mb-4 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
-          <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="agent-card p-6 text-center border-red-500/30">
+        <div class="w-12 h-12 mx-auto mb-4 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center">
+          <svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+        <h3 class="text-lg font-semibold text-white mb-2">
           Failed to load latest apps
         </h3>
-        <p class="text-red-600 dark:text-red-400 mb-4">
+        <p class="text-red-400 mb-4">
           {error}
         </p>
-        <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">
+        <p class="text-gray-400 text-sm mb-4">
           Showing cached apps instead. You can try refreshing to get the latest updates.
         </p>
         <button
           on:click={loadStoreData}
           disabled={isLoading}
-          class="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 disabled:cursor-not-allowed"
+          class="agent-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? 'Retrying...' : 'Try Again'}
         </button>
       </div>
     {:else}
       <!-- Submit Your App Banner -->
-      <div class="mb-8 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl border border-purple-200 dark:border-purple-800 p-6">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div class="mb-8 agent-card p-6">
+        <div class="agent-glow"></div>
+        <div class="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div class="flex-1">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              🏆 Build & Submit Your App
+            <p class="agent-eyebrow mb-2">Community</p>
+            <h3 class="text-lg font-semibold text-white mb-2">
+              Build & Submit Your App
             </h3>
-            <p class="text-gray-600 dark:text-gray-400 text-sm">
-              Join the funnAI x CaffeineAI Community Challenge! Build with CaffeineAI, integrate with funnAI, and compete for amazing prizes including mAIners with 40T cycles each! ☕🦜
+            <p class="text-gray-400 text-sm">
+              Join the funnAI x CaffeineAI Community Challenge. Build with CaffeineAI, integrate with funnAI, and compete for prizes including mAIners with 40T cycles each.
             </p>
           </div>
           <button
             on:click={() => window.open('https://github.com/onicai/awesome-funnAI-caffeineAI', '_blank')}
-            class="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-3 px-6 rounded-xl transition-all duration-200 flex items-center gap-2 group whitespace-nowrap"
+            class="agent-btn-primary whitespace-nowrap group"
           >
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
             </svg>
             <span>Submit Your App</span>
@@ -287,7 +291,7 @@
             type="text"
             placeholder="Search apps..."
             bind:value={searchTerm}
-            class="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+            class="agent-input"
           />
         </div>
       </div>
@@ -296,29 +300,29 @@
       {#if featuredApps.length > 0 && !searchTerm}
         <div class="mb-12">
           <div class="flex items-center gap-2 mb-6">
-            <Star class="w-6 h-6 text-yellow-500" />
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Featured Apps</h2>
+            <Star class="w-5 h-5 text-agent-purple" />
+            <h2 class="text-xl font-semibold text-white">Featured Apps</h2>
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {#each featuredApps as app}
-              <div class="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+              <div class="group agent-card hover:border-agent-purple/30 transition-all duration-300">
                 <!-- Featured Badge -->
                 <div class="absolute top-4 right-4 z-10">
-                  <div class="bg-gradient-to-r from-yellow-400 to-yellow-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                  <div class="bg-agent-purple/90 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
                     <Star class="w-3 h-3" />
                     Featured
                   </div>
                 </div>
                 
                 <!-- App Thumbnail -->
-                <div class="relative h-48 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/30 dark:to-blue-900/30">
+                <div class="relative h-48 bg-agent-elevated">
                   <img 
                     src={app.thumbnail} 
                     alt={app.name}
                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"></div>
+                  <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300"></div>
                 </div>
                 
                 <!-- App Info -->
@@ -329,23 +333,23 @@
                         <img 
                           src={app.logo} 
                           alt={app.name}
-                          class="w-10 h-10 rounded-lg border border-gray-200 dark:border-gray-600"
+                          class="w-10 h-10 rounded-lg border border-white/10"
                         />
                       {/if}
                       <div>
-                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-200">
+                        <h3 class="text-xl font-semibold text-white group-hover:text-agent-purple transition-colors duration-200">
                           {app.name}
                         </h3>
                       </div>
                     </div>
                   </div>
                   
-                  <p class="text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+                  <p class="text-gray-400 mb-4 line-clamp-2">
                     {app.description}
                   </p>
                   
                   <!-- Creator Info -->
-                  <div class="flex items-center gap-4 mb-4 text-sm text-gray-500 dark:text-gray-400">
+                  <div class="flex items-center gap-4 mb-4 text-sm text-gray-500">
                     <div class="flex items-center gap-1">
                       <MessageSquare class="w-4 h-4" />
                       <span>{app.creator_openchat}</span>
@@ -361,7 +365,7 @@
                   <!-- Launch Button -->
                   <button
                     on:click={() => openApp(app.url)}
-                    class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 group"
+                    class="w-full agent-btn-primary group"
                   >
                     <span>Launch App</span>
                     <ExternalLink class="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" />
@@ -377,20 +381,20 @@
       <div>
         <div class="flex items-center justify-between mb-6">
           <div class="flex items-center gap-3">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+            <h2 class="text-xl font-semibold text-white">
               All Apps
             </h2>
             {#if error}
-              <span class="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-xs px-2 py-1 rounded-full">
+              <span class="border border-white/10 bg-white/4 text-gray-400 text-xs px-2 py-1 rounded-full">
                 Cached
               </span>
             {:else}
-              <span class="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs px-2 py-1 rounded-full">
+              <span class="border border-agent-purple/30 bg-agent-purple/15 text-agent-purple text-xs px-2 py-1 rounded-full">
                 Live
               </span>
             {/if}
           </div>
-          <span class="text-gray-500 dark:text-gray-400">
+          <span class="text-gray-500">
             {filteredApps.length} app{filteredApps.length !== 1 ? 's' : ''}
           </span>
         </div>
@@ -398,21 +402,21 @@
         {#if filteredApps.length === 0}
           <!-- Empty State -->
           <div class="text-center py-12">
-            <div class="w-20 h-20 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-              <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-20 h-20 mx-auto mb-4 agent-card flex items-center justify-center">
+              <svg class="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No apps found</h3>
-            <p class="text-gray-500 dark:text-gray-400">Try adjusting your search or filter criteria</p>
+            <h3 class="text-lg font-semibold text-white mb-2">No apps found</h3>
+            <p class="text-gray-400">Try adjusting your search or filter criteria</p>
           </div>
         {:else}
           <!-- Apps Grid -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {#each filteredApps as app}
-              <div class="group bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+              <div class="group agent-card hover:border-agent-purple/30 transition-all duration-300">
                 <!-- App Thumbnail -->
-                <div class="relative h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800">
+                <div class="relative h-32 bg-agent-elevated">
                   <img 
                     src={app.thumbnail} 
                     alt={app.name}
@@ -420,7 +424,7 @@
                   />
                   {#if app.featured}
                     <div class="absolute top-2 right-2">
-                      <Star class="w-4 h-4 text-yellow-500" fill="currentColor" />
+                      <Star class="w-4 h-4 text-agent-purple" fill="currentColor" />
                     </div>
                   {/if}
                 </div>
@@ -432,20 +436,20 @@
                       <img 
                         src={app.logo} 
                         alt={app.name}
-                        class="w-8 h-8 rounded border border-gray-200 dark:border-gray-600"
+                        class="w-8 h-8 rounded-sm border border-white/10"
                       />
                     {/if}
-                    <h3 class="font-semibold text-gray-900 dark:text-white text-sm group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-200">
+                    <h3 class="font-semibold text-white text-sm group-hover:text-agent-purple transition-colors duration-200">
                       {app.name}
                     </h3>
                   </div>
                   
-                  <p class="text-gray-600 dark:text-gray-400 text-xs mb-3 line-clamp-2">
+                  <p class="text-gray-400 text-xs mb-3 line-clamp-2">
                     {app.description}
                   </p>
                   
                   <!-- Creator Info -->
-                  <div class="flex items-center gap-3 mb-3 text-xs text-gray-500 dark:text-gray-400">
+                  <div class="flex items-center gap-3 mb-3 text-xs text-gray-500">
                     <div class="flex items-center gap-1">
                       <MessageSquare class="w-3 h-3" />
                       <span>{app.creator_openchat}</span>
@@ -461,7 +465,7 @@
                   <div class="flex items-center justify-end">
                     <button
                       on:click={() => openApp(app.url)}
-                      class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium py-1.5 px-3 rounded-lg transition-colors duration-200 flex items-center gap-1"
+                      class="agent-btn-primary h-8 text-xs px-3"
                     >
                       <span>Launch</span>
                       <ExternalLink class="w-3 h-3" />

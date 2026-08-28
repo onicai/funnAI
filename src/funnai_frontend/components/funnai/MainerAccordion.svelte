@@ -2,14 +2,16 @@
   import { onMount, afterUpdate, onDestroy } from 'svelte';
   import CyclesDisplayAgent from './CyclesDisplayAgent.svelte';
   import DailyBurnRatePanel from './DailyBurnRatePanel.svelte';
-  import FlockOverview from './mainers/FlockOverview.svelte';
+  import FleetOverview from './mainers/FleetOverview.svelte';
+  import EmptyFleetBanner from './mainers/EmptyFleetBanner.svelte';
+  import NetworkCapacityPanel from './mainers/NetworkCapacityPanel.svelte';
   import MainerCreationPanel from './mainers/MainerCreationPanel.svelte';
   import WhitelistMainerPanel from './mainers/WhitelistMainerPanel.svelte';
   import ReverseAuctionPanel from './mainers/ReverseAuctionPanel.svelte';
-  import NetworkCapacityPanel from './mainers/NetworkCapacityPanel.svelte';
   import AnnouncementPanel from './mainers/AnnouncementPanel.svelte';
   import CanisterInfo from './CanisterInfo.svelte';
-  import { store } from "../../stores/store";
+  import { get } from 'svelte/store';
+  import { store, MAINER_UI_CACHE_KEY } from "../../stores/store";
   import LoginModal from '../login/LoginModal.svelte';
   import MainerPaymentModal from './MainerPaymentModal.svelte';
   import MainerTopUpModal from './MainerTopUpModal.svelte';
@@ -21,6 +23,7 @@
   import { mainerHealthService, mainerHealthStatuses } from "../../helpers/mainerHealthService";
   import { MarketplaceService } from "../../helpers/marketplaceService";
   import { MARKETPLACE_ENABLED } from "../../helpers/config/featureFlags";
+  import { ArrowUp } from '@lucide/svelte';
 
   $: agentCanisterActors = $store.userMainerCanisterActors;
   $: agentCanistersInfo = $store.userMainerAgentCanistersInfo;
@@ -28,25 +31,92 @@
   $: isCreatingMainer = $store.isCreatingMainer;
   $: mainerCreationProgress = $store.mainerCreationProgress;
   $: shouldOpenFirstMainerAfterCreation = $store.shouldOpenFirstMainerAfterCreation;
+  $: mainersLoadError = $store.userMainersLoadError;
+  $: mainersLoadStatus = $store.userMainersLoadStatus;
 
-  // Loading state for protocol flags
-  let protocolFlagsLoading = true;
+  const PROTOCOL_FLAGS_CACHE_KEY = 'funnai.protocolFlags';
 
-  let isProtocolActiveFlag = true; // Will be loaded
+  function readProtocolFlagsCache() {
+    try {
+      const raw = localStorage.getItem(PROTOCOL_FLAGS_CACHE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeProtocolFlagsCache(flags) {
+    try {
+      localStorage.setItem(PROTOCOL_FLAGS_CACHE_KEY, JSON.stringify(flags));
+    } catch {
+      // ignore quota / private mode
+    }
+  }
+
+  function readMainerUiCache() {
+    try {
+      const raw = localStorage.getItem(MAINER_UI_CACHE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed?.agents)) return [];
+      return parsed.agents.map((agent) => ({
+        ...agent,
+        originalCanisterInfo: {
+          address: agent.id,
+          creationTimestamp: agent.createdAtNs ? BigInt(agent.createdAtNs) : 0n,
+        },
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  function writeMainerUiCache(nextAgents) {
+    try {
+      localStorage.setItem(MAINER_UI_CACHE_KEY, JSON.stringify({
+        agents: nextAgents.map((agent) => ({
+          id: agent.id,
+          name: agent.name,
+          uiStatus: agent.uiStatus,
+          burnedCycles: agent.burnedCycles,
+          cycleBalance: agent.cycleBalance,
+          cyclesBurnRateSetting: agent.cyclesBurnRateSetting,
+          mainerType: agent.mainerType,
+          llmSetupStatus: agent.llmSetupStatus,
+          hasError: agent.hasError,
+          isUnlocked: agent.isUnlocked,
+          createdAt: agent.createdAt,
+          createdAtNs: agent.originalCanisterInfo?.creationTimestamp
+            ? agent.originalCanisterInfo.creationTimestamp.toString()
+            : null,
+        })),
+      }));
+    } catch {
+      // ignore quota / private mode
+    }
+  }
+
+  const cachedProtocolFlags = readProtocolFlagsCache();
+
+  // Loading state for protocol flags — skip the spinner when we already know last values
+  let protocolFlagsLoading = !cachedProtocolFlags;
+
+  let isProtocolActiveFlag = cachedProtocolFlags?.isProtocolActive ?? true;
   $: isProtocolActive = isProtocolActiveFlag;
 
-  let isMainerCreationStoppedFlag = false; // Will be loaded
+  let isMainerCreationStoppedFlag = cachedProtocolFlags?.isMainerCreationStopped ?? false;
   $: stopMainerCreation = isMainerCreationStoppedFlag;
+  $: canCreateMainer = isProtocolActive && !stopMainerCreation;
 
   // Whitelist phase variables
-  let isWhitelistPhaseActiveFlag = false; // Will be loaded
+  let isWhitelistPhaseActiveFlag = cachedProtocolFlags?.isWhitelistPhaseActive ?? false;
   $: isWhitelistPhaseActive = isWhitelistPhaseActiveFlag;
   
-  let isPauseWhitelistMainerCreationFlag = false; // Will be loaded
+  let isPauseWhitelistMainerCreationFlag = cachedProtocolFlags?.isPauseWhitelistMainerCreation ?? false;
   $: isPauseWhitelistMainerCreation = isPauseWhitelistMainerCreationFlag;
 
   // Reverse Auction variables
-  let isAuctionActiveFlag = false; // Will be loaded
+  let isAuctionActiveFlag = cachedProtocolFlags?.isAuctionActive ?? false;
   $: isAuctionActive = isAuctionActiveFlag;
   
   let availableMainersCount = 0; // Will be loaded
@@ -60,8 +130,6 @@
   let auctionUpdateInterval: number | null = null;
 
   let agents = [];
-
-  // Separate unlocked mAIners for whitelist phase
   let unlockedMainers = [];
 
   let selectedBurnRate: 'Low' | 'Medium' | 'High' = 'Medium'; // Default value
@@ -399,8 +467,14 @@
         await loadProtocolFlags();
       }, 2000);
     } finally {
-      // Set loading to false after flags are loaded (whether successful or not)
       protocolFlagsLoading = false;
+      writeProtocolFlagsCache({
+        isProtocolActive: isProtocolActiveFlag,
+        isMainerCreationStopped: isMainerCreationStoppedFlag,
+        isWhitelistPhaseActive: isWhitelistPhaseActiveFlag,
+        isPauseWhitelistMainerCreation: isPauseWhitelistMainerCreationFlag,
+        isAuctionActive: isAuctionActiveFlag,
+      });
     };    
   };
 
@@ -451,6 +525,14 @@
       availableMainersCount = 0;
       nextPriceDropAtNs = 0;
       auctionIntervalSeconds = 0;
+    } finally {
+      writeProtocolFlagsCache({
+        isProtocolActive: isProtocolActiveFlag,
+        isMainerCreationStopped: isMainerCreationStoppedFlag,
+        isWhitelistPhaseActive: isWhitelistPhaseActiveFlag,
+        isPauseWhitelistMainerCreation: isPauseWhitelistMainerCreationFlag,
+        isAuctionActive: isAuctionActiveFlag,
+      });
     }
   };
 
@@ -533,13 +615,13 @@
             addProgressMessage("mAIner successfully created!", true);
             setTimeout(() => {
               // Refresh the list of agents to show the newly created one
-              store.loadUserMainerCanisters().then(() => {
-                // Reload agents to get the updated list
+              refreshMainersUntilListed().then((found) => {
+                if (!found) {
+                  addProgressMessage("mAIner created — if it does not appear yet, it is still setting up.");
+                }
                 loadAgents().then((updatedAgents) => {
                   agents = updatedAgents;
-                  // Wait for the reactive update to complete, then open the first mAIner
                   setTimeout(() => {
-                    // Force open the first mAIner accordion (newest one since we reverse the order)
                     if (agents.length > 0) {
                       const firstAgent = agents[0];
                       const sanitizedId = firstAgent.id.replace(/[^a-zA-Z0-9-_]/g, '_');
@@ -551,16 +633,11 @@
                         icon.style.transform = 'rotate(0deg)';
                       }
                     }
-                    // Reset the terminal after opening the accordion
                     setTimeout(() => {
                       store.completeMainerCreation();
                     }, 4000);
-                  }, 1000); // Increased timeout for better reliability
+                  }, 1000);
                 });
-              }).catch((error) => {
-                console.error("Error refreshing mAIner list:", error);
-                addProgressMessage("Warning: mAIner created but list refresh failed. Please refresh manually.");
-                store.completeMainerCreation();
               });
             }, 14000);
           }, 9000);
@@ -669,15 +746,16 @@
             addProgressMessage("mAIner successfully created!", true);
             setTimeout(() => {
               // Refresh the list of agents to show the newly created one
-              store.loadUserMainerCanisters().then(() => {
-                // Wait for the reactive update to complete, then open the first mAIner (newest one)
+              refreshMainersUntilListed().then((found) => {
+                if (!found) {
+                  addProgressMessage("mAIner created — if it does not appear yet, it is still setting up.");
+                }
                 setTimeout(() => {
                   openFirstMainerAccordion();
-                  // Reset the terminal after opening the accordion
                   setTimeout(() => {
                     store.completeMainerCreation();
                   }, 4000);
-                }, 4000); // Increased timeout for better reliability
+                }, 1000);
               });
             }, 14000);
           }, 9000);
@@ -715,21 +793,13 @@
     addressCopied = true;
   };
 
-  async function loadAgents() {
-    // The store now provides enriched canister info with status, cycles, etc.
-    const enrichedCanistersInfo = agentCanistersInfo;
-
-    // Separate unlocked mAIners from active agents
+  function mapAgentsFrom(canistersInfo = [], _canisterActors = [], principalText = null) {
     const activeAgents = [];
     const unlockedAgents = [];
 
-    enrichedCanistersInfo.forEach((canisterInfo, index) => {
-      // Get the correct actor by index (might be null for unlocked mAIners)
-      const agentActor = agentCanisterActors[index];
-      
-      // Determine mainer type from the canister info
+    canistersInfo.forEach((canisterInfo, index) => {
       let mainerType = 'Unknown';
-      if (canisterInfo.canisterType) {
+      if (canisterInfo.canisterType?.MainerAgent) {
         if ('Own' in canisterInfo.canisterType.MainerAgent) {
           mainerType = 'Own';
         } else if ('ShareAgent' in canisterInfo.canisterType.MainerAgent) {
@@ -737,14 +807,12 @@
         }
       }
 
-      // Check if this is an unlocked mAIner
       const isUnlocked = canisterInfo.status && 'Unlocked' in canisterInfo.status;
-      
-      // Check if this unlocked mAIner is owned by the current user
-      const isOwnedByCurrentUser = !canisterInfo.ownedBy || canisterInfo.ownedBy.toString() === $store.principal?.toString();
+      const isOwnedByCurrentUser = !canisterInfo.ownedBy || canisterInfo.ownedBy.toString() === principalText;
+      const creationTimestamp = canisterInfo.creationTimestamp;
       
       const mainerData = {
-        id: canisterInfo.address || `unlocked-${index}`, // Use index for unlocked without address
+        id: canisterInfo.address || `unlocked-${index}`,
         name: isUnlocked ? `Unlocked mAIner ${index + 1}` : `mAIner ${canisterInfo.address?.slice(0, 5) || 'Unknown'}`,
         uiStatus: isUnlocked ? "unlocked" : (canisterInfo.uiStatus || "active"),
         burnedCycles: canisterInfo.burnedCycles || 0,
@@ -757,44 +825,68 @@
         hasError: canisterInfo.hasError || false,
         isUnlocked,
         isOwnedByCurrentUser,
-        originalCanisterInfo: canisterInfo, // Store original for whitelist creation
-        // NEW: store creation timestamp in milliseconds for easy display
-        createdAt: canisterInfo.creationTimestamp ? Number(canisterInfo.creationTimestamp / 1000000n) : null
+        originalCanisterInfo: canisterInfo,
+        createdAt: creationTimestamp
+          ? Number(typeof creationTimestamp === 'bigint' ? creationTimestamp / 1000000n : creationTimestamp)
+          : null
       };
 
       if (isUnlocked && isOwnedByCurrentUser) {
         unlockedAgents.push(mainerData);
-      } else if (isUnlocked && !isOwnedByCurrentUser) {
-        //console.log(`⏭️ Skipping unlocked mAIner ${index + 1} - owned by different user:`, canisterInfo.ownedBy?.toString());
       } else if (!isUnlocked) {
         activeAgents.push(mainerData);
       }
     });
 
-    // Update unlocked mAIners list
-    unlockedMainers = unlockedAgents;
-    
-    // Sort by creation timestamp so newest mAIners appear first
-    return activeAgents.sort((a, b) => {
-      const nowNs = BigInt(Date.now()) * 1000000n; // current time in nanoseconds approximation
+    const agentsSorted = activeAgents.sort((a, b) => {
+      const nowNs = BigInt(Date.now()) * 1000000n;
       const tsA: bigint = (a.originalCanisterInfo?.creationTimestamp && a.originalCanisterInfo.creationTimestamp > 0n) ? a.originalCanisterInfo.creationTimestamp : nowNs;
       const tsB: bigint = (b.originalCanisterInfo?.creationTimestamp && b.originalCanisterInfo.creationTimestamp > 0n) ? b.originalCanisterInfo.creationTimestamp : nowNs;
       if (tsA === tsB) return 0;
-      // Newest first => larger timestamp comes before smaller one
       return tsA < tsB ? 1 : -1;
     });
-  };
+
+    return { agents: agentsSorted, unlocked: unlockedAgents };
+  }
+
+  function loadAgents() {
+    const mapped = mapAgentsFrom(
+      agentCanistersInfo || [],
+      agentCanisterActors || [],
+      $store.principal?.toString()
+    );
+    unlockedMainers = mapped.unlocked;
+    return mapped.agents;
+  }
+
+  {
+    const initial = get(store);
+    if (initial.userMainerAgentCanistersInfo?.length) {
+      const mapped = mapAgentsFrom(
+        initial.userMainerAgentCanistersInfo,
+        initial.userMainerCanisterActors,
+        initial.principal?.toString()
+      );
+      agents = mapped.agents;
+      unlockedMainers = mapped.unlocked;
+    } else if (initial.isAuthed) {
+      agents = readMainerUiCache();
+    }
+  }
 
   $: {
-    // React to changes in agentCanisterActors and agentCanistersInfo
     agentCanisterActors;
     agentCanistersInfo;
 
-    (async () => {
-      agents = await loadAgents();
-      // Check if we should auto-open the first mAIner after creation
+    if (agentCanistersInfo && agentCanistersInfo.length > 0) {
+      agents = loadAgents();
+      writeMainerUiCache(agents);
       openFirstMainerAccordion();
-    })();
+    } else if ($store.principal) {
+      agents = [];
+      unlockedMainers = [];
+      writeMainerUiCache([]);
+    }
   };
 
   function toggleLoginModal() {
@@ -810,9 +902,6 @@
     ]).catch(error => {
       console.error("Error loading initial data:", error);
     });
-    
-    // Retrieve the data from the agents' backend canisters to fill the above agents array dynamically
-    agents = await loadAgents();
     
     // Load marketplace listings to show "For Sale" badges
     await loadMarketplaceListings();
@@ -879,28 +968,54 @@
     }
   }
 
-  // Update agent status based on health checks
+  // Update agent status based on health checks — only rewrite agents when uiStatus actually changes
+  // (unconditional remap caused constant re-renders with many mainers and modal scroll flicker)
   $: if (agents && agents.length > 0 && $mainerHealthStatuses) {
-    agents = agents.map(agent => {
+    let changed = false;
+    const now = Date.now();
+    const PROVISIONING_WINDOW_MS = 5 * 60 * 1000;
+    const nextAgents = agents.map(agent => {
       const healthStatus = $mainerHealthStatuses.get(agent.id);
-      
-      // Only update status if we have a health check result
-      if (healthStatus) {
-        // If health check shows unhealthy (stopped/maintenance), mark as inactive
-        if (!healthStatus.isHealthy) {
+      const stillProvisioning = Boolean(
+        agent.createdAt && now - agent.createdAt < PROVISIONING_WINDOW_MS
+      );
+
+      if (healthStatus && !healthStatus.isHealthy) {
+        if (stillProvisioning && agent.uiStatus !== 'setting-up') {
+          changed = true;
+          return { ...agent, uiStatus: 'setting-up' };
+        }
+        if (!stillProvisioning && agent.uiStatus !== 'inactive') {
+          changed = true;
           return { ...agent, uiStatus: 'inactive' };
         }
-        // If health check is healthy, don't change the status - it was already set based on cycle balance
-        // A mAIner can be healthy (responding) but still inactive due to low cycles
       }
-      
+
       return agent;
     });
+
+    if (changed) {
+      agents = nextAgents;
+    }
   }
 
-  // Auto-open logic is now handled by MainerCreationPanel component via shouldAutoOpen prop
-
-  // Add refresh balance function
+  async function refreshMainersUntilListed(attempts = 6, delayMs = 4000) {
+    for (let i = 0; i < attempts; i++) {
+      try {
+        await store.loadUserMainerCanisters();
+        agents = await loadAgents();
+        if (agents.length > 0) {
+          return true;
+        }
+      } catch (error) {
+        console.error("Error refreshing mAIner list after creation:", error);
+      }
+      if (i < attempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+    return false;
+  }
   async function refreshAgentBalance(agent) {
     // Add this agent to the refreshing set
     agentsBeingRefreshed.add(agent.id);
@@ -1008,33 +1123,25 @@
 
 </script>
 
+<div class="flex flex-col gap-3 p-1 sm:p-0">
+
 <!-- Announcements Panel 
 <AnnouncementPanel
   isVisible={showAnnouncement}
-  title="Reverse Auction Completed! 🎉"
-  subtitle="All mAIners sold successfully on November 9th!"
+  title="Reverse auction completed"
+  subtitle="All mAIners sold successfully on November 9th."
   variant="success"
   items={[
-    { icon: "💎", text: "Sold for 65-130 ICP per mAIner." },
-    { icon: "🦜", text: "Aira the Parrot ended the auction." }
+    { text: "Sold for 65–130 ICP per mAIner." },
+    { text: "Auction closed after full sell-through." }
   ]}
   onClose={() => showAnnouncement = false}
 />
 -->
 
-<!-- Loading state for protocol flags -->
-{#if protocolFlagsLoading}
-  <div class="border-b border-gray-300 dark:border-gray-700 bg-gradient-to-r from-gray-100/50 to-gray-200/50 dark:from-gray-800/50 dark:to-gray-900/50 rounded-t-lg">
-    <div class="w-full flex justify-center items-center py-8 px-6 text-gray-600 dark:text-gray-400">
-      <div class="flex items-center space-x-3">
-        <div class="w-6 h-6 border-2 border-gray-300/30 border-t-gray-600 dark:border-gray-600/30 dark:border-t-gray-400 rounded-full animate-spin"></div>
-        <span class="text-sm font-medium">Loading creation options...</span>
-      </div>
-    </div>
-  </div>
-{:else}
-  <!-- Create Agent Accordion (only show when not in whitelist phase AND not in auction mode) -->
-  {#if !isWhitelistPhaseActive && !isAuctionActive}
+<!-- Create Agent Accordion (only when creation is open and not in whitelist/auction mode) -->
+{#if !isWhitelistPhaseActive && !isAuctionActive}
+  {#if canCreateMainer}
     <MainerCreationPanel
       {isAuthenticated}
       {isProtocolActive}
@@ -1045,12 +1152,18 @@
       {modelType}
       {selectedModel}
       {addressCopied}
-      shouldAutoOpen={agents.length === 0 && !isWhitelistPhaseActive && !isAuctionActive}
+      shouldAutoOpen={false}
       onCreateAgent={createAgent}
       onToggleLoginModal={toggleLoginModal}
       onToggleAccordion={toggleAccordion}
       onModelTypeChange={(type) => modelType = type}
     />
+  {:else if !protocolFlagsLoading && !isCreatingMainer && mainersLoadStatus === 'success'}
+    {#if MARKETPLACE_ENABLED}
+      <EmptyFleetBanner hasMainers={totalMainers > 0} />
+    {:else}
+      <NetworkCapacityPanel isVisible={true} />
+    {/if}
   {/if}
 {/if}
 
@@ -1073,7 +1186,7 @@
 />
 
 <!--Reverse Auction Section (show when auction is active and not in whitelist phase) -->
-{#if isAuctionActive && !isWhitelistPhaseActive && !protocolFlagsLoading}
+{#if isAuctionActive && !isWhitelistPhaseActive}
   <div class="mt-4">
     <ReverseAuctionPanel
       {isAuthenticated}
@@ -1098,37 +1211,27 @@
 
 <!-- Warning Banner - Don't refresh/navigate during creation -->
 {#if isCreatingMainer}
-  <div class="mt-4 relative overflow-hidden bg-gradient-to-r from-red-500 via-orange-500 to-red-500 dark:from-red-600 dark:via-orange-600 dark:to-red-600 rounded-xl shadow-lg border-2 border-red-400/50 dark:border-red-500/50 animate-pulse">
-    <!-- Background decoration -->
-    <div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/10 to-transparent"></div>
-    <div class="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full -translate-y-8 translate-x-8"></div>
-    <div class="absolute bottom-0 left-0 w-12 h-12 bg-white/5 rounded-full translate-y-6 -translate-x-6"></div>
-    
+  <div class="mt-4 relative overflow-hidden agent-card border-red-500/40 bg-red-950/40 animate-pulse">
     <div class="relative p-3 sm:p-4">
       <div class="flex items-start space-x-3">
-        <!-- Warning icon -->
-        <div class="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-white/20 backdrop-blur-sm rounded-xl shadow-sm flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 text-white animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-red-500/20 rounded-xl flex items-center justify-center border border-red-500/30">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 text-red-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
           </svg>
         </div>
         
-        <!-- Warning content -->
         <div class="flex-1 min-w-0">
           <div class="flex flex-col space-y-2">
-                         <h3 class="text-sm sm:text-base font-bold text-white drop-shadow-sm">⚠️ IMPORTANT: Do NOT refresh or navigate away!</h3>
-             <div class="text-white/90 text-xs sm:text-sm leading-relaxed">
-               <p class="font-semibold mb-1">Your mAIner is being created right now.</p>
-               <p>🚫 <span class="font-medium">DO NOT refresh this page or navigate away</span> - this will stop the creation process and you'll need to start over.</p>
-               <p class="mt-1">✅ Please keep this tab open and wait for the process to complete (~1 minute).</p>
-             </div>
+            <h3 class="text-sm sm:text-base font-semibold text-white">IMPORTANT: Do NOT refresh or navigate away</h3>
+            <div class="text-gray-300 text-xs sm:text-sm leading-relaxed">
+              <p class="font-medium mb-1 text-gray-200">Your mAIner is being created right now.</p>
+              <p><span class="font-medium text-white">DO NOT refresh this page or navigate away</span> — this will stop the creation process and you'll need to start over.</p>
+              <p class="mt-1 text-gray-400">Please keep this tab open and wait for the process to complete (~1 minute).</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
-    
-    <!-- Bottom accent line with pulse animation -->
-    <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/60 to-transparent animate-pulse"></div>
   </div>
 {/if}
 
@@ -1145,7 +1248,7 @@
       {#each mainerCreationProgress as progress}
         <div class="flex mb-1 items-start" class:text-green-300={progress.complete}>
           <span class="text-gray-500 mr-1 sm:mr-2 text-xs hidden sm:inline">[{progress.timestamp}]</span>
-          <span class="flex-1 text-xs sm:text-sm break-words">{progress.message}</span>
+          <span class="flex-1 text-xs sm:text-sm wrap-break-word">{progress.message}</span>
           {#if progress.complete}
             <span class="text-green-500 ml-1">✓</span>
           {/if}
@@ -1184,8 +1287,28 @@
   />
 {/if}
 
+{#if isAuthenticated && mainersLoadStatus === 'error'}
+  <div class="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/8 px-4 py-3 sm:px-5 sm:py-4">
+    <p class="text-sm text-amber-200">
+      {mainersLoadError || "Couldn't load your mAIners."}
+      {#if agents.length > 0}
+        Showing last known list.
+      {:else}
+        This is not an empty fleet — the query failed.
+      {/if}
+    </p>
+    <button
+      type="button"
+      class="mt-2 agent-btn-ghost h-8! px-3! text-xs!"
+      on:click={() => store.loadUserMainerCanisters()}
+    >
+      Retry
+    </button>
+  </div>
+{/if}
+
 {#if totalMainers > 0}
-  <FlockOverview 
+  <FleetOverview 
     {totalMainers}
     {activeMainers}
     {inactiveMainers}
@@ -1197,40 +1320,34 @@
 {/if}
 
 <!-- Existing Agents -->
-{#each agents as agent, index}
+{#each agents as agent, index (agent.id)}
   {#if agent && agent.id}
     {@const sanitizedId = agent.id.replace(/[^a-zA-Z0-9-_]/g, '_')}
     {@const identity = getMainerVisualIdentity(agent.id)}
-    <div class="border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 mb-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300" class:opacity-75={agent.uiStatus === 'inactive'}>
+    <div class="agent-card" class:opacity-75={agent.uiStatus === 'inactive'}>
       <button 
         on:click={() => toggleAccordion(agent.id)} 
-        class="w-full relative overflow-hidden bg-gradient-to-r {identity.colors.bg} hover:{identity.colors.bgHover} {identity.colors.border} border-2 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 transform group"
+        class="w-full relative overflow-hidden bg-agent-surface hover:bg-agent-elevated border-b border-white/6 transition-all duration-300 group"
       >
-        <!-- Background decorative elements -->
-        <div class="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-white/5"></div>
-        <div class="absolute top-0 right-0 w-32 h-32 {identity.colors.accent} rounded-full -translate-y-16 translate-x-16 opacity-30"></div>
-        <div class="absolute bottom-0 left-0 w-24 h-24 {identity.colors.accent} rounded-full translate-y-12 -translate-x-12 opacity-20"></div>
+        <div class="absolute left-0 top-0 bottom-0 w-[3px] bg-agent-purple/60 group-hover:bg-agent-purple transition-colors"></div>
         
         <div class="relative flex items-center py-3 sm:py-4 px-4 sm:px-6">
           <!-- Left section: Avatar and Info -->
           <div class="flex items-center space-x-3 sm:space-x-4 min-w-0 flex-1">
             <!-- Unique avatar with visual identity and name -->
-            <div class="relative flex-shrink-0 flex flex-col items-center">
-              <!-- Avatar container with glow effect -->
-              <div class="w-12 h-12 sm:w-16 sm:h-16 {identity.colors.accent} backdrop-blur-sm rounded-xl shadow-lg flex items-center justify-center border-2 border-white/20 group-hover:scale-105 transition-transform duration-300">
-                <div class="w-6 h-6 sm:w-8 sm:h-8 {identity.colors.icon}">
-                  {@html identity.icon}
-                </div>
+            <div class="relative shrink-0 flex flex-col items-center">
+              <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-xl overflow-hidden border border-white/10 bg-agent-elevated group-hover:border-agent-purple/40 transition-all duration-300 [&>svg]:w-full [&>svg]:h-full [&>svg]:block">
+                {@html identity.icon}
               </div>
               
               <!-- mAIner number badge -->
-              <div class="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center border-2 border-white/50">
-                <span class="text-xs sm:text-sm font-bold text-gray-800">#{totalMainers - index}</span>
+              <div class="absolute -top-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-agent-elevated border border-white/10 rounded-full flex items-center justify-center">
+                <span class="text-xs sm:text-sm font-semibold text-white">#{totalMainers - index}</span>
               </div>
               
               <!-- Status indicator dot -->
-              <div class="absolute -bottom-1 -left-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-white shadow-lg flex items-center justify-center">
-                <div class={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${agent.uiStatus === 'active' ? 'bg-green-400' : 'bg-red-400'} animate-pulse`}></div>
+              <div class="absolute -bottom-1 -left-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 border-agent-surface bg-agent-elevated flex items-center justify-center">
+                <div class={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${agent.uiStatus === 'active' ? 'bg-emerald-400' : agent.uiStatus === 'setting-up' ? 'bg-amber-400' : 'bg-red-400'}`}></div>
               </div>
             </div>
             
@@ -1238,28 +1355,30 @@
             <div class="flex flex-col items-start min-w-0 flex-1">
               <div class="flex flex-wrap items-center gap-1 sm:gap-2 mb-1">
                 <!-- Status badge -->
-                <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm border ${agent.uiStatus === 'active' 
-                  ? 'bg-green-100/80 text-green-800 border-green-300/50' 
-                  : 'bg-red-100/80 text-red-800 border-red-300/50'}`}>
-                  <div class={`w-2 h-2 rounded-full mr-1 ${agent.uiStatus === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  {agent.uiStatus}
+                <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${agent.uiStatus === 'active' 
+                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' 
+                  : agent.uiStatus === 'setting-up'
+                  ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                  : 'bg-red-500/15 text-red-300 border-red-500/30'}`}>
+                  <div class={`w-2 h-2 rounded-full mr-1 ${agent.uiStatus === 'active' ? 'bg-emerald-400' : agent.uiStatus === 'setting-up' ? 'bg-amber-400' : 'bg-red-400'}`}></div>
+                  {agent.uiStatus === 'setting-up' ? 'setting up' : agent.uiStatus}
                 </span>
                 
                 <!-- Daily Burn Rate badge (only show if active) -->
                 {#if agent.uiStatus === 'active' && agent.cyclesBurnRateSetting}
                   {@const burnRateColors = {
-                    'Low': 'bg-green-100/80 text-green-800 border-green-300/50',
-                    'Medium': 'bg-yellow-100/80 text-yellow-800 border-yellow-300/50', 
-                    'High': 'bg-red-100/80 text-red-800 border-red-300/50'
+                    'Low': 'bg-white/4 text-gray-300 border-white/10',
+                    'Medium': 'bg-agent-purple/15 text-agent-purple border-agent-purple/30', 
+                    'High': 'bg-red-500/15 text-red-300 border-red-500/30'
                   }}
-                  <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm border ${burnRateColors[agent.cyclesBurnRateSetting] || 'bg-gray-100/80 text-gray-800 border-gray-300/50'}`}>
-                    🔥 {agent.cyclesBurnRateSetting}
+                  <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${burnRateColors[agent.cyclesBurnRateSetting] || 'bg-white/4 text-gray-400 border-white/10'}`}>
+                    {agent.cyclesBurnRateSetting}
                   </span>
                 {/if}
                 
                 <!-- LLM setup status badge -->
                 {#if agent.mainerType === 'Own' && agent.llmSetupStatus === 'inProgress'}
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100/80 text-yellow-800 border border-yellow-300/50 backdrop-blur-sm">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/15 text-amber-300 border border-amber-500/30">
                     <svg class="w-3 h-3 mr-1 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="10" stroke-width="4" stroke-opacity="0.25"/>
                       <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" stroke-opacity="0.75"/>
@@ -1270,7 +1389,7 @@
                 
                 <!-- Marketplace listing badge -->
                 {#if listedMainerAddresses.has(agent.id)}
-                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100/80 text-purple-800 border border-purple-300/50 backdrop-blur-sm">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-agent-purple/15 text-agent-purple border border-agent-purple/30">
                     <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
@@ -1281,7 +1400,7 @@
                 <!-- Cycles warning (only show if inactive due to low cycles, not if stopped) -->
                 {#if agent.uiStatus === 'inactive' && $mainerHealthStatuses.get(agent.id)?.isHealthy !== false}
                   <span 
-                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100/80 text-red-800 border border-red-300/50 backdrop-blur-sm cursor-help"
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/15 text-red-300 border border-red-500/30 cursor-help"
                     use:tooltip={{ 
                       text: "You still have some cycles, but not enough to keep going. Please top up to continue.",
                       direction: 'top',
@@ -1297,7 +1416,7 @@
               </div>
               
               <!-- Cycles Balance preview -->
-              <div class="text-sm {identity.colors.text} opacity-90 truncate max-w-full mt-1">
+              <div class="text-sm text-gray-400 truncate max-w-full mt-1">
                 {#if $mainerHealthStatuses.get(agent.id)?.isHealthy === false}
                   <span class="opacity-60">Cycles: Unknown (mAIner stopped)</span>
                 {:else}
@@ -1305,7 +1424,7 @@
                 {/if}
               </div>
               {#if agent.createdAt}
-                <div class="text-xs {identity.colors.text} opacity-60">
+                <div class="text-xs text-gray-500">
                   Created: {formatDate(agent.createdAt)}
                 </div>
               {/if}
@@ -1313,15 +1432,14 @@
           </div>
           
           <!-- Right section: Expand indicator -->
-          <div class="flex-shrink-0 ml-4">
-            <!-- Agent name  -->
-            <div class="mb-2 px-2 py-0.5 bg-white/80 backdrop-blur-sm rounded-md shadow-sm border border-white/40 max-w-[80px] sm:max-w-[100px]">
-              <span class="text-xs font-bold text-gray-800 truncate block text-center">
-                🦜 {agent.name.replace('mAIner ', '')}
+          <div class="shrink-0 ml-4">
+            <div class="mb-2 px-2 py-0.5 bg-white/4 rounded-md border border-white/10 max-w-[80px] sm:max-w-[100px]">
+              <span class="text-xs font-semibold text-gray-200 truncate block text-center">
+                {agent.name.replace('mAIner ', '')}
               </span>
             </div>
-            <div class="w-full h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center border border-white/30 shadow-sm group-hover:bg-white/30 transition-all duration-300">
-              <span id="icon-{sanitizedId}" class="{identity.colors.text} transition-transform duration-300 group-hover:scale-110" style="transform: rotate(180deg)">
+            <div class="w-full h-10 bg-white/4 rounded-lg flex items-center justify-center border border-white/10 group-hover:border-agent-purple/40 group-hover:bg-agent-purple/10 transition-all duration-300">
+              <span id="icon-{sanitizedId}" class="text-gray-400 group-hover:text-agent-purple transition-transform duration-300" style="transform: rotate(180deg)">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4 sm:w-5 sm:h-5">
                   <path fill-rule="evenodd" d="M11.78 9.78a.75.75 0 0 1-1.06 0L8 7.06 5.28 9.78a.75.75 0 0 1-1.06-1.06l3.25-3.25a.75.75 0 0 1 1.06 0l3.25 3.25a.75.75 0 0 1 0 1.06Z" clip-rule="evenodd" />
                 </svg>
@@ -1329,241 +1447,112 @@
             </div>
           </div>
         </div>
-        
-        <!-- Bottom accent line with pulse animation for active mAIners -->
-        <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent {agent.uiStatus === 'active' ? 'animate-pulse' : ''}"></div>
       </button>
       <div id="content-{sanitizedId}" class="accordion-content">
-        <div class="pb-3 sm:pb-5 text-xs sm:text-sm text-gray-700 dark:text-gray-300 p-3 sm:p-4 bg-gray-50 dark:bg-gray-800">
-          <div class="flex flex-col space-y-2 mb-2">
-            <!-- Enhanced Cycles Management Panel -->
-            <div class="relative overflow-hidden bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-cyan-900/20 border border-emerald-200/60 dark:border-emerald-700/60 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
-              <!-- Background decorative elements -->
-              <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-200/30 to-teal-200/30 dark:from-emerald-600/10 dark:to-teal-600/10 rounded-full -translate-y-10 translate-x-10"></div>
-              <div class="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-cyan-200/30 to-emerald-200/30 dark:from-cyan-600/10 dark:to-emerald-600/10 rounded-full translate-y-8 -translate-x-8"></div>
-              
-              <div class="relative p-4 sm:p-5">
-                <!-- Header Section -->
-                <div class="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0 mb-4">
-                  <div class="flex items-center space-x-3">
-                    <!-- Icon with gradient background -->
-                    <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                      </svg>
-                    </div>
-                    
-                    <!-- Title and subtitle -->
-                    <div class="flex flex-col">
-                      <h2 class="text-sm sm:text-base font-bold text-emerald-900 dark:text-emerald-100">Cycles Management</h2>
-                      <p class="text-xs text-emerald-700 dark:text-emerald-300">Cycle-power your mAIner</p>
-                    </div>
-                  </div>
-                  
-                  <!-- Primary Top-up Button -->
-                  {#if $mainerHealthStatuses.get(agent.id)?.isHealthy !== true}
-                    <!-- Show maintenance message instead of button (defensive: hide button unless explicitly healthy) -->
-                    <div class="w-full md:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-amber-100 dark:bg-amber-900/30 border border-amber-400 dark:border-amber-600 rounded-xl">
-                      <div class="flex items-center space-x-2 text-amber-800 dark:text-amber-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        <span class="text-sm font-medium">{$mainerHealthStatuses.get(agent.id)?.maintenanceMessage || 'Checking mAIner status...'}</span>
-                      </div>
-                    </div>
+        <div class="text-xs sm:text-sm text-gray-300 p-3 space-y-2 border-t border-white/6">
+            <div class="rounded-xl bg-white/3 p-4">
+              <div class="flex items-center justify-between gap-2 mb-3">
+                <div class="flex items-center gap-2 min-w-0">
+                  <h2 class="text-sm font-semibold text-white">Cycles</h2>
+                  {#if agent.cycleBalance > 5_000_000_000_000}
+                    <span class="inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-emerald-300">Healthy</span>
+                  {:else if agent.cycleBalance > 1_000_000_000_000}
+                    <span class="inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-300">Low</span>
                   {:else}
-                    <button 
-                      type="button" 
-                      class="group relative inline-flex items-center justify-center px-4 sm:px-6 py-2.5 sm:py-3 text-sm font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-600 dark:to-teal-700 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 border border-emerald-400/50 dark:border-emerald-500/50 w-full md:w-auto"
-                      class:opacity-50={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                      class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                      class:transform-none={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                      class:hover:scale-100={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                      disabled={agentsBeingToppedUp.has(agent.id) || !isProtocolActive }
-                      on:click={() => openTopUpModal(agent)}
-                    >
-                      {#if agentsBeingToppedUp.has(agent.id)}
-                        <div class="flex items-center space-x-2">
-                          <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                          <span>Processing...</span>
-                        </div>
-                      {:else}
-                        <div class="flex items-center space-x-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                          </svg>
-                          <span>Top-up Cycles</span>
-                        </div>
-                      {/if}
-                      <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-100 to-emerald-100 dark:from-teal-600/20 dark:to-emerald-600/20 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                    </button>
+                    <span class="inline-flex items-center rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-medium text-red-300">Critical</span>
                   {/if}
                 </div>
 
-                <!-- Balance Display Section -->
-                <div class="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 border border-emerald-200/40 dark:border-emerald-700/40 shadow-sm">
-                  <div class="flex flex-col space-y-3">
-                    <!-- Balance Header -->
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                        </svg>
-                        <span class="text-sm font-medium text-emerald-900 dark:text-emerald-100">Current Balance</span>
-                      </div>
-                      
-                      <!-- Status indicator based on balance level -->
-                      {#if agent.cycleBalance > 5_000_000_000_000}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 border border-green-300 dark:border-green-700">
-                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                          </svg>
-                          Healthy
-                        </span>
-                      {:else if agent.cycleBalance > 1_000_000_000_000}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700">
-                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                          </svg>
-                          Low
-                        </span>
-                      {:else}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-700">
-                          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                          </svg>
-                          Critical
-                        </span>
-                      {/if}
-                    </div>
+                {#if $mainerHealthStatuses.get(agent.id)?.isHealthy !== true}
+                  <span class="text-[11px] font-medium text-amber-300 truncate max-w-[55%]">
+                    {$mainerHealthStatuses.get(agent.id)?.maintenanceMessage || 'Checking status…'}
+                  </span>
+                {/if}
+              </div>
 
-                    <!-- Balance Value Display -->
-                    <div class="flex items-center justify-between">
-                      {#if agentsBeingToppedUp.has(agent.id) || agentsBeingRefreshed.has(agent.id)}
-                        <div class="flex items-center space-x-3">
-                          <span class="w-5 h-5 border-2 border-emerald-400/30 border-t-emerald-600 rounded-full animate-spin"></span>
-                          <div class="flex flex-col">
-                            <span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
-                              {agentsBeingToppedUp.has(agent.id) ? 'Updating balance...' : 'Refreshing balance...'}
-                            </span>
-                            <span class="text-xs text-emerald-600 dark:text-emerald-400 opacity-75">Please wait</span>
-                          </div>
-                        </div>
-                      {:else}
-                        <div class="flex flex-col">
-                          {#if $mainerHealthStatuses.get(agent.id)?.isHealthy === false}
-                            <div class="flex items-center space-x-2">
-                              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              <span class="text-xl sm:text-2xl font-bold text-gray-600 dark:text-gray-400">
-                                Unknown
-                              </span>
-                            </div>
-                            <span class="text-xs text-gray-600 dark:text-gray-400 opacity-75">
-                              Balance unavailable (mAIner stopped)
-                            </span>
-                          {:else}
-                            <div class="flex items-baseline space-x-2">
-                              <span class="text-2xl sm:text-3xl font-bold text-emerald-900 dark:text-emerald-100">
-                                {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 4, false)}
-                              </span>
-                              <span class="text-sm font-medium text-emerald-700 dark:text-emerald-300">T cycles</span>
-                            </div>
-                            <span class="text-xs text-emerald-600 dark:text-emerald-400 opacity-75">
-                              ≈ {formatLargeNumber(agent.cycleBalance, 2, true)} total cycles
-                            </span>
-                          {/if}
-                        </div>
-                      {/if}
-
-                      <!-- Refresh Button -->
-                      <button 
-                        type="button" 
-                        class="group inline-flex items-center justify-center w-9 h-9 text-emerald-600 dark:text-emerald-400 bg-emerald-100/50 dark:bg-emerald-800/30 hover:bg-emerald-200/70 dark:hover:bg-emerald-700/40 rounded-lg border border-emerald-300/50 dark:border-emerald-600/50 transition-all duration-200 hover:scale-105 hover:shadow-md"
-                        class:opacity-50={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
-                        class:cursor-not-allowed={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
-                        class:hover:scale-100={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
-                        disabled={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
-                        on:click={() => refreshAgentBalance(agent)}
-                        use:tooltip={{ 
-                          text: "Refresh cycles balance",
-                          direction: 'top',
-                          textSize: 'xs'
-                        }}
-                      >
-                        {#if agentsBeingRefreshed.has(agent.id)}
-                          <span class="w-4 h-4 border-2 border-emerald-400/30 border-t-emerald-600 rounded-full animate-spin"></span>
-                        {:else}
-                          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                        {/if}
-                      </button>
-                    </div>
-
-                    <!-- Balance Info Footer -->
-                    {#if !agentsBeingToppedUp.has(agent.id) && !agentsBeingRefreshed.has(agent.id)}
-                      <div class="pt-2 border-t border-emerald-200/50 dark:border-emerald-700/50">
-                        <div class="flex flex-col text-xs space-y-1.5">
-                          <!-- Official App Warning -->
-                          <div class="flex items-start gap-1.5 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded">
-                            <svg class="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                            </svg>
-                            <span class="text-amber-800 dark:text-amber-200 text-sm leading-tight">
-                              <sup class="font-bold mr-1">Only top-up via this official app. Direct cycles transfers to the mAIner canister incur high fees.
-                            </span>
-                          </div>
-                          
-                          <!-- Info and Low Balance Warning -->
-                          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1 sm:space-y-0">
-                            <span class="text-emerald-600 dark:text-emerald-400 opacity-75">
-                              💡 Cycles power your mAIner's computational tasks
-                            </span>
-                            {#if agent.cycleBalance <= 1_000_000_000_000 && $mainerHealthStatuses.get(agent.id)?.isHealthy !== false}
-                              <span class="text-red-600 dark:text-red-400 font-medium">
-                                ⚠️ Top-up recommended
-                              </span>
-                            {/if}
-                          </div>
-                        </div>
-                      </div>
+              <div class="flex items-center justify-between gap-3">
+                {#if agentsBeingToppedUp.has(agent.id) || agentsBeingRefreshed.has(agent.id)}
+                  <div class="flex items-center gap-2 text-gray-400">
+                    <span class="w-4 h-4 border-2 border-agent-purple/30 border-t-agent-purple rounded-full animate-spin"></span>
+                    <span class="text-xs">
+                      {agentsBeingToppedUp.has(agent.id) ? 'Updating balance…' : 'Refreshing…'}
+                    </span>
+                  </div>
+                {:else if $mainerHealthStatuses.get(agent.id)?.isHealthy === false}
+                  <span class="text-sm font-medium text-gray-400">Balance unknown</span>
+                {:else}
+                  <div class="flex items-baseline gap-1.5">
+                    <span class="text-xl font-semibold text-white tabular-nums">
+                      {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 2, false)}
+                    </span>
+                    <span class="text-xs text-gray-500">T cycles</span>
+                    {#if agent.cycleBalance <= 1_000_000_000_000}
+                      <span class="text-[10px] font-medium text-red-400">Top-up recommended</span>
                     {/if}
                   </div>
-                </div>
-              </div>
-              
-              <!-- Bottom accent line -->
-              <div class="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-emerald-400 dark:via-emerald-500 to-transparent"></div>
-            </div>
-          </div>
+                {/if}
 
-          <div class="flex flex-col space-y-2 mb-2">
-            <!-- Daily Burn Rate Panel Component -->
-            <DailyBurnRatePanel 
-              {agent} 
-              {agentCanisterActors} 
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center w-8 h-8 text-gray-400 bg-white/4 hover:bg-agent-purple/15 hover:text-agent-purple rounded-lg border border-white/10 hover:border-agent-purple/30 transition-colors"
+                  class:opacity-50={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
+                  class:cursor-not-allowed={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
+                  disabled={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
+                  on:click={() => refreshAgentBalance(agent)}
+                  use:tooltip={{ text: "Refresh cycles balance", direction: 'top', textSize: 'xs' }}
+                >
+                  {#if agentsBeingRefreshed.has(agent.id)}
+                    <span class="w-3.5 h-3.5 border-2 border-agent-purple/30 border-t-agent-purple rounded-full animate-spin"></span>
+                  {:else}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  {/if}
+                </button>
+              </div>
+
+              {#if $mainerHealthStatuses.get(agent.id)?.isHealthy === true}
+                <button
+                  type="button"
+                  class="mt-4 w-full agent-btn-neon h-12! rounded-xl! text-sm font-semibold"
+                  class:opacity-50={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
+                  class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
+                  disabled={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
+                  on:click={() => openTopUpModal(agent)}
+                >
+                  {#if agentsBeingToppedUp.has(agent.id)}
+                    <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    <span>Processing…</span>
+                  {:else}
+                    <ArrowUp size={18} />
+                    <span>Top up</span>
+                  {/if}
+                </button>
+              {/if}
+
+              <p class="mt-2.5 text-[11px] leading-snug text-amber-200/90">
+                Top up only in this app — direct canister transfers incur high fees.
+              </p>
+            </div>
+
+            <DailyBurnRatePanel
+              {agent}
+              {agentCanisterActors}
               {agentCanistersInfo}
               isHealthy={$mainerHealthStatuses.get(agent.id)?.isHealthy ?? true}
               on:burnRateUpdated={handleBurnRateUpdate}
             />
-          </div>
 
-          <!-- Canister Info Component -->
-          <div class="flex flex-col space-y-2 mb-2">
             <CanisterInfo {agent} />
-          </div>
 
-          <div class="flex flex-col space-y-2 mb-2">
             <CyclesDisplayAgent cycles={agent.burnedCycles} label="Burned Cycles" />
-          </div>
-
         </div>
       </div>
     </div>
   {/if}
 {/each}
+
+</div>
 
 <!-- Top-Up Celebration Component -->
 <TopUpCelebration 
@@ -1631,7 +1620,7 @@
     }
     
     /* Better text wrapping on small screens */
-    .break-words {
+    .wrap-break-word {
       word-break: break-word;
       overflow-wrap: break-word;
     }

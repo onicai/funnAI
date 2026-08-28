@@ -1,6 +1,3 @@
-import { theme } from "../stores/store";
-import { get } from "svelte/store";
-
 export interface ChartTheme {
   backgroundColor: string;
   textColor: string;
@@ -11,32 +8,23 @@ export interface ChartTheme {
   accentColors: string[];
 }
 
-/**
- * Get theme-aware colors for charts
- */
-export function getChartTheme(): ChartTheme {
-  const currentTheme = get(theme);
-  const isDark = currentTheme === 'dark';
+const DARK_CHART_THEME: ChartTheme = {
+  backgroundColor: "#1f2937",
+  textColor: "#f9fafb",
+  gridColor: "#374151",
+  borderColor: "#4b5563",
+  primaryColor: "#8b5cf6",
+  secondaryColor: "#06b6d4",
+  accentColors: ["#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444", "#ec4899"],
+};
 
-  return {
-    backgroundColor: isDark ? '#1f2937' : '#ffffff',
-    textColor: isDark ? '#f9fafb' : '#111827',
-    gridColor: isDark ? '#374151' : '#e5e7eb',
-    borderColor: isDark ? '#4b5563' : '#d1d5db',
-    primaryColor: isDark ? '#8b5cf6' : '#7c3aed',
-    secondaryColor: isDark ? '#06b6d4' : '#0891b2',
-    accentColors: isDark 
-      ? ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899']
-      : ['#7c3aed', '#0891b2', '#059669', '#d97706', '#dc2626', '#db2777']
-  };
+export function getChartTheme(): ChartTheme {
+  return DARK_CHART_THEME;
 }
 
-/**
- * Common chart options with theme support
- */
-export function getBaseChartOptions(isDark: boolean = false) {
+export function getBaseChartOptions(_isDark: boolean = true) {
   const chartTheme = getChartTheme();
-  
+
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -47,59 +35,56 @@ export function getBaseChartOptions(isDark: boolean = false) {
           usePointStyle: true,
           padding: 20,
           font: {
-            size: 12
-          }
-        }
+            size: 12,
+          },
+        },
       },
       tooltip: {
-        backgroundColor: isDark ? '#374151' : '#ffffff',
+        backgroundColor: "#374151",
         titleColor: chartTheme.textColor,
         bodyColor: chartTheme.textColor,
         borderColor: chartTheme.borderColor,
         borderWidth: 1,
         cornerRadius: 8,
         displayColors: true,
-        mode: 'index' as const,
-        intersect: false
-      }
+        mode: "index" as const,
+        intersect: false,
+      },
     },
     scales: {
       x: {
         ticks: {
           color: chartTheme.textColor,
           font: {
-            size: 11
-          }
+            size: 11,
+          },
         },
         grid: {
           color: chartTheme.gridColor,
-          drawBorder: false
-        }
+          drawBorder: false,
+        },
       },
       y: {
         ticks: {
           color: chartTheme.textColor,
           font: {
-            size: 11
-          }
+            size: 11,
+          },
         },
         grid: {
           color: chartTheme.gridColor,
-          drawBorder: false
-        }
-      }
+          drawBorder: false,
+        },
+      },
     },
     interaction: {
-      mode: 'nearest' as const,
-      axis: 'x' as const,
-      intersect: false
-    }
+      mode: "nearest" as const,
+      axis: "x" as const,
+      intersect: false,
+    },
   };
 }
 
-/**
- * Format number for chart display
- */
 export function formatChartNumber(value: number, type: 'default' | 'percentage' | 'currency' | 'cycles' = 'default'): string {
   switch (type) {
     case 'percentage':
@@ -117,9 +102,6 @@ export function formatChartNumber(value: number, type: 'default' | 'percentage' 
   }
 }
 
-/**
- * Generate gradient for chart backgrounds
- */
 export function createGradient(ctx: CanvasRenderingContext2D, color: string, alpha: number = 0.2): CanvasGradient {
   const gradient = ctx.createLinearGradient(0, 0, 0, 400);
   gradient.addColorStop(0, color + Math.floor(alpha * 255).toString(16).padStart(2, '0'));
@@ -127,9 +109,6 @@ export function createGradient(ctx: CanvasRenderingContext2D, color: string, alp
   return gradient;
 }
 
-/**
- * Format date for chart labels
- */
 export function formatDateLabel(dateString: string, format: 'short' | 'medium' | 'long' = 'medium'): string {
   const date = new Date(dateString + 'T00:00:00');
   
@@ -149,9 +128,6 @@ export function formatDateLabel(dateString: string, format: 'short' | 'medium' |
   }
 }
 
-/**
- * Generate colors for pie/doughnut charts
- */
 export function generatePieColors(count: number): string[] {
   const chartTheme = getChartTheme();
   const colors = [];
@@ -163,9 +139,6 @@ export function generatePieColors(count: number): string[] {
   return colors;
 }
 
-/**
- * Create chart dataset with theme-aware styling
- */
 export function createDataset(
   label: string,
   data: number[],

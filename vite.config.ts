@@ -1,9 +1,13 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, loadEnv } from "vite";
 import path from "path";
-import dfxJson from "./dfx.json";
+import dfxJson from "./dfx.json" with { type: "json" };
 import fs from "fs";
+import { fileURLToPath } from "url";
 // PWA plugin removed to solve caching issues
+
+const __dirname = import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url));
 
 // Load environment variables from .env file
 const mode = process.env.NODE_ENV || 'development';
@@ -83,22 +87,18 @@ const canisterDefinitions = Object.entries(canisterIds).reduce(
 // See guide on how to configure Vite at:
 // https://vitejs.dev/config/
 export default defineConfig({
-      plugins: [
-      svelte()
-    ],
+      plugins: [tailwindcss(), svelte()],
   build: {
     target: "es2020",
     rollupOptions: {
       output: {
-        // Default Vite hashing for cache busting
-        manualChunks: {
-          // Vendor chunks for large libraries
-          'webllm': ['@mlc-ai/web-llm'],
-          'dfinity': ['@dfinity/agent', '@dfinity/auth-client', '@dfinity/candid', '@dfinity/principal', '@dfinity/identity', '@dfinity/ledger-icp', '@dfinity/utils'],
-          'qr-scanner': ['html5-qrcode', 'qrcode'],
-          'ui-libs': ['svelte-spa-router', 'lucide-svelte', 'svelte-portal'],
-          'markdown': ['marked']
-        }
+        manualChunks(id) {
+          if (id.includes("@mlc-ai/web-llm")) return "webllm";
+          if (id.includes("@dfinity/")) return "dfinity";
+          if (id.includes("html5-qrcode") || id.includes("/qrcode")) return "qr-scanner";
+          if (id.includes("svelte-spa-router") || id.includes("@lucide/svelte")) return "ui-libs";
+          if (id.includes("/marked")) return "markdown";
+        },
       }
     }
   },
@@ -133,6 +133,8 @@ export default defineConfig({
       isDev ? "development" : "production",
     ),
     "process.env.DFX_NETWORK": JSON.stringify(dfxNetwork),
-    global: process.env.NODE_ENV === "development" ? "globalThis" : "global",
+    // @dfinity/agent (and other Node-oriented deps) still reference `global`.
+    // Vite 8 / the browser do not provide it; always alias to globalThis.
+    global: "globalThis",
   },
 });

@@ -334,81 +334,92 @@
 
   function getRankClass(rank: number): string {
     switch (rank) {
-      case 1: return "text-yellow-600 dark:text-yellow-400";
-      case 2: return "text-gray-500 dark:text-gray-400";
-      case 3: return "text-orange-600 dark:text-orange-400";
-      default: return "text-blue-600 dark:text-blue-400";
+      case 1: return "text-amber-400";
+      case 2: return "text-gray-400";
+      case 3: return "text-orange-400";
+      default: return "text-agent-purple";
     }
   }
 </script>
 
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-  <div class="flex items-center justify-between mb-4">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-      {title}
-    </h3>
-    <div class="flex items-center gap-2">
-      {#if loading}
-        <div class="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
-      {/if}
-      <span class="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
+<div class="agent-card bg-agent-surface! p-6">
+  <div class="flex items-center justify-between mb-5">
+    <div>
+      <p class="agent-eyebrow">Leaderboard</p>
+      <h3 class="mt-1 text-base font-semibold tracking-tight text-white">{title}</h3>
+      <p class="mt-0.5 text-sm text-gray-500">
+        {variant === "user" ? "Performance of your mAIners" : "Network-wide rankings"}
+      </p>
+    </div>
+    <div class="flex items-center gap-2 shrink-0">
+      <span class="inline-flex h-4 w-4 items-center justify-center">
+        {#if loading}
+          <span class="h-4 w-4 border-2 border-agent-purple rounded-full border-t-transparent animate-spin"></span>
+        {/if}
+      </span>
+      <span class="inline-flex items-center rounded-full border border-white/10 bg-white/4 px-2.5 py-1 text-[11px] font-medium text-gray-400">
         {variant === "user" ? "My mAIners" : "Global"}
       </span>
     </div>
   </div>
 
   {#if error}
-    <div class="text-red-600 dark:text-red-400 text-sm mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+    <div class="text-red-400 text-sm mb-4 p-3 bg-red-950/40 rounded-xl border border-red-500/30">
       {error}
     </div>
   {/if}
 
   {#if !isAuthenticated && variant === "user"}
-    <div class="text-center py-8">
-      <div class="text-gray-400 mb-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      </div>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Connect your wallet to see your mAIner leaderboard</p>
-      <p class="text-xs text-gray-400 dark:text-gray-500">
-        Requires at least {MIN_FUNNAI_REQUIRED} FUNNAI tokens
-      </p>
+    <div class="rounded-xl border border-white/6 bg-white/2 px-4 py-8 text-center">
+      <p class="text-sm text-gray-400 mb-1">Connect your wallet to see your mAIner leaderboard</p>
+      <p class="text-xs text-gray-500">Requires at least {MIN_FUNNAI_REQUIRED} FUNNAI tokens</p>
     </div>
   {:else if isAuthenticated && shouldShowLoadingForWallet && variant === "user"}
     <div class="text-center py-8">
-      <div class="text-blue-400 mb-2">
-        <div class="animate-spin h-8 w-8 mx-auto border-4 border-blue-500 rounded-full border-t-transparent"></div>
+      <div class="text-agent-purple mb-2">
+        <div class="animate-spin h-8 w-8 mx-auto border-4 border-agent-purple rounded-full border-t-transparent"></div>
       </div>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+      <p class="text-sm text-gray-400 mb-2">
         Loading wallet data...
       </p>
-      <p class="text-xs text-gray-400 dark:text-gray-500">
+      <p class="text-xs text-gray-500">
         Checking FUNNAI balance for leaderboard access
       </p>
     </div>
   {:else if isAuthenticated && !hasEnoughFunnai && !shouldShowLoadingForWallet && variant === "user"}
     <div class="text-center py-8">
-      <div class="text-orange-400 mb-2">
+      <div class="text-amber-400 mb-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
         </svg>
       </div>
-      <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+      <p class="text-sm text-gray-400 mb-2">
         You need at least {MIN_FUNNAI_REQUIRED} FUNNAI tokens to access the mAIner leaderboard
       </p>
-      <p class="text-xs text-gray-400 dark:text-gray-500">
+      <p class="text-xs text-gray-500">
         Your balance: {userFunnaiBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })} FUNNAI
       </p>
     </div>
+  {:else if $store.userMainersLoadStatus === 'error'}
+    <div class="text-center py-8">
+      <p class="text-sm text-amber-200 mb-2">Couldn't load your mAIners</p>
+      <p class="text-xs text-gray-500 mb-4">This is not an empty list — the query failed.</p>
+      <button
+        type="button"
+        class="agent-btn-ghost h-8! px-3! text-xs!"
+        on:click={() => store.loadUserMainerCanisters()}
+      >
+        Retry
+      </button>
+    </div>
   {:else if leaderboardData.length === 0 && !loading}
     <div class="text-center py-8">
-      <div class="text-gray-400 mb-2">
+      <div class="text-gray-500 mb-2">
         <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2z" />
         </svg>
       </div>
-      <p class="text-sm text-gray-500 dark:text-gray-400">
+      <p class="text-sm text-gray-400">
         {variant === "user" ? "No mAIners found or no performance data available" : "Global leaderboard not yet available"}
       </p>
     </div>
@@ -416,70 +427,70 @@
     <div class="overflow-x-auto">
       <table class="w-full min-w-full">
         <thead>
-          <tr class="border-b border-gray-200 dark:border-gray-700">
-            <th class="text-left py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+          <tr class="border-b border-white/8">
+            <th class="text-left py-3 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Rank
             </th>
-            <th class="text-left py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+            <th class="text-left py-3 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               mAIner
             </th>
-            <!-- <th class="text-right py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+            <!-- <th class="text-right py-3 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Winnings
             </th> -->
-            <th class="text-center py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+            <th class="text-center py-3 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Avg Score
             </th>
-            <th class="text-center py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+            <th class="text-center py-3 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Best Score
             </th>
-            <th class="text-center py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+            <th class="text-center py-3 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Submissions
             </th>
-            <th class="text-center py-3 px-2 text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+            <th class="text-center py-3 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Recent
             </th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        <tbody class="divide-y divide-white/8">
           {#each leaderboardData as entry (entry.id)}
-            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <tr class="hover:bg-white/3 transition-colors">
               <td class="py-3 px-2">
                 <div class="flex items-center gap-2">
                   <span class="text-lg {getRankClass(entry.rank)}">
                     {getRankIcon(entry.rank)}
                   </span>
-                  <span class="text-sm font-medium text-gray-900 dark:text-white">
+                  <span class="text-sm font-medium text-white">
                     #{entry.rank}
                   </span>
                 </div>
               </td>
               <td class="py-3 px-2">
-                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                <div class="text-sm font-medium text-white">
                   {entry.name}
                 </div>
               </td>
               <!-- <td class="py-3 px-2 text-right">
-                <div class="text-sm font-semibold text-green-600 dark:text-green-400">
+                <div class="text-sm font-semibold text-emerald-400">
                   {formatFunnaiAmount(entry.winnings)} FUNNAI
                 </div>
               </td> -->
               <td class="py-3 px-2 text-center">
-                <div class="text-sm text-gray-900 dark:text-white">
+                <div class="text-sm text-white">
                   {entry.averageScore > 0 ? entry.averageScore.toFixed(1) : "—"}
                 </div>
               </td>
               <td class="py-3 px-2 text-center">
-                <div class="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                <div class="text-sm text-agent-purple font-medium">
                   {entry.bestScore > 0 ? entry.bestScore : "—"}
                 </div>
               </td>
               <td class="py-3 px-2 text-center">
-                <div class="text-sm text-gray-900 dark:text-white">
+                <div class="text-sm text-white">
                   {entry.totalSubmissions}
                 </div>
               </td>
               <td class="py-3 px-2 text-center">
-                <div class="text-sm text-orange-600 dark:text-orange-400">
+                <div class="text-sm text-gray-400">
                   {entry.recentSubmissions}
                 </div>
               </td>

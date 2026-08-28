@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { Doughnut } from 'svelte-chartjs';
-  import { theme } from '../../stores/store';
   import { DailyMetricsService, type DailyMetricsData } from '../../helpers/DailyMetricsService';
   import { getBaseChartOptions, generatePieColors, formatChartNumber, getChartTheme } from '../../helpers/chartUtils';
 
@@ -21,7 +20,7 @@
   let latestMetrics: DailyMetricsData | null = null;
 
   // Theme reactivity
-  $: isDark = $theme === 'dark';
+  const isDark = true;
   $: chartTheme = getChartTheme();
   $: chartOptions = {
     responsive: true,
@@ -186,43 +185,43 @@
 
 </script>
 
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+<div class="agent-card p-6">
   <div class="flex items-center justify-between mb-4">
     <div>
-      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+      <h3 class="text-lg font-semibold text-white">
         {title}
       </h3>
       {#if latestMetrics}
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        <p class="text-xs text-gray-500 mt-1">
           Data from {new Date(latestMetrics.metadata.date + 'T00:00:00').toLocaleDateString()}
         </p>
       {/if}
     </div>
     <div class="flex items-center gap-2">
       {#if loading}
-        <div class="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+        <div class="animate-spin h-4 w-4 border-2 border-agent-purple rounded-full border-t-transparent"></div>
       {/if}
     </div>
   </div>
 
   {#if error}
-    <div class="text-red-600 dark:text-red-400 text-sm mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+    <div class="text-red-400 text-sm mb-4 p-3 bg-red-950/40 rounded-lg border border-red-500/40">
       {error}
     </div>
   {/if}
 
   <div class="relative" style="height: {height}">
     {#if loading}
-      <div class="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div class="absolute inset-0 flex items-center justify-center bg-agent-surface/80 rounded-lg">
         <div class="text-center">
-          <div class="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent mx-auto mb-2"></div>
-          <p class="text-sm text-gray-500 dark:text-gray-400">Loading chart data...</p>
+          <div class="animate-spin h-8 w-8 border-4 border-agent-purple rounded-full border-t-transparent mx-auto mb-2"></div>
+          <p class="text-sm text-gray-400">Loading chart data...</p>
         </div>
       </div>
     {:else if !error && chartData.labels.length > 0}
       <Doughnut data={chartData} options={chartOptions} />
     {:else if !error}
-      <div class="absolute inset-0 flex items-center justify-center text-gray-500 dark:text-gray-400">
+      <div class="absolute inset-0 flex items-center justify-center text-gray-500">
         <div class="text-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
@@ -236,17 +235,17 @@
 
   <!-- Summary stats below the chart -->
   {#if latestMetrics && !loading && !error}
-    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+    <div class="mt-4 pt-4 border-t border-white/8">
       <div class="grid grid-cols-2 gap-4 text-sm">
         <div>
-          <span class="text-gray-600 dark:text-gray-400">Total Active:</span>
-          <span class="font-medium text-gray-900 dark:text-white ml-2">
+          <span class="text-gray-400">Total Active:</span>
+          <span class="font-medium text-white ml-2">
             {formatChartNumber(latestMetrics.mainers.totals.active)}
           </span>
         </div>
         <div>
-          <span class="text-gray-600 dark:text-gray-400">Active %:</span>
-          <span class="font-medium text-green-600 dark:text-green-400 ml-2">
+          <span class="text-gray-400">Active %:</span>
+          <span class="font-medium text-emerald-400 ml-2">
             {formatChartNumber(latestMetrics.derived_metrics.active_percentage, 'percentage')}
           </span>
         </div>

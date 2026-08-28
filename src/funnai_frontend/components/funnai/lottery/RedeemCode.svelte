@@ -48,7 +48,7 @@
 </script>
 
 <div>
-  <h3 class="text-base font-semibold mb-2 text-gray-800 dark:text-white">Redeem Access Code</h3>
+  <h3 class="text-base font-semibold mb-2 text-white">Redeem Access Code</h3>
   <div class="relative">
     <form on:submit|preventDefault={redeemCode} class="flex items-center">
       <div class="relative w-full">
@@ -57,7 +57,7 @@
           bind:value={code}
           bind:this={inputElement}
           placeholder="Enter access code" 
-          class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+          class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 bg-gray-700 border-gray-600 placeholder-gray-400 text-white focus:ring-blue-500 focus:border-blue-500"
           disabled={isSubmitting}
           autofocus
           use:focusOnInit
@@ -65,7 +65,7 @@
       </div>
       <button 
         type="submit" 
-        class="p-2.5 ms-2 text-sm font-medium text-white bg-blue-700 rounded-lg border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+        class="p-2.5 ms-2 text-sm font-medium text-white bg-blue-700 rounded-lg border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-hidden focus:ring-blue-300 hover:bg-blue-700 focus:ring-blue-800"
         disabled={isSubmitting}
       >
         {#if isSubmitting}
@@ -92,7 +92,7 @@
       <div class="text-xs text-green-600 mt-1">{success}</div>
     {/if}
   </div>
-  <div class="text-xs text-gray-500 mt-2 dark:text-gray-400">
+  <div class="text-xs text-gray-500 mt-2 text-gray-400">
     Enter your access code to redeem lottery entries and discounts for mAIner creation.
   </div>
 </div> 

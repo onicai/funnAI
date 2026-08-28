@@ -138,9 +138,7 @@ export class IcrcService {
       };
     } catch (error) {
       console.error(`Error getting ICRC1 balance for ${token.symbol}: `, error);
-      return separateBalances
-        ? { default: BigInt(0), subaccount: BigInt(0) }
-        : BigInt(0);
+      throw error;
     }
   }
 
@@ -154,12 +152,14 @@ export class IcrcService {
         `${token.canister_id}-${principal.toString()}-${Date.now() - (Date.now() % 5000)}`,
     );
 
+    const bypassCache = tokens.some((token) => Boolean((token as FE.Token & { timestamp?: number }).timestamp));
+
     // Check if any of these exact tokens are already being fetched
     const pendingPromises = requestKeys
       .map((key) => this.pendingRequests.get(key))
       .filter(Boolean);
 
-    if (pendingPromises.length === tokens.length) {
+    if (!bypassCache && pendingPromises.length === tokens.length) {
       // All tokens are already being fetched, wait for them
       const results = await Promise.all(pendingPromises);
       return new Map([...results.flatMap((m) => [...m.entries()])]);
@@ -220,13 +220,13 @@ export class IcrcService {
                 principal,
                 subaccount,
               );
-              return { token, balance };
+              return { token, balance, ok: true as const };
             } catch (error) {
               console.error(
                 `Failed to get balance for ${token.symbol}: `,
                 error,
               );
-              return { token, balance: BigInt(0) };
+              return { token, balance: null, ok: false as const };
             }
           });
 
@@ -234,7 +234,7 @@ export class IcrcService {
           const balances = await this.withConcurrencyLimit(operations, 25);
 
           balances.forEach((result) => {
-            if (result) {
+            if (result && result.ok) {
               const { token, balance } = result;
               results.set(
                 token.canister_id,
@@ -361,6 +361,27 @@ export class IcrcService {
     }
   }
 
+  private static extractExpectedFee(err: unknown): bigint | null {
+    if (!err || typeof err !== "object" || !("BadFee" in err)) {
+      return null;
+    }
+
+    const badFee = (err as { BadFee?: { expected_fee?: unknown } }).BadFee;
+    const expected = badFee?.expected_fee;
+    if (expected === undefined || expected === null) {
+      return null;
+    }
+
+    try {
+      if (typeof expected === "object" && expected !== null && "e8s" in expected) {
+        return BigInt((expected as { e8s: bigint | number | string }).e8s);
+      }
+      return BigInt(expected as bigint | number | string);
+    } catch {
+      return null;
+    }
+  }
+
   public static async getTokenFee(token: FE.Token): Promise<bigint> {
     try {
       const actor = await store.getActor(token.canister_id, canisterIDLs.icrc1, {
@@ -371,7 +392,7 @@ export class IcrcService {
       return await actor.icrc1_fee();
     } catch (error) {
       console.error(`Error getting token fee for ${token.symbol}: `, error);
-      return BigInt(10000); // Fallback to default fee
+      throw error;
     }
   }
 
@@ -401,80 +422,102 @@ export class IcrcService {
     } = {},
   ) {
     try {
-      // If it's an ICP transfer to an account ID
-      if (
-        token.symbol === "ICP" &&
-        typeof to === "string" &&
-        to.length === 64
-      ) {
-        const wallet = storeState.isAuthed;
-        if (wallet === "oisy") {
-          return { Err: "Oisy subaccount transfer is temporarily disabled." };
-        }
-        const ledgerActor = await store.getActor(token.canister_id, canisterIDLs.ICP, {
-          anon: false,
-          requiresSigning: true,
-        });
+      const fee = opts.fee === 0n ? 0n : await this.getTokenFee(token);
+      const result = await this.executeTransfer(token, to, amount, { ...opts, fee });
 
-        const transfer_args = {
-          to: this.hex2Bytes(to),
-          amount: { e8s: amount },
-          fee: { e8s: BigInt(token.fee_fixed) },
-          memo: 0n,
-          from_subaccount: opts.fromSubaccount
-            ? [Array.from(opts.fromSubaccount)]
-            : [],
-          created_at_time: opts.createdAtTime
-            ? [{ timestamp_nanos: opts.createdAtTime }]
-            : [],
-        };
+      const expectedFee = result && typeof result === "object" && "Err" in result
+        ? this.extractExpectedFee((result as { Err: unknown }).Err)
+        : null;
 
-        return await ledgerActor.transfer(transfer_args);
+      if (expectedFee !== null && expectedFee !== fee) {
+        console.warn(
+          `Retrying ${token.symbol} transfer with ledger expected fee ${expectedFee.toString()} (was ${fee.toString()})`,
+        );
+        return await this.executeTransfer(token, to, amount, { ...opts, fee: expectedFee });
       }
 
-      // For all other cases (ICRC1 transfers to principals)
-      console.log(`Creating ICRC1 actor for token ${token.symbol} (${token.canister_id})`);
-      const actor = await store.getActor(token.canister_id, canisterIDLs.icrc1, {
-        anon: false,
-        requiresSigning: true,
-      });
-
-      let fee = BigInt(token.fee_fixed);
-
-      if (opts?.fee === 0n) {
-        fee = opts.fee;
-      };
-
-      const transferArgs = {
-        to: {
-          owner: typeof to === "string" ? Principal.fromText(to) : to,
-          subaccount: [],
-        },
-        amount,
-        fee: [fee],
-        memo: opts.memo ? [opts.memo] : [],
-        from_subaccount: opts.fromSubaccount ? [opts.fromSubaccount] : [],
-        created_at_time: opts.createdAtTime ? [opts.createdAtTime] : [],
-      };
-      
-      console.log(`Calling icrc1_transfer for ${token.symbol}:`, {
-        to: transferArgs.to.owner.toString(),
-        amount: amount.toString(),
-        fee: fee.toString(),
-      });
-
-      const result = await actor.icrc1_transfer(transferArgs);
-      console.log(`Transfer result for ${token.symbol}:`, result);
       return result;
     } catch (error) {
       console.error(`Transfer error for ${token.symbol}:`, error);
-      // Log more details about the error
       if (error instanceof Error) {
         console.error("Error message:", error.message);
         console.error("Error stack:", error.stack);
       }
       return { Err: error };
     }
+  }
+
+  private static async executeTransfer(
+    token: FE.Token,
+    to: string | Principal,
+    amount: bigint,
+    opts: {
+      memo?: number[];
+      fee?: bigint;
+      fromSubaccount?: number[];
+      createdAtTime?: bigint;
+    },
+  ) {
+    const fee = opts.fee ?? 0n;
+
+    // If it's an ICP transfer to an account ID
+    if (
+      token.symbol === "ICP" &&
+      typeof to === "string" &&
+      to.length === 64
+    ) {
+      const wallet = storeState.isAuthed;
+      if (wallet === "oisy") {
+        return { Err: "Oisy subaccount transfer is temporarily disabled." };
+      }
+      const ledgerActor = await store.getActor(token.canister_id, canisterIDLs.ICP, {
+        anon: false,
+        requiresSigning: true,
+      });
+
+      const transfer_args = {
+        to: this.hex2Bytes(to),
+        amount: { e8s: amount },
+        fee: { e8s: fee },
+        memo: 0n,
+        from_subaccount: opts.fromSubaccount
+          ? [Array.from(opts.fromSubaccount)]
+          : [],
+        created_at_time: opts.createdAtTime
+          ? [{ timestamp_nanos: opts.createdAtTime }]
+          : [],
+      };
+
+      return await ledgerActor.transfer(transfer_args);
+    }
+
+    console.log(`Creating ICRC1 actor for token ${token.symbol} (${token.canister_id})`);
+    const actor = await store.getActor(token.canister_id, canisterIDLs.icrc1, {
+      anon: false,
+      requiresSigning: true,
+    });
+
+    const transferArgs = {
+      to: {
+        owner: typeof to === "string" ? Principal.fromText(to) : to,
+        subaccount: [],
+      },
+      amount,
+      fee: [fee],
+      memo: opts.memo ? [opts.memo] : [],
+      from_subaccount: opts.fromSubaccount ? [opts.fromSubaccount] : [],
+      created_at_time: opts.createdAtTime ? [opts.createdAtTime] : [],
+    };
+
+    console.log(`Calling icrc1_transfer for ${token.symbol}:`, {
+      to: transferArgs.to.owner.toString(),
+      amount: amount.toString(),
+      fee: fee.toString(),
+    });
+
+    const result = await actor.icrc1_transfer(transferArgs);
+    console.log(`Transfer result for ${token.symbol}:`, result);
+    return result;
   }
 
   // to byte array

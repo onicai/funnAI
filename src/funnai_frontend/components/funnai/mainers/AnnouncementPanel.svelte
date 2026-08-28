@@ -7,17 +7,24 @@
   export let onClose: (() => void) | undefined = undefined;
   
   const variantStyles = {
-    info: "bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-500/10 dark:to-purple-500/10 border-blue-400 dark:border-blue-500/30",
-    warning: "bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-500/10 dark:to-orange-500/10 border-yellow-400 dark:border-yellow-500/30",
-    success: "bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-500/10 dark:to-emerald-500/10 border-green-400 dark:border-green-500/30",
-    announcement: "bg-gradient-to-r from-pink-100 to-purple-100 dark:from-pink-500/10 dark:to-purple-500/10 border-pink-400 dark:border-pink-500/30"
+    info: "border-white/10 bg-white/3",
+    warning: "border-amber-500/30 bg-amber-500/5",
+    success: "border-emerald-500/30 bg-emerald-500/5",
+    announcement: "border-agent-purple/30 bg-agent-purple/5"
   };
   
   const iconStyles = {
-    info: "text-blue-600 dark:text-blue-400",
-    warning: "text-yellow-600 dark:text-yellow-400",
-    success: "text-green-600 dark:text-green-400",
-    announcement: "text-pink-600 dark:text-pink-400"
+    info: "text-agent-purple",
+    warning: "text-amber-400",
+    success: "text-emerald-400",
+    announcement: "text-agent-purple"
+  };
+
+  const iconBgStyles = {
+    info: "border-white/10 bg-white/3",
+    warning: "border-amber-500/30 bg-amber-500/10",
+    success: "border-emerald-500/30 bg-emerald-500/10",
+    announcement: "border-agent-purple/20 bg-agent-purple/15"
   };
   
   function handleClose() {
@@ -28,12 +35,12 @@
 </script>
 
 {#if isVisible}
-  <div class="announcement-panel {variantStyles[variant]} border rounded-lg p-6 mb-6 backdrop-blur-sm relative">
+  <div class="agent-card {variantStyles[variant]} p-5 sm:p-6 mb-6 relative">
     <!-- Close Button -->
     {#if onClose}
       <button
         on:click={handleClose}
-        class="absolute top-3 right-3 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition-colors p-1 rounded-full hover:bg-gray-200/50 dark:hover:bg-white/10"
+        class="absolute top-3 right-3 text-gray-500 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/6"
         aria-label="Close announcement"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,20 +51,36 @@
     
     <div class="flex items-start gap-4">
       <!-- Icon/Visual Element -->
-      <div class="flex-shrink-0">
-        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-2xl animate-pulse">
-          🦜
+      <div class="shrink-0">
+        <div class="w-10 h-10 rounded-xl border {iconBgStyles[variant]} flex items-center justify-center">
+          {#if variant === "warning"}
+            <svg class="w-5 h-5 {iconStyles[variant]}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          {:else if variant === "success"}
+            <svg class="w-5 h-5 {iconStyles[variant]}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          {:else if variant === "announcement"}
+            <svg class="w-5 h-5 {iconStyles[variant]}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+            </svg>
+          {:else}
+            <svg class="w-5 h-5 {iconStyles[variant]}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          {/if}
         </div>
       </div>
       
       <!-- Content -->
-      <div class="flex-1 pr-8">
+      <div class="flex-1 {onClose ? 'pr-8' : ''}">
         {#if title}
-          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 {iconStyles[variant]}">{title}</h3>
+          <h3 class="text-lg font-semibold text-white mb-2">{title}</h3>
         {/if}
         
         {#if subtitle}
-          <p class="text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">{subtitle}</p>
+          <p class="text-gray-400 mb-4 leading-relaxed text-sm">{subtitle}</p>
         {/if}
         
         {#if items.length > 0}
@@ -65,9 +88,9 @@
             {#each items as item}
               <li class="flex items-start gap-3">
                 {#if item.icon}
-                  <span class="text-xl flex-shrink-0">{item.icon}</span>
+                  <span class="text-sm shrink-0 text-gray-500">{item.icon}</span>
                 {/if}
-                <span class="text-gray-800 dark:text-gray-200 leading-relaxed">{item.text}</span>
+                <span class="text-gray-300 leading-relaxed text-sm">{item.text}</span>
               </li>
             {/each}
           </ul>
@@ -76,39 +99,3 @@
     </div>
   </div>
 {/if}
-
-<style>
-  .announcement-panel {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-  }
-  
-  :global(.dark) .announcement-panel {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  }
-  
-  .announcement-panel:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
-  }
-  
-  :global(.dark) .announcement-panel:hover {
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
-  }
-  
-  @keyframes pulse {
-    0%, 100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.8;
-      transform: scale(1.05);
-    }
-  }
-  
-  .animate-pulse {
-    animation: pulse 2s ease-in-out infinite;
-  }
-</style>
-

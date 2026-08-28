@@ -1,188 +1,155 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { store, theme } from "../../stores/store";
-  import { link, location } from 'svelte-spa-router';
+  import { store } from "../../stores/store";
+  import { link } from 'svelte-spa-router';
   import LoginModal from '../login/LoginModal.svelte';
+  import {
+    ShoppingCart,
+    ChevronDown,
+    LogOut,
+    User,
+  } from '@lucide/svelte';
 
-  let visibleInstallAppToast = false;
-  let navigationDropdownOpen = false;
-
-  const showInstallAppToast = () => {
-    visibleInstallAppToast = true;
-    // Automatically hide the toast
-    setTimeout(() => {
-      visibleInstallAppToast = false;
-    }, 8000);
-  };
-
+  let accountDropdownOpen = false;
   let modalIsOpen = false;
 
   const toggleModal = () => {
     modalIsOpen = !modalIsOpen;
   };
 
-  const toggleNavigationDropdown = (event: Event) => {
+  const toggleAccountDropdown = (event: Event) => {
     event.stopPropagation();
-    navigationDropdownOpen = !navigationDropdownOpen;
+    accountDropdownOpen = !accountDropdownOpen;
   };
 
-  const closeNavigationDropdown = () => {
-    navigationDropdownOpen = false;
+  const closeAccountDropdown = () => {
+    accountDropdownOpen = false;
   };
 
   async function disconnect() {
     await store.disconnect();
   }
 
-  // Navigation items
-  const navItems = [
-    { href: '/', label: 'mAIners', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', color: 'purple' },
-    { href: '/dashboard', label: 'Dashboard', icon: 'M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2', color: 'blue' },
-    { href: '/wallet', label: 'Wallet', icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z', color: 'orange' },
-    { href: '/marketplace', label: 'Marketplace', icon: 'M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z', color: 'emerald' },
-    { href: '/store', label: 'App Store', icon: 'M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z', color: 'indigo' },
-  ];
-
-  // Reactive current path
-  $: currentPath = $location;
-
-  // Function to initialize dropdown and sidebar functionality
-  const initializeDropdown = () => {
-    document.body.addEventListener('click', function (event) {
-      const target = event.target as Node;
-      const navDropdown = document.getElementById('navigationDropdown');
-      const navDropdownButton = document.getElementById('navigationDropdownButton');
-      
-      if (navDropdown && navDropdownButton && 
-          !navDropdown.contains(target) && 
-          !navDropdownButton.contains(target)) {
-        closeNavigationDropdown();
-      }
-    });
-  };
+  $: principalShort = $store.principal
+    ? `${$store.principal.toText().slice(0, 5)}…${$store.principal.toText().slice(-3)}`
+    : 'Account';
 
   onMount(() => {
-    initializeDropdown();
+    document.body.addEventListener('click', function (event) {
+      const target = event.target as Node;
+      const dropdown = document.getElementById('accountDropdown');
+      const button = document.getElementById('accountDropdownButton');
+
+      if (
+        dropdown &&
+        button &&
+        !dropdown.contains(target) &&
+        !button.contains(target)
+      ) {
+        closeAccountDropdown();
+      }
+    });
   });
 </script>
 
-<div class="flex items-center justify-center w-full relative">
-  <!-- Navigation & Auth - Right side -->
-  <div class="ml-auto flex items-center gap-3">
-    <!-- Buy mAIner Button -->
+<div class="flex items-center justify-center w-full relative font-sans">
+  <div class="ml-auto flex items-center gap-2.5">
     <a
       use:link
       href="/marketplace"
-      class="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium text-sm transition-all duration-200 shadow-md hover:shadow-lg no-underline"
+      class="agent-btn-neon agent-btn-neon-pink no-underline"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-      </svg>
+      <ShoppingCart class="w-3.5 h-3.5 stroke-[1.75]" />
       <span>Buy mAIner</span>
     </a>
 
-    <!-- Navigation Dropdown -->
     {#if $store.isAuthed}
-      <div class="relative">
+      <div class="relative z-80">
         <button
-          id="navigationDropdownButton"
-          on:click={toggleNavigationDropdown}
-          class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 text-gray-700 dark:text-gray-200"
+          id="accountDropdownButton"
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={accountDropdownOpen}
+          on:click={toggleAccountDropdown}
+          class="agent-btn-ghost sm:min-w-38"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-          <span class="hidden sm:inline text-sm font-medium">Menu</span>
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 transition-transform {navigationDropdownOpen ? 'rotate-180' : ''}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-          </svg>
+          <User class="w-3.5 h-3.5 stroke-[1.75] text-gray-400 shrink-0" />
+          <span class="hidden sm:inline w-22 truncate text-left">{principalShort}</span>
+          <ChevronDown
+            class="w-3.5 h-3.5 stroke-[1.75] text-gray-500 shrink-0 transition-transform duration-200 {accountDropdownOpen ? 'rotate-180' : ''}"
+          />
         </button>
 
-        <!-- Dropdown Menu -->
-        {#if navigationDropdownOpen}
+        {#if accountDropdownOpen}
+          <button
+            type="button"
+            class="fixed inset-0 z-90 cursor-default bg-black/20"
+            aria-label="Close account menu"
+            on:click={closeAccountDropdown}
+          ></button>
+
           <div
-            id="navigationDropdown"
-            class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50 animate-slideDown"
+            id="accountDropdown"
+            role="menu"
+            class="absolute right-0 top-full mt-2 w-52 z-100 overflow-hidden rounded-2xl border border-white/10 bg-agent-elevated shadow-[0_20px_50px_rgba(0,0,0,0.55)] animate-slideDown"
           >
-            {#each navItems as item}
-              <a
-                use:link
-                href={item.href}
-                on:click={closeNavigationDropdown}
-                class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 {currentPath === item.href ? 'bg-gray-50 dark:bg-gray-700 border-l-4 border-' + item.color + '-500' : ''}"
+            <div class="border-b border-white/6 px-4 py-3">
+              <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Account</p>
+              {#if $store.principal}
+                <p class="mt-1.5 font-mono text-[11px] text-gray-400 truncate" title={$store.principal.toText()}>
+                  {$store.principal.toText()}
+                </p>
+              {/if}
+            </div>
+
+            <div class="p-1.5">
+              <button
+                type="button"
+                role="menuitem"
+                on:click={() => {
+                  disconnect();
+                  closeAccountDropdown();
+                }}
+                class="group flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-red-400 transition-colors duration-150 hover:bg-red-500/10"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-{item.color}-600 dark:text-{item.color}-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={item.icon} />
-                </svg>
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-200">{item.label}</span>
-                {#if currentPath === item.href}
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 ml-auto text-{item.color}-600 dark:text-{item.color}-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                {/if}
-              </a>
-            {/each}
-            
-            <!-- Separator -->
-            <div class="border-t border-gray-200 dark:border-gray-700 my-2"></div>
-            
-            <!-- Logout Button -->
-            <button
-              on:click={() => { disconnect(); closeNavigationDropdown(); }}
-              class="flex items-center gap-3 px-4 py-2.5 w-full text-left hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-150"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              <span class="text-sm font-medium text-red-600 dark:text-red-400">Logout</span>
-            </button>
+                <LogOut class="w-4 h-4 stroke-[1.75] text-red-400/80 group-hover:text-red-300" />
+                <span class="text-[13px] font-medium tracking-tight">Logout</span>
+              </button>
+            </div>
           </div>
         {/if}
       </div>
     {/if}
 
-    <!-- Connect/Login Button -->
     {#if !$store.isAuthed}
       <button
         type="button"
         on:click={toggleModal}
-        class="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-medium text-sm transition-all duration-200 shadow-md hover:shadow-lg"
+        class="agent-btn-neon agent-btn-neon-cyan"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-        </svg>
         <span>Connect</span>
       </button>
     {/if}
   </div>
 </div>
 
-<!-- Main modal -->
-<div class={modalIsOpen ? "" : "hidden"}>
+{#if modalIsOpen}
   <LoginModal {toggleModal} />
-</div>
+{/if}
 
 <style>
   @keyframes slideDown {
     from {
       opacity: 0;
-      transform: translateY(-10px);
+      transform: translateY(-8px) scale(0.98);
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateY(0) scale(1);
     }
   }
 
   .animate-slideDown {
-    animation: slideDown 0.2s ease-out;
-  }
-
-  /* Improve touch targets on mobile */
-  @media (max-width: 640px) {
-    button, a {
-      min-height: 44px;
-    }
+    animation: slideDown 0.18s ease-out;
   }
 </style>
-

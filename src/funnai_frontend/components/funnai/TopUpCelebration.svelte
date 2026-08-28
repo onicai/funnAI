@@ -124,7 +124,7 @@
 {#if isVisible}
   <!-- Full-screen overlay -->
   <div 
-    class="fixed inset-0 z-[200000] bg-black/20 backdrop-blur-sm flex items-center justify-center"
+    class="fixed inset-0 z-200000 bg-black/70 flex items-center justify-center"
     transition:fade={{ duration: 300 }}
     on:click={stopCelebration}
     on:keydown={(e) => { if (e.key === 'Escape') { stopCelebration(); } }}
@@ -135,7 +135,7 @@
     <div bind:this={confettiContainer} class="absolute inset-0 pointer-events-none overflow-hidden">
       {#each confettiPieces as piece (piece.id)}
         <div
-          class="absolute w-3 h-3 rounded-sm opacity-90"
+          class="absolute w-2 h-2 rounded-xs opacity-70"
           style="
             left: {piece.x}px;
             top: {piece.y}px;
@@ -149,80 +149,73 @@
 
     <!-- Main celebration content -->
     <div 
-      class="relative z-10 text-center p-8 max-w-md mx-4"
+      class="relative z-10 text-center p-8 max-w-md mx-4 rounded-2xl bg-agent-elevated border border-white/10 shadow-[0_0_60px_rgba(139,124,246,0.15)]"
       transition:scale={{ duration: 600, easing: elasticOut }}
+      on:click|stopPropagation
+      on:keydown|stopPropagation
+      role="dialog"
+      aria-label="Maximum top-up celebration"
     >
-      <!-- Party Parrot -->
-      <div class="mb-6 flex justify-center">
-        <div class="relative">
-          <img 
-            src="/party-parrot.gif" 
-            alt="Party Parrot" 
-            class="w-32 h-32 sm:w-40 sm:h-40 object-contain drop-shadow-2xl animate-bounce"
-          />
-          <!-- Glow effect -->
-          <div class="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-pink-400/20 to-purple-400/20 rounded-full blur-xl animate-pulse"></div>
+      <!-- Soft purple glow -->
+      <div class="pointer-events-none absolute inset-0 rounded-2xl overflow-hidden">
+        <div class="absolute -top-16 left-1/2 -translate-x-1/2 w-48 h-48 bg-agent-purple/20 rounded-full blur-3xl"></div>
+      </div>
+
+      <div class="relative">
+        <!-- Party Parrot -->
+        <div class="mb-6 flex justify-center">
+          <div class="relative">
+            <img 
+              src="/party-parrot.gif" 
+              alt="Party Parrot" 
+              class="w-28 h-28 sm:w-32 sm:h-32 object-contain celebration-mascot"
+            />
+            <div class="absolute inset-0 bg-agent-purple/15 rounded-full blur-xl"></div>
+          </div>
         </div>
-      </div>
 
-      <!-- Celebration text -->
-      <div class="text-white drop-shadow-lg">
-        <h1 class="text-4xl sm:text-6xl font-bold mb-4 animate-pulse">
-          🎉 MAXIMUM TOP-UP! 🎉
-        </h1>
-        <p class="text-xl sm:text-2xl font-semibold mb-2 text-yellow-300">
-          Incredible! You topped up the maximum amount!
-        </p>
-        <p class="text-lg sm:text-xl text-blue-200">
-          {amount} {token} = ULTIMATE POWER! 💪
-        </p>
-        <p class="text-sm sm:text-base text-gray-300 mt-4 opacity-80">
-          You're officially a top-tier mAIner legend! 🏆
-        </p>
-      </div>
+        <!-- Celebration text -->
+        <div class="text-gray-100">
+          <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight text-white mb-3">
+            Maximum Top-Up
+          </h1>
+          <p class="text-base sm:text-lg text-gray-300 mb-2">
+            You topped up the maximum amount
+          </p>
+          <p class="text-lg sm:text-xl font-semibold text-agent-purple">
+            {amount} {token}
+          </p>
+          <p class="text-sm text-gray-400 mt-4">
+            Top-tier mAIner status unlocked
+          </p>
+        </div>
 
-      <!-- Additional party elements -->
-      <div class="mt-8 flex justify-center space-x-4 text-4xl animate-bounce">
-        <span style="animation-delay: 0.1s">🚀</span>
-        <span style="animation-delay: 0.2s">⭐</span>
-        <span style="animation-delay: 0.3s">🔥</span>
-        <span style="animation-delay: 0.4s">💎</span>
-        <span style="animation-delay: 0.5s">🎊</span>
+        <button
+          type="button"
+          class="mt-6 agent-btn-ghost"
+          on:click={stopCelebration}
+        >
+          <span>Continue</span>
+        </button>
       </div>
     </div>
   </div>
 {/if}
 
 <style>
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+  @keyframes soft-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
   }
 
-  .animate-float {
-    animation: float 2s ease-in-out infinite;
+  .celebration-mascot {
+    animation: soft-float 2.4s ease-in-out infinite;
+    filter: drop-shadow(0 0 18px rgba(139, 124, 246, 0.35));
   }
 
-  /* Enhanced glow effect */
-  @keyframes glow {
-    0%, 100% { 
-      filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)) 
-              drop-shadow(0 0 40px rgba(255, 20, 147, 0.6)); 
-    }
-    50% { 
-      filter: drop-shadow(0 0 30px rgba(255, 215, 0, 1)) 
-              drop-shadow(0 0 60px rgba(255, 20, 147, 0.8)); 
-    }
-  }
-
-  img {
-    animation: glow 1.5s ease-in-out infinite;
-  }
-
-  /* Responsive adjustments */
   @media (max-width: 640px) {
     h1 {
-      font-size: 2.5rem;
+      font-size: 1.5rem;
     }
   }
-</style> 
+</style>

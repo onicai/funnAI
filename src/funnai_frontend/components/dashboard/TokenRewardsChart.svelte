@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Line, Bar } from 'svelte-chartjs';
-  import { theme } from '../../stores/store';
   import { getBaseChartOptions, createDataset, formatChartNumber } from '../../helpers/chartUtils';
   import { TokenRewardsService, type TokenRewardsData } from '../../helpers/TokenRewardsService';
 
@@ -14,7 +13,7 @@
   let tokenRewardsData: TokenRewardsData | null = null;
 
   // Theme reactivity
-  $: isDark = $theme === 'dark';
+  const isDark = true;
 
   // Load token rewards data from API canister
   async function loadTokenRewardsData() {
@@ -392,38 +391,36 @@
   });
 </script>
 
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-  <div class="flex items-center justify-between mb-6">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-      {title}
-    </h3>
-    <div class="flex items-center gap-2">
-      {#if loading}
-        <div class="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
-      {/if}
+<div class="agent-card bg-agent-surface! p-5 sm:p-6">
+  <div class="relative z-1 flex items-center justify-between mb-5">
+    <div>
+      <p class="agent-eyebrow">Analytics</p>
+      <h3 class="mt-1 text-base font-semibold tracking-tight text-white">{title}</h3>
+      <p class="mt-0.5 text-sm text-gray-500">Supply growth and quarterly minting</p>
     </div>
+    <span class="inline-flex h-4 w-4 items-center justify-center">
+      {#if loading}
+        <span class="h-4 w-4 border-2 border-agent-purple rounded-full border-t-transparent animate-spin"></span>
+      {/if}
+    </span>
   </div>
 
   {#if error}
-    <div class="text-red-600 dark:text-red-400 text-sm mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+    <div class="text-red-400 text-sm mb-4 p-3 bg-red-950/40 rounded-lg border border-red-500/40">
       {error}
     </div>
   {/if}
 
   <!-- View Selector -->
-  <div class="flex flex-wrap gap-2 mb-6 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+  <div class="agent-tab-track mb-6 flex-wrap">
     <button
-      class="px-4 py-2 text-sm font-medium rounded-md transition-colors {activeView === 'supply' 
-        ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm' 
-        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}"
+      class="agent-tab {activeView === 'supply' ? 'agent-tab-active' : ''}"
       on:click={() => setActiveView('supply')}
     >
       Supply Timeline
     </button>
     <button
-      class="px-4 py-2 text-sm font-medium rounded-md transition-colors {activeView === 'combined' 
-        ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-sm' 
-        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}"
+      class="agent-tab {activeView === 'combined' ? 'agent-tab-active' : ''}"
       on:click={() => setActiveView('combined')}
     >
       Rewards & Minting
@@ -433,14 +430,14 @@
   <!-- Chart Content -->
   <div class="relative" style="height: {height}">
     {#if loading}
-      <div class="absolute inset-0 flex items-center justify-center bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+      <div class="absolute inset-0 flex items-center justify-center bg-agent-surface/80 rounded-lg">
         <div class="text-center">
-          <div class="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent mx-auto mb-2"></div>
-          <p class="text-sm text-gray-500 dark:text-gray-400">Loading token rewards data...</p>
+          <div class="animate-spin h-8 w-8 border-4 border-agent-purple rounded-full border-t-transparent mx-auto mb-2"></div>
+          <p class="text-sm text-gray-400">Loading token rewards data...</p>
         </div>
       </div>
     {:else if error}
-      <div class="absolute inset-0 flex items-center justify-center text-red-600 dark:text-red-400">
+      <div class="absolute inset-0 flex items-center justify-center text-red-400">
         <div class="text-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -450,16 +447,16 @@
       </div>
     {:else if activeView === 'supply'}
       <div class="mb-4">
-        <h4 class="text-md font-medium text-gray-900 dark:text-white mb-2">Total Supply Growth Timeline</h4>
-        <p class="text-sm text-gray-600 dark:text-gray-400">Projected FUNNAI token supply from launch to maximum supply</p>
+        <h4 class="text-md font-semibold text-white mb-2">Total Supply Growth Timeline</h4>
+        <p class="text-sm text-gray-400">Projected FUNNAI token supply from launch to maximum supply</p>
       </div>
       <div style="height: 350px;">
         <Line data={supplyChartData} options={supplyChartOptions} />
       </div>
     {:else if activeView === 'combined'}
       <div class="mb-4">
-        <h4 class="text-md font-medium text-gray-900 dark:text-white mb-2">Quarterly Minting & Rewards Analysis</h4>
-        <p class="text-sm text-gray-600 dark:text-gray-400">Combined view showing quarterly token minting (green bars) and rewards per challenge (red bars) with stabilization points</p>
+        <h4 class="text-md font-semibold text-white mb-2">Quarterly Minting & Rewards Analysis</h4>
+        <p class="text-sm text-gray-400">Combined view showing quarterly token minting (green bars) and rewards per challenge (red bars) with stabilization points</p>
       </div>
       <div style="height: 350px;">
         <Bar data={combinedChartData} options={combinedChartOptions} />
@@ -469,8 +466,8 @@
 
   <!-- Data Source Footer -->
   {#if tokenRewardsData}
-    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-      <p class="text-xs text-gray-500 dark:text-gray-400 text-center">
+    <div class="mt-4 pt-4 border-t border-white/8">
+      <p class="text-xs text-gray-500 text-center">
         Data source: {tokenRewardsData.metadata.dataset} • Last updated: {tokenRewardsData.metadata.last_updated}
       </p>
     </div>

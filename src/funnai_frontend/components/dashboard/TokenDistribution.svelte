@@ -196,6 +196,8 @@
       const decimals = funnaiToken?.decimals || 8;
       const formattedBalance = formatBalance(funnaiBalance.in_tokens.toString(), decimals);
       userBalance = parseFloat(formattedBalance.replace(/,/g, ''));
+    } else if (walletData.balancesStatus === 'error') {
+      return;
     } else {
       userBalance = 0;
     }
@@ -224,8 +226,8 @@
     }
   }
 
-  async function updateTokenData() {
-    loading = true;
+  async function updateTokenData(isRefresh = false) {
+    if (!isRefresh) loading = true;
     error = "";
 
     try {
@@ -249,17 +251,15 @@
 
   function getPriceChangeColor(change: string): string {
     const num = parseFloat(change);
-    if (isNaN(num)) return "text-gray-600 dark:text-gray-400";
-    if (num > 0) return "text-green-600 dark:text-green-400";
-    if (num < 0) return "text-red-600 dark:text-red-400";
-    return "text-gray-600 dark:text-gray-400";
+    if (isNaN(num)) return "text-gray-400";
+    if (num > 0) return "text-emerald-400";
+    if (num < 0) return "text-red-400";
+    return "text-gray-400";
   }
 
-  onMount(async () => {
-    await updateTokenData();
-    
-    // Update token data every 2 minutes (ICPSwap data is cached for 1 minute)
-    updateInterval = setInterval(updateTokenData, 120000);
+  onMount(() => {
+    // Initial fetch is triggered by the isAuthenticated reactive below
+    updateInterval = setInterval(() => updateTokenData(true), 120000);
   });
 
   onDestroy(() => {
@@ -270,7 +270,7 @@
 
   // React to authentication changes
   $: if (isAuthenticated !== undefined) {
-    updateTokenData();
+    updateTokenData(true);
   }
 
   // React to wallet data changes to update user balance
@@ -279,115 +279,100 @@
   }
 </script>
 
-<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-  <div class="flex items-center justify-between mb-4">
-    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-      {title}
-    </h3>
-    <div class="flex items-center gap-2">
-      {#if loading || (isAuthenticated && isLoadingUserBalance)}
-        <div class="animate-spin h-4 w-4 border-2 border-blue-500 rounded-full border-t-transparent"></div>
-      {/if}
-      <span class="text-xs text-gray-500 dark:text-gray-400 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded">
-        $FUNNAI
-      </span>
-      {#if icpswapData}
-        <span class="text-xs text-green-600 dark:text-green-400 px-2 py-1 bg-green-50 dark:bg-green-900/20 rounded">
+<div class="agent-card bg-agent-surface! p-5 sm:p-6">
+  <div class="relative z-1 flex items-start justify-between gap-3 mb-5">
+    <div>
+      <div class="flex flex-wrap items-center gap-2">
+        <p class="agent-eyebrow">Token</p>
+        <span class="inline-flex items-center gap-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-300 {icpswapData ? '' : 'invisible'}">
+          <span class="h-1 w-1 rounded-full bg-emerald-400 animate-pulse"></span>
           Live
         </span>
-      {/if}
+      </div>
+      <h3 class="mt-1 text-base font-semibold tracking-tight text-white">{title}</h3>
+      <p class="mt-0.5 text-sm text-gray-500">FUNNAI price, market cap, and your balance</p>
     </div>
+    <span class="inline-flex h-4 w-4 shrink-0 mt-1 items-center justify-center">
+      {#if loading || (isAuthenticated && isLoadingUserBalance)}
+        <span class="h-4 w-4 border-2 border-agent-purple rounded-full border-t-transparent animate-spin"></span>
+      {/if}
+    </span>
   </div>
 
   {#if error}
-    <div class="text-red-600 dark:text-red-400 text-sm mb-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+    <div class="text-red-400 text-sm mb-4 p-3 bg-red-950/40 rounded-xl border border-red-500/30">
       {error}
     </div>
   {/if}
 
   <!-- Token Metrics -->
-  {#if loading}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-      <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-        <div class="text-lg font-bold text-purple-600 dark:text-purple-400">
-          <div class="animate-pulse flex justify-center">
-            <div class="h-6 bg-purple-300 dark:bg-purple-600 rounded w-20"></div>
-          </div>
-        </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Price</div>
-      </div>
-      
-      <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-        <div class="text-lg font-bold text-orange-600 dark:text-orange-400">
-          <div class="animate-pulse flex justify-center">
-            <div class="h-6 bg-orange-300 dark:bg-orange-600 rounded w-24"></div>
-          </div>
-        </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Market Cap</div>
-      </div>
-    </div>
-  {:else if dataLoadedSuccessfully && tokenPrice !== null && marketCap !== null}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-      <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-        <div class="text-lg font-bold text-purple-600 dark:text-purple-400">
-          ${tokenPrice.toFixed(4)}
-        </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Price</div>
-        {#if priceChange24h && priceChange24h !== "0"}
-          <div class="text-xs {getPriceChangeColor(priceChange24h)} mt-1">
-            {formatPriceChange(priceChange24h)} (24h)
-          </div>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div class="p-4 rounded-xl bg-white/3">
+      <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Price</p>
+      <p class="agent-metric-value-md">
+        {#if loading || tokenPrice === null}
+          <span class="agent-metric-pulse w-[7ch]" aria-hidden="true"></span>
+        {:else}
+          <span class="min-w-[7ch] tabular-nums">${tokenPrice.toFixed(4)}</span>
         {/if}
-      </div>
-      
-      <div class="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
-        <div class="text-lg font-bold text-orange-600 dark:text-orange-400">
-          ${formatLargeNumber(parseFloat(marketCap))}
-        </div>
-        <div class="text-sm text-gray-600 dark:text-gray-400">Market Cap</div>
-      </div>
+      </p>
+      <p class="agent-metric-hint {priceChange24h && priceChange24h !== '0' ? getPriceChangeColor(priceChange24h) : ''}">
+        {#if !loading && priceChange24h && priceChange24h !== "0"}
+          {formatPriceChange(priceChange24h)} (24h)
+        {:else}
+          &nbsp;
+        {/if}
+      </p>
     </div>
-  {/if}
+    
+    <div class="p-4 rounded-xl bg-white/3">
+      <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Market cap</p>
+      <p class="agent-metric-value-md">
+        {#if loading || marketCap === null}
+          <span class="agent-metric-pulse w-[8ch]" aria-hidden="true"></span>
+        {:else}
+          <span class="min-w-[8ch] tabular-nums">${formatLargeNumber(parseFloat(marketCap))}</span>
+        {/if}
+      </p>
+      <p class="agent-metric-hint">&nbsp;</p>
+    </div>
+  </div>
 
   <!-- User Balance (if authenticated) -->
   {#if isAuthenticated}
-    <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mb-6">
+    <div class="rounded-xl bg-white/3 p-4 mb-5">
       <div class="flex items-center justify-between">
         <div class="flex-1">
-          <div class="text-sm text-gray-600 dark:text-gray-400">Your balance</div>
-          {#if isLoadingUserBalance}
-            <div class="text-xl font-bold text-gray-900 dark:text-white">
-              <div class="animate-pulse flex items-center">
-                <div class="h-6 bg-gray-300 dark:bg-gray-600 rounded w-32"></div>
-              </div>
-            </div>
-            <div class="text-lg font-semibold text-gray-600 dark:text-gray-400 mt-1">
-              <div class="animate-pulse flex items-center">
-                <div class="h-5 bg-gray-300 dark:bg-gray-600 rounded w-24"></div>
-              </div>
-            </div>
-          {:else}
-            <div class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              {userBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 8 })} FUNNAI
-              {#if isWhale()}
-                <span class="text-2xl" title="Whale Alert! You hold {getUserSupplyPercentage()}% of total supply">🐋</span>
-              {/if}
-            </div>
-            {#if dataLoadedSuccessfully && tokenPrice !== null}
-              <div class="text-lg font-semibold text-green-600 dark:text-green-400 mt-1">
-                ${(userBalance * tokenPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-              </div>
+          <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Your balance</p>
+          <p class="agent-metric-value-md">
+            {#if isLoadingUserBalance}
+              <span class="agent-metric-pulse w-[10ch]" aria-hidden="true"></span>
             {:else}
-              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                USD value unavailable
-              </div>
+              <span class="min-w-[10ch] truncate">
+                {userBalance.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 8 })}
+              </span>
             {/if}
-            {#if totalSupply && userBalance > 0}
-              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {getUserSupplyPercentage()}% of current supply
-              </div>
+            <span class="agent-metric-unit">FUNNAI</span>
+            {#if !isLoadingUserBalance && isWhale()}
+              <span class="text-xl leading-none" title="Whale Alert! You hold {getUserSupplyPercentage()}% of total supply">🐋</span>
             {/if}
-          {/if}
+          </p>
+          <p class="mt-1 text-lg font-semibold leading-7 min-h-7 {dataLoadedSuccessfully && tokenPrice !== null ? 'text-emerald-400' : 'text-gray-500'}">
+            {#if isLoadingUserBalance}
+              <span class="agent-metric-pulse w-[8ch]" aria-hidden="true"></span>
+            {:else if dataLoadedSuccessfully && tokenPrice !== null}
+              ${(userBalance * tokenPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+            {:else}
+              USD value unavailable
+            {/if}
+          </p>
+          <p class="agent-metric-hint">
+            {#if !isLoadingUserBalance && totalSupply && userBalance > 0}
+              {getUserSupplyPercentage()}% of current supply
+            {:else}
+              &nbsp;
+            {/if}
+          </p>
         </div>
 
       </div>
@@ -395,7 +380,7 @@
   {/if}
 
   <!-- Data Source Info -->
-  <div class="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
+  <div class="text-xs text-gray-500 text-center mt-4 min-h-4 truncate">
     {#if loading}
       Loading token data...
     {:else if !dataLoadedSuccessfully}

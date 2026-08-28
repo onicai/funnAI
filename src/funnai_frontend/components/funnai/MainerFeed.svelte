@@ -1,10 +1,12 @@
 <script lang="ts">
   import { Principal } from "@dfinity/principal";
 
-  import { onMount } from "svelte";
-  import { fly } from "svelte/transition";
+  import { onMount, onDestroy } from "svelte";
+  import { fly, scale } from "svelte/transition";
+  import { elasticOut } from "svelte/easing";
   import { store } from "../../stores/store";
   import { formatFunnaiAmount } from "../../helpers/utils/numberFormatUtils";
+  import { getMainerVisualIdentity } from "../../helpers/utils/mainerIdentity";
   import ShareFeedItem from "./ShareFeedItem.svelte";
 
   export let showAllEvents: boolean = true; // Will be overridden by parent based on auth status
@@ -17,6 +19,7 @@
     timestamp: number;
     type: "challenge" | "response" | "score" | "winner" | "participation";
     mainerName: string;
+    mainerAddress?: string;
     content: {
       challenge?: string;
       response?: string;
@@ -29,11 +32,14 @@
   let feedItems: FeedItem[] = [];
   let allItems: FeedItem[] = [];
   let loading = true;
+  let hasLoadedOnce = false;
   let interval: NodeJS.Timer;
   let currentIndex = 0;
   let updating = false;
+  let updateInFlight = false;
   let updateCounter = 0;
   let lastFetchTimestamp = 0;
+  let lastMainerSourceKey = "";
 
   // Storage keys for persistence - separate caches for different modes
   const FEED_STORAGE_KEY_MY_MAINERS = 'mainer_feed_items_my_mainers';
@@ -159,15 +165,15 @@
   function getStatusColor(type: string): string {
     switch (type) {
       case "challenge":
-        return "before:bg-blue-500";
+        return "before:bg-blue-400/70";
       case "response":
-        return "before:bg-purple-500";
+        return "before:bg-agent-purple";
       case "score":
-        return "before:bg-orange-500";
+        return "before:bg-orange-400/70";
       case "winner":
-        return "before:bg-gradient-to-r before:from-yellow-400 before:to-yellow-600 before:shadow-lg before:shadow-yellow-500/50";
+        return "before:bg-amber-400/80";
       case "participation":
-        return "before:bg-green-500";
+        return "before:bg-emerald-400/70";
       default:
         return "before:bg-gray-500";
     }
@@ -176,26 +182,38 @@
   function getWinnerStyling(placement: string): string {
     switch (placement) {
       case "First Place":
-        return "bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-300 shadow-lg shadow-yellow-500/20 dark:from-yellow-900/20 dark:to-amber-900/20 dark:border-yellow-600";
+        return "prize-card prize-first";
       case "Second Place":
-        return "bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-300 shadow-lg shadow-gray-500/20 dark:from-gray-800/20 dark:to-slate-800/20 dark:border-gray-600";
+        return "prize-card prize-second";
       case "Third Place":
-        return "bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-300 shadow-lg shadow-orange-500/20 dark:from-orange-900/20 dark:to-amber-900/20 dark:border-orange-600";
+        return "prize-card prize-third";
       default:
-        return "";
+        return "prize-card";
     }
   }
 
-  function getWinnerIcon(placement: string): string {
+  function getItemBackground(type: string, placement?: string): string {
+    if (type === "winner") {
+      return getWinnerStyling(placement || "");
+    }
+    return "bg-white/3 border border-white/10 rounded-xl p-4";
+  }
+
+  function getPlacementMeta(placement: string): {
+    rank: string;
+    label: string;
+    tone: string;
+    ring: string;
+  } {
     switch (placement) {
       case "First Place":
-        return "🏆";
+        return { rank: "1", label: "First place", tone: "text-amber-300", ring: "ring-amber-400/40" };
       case "Second Place":
-        return "🥈";
+        return { rank: "2", label: "Second place", tone: "text-gray-200", ring: "ring-white/25" };
       case "Third Place":
-        return "🥉";
+        return { rank: "3", label: "Third place", tone: "text-orange-300", ring: "ring-orange-400/35" };
       default:
-        return "🏅";
+        return { rank: "•", label: placement || "Placement", tone: "text-agent-purple", ring: "ring-agent-purple/30" };
     }
   }
 
@@ -283,6 +301,7 @@
                   timestamp: winnerTimestamp,
                   type: "winner",
                   mainerName,
+                  mainerAddress: entry.submittedBy.toString(),
                   content: {
                     placement: position,
                     reward: entry.reward.amount.toString(),
@@ -421,64 +440,86 @@
   }
 
   async function updateFeed(forceUpdate = false) {
-    updating = true;
-    
-    // Load cached items first for instant display
+    // Load cached items first for instant display (no spinner flicker)
     if (!forceUpdate && allItems.length === 0) {
       const cachedItems = loadCachedFeedItems();
       if (cachedItems.length > 0) {
         allItems = cachedItems;
         feedItems = [...allItems];
         loading = false;
+        hasLoadedOnce = true;
       }
     }
-    
+
     // Check if we should fetch new data
     const lastFetch = getLastFetchTimestamp();
     const timeSinceLastFetch = Date.now() - lastFetch;
-    const shouldFetch = forceUpdate || 
+    const shouldFetch = forceUpdate ||
                        updateCounter % 6 === 0 || // Every 6th time (e.g. 6 * 10sec = 1min)
                        timeSinceLastFetch > 5 * 60 * 1000; // Or every 5 minutes
-    
-    if (shouldFetch) {
-      try {
-        const newItems = await getFeedData(!showAllEvents);
-        
-        // Merge new items with existing cached items
-        const mergedItems = allItems.length > 0 ? mergeItems(allItems, newItems) : newItems;
-        allItems = mergedItems;
-        feedItems = [...allItems];
-        
-        // Save to cache
-        saveFeedItemsToCache(allItems);
-        
-        currentIndex = allItems.length; // Mark all items as displayed
-      } catch (error) {
-        console.error("Error updating feed:", error);
-        // If fetch fails, keep showing cached items
-      }
+
+    if (!shouldFetch) {
+      loading = false;
+      updateCounter++;
+      return;
     }
-    
-    loading = false;
-    updating = false;
-    updateCounter++;
+
+    if (updateInFlight) return;
+    updateInFlight = true;
+
+    // Only show the overlay spinner when there is already content.
+    // An empty feed must keep its empty state visible — flipping `updating`
+    // was hiding/showing that card every poll and looking like a flicker.
+    if (feedItems.length > 0) {
+      updating = true;
+    }
+
+    try {
+      const newItems = await getFeedData(!showAllEvents);
+
+      // Merge new items with existing cached items
+      const mergedItems = allItems.length > 0 ? mergeItems(allItems, newItems) : newItems;
+      allItems = mergedItems;
+      feedItems = [...allItems];
+
+      // Save to cache
+      saveFeedItemsToCache(allItems);
+
+      currentIndex = allItems.length; // Mark all items as displayed
+    } catch (error) {
+      console.error("Error updating feed:", error);
+      // If fetch fails, keep showing cached items / empty state
+    } finally {
+      loading = false;
+      updating = false;
+      updateInFlight = false;
+      hasLoadedOnce = true;
+      updateCounter++;
+    }
   }
 
-  // Handle toggle changes
-  $: if (showAllEvents !== undefined) {
-    currentIndex = 0;
-    feedItems = [];
-    allItems = [];
-    // Clear cache when switching modes since data structure changes
-    try {
-      localStorage.removeItem(FEED_STORAGE_KEY_MY_MAINERS);
-      localStorage.removeItem(FEED_STORAGE_KEY_ALL_EVENTS);
-      localStorage.removeItem(LAST_FETCH_KEY_MY_MAINERS);
-      localStorage.removeItem(LAST_FETCH_KEY_ALL_EVENTS);
-    } catch (error) {
-      console.error('Error clearing cache:', error);
+  // Handle toggle changes only — not every remount
+  let lastShowAllEvents: boolean | undefined = undefined;
+  $: if (showAllEvents !== lastShowAllEvents) {
+    const isFirst = lastShowAllEvents === undefined;
+    lastShowAllEvents = showAllEvents;
+    if (!isFirst) {
+      currentIndex = 0;
+      feedItems = [];
+      allItems = [];
+      hasLoadedOnce = false;
+      loading = true;
+      // Clear cache when switching modes since data structure changes
+      try {
+        localStorage.removeItem(FEED_STORAGE_KEY_MY_MAINERS);
+        localStorage.removeItem(FEED_STORAGE_KEY_ALL_EVENTS);
+        localStorage.removeItem(LAST_FETCH_KEY_MY_MAINERS);
+        localStorage.removeItem(LAST_FETCH_KEY_ALL_EVENTS);
+      } catch (error) {
+        console.error('Error clearing cache:', error);
+      }
+      updateFeed(true);
     }
-    updateFeed(true);
   }
 
   // Reset state when authentication status changes
@@ -488,6 +529,8 @@
     currentIndex = 0;
     loading = false;
     updating = false;
+    hasLoadedOnce = false;
+    lastMainerSourceKey = "";
     // Clear cache when user logs out
     try {
       localStorage.removeItem(FEED_STORAGE_KEY_MY_MAINERS);
@@ -499,16 +542,14 @@
     }
   }
 
-  $: {
-    console.log("MainerFeed reactive agentCanisterActors", agentCanisterActors);
-    console.log("MainerFeed reactive agentCanistersInfo", agentCanistersInfo);
-
-    // Only update feed if authenticated
-    if ($store.isAuthed) {
-      (async () => {
-        await updateFeed(true);
-      })();
-    }
+  // Refresh only when the user's mAIner set actually changes — not on every
+  // store write during login enrich (that forced a full feed reload for ~30s).
+  $: mainerSourceKey = $store.isAuthed
+    ? `${agentCanisterActors?.length ?? 0}:${(agentCanistersInfo || []).map((c) => c.address || "").join(",")}`
+    : "";
+  $: if ($store.isAuthed && mainerSourceKey !== lastMainerSourceKey) {
+    lastMainerSourceKey = mainerSourceKey;
+    updateFeed(true);
   }
 
   // Cleanup old cached items
@@ -558,53 +599,61 @@
         cleanupOldCachedItems();
       }
     }, 10000); // Update every 10 seconds
+  });
 
-    return () => {
-      if (interval) clearInterval(interval);
-    };
+  onDestroy(() => {
+    if (interval) clearInterval(interval);
   });
 </script>
 
-<div class="h-full dark:bg-gray-800 dark:text-white flex flex-col" style="overflow-y: auto; overflow-x: visible;">
-
-  <!-- Fixed space for loader to prevent UI jump -->
-  <div class="flex justify-center py-2 transition-opacity duration-300 {updating && $store.isAuthed ? 'opacity-100' : 'opacity-0 pointer-events-none'}">
-    <div class="animate-spin h-5 w-5 border-2 border-blue-500 rounded-full border-t-transparent dark:border-blue-400"></div>
+<div class="relative h-full min-h-0 bg-agent-surface text-white flex flex-col font-sans overflow-hidden">
+  <!-- Overlay loader — only when content already exists (empty state stays put) -->
+  <div
+    class="absolute top-2 left-1/2 z-20 -translate-x-1/2 transition-opacity duration-300
+           {updating && $store.isAuthed && feedItems.length > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'}"
+    aria-hidden={!(updating && $store.isAuthed && feedItems.length > 0)}
+  >
+    <div class="animate-spin h-5 w-5 border-2 border-agent-purple rounded-full border-t-transparent"></div>
   </div>
-  <!-- Info Panel - show when not authenticated or when authenticated but no content -->
-  {#if (!$store.isAuthed) || (feedItems.length === 0 && !loading && !updating)}
-    <div class="flex-1 flex flex-col justify-center items-center px-4 py-6">
-      <div class="flex flex-col items-center gap-4 text-gray-500 dark:text-gray-400">
-        <div class="text-6xl">🤖</div>
-        <div class="max-w-md text-center">
-          <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-            mAIner activity feed
+
+  {#if (!$store.isAuthed) || (feedItems.length === 0 && !loading)}
+    <div class="absolute inset-0 z-10 flex flex-col justify-center items-center px-5 py-8 overflow-y-auto">
+      <div class="relative w-full max-w-md overflow-hidden rounded-xl border border-white/6 bg-agent-surface px-6 py-8 text-left">
+        <div class="relative">
+          <p class="mb-2 text-[10px] font-medium uppercase tracking-[0.2em] text-agent-purple/80">Protocol stream</p>
+          <h3 class="text-base font-medium tracking-tight text-gray-300">
+            Agent activity
           </h3>
-          <p class="text-sm leading-relaxed">
-            This feed displays activity from mAIner agents including:
+          <p class="mt-2 text-sm font-normal leading-relaxed text-gray-500">
+            Live signals from mAIners operating on the network:
           </p>
-          <ul class="text-sm mt-3 space-y-1">
-            <li>• 🎯 Challenges in the protocol</li>
+          <ul class="mt-4 space-y-2 text-sm font-normal text-gray-500 min-h-30">
+            <li class="flex gap-2"><span class="text-gray-600">–</span> Challenges in the protocol</li>
             {#if $store.isAuthed}
-            <li>• 💭 Responses from your mAIners</li>
-            <li>• 📊 Scores your mAIners receive</li>
+            <li class="flex gap-2"><span class="text-gray-600">–</span> Responses from your mAIners</li>
+            <li class="flex gap-2"><span class="text-gray-600">–</span> Scores your mAIners receive</li>
+            {:else}
+            <li class="flex gap-2"><span class="text-gray-600">–</span> Responses from mAIners</li>
+            <li class="flex gap-2"><span class="text-gray-600">–</span> Scores received by mAIners</li>
             {/if}
             {#if !showAllEvents}
-            <li>• 🏆 Your mAIners' victories and placements</li>
-            <li>• 🎯 Participation rewards earned</li>
-            {/if}
-            {#if !$store.isAuthed}
-            <li>• 💭 Responses from mAIners</li>
-            <li>• 📊 Scores received by mAIners</li>
+            <li class="flex gap-2"><span class="text-gray-600">–</span> Victories and placements</li>
+            <li class="flex gap-2"><span class="text-gray-600">–</span> Participation rewards earned</li>
             {/if}
           </ul>
           {#if !$store.isAuthed}
-            <p class="text-xs mt-4 text-gray-400 dark:text-gray-500">
-              Connect your wallet to create your own mAIners and see personalized activity.
+            <p class="mt-5 text-xs font-normal text-gray-600">
+              Connect to deploy agents and unlock a personalized stream.
             </p>
           {:else}
-            <p class="text-xs mt-4 text-gray-400 dark:text-gray-500">
-              {showAllEvents ? 'No recent activity in the protocol.' : 'Loading activity from your mAIners.'}
+            <p class="mt-5 text-xs font-normal text-gray-600">
+              {#if showAllEvents}
+                No recent activity in the protocol.
+              {:else if hasLoadedOnce}
+                No activity yet. Once your mAIner submits its first response, it will show up here.
+              {:else}
+                Loading activity from your mAIners.
+              {/if}
             </p>
           {/if}
         </div>
@@ -613,70 +662,109 @@
   {/if}
 
   {#if feedItems.length > 0 || (loading && $store.isAuthed)}
-    <ul 
-      aria-label="mAIner Activity feed" 
-      role="feed" 
-      class="relative flex flex-col gap-8 py-12 pl-6 text-sm 
-             before:absolute before:top-0 before:z-0 before:left-6 before:h-full before:border-2 before:-translate-x-1/2 before:border-slate-400 before:border-dashed dark:before:border-slate-400"
+    <ul
+      aria-label="mAIner Activity feed"
+      role="feed"
+      class="relative flex-1 min-h-0 overflow-y-auto overflow-x-hidden flex flex-col gap-4 py-6 pl-6 pr-2 text-sm
+             before:absolute before:top-0 before:z-0 before:left-6 before:h-full before:border before:-translate-x-1/2 before:border-white/10 before:border-dashed"
     >
       {#if feedItems.length === 0 && loading}
         <li class="text-center py-4">
-          <p class="text-sm text-gray-500 dark:text-gray-400">
+          <p class="text-sm text-gray-600">
             {showAllEvents ? 'No recent activity in the protocol.' : 'Loading activity from your mAIners.'}
           </p>
         </li>
       {:else}
         {#each feedItems.filter(item => !showAllEvents || (item.type !== 'winner' && item.type !== 'participation')) as item (item.id)}
-          <li 
-            role="article" 
-            class="relative px-6 
-                   before:absolute before:z-[1] before:left-0 before:top-2 before:h-3 before:w-3 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-white dark:before:ring-gray-900 before:shadow-sm"
-            in:fly="{{ y: 20, duration: 500 }}"
+          <li
+            role="article"
+            class="relative px-4
+                   before:absolute before:z-1 before:left-0 before:top-5 before:h-2.5 before:w-2.5 before:-translate-x-1/2 before:rounded-full {getStatusColor(item.type)} before:ring-2 before:ring-agent-surface"
+            in:fly="{{ y: 12, duration: 280 }}"
           >
-            <div class="flex flex-col flex-1 gap-2 {item.type === 'winner' ? getWinnerStyling(item.content.placement || '') + ' p-4 rounded-lg animate-pulse-winner' : ''}">
+            <div class="flex flex-col flex-1 gap-2 {getItemBackground(item.type, item.content.placement)}">
+              {#if item.type === 'winner'}
+                {@const place = getPlacementMeta(item.content.placement || '')}
+                {@const identity = getMainerVisualIdentity(item.mainerAddress || item.mainerName)}
+                <div
+                  class="relative overflow-hidden"
+                  in:scale={{ duration: 520, start: 0.94, easing: elasticOut }}
+                >
+                  <div class="prize-glow" aria-hidden="true"></div>
+                  <div class="relative flex items-start gap-3">
+                    <div class="relative shrink-0">
+                      <div class="w-12 h-12 rounded-xl overflow-hidden border border-white/10 bg-agent-elevated [&>svg]:w-full [&>svg]:h-full [&>svg]:block prize-avatar">
+                        {@html identity.icon}
+                      </div>
+                      <div class="absolute -bottom-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-agent-elevated ring-2 {place.ring} prize-rank-badge">
+                        <span class="text-[11px] font-semibold tabular-nums {place.tone}">{place.rank}</span>
+                      </div>
+                    </div>
+
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-start justify-between gap-2">
+                        <div>
+                          <p class="agent-eyebrow mb-1">Prize announcement</p>
+                          <h4 class="text-sm font-semibold tracking-tight text-white">
+                            {item.mainerName}
+                          </h4>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                          <div class="text-2xs font-medium text-gray-500 text-right">
+                            <div>{formatTimestamp(item.timestamp).date}</div>
+                            <div class="text-gray-600">{formatTimestamp(item.timestamp).time}</div>
+                          </div>
+                          <ShareFeedItem feedItem={item} />
+                        </div>
+                      </div>
+
+                      <div class="mt-3 flex flex-wrap items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-1 text-[11px] font-medium {place.tone} prize-place-chip">
+                          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.9 7.2 17l.9-5.4L4.2 7.7l5.4-.8L12 2z"/>
+                          </svg>
+                          {place.label}
+                        </span>
+                        <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300 prize-reward">
+                          +{formatFunnaiAmount(item.content.reward || '0')} FUNNAI
+                        </span>
+                      </div>
+
+                      <p class="mt-2.5 text-sm text-gray-400">
+                        Placement secured on the Proof-of-AI-Work leaderboard.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              {:else}
               <h4
-                class="text-base font-medium flex justify-between items-center mr-6 text-gray-900 dark:text-gray-100
-                       {item.type === 'winner' ? 'text-lg font-bold' : ''}"
+                class="text-sm font-medium flex justify-between items-center text-gray-200"
               >
                 <span class="flex items-center gap-2">
-                  {#if item.type === 'winner'}
-                    <span class="text-2xl animate-bounce-10s">{getWinnerIcon(item.content.placement || '')}</span>
-                  {/if}
                   {item.mainerName}
-                  {#if item.type === 'winner'}
-                    <span class="text-2xl animate-bounce-10s">{getWinnerIcon(item.content.placement || '')}</span>
-                  {/if}
                 </span>
                 <div class="flex items-center gap-2">
-                  <div class="text-2xs font-bold text-slate-600 dark:text-slate-300 text-right opacity-60">
+                  <div class="text-2xs font-medium text-gray-500 text-right">
                     <div>{formatTimestamp(item.timestamp).date}</div>
-                    <div class="opacity-40">{formatTimestamp(item.timestamp).time}</div>
+                    <div class="text-gray-600">{formatTimestamp(item.timestamp).time}</div>
                   </div>
                   <ShareFeedItem feedItem={item} />
                 </div>
               </h4>
               {#if item.type === 'challenge'}
-                <p class="text-slate-600 dark:text-slate-300 pr-6">New challenge: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.challenge}</span></p>
+                <p class="text-gray-500 pr-2">New challenge: <span class="font-medium text-gray-300">{item.content.challenge}</span></p>
               {:else if item.type === 'response'}
-                <p class="text-slate-600 dark:text-slate-300 pr-6">Submitted response: <span class="font-medium text-gray-800 dark:text-gray-200">{item.content.response}</span></p>
+                <p class="text-gray-500 pr-2">Submitted response: <span class="font-medium text-gray-300">{item.content.response}</span></p>
               {:else if item.type === 'score'}
-                <p class="text-slate-600 dark:text-slate-300 pr-6">Received score: <span class="font-semibold text-orange-600 dark:text-orange-400">{item.content.score}/5</span></p>
-              {:else if item.type === 'winner'}
-                <div class="text-center">
-                  <p class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-600 to-amber-600 dark:from-yellow-400 dark:to-amber-400 mb-2">
-                    🎉 CONGRATULATIONS! 🎉
-                  </p>
-                  <p class="text-slate-700 dark:text-slate-200">
-                    Achieved <span class="font-bold text-lg {item.content.placement === 'First Place' ? 'text-yellow-600 dark:text-yellow-400' : item.content.placement === 'Second Place' ? 'text-gray-600 dark:text-gray-400' : 'text-orange-600 dark:text-orange-400'}">{item.content.placement}</span>
-                  </p>
-                  <p class="text-slate-700 dark:text-slate-200">
-                    and earned <span class="font-bold text-lg text-green-600 dark:text-green-400">{formatFunnaiAmount(item.content.reward || '0')} FUNNAI</span>
+                <p class="text-gray-500 pr-2">Received score: <span class="font-semibold text-orange-400/90">{item.content.score}/5</span></p>
+              {:else if item.type === 'participation'}
+                <div class="rounded-lg bg-agent-purple/10 px-3 py-2.5">
+                  <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-agent-purple mb-1">Participation</p>
+                  <p class="text-sm text-gray-300">
+                    Earned <span class="font-semibold text-emerald-300">{formatFunnaiAmount(item.content.reward || '0')} FUNNAI</span>
                   </p>
                 </div>
-              {:else if item.type === 'participation'}
-                <p class="text-slate-600 dark:text-slate-300 pr-6">
-                  🎯 Earned participation reward: <span class="font-semibold text-blue-600 dark:text-blue-400">{formatFunnaiAmount(item.content.reward || '0')} FUNNAI</span>
-                </p>
+              {/if}
               {/if}
             </div>
           </li>
@@ -689,77 +777,125 @@
 <style>
   /* Custom text size smaller than text-xs */
   .text-2xs {
-    font-size: 0.625rem; /* 10px */
-    line-height: 0.75rem; /* 12px */
+    font-size: 0.625rem;
+    line-height: 0.75rem;
   }
 
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
+  .prize-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1rem;
+  }
+
+  .prize-first {
+    border-color: rgba(251, 191, 36, 0.28);
+    background:
+      linear-gradient(135deg, rgba(251, 191, 36, 0.08), transparent 42%),
+      rgba(255, 255, 255, 0.03);
+  }
+
+  .prize-second {
+    border-color: rgba(255, 255, 255, 0.16);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent 42%),
+      rgba(255, 255, 255, 0.03);
+  }
+
+  .prize-third {
+    border-color: rgba(251, 146, 60, 0.28);
+    background:
+      linear-gradient(135deg, rgba(251, 146, 60, 0.08), transparent 42%),
+      rgba(255, 255, 255, 0.03);
+  }
+
+  .prize-glow {
+    pointer-events: none;
+    position: absolute;
+    inset: -40% auto auto 55%;
+    width: 10rem;
+    height: 10rem;
+    border-radius: 9999px;
+    background: rgba(101, 63, 197, 0.18);
+    filter: blur(40px);
+    animation: prizeGlow 3.2s ease-in-out infinite;
+  }
+
+  .prize-first .prize-glow {
+    background: rgba(251, 191, 36, 0.2);
+  }
+
+  .prize-second .prize-glow {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .prize-third .prize-glow {
+    background: rgba(251, 146, 60, 0.18);
+  }
+
+  .prize-avatar {
+    animation: prizeAvatarIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .prize-rank-badge {
+    animation: prizeBadgePop 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+  }
+
+  .prize-place-chip {
+    animation: prizeChipIn 0.45s ease-out 0.15s both;
+  }
+
+  .prize-reward {
+    position: relative;
+    overflow: hidden;
+    animation: prizeChipIn 0.45s ease-out 0.22s both;
+  }
+
+  .prize-reward::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.22), transparent 65%);
+    transform: translateX(-120%);
+    animation: prizeShimmer 2.4s ease-in-out 0.6s 2;
+  }
+
+  @keyframes prizeGlow {
+    0%, 100% { opacity: 0.45; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.08); }
+  }
+
+  @keyframes prizeAvatarIn {
+    from { opacity: 0; transform: scale(0.86) translateY(6px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  @keyframes prizeBadgePop {
+    0% { opacity: 0; transform: scale(0.5); }
+    70% { opacity: 1; transform: scale(1.12); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes prizeChipIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes prizeShimmer {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(120%); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .prize-glow,
+    .prize-avatar,
+    .prize-rank-badge,
+    .prize-place-chip,
+    .prize-reward,
+    .prize-reward::after {
+      animation: none !important;
     }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes pulseWinner {
-    0%, 100% {
-      box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
-    }
-    50% {
-      box-shadow: 0 0 0 10px rgba(251, 191, 36, 0);
-    }
-  }
-
-  @keyframes shimmer {
-    0% {
-      background-position: -200% 0;
-    }
-    100% {
-      background-position: 200% 0;
-    }
-  }
-
-  @keyframes bounce10s {
-    0%, 100% {
-      transform: translateY(-25%);
-      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-    }
-    50% {
-      transform: none;
-      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
-    }
-  }
-
-  .animate-fadeIn {
-    animation: fadeIn 0.5s ease-out forwards;
-  }
-
-  .animate-bounce-10s {
-    animation: bounce10s 1s ease-in-out 10;
-  }
-
-  .animate-pulse-winner {
-    animation: pulseWinner 2s 5;
-  }
-
-  /* Shimmer effect for winner text */
-  .winner-shimmer {
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    background-size: 200% 100%;
-    animation: shimmer 2s 6;
-  }
-
-  /* Dark mode adjustments */
-  :global(.dark) .animate-spin {
-    border-color: rgba(96, 165, 250, 0.8);
-    border-top-color: transparent;
-  }
-
-  /* Enhanced winner glow for dark mode */
-  :global(.dark) .animate-pulse-winner {
-    box-shadow: 0 0 22px rgba(251, 191, 36, 0.3);
   }
 </style> 

@@ -12,7 +12,7 @@
   export let zIndex: number = 10;
   export let roundedBorders: boolean = true;
   export let roundness: 
-    | "rounded-none" | "rounded-sm" | "rounded" | "rounded-md"
+    | "rounded-none" | "rounded-xs" | "rounded-sm" | "rounded-md"
     | "rounded-lg" | "rounded-xl" | "rounded-2xl" | "rounded-3xl"
     | "rounded-full" | null = null;
   export let unpadded: boolean = false;
@@ -47,8 +47,6 @@
   <div
     class="panel {unpadded ? '' : 'p-4'} {variant} {type} {className} {roundnessClass} {animated ? 'animated' : ''} {isSwapPanel ? 'swap-panel' : ''} {isSidebar ? 'sidebar-panel' : ''} {interactiveClass}"
     style="width: {width}; height: {height}; z-index: {zIndex};"
-    on:click
-    on:keydown
     transition:slide={params}
     >
     <slot>{content}</slot>
@@ -58,8 +56,6 @@
     class="panel {unpadded ? '' : 'p-4'} {variant} {type} {className} {roundnessClass} {animated ? 'animated' : ''} {isSwapPanel ? 'swap-panel' : ''} {isSidebar ? 'sidebar-panel' : ''} {interactiveClass}"
     style="width: {width}; height: {height}; z-index: {zIndex};"
     transition:fade={params}
-    on:click
-    on:keydown
   >
     <slot>{content}</slot>
   </div>
@@ -67,8 +63,6 @@
   <div 
     class="panel {unpadded ? '' : 'p-4'} {variant} {type} {className} {roundnessClass} {animated ? 'animated' : ''} {isSwapPanel ? 'swap-panel' : ''} {isSidebar ? 'sidebar-panel' : ''} {interactiveClass}"
     style="width: {width}; height: {height}; z-index: {zIndex};"
-    on:click
-    on:keydown
   >
     <slot>{content}</slot>
   </div>
@@ -77,7 +71,7 @@
 <style lang="postcss" scoped>
   .panel {
     position: relative;
-    color: #1f2937; /* neutral-800 for light theme */
+    color: #e5e7eb;
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -87,31 +81,23 @@
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
-  /* Solid panel base */
+  /* Solid panel — agent surface */
   .panel.solid {
-    background-color: #ffffff; /* white for light theme */
-    border: 1px solid #d1d5db; /* neutral-300 for light theme */
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    background-color: #0c0b12;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.02) inset,
+      0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+      0 18px 40px -28px rgba(0, 0, 0, 0.75);
+    color: #f9fafb;
   }
   
-  /* Dark theme for solid panels */
-  :global(.dark) .panel.solid {
-    background-color: #111827; /* neutral-900 for dark theme */
-    border-color: #374151; /* neutral-700 for dark theme */
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-    color: #f9fafb; /* neutral-50 for dark theme */
-  }
-  
-  /* Main solid panel */
   .panel.solid.main {
-    border-color: #d1d5db; /* neutral-300 for light theme */
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Dark theme for main solid panels */
-  :global(.dark) .panel.solid.main {
-    border-color: #374151; /* neutral-700 for dark theme */
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.02) inset,
+      0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+      0 24px 48px -20px rgba(0, 0, 0, 0.85);
   }
   
   /* Sidebar panel */
