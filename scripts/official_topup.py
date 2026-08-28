@@ -99,8 +99,18 @@ PREFLIGHT_WORKERS = 8
 PREFLIGHT_PROGRESS_EVERY = 25
 
 # Round payments up to this granularity, and never send more than the cap in one go.
-ICP_GRANULARITY = 0.05
+# Granularity is also the smallest auto-sized payment (icp_needed_for floors at it),
+# so it must stay at or above MIN_TOPUP_ICP - otherwise a small shortfall would size a
+# payment the protocol then refuses, after the ICP has already been transferred.
+ICP_GRANULARITY = 0.1
 MAX_ICP_PER_TOPUP = 2.0
+
+# GameState rejects top-ups below this on the unauthenticated endpoints
+# (MIN_TOPUP_E8S in PoAIW/src/GameState/src/Main.mo). Checked here BEFORE the
+# transfer, because this script pays first and redeems second - sending less than
+# this would strand the ICP as a paid-but-unredeemable block.
+MIN_TOPUP_ICP = 0.09
+MIN_TOPUP_E8S = 9_000_000
 
 LEDGER_DID = """
 type Account = record { owner : principal; subaccount : opt blob };
@@ -392,6 +402,16 @@ def official_topup(network: str, gamestate: str, target_mainer: str,
         f"~= {expected/1e9:,.0f} B cycles",
         "INFO",
     )
+
+    # Refuse to move ICP the protocol would then refuse to redeem. This script pays
+    # first and redeems second, so a rejected redeem strands the payment.
+    if e8s < MIN_TOPUP_E8S:
+        log_message(
+            f"{target_mainer}: refusing to send {e8s} e8s ({amount_icp:.4f} ICP) - "
+            f"GameState rejects top-ups below {MIN_TOPUP_E8S} e8s ({MIN_TOPUP_ICP} ICP). "
+            f"Raise --icp to at least {MIN_TOPUP_ICP}.",
+            "ERROR")
+        return False
 
     if dry_run:
         log_message(f"DRY RUN: would transfer {e8s} e8s with a memo bound to "

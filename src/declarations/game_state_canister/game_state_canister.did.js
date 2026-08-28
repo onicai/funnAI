@@ -850,6 +850,11 @@ export const idlFactory = ({ IDL }) => {
       'Array' : IDL.Vec(Value__1),
     })
   );
+  const TopUpRecord = IDL.Record({
+    'mainerAgentAddress' : IDL.Text,
+    'cyclesAdded' : IDL.Nat,
+  });
+  const TopUpResult = IDL.Variant({ 'Ok' : TopUpRecord, 'Err' : ApiError });
   const MainerctrlReinstallInput = IDL.Record({
     'canisterAddress' : CanisterAddress,
   });
@@ -1015,11 +1020,6 @@ export const idlFactory = ({ IDL }) => {
     'paymentTransactionBlockId' : IDL.Nat64,
     'mainerAgentAddress' : IDL.Text,
   });
-  const TopUpRecord = IDL.Record({
-    'mainerAgentAddress' : IDL.Text,
-    'cyclesAdded' : IDL.Nat,
-  });
-  const TopUpResult = IDL.Variant({ 'Ok' : TopUpRecord, 'Err' : ApiError });
   const MainerctrlUpgradeInput = IDL.Record({
     'canisterAddress' : CanisterAddress,
   });
@@ -1448,6 +1448,7 @@ export const idlFactory = ({ IDL }) => {
         [AuthRecordResult],
         [],
       ),
+    'isCallerMainerOwnedBy' : IDL.Func([IDL.Principal], [IDL.Bool], ['query']),
     'isMainerReservedOnMarketplaceAdmin' : IDL.Func(
         [IDL.Text],
         [IDL.Bool],
@@ -1463,6 +1464,11 @@ export const idlFactory = ({ IDL }) => {
     'migrateWinnerDeclarationsAdmin' : IDL.Func(
         [IDL.Vec(IDL.Text)],
         [AuthRecordResult],
+        [],
+      ),
+    'notifyMainerTopUp' : IDL.Func(
+        [PaymentTransactionBlockId],
+        [TopUpResult],
         [],
       ),
     'rebuildUserMainerMappingAdmin' : IDL.Func([], [AuthRecordResult], []),
@@ -1507,6 +1513,11 @@ export const idlFactory = ({ IDL }) => {
         [],
         [StatusCodeRecordResult],
         [],
+      ),
+    'resolveMainerByPrefixAdmin' : IDL.Func(
+        [IDL.Text],
+        [TextResult],
+        ['query'],
       ),
     'resolveMainerTransferFailureAdmin' : IDL.Func(
         [ResolveMainerTransferFailureInput],
