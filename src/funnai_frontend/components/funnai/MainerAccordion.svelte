@@ -3,6 +3,7 @@
   import CyclesDisplayAgent from './CyclesDisplayAgent.svelte';
   import DailyBurnRatePanel from './DailyBurnRatePanel.svelte';
   import FleetOverview from './mainers/FleetOverview.svelte';
+  import FleetBulkTopUp from './mainers/FleetBulkTopUp.svelte';
   import EmptyFleetBanner from './mainers/EmptyFleetBanner.svelte';
   import NetworkCapacityPanel from './mainers/NetworkCapacityPanel.svelte';
   import MainerCreationPanel from './mainers/MainerCreationPanel.svelte';
@@ -147,6 +148,7 @@
   
   // Track which agents are being topped up (agent-specific loading states)
   let agentsBeingToppedUp = new Set<string>();
+  let bulkTopUpIds: string[] = [];
 
 
 
@@ -391,6 +393,27 @@
     };
 
     // Reload flags
+    await loadProtocolFlags();
+  }
+
+  function handleBulkTopUpStart(canisterIds: string[]) {
+    bulkTopUpIds = canisterIds;
+    canisterIds.forEach((id) => agentsBeingToppedUp.add(id));
+    agentsBeingToppedUp = agentsBeingToppedUp;
+  }
+
+  async function handleBulkTopUpComplete() {
+    try {
+      await store.loadUserMainerCanisters();
+      agents = await loadAgents();
+    } catch (refreshError) {
+      console.error("Error refreshing agents after fleet top-up:", refreshError);
+    } finally {
+      bulkTopUpIds.forEach((id) => agentsBeingToppedUp.delete(id));
+      bulkTopUpIds = [];
+      agentsBeingToppedUp = agentsBeingToppedUp;
+    }
+
     await loadProtocolFlags();
   }
 
@@ -1316,6 +1339,13 @@
     {mediumBurnRateMainers}
     {highBurnRateMainers}
     {veryHighBurnRateMainers}
+  />
+  <FleetBulkTopUp
+    {agents}
+    {isProtocolActive}
+    isBusy={agentsBeingToppedUp.size > 0 && bulkTopUpIds.length === 0}
+    onStart={handleBulkTopUpStart}
+    onComplete={handleBulkTopUpComplete}
   />
 {/if}
 
