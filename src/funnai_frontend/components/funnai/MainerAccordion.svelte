@@ -3,6 +3,7 @@
   import CyclesDisplayAgent from './CyclesDisplayAgent.svelte';
   import DailyBurnRatePanel from './DailyBurnRatePanel.svelte';
   import FleetOverview from './mainers/FleetOverview.svelte';
+  import FleetBulkTopUp from './mainers/FleetBulkTopUp.svelte';
   import EmptyFleetBanner from './mainers/EmptyFleetBanner.svelte';
   import NetworkCapacityPanel from './mainers/NetworkCapacityPanel.svelte';
   import MainerCreationPanel from './mainers/MainerCreationPanel.svelte';
@@ -147,6 +148,7 @@
   
   // Track which agents are being topped up (agent-specific loading states)
   let agentsBeingToppedUp = new Set<string>();
+  let bulkTopUpIds: string[] = [];
 
 
 
@@ -391,6 +393,27 @@
     };
 
     // Reload flags
+    await loadProtocolFlags();
+  }
+
+  function handleBulkTopUpStart(canisterIds: string[]) {
+    bulkTopUpIds = canisterIds;
+    canisterIds.forEach((id) => agentsBeingToppedUp.add(id));
+    agentsBeingToppedUp = agentsBeingToppedUp;
+  }
+
+  async function handleBulkTopUpComplete() {
+    try {
+      await store.loadUserMainerCanisters();
+      agents = await loadAgents();
+    } catch (refreshError) {
+      console.error("Error refreshing agents after fleet top-up:", refreshError);
+    } finally {
+      bulkTopUpIds.forEach((id) => agentsBeingToppedUp.delete(id));
+      bulkTopUpIds = [];
+      agentsBeingToppedUp = agentsBeingToppedUp;
+    }
+
     await loadProtocolFlags();
   }
 
@@ -1317,6 +1340,13 @@
     {highBurnRateMainers}
     {veryHighBurnRateMainers}
   />
+  <FleetBulkTopUp
+    {agents}
+    {isProtocolActive}
+    isBusy={agentsBeingToppedUp.size > 0 && bulkTopUpIds.length === 0}
+    onStart={handleBulkTopUpStart}
+    onComplete={handleBulkTopUpComplete}
+  />
 {/if}
 
 <!-- Existing Agents -->
@@ -1450,51 +1480,42 @@
       </button>
       <div id="content-{sanitizedId}" class="accordion-content">
         <div class="text-xs sm:text-sm text-gray-300 p-3 space-y-2 border-t border-white/6">
-            <div class="rounded-xl bg-white/3 p-4">
-              <div class="flex items-center justify-between gap-2 mb-3">
-                <div class="flex items-center gap-2 min-w-0">
-                  <h2 class="text-sm font-semibold text-white">Cycles</h2>
+            <div class="rounded-xl bg-white/3 px-3 py-2.5">
+              <div class="flex items-center gap-2">
+                <div class="min-w-0 flex-1 flex items-center gap-2 flex-wrap">
+                  <h2 class="text-xs font-semibold text-white">Cycles</h2>
                   {#if agent.cycleBalance > 5_000_000_000_000}
-                    <span class="inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium text-emerald-300">Healthy</span>
+                    <span class="inline-flex items-center rounded-full bg-emerald-500/15 px-1.5 py-px text-[10px] font-medium text-emerald-300">Healthy</span>
                   {:else if agent.cycleBalance > 1_000_000_000_000}
-                    <span class="inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-300">Low</span>
+                    <span class="inline-flex items-center rounded-full bg-amber-500/15 px-1.5 py-px text-[10px] font-medium text-amber-300">Low</span>
                   {:else}
-                    <span class="inline-flex items-center rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-medium text-red-300">Critical</span>
+                    <span class="inline-flex items-center rounded-full bg-red-500/15 px-1.5 py-px text-[10px] font-medium text-red-300">Critical</span>
+                  {/if}
+
+                  {#if agentsBeingToppedUp.has(agent.id) || agentsBeingRefreshed.has(agent.id)}
+                    <span class="flex items-center gap-1.5 text-gray-400">
+                      <span class="w-3 h-3 border-2 border-agent-purple/30 border-t-agent-purple rounded-full animate-spin"></span>
+                      <span class="text-[11px]">
+                        {agentsBeingToppedUp.has(agent.id) ? 'Updating…' : 'Refreshing…'}
+                      </span>
+                    </span>
+                  {:else if $mainerHealthStatuses.get(agent.id)?.isHealthy === false}
+                    <span class="text-[11px] font-medium text-gray-400 truncate">
+                      {$mainerHealthStatuses.get(agent.id)?.maintenanceMessage || 'Balance unknown'}
+                    </span>
+                  {:else}
+                    <span class="flex items-baseline gap-1 min-w-0">
+                      <span class="text-sm font-semibold text-white tabular-nums">
+                        {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 2, false)}
+                      </span>
+                      <span class="text-[11px] text-gray-500">T cycles</span>
+                    </span>
                   {/if}
                 </div>
 
-                {#if $mainerHealthStatuses.get(agent.id)?.isHealthy !== true}
-                  <span class="text-[11px] font-medium text-amber-300 truncate max-w-[55%]">
-                    {$mainerHealthStatuses.get(agent.id)?.maintenanceMessage || 'Checking status…'}
-                  </span>
-                {/if}
-              </div>
-
-              <div class="flex items-center justify-between gap-3">
-                {#if agentsBeingToppedUp.has(agent.id) || agentsBeingRefreshed.has(agent.id)}
-                  <div class="flex items-center gap-2 text-gray-400">
-                    <span class="w-4 h-4 border-2 border-agent-purple/30 border-t-agent-purple rounded-full animate-spin"></span>
-                    <span class="text-xs">
-                      {agentsBeingToppedUp.has(agent.id) ? 'Updating balance…' : 'Refreshing…'}
-                    </span>
-                  </div>
-                {:else if $mainerHealthStatuses.get(agent.id)?.isHealthy === false}
-                  <span class="text-sm font-medium text-gray-400">Balance unknown</span>
-                {:else}
-                  <div class="flex items-baseline gap-1.5">
-                    <span class="text-xl font-semibold text-white tabular-nums">
-                      {formatLargeNumber(agent.cycleBalance / 1_000_000_000_000, 2, false)}
-                    </span>
-                    <span class="text-xs text-gray-500">T cycles</span>
-                    {#if agent.cycleBalance <= 1_000_000_000_000}
-                      <span class="text-[10px] font-medium text-red-400">Top-up recommended</span>
-                    {/if}
-                  </div>
-                {/if}
-
                 <button
                   type="button"
-                  class="inline-flex items-center justify-center w-8 h-8 text-gray-400 bg-white/4 hover:bg-agent-purple/15 hover:text-agent-purple rounded-lg border border-white/10 hover:border-agent-purple/30 transition-colors"
+                  class="inline-flex items-center justify-center w-7 h-7 shrink-0 text-gray-400 bg-white/4 hover:bg-agent-purple/15 hover:text-agent-purple rounded-lg border border-white/10 hover:border-agent-purple/30 transition-colors"
                   class:opacity-50={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
                   class:cursor-not-allowed={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
                   disabled={agentsBeingRefreshed.has(agent.id) || agentsBeingToppedUp.has(agent.id)}
@@ -1502,35 +1523,34 @@
                   use:tooltip={{ text: "Refresh cycles balance", direction: 'top', textSize: 'xs' }}
                 >
                   {#if agentsBeingRefreshed.has(agent.id)}
-                    <span class="w-3.5 h-3.5 border-2 border-agent-purple/30 border-t-agent-purple rounded-full animate-spin"></span>
+                    <span class="w-3 h-3 border-2 border-agent-purple/30 border-t-agent-purple rounded-full animate-spin"></span>
                   {:else}
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                   {/if}
                 </button>
+
+                {#if $mainerHealthStatuses.get(agent.id)?.isHealthy === true}
+                  <button
+                    type="button"
+                    class="agent-btn-neon h-10! min-w-[7.5rem] px-4! rounded-xl! text-xs! font-semibold shrink-0"
+                    class:opacity-50={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
+                    class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
+                    disabled={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
+                    on:click={() => openTopUpModal(agent)}
+                  >
+                    {#if agentsBeingToppedUp.has(agent.id)}
+                      <span class="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    {:else}
+                      <ArrowUp size={16} />
+                      <span>Top up</span>
+                    {/if}
+                  </button>
+                {/if}
               </div>
 
-              {#if $mainerHealthStatuses.get(agent.id)?.isHealthy === true}
-                <button
-                  type="button"
-                  class="mt-4 w-full agent-btn-neon h-12! rounded-xl! text-sm font-semibold"
-                  class:opacity-50={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
-                  class:cursor-not-allowed={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
-                  disabled={agentsBeingToppedUp.has(agent.id) || !isProtocolActive}
-                  on:click={() => openTopUpModal(agent)}
-                >
-                  {#if agentsBeingToppedUp.has(agent.id)}
-                    <span class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                    <span>Processing…</span>
-                  {:else}
-                    <ArrowUp size={18} />
-                    <span>Top up</span>
-                  {/if}
-                </button>
-              {/if}
-
-              <p class="mt-2.5 text-[11px] leading-snug text-amber-200/90">
+              <p class="mt-1.5 text-[10px] leading-snug text-amber-200/80">
                 Top up only in this app — direct canister transfers incur high fees.
               </p>
             </div>
