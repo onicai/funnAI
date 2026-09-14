@@ -23,6 +23,8 @@ source scripts/canister_ids_mainers-$NETWORK.env
 
 # Check status of some canisters
 echo -n "SUBNET_0_1_GAMESTATE           = $SUBNET_0_1_GAMESTATE - "; dfx canister --network $NETWORK status $SUBNET_0_1_GAMESTATE | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
+# Uncomment once the GameStateSidecar has been deployed to this network:
+# echo -n "SUBNET_0_1_GAMESTATE_SIDECAR   = $SUBNET_0_1_GAMESTATE_SIDECAR - "; dfx canister --network $NETWORK status $SUBNET_0_1_GAMESTATE_SIDECAR | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "SUBNET_0_1_MAINER_CREATOR      = $SUBNET_0_1_MAINER_CREATOR - "; dfx canister --network $NETWORK status $SUBNET_0_1_MAINER_CREATOR | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "SUBNET_0_1_CHALLENGER          = $SUBNET_0_1_CHALLENGER - "; dfx canister --network $NETWORK status $SUBNET_0_1_CHALLENGER | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
 echo -n "SUBNET_0_1_JUDGE               = $SUBNET_0_1_JUDGE - "; dfx canister --network $NETWORK status $SUBNET_0_1_JUDGE | grep -E "(Status|Balance)" | tr '\n' ' ' | sed 's/  */ /g'; echo
@@ -54,6 +56,12 @@ dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE stopTimerExecutio
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         stopTimerExecutionAdmin
 # Wait until ShareService has nothing left in it's queue.
 # -> pause is next step
+
+# GameStateSidecar - OPTIONAL, only if it is deployed on this network.
+# Not required for correctness: a sweep that hits a paused or stopped GameState gets
+# a retryable verdict and re-offers the block on a later run. Stopping it just keeps
+# the maintenance window quiet.
+# dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR stopTimerExecutionAdmin
 ```
 
 # pause protocol
@@ -178,6 +186,235 @@ dfx canister --network $NETWORK call game_state_canister assignAdminRole '( reco
 dfx canister --network $NETWORK call game_state_canister assignAdminRole '( record { "principal" = "'$DEV2'"; role = variant { AdminUpdate }; note = "Maintainer: dev2" } )'
 # if needed, this is how you revoke permissions for a principal
 # dfx canister --network $NETWORK call game_state_canister revokeAdminRole '( "'$DEV1'")'
+```
+
+## GameStateSidecar registration on GameState
+
+`sweepArchivedTopUp` and `requestCyclesForSidecar` are gated on this registry.
+An unregistered sidecar gets `#Err(#Unauthorized)` on both, so a sidecar that is
+running but not registered sweeps nothing and cannot be funded.
+
+The registration is a **stable var and survives a GameState upgrade** — verify it
+after an upgrade, do not re-add it blindly.
+
+There is **exactly one slot**. An occupied slot is refused rather than overwritten,
+so rotating the sidecar is remove-then-add.
+
+```bash
+# Verify the registration survived the upgrade.
+# (null) = no sidecar registered
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getSidecarCanisterAdmin
+
+# Register the sidecar (only needed on first deployment, or after a rotation)
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE addSidecarCanisterAdmin '("'$SUBNET_0_1_GAMESTATE_SIDECAR'")'
+
+# Rotate to a different sidecar: remove first, then add. A second addSidecar... on an
+# occupied slot returns "A different sidecar is already registered - remove it first".
+# dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE removeSidecarCanisterAdmin
+# dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE addSidecarCanisterAdmin '("<new-sidecar-canister-id>")'
+
+# Review the outbound cycles grants GameState has made to the sidecar.
+# Bounded ring of the last 50. lastGrantAt on the registry record backs the
+# once-per-24h rate limit.
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getCyclesGrantsAdmin
+
+# Tune the grant policy, if needed. Both take TRILLIONS of cycles.
+# Defaults: floor 400T, amount 10T. NOTE: there are no getters for these two - the
+# only way to confirm a change is that the setter returned Ok.
+#
+# SIDECAR_GRANT_FLOOR - GameState refuses a grant when its own balance is below this.
+# Deliberately separate from PROTOCOL_CYCLES_BALANCE_BUFFER: that one also drives the
+# bonus-cycles percentage and the CMC-conversion trigger, so do NOT lower that one to
+# let a grant through.
+# dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setSidecarGrantFloorAdmin '(400 : nat)'
+#
+# SIDECAR_GRANT_AMOUNT - size of one grant. Capped at 100T.
+# dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE setSidecarGrantAmountAdmin '(10 : nat)'
+```
+
+# upgrade the GameStateSidecar
+
+> **After upgrade, re-arm the sweep timer**: `startTimerExecutionAdmin`. The timer
+> registration does NOT survive an upgrade — only the stable timer *id* does. This
+> is the failure that hides: a dead sweep timer looks exactly like a sweep with
+> nothing to do, and nothing will alert you. `ready` reports an unarmed timer as
+> not-ready, and `getSidecarStatusAdmin` reports `timerIsArmed`.
+
+The sidecar redeems ICP top-up payments that have aged out of the ledger's live
+window (~1.5–3 h) and can no longer be redeemed through the public
+`notifyMainerTopUp`. Once a day it crawls the ICP index for payments to GameState's
+account and offers each archived block id to `sweepArchivedTopUp`.
+
+It passes GameState a **block id and nothing else** — GameState re-reads the block
+from the ledger and resolves the memo itself, so the sidecar is a scheduler, not
+something trusted with attribution.
+
+Full detail: `PoAIW/src/GameStateSidecar/README.md`.
+
+```bash
+# Verify correct network & canister settings !
+echo $NETWORK
+echo $SUBNET_0_1_GAMESTATE_SIDECAR
+
+# from folder: PoAIW/src/GameStateSidecar
+
+# mops.toml was updated in latest PR
+rm -rf .mops
+mops install
+
+# Build wasm with Docker (reproducible build)
+make docker-build-base # Optional. Once built for one PoAIW canister, no rebuild needed for others.
+make docker-build-wasm
+
+dfx canister --network $NETWORK stop $SUBNET_0_1_GAMESTATE_SIDECAR
+dfx canister --network $NETWORK snapshot create $SUBNET_0_1_GAMESTATE_SIDECAR
+
+# Deploy the pre-built wasm
+# Note: Post-SNS, this step is replaced with SNS governed deployment.
+# The wasm will be uploaded to the SNS and a deploy proposal will be created
+# for the community to vote on. Once the proposal passes, the SNS automatically
+# upgrades the canister.
+dfx canister install --wasm out/gamestate_sidecar_canister.wasm --network $NETWORK --mode upgrade --wasm-memory-persistence keep $SUBNET_0_1_GAMESTATE_SIDECAR
+
+# Verify wasm hash
+make docker-verify-wasm VERIFY_NETWORK=$NETWORK
+
+# start the GameStateSidecar canister back up
+dfx canister --network $NETWORK start  $SUBNET_0_1_GAMESTATE_SIDECAR
+dfx canister --network $NETWORK status $SUBNET_0_1_GAMESTATE_SIDECAR | grep Status
+dfx canister --network $NETWORK call   $SUBNET_0_1_GAMESTATE_SIDECAR health
+
+# Verify it still points at this network's GameState
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR getGameStateCanisterId
+
+# Verify the cursor survived. It is a stable var, so it should be unchanged.
+# A 0 here means it was never seeded -> DO NOT arm the timer, seed it first
+# (see "First deployment" below). A run from 0 walks GameState's entire ICP
+# account history.
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR getScannedThroughBlockIdAdmin
+
+# Verify GameState still has this sidecar registered
+# -> see "GameStateSidecar registration on GameState" above
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getSidecarCanisterAdmin
+
+# 🚨 REQUIRED, AND EASY TO MISS: re-arm the sweep timer.
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR startTimerExecutionAdmin
+
+# Verify - timerIsArmed MUST be true
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR getSidecarStatusAdmin
+
+# ready = configured AND armed. Anything else is not a healthy sidecar.
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR ready
+```
+
+## First deployment of the GameStateSidecar
+
+Run this once per network. The order matters: **seed the cursor and register with
+GameState before arming the timer.**
+
+```bash
+# from folder: PoAIW/src/GameStateSidecar
+
+# 1. Create the canister and record its id
+dfx canister --network $NETWORK create gamestate_sidecar_canister
+# -> add the id to canister_ids.json AND to funnAI/scripts/canister_ids-$NETWORK.env
+#    as SUBNET_0_1_GAMESTATE_SIDECAR, then re-source the env file:
+#    source scripts/canister_ids-$NETWORK.env
+
+# 2. Build and install (mode install, not upgrade)
+make docker-build-wasm
+dfx canister install --wasm out/gamestate_sidecar_canister.wasm --network $NETWORK --mode install $SUBNET_0_1_GAMESTATE_SIDECAR
+
+# 3. Fund it. GameState only grants 10T per day and only once the sidecar has
+#    dropped below its own minimum, so the initial balance has to come from you.
+dfx canister --network $NETWORK deposit-cycles 20000000000000 $SUBNET_0_1_GAMESTATE_SIDECAR
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR getCyclesBalanceAdmin
+
+# 4. Point it at this network's GameState (the default is the prd id)
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR setGameStateCanisterId '("'$SUBNET_0_1_GAMESTATE'")'
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR getGameStateCanisterId
+
+# 5. Sanity-check the derived account. This MUST equal the account identifier of
+#    GameState itself - it is the account the sweep crawls. The index answers a
+#    wrong identifier with an EMPTY list rather than an error, so a mismatch here
+#    looks exactly like having nothing to sweep.
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR getGameStateAccountIdentifierAdmin
+dfx ledger account-id --of-principal $SUBNET_0_1_GAMESTATE
+
+# 6. 🚨 SEED THE CURSOR. It defaults to 0, and a first run from 0 walks GameState's
+#    entire ICP account history. Set it to (current ledger tip - the backfill window
+#    you actually want), and stage a larger backfill in chunks.
+#    Read the current tip with:
+#      dfx canister --network $NETWORK call ryjl3-tyaaa-aaaaa-aaaba-cai query_blocks '(record { start = 0 : nat64; length = 0 : nat64 })' --query
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR setScannedThroughBlockIdAdmin '(38034000 : nat64)'
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR getScannedThroughBlockIdAdmin
+
+# 7. Register it on GameState. Until this lands, every sweep offer comes back
+#    Unauthorized. See "GameStateSidecar registration on GameState" above.
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE addSidecarCanisterAdmin '("'$SUBNET_0_1_GAMESTATE_SIDECAR'")'
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE getSidecarCanisterAdmin
+
+# 8. Optional: adjust the sweep interval. Default 86400s (24h), minimum 300s.
+# dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR setSweepIntervalSecondsAdmin '(86400 : nat)'
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR getSweepIntervalSecondsAdmin
+
+# 9. Dry-run one sweep by hand BEFORE arming the timer, then read the counters.
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR runSweepNowAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR getSidecarStatusAdmin
+
+# 10. Arm the timer
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR startTimerExecutionAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR ready
+
+# 11. Register the canister with CycleOps for monitoring
+```
+
+## Update Admin RBAC for GameStateSidecar
+
+Grant the maintainer principals `#AdminUpdate` so they retain admin access
+post-SNS. One-time per network — the role assignment persists across upgrades.
+
+```bash
+# verify which principals already have admin roles
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR getAdminRoles
+# grant #AdminUpdate to the maintainer principals (dev1, dev2)
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR assignAdminRole '( record { "principal" = "'$DEV1'"; role = variant { AdminUpdate }; note = "Maintainer: dev1" } )'
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR assignAdminRole '( record { "principal" = "'$DEV2'"; role = variant { AdminUpdate }; note = "Maintainer: dev2" } )'
+# verify
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR getAdminRoles
+# if needed, revoke
+# dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR revokeAdminRole '( "'$DEV1'")'
+```
+
+## Monitoring the GameStateSidecar
+
+```bash
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR getSidecarStatusAdmin
+```
+
+| Field                   | What to look for                                                               |
+| ----------------------- | ------------------------------------------------------------------------------ |
+| `timerIsArmed`          | Must be `true`. `false` after every upgrade until you re-arm it.               |
+| `lastRunAt`             | Alert if older than 48 h. `0` means it has never run.                          |
+| `scannedThroughBlockId` | Must advance over time. Stuck means runs are not reaching the cursor.          |
+| `pendingRetriesCount`   | Transient failures awaiting retry. Persistently non-zero = GameState refusing. |
+| run counters            | `offered` / `redeemed` / `rejected` / `retried`, for the LAST run only.        |
+
+`rejected` is normal — it counts blocks that will never redeem (no memo match, below
+the minimum, ambiguous prefix), and the cursor moves past them for good.
+
+If `scannedThroughBlockId` stops advancing while runs keep happening, the run is
+hitting its page budget before reaching the cursor and the cursor cannot be advanced
+safely. Stage the backfill by hand with `setScannedThroughBlockIdAdmin`.
+
+```bash
+# Force a sweep now, without waiting for the timer
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR runSweepNowAdmin
+
+# Cycles: the sidecar asks GameState for a top-up when it drops below this
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR getCyclesBalanceAdmin
+dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR getMinCyclesBalanceAdmin
+# dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR setMinCyclesBalanceAdmin '(5 : nat)'
 ```
 
 # upgrade the Challenger
@@ -1083,6 +1320,11 @@ In this order:
 dfx canister --network $NETWORK call $SUBNET_0_1_JUDGE         startTimerExecutionAdmin
 dfx canister --network $NETWORK call $SUBNET_0_1_SHARE_SERVICE startTimerExecutionAdmin
 dfx canister --network $NETWORK call $SUBNET_0_1_CHALLENGER    startTimerExecutionAdmin
+
+# GameStateSidecar - only if it is deployed on this network.
+# REQUIRED after every sidecar upgrade: the timer registration does not survive one.
+# dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR startTimerExecutionAdmin
+# dfx canister --network $NETWORK call $SUBNET_0_1_GAMESTATE_SIDECAR getSidecarStatusAdmin
 
 # If you changed the Challenger timer interval, note it is a stble var.
 # You will need to call setTimerActionRegularityInSecondsAdmin, as in:

@@ -769,6 +769,7 @@ type GameStateCanister =
    icrc7_tokens: (prev: opt nat, take: opt nat) -> (vec nat) query;
    icrc7_total_supply: () -> (nat) query;
    initializeOpenSubmissionsQueueAdmin: () -> (AuthRecordResult);
+   isCallerMainerOwnedBy: (user: principal) -> (bool) query;
    isMainerReservedOnMarketplaceAdmin: (mainerAddress: text) -> (bool) query;
    migrateArchivedChallengesAdmin: () -> (NatResult);
    migrateScoredResponsesForChallengeAdmin: (challengeIdToMigrate: text) ->
@@ -776,6 +777,7 @@ type GameStateCanister =
    migrateSubmissionsAdmin: () -> (AuthRecordResult);
    migrateWinnerDeclarationsAdmin: (challengeIdsToMigrate: vec text) ->
     (AuthRecordResult);
+   notifyMainerTopUp: (input: PaymentTransactionBlockId) -> (TopUpResult);
    rebuildUserMainerMappingAdmin: () -> (AuthRecordResult);
    reinstallMainerControllerAdmin: (mainerctrlReinstallInput:
     MainerctrlReinstallInput) -> (MainerAgentCanisterResult);
@@ -793,6 +795,7 @@ type GameStateCanister =
    resetIsMigratingChallengesFlagAdmin: () -> (AuthRecordResult);
    resetRoundRobinChallengeIndexAdmin: () -> (StatusCodeRecordResult);
    resetRoundRobinTopicIndexAdmin: () -> (StatusCodeRecordResult);
+   resolveMainerByPrefixAdmin: (prefix: text) -> (TextResult) query;
    resolveMainerTransferFailureAdmin: (resolveInput:
     ResolveMainerTransferFailureInput) -> (bool) query;
    revokeAdminRole: ("principal": text) -> (TextResult);

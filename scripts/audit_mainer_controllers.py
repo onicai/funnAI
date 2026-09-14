@@ -10,6 +10,10 @@ STRICTLY READ-ONLY
     Note this is why the read helpers here are local rather than reused from
     update_admin_rbac_mainers: those omit `--query`.
 
+SCOPE
+    mAIners only. ShareService is registered in the same GameState table but is not a
+    mAIner, and none of the checks below apply to it - see EXCLUDED_TYPES.
+
 WHAT IT CHECKS, per mAIner
     1. Controllers  - are exactly the canonical three present, is the owner still
                       one of them, and is there anything else (a shadow controller
@@ -58,6 +62,14 @@ LOG_FILE_PATH = SCRIPT_DIR / "logs-admin-rbac" / "audit_mainer_controllers.logs"
 # sequentially, i.e. ~23 minutes over 754. Both are read-only, so run them concurrently.
 AUDIT_WORKERS = 8
 AUDIT_PROGRESS_EVERY = 25
+
+# Types that are registered alongside mAIners but are NOT mAIners, and to which none
+# of the checks below apply. ShareService is protocol infrastructure: it legitimately
+# carries extra controllers, holds #AdminUpdate for both maintainers and mAInerCreator,
+# and runs its own wasm - so the canonical-three, no-#AdminUpdate and majority-hash
+# rules all misfire on it. Excluded unconditionally: --all widens the audit across
+# mAIner types, not onto the protocol canisters.
+EXCLUDED_TYPES = {"ShareService"}
 
 # Must match MAINTAINER_PRINCIPAL_1 / _2 in PoAIW/src/mAInerCreator/src/Main.mo
 MAINTAINER_PRINCIPALS = [
@@ -218,7 +230,7 @@ def main():
     parser.add_argument("--network", required=True,
                         choices=["local", "ic", "testing", "demo", "development", "prd"])
     parser.add_argument("--all", action="store_true",
-                        help="Audit every mAIner type, not just ShareAgent")
+                        help="Audit every mAIner type, not just ShareAgent. Never includes the types in EXCLUDED_TYPES, which are not mAIners.")
     parser.add_argument("--num", type=int, default=None, help="Audit at most this many")
     parser.add_argument("--json", dest="json_out", default=None,
                         help="Also write the full findings to this JSON file")
@@ -241,6 +253,15 @@ def main():
         rbac.log_message("=" * 60, "INFO")
 
         mainers = [m for m in get_mainers_readonly(args.network) if m.get("address")]
+        excluded = [m for m in mainers if mainer_type(m) in EXCLUDED_TYPES]
+        if excluded:
+            mainers = [m for m in mainers if mainer_type(m) not in EXCLUDED_TYPES]
+            rbac.log_message(
+                f"Excluded {len(excluded)} non-mAIner canister(s) "
+                f"({', '.join(sorted({mainer_type(m) for m in excluded}))}): "
+                f"{', '.join(m['address'] for m in excluded)}",
+                "INFO",
+            )
         if not args.all:
             mainers = [m for m in mainers if mainer_type(m) == "ShareAgent"]
         if args.num is not None:
