@@ -8,7 +8,7 @@ import os
 import json
 import re
 
-from .monitor_common import get_canisters, run_this_cmd
+from .monitor_common import get_canisters, run_this_cmd, LLM_MAX_TOKENS, LLM_WASM_MEMORY_LIMIT
 
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -168,17 +168,39 @@ def auto_select_subnet(env_path, env_key):
     return None, None
 
 
-def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=False):
-    """Deploy a new LLM canister and configure it."""
+def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, target_canister_id=None, dry_run=False):
+    """Deploy a new LLM canister and configure it.
+
+    With target_canister_id, install into that existing (empty) canister
+    instead of creating a new one. The canister must already be listed in
+    canister_ids.json for this network and must have no module installed.
+    """
     env_key = LLM_TYPE_CONFIG[llm_type]["env_key"]
     canister_ids_path = os.path.join(llm_cwd, "canister_ids.json")
     dfx_json_path = os.path.join(llm_cwd, "dfx.json")
     env_path = os.path.join(SCRIPT_DIR, f"canister_ids-{network}.env")
 
-    # Step 1: Determine next llm_N index
-    llm_index, canister_ids_data = find_next_llm_index(canister_ids_path, network)
-    llm_name = f"llm_{llm_index}"
-    print(f"\n- Next available LLM index: {llm_name}")
+    canister_ids_data = None
+    if target_canister_id:
+        # Step 1: Reverse-lookup the llm_N name for the target canister
+        llm_name = None
+        try:
+            with open(canister_ids_path) as f:
+                for key, networks in json.load(f).items():
+                    if networks.get(network) == target_canister_id:
+                        llm_name = key
+                        break
+        except FileNotFoundError:
+            pass
+        if not llm_name:
+            print(f"ERROR: Canister {target_canister_id} not found in {canister_ids_path} for network {network}.")
+            return
+        print(f"\n- Installing into existing canister {target_canister_id} ({llm_name})")
+    else:
+        # Step 1: Determine next llm_N index
+        llm_index, canister_ids_data = find_next_llm_index(canister_ids_path, network)
+        llm_name = f"llm_{llm_index}"
+        print(f"\n- Next available LLM index: {llm_name}")
 
     # Step 2: Verify/add llm_N in dfx.json
     added = ensure_dfx_json_entry(dfx_json_path, llm_name)
@@ -187,9 +209,12 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
     else:
         print(f"  Ok! {llm_name} exists in {dfx_json_path} — we know how to deploy")
 
-    # Step 3: Auto-select subnet if not provided
+    # Step 3: Auto-select subnet if not provided (new canisters only —
+    # an existing canister already lives on its subnet)
     subnet_var = None
-    if not subnet:
+    if target_canister_id:
+        pass
+    elif not subnet:
         subnet_var, subnet = auto_select_subnet(env_path, env_key)
         if subnet:
             print(f"\n- Auto-selected subnet: {subnet_var} ({subnet}) — has room for more LLMs")
@@ -219,32 +244,59 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         print(f"  LLM name   : {llm_name}")
         print(f"  LLM type   : {llm_type}")
         print(f"  Network    : {network}")
-        print(f"  Subnet     : {subnet_var} ({subnet})")
+        if target_canister_id:
+            print(f"  Canister   : {target_canister_id} (existing, must be empty)")
+        else:
+            print(f"  Subnet     : {subnet_var} ({subnet})")
         print(f"  Controller : {ctrlb_canister_id}")
         print(f"  Working dir: {llm_cwd}")
         print("-" * 80)
         print("Actions that WOULD be performed:")
-        print(f"   1. Deploy {llm_name} to subnet {subnet}")
-        print(f"   2. Health check (3 retries)")
-        print(f"   3. Verify correct subnet")
-        print(f"   4. Add admin controllers (DEV2, DEV1)")
-        print(f"   5. Deposit {INITIAL_TOPUP_CYCLES // 10**12} T cycles into canister")
-        print(f"   6. Upload model: {MODEL}")
-        print(f"   7. Load model")
-        print(f"   8. Set max_tokens (12/12)")
-        print(f"   9. Pause logs and chats")
-        print(f"  10. Assign admin roles (3 principals)")
-        print(f"  11. Add log viewers (2 principals)")
-        print(f"  12. Test LLM (new_chat, run_update, remove_prompt_cache)")
-        print(f"  13. Start prompt-cache cleanup timer")
-        print(f"  14. Start cycle-balance tracking timer")
-        print(f"  15. Update canister_ids.json")
+        actions = []
+        if target_canister_id:
+            actions.append(f"Verify {target_canister_id} is empty (a non-empty canister offers a state-wiping reinstall, with confirmation)")
+            actions.append("Remove LLM from controller if currently registered")
+            actions.append(f"Install wasm into {target_canister_id} (install --wasm, no rebuild)")
+        else:
+            actions.append(f"Create {llm_name} on subnet {subnet}")
+            actions.append("Install wasm (install --wasm, no rebuild)")
+        actions.append("Health check (3 retries)")
+        if not target_canister_id:
+            actions.append("Verify correct subnet")
+        actions.append("Add admin controllers (DEV2, DEV1)")
+        actions.append("Set wasm_memory_limit to 3.75 GiB")
+        deposit_action = f"Deposit {INITIAL_TOPUP_CYCLES // 10**12} T cycles into canister"
+        if target_canister_id:
+            deposit_action += " (asks for confirmation — canister may already be funded)"
+        actions.append(deposit_action)
+        actions.append(f"Upload model: {MODEL}")
+        actions.append("Load model")
+        actions.append(f"Set max_tokens ({LLM_MAX_TOKENS}/{LLM_MAX_TOKENS})")
+        actions.append("Pause logs and chats")
+        actions.append("Assign admin roles (3 principals)")
+        actions.append("Add log viewers (2 principals)")
+        if network == "prd":
+            actions.append("Add NNS Root canister as controller")
+        else:
+            actions.append("Skip NNS Root controller step (non-prd network)")
+        actions.append("Test LLM (new_chat, run_update, remove_prompt_cache)")
+        actions.append("Start prompt-cache cleanup timer")
+        actions.append("Start cycle-balance tracking timer")
+        if target_canister_id:
+            actions.append("Re-register LLM with controller if it was registered")
+        else:
+            actions.append("Update canister_ids.json")
+        for i, action in enumerate(actions, 1):
+            print(f"  {i:2d}. {action}")
         print("-" * 80)
         print("DRY RUN complete — nothing was changed.")
         return
 
     # Step 5: Confirm with user
-    print(f"\nAbout to deploy {llm_name} ({llm_type}) on '{network}' to subnet {subnet}")
+    if target_canister_id:
+        print(f"\nAbout to install {llm_name} ({llm_type}) into existing canister {target_canister_id} on '{network}'")
+    else:
+        print(f"\nAbout to deploy {llm_name} ({llm_type}) on '{network}' to subnet {subnet}")
     confirm = input("Proceed? (y/n): ").strip().lower()
     if confirm not in ["y", "yes"]:
         print("Deployment cancelled.")
@@ -253,29 +305,104 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
     # Track completed steps for error reporting
     completed_steps = []
     canister_id = None
+    was_registered = False
 
     try:
-        # Step 6: Deploy canister
-        print(f"\n- Deploying {llm_name} to subnet {subnet}")
-        cmd = [
-            "dfx", "deploy", "--network", network,
-            llm_name, "--subnet", subnet, "--mode", "install",
-        ]
-        run_this_cmd(cmd, llm_cwd, confirm=False)
-        completed_steps.append("Deploy canister")
+        if target_canister_id:
+            canister_id = target_canister_id
+
+            # An empty canister gets a plain install. If a module is already
+            # installed (e.g. a bootstrap run died before the model upload),
+            # offer a REINSTALL — that wipes ALL canister state, including the
+            # stable-memory gguf files, so it is only for bootstrapping.
+            # A live LLM with its model uploaded belongs to upgrade_llms.sh.
+            install_mode = "install"
+            print(f"\n- Verifying {canister_id} has no module installed")
+            cmd = ["dfx", "canister", "--network", network, "info", canister_id]
+            print(f"  {' '.join(cmd)} \n  -> from directory: {llm_cwd}")
+            result = subprocess.check_output(cmd, text=True, cwd=llm_cwd)
+            print(result)
+            if "Module hash: None" not in result:
+                print(f"WARNING: {canister_id} already has a module installed.")
+                print("         A reinstall WIPES all canister state, including stable memory")
+                print("         (any uploaded gguf model files). Only do this to bootstrap a")
+                print("         canister whose model upload never completed. To upgrade a")
+                print("         live LLM, use scripts/upgrade_llms.sh instead.")
+                confirm = input("Reinstall and wipe all canister state? (y/n): ").strip().lower()
+                if confirm not in ["y", "yes"]:
+                    print("Aborted.")
+                    return
+                install_mode = "reinstall"
+                completed_steps.append("Confirm reinstall of non-empty canister")
+            else:
+                completed_steps.append("Verify canister is empty")
+
+            # If the LLM is still registered with the controller, remove it
+            # before installing (mirrors upgrade_llms.py).
+            print(f"\n- Checking whether {canister_id} is registered in controller ({ctrlb_canister_id})")
+            cmd = ["dfx", "canister", "--network", network, "call", ctrlb_canister_id, "get_llm_canisters", "--output", "json"]
+            print(f"  {' '.join(cmd)} \n  -> from directory: {llm_cwd}")
+            result = subprocess.check_output(cmd, text=True, cwd=llm_cwd)
+            print(result)
+            was_registered = canister_id in result
+            if was_registered:
+                print(f"\n- Removing LLM from controller canister ({ctrlb_canister_id})")
+                cmd = ["dfx", "canister", "--network", network, "call", ctrlb_canister_id, "remove_llm_canister", f'(record {{canister_id = "{canister_id}"}})']
+                run_this_cmd(cmd, llm_cwd, confirm=False)
+                completed_steps.append("Remove LLM from controller")
+
+            # Step 6: Install into the existing canister.
+            # Install the exact wasm that was hashed. Use `install --wasm`,
+            # never `dfx deploy`, so nothing gets rebuilt between hashing and
+            # installing (TMP-HANDOVER-FROM-LLAMA_CPP_CANISTER-TO-UPGRADE-LLM-CANISTERS.md).
+            # No --wasm-memory-persistence flag: that only applies to
+            # enhanced-orthogonal-persistence (Motoko) canisters like the
+            # mAIners; the llama_cpp wasm has no EOP metadata. Stable memory
+            # (the gguf files) is preserved by upgrade mode automatically —
+            # see the fuller note in upgrade_llms.py.
+            print(f"\n- Installing wasm into existing canister {canister_id} ({llm_name}) --mode {install_mode}")
+            cmd = [
+                "dfx", "canister", "--network", network, "install", canister_id,
+                "--wasm", "../llama_cpp_canister/build/llama_cpp.wasm",
+                "--mode", install_mode,
+            ]
+            run_this_cmd(cmd, llm_cwd, confirm=False)
+            completed_steps.append("Install into existing canister")
+        else:
+            # Step 6: Create the canister, then install the exact wasm that was
+            # hashed. Use `install --wasm`, never `dfx deploy`, so nothing gets
+            # rebuilt between hashing and installing
+            # (TMP-HANDOVER-FROM-LLAMA_CPP_CANISTER-TO-UPGRADE-LLM-CANISTERS.md).
+            print(f"\n- Creating {llm_name} on subnet {subnet}")
+            cmd = [
+                "dfx", "canister", "--network", network,
+                "create", llm_name, "--subnet", subnet,
+            ]
+            run_this_cmd(cmd, llm_cwd, confirm=False)
+            completed_steps.append("Create canister")
+
+            print(f"\n- Installing wasm into {llm_name}")
+            cmd = [
+                "dfx", "canister", "--network", network, "install", llm_name,
+                "--wasm", "../llama_cpp_canister/build/llama_cpp.wasm",
+                "--mode", "install",
+            ]
+            run_this_cmd(cmd, llm_cwd, confirm=False)
+            completed_steps.append("Install wasm")
 
         # Step 7: Wait 30s + health check (3 retries)
         print(f"\n- Waiting 30 seconds for canister to initialize...")
         time.sleep(30)
 
         # Step 8: Get canister ID
-        print(f"\n- Getting canister ID for {llm_name}")
-        cmd = ["dfx", "canister", "id", llm_name, "--network", network]
-        print(f"  {' '.join(cmd)} \n  -> from directory: {llm_cwd}")
-        result = subprocess.check_output(cmd, text=True, cwd=llm_cwd)
-        canister_id = result.strip()
-        print(f"  Canister ID: {canister_id}")
-        completed_steps.append(f"Get canister ID: {canister_id}")
+        if not target_canister_id:
+            print(f"\n- Getting canister ID for {llm_name}")
+            cmd = ["dfx", "canister", "id", llm_name, "--network", network]
+            print(f"  {' '.join(cmd)} \n  -> from directory: {llm_cwd}")
+            result = subprocess.check_output(cmd, text=True, cwd=llm_cwd)
+            canister_id = result.strip()
+            print(f"  Canister ID: {canister_id}")
+            completed_steps.append(f"Get canister ID: {canister_id}")
 
         # Health check with retries
         print(f"\n- Checking health for {llm_name} ({canister_id})")
@@ -296,7 +423,7 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         completed_steps.append("Health check")
 
         # Verify correct subnet (API may need a retry if canister is newly indexed)
-        if network in ["ic", "prd", "testing", "development", "demo"]:
+        if not target_canister_id and network in ["ic", "prd", "testing", "development", "demo"]:
             print(f"\n- Verifying canister is on correct subnet")
             curl_cmd = [
                 "curl", "-s",
@@ -346,6 +473,18 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Add admin controllers (DEV2, DEV1)")
 
+        # Applied before load_model, so the limit is in force when the model
+        # is loaded into the heap. See LLM_WASM_MEMORY_LIMIT for why the 3 GiB
+        # dfx default is not enough.
+        print(f"\n- Setting wasm_memory_limit to {LLM_WASM_MEMORY_LIMIT} (3.75 GiB) for {llm_name} ({canister_id})")
+        cmd = [
+            "dfx", "canister", "update-settings", canister_id,
+            "--wasm-memory-limit", str(LLM_WASM_MEMORY_LIMIT),
+            "--network", network,
+        ]
+        run_this_cmd(cmd, llm_cwd, confirm=False)
+        completed_steps.append("Set wasm_memory_limit")
+
         # Deposit cycles before the model is loaded into the wasm heap.
         # load_model needs to grow the heap by ~670 MB, which requires ~135 B
         # cycles for the memory allocation alone, on top of operating costs.
@@ -356,17 +495,20 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
             "dfx", "canister", "--network", network, "deposit-cycles",
             str(INITIAL_TOPUP_CYCLES), canister_id,
         ]
-        run_this_cmd(cmd, llm_cwd, confirm=False)
+        # An existing canister may already be funded, so ask before depositing.
+        run_this_cmd(cmd, llm_cwd, confirm=bool(target_canister_id))
         completed_steps.append(f"Deposit {topup_tc} T cycles")
 
         # Upload model
         # The upload script (llama_cpp_canister/scripts/upload.py) uses
         # ROOT_PATH = Path(__file__).parent.parent (= llama_cpp_canister/)
-        # for dfx.json, candid, and resolving the model path.
-        # So we must: run from llama_cpp_canister/, pass canister ID directly,
-        # and use a model path relative to llama_cpp_canister/.
-        # We use --network ic because llama_cpp_canister/dfx.json only knows
-        # "local" and "ic". Networks like testing/prd/demo all resolve to ic.
+        # for icp.yaml, candid, and resolving the model path.
+        # So we must: run from llama_cpp_canister/, pass the canister ID via
+        # --canister-id (it overrules --canister, skipping the icp-cli name
+        # lookup), and use a model path relative to llama_cpp_canister/.
+        # Since v0.16.x the --network value is an ENVIRONMENT name from
+        # llama_cpp_canister/icp.yaml: "local" or "production" (-> network ic).
+        # Networks like testing/prd/demo all resolve to production.
         print(f"\n- Uploading model to {llm_name} ({canister_id})")
         llama_cpp_canister_path = os.path.join(llm_cwd, "../llama_cpp_canister")
         llama_cpp_canister_path = os.path.realpath(llama_cpp_canister_path)
@@ -379,11 +521,20 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         else:
             env["PYTHONPATH"] = llama_cpp_canister_path
 
-        upload_network = "ic" if network != "local" else "local"
+        # Sign the upload as the active dfx identity: icp-cli keeps its own
+        # identity store whose default may be anonymous, and upload.py's
+        # get_agent honors ICPP_PRO_TEST_IDENTITY before `icp identity default`.
+        # The identity must exist under the same name in the icp store.
+        if not env.get("ICPP_PRO_TEST_IDENTITY", "").strip():
+            dfx_identity = subprocess.check_output(["dfx", "identity", "whoami"], text=True).strip()
+            env["ICPP_PRO_TEST_IDENTITY"] = dfx_identity
+            print(f"  Upload signs as identity: {dfx_identity} (via ICPP_PRO_TEST_IDENTITY)")
+
+        upload_network = "production" if network != "local" else "local"
         cmd = [
             sys.executable, "-m", "scripts.upload",
             "--network", upload_network,
-            "--canister", canister_id,
+            "--canister-id", canister_id,
             "--canister-filename", "models/model.gguf",
             model_path_relative,
         ]
@@ -406,7 +557,7 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         cmd = [
             "dfx", "canister", "--network", network, "call", canister_id,
             "set_max_tokens",
-            "(record { max_tokens_query = 12 : nat64; max_tokens_update = 12 : nat64 })",
+            f"(record {{ max_tokens_query = {LLM_MAX_TOKENS} : nat64; max_tokens_update = {LLM_MAX_TOKENS} : nat64 }})",
         ]
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Set max_tokens")
@@ -460,6 +611,15 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Add log viewers")
 
+        # Add NNS Root canister as controller (SNS dapp canisters live on prd only)
+        if network == "prd":
+            print(f"\n- Adding NNS Root Canister as controller for {llm_name} ({canister_id})")
+            cmd = ["dfx", "sns", "prepare-canisters", "--network", "ic", "add-nns-root", canister_id]
+            run_this_cmd(cmd, llm_cwd, confirm=False)
+            completed_steps.append("Add NNS root controller")
+        else:
+            print(f"\n- Skipping NNS Root Canister as controller for {llm_name} ({canister_id}) (non-prd network)")
+
         # Step 20: Test LLM
         print(f"\n- Testing LLM {llm_name} ({canister_id})")
         cmd = [
@@ -509,29 +669,47 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         run_this_cmd(cmd, llm_cwd, confirm=False)
         completed_steps.append("Start cycle-balance tracking timer")
 
-        # Update canister_ids.json
-        print(f"\n- Updating canister_ids.json")
-        if llm_name in canister_ids_data:
-            canister_ids_data[llm_name][network] = canister_id
+        if target_canister_id:
+            # Re-register with the controller if it was registered before
+            # (mirrors upgrade_llms.py; counts are unchanged, so GameState
+            # needs no update).
+            if was_registered:
+                print(f"\n- Adding LLM back to controller canister ({ctrlb_canister_id})")
+                cmd = ["dfx", "canister", "--network", network, "call", ctrlb_canister_id, "add_llm_canister", f'(record {{canister_id = "{canister_id}"}})']
+                run_this_cmd(cmd, llm_cwd, confirm=True)
+
+                print(f"\n- Verifying LLMs registered in controller canister ({ctrlb_canister_id})")
+                cmd = ["dfx", "canister", "--network", network, "call", ctrlb_canister_id, "get_llm_canisters", "--output", "json"]
+                run_this_cmd(cmd, llm_cwd, confirm=False)
+                completed_steps.append("Re-register LLM with controller")
         else:
-            canister_ids_data[llm_name] = {network: canister_id}
-        with open(canister_ids_path, "w") as f:
-            json.dump(canister_ids_data, f, indent=2)
-            f.write("\n")
-        print(f"  Updated {llm_name}.{network} = {canister_id}")
-        completed_steps.append("Update canister_ids.json")
+            # Update canister_ids.json
+            print(f"\n- Updating canister_ids.json")
+            if llm_name in canister_ids_data:
+                canister_ids_data[llm_name][network] = canister_id
+            else:
+                canister_ids_data[llm_name] = {network: canister_id}
+            with open(canister_ids_path, "w") as f:
+                json.dump(canister_ids_data, f, indent=2)
+                f.write("\n")
+            print(f"  Updated {llm_name}.{network} = {canister_id}")
+            completed_steps.append("Update canister_ids.json")
 
         # Print summary
         print("\n" + "=" * 80)
         print(f"Successfully deployed {llm_name} ({canister_id})")
         print(f"  LLM type : {llm_type}")
         print(f"  Network  : {network}")
-        print(f"  Subnet   : {subnet_var} ({subnet})")
+        if not target_canister_id:
+            print(f"  Subnet   : {subnet_var} ({subnet})")
         print(f"  Controller: {ctrlb_canister_id}")
         print("=" * 80)
         print("\nNext steps:")
-        print(f"  1. Register canister with CycleOps (manual)")
-        print(f"  2. Add LLM to protocol: ./scripts/add_llm.sh --network {network} --canister-id {canister_id} --llm-type {llm_type}")
+        if target_canister_id and was_registered:
+            print(f"  1. Verify canister is still registered with CycleOps (manual)")
+        else:
+            print(f"  1. Register canister with CycleOps (manual)")
+            print(f"  2. Add LLM to protocol: ./scripts/add_llm.sh --network {network} --canister-id {canister_id} --llm-type {llm_type}")
 
     except subprocess.CalledProcessError as e:
         print("\n" + "!" * 80)
@@ -540,7 +718,8 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         print(f"  LLM name     : {llm_name}")
         if canister_id:
             print(f"  Canister ID  : {canister_id}")
-        print(f"  Subnet       : {subnet_var} ({subnet})")
+        if not target_canister_id:
+            print(f"  Subnet       : {subnet_var} ({subnet})")
         print(f"  Network      : {network}")
         print(f"\n  Completed steps:")
         for i, step in enumerate(completed_steps, 1):
@@ -550,7 +729,19 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
             print(f"  Command: {e.cmd}")
         if hasattr(e, "returncode"):
             print(f"  Return code: {e.returncode}")
-        if canister_id:
+        if target_canister_id:
+            print(f"\n  Do NOT delete this pre-existing canister.")
+            if "Install into existing canister" in completed_steps:
+                print(f"  The wasm is already installed. Either re-run deploy_llm and accept the")
+                print(f"  reinstall prompt (wipes state; the model is re-uploaded), or — if the")
+                print(f"  model upload already completed — finish the remaining steps via:")
+                print(f"    ./scripts/upgrade_llms.sh --network {network} --canister-id {target_canister_id}")
+            else:
+                print(f"  Fix the issue and re-run:")
+                print(f"    ./scripts/deploy_llm.sh --network {network} --llm-type {llm_type} --canister-id {target_canister_id}")
+            if was_registered and "Re-register LLM with controller" not in completed_steps:
+                print(f"  NOTE: the LLM was removed from the controller and has NOT been re-added yet.")
+        elif canister_id:
             env_updated = "Update canister_ids-" in " ".join(completed_steps)
             print(f"\n  To clean up the failed canister:")
             if env_updated:
@@ -562,7 +753,7 @@ def deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=Fa
         print("!" * 80)
 
 
-def main(network, llm_type, subnet=None, dry_run=False):
+def main(network, llm_type, subnet=None, target_canister_id=None, dry_run=False):
     (CANISTERS, CANISTER_COLORS, RESET_COLOR) = get_canisters(network, "protocol")
 
     # Extract controller canister IDs
@@ -598,12 +789,15 @@ def main(network, llm_type, subnet=None, dry_run=False):
     llm_cwd = os.path.join(SCRIPT_DIR, LLM_TYPE_CONFIG[llm_type]["llm_cwd"])
 
     print("\n" + "=" * 80)
-    print(f"Deploy new {llm_type} LLM on network '{network}'")
+    if target_canister_id:
+        print(f"Install {llm_type} LLM into existing canister {target_canister_id} on network '{network}'")
+    else:
+        print(f"Deploy new {llm_type} LLM on network '{network}'")
     print(f"  Controller: {ctrlb_canister_id}")
     print(f"  Working dir: {llm_cwd}")
     print("=" * 80)
 
-    deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, dry_run=dry_run)
+    deploy_llm(ctrlb_canister_id, llm_type, llm_cwd, network, subnet, target_canister_id=target_canister_id, dry_run=dry_run)
 
 
 if __name__ == "__main__":
@@ -626,9 +820,16 @@ if __name__ == "__main__":
         help="Specify the subnet ID (auto-selected if not provided)",
     )
     parser.add_argument(
+        "--canister-id",
+        default=None,
+        help="Install into this existing empty canister instead of creating a new one",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Show what would be done without making any changes",
     )
     args = parser.parse_args()
-    main(args.network, args.llm_type, subnet=args.subnet, dry_run=args.dry_run)
+    if args.canister_id and args.subnet:
+        parser.error("--subnet cannot be combined with --canister-id (an existing canister already lives on its subnet)")
+    main(args.network, args.llm_type, subnet=args.subnet, target_canister_id=args.canister_id, dry_run=args.dry_run)

@@ -9,13 +9,20 @@ import json
 from collections import defaultdict
 from dotenv import dotenv_values
 
-from scripts.cleanup_llm_promptcache import cleanup_llm_promptcache
-
-from .monitor_common import get_canisters, run_this_cmd
+from .monitor_common import get_canisters, get_balance, run_this_cmd, LLM_MAX_TOKENS, LLM_WASM_MEMORY_LIMIT
 
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 FUNNAI_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "../"))
+
+# Minimum cycles balance before taking the pre-upgrade snapshot. A snapshot
+# reserves roughly the canister's Memory Size again: at ~2.3 GB the testing
+# ShareService LLM needed > 3.6 T total ("Canister cannot grow memory ...
+# insufficient cycles", 2026-09-14); prd LLMs run up to ~3 GB. 6 T gives margin.
+# The top-up is sent from the identity's cycles wallet (`dfx wallet --ic
+# balance`). --ic is correct for every supported network here: testing/prd/
+# development are all aliases for mainnet, where the wallet lives.
+MIN_CYCLES_BALANCE_FOR_SNAPSHOT = 6_000_000_000_000
     
 
 def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_canister_id, canister_name, canister_id, network, dry_run=False):
@@ -40,7 +47,8 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
             print(f"Unknown llm type for canister {canister_name}. Skipping cleanup.")
             return
 
-        # get canister name from canister_ids.json, for dfx deploy command
+        # Sanity check: the canister id must be a known llm_N of this role for
+        # this network (the install itself targets the id directly).
         llm_name_dfx_json = None
         with open(os.path.join(llm_cwd, "canister_ids.json")) as f:
             canister_ids = json.load(f)
@@ -84,25 +92,56 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
         
         print(" ")
+        print(f"- Checking cycles balance of LLM {canister_name} ({canister_id})")
+        if dry_run:
+            print(f"  [DRY-RUN] would deposit cycles if balance < {MIN_CYCLES_BALANCE_FOR_SNAPSHOT:_}.")
+        else:
+            balance = get_balance(canister_id, network, cwd=llm_cwd)
+            if balance is None:
+                print(f"ERROR: could not read cycles balance of {canister_id}. Skipping this LLM.")
+                return
+            print(f"  Balance: {balance:_} cycles (minimum for snapshot: {MIN_CYCLES_BALANCE_FOR_SNAPSHOT:_})")
+            if balance < MIN_CYCLES_BALANCE_FOR_SNAPSHOT:
+                topup = MIN_CYCLES_BALANCE_FOR_SNAPSHOT - balance
+                print(f"  Balance too low for the snapshot's memory reservation.")
+                print(f"  Sending {topup:_} cycles from the cycles wallet (check it with `dfx wallet --ic balance`).")
+                cmd = ["dfx", "wallet", "--ic", "send", canister_id, str(topup)]
+                run_this_cmd(cmd, llm_cwd, confirm=True, dry_run=dry_run)
+
+        print(" ")
         print(f"- Creating snapshot for LLM {canister_name} ({canister_id})")
         cmd = ["dfx", "canister", "--network", network, "snapshot", "create", canister_id]
         run_this_cmd(cmd, llm_cwd, confirm=True, dry_run=dry_run)
         
         print(" ")
         print(f"- Upgrading LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "deploy", "--network", network, llm_name_dfx_json, "--mode", "upgrade"]
+        # Install the exact wasm that was hashed. Use `install --wasm`, never
+        # `dfx deploy`, so nothing gets rebuilt between hashing and installing
+        # (TMP-HANDOVER-FROM-LLAMA_CPP_CANISTER-TO-UPGRADE-LLM-CANISTERS.md).
+        #
+        # No --wasm-memory-persistence flag, deliberately. `--mode upgrade`
+        # always preserves STABLE memory, where the gguf model files live
+        # (only `--mode reinstall` would wipe them). The `keep` flag preserves
+        # wasm MAIN (heap) memory and only applies to enhanced-orthogonal-
+        # persistence canisters (Motoko, e.g. the mAIners in
+        # upgrade_mainers.py); the llama_cpp wasm carries no EOP metadata, so
+        # the flag would be rejected. The heap IS reset on upgrade — that is
+        # why load_model and the timer re-arms below must run afterwards.
+        cmd = ["dfx", "canister", "--network", network, "install", canister_id, "--wasm", "../llama_cpp_canister/build/llama_cpp.wasm", "--mode", "upgrade"]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
-        
+
+        # Applied before start/load_model, so the limit is in force when the
+        # model is loaded into the heap. See LLM_WASM_MEMORY_LIMIT for why the
+        # 3 GiB dfx default is not enough.
+        print(" ")
+        print(f"- Setting wasm_memory_limit to {LLM_WASM_MEMORY_LIMIT} (3.75 GiB) for LLM {canister_name} ({canister_id})")
+        cmd = ["dfx", "canister", "update-settings", canister_id, "--wasm-memory-limit", str(LLM_WASM_MEMORY_LIMIT), "--network", network]
+        run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
+
         print(" ")
         print(f"- Starting LLM {canister_name} ({canister_id})")
         cmd = ["dfx", "canister", "--network", network, "start", canister_id]
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
-        
-        # We can now skip this. Cleaning is done constantly while in production.
-        # print(" ")
-        # print(f"- Cleaning prompt caches in LLM {canister_name} ({canister_id})")
-        # cmd = ["scripts/cleanup_llm_promptcache.sh", "--network", network, "--canister-id", canister_id]
-        # run_this_cmd(cmd, FUNNAI_DIR, confirm=False)
         
         print(" ")
         print(f"- Checking health for LLM {canister_name} ({canister_id})")
@@ -122,6 +161,17 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
                     print(f"Health check failed after {max_retries} attempts")
                     raise
 
+        # Delete ALL saved prompt caches. Cache files written by the previous
+        # wasm version may not be loadable by the new one, and the controllers
+        # copy_prompt_cache old saved sessions as soon as traffic resumes. The
+        # on-chain cleanup timer only prunes by age, which is too late. The
+        # cleanup tool requires the LLM to be offline — true here, since it was
+        # removed from its controller at the start of this run.
+        print(" ")
+        print(f"- Cleaning prompt caches in LLM {canister_name} ({canister_id})")
+        cmd = ["scripts/cleanup_llm_promptcache.sh", "--network", network, "--canister-id", canister_id]
+        run_this_cmd(cmd, FUNNAI_DIR, confirm=False, dry_run=dry_run)
+
         print(" ")
         print(f"- Loading model for LLM {canister_name} ({canister_id})")
         cmd = ["dfx", "canister", "--network", network, "call", canister_id, "load_model", '(record { args = vec {"--model"; "models/model.gguf"} })']
@@ -129,7 +179,7 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
         
         print(" ")
         print(f"- Setting max_tokens for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "set_max_tokens", '(record { max_tokens_query = 12 : nat64; max_tokens_update = 12 : nat64 })']
+        cmd = ["dfx", "canister", "--network", network, "call", canister_id, "set_max_tokens", f'(record {{ max_tokens_query = {LLM_MAX_TOKENS} : nat64; max_tokens_update = {LLM_MAX_TOKENS} : nat64 }})']
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
         
         print(" ")
@@ -171,9 +221,12 @@ def upgrade_llm(challenger_canister_id, judge_canister_id, share_service_caniste
         run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
 
         print(" ")
-        print(f"- Adding NNS Root Canister as controller for LLM {canister_name} ({canister_id})")
-        cmd = ["dfx", "sns", "prepare-canisters", "--network", "ic", "add-nns-root", canister_id]
-        run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
+        if network == "prd":
+            print(f"- Adding NNS Root Canister as controller for LLM {canister_name} ({canister_id})")
+            cmd = ["dfx", "sns", "prepare-canisters", "--network", "ic", "add-nns-root", canister_id]
+            run_this_cmd(cmd, llm_cwd, confirm=False, dry_run=dry_run)
+        else:
+            print(f"- Skipping NNS Root Canister as controller for LLM {canister_name} ({canister_id}) (non-prd network)")
 
         print(" ")
         print(f"- Testing LLM {canister_name} ({canister_id})")

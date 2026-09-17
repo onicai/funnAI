@@ -4,6 +4,7 @@
 NETWORK_TYPE="local"
 LLM_TYPE=""
 SUBNET=""
+CANISTER_ID=""
 DRY_RUN=""
 
 # Parse command line arguments
@@ -34,13 +35,18 @@ while [ $# -gt 0 ]; do
             SUBNET=$1
             shift
             ;;
+        --canister-id)
+            shift
+            CANISTER_ID=$1
+            shift
+            ;;
         --dry-run)
             DRY_RUN="--dry-run"
             shift
             ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --llm-type [challenger|judge|share_service] [--subnet SUBNET_ID] [--dry-run]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --llm-type [challenger|judge|share_service] [--subnet SUBNET_ID] [--canister-id CANISTER_ID] [--dry-run]"
             exit 1
             ;;
     esac
@@ -48,7 +54,7 @@ done
 
 if [ -z "$LLM_TYPE" ]; then
     echo "ERROR: --llm-type is required."
-    echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --llm-type [challenger|judge|share_service] [--subnet SUBNET_ID] [--dry-run]"
+    echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --llm-type [challenger|judge|share_service] [--subnet SUBNET_ID] [--canister-id CANISTER_ID] [--dry-run]"
     exit 1
 fi
 
@@ -56,6 +62,9 @@ echo "Using network type: $NETWORK_TYPE"
 echo "Using LLM type    : $LLM_TYPE"
 if [ -n "$SUBNET" ]; then
     echo "Using subnet       : $SUBNET"
+fi
+if [ -n "$CANISTER_ID" ]; then
+    echo "Using canister id  : $CANISTER_ID"
 fi
 if [ -n "$DRY_RUN" ]; then
     echo "DRY RUN mode       : enabled"
@@ -66,4 +75,9 @@ if [ -n "$SUBNET" ]; then
     SUBNET_ARG="--subnet $SUBNET"
 fi
 
-python -m scripts.deploy_llm --network $NETWORK_TYPE --llm-type $LLM_TYPE $SUBNET_ARG $DRY_RUN
+CANISTER_ID_ARG=""
+if [ -n "$CANISTER_ID" ]; then
+    CANISTER_ID_ARG="--canister-id $CANISTER_ID"
+fi
+
+python -m scripts.deploy_llm --network $NETWORK_TYPE --llm-type $LLM_TYPE $SUBNET_ARG $CANISTER_ID_ARG $DRY_RUN
