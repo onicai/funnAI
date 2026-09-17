@@ -32,10 +32,16 @@ DFINITY release tag for group D, and the outer `funnAI` repo for group E.
 
 **Verification status (2026-09-17):** all of group A (7), the group-B ShareAgent fleet,
 group C (9 LLMs) and group D (Token Ledger + Index) were **reproduced and confirmed** — the
-build/artifact hash equals the deployed module hash. Two gaps remain, flagged in place:
-- **ShareService controller** (group B) runs an **older build, left behind** — it was not
-  re-upgraded when the fleet advanced, so it does not match `main` (⚠️ in the table).
-- **Frontend + Backend** (group E) have **no reproducible Docker build** yet.
+build/artifact hash equals the deployed module hash. Two things are **NOT** reproducible:
+- **ShareService controller** (group B): its deployed build `7e149b67…` predates the
+  reproducible-build framework (release-10); it matches no release from release-10 → `main`.
+  Not reproducible — must be redeployed from `main`. See group B (⚠️).
+- **Frontend + Backend** (group E) have **no reproducible Docker build** at all.
+
+Reproducibility note: the base images for **release-10 … release-13** no longer build
+as-pinned (their `Dockerfile.base` pins exact apt patch versions of curl/ca-certificates/git
+that Ubuntu has since deleted); release-14 onward unpinned them. Relaxing those pins lets the
+base build and does not change the wasm (apt tooling ≠ the compiler).
 
 `(to confirm)` marks a deployed hash that is authoritative but whose source isn't pinned to
 a repo commit yet.
@@ -79,17 +85,28 @@ mAInerCreator) to the current build, but the ShareService controller canister wa
 sampled agent's live hash; `scripts/audit_mainer_controllers.sh --network prd` confirms
 all 754 agree.
 
-**⚠️ ShareService controller** (`7e149b67…`): runs an **older build that was left behind**,
-not a build ahead of `main`. Building `PoAIW/src/mAIner` at `main` @ `5e262d2` — and at
-release-15 (2026-07-21) — yields `ce262a7b…` (the current fleet build), while ShareService
-still runs `7e149b67…`. So the mAIner wasm has been `ce262a7b…` since at least release-15,
-and ShareService's `7e149b67…` predates it (≤ release-13 era). No release tag records a
-ShareService-specific upgrade: subsequent releases upgraded the mAIner **fleet** (via
-mAInerCreator) but never redeployed the ShareService **controller** canister. Its exact
-source release is `(to confirm)` (built with the pre-release-15 build system).
+**⚠️ ShareService controller** (`7e149b67…`): **its build predates the reproducible-build
+framework — it cannot be reproduced from any release.** `PoAIW/src/mAIner` was built at
+every release from release-10 (the first reproducible release, 2026-01-31) through
+release-16 / `main`, each with its own correct per-release base image (apt version pins
+relaxed only where Ubuntu has since removed those exact patch versions — those pins are
+build tooling, not the Motoko compiler, so the wasm is unaffected):
+
+| release                                    | mAIner wasm hash |
+| ------------------------------------------ | ---------------- |
+| release-10                                 | `62704fe6…`      |
+| release-11, release-12                     | `eec87d02…`      |
+| release-13                                 | `ea4b480b…`      |
+| release-14, release-15, release-16, `main` | `ce262a7b…` (fleet) |
+
+**None equals ShareService's `7e149b67…`.** So the ShareService controller was last
+deployed **before release-10** — before any reproducible-build machinery existed, when the
+wasm came from an unpinned local `dfx build`. It therefore **cannot be reproduced today**.
+It was never redeployed as the fleet advanced (releases upgrade the fleet via mAInerCreator,
+not the standalone ShareService controller canister `rilmv`).
 **Fix before SNS launch:** redeploy the ShareService controller from a current `main`
 build — `make docker-verify-wasm VERIFY_NETWORK=prd VERIFY_CANISTER=rilmv-caaaa-aaaaa-qandq-cai`
-would then MATCH `ce262a7b…`, aligning ShareService with the fleet and `main`.
+would then MATCH `ce262a7b…`, making it reproducible and aligned with the fleet and `main`.
 
 ### Group C — LLM canisters (llama_cpp_canister)
 
