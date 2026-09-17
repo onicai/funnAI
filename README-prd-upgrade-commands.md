@@ -957,10 +957,19 @@ shasum -a 256 out/mainer_canister.wasm # confirm it is the TARGET_HASH
 cp out/mainer_canister.did  ../mAInerCreator/files/mainer_ctrlb_canister.did
 cp out/mainer_canister.wasm ../mAInerCreator/files/mainer_ctrlb_canister.wasm
 #
+# 🚫 OBSOLETE — funnAI will NEVER deploy new LLM canisters via mAInerCreator.
+# LLM canisters (Challenger / Judge / ShareService) are deployed and upgraded
+# DIRECTLY with funnAI/scripts/upgrade_llms.sh and funnAI/scripts/deploy_llm.sh.
+# The llama_cpp wasm/model therefore no longer needs to be copied into, or
+# uploaded to, mAInerCreator. The llama_cpp steps below are kept for historical
+# reference only — do NOT run them.
+# (The mAIner CONTROLLER wasm steps remain valid: mAInerCreator still creates the
+#  ShareAgent mAIner controllers. This obsoletion applies ONLY to the LLM wasm/model.)
+#
 # From folder: PoAIW/llms/llama_cpp_canister/build
-shasum -a 256 llama_cpp.wasm # confirm it is the deployed llm wasm
-cp llama_cpp.did ../../../src/mAInerCreator/files/llama_cpp.did
-cp llama_cpp.wasm ../../../src/mAInerCreator/files/llama_cpp.wasm
+# shasum -a 256 llama_cpp.wasm # confirm it is the deployed llm wasm
+# cp llama_cpp.did ../../../src/mAInerCreator/files/llama_cpp.did
+# cp llama_cpp.wasm ../../../src/mAInerCreator/files/llama_cpp.wasm
 #
 # -> More details in PoAIW/src/mAInerCreator/README.md
 #
@@ -971,15 +980,15 @@ shasum -a 256 files/mainer_ctrlb_canister.wasm # verify
 python -m scripts.upload_mainer_controller_canister --network $NETWORK --canister mainer_creator_canister --wasm files/mainer_ctrlb_canister.wasm --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
 # -> Repeat for all networks, used to test mAInerCreator
 #
-# (if changed) Upload the mainer LLM canister wasm
-shasum -a 256 files/llama_cpp.wasm # verify
-python -m scripts.upload_mainer_llm_canister_wasm --network $NETWORK --canister mainer_creator_canister --wasm files/llama_cpp.wasm --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
-# -> Repeat for all networks, used to test mAInerCreator
-
-# (if changed) Upload the mainer LLM model file (gguf)
-shasum -a 256 files/qwen2.5-0.5b-instruct-q8_0.gguf # verify
-python -m scripts.upload_mainer_llm_canister_modelfile --network $NETWORK --canister mainer_creator_canister --chunksize 2000000 --wasm files/qwen2.5-0.5b-instruct-q8_0.gguf --hf-sha256 "ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e" --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
-# -> Repeat for all networks, used to test mAInerCreator
+# 🚫 OBSOLETE — do NOT upload an LLM wasm/model to mAInerCreator (see the note
+# above: funnAI never deploys LLMs via mAInerCreator). Kept for reference only.
+# # (if changed) Upload the mainer LLM canister wasm
+# shasum -a 256 files/llama_cpp.wasm # verify
+# python -m scripts.upload_mainer_llm_canister_wasm --network $NETWORK --canister mainer_creator_canister --wasm files/llama_cpp.wasm --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
+#
+# # (if changed) Upload the mainer LLM model file (gguf)
+# shasum -a 256 files/qwen2.5-0.5b-instruct-q8_0.gguf # verify
+# python -m scripts.upload_mainer_llm_canister_modelfile --network $NETWORK --canister mainer_creator_canister --chunksize 2000000 --wasm files/qwen2.5-0.5b-instruct-q8_0.gguf --hf-sha256 "ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e" --candid src/declarations/mainer_creator_canister/mainer_creator_canister.did
 
 # Verify the sha256 hashes of all uploaded files
 # Warning: do not run this while upload is in process. Wait till it is fully completed.

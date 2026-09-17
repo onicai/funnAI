@@ -122,11 +122,15 @@ dfx canister --ic call $GAMESTATE getNumScoredChallengesAdmin --output json
 dfx canister --ic call $MAINER_OWN getRoundRobinCanister
 ```
 
-### Add another LLM to a mAIner Agent
+### Add another LLM to a mAIner Agent — 🚫 OBSOLETE
+
+funnAI NEVER deploys LLM canisters via mAInerCreator. LLM canisters are deployed
+directly with funnAI/scripts/deploy_llm.sh / upgrade_llms.sh. Kept for historical
+reference only — do NOT run.
 
 ```bash
 # Use $MAINER_OWN or $MAINER_SERVICE
-dfx canister --ic call $MAINER_CREATOR testCreateMainerLlmCanister "(\"$MAINER_OWN\")"
+# dfx canister --ic call $MAINER_CREATOR testCreateMainerLlmCanister "(\"$MAINER_OWN\")"
 ```
 
 ### LLM canisters
