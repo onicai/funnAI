@@ -6,4 +6,4 @@ The code for https://funnai.onicai.com/
 
 To contribute, see [README-setup.md](README-setup.md).
 
-To verify, see [WASM-HASHES.md](WASM-HASHES.md)
+To verify via reproducible builds, see [WASM-HASHES.md](WASM-HASHES.md)

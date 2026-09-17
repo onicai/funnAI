@@ -11,9 +11,7 @@ tables below use bare hex to match `shasum` / the reproducible build output):
 dfx canister --network ic info <canister-id>   # prints "Module hash: 0x..."
 ```
 
-All hashes in this file were **read live on 2026-09-17**. Re-read them with the loop in
-[Read every deployed hash at once](#read-every-deployed-hash-at-once) rather than trusting
-a copy — this file has been wrong before from stale copying.
+All hashes in this file were read live on 2026-09-17.
 
 ## What the SNS controls
 
@@ -30,41 +28,63 @@ holds the promoted controller wasm they all run. They are documented in group B.
 
 Grouped by how the wasm is built and verified. The **source** column is repo-aware: a
 PoAIW commit for groups A/B, the `llama_cpp_onicai_fork` commit / release for group C, the
-DFINITY release tag for group D, and the outer `funnAI` repo for group E. `(to confirm)`
-means the deployed hash is authoritative but its exact source commit/date isn't on record
-yet — reproduce it with the group's verify procedure to establish it.
+DFINITY release tag for group D, and the outer `funnAI` repo for group E.
+
+**Verification status (2026-09-17):** all of group A (7), the group-B ShareAgent fleet,
+group C (9 LLMs) and group D (Token Ledger + Index) were **reproduced and confirmed** — the
+build/artifact hash equals the deployed module hash. Two gaps remain, flagged in place:
+- **ShareService controller** (group B) runs a build **ahead of `main`** — not yet
+  reproducible from the repo (⚠️ in the table).
+- **Frontend + Backend** (group E) have **no reproducible Docker build** yet.
+
+`(to confirm)` marks a deployed hash that is authoritative but whose source isn't pinned to
+a repo commit yet.
 
 ### Group A — Motoko protocol canisters (PoAIW, shared Docker build)
 
-| role          | canister-id                   | source (PoAIW) | deployed     | deployed module hash                                             |
-| ------------- | ----------------------------- | -------------- | ------------ | ---------------------------------------------------------------- |
-| GameState     | `r5m5y-diaaa-aaaaa-qanaa-cai` | `(to confirm)` | (to confirm) | e26a6419dbcfc98e1eff40c02cd10916cead203dff25814a779421efabf55d71 |
-| Challenger    | `rtoqq-yyaaa-aaaaa-qanba-cai` | `(to confirm)` | (to confirm) | 47f386b76144ef1a0fccd20608c099de7c83480a9a7e87a8ae1fa64b10f97db1 |
-| Judge         | `qmgdh-3aaaa-aaaaa-qanfq-cai` | `(to confirm)` | (to confirm) | 24ade07da97f8e6026c15b150f81e6486360025fc846cf2eefa74bb195f7edd6 |
-| mAInerCreator | `r2n3m-oqaaa-aaaaa-qanaq-cai` | `968cc3a`      | 2026-08-25   | 6441d67f73af48d06e06106db1ce6f23eaf7d7c7782f352accead7a9a622d52d |
-| Treasury      | `qbhxa-ziaaa-aaaaa-qbqza-cai` | `(to confirm)` | (to confirm) | df75427673a8a49c4cd03befdaf0c9b189e5e31e3e9f3481097ea8f5eaa006e7 |
-| Archive       | `yiobo-hyaaa-aaaaf-qdjnq-cai` | `(to confirm)` | (to confirm) | 1220f961d72159c8ddbee7eb6f89ac71a1a054781e4db7ca90add749c37061b7 |
-| API           | `bgm6p-5aaaa-aaaaf-qbzda-cai` | `(to confirm)` | (to confirm) | 13ef2f45052b5b914cb867a02b281440307ab6ce861ef489d34ab71a1ede5513 |
+All 7 verified **reproducible from PoAIW `main` @ `5e262d2`** on 2026-09-17 via
+`make docker-verify-wasm VERIFY_NETWORK=prd` — each Docker build hash equalled the
+deployed module hash (✅ MATCH).
 
-Note: GameState's hash `e26a6419…` differs from the `66e0da2a…` (`968cc3a`, 2026-08-25)
-this file recorded before — it was upgraded since (e.g. the marketplace / 60% bonus
-release), so its source commit is `(to confirm)`.
+| role          | canister-id                   | source (PoAIW) | verified   | deployed module hash                                             |
+| ------------- | ----------------------------- | -------------- | ---------- | ---------------------------------------------------------------- |
+| GameState     | `r5m5y-diaaa-aaaaa-qanaa-cai` | `5e262d2`      | 2026-09-17 | e26a6419dbcfc98e1eff40c02cd10916cead203dff25814a779421efabf55d71 |
+| Challenger    | `rtoqq-yyaaa-aaaaa-qanba-cai` | `5e262d2`      | 2026-09-17 | 47f386b76144ef1a0fccd20608c099de7c83480a9a7e87a8ae1fa64b10f97db1 |
+| Judge         | `qmgdh-3aaaa-aaaaa-qanfq-cai` | `5e262d2`      | 2026-09-17 | 24ade07da97f8e6026c15b150f81e6486360025fc846cf2eefa74bb195f7edd6 |
+| mAInerCreator | `r2n3m-oqaaa-aaaaa-qanaq-cai` | `5e262d2`      | 2026-09-17 | 6441d67f73af48d06e06106db1ce6f23eaf7d7c7782f352accead7a9a622d52d |
+| Treasury      | `qbhxa-ziaaa-aaaaa-qbqza-cai` | `5e262d2`      | 2026-09-17 | df75427673a8a49c4cd03befdaf0c9b189e5e31e3e9f3481097ea8f5eaa006e7 |
+| Archive       | `yiobo-hyaaa-aaaaf-qdjnq-cai` | `5e262d2`      | 2026-09-17 | 1220f961d72159c8ddbee7eb6f89ac71a1a054781e4db7ca90add749c37061b7 |
+| API           | `bgm6p-5aaaa-aaaaf-qbzda-cai` | `5e262d2`      | 2026-09-17 | 13ef2f45052b5b914cb867a02b281440307ab6ce861ef489d34ab71a1ede5513 |
+
+`5e262d2` is `main`'s tip at verification time; the deployed protocol canisters reproduce
+from it, so the code the SNS will govern is exactly what is in this repo. (GameState's
+hash changed from the `66e0da2a…` this file recorded on 2026-08-25 — it was upgraded since,
+e.g. the marketplace / 60% bonus release — and now reproduces at `5e262d2`.)
 
 ### Group B — mAIner controller wasm (PoAIW; ShareService + the ShareAgent fleet)
 
 One Motoko source (`PoAIW/src/mAIner`) produces the role-neutral `mainer_canister.wasm`,
 run by both the ShareService controller and every ShareAgent. mAInerCreator deliberately
 promotes a pinned build to the fleet, which can lag the ShareService's own deploy, so the
-two hashes can differ.
+two hashes differ today.
 
-| role                    | canister-id                   | source (PoAIW) | deployed     | deployed module hash                                             |
-| ----------------------- | ----------------------------- | -------------- | ------------ | ---------------------------------------------------------------- |
-| ShareService controller | `rilmv-caaaa-aaaaa-qandq-cai` | `(unrecorded)` | (to confirm) | 7e149b675f982bb948055326a22358508da2cbd472e7949aad1e2e40b0f3db6e |
-| ShareAgent fleet (754)  | *(all 754 mAIner canisters)*  | `968cc3a`      | 2026-08-26   | ce262a7b1167a86204d4f80273b05b7b299df852a99e6c3134e1f22dd41199d7 |
+| role                    | canister-id                   | source (PoAIW)     | verified   | deployed module hash                                             |
+| ----------------------- | ----------------------------- | ------------------ | ---------- | ---------------------------------------------------------------- |
+| ShareAgent fleet (754)  | *(all 754 mAIner canisters)*  | `5e262d2`          | 2026-09-17 | ce262a7b1167a86204d4f80273b05b7b299df852a99e6c3134e1f22dd41199d7 |
+| ShareService controller | `rilmv-caaaa-aaaaa-qandq-cai` | `(to confirm)` ⚠️  | —          | 7e149b675f982bb948055326a22358508da2cbd472e7949aad1e2e40b0f3db6e |
 
-The fleet hash equals mAInerCreator's promoted `mainerControllerWasmSha256` and a sampled
-agent's live module hash (both `ce262a7b…`, verified 2026-09-17);
-`scripts/audit_mainer_controllers.sh --network prd` confirms all 754 agree.
+**ShareAgent fleet** (`ce262a7b…`): reproducible from `main` @ `5e262d2` — a
+`make docker-verify-wasm` build of `PoAIW/src/mAIner` produced exactly `ce262a7b…` on
+2026-09-17. It also equals mAInerCreator's promoted `mainerControllerWasmSha256` and a
+sampled agent's live hash; `scripts/audit_mainer_controllers.sh --network prd` confirms
+all 754 agree.
+
+**⚠️ ShareService controller** (`7e149b67…`): does **NOT** reproduce from `main` — the
+same `main` @ `5e262d2` build of `PoAIW/src/mAIner` yields the fleet's `ce262a7b…`, not
+`7e149b67…`. The ShareService therefore runs a mAIner build that is **ahead of / not on
+`main`** (consistent with it being intentionally newer than the promoted fleet build). Its
+exact source commit is `(to confirm)`; to make it SNS-verifiable, that commit must land on
+`main`, or ShareService be redeployed from a `main` build.
 
 ### Group C — LLM canisters (llama_cpp_canister)
 
@@ -99,16 +119,21 @@ Standard DFINITY ICRC-1 canisters (`type: custom`), wasm downloaded from DFINITY
 | Token Ledger (FUNNAI) | `vpyot-zqaaa-aaaaa-qavaq-cai` | `ic-icrc1-ledger.wasm.gz`                                     | 3b03d1bb1145edbcd11101ab2788517bc0f427c3bd7b342b9e3e7f42e29d5822 |
 | Token Index           | `mziuv-biaaa-aaaaa-qccrq-cai` | `ic-icrc1-index-ng.wasm.gz`                                   | e155db9d06b6147ece4f9defe599844f132a7db21693265671aa6ac60912935f |
 
+Both **verified 2026-09-17**: `shasum -a 256` of each release `.gz` asset equals the
+deployed module hash. Note the IC stores the **gzip-compressed** module, so the module
+hash is the sha256 of the `.gz` file **as-is** — do NOT gunzip it first (see the group-D
+verify command below).
+
 ### Group E — Frontend & Backend (outer funnAI repo)
 
 Built in the **outer `funnAI` repo** (not PoAIW) and — unlike every other group —
 **without a reproducible Docker build**. Deployed hashes are recorded; reproducibility is
 a known gap (see the group-E verify note below).
 
-| role     | canister-id                   | source (funnAI)              | deployed     | deployed module hash                                             |
-| -------- | ----------------------------- | ---------------------------- | ------------ | ---------------------------------------------------------------- |
-| Frontend | `vizih-uiaaa-aaaaa-qavaa-cai` | `funnai_frontend` `(to confirm)` | (to confirm) | 423f20ee4e5daf8f76d6bb2b4a87440227f15b26cf874c132fd75d83e252c8f6 |
-| Backend  | `6wp2z-paaaa-aaaaa-qau7q-cai` | `funnai_backend` `(to confirm)`  | (to confirm) | 9fca8da6b78fe5c4aa0957596c28c32ebe90bdb16573c64880809577aca688cb |
+| role     | canister-id                   | source (funnAI)   | verified                | deployed module hash                                             |
+| -------- | ----------------------------- | ----------------- | ----------------------- | ---------------------------------------------------------------- |
+| Frontend | `vizih-uiaaa-aaaaa-qavaa-cai` | `funnai_frontend` | — (no reproducible build) | 423f20ee4e5daf8f76d6bb2b4a87440227f15b26cf874c132fd75d83e252c8f6 |
+| Backend  | `6wp2z-paaaa-aaaaa-qau7q-cai` | `funnai_backend`  | — (no reproducible build) | 9fca8da6b78fe5c4aa0957596c28c32ebe90bdb16573c64880809577aca688cb |
 
 ## Reproducible build & verification
 
@@ -139,8 +164,8 @@ a ShareAgent — each link must be checked:
 
 ```bash
 # 1. SOURCE -> BUILD (the trust anchor: you build the recorded commit yourself)
-cd PoAIW && git checkout 968cc3a
-cd src/mAIner && make docker-build-wasm        # must print ce262a7b1167a862...
+cd PoAIW && git checkout 5e262d2
+cd src/mAIner && make docker-build-wasm        # must print ce262a7b1167a862... (verified 2026-09-17)
 
 # 2. BUILD -> PROMOTED (the hash mAInerCreator hands out must be that build)
 dfx canister --network prd call --query r2n3m-oqaaa-aaaaa-qanaq-cai getSha256HashesAdmin
@@ -153,6 +178,9 @@ scripts/audit_mainer_controllers.sh --network prd              # fleet-wide: one
 
 For the **ShareService controller**, verify directly (it has no on-chain expected hash):
 `make docker-verify-wasm VERIFY_NETWORK=prd VERIFY_CANISTER=rilmv-caaaa-aaaaa-qandq-cai`.
+As of 2026-09-17 this reports **MISMATCH** — the `main` build yields `ce262a7b…` (the
+fleet) while ShareService runs `7e149b67…`, i.e. a build ahead of `main` (see the group-B
+table note). It becomes verifiable once that source lands on `main`.
 
 ### C. LLM canisters
 
@@ -171,8 +199,10 @@ Full reproduce: build the release from `onicai/llama_cpp_canister` at the fork c
 Not built here — verify the deployed hash against the DFINITY release asset:
 
 ```bash
-curl -sL https://github.com/dfinity/ic/releases/download/ledger-suite-icrc-2025-01-07/ic-icrc1-ledger.wasm.gz | gunzip | shasum -a 256
-#   -> must equal the deployed Token Ledger module hash (index: ic-icrc1-index-ng.wasm.gz)
+curl -sL https://github.com/dfinity/ic/releases/download/ledger-suite-icrc-2025-01-07/ic-icrc1-ledger.wasm.gz | shasum -a 256
+#   -> must equal the deployed Token Ledger module hash 3b03d1bb...  (verified 2026-09-17)
+#   The IC stores the gzip-compressed module, so hash the .gz AS-IS — do NOT gunzip.
+#   Index: same with ic-icrc1-index-ng.wasm.gz -> must equal e155db9d...
 ```
 
 ### E. Frontend & Backend — reproducibility gap
