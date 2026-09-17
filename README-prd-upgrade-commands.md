@@ -1265,7 +1265,41 @@ Follow instructions of PoAIW/llms/llama_cpp_canister/README-instructions.md
 
 ## Description
 
-Deploying or upgrading LLMs is done without pausing the protocol.
+Deploying or upgrading LLMs is normally a **live rolling upgrade**: no protocol
+pause, no challenge drain. `scripts/upgrade_llms.sh` takes ONE LLM offline at a
+time (removes it from its controller, snapshots, installs, reloads the model,
+re-registers) while the protocol keeps running on the other LLMs.
+
+🚨 **This is only safe when the prompt-cache file format is UNCHANGED between the
+old and new llama_cpp_canister version.** The Challenger pre-generates the mAIner
+and Judge prompt caches with the CURRENT wasm and uploads them to GameState;
+ShareService and Judge LLMs download and load those caches for as long as a
+challenge is open. If the new wasm cannot load an old-format cache, a live upgrade
+would feed new-wasm LLMs old-wasm caches.
+
+Decide per upgrade:
+
+- **Cache format unchanged → live rolling upgrade (default; no pause, no drain).**
+  Verify the `llama_cpp_onicai_fork` commit is IDENTICAL across the two release
+  tags — it owns the KV-cache / session-file serialization — and that no
+  prompt-cache serialization code changed. The fork commit is printed in each
+  GitHub release body at onicai/llama_cpp_canister. Example: v0.16.6 → v0.16.8
+  shared fork commit `6bd7743…`, so it was a live rolling upgrade (confirmed by a
+  cross-version cache load on testing).
+
+- **Cache format CHANGED → drain-then-pause ceremony (required).** In order:
+  1. Stop ONLY the Challenger timer (`stopTimerExecutionAdmin`) — no new
+     challenges/caches are generated.
+  2. Let the protocol run until `getNumCurrentChallengesAdmin` = 0 AND
+     `getNumOpenSubmissionsForOpenChallengesAdmin` = 0 — each challenge closing
+     deletes its old-wasm caches from GameState (`closeChallenge`).
+  3. Confirm the ShareService queue is empty (`getChallengeQueueAdmin`); the Judge
+     holds no local queue.
+  4. Stop the ShareService and Judge timers.
+  5. Pause the protocol (`togglePauseProtocolFlagAdmin`; verify with `getPauseProtocolFlag`).
+  6. Upgrade all LLMs (`scripts/upgrade_llms.sh`).
+  7. Unpause; restart timers in order Judge → ShareService → Challenger.
+  The v0.11.0 → v0.16.6 round was such a cache-changing upgrade.
 
 We create, update & manage the LLMs from these folders:
 - `PoAIW/llms/Challenger`
@@ -1584,6 +1618,10 @@ scripts/add_llm.sh --network $NETWORK --canister-id <new-canister-id>
 
 
 ## Upgrade an existing LLM
+
+First decide live-rolling vs drain-then-pause — see the "Description" section above
+(it hinges on whether the prompt-cache format changed between the two
+llama_cpp_canister versions). Default is live rolling: no pause, no drain.
 
 ```bash
     # Takes the LLM offline, upgrades it, tests it, and puts it back online
