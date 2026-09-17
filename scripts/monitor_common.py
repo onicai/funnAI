@@ -11,11 +11,25 @@ from dotenv import dotenv_values
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
-def get_balance(canister_id, network):
+# max_tokens for the LLM canisters (query & update), set via set_max_tokens by
+# deploy_llm.py and upgrade_llms.py. Requires llama_cpp_canister >= v0.16.x.
+# 20 is the upstream README's own value for qwen2.5-0.5b-instruct-q8_0: its
+# Appendix A measures 25 tokens/call sustained, so 20 keeps a safety margin.
+# 24 was tried on testing (2026-09-14) and left no margin.
+LLM_MAX_TOKENS = 20
+
+# wasm_memory_limit for the LLM canisters: 3.75 GiB (wasm32 cannot address a
+# full 4 GiB), matching upstream llama_cpp_canister's own setting. The 3 GiB
+# dfx default leaves too little heap headroom for these models: on testing
+# (2026-09-14) rryid trapped IC0502 "heap out of bounds" during Judge-prompt
+# ingestion with its Memory Size already at 2.7 GB.
+LLM_WASM_MEMORY_LIMIT = 4026531840  # 3.75 GiB
+
+def get_balance(canister_id, network, cwd=None):
     """Fetch cycles balance using dfx for a given canister."""
     try:
         cmd = ["dfx", "canister", "status", canister_id, "--network", network]
-        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True)
+        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True, cwd=cwd)
         
         # Extract balance from the output
         balance = None

@@ -83,6 +83,12 @@ def get_data(canister_id, network):
             )
             data = json.loads(result)
             val = data.get('Ok')
+            if val is None:
+                # Show the actual #Err instead of a bare None. The only Err
+                # these methods return is #Unauthorized (Principal.isController
+                # gate) — if it appears transiently, check whether another
+                # shell switched the global dfx identity (`dfx identity use`).
+                val = f"Err: {json.dumps(data.get('Err'))}"
             if should_include(label, val):
                 output += f"- {method:<45} = {val} \n"
 
