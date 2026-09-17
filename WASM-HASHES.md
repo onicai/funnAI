@@ -33,8 +33,8 @@ DFINITY release tag for group D, and the outer `funnAI` repo for group E.
 **Verification status (2026-09-17):** all of group A (7), the group-B ShareAgent fleet,
 group C (9 LLMs) and group D (Token Ledger + Index) were **reproduced and confirmed** — the
 build/artifact hash equals the deployed module hash. Two gaps remain, flagged in place:
-- **ShareService controller** (group B) runs a build **ahead of `main`** — not yet
-  reproducible from the repo (⚠️ in the table).
+- **ShareService controller** (group B) runs an **older build, left behind** — it was not
+  re-upgraded when the fleet advanced, so it does not match `main` (⚠️ in the table).
 - **Frontend + Backend** (group E) have **no reproducible Docker build** yet.
 
 `(to confirm)` marks a deployed hash that is authoritative but whose source isn't pinned to
@@ -64,9 +64,9 @@ e.g. the marketplace / 60% bonus release — and now reproduces at `5e262d2`.)
 ### Group B — mAIner controller wasm (PoAIW; ShareService + the ShareAgent fleet)
 
 One Motoko source (`PoAIW/src/mAIner`) produces the role-neutral `mainer_canister.wasm`,
-run by both the ShareService controller and every ShareAgent. mAInerCreator deliberately
-promotes a pinned build to the fleet, which can lag the ShareService's own deploy, so the
-two hashes differ today.
+run by both the ShareService controller and every ShareAgent. The two hashes differ today
+because the ShareService controller was left behind: the fleet was upgraded (via
+mAInerCreator) to the current build, but the ShareService controller canister was not.
 
 | role                    | canister-id                   | source (PoAIW)     | verified   | deployed module hash                                             |
 | ----------------------- | ----------------------------- | ------------------ | ---------- | ---------------------------------------------------------------- |
@@ -79,12 +79,17 @@ two hashes differ today.
 sampled agent's live hash; `scripts/audit_mainer_controllers.sh --network prd` confirms
 all 754 agree.
 
-**⚠️ ShareService controller** (`7e149b67…`): does **NOT** reproduce from `main` — the
-same `main` @ `5e262d2` build of `PoAIW/src/mAIner` yields the fleet's `ce262a7b…`, not
-`7e149b67…`. The ShareService therefore runs a mAIner build that is **ahead of / not on
-`main`** (consistent with it being intentionally newer than the promoted fleet build). Its
-exact source commit is `(to confirm)`; to make it SNS-verifiable, that commit must land on
-`main`, or ShareService be redeployed from a `main` build.
+**⚠️ ShareService controller** (`7e149b67…`): runs an **older build that was left behind**,
+not a build ahead of `main`. Building `PoAIW/src/mAIner` at `main` @ `5e262d2` — and at
+release-15 (2026-07-21) — yields `ce262a7b…` (the current fleet build), while ShareService
+still runs `7e149b67…`. So the mAIner wasm has been `ce262a7b…` since at least release-15,
+and ShareService's `7e149b67…` predates it (≤ release-13 era). No release tag records a
+ShareService-specific upgrade: subsequent releases upgraded the mAIner **fleet** (via
+mAInerCreator) but never redeployed the ShareService **controller** canister. Its exact
+source release is `(to confirm)` (built with the pre-release-15 build system).
+**Fix before SNS launch:** redeploy the ShareService controller from a current `main`
+build — `make docker-verify-wasm VERIFY_NETWORK=prd VERIFY_CANISTER=rilmv-caaaa-aaaaa-qandq-cai`
+would then MATCH `ce262a7b…`, aligning ShareService with the fleet and `main`.
 
 ### Group C — LLM canisters (llama_cpp_canister)
 
@@ -179,8 +184,8 @@ scripts/audit_mainer_controllers.sh --network prd              # fleet-wide: one
 For the **ShareService controller**, verify directly (it has no on-chain expected hash):
 `make docker-verify-wasm VERIFY_NETWORK=prd VERIFY_CANISTER=rilmv-caaaa-aaaaa-qandq-cai`.
 As of 2026-09-17 this reports **MISMATCH** — the `main` build yields `ce262a7b…` (the
-fleet) while ShareService runs `7e149b67…`, i.e. a build ahead of `main` (see the group-B
-table note). It becomes verifiable once that source lands on `main`.
+fleet) while ShareService still runs the older `7e149b67…` (see the group-B table note). It
+becomes verifiable once ShareService is redeployed from a `main` build.
 
 ### C. LLM canisters
 
