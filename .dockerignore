@@ -1,0 +1,27 @@
+# Context is the repo root (frontend Docker build only).
+.git
+.dfx
+.env
+.env.*
+.venv
+.vscode
+.idea
+.DS_Store
+node_modules
+dist
+dist-ssr
+PoAIW
+local
+secret
+deps
+coverage
+.mops
+.vessel
+src/funnai_backend
+src/funnai_frontend/out
+*.onnx
+*.onnx_data
+funnai_accounts
+scripts/logs-mainer-analysis
+scripts/lp_holders
+TMP-*

@@ -32,11 +32,15 @@ DFINITY release tag for group D, and the outer `funnAI` repo for group E.
 
 **Verification status (2026-09-17):** all of group A (7), the group-B ShareAgent fleet,
 group C (9 LLMs; re-confirmed 2026-09-18 at v0.17.0) and group D (Token Ledger + Index) were **reproduced and confirmed** — the
-build/artifact hash equals the deployed module hash. Two things are **NOT** reproducible:
+build/artifact hash equals the deployed module hash. Remaining gaps:
 - **ShareService controller** (group B): its deployed build `7e149b67…` predates the
   reproducible-build framework (release-10); it matches no release from release-10 → `main`.
   Not reproducible — must be redeployed from `main`. See group B (⚠️).
-- **Frontend + Backend** (group E) have **no reproducible Docker build** at all.
+- **Frontend** (group E): Docker kit exists (`src/funnai_frontend`); verify
+  `out/dist.fingerprint` against live HTTPS assets, **not** the module hash.
+  No Docker-built deploy has been recorded yet.
+- **Backend** (group E): Docker kit exists (`src/funnai_backend`); the deployed
+  hash has not yet been confirmed against a Docker build.
 
 Reproducibility note: the base images for **release-10 … release-13** no longer build
 as-pinned (their `Dockerfile.base` pins exact apt patch versions of curl/ca-certificates/git
@@ -151,14 +155,19 @@ verify command below).
 
 ### Group E — Frontend & Backend (outer funnAI repo)
 
-Built in the **outer `funnAI` repo** (not PoAIW) and — unlike every other group —
-**without a reproducible Docker build**. Deployed hashes are recorded; reproducibility is
-a known gap (see the group-E verify note below).
+Built in the **outer `funnAI` repo** (not PoAIW).
 
-| role     | canister-id                   | source (funnAI)   | verified                | deployed module hash                                             |
-| -------- | ----------------------------- | ----------------- | ----------------------- | ---------------------------------------------------------------- |
-| Frontend | `vizih-uiaaa-aaaaa-qavaa-cai` | `funnai_frontend` | — (no reproducible build) | 423f20ee4e5daf8f76d6bb2b4a87440227f15b26cf874c132fd75d83e252c8f6 |
-| Backend  | `6wp2z-paaaa-aaaaa-qau7q-cai` | `funnai_backend`  | — (no reproducible build) | 9fca8da6b78fe5c4aa0957596c28c32ebe90bdb16573c64880809577aca688cb |
+**Frontend** is a dfx `type: assets` canister. Its **module hash is dfx's stock
+certified-assets wasm** and does not include the UI. The reproducible artifact is
+`out/dist.fingerprint` (sha256 of the sorted per-file manifest). Compare that to
+live HTTPS bodies with `make docker-verify-frontend`, not `dfx canister info`.
+
+**Backend** is Motoko; verify like group A via `make docker-verify-wasm`.
+
+| role     | canister-id                   | source (funnAI)   | verified                         | deployed module hash                                             |
+| -------- | ----------------------------- | ----------------- | -------------------------------- | ---------------------------------------------------------------- |
+| Frontend | `vizih-uiaaa-aaaaa-qavaa-cai` | `funnai_frontend` | kit added; fingerprint unrecorded | 423f20ee4e5daf8f76d6bb2b4a87440227f15b26cf874c132fd75d83e252c8f6 |
+| Backend  | `6wp2z-paaaa-aaaaa-qau7q-cai` | `funnai_backend`  | kit exists; not yet confirmed    | 9fca8da6b78fe5c4aa0957596c28c32ebe90bdb16573c64880809577aca688cb |
 
 ## Reproducible build & verification
 
@@ -230,15 +239,30 @@ curl -sL https://github.com/dfinity/ic/releases/download/ledger-suite-icrc-2025-
 #   Index: same with ic-icrc1-index-ng.wasm.gz -> must equal e155db9d...
 ```
 
-### E. Frontend & Backend — reproducibility gap
+### E. Frontend & Backend (outer funnAI repo)
 
-These have **no reproducible Docker build** yet. Frontend is a certified-assets asset
-canister (`funnai_frontend`, `npm run build` + `dfx deploy`; its module hash is the
-asset-storage wasm, app content is uploaded assets not part of the wasm). Backend is
-`funnai_backend` (`type: motoko`, plain `dfx build`). Their deployed hashes are recorded
-above so a change is at least detectable, but they cannot yet be independently reproduced
-from a pinned source. **TODO (later pass): add a Docker reproducible-build kit for both**,
-matching the group-A pattern, so all 21 SNS canisters are reproducibly verifiable.
+**Frontend** — assets canister. The module hash is the stock asset runtime; the UI is
+`dist/`. The bundle inlines `canister_ids.json`, so the artifact is per-network.
+
+```bash
+cd src/funnai_frontend
+make docker-build-frontend NETWORK=prd     # prints out/dist.fingerprint
+make docker-verify-frontend VERIFY_NETWORK=prd
+# MATCH means every file in dist/ is served bit-for-bit at
+# https://vizih-uiaaa-aaaaa-qavaa-cai.icp0.io/...
+```
+
+Record `out/dist.fingerprint` (and the commit) in the group-E table after the first
+Docker-built deploy. Do not treat the module hash as a UI check.
+
+**Backend** — Motoko, same pattern as group A:
+
+```bash
+cd src/funnai_backend
+make docker-build-base
+make docker-build-wasm                     # prints sha256 of out/funnai_backend.wasm
+make docker-verify-wasm VERIFY_NETWORK=prd
+```
 
 ## Read every deployed hash at once
 
