@@ -31,7 +31,7 @@ PoAIW commit for groups A/B, the `llama_cpp_onicai_fork` commit / release for gr
 DFINITY release tag for group D, and the outer `funnAI` repo for group E.
 
 **Verification status (2026-09-17):** all of group A (7), the group-B ShareAgent fleet,
-group C (9 LLMs) and group D (Token Ledger + Index) were **reproduced and confirmed** — the
+group C (9 LLMs; re-confirmed 2026-09-18 at v0.17.0) and group D (Token Ledger + Index) were **reproduced and confirmed** — the
 build/artifact hash equals the deployed module hash. Two things are **NOT** reproducible:
 - **ShareService controller** (group B): its deployed build `7e149b67…` predates the
   reproducible-build framework (release-10); it matches no release from release-10 → `main`.
@@ -110,13 +110,16 @@ would then MATCH `ce262a7b…`, making it reproducible and aligned with the flee
 
 ### Group C — LLM canisters (llama_cpp_canister)
 
-All **9 LLM canisters run the identical wasm**, llama_cpp_canister release **v0.16.8**:
+All **9 LLM canisters run the identical wasm**, llama_cpp_canister release **v0.17.0**:
 
-- deployed module hash `3db909db346b6851ae1761de45b1fbc13b882ac0dbc3c44069f6944667e55066`
-- source: `onicai/llama_cpp_onicai_fork` commit `6bd774370579b0c48b8ad3f56df468907d033fe9`
+- deployed module hash `4f89aa1564470574acc5ae78e5b5f49f78d4f188c252760fa399e726e72d8820`
+  (confirmed live on all 9 canisters via `dfx canister info`; matches the vendored
+  release `build/llama_cpp.wasm.sha256`)
+- source: `onicai/llama_cpp_onicai_fork` commit `91c63a2284ff99c5761a27c3865b312fb8eca148`
   (vendored at `PoAIW/llms/llama_cpp_canister`; see `BUILD-PROVENANCE.txt` +
   `build/llama_cpp.wasm.sha256`)
-- deployed 2026-09-17
+- deployed 2026-09-18 (upgraded from v0.16.8 `3db909db…` to fix the IC0502
+  heap-out-of-bounds traps; see `TMP-HANDOVER-llama_cpp_canister-v0.17.0.md`)
 
 | role               | canister-id                   |
 | ------------------ | ----------------------------- |
@@ -209,11 +212,11 @@ becomes verifiable once ShareService is redeployed from a `main` build.
 Permissionless: read a deployed LLM's module hash and compare to the release sha256.
 
 ```bash
-dfx canister --network ic info psgg4-iqaaa-aaaac-qgtza-cai   # any of the 9; must be 0x3db909db...
+dfx canister --network ic info psgg4-iqaaa-aaaac-qgtza-cai   # any of the 9; must be 0x4f89aa15...
 ```
 
 Full reproduce: build the release from `onicai/llama_cpp_canister` at the fork commit
-`6bd7743…` (`make docker-build-base` + `make docker-verify-wasm`); the vendored copy at
+`91c63a2…` (`make docker-build-base` + `make docker-verify-wasm`); the vendored copy at
 `PoAIW/llms/llama_cpp_canister` ships only the pre-built artifact + `BUILD-PROVENANCE.txt`.
 
 ### D. Token Ledger & Index
