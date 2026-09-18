@@ -138,15 +138,21 @@ dfx canister call game_state_canister getRecentProtocolActivity --output json --
 # Deploy funnai backend (reproducible build):
 # See README-prd-upgrade-commands.md for build, deploy and verify instructions
 
-# Deploy funnai frontend:
-## ensure you have the latest from the PoAIW repo
-dfx generate game_state_canister
-dfx generate mainer_ctrlb_canister
-dfx generate api_canister
+# Deploy funnai frontend (reproducible build):
+# See src/funnai_frontend/README.md
+# The bundle inlines canister IDs, so NETWORK must match the target.
+# from folder: funnAI/src/funnai_frontend
+make docker-build-frontend NETWORK=$NETWORK
+# from folder: funnAI
+# Do not regenerate declarations as part of the deploy — newer dfx emits different
+# JS bindings and the Docker image uses the committed src/declarations/.
 dfx deploy funnai_frontend --network $NETWORK
 # Note: you might need to give yourself these explicit permissions:
 dfx canister call funnai_frontend grant_permission '(record {permission = variant {Prepare}; to_principal = principal "<your-principal>"})'
 dfx canister call funnai_frontend grant_permission '(record {permission = variant {Commit}; to_principal = principal "<your-principal>"})'
+# Verify live assets match the Docker dist/
+# from folder: funnAI/src/funnai_frontend
+make docker-verify-frontend VERIFY_NETWORK=$NETWORK
 
 
 # Deploy the token ledger canister:

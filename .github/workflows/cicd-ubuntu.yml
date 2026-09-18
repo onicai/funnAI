@@ -9,6 +9,20 @@ on:
       # Keep in sync with matrix.canister below
       - "src/funnai_backend/**"
       - "src/docker/**"
+      # Frontend reproducible build
+      - "src/funnai_frontend/**"
+      - "src/declarations/**"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.ts"
+      - "svelte.config.js"
+      - "tsconfig.json"
+      - "postcss.config.cjs"
+      - "index.html"
+      - "canister_ids.json"
+      - "dfx.json"
+      - "scripts/build-frontend.sh"
+      - ".dockerignore"
 
 env:
   DFX_VERSION: "0.29.2"
@@ -93,3 +107,41 @@ jobs:
           set -euo pipefail
           mops install
           make smoketest
+
+  reproducible-build-frontend:
+    name: reproducible-build funnai_frontend
+    runs-on: ubuntu-22.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: docker versions
+        run: |
+          echo "Runner OS   : $RUNNER_OS"
+          echo "Architecture: $(uname -m)"
+          echo "OS version  : $(lsb_release -d 2>/dev/null | cut -f2)"
+          echo "Docker      : $(docker --version)"
+
+      - name: build frontend with Docker (reproducible build)
+        working-directory: src/funnai_frontend
+        run: make docker-build-frontend NETWORK=prd
+
+      - name: print fingerprint
+        run: |
+          set -euo pipefail
+          echo "fingerprint=$(cat src/funnai_frontend/out/dist.fingerprint)"
+          cat src/funnai_frontend/out/versions.txt
+          wc -l src/funnai_frontend/out/dist.sha256
+
+      - name: upload frontend build artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: funnai-frontend-dist
+          path: |
+            src/funnai_frontend/out/dist.fingerprint
+            src/funnai_frontend/out/dist.sha256
+            src/funnai_frontend/out/assets.tar.xz
+            src/funnai_frontend/out/versions.txt
+          retention-days: 14

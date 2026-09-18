@@ -1,0 +1,19 @@
+# Reproducible build configuration for funnai_frontend (assets canister).
+# Node 22.21.1 is pinned by digest in Dockerfile (must match .nvmrc).
+
+services:
+  frontend:
+    image: funnai-funnai-frontend-assets:latest
+    platform: linux/amd64
+    build:
+      context: ../../..
+      dockerfile: src/funnai_frontend/docker/Dockerfile
+      args:
+        DFX_NETWORK: ${DFX_NETWORK:-prd}
+        SOURCE_DATE_EPOCH: ${SOURCE_DATE_EPOCH:-0}
+        COMMIT: ${COMMIT:-unknown}
+    volumes:
+      - ../out:/host-out
+    environment:
+      DFX_NETWORK: ${DFX_NETWORK:-prd}
+    command: ["bash", "-c", "rm -rf /host-out/out /host-out/*; mkdir -p /host-out && cp -a /out/. /host-out/"]
