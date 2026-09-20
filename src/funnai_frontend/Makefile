@@ -29,7 +29,7 @@ docker-build-frontend:
 	  SOURCE_DATE_EPOCH="$(SOURCE_DATE_EPOCH)" \
 	  COMMIT="$(COMMIT)" \
 	  docker compose build --no-cache frontend && \
-	  DFX_NETWORK="$(NETWORK)" docker compose run --rm frontend
+	  bash -o pipefail -c 'DFX_NETWORK="$(NETWORK)" docker compose run --rm -T frontend | tar --no-same-owner -xf - -C ../out'
 	@test -f out/dist.fingerprint
 	@echo "Frontend fingerprint (Docker build): $$(cat out/dist.fingerprint)"
 	@echo "Network: $(NETWORK)  commit: $(COMMIT)  SOURCE_DATE_EPOCH: $(SOURCE_DATE_EPOCH)"
@@ -37,5 +37,6 @@ docker-build-frontend:
 	cp -a out/dist "$(REPO_ROOT)/dist"
 	@echo "Copied Docker dist/ to $(REPO_ROOT)/dist for dfx deploy"
 
-docker-verify-frontend: docker-build-frontend
+docker-verify-frontend:
+	$(MAKE) docker-build-frontend NETWORK="$(VERIFY_NETWORK)"
 	VERIFY_NETWORK="$(VERIFY_NETWORK)" bash scripts/verify-assets.sh
