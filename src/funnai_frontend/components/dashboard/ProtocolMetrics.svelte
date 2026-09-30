@@ -2,6 +2,12 @@
   import { onMount, onDestroy } from "svelte";
   import { store } from "../../stores/store";
   import { formatLargeNumber } from "../../helpers/utils/numberFormatUtils";
+  import { TokenRewardsService, type TokenRewardsEntry } from "../../helpers/TokenRewardsService";
+  import {
+    formatRewardDecreaseWhen,
+    formatRewardPerChallenge,
+    resolveRewardSchedule,
+  } from "../../helpers/rewardSchedule";
   import Countdown from "../_widgets/Countdown.svelte";
 
   export let title: string = "Protocol metrics";
@@ -25,6 +31,42 @@
   let recentChallenges = 0;
   let recentWinners = 0;
   let dailyActivity = [];
+
+  // Reward schedule from Quarterly Minting & Rewards Analysis
+  let scheduleEntries: TokenRewardsEntry[] = [];
+  let rewardScheduleLoading = true;
+  let currentRewardPerChallenge: number | null = null;
+  let nextDecreaseAt: Date | null = null;
+  let nextDecreaseLabel = "";
+  let rewardStabilized = false;
+  let rewardEnded = false;
+
+  function applyRewardSchedule(now = new Date()) {
+    const schedule = resolveRewardSchedule(scheduleEntries, now);
+    currentRewardPerChallenge = schedule.rewardPerChallenge;
+    nextDecreaseAt = schedule.nextDecreaseAt;
+    nextDecreaseLabel = schedule.nextDecreaseDate
+      ? formatRewardDecreaseWhen(schedule.nextDecreaseDate)
+      : "";
+    rewardStabilized = schedule.stabilized;
+    rewardEnded = schedule.ended;
+  }
+
+  async function loadRewardSchedule(isRefresh = false) {
+    if (!isRefresh) rewardScheduleLoading = true;
+    try {
+      const data = await TokenRewardsService.fetchTokenRewardsData();
+      // Same rows as the Quarterly Minting & Rewards Analysis chart.
+      scheduleEntries = data.data.filter(
+        (entry) => entry.quarter !== "Q2 2025" && entry.quarter !== ""
+      );
+      applyRewardSchedule();
+    } catch (err) {
+      console.warn("Token rewards schedule unavailable:", err);
+    } finally {
+      rewardScheduleLoading = false;
+    }
+  }
 
   async function loadProtocolMetrics() {
     try {
@@ -101,7 +143,10 @@
     error = "";
 
     try {
-      await loadProtocolMetrics();
+      await Promise.all([
+        loadProtocolMetrics(),
+        loadRewardSchedule(isRefresh),
+      ]);
     } catch (err) {
       console.error("Error updating metrics:", err);
       error = "Failed to update metrics";
@@ -209,7 +254,15 @@
     <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
       <div class="p-3.5 rounded-xl bg-white/3">
         <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Per challenge</p>
-        <p class="mt-2 text-xl font-semibold tracking-tight text-white tabular-nums">73.21</p>
+        <p class="mt-2 text-xl font-semibold tracking-tight text-white tabular-nums">
+          {#if rewardScheduleLoading && currentRewardPerChallenge == null}
+            <span class="agent-metric-pulse w-[5ch]" aria-hidden="true"></span>
+          {:else if currentRewardPerChallenge != null}
+            {formatRewardPerChallenge(currentRewardPerChallenge)}
+          {:else}
+            —
+          {/if}
+        </p>
         <p class="mt-0.5 text-xs text-gray-500">FUNNAI</p>
       </div>
       <div class="p-3.5 rounded-xl bg-white/3">
@@ -242,15 +295,33 @@
     </div>
 
     <div class="rounded-xl bg-white/3 p-4">
-      <p class="text-xs text-gray-500">Sept 29, 2026 · 12pm PT / 9pm CET</p>
-      <div class="mt-2 text-xl font-semibold tracking-tight text-[#c4b5fd] tabular-nums">
-        <Countdown
-          targetDate={new Date("2026-09-29T12:00:00-08:00")}
-          format="detailed"
-          className="text-[#c4b5fd]"
-        />
-      </div>
-      <p class="mt-1 text-xs text-gray-500">until rewards decrease</p>
+      {#if rewardScheduleLoading && !nextDecreaseAt && !rewardStabilized}
+        <span class="agent-metric-pulse w-[16ch]" aria-hidden="true"></span>
+      {:else if nextDecreaseAt}
+        <p class="text-xs text-gray-500">{nextDecreaseLabel}</p>
+        <div class="mt-2 text-xl font-semibold tracking-tight text-[#c4b5fd] tabular-nums">
+          {#key nextDecreaseAt.getTime()}
+            <Countdown
+              targetDate={nextDecreaseAt}
+              format="detailed"
+              className="text-[#c4b5fd]"
+              onComplete={() => applyRewardSchedule()}
+            />
+          {/key}
+        </div>
+        <p class="mt-1 text-xs text-gray-500">until rewards decrease</p>
+      {:else if rewardStabilized}
+        <p class="text-xs text-gray-500">Stabilized</p>
+        <p class="mt-2 text-xl font-semibold tracking-tight text-[#c4b5fd] tabular-nums">
+          {formatRewardPerChallenge(currentRewardPerChallenge ?? 0)} FUNNAI
+        </p>
+        <p class="mt-1 text-xs text-gray-500">until max supply is reached</p>
+      {:else if rewardEnded}
+        <p class="text-xs text-gray-500">Maximum supply reached</p>
+        <p class="mt-1 text-xs text-gray-500">Rewards are no longer minted</p>
+      {:else}
+        <p class="text-xs text-gray-500">Reward schedule unavailable</p>
+      {/if}
     </div>
   {/if}
-</div> 
+</div>

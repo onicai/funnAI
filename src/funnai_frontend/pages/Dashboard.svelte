@@ -193,13 +193,6 @@
         <CyclesMetrics title="Cycles Overview" />
       </div>
 
-      <!-- Token Information Section -->
-      <div class="grid grid-cols-1">
-        <TokenInfo />
-      </div>
-
-      
-
       <!-- Top Row: User mAIner Stats and Protocol Metrics -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="grid grid-cols-1 gap-6">
@@ -221,6 +214,11 @@
     <!-- Metrics Dashboard -->
     <div class="my-6">
       <MetricsDashboard title="Daily Metrics Dashboard" />
+    </div>
+
+    <!-- Token infrastructure, after the live metrics -->
+    <div class="mb-6">
+      <TokenInfo />
     </div>
   </div>
 
