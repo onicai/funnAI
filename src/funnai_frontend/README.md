@@ -66,6 +66,15 @@ make docker-build-frontend NETWORK=prd
 That prints `out/dist.fingerprint`, writes artefacts under `out/`, and copies
 Docker `dist/` to the repo-root `dist/` so dfx can upload it.
 
+Artifacts are streamed from Docker and extracted by your host user so repeated
+builds can remove them. If an older build left `out/` owned by `root` or `nobody`,
+repair ownership once from this directory, then retry:
+
+```bash
+sudo chown -R "$(id -u):$(id -g)" out
+make docker-verify-frontend VERIFY_NETWORK=development
+```
+
 ```bash
 # from repo root (funnAI/)
 dfx deploy funnai_frontend --network prd
@@ -110,7 +119,7 @@ Variables (defaults in parentheses):
 | variable | default | role |
 | --- | --- | --- |
 | `NETWORK` | `prd` | `DFX_NETWORK` baked into the bundle |
-| `VERIFY_NETWORK` | same as `NETWORK` | which `canister_ids.json` entry to fetch |
+| `VERIFY_NETWORK` | same as `NETWORK` | network for both the verification rebuild and the `canister_ids.json` entry to fetch |
 | `COMMIT` | `git rev-parse HEAD` | written into `dist/.reproducible-build` |
 | `SOURCE_DATE_EPOCH` | `git log -1 --pretty=%ct` | tar `--mtime` and any tool that honours it |
 

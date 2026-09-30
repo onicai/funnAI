@@ -12,8 +12,8 @@ services:
         DFX_NETWORK: ${DFX_NETWORK:-prd}
         SOURCE_DATE_EPOCH: ${SOURCE_DATE_EPOCH:-0}
         COMMIT: ${COMMIT:-unknown}
-    volumes:
-      - ../out:/host-out
     environment:
       DFX_NETWORK: ${DFX_NETWORK:-prd}
-    command: ["bash", "-c", "rm -rf /host-out/out /host-out/*; mkdir -p /host-out && cp -a /out/. /host-out/"]
+    # Extract on the host so artifacts belong to the invoking user, including
+    # when Docker uses user namespace remapping. Keep stdout archive-only.
+    command: ["tar", "-C", "/out", "-cf", "-", "."]
