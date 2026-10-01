@@ -996,6 +996,89 @@ python -m scripts.upload_mainer_controller_canister --network $NETWORK --caniste
 dfx canister --network $NETWORK call mainer_creator_canister getSha256HashesAdmin
 ```
 
+## Update Admin RBAC for mAInerCreator
+
+Grant the maintainer principals `#AdminQuery` so they keep read-only admin access
+post-SNS, when `isController` belongs to SNS root alone.
+
+> 🚨 **Do this BEFORE control of the mAInerCreator passes to SNS root.** `assignAdminRole`
+> is `isController`-gated. Afterwards, granting a role needs the DAO to open a maintenance
+> window first (see the next section) — and you will want the role on the day the pipeline
+> is already broken, not before.
+>
+> 🚨 **Roles do NOT survive a `--mode reinstall`.** Re-run this section afterwards and read
+> back `getAdminRoles` to confirm.
+
+`#AdminQuery` is read-only and is all the maintainers need for monitoring:
+`getMasterCanisterIdAdmin`, `getCyclesTransactionsAdmin`, `getMinCyclesBalanceAdmin`,
+`getCyclesToSendToGameStateAdmin`, `getSha256HashesAdmin`, `getDefaultSubnetsAdmin`,
+`isSubnetAvailableAdmin` and `getAdminRoles`. Everything that mutates — including
+`addMaintainerControllersToMainerAdmin` — stays controller-only on purpose.
+
+```bash
+# verify which principals already have admin roles
+dfx canister --network $NETWORK call $SUBNET_0_1_MAINER_CREATOR getAdminRoles
+
+# grant #AdminQuery to the maintainer principals (dev1, dev2)
+dfx canister --network $NETWORK call $SUBNET_0_1_MAINER_CREATOR assignAdminRole '( record { "principal" = "'$DEV1'"; role = variant { AdminQuery }; note = "Maintainer: dev1" } )'
+dfx canister --network $NETWORK call $SUBNET_0_1_MAINER_CREATOR assignAdminRole '( record { "principal" = "'$DEV2'"; role = variant { AdminQuery }; note = "Maintainer: dev2" } )'
+
+# verify -- BOTH dev principals MUST appear with AdminQuery
+dfx canister --network $NETWORK call $SUBNET_0_1_MAINER_CREATOR getAdminRoles
+
+# if needed, this is how you revoke permissions for a principal
+# dfx canister --network $NETWORK call $SUBNET_0_1_MAINER_CREATOR revokeAdminRole '( "'$DEV1'")'
+```
+
+## Maintenance window: borrowing controllership of the mAInerCreator (post-SNS)
+
+Every ShareAgent has the mAInerCreator as its **sole** controller, so the maintainers
+cannot stop, start, snapshot or status one, and `upgrade_mainers.sh` cannot run. The way
+back in is `addMaintainerControllersToMainerAdmin`, which is `isController`-gated — and
+post-SNS the only controller is SNS root.
+
+SNS root can never call a method itself. So the DAO lends controllership with a
+`DeregisterDappCanisters` proposal. **Despite the name, with SNS root kept in
+`new_controllers` nothing is deregistered**: the canister stays in `dapp_canister_ids`,
+`UpgradeSnsControlledCanister` keeps working, and root keeps the power to evict the devs.
+
+> 🚨 **NEVER omit SNS root from `new_controllers`.** Without it the canister is dropped
+> from the dapp list, and `register_dapp_canisters` requires root to *already* be a
+> controller. NNS root is not a controller post-launch and nothing can force a controller
+> change back — recovery would depend entirely on the dev principals voluntarily re-adding
+> root. Proposal validation does **not** warn about this.
+>
+> 🚨 **Close the window with another `DeregisterDappCanisters`, not `RegisterDappCanisters`.**
+> Registering an already-listed canister is a silent no-op that would leave the devs in place.
+>
+> 🚨 **One canister per proposal.** `set_dapp_controllers` is not atomic across canisters:
+> successful updates are not rolled back when a later one fails.
+
+```
+# 1. OPEN the window - proposal payload
+DeregisterDappCanisters {
+    canister_ids    = [ <mAInerCreator canister id> ];
+    new_controllers = [ <SNS root>, <DEV1>, <DEV2> ];
+}
+
+# 2. do the maintenance, from folder: funnAI
+scripts/add_maintainer_controllers.sh --network $NETWORK --creator-hash 0x<mAInerCreator wasm hash> --num 1 --dry-run
+scripts/add_maintainer_controllers.sh --network $NETWORK --creator-hash 0x<mAInerCreator wasm hash>
+#    ... run the upgrade campaign ...
+scripts/remove_maintainer_controllers.sh --network $NETWORK --target-hash 0x<mAIner wasm hash> --creator-hash 0x<mAInerCreator wasm hash>
+scripts/audit_mainer_controllers.sh --network $NETWORK --all --check-log-viewers
+
+# 3. CLOSE the window - proposal payload
+DeregisterDappCanisters {
+    canister_ids    = [ <mAInerCreator canister id> ];
+    new_controllers = [ <SNS root> ];
+}
+```
+
+While the window is open the dev principals are full controllers of the mAInerCreator and,
+once step 2 runs, of all ~754 ShareAgents — they can install arbitrary code. Keep the
+window short.
+
 ## Post-reinstall configuration (mAInerCreator)
 
 `--mode reinstall` wipes the mAInerCreator's stable state. The wasm/model
@@ -1778,6 +1861,14 @@ If you want to do it all manually, follow these steps:
 ```
 
 # Upgrade the mAIners
+
+> 🚨 **Post-SNS, a mAIner upgrade campaign begins by borrowing controllership.** Every
+> ShareAgent has the mAInerCreator as its sole controller, so `dfx canister stop` and
+> `snapshot create` — and therefore `upgrade_mainers.sh` — fail with a bare authorization
+> error until the maintainers are controllers again. See
+> **"Maintenance window: borrowing controllership of the mAInerCreator (post-SNS)"** above,
+> then `scripts/add_maintainer_controllers.sh`, and tighten back down with
+> `scripts/remove_maintainer_controllers.sh` when the campaign is done.
 
 > **dfx version note (2026-06-29):** the LLMs and ShareAgent mAIners now use **dfx 0.32.0** (pinned via `DFX_VERSION='0.32.0'` in each `PoAIW/llms/<x>/.env`); this is the version for the llama_cpp_canister v0.11.0 LLM upgrade. (They were previously on dfx 0.31.0 as of the 2026-04-16 mAIner upgrade/reinstall.) All other canisters (frontend, backend, and PoAIW protocol canisters) are still on **dfx 0.29.2** (pinned in `PoAIW/src/GameState/docker/docker-compose.yml`). Keep this mismatch in mind when regenerating declarations or reproducing wasm hashes — newer dfx versions emit different JS codegen (e.g. importing from `@icp-sdk/core/agent` instead of `@dfinity/agent`), which can break the frontend build if regenerated wholesale.
 >

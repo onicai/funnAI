@@ -12,6 +12,7 @@ NETWORK_TYPE="local"
 ALL=""
 NUM=""
 JSON_OUT=""
+CHECK_LOG_VIEWERS=""
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -39,9 +40,13 @@ while [ $# -gt 0 ]; do
             JSON_OUT="--json $1"
             shift
             ;;
+        --check-log-viewers)
+            CHECK_LOG_VIEWERS="--check-log-viewers"
+            shift
+            ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--all] [--num N] [--json FILE]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] [--all] [--num N] [--json FILE] [--check-log-viewers]"
             exit 1
             ;;
     esac
@@ -49,4 +54,4 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 
-python -m scripts.audit_mainer_controllers --network $NETWORK_TYPE $ALL $NUM $JSON_OUT
+python -m scripts.audit_mainer_controllers --network $NETWORK_TYPE $ALL $NUM $JSON_OUT $CHECK_LOG_VIEWERS
