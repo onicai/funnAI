@@ -4,10 +4,6 @@
   import { getBaseChartOptions, createDataset, formatChartNumber } from '../../helpers/chartUtils';
   import { TokenRewardsService, type TokenRewardsData } from '../../helpers/TokenRewardsService';
 
-  export let title: string = "Token Rewards & Supply Analytics";
-  export let height: string = "400px";
-  export let activeView: 'supply' | 'combined' = 'supply';
-
   let loading = true;
   let error = "";
   let tokenRewardsData: TokenRewardsData | null = null;
@@ -382,94 +378,73 @@
   };
 
 
-  function setActiveView(view: typeof activeView) {
-    activeView = view;
-  }
-
   onMount(() => {
     loadTokenRewardsData();
   });
 </script>
 
-<div class="agent-card bg-agent-surface! p-5 sm:p-6">
-  <div class="relative z-1 flex items-center justify-between mb-5">
-    <div>
-      <p class="agent-eyebrow">Analytics</p>
-      <h3 class="mt-1 text-base font-semibold tracking-tight text-white">{title}</h3>
-      <p class="mt-0.5 text-sm text-gray-500">Supply growth and quarterly minting</p>
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+  <div class="agent-card bg-agent-surface! p-5 sm:p-6">
+    <div class="relative z-1 flex items-start justify-between gap-3 mb-5">
+      <div>
+        <p class="agent-eyebrow">Supply</p>
+        <h3 class="mt-1 text-base font-semibold tracking-tight text-white">Supply Timeline</h3>
+        <p class="mt-0.5 text-sm text-gray-500">Projected FUNNAI token supply from launch to maximum supply</p>
+      </div>
+      <span class="inline-flex h-4 w-4 shrink-0 mt-1 items-center justify-center">
+        {#if loading}
+          <span class="h-4 w-4 border-2 border-agent-purple rounded-full border-t-transparent animate-spin"></span>
+        {/if}
+      </span>
     </div>
-    <span class="inline-flex h-4 w-4 items-center justify-center">
+
+    <div class="relative h-[320px]">
       {#if loading}
-        <span class="h-4 w-4 border-2 border-agent-purple rounded-full border-t-transparent animate-spin"></span>
-      {/if}
-    </span>
-  </div>
-
-  {#if error}
-    <div class="text-red-400 text-sm mb-4 p-3 bg-red-950/40 rounded-lg border border-red-500/40">
-      {error}
-    </div>
-  {/if}
-
-  <!-- View Selector -->
-  <div class="agent-tab-track mb-6 flex-wrap">
-    <button
-      class="agent-tab {activeView === 'supply' ? 'agent-tab-active' : ''}"
-      on:click={() => setActiveView('supply')}
-    >
-      Supply Timeline
-    </button>
-    <button
-      class="agent-tab {activeView === 'combined' ? 'agent-tab-active' : ''}"
-      on:click={() => setActiveView('combined')}
-    >
-      Rewards & Minting
-    </button>
-  </div>
-
-  <!-- Chart Content -->
-  <div class="relative" style="height: {height}">
-    {#if loading}
-      <div class="absolute inset-0 flex items-center justify-center bg-agent-surface/80 rounded-lg">
-        <div class="text-center">
-          <div class="animate-spin h-8 w-8 border-4 border-agent-purple rounded-full border-t-transparent mx-auto mb-2"></div>
+        <div class="absolute inset-0 flex items-center justify-center">
           <p class="text-sm text-gray-400">Loading token rewards data...</p>
         </div>
-      </div>
-    {:else if error}
-      <div class="absolute inset-0 flex items-center justify-center text-red-400">
-        <div class="text-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+      {:else if error}
+        <div class="absolute inset-0 flex items-center justify-center text-red-400">
           <p class="text-sm">{error}</p>
         </div>
-      </div>
-    {:else if activeView === 'supply'}
-      <div class="mb-4">
-        <h4 class="text-md font-semibold text-white mb-2">Total Supply Growth Timeline</h4>
-        <p class="text-sm text-gray-400">Projected FUNNAI token supply from launch to maximum supply</p>
-      </div>
-      <div style="height: 350px;">
+      {:else}
         <Line data={supplyChartData} options={supplyChartOptions} />
-      </div>
-    {:else if activeView === 'combined'}
-      <div class="mb-4">
-        <h4 class="text-md font-semibold text-white mb-2">Quarterly Minting & Rewards Analysis</h4>
-        <p class="text-sm text-gray-400">Combined view showing quarterly token minting (green bars) and rewards per challenge (red bars) with stabilization points</p>
-      </div>
-      <div style="height: 350px;">
-        <Bar data={combinedChartData} options={combinedChartOptions} />
-      </div>
-    {/if}
+      {/if}
+    </div>
   </div>
 
-  <!-- Data Source Footer -->
-  {#if tokenRewardsData}
-    <div class="mt-4 pt-4 border-t border-white/8">
-      <p class="text-xs text-gray-500 text-center">
-        Data source: {tokenRewardsData.metadata.dataset} • Last updated: {tokenRewardsData.metadata.last_updated}
-      </p>
+  <div class="agent-card bg-agent-surface! p-5 sm:p-6">
+    <div class="relative z-1 flex items-start justify-between gap-3 mb-5">
+      <div>
+        <p class="agent-eyebrow">Rewards</p>
+        <h3 class="mt-1 text-base font-semibold tracking-tight text-white">Rewards & Minting</h3>
+        <p class="mt-0.5 text-sm text-gray-500">Quarterly minting and rewards per challenge, with the stabilization point</p>
+      </div>
+      <span class="inline-flex h-4 w-4 shrink-0 mt-1 items-center justify-center">
+        {#if loading}
+          <span class="h-4 w-4 border-2 border-agent-purple rounded-full border-t-transparent animate-spin"></span>
+        {/if}
+      </span>
     </div>
+
+    <div class="relative h-[320px]">
+      {#if loading}
+        <div class="absolute inset-0 flex items-center justify-center">
+          <p class="text-sm text-gray-400">Loading token rewards data...</p>
+        </div>
+      {:else if error}
+        <div class="absolute inset-0 flex items-center justify-center text-red-400">
+          <p class="text-sm">{error}</p>
+        </div>
+      {:else}
+        <Bar data={combinedChartData} options={combinedChartOptions} />
+      {/if}
+    </div>
+  </div>
+
+  {#if tokenRewardsData}
+    <p class="xl:col-span-2 text-xs text-gray-500 text-center">
+      Data source: {tokenRewardsData.metadata.dataset} • Last updated: {tokenRewardsData.metadata.last_updated}
+    </p>
   {/if}
 </div>

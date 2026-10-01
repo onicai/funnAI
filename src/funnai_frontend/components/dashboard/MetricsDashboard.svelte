@@ -148,56 +148,6 @@
     </div>
   </div>
 
-  <!-- Additional Metrics Row -->
-  <div class="agent-card bg-agent-surface! p-5 sm:p-6">
-    <div class="flex items-center justify-between mb-4">
-      <div>
-        <p class="agent-eyebrow">Inventory</p>
-        <h3 class="mt-1 text-base font-semibold tracking-tight text-white">Additional metrics</h3>
-      </div>
-      <span class="text-xs text-gray-500 min-h-4 min-w-24 text-right">
-        {#if displayMetrics}
-          {new Date(displayMetrics.metadata.date + 'T00:00:00').toLocaleDateString()}
-        {/if}
-      </span>
-    </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-      <div class="rounded-xl bg-white/3 p-4">
-        <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Total cycles</p>
-        <p class="agent-metric-value-md">
-          {#if displayMetrics}
-            <span class="min-w-[8ch]">{formatChartNumber(displayMetrics.mainers.totals.total_cycles * 1e12, 'cycles')}</span>
-          {:else}
-            <span class="agent-metric-pulse w-[8ch]" aria-hidden="true"></span>
-          {/if}
-        </p>
-      </div>
-      
-      <div class="rounded-xl bg-white/3 p-4">
-        <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Avg per mAIner</p>
-        <p class="agent-metric-value-md">
-          {#if displayMetrics}
-            <span class="min-w-[8ch]">{formatChartNumber(displayMetrics.derived_metrics.avg_cycles_per_mainer * 1e12, 'cycles')}</span>
-          {:else}
-            <span class="agent-metric-pulse w-[8ch]" aria-hidden="true"></span>
-          {/if}
-        </p>
-      </div>
-      
-      <div class="rounded-xl bg-white/3 p-4">
-        <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Burn per active</p>
-        <p class="agent-metric-value-md">
-          {#if displayMetrics}
-            <span class="min-w-[8ch]">{formatChartNumber(displayMetrics.derived_metrics.burn_rate_per_active_mainer * 1e12, 'cycles')}</span>
-          {:else}
-            <span class="agent-metric-pulse w-[8ch]" aria-hidden="true"></span>
-          {/if}
-        </p>
-      </div>
-    </div>
-  </div>
-
   <!-- Historical Charts Section -->
   <div class="agent-card bg-agent-surface!">
     <div class="p-5 sm:p-6 border-b border-white/6">
@@ -277,7 +227,55 @@
     </div>
   </div>
 
-  
+  <!-- Additional metrics, after the historical charts -->
+  <div class="agent-card bg-agent-surface! p-5 sm:p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <p class="agent-eyebrow">Inventory</p>
+        <h3 class="mt-1 text-base font-semibold tracking-tight text-white">Additional metrics</h3>
+      </div>
+      <span class="text-xs text-gray-500 min-h-4 min-w-24 text-right">
+        {#if displayMetrics}
+          {new Date(displayMetrics.metadata.date + 'T00:00:00').toLocaleDateString()}
+        {/if}
+      </span>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div class="rounded-xl bg-white/3 p-4">
+        <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Total cycles</p>
+        <p class="agent-metric-value-md">
+          {#if displayMetrics}
+            <span class="min-w-[8ch]">{formatChartNumber(displayMetrics.mainers.totals.total_cycles * 1e12, 'cycles')}</span>
+          {:else}
+            <span class="agent-metric-pulse w-[8ch]" aria-hidden="true"></span>
+          {/if}
+        </p>
+      </div>
+
+      <div class="rounded-xl bg-white/3 p-4">
+        <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Avg per mAIner</p>
+        <p class="agent-metric-value-md">
+          {#if displayMetrics}
+            <span class="min-w-[8ch]">{formatChartNumber(displayMetrics.derived_metrics.avg_cycles_per_mainer * 1e12, 'cycles')}</span>
+          {:else}
+            <span class="agent-metric-pulse w-[8ch]" aria-hidden="true"></span>
+          {/if}
+        </p>
+      </div>
+
+      <div class="rounded-xl bg-white/3 p-4">
+        <p class="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Burn per active</p>
+        <p class="agent-metric-value-md">
+          {#if displayMetrics}
+            <span class="min-w-[8ch]">{formatChartNumber(displayMetrics.derived_metrics.burn_rate_per_active_mainer * 1e12, 'cycles')}</span>
+          {:else}
+            <span class="agent-metric-pulse w-[8ch]" aria-hidden="true"></span>
+          {/if}
+        </p>
+      </div>
+    </div>
+  </div>
 
   <!-- Data freshness indicator 
   {#if latestMetrics}
