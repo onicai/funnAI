@@ -121,6 +121,7 @@ dist
 
 # Docker reproducible build output
 src/funnai_backend/out/
+src/funnai_frontend/out/
 
 .DS_Store
 dist-ssr

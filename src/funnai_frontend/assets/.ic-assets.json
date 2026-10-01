@@ -52,5 +52,9 @@
       "Service-Worker-Allowed": "/"
     },
     "ignore": false
+  },
+  {
+    "match": ".reproducible-build",
+    "ignore": true
   }
 ]

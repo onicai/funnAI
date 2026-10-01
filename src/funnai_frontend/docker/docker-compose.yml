@@ -1,0 +1,19 @@
+# Reproducible build configuration for funnai_frontend (assets canister).
+# Node 22.21.1 is pinned by digest in Dockerfile (must match .nvmrc).
+
+services:
+  frontend:
+    image: funnai-funnai-frontend-assets:latest
+    platform: linux/amd64
+    build:
+      context: ../../..
+      dockerfile: src/funnai_frontend/docker/Dockerfile
+      args:
+        DFX_NETWORK: ${DFX_NETWORK:-prd}
+        SOURCE_DATE_EPOCH: ${SOURCE_DATE_EPOCH:-0}
+        COMMIT: ${COMMIT:-unknown}
+    environment:
+      DFX_NETWORK: ${DFX_NETWORK:-prd}
+    # Extract on the host so artifacts belong to the invoking user, including
+    # when Docker uses user namespace remapping. Keep stdout archive-only.
+    command: ["tar", "-C", "/out", "-cf", "-", "."]

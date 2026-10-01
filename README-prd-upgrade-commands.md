@@ -1072,6 +1072,31 @@ make docker-verify-wasm VERIFY_NETWORK=$NETWORK
 dfx canister --network $NETWORK start funnai_backend
 ```
 
+# upgrade the funnai_frontend
+
+The frontend is a dfx **assets** canister. `dfx canister info` prints the stock
+certified-assets wasm, which does **not** include the UI. Build `dist/` in Docker
+and deploy that; verify by hashing live HTTPS bodies.
+
+```bash
+# Verify correct network & canister settings !
+echo $NETWORK
+
+# from folder: funnAI/src/funnai_frontend
+make docker-build-frontend NETWORK=$NETWORK
+# copies Docker dist/ to funnAI/dist/ and stamps dist/.reproducible-build
+# so the following dfx deploy does not rebuild on the host.
+
+# from folder: funnAI
+# Do not run `dfx generate` as part of this deploy. The Docker image uses the
+# committed src/declarations/; newer dfx emits different JS bindings.
+dfx deploy funnai_frontend --network $NETWORK
+
+# from folder: funnAI/src/funnai_frontend
+make docker-verify-frontend VERIFY_NETWORK=$NETWORK
+# Record out/dist.fingerprint + commit in WASM-HASHES.md (group E).
+```
+
 # un-pause protocol
 ```bash
 # From folder: funnAI

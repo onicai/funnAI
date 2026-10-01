@@ -1,6 +1,6 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import tailwindcss from "@tailwindcss/vite";
-import { defineConfig, loadEnv } from "vite";
+import { defineConfig } from "vite";
 import path from "path";
 import dfxJson from "./dfx.json" with { type: "json" };
 import fs from "fs";
@@ -9,12 +9,9 @@ import { fileURLToPath } from "url";
 
 const __dirname = import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url));
 
-// Load environment variables from .env file
-const mode = process.env.NODE_ENV || 'development';
-const env = loadEnv(mode, process.cwd(), '');
-
-// Use DFX_NETWORK from environment, fallback to 'local'
-const dfxNetwork = env.DFX_NETWORK || process.env.DFX_NETWORK || "local";
+// DFX_NETWORK must come from the process environment (dfx or Docker), never from
+// a leftover dfx-generated .env — that file is gitignored and machine-specific.
+const dfxNetwork = process.env.DFX_NETWORK || "local";
 const isDev = dfxNetwork === "local";
 const networkName = dfxNetwork;
 
@@ -90,6 +87,7 @@ export default defineConfig({
       plugins: [tailwindcss(), svelte()],
   build: {
     target: "es2020",
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks(id) {
