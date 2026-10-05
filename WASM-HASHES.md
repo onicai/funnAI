@@ -61,8 +61,8 @@ All 9 run llama_cpp_canister v0.17.0, built from tag `v0.17.0-repro` (C):
 
 ### ShareAgents (754 mAIner canisters)
 
-They are not individually in the SNS `dapp_canisters`. mAInerCreator, an SNS canister,
-controls them and installs the wasm they all run:
+They are not individually in the SNS `dapp_canisters`. Their only controller is
+mAInerCreator, which is an SNS canister and installs the wasm they all run:
 `ce262a7b1167a86204d4f80273b05b7b299df852a99e6c3134e1f22dd41199d7`, from PoAIW `c69ed39` (B).
 This is the same wasm as the ShareService controller.
 
@@ -93,15 +93,16 @@ make docker-verify-wasm VERIFY_NETWORK=prd   # compares against the ShareService
 ```
 
 For the ShareAgents, `src/mAIner/canister_ids.json` lists every prd ShareAgent
-(`mainer_ctrlb_canister_*`). Each must run `ce262a7b…`, with mAInerCreator
-(`r2n3m-oqaaa-aaaaa-qanaq-cai`) among its controllers. This tallies module hash and
-controllers across the whole fleet (754 public read-state calls):
+(`mainer_ctrlb_canister_*`). Each must run `ce262a7b…`, and its only controller must be
+mAInerCreator (`r2n3m-oqaaa-aaaaa-qanaq-cai`). This tallies module hash and controllers
+across the whole fleet (754 public read-state calls):
 
 ```bash
 python3 -c 'import json; d=json.load(open("canister_ids.json")); print("\n".join(v["prd"] for k,v in d.items() if k.startswith("mainer_ctrlb_canister_") and "prd" in v))' | while read id; do dfx canister --network ic info "$id" | tr '\n' ' ' | grep -oE 'Controllers: [^M]*|Module hash: 0x[0-9a-f]+' | tr '\n' ' '; echo; done | sort | uniq -c
 ```
 
-Every line must show `ce262a7b…` and `r2n3m-oqaaa-aaaaa-qanaq-cai`, and the counts must add up to 754.
+It must print a single line, with a count of 754, showing
+`Controllers: r2n3m-oqaaa-aaaaa-qanaq-cai` and `Module hash: 0xce262a7b…`.
 
 ### C. LLM canisters
 
