@@ -11,7 +11,7 @@ tables below use bare hex to match `shasum` / the reproducible build output):
 dfx canister --network ic info <canister-id>   # prints "Module hash: 0x..."
 ```
 
-All hashes in this file were read live on 2026-09-17.
+All hashes in this file were read live on 2026-10-05.
 
 ## What the SNS controls
 
@@ -30,17 +30,14 @@ Grouped by how the wasm is built and verified. The **source** column is repo-awa
 PoAIW commit for groups A/B, the `llama_cpp_onicai_fork` commit / release for group C, the
 DFINITY release tag for group D, and the outer `funnAI` repo for group E.
 
-**Verification status (2026-09-17):** all of group A (7), the group-B ShareAgent fleet,
-group C (9 LLMs; re-confirmed 2026-09-18 at v0.17.0) and group D (Token Ledger + Index) were **reproduced and confirmed** — the
-build/artifact hash equals the deployed module hash. Remaining gaps:
-- **ShareService controller** (group B): its deployed build `7e149b67…` predates the
-  reproducible-build framework (release-10); it matches no release from release-10 → `main`.
-  Not reproducible — must be redeployed from `main`. See group B (⚠️).
-- **Frontend** (group E): Docker kit exists (`src/funnai_frontend`); verify
-  `out/dist.fingerprint` against live HTTPS assets, **not** the module hash.
-  No Docker-built deploy has been recorded yet.
-- **Backend** (group E): Docker kit exists (`src/funnai_backend`); the deployed
-  hash has not yet been confirmed against a Docker build.
+**Verification status (2026-10-05):** group A (7), group B (ShareService controller, plus
+the fleet build), group C (9 LLMs), group D (Token Ledger + Index) and
+the Backend (group E) were
+**reproduced and confirmed**: the build/artifact hash equals the deployed module hash.
+Remaining gap:
+- **Frontend** (group E): the Docker build of `funnAI` `master` @ `274e912` does **not**
+  match the live assets (45 of 48 files match; `index.html`, `index-*.js` and
+  `QrScanner-*.js` differ). See group E (⚠️).
 
 Reproducibility note: the base images for **release-10 … release-13** no longer build
 as-pinned (their `Dockerfile.base` pins exact apt patch versions of curl/ca-certificates/git
@@ -52,65 +49,44 @@ a repo commit yet.
 
 ### Group A — Motoko protocol canisters (PoAIW, shared Docker build)
 
-All 7 verified **reproducible from PoAIW `main` @ `5e262d2`** on 2026-09-17 via
-`make docker-verify-wasm VERIFY_NETWORK=prd` — each Docker build hash equalled the
-deployed module hash (✅ MATCH).
+All 7 verified **reproducible from PoAIW `main` @ `c69ed39`** on 2026-10-05 via
+`make docker-verify-wasm VERIFY_NETWORK=prd`: each Docker build hash equalled the
+deployed module hash (✅ MATCH). `src/` is identical between `5e262d2` and `c69ed39`, so
+both commits build these hashes.
 
 | role          | canister-id                   | source (PoAIW) | verified   | deployed module hash                                             |
 | ------------- | ----------------------------- | -------------- | ---------- | ---------------------------------------------------------------- |
-| GameState     | `r5m5y-diaaa-aaaaa-qanaa-cai` | `5e262d2`      | 2026-09-17 | e26a6419dbcfc98e1eff40c02cd10916cead203dff25814a779421efabf55d71 |
-| Challenger    | `rtoqq-yyaaa-aaaaa-qanba-cai` | `5e262d2`      | 2026-09-17 | 47f386b76144ef1a0fccd20608c099de7c83480a9a7e87a8ae1fa64b10f97db1 |
-| Judge         | `qmgdh-3aaaa-aaaaa-qanfq-cai` | `5e262d2`      | 2026-09-17 | 24ade07da97f8e6026c15b150f81e6486360025fc846cf2eefa74bb195f7edd6 |
-| mAInerCreator | `r2n3m-oqaaa-aaaaa-qanaq-cai` | `5e262d2`      | 2026-09-17 | 6441d67f73af48d06e06106db1ce6f23eaf7d7c7782f352accead7a9a622d52d |
-| Treasury      | `qbhxa-ziaaa-aaaaa-qbqza-cai` | `5e262d2`      | 2026-09-17 | df75427673a8a49c4cd03befdaf0c9b189e5e31e3e9f3481097ea8f5eaa006e7 |
-| Archive       | `yiobo-hyaaa-aaaaf-qdjnq-cai` | `5e262d2`      | 2026-09-17 | 1220f961d72159c8ddbee7eb6f89ac71a1a054781e4db7ca90add749c37061b7 |
-| API           | `bgm6p-5aaaa-aaaaf-qbzda-cai` | `5e262d2`      | 2026-09-17 | 13ef2f45052b5b914cb867a02b281440307ab6ce861ef489d34ab71a1ede5513 |
+| GameState     | `r5m5y-diaaa-aaaaa-qanaa-cai` | `c69ed39`      | 2026-10-05 | e26a6419dbcfc98e1eff40c02cd10916cead203dff25814a779421efabf55d71 |
+| Challenger    | `rtoqq-yyaaa-aaaaa-qanba-cai` | `c69ed39`      | 2026-10-05 | 47f386b76144ef1a0fccd20608c099de7c83480a9a7e87a8ae1fa64b10f97db1 |
+| Judge         | `qmgdh-3aaaa-aaaaa-qanfq-cai` | `c69ed39`      | 2026-10-05 | 24ade07da97f8e6026c15b150f81e6486360025fc846cf2eefa74bb195f7edd6 |
+| mAInerCreator | `r2n3m-oqaaa-aaaaa-qanaq-cai` | `c69ed39`      | 2026-10-05 | 6441d67f73af48d06e06106db1ce6f23eaf7d7c7782f352accead7a9a622d52d |
+| Treasury      | `qbhxa-ziaaa-aaaaa-qbqza-cai` | `c69ed39`      | 2026-10-05 | df75427673a8a49c4cd03befdaf0c9b189e5e31e3e9f3481097ea8f5eaa006e7 |
+| Archive       | `yiobo-hyaaa-aaaaf-qdjnq-cai` | `c69ed39`      | 2026-10-05 | 1220f961d72159c8ddbee7eb6f89ac71a1a054781e4db7ca90add749c37061b7 |
+| API           | `bgm6p-5aaaa-aaaaf-qbzda-cai` | `c69ed39`      | 2026-10-05 | 13ef2f45052b5b914cb867a02b281440307ab6ce861ef489d34ab71a1ede5513 |
 
-`5e262d2` is `main`'s tip at verification time; the deployed protocol canisters reproduce
-from it, so the code the SNS will govern is exactly what is in this repo. (GameState's
-hash changed from the `66e0da2a…` this file recorded on 2026-08-25 — it was upgraded since,
-e.g. the marketplace / 60% bonus release — and now reproduces at `5e262d2`.)
+`c69ed39` is `main`'s tip at verification time; the deployed protocol canisters reproduce
+from it, so the code the SNS will govern is exactly what is in this repo.
 
 ### Group B — mAIner controller wasm (PoAIW; ShareService + the ShareAgent fleet)
 
 One Motoko source (`PoAIW/src/mAIner`) produces the role-neutral `mainer_canister.wasm`,
-run by both the ShareService controller and every ShareAgent. The two hashes differ today
-because the ShareService controller was left behind: the fleet was upgraded (via
-mAInerCreator) to the current build, but the ShareService controller canister was not.
+run by both the ShareService controller and every ShareAgent. Both now run the same build.
 
-| role                    | canister-id                   | source (PoAIW)     | verified   | deployed module hash                                             |
-| ----------------------- | ----------------------------- | ------------------ | ---------- | ---------------------------------------------------------------- |
-| ShareAgent fleet (754)  | *(all 754 mAIner canisters)*  | `5e262d2`          | 2026-09-17 | ce262a7b1167a86204d4f80273b05b7b299df852a99e6c3134e1f22dd41199d7 |
-| ShareService controller | `rilmv-caaaa-aaaaa-qandq-cai` | `(to confirm)` ⚠️  | —          | 7e149b675f982bb948055326a22358508da2cbd472e7949aad1e2e40b0f3db6e |
+| role                    | canister-id                   | source (PoAIW) | verified   | deployed module hash                                             |
+| ----------------------- | ----------------------------- | -------------- | ---------- | ---------------------------------------------------------------- |
+| ShareAgent fleet (754)  | *(all 754 mAIner canisters)*  | `5e262d2`      | 2026-09-17 | ce262a7b1167a86204d4f80273b05b7b299df852a99e6c3134e1f22dd41199d7 |
+| ShareService controller | `rilmv-caaaa-aaaaa-qandq-cai` | `c69ed39`      | 2026-10-05 | ce262a7b1167a86204d4f80273b05b7b299df852a99e6c3134e1f22dd41199d7 |
 
-**ShareAgent fleet** (`ce262a7b…`): reproducible from `main` @ `5e262d2` — a
+**ShareAgent fleet** (`ce262a7b…`): reproducible from `main` @ `5e262d2`: a
 `make docker-verify-wasm` build of `PoAIW/src/mAIner` produced exactly `ce262a7b…` on
-2026-09-17. It also equals mAInerCreator's promoted `mainerControllerWasmSha256` and a
-sampled agent's live hash; `scripts/audit_mainer_controllers.sh --network prd` confirms
-all 754 agree.
+2026-09-17 (and again from `c69ed39` on 2026-10-05). It also equals mAInerCreator's promoted
+`mainerControllerWasmSha256` and a sampled agent's live hash;
+`scripts/audit_mainer_controllers.sh --network prd` confirms all 754 agree.
 
-**⚠️ ShareService controller** (`7e149b67…`): **its build predates the reproducible-build
-framework — it cannot be reproduced from any release.** `PoAIW/src/mAIner` was built at
-every release from release-10 (the first reproducible release, 2026-01-31) through
-release-16 / `main`, each with its own correct per-release base image (apt version pins
-relaxed only where Ubuntu has since removed those exact patch versions — those pins are
-build tooling, not the Motoko compiler, so the wasm is unaffected):
-
-| release                                    | mAIner wasm hash |
-| ------------------------------------------ | ---------------- |
-| release-10                                 | `62704fe6…`      |
-| release-11, release-12                     | `eec87d02…`      |
-| release-13                                 | `ea4b480b…`      |
-| release-14, release-15, release-16, `main` | `ce262a7b…` (fleet) |
-
-**None equals ShareService's `7e149b67…`.** So the ShareService controller was last
-deployed **before release-10** — before any reproducible-build machinery existed, when the
-wasm came from an unpinned local `dfx build`. It therefore **cannot be reproduced today**.
-It was never redeployed as the fleet advanced (releases upgrade the fleet via mAInerCreator,
-not the standalone ShareService controller canister `rilmv`).
-**Fix before SNS launch:** redeploy the ShareService controller from a current `main`
-build — `make docker-verify-wasm VERIFY_NETWORK=prd VERIFY_CANISTER=rilmv-caaaa-aaaaa-qandq-cai`
-would then MATCH `ce262a7b…`, making it reproducible and aligned with the fleet and `main`.
+**ShareService controller** (`ce262a7b…`): redeployed from PoAIW `main` @ `c69ed39`.
+`make docker-verify-wasm VERIFY_NETWORK=prd` in `PoAIW/src/mAIner` reported ✅ MATCH on
+2026-10-05. Its previous build `7e149b67…` predated the reproducible-build framework
+(release-10) and could not be reproduced from any release.
 
 ### Group C — LLM canisters (llama_cpp_canister)
 
@@ -136,6 +112,27 @@ All **9 LLM canisters run the identical wasm**, llama_cpp_canister release **v0.
 | ShareService LLM 1 | `k26rl-vqaaa-aaaai-rakcq-cai` |
 | ShareService LLM 2 | `tb4fe-6qaaa-aaaac-be5tq-cai` |
 | ShareService LLM 3 | `6tx5a-raaaa-aaaan-q6hfa-cai` |
+
+**Reproducible build: tag `v0.17.0-repro`** (branch `repro/v0.17.0`, commit
+[`2e568e5`](https://github.com/onicai/llama_cpp_canister/commit/2e568e5e166b952d1f16205a39b3b80fffa1bbde)).
+A cold Docker build of it reproduced `4f89aa15…` on 2026-10-05; see section C below.
+
+A Docker rebuild of tag `v0.17.0` itself no longer gives `4f89aa15…` (a fresh base gives
+`0c3202f8…`). The compile is deterministic, but `v0.17.0`'s base image resolves two inputs
+at build time:
+
+- `icpp-pro==6.0.0` requires `icpp-candid>=6.0.0`. A fresh base installs 6.2.0, while the
+  release used 6.0.0, and its C++ Candid sources are compiled into the wasm.
+- `icpp install-rust` builds `ic-wasi-polyfill` (linked into the wasm) and `wasi2ic`
+  without a lockfile, so their crates.io dependencies resolve to whatever is newest.
+
+[`v0.17.0-repro`](https://github.com/onicai/llama_cpp_canister/compare/v0.17.0...v0.17.0-repro)
+differs from `v0.17.0` only in the base image inputs. It installs the exact Python package
+set the release CI installed (`docker/requirements-base.txt`), and it rebuilds both Rust
+tools with `--locked` from `docker/locks/*.Cargo.lock`. Those locks are the crates.io
+resolution as of 2026-09-18 02:55:10 UTC, the moment the release CI (run `35301170380`) ran
+`icpp install-rust`. `scripts/time_lock.py` re-derives them from crates.io publish dates, so
+a reviewer can check that the locks are what CI resolved, not hand-picked versions.
 
 ### Group D — Token Ledger & Index (DFINITY ICRC release)
 
@@ -164,10 +161,28 @@ live HTTPS bodies with `make docker-verify-frontend`, not `dfx canister info`.
 
 **Backend** is Motoko; verify like group A via `make docker-verify-wasm`.
 
-| role     | canister-id                   | source (funnAI)   | verified                         | deployed module hash                                             |
-| -------- | ----------------------------- | ----------------- | -------------------------------- | ---------------------------------------------------------------- |
-| Frontend | `vizih-uiaaa-aaaaa-qavaa-cai` | `funnai_frontend` | kit added; fingerprint unrecorded | 423f20ee4e5daf8f76d6bb2b4a87440227f15b26cf874c132fd75d83e252c8f6 |
-| Backend  | `6wp2z-paaaa-aaaaa-qau7q-cai` | `funnai_backend`  | kit exists; not yet confirmed    | 9fca8da6b78fe5c4aa0957596c28c32ebe90bdb16573c64880809577aca688cb |
+| role     | canister-id                   | source (funnAI) | verified                | deployed module hash                                             |
+| -------- | ----------------------------- | --------------- | ----------------------- | ---------------------------------------------------------------- |
+| Frontend | `vizih-uiaaa-aaaaa-qavaa-cai` | `274e912` ⚠️    | 2026-10-05: ❌ MISMATCH | 423f20ee4e5daf8f76d6bb2b4a87440227f15b26cf874c132fd75d83e252c8f6 |
+| Backend  | `6wp2z-paaaa-aaaaa-qau7q-cai` | `274e912`       | 2026-10-05: ✅ MATCH    | 9fca8da6b78fe5c4aa0957596c28c32ebe90bdb16573c64880809577aca688cb |
+
+**Backend**: `make docker-verify-wasm VERIFY_NETWORK=prd` at `master` @ `274e912` reported
+✅ MATCH on 2026-10-05.
+
+**⚠️ Frontend**: the module hash above is the stock asset runtime; the UI artifact is the
+fingerprint. `make docker-verify-frontend VERIFY_NETWORK=prd` at `master` @ `274e912`
+produced `out/dist.fingerprint` =
+`f8dfce727583ed9800e0c8c63770e2be7e5caf6fa0b94271e14d2fa8dd77f8c0` and reported
+**MISMATCH** on 2026-10-05: 45 of 48 files match, but the live `index.html` loads
+`assets/index-DjeGQ_vG.js` where the Docker build has `assets/index-CQc5e98w.js` (and
+the dependent `QrScanner-*.js` chunk). The live bundle's Candid IDLs contain methods that
+the committed `src/declarations/` at `274e912` lack, namely GameState
+`isCallerMainerOwnedBy` and mAIner `getMinCyclesBalanceAdmin` /
+`getCyclesToSendToGameStateAdmin`. Those methods are in the current PoAIW canisters, so the
+deployed frontend appears to have been built from declarations regenerated from PoAIW, not the
+committed ones. No pushed commit reproduces it. To fix, either redeploy the Docker-built
+`dist/` from `master`, or commit the regenerated declarations and redeploy from that
+commit's Docker build.
 
 ## Reproducible build & verification
 
@@ -211,10 +226,8 @@ scripts/audit_mainer_controllers.sh --network prd              # fleet-wide: one
 ```
 
 For the **ShareService controller**, verify directly (it has no on-chain expected hash):
-`make docker-verify-wasm VERIFY_NETWORK=prd VERIFY_CANISTER=rilmv-caaaa-aaaaa-qandq-cai`.
-As of 2026-09-17 this reports **MISMATCH** — the `main` build yields `ce262a7b…` (the
-fleet) while ShareService still runs the older `7e149b67…` (see the group-B table note). It
-becomes verifiable once ShareService is redeployed from a `main` build.
+`make docker-verify-wasm VERIFY_NETWORK=prd VERIFY_CANISTER=rilmv-caaaa-aaaaa-qandq-cai`
+(the default target). It reported ✅ MATCH (`ce262a7b…`) on 2026-10-05.
 
 ### C. LLM canisters
 
@@ -224,9 +237,23 @@ Permissionless: read a deployed LLM's module hash and compare to the release sha
 dfx canister --network ic info psgg4-iqaaa-aaaac-qgtza-cai   # any of the 9; must be 0x4f89aa15...
 ```
 
-Full reproduce: build the release from `onicai/llama_cpp_canister` at the fork commit
-`91c63a2…` (`make docker-build-base` + `make docker-verify-wasm`); the vendored copy at
-`PoAIW/llms/llama_cpp_canister` ships only the pre-built artifact + `BUILD-PROVENANCE.txt`.
+Full reproduce from source, at tag `v0.17.0-repro` (see group C for how it differs from
+`v0.17.0`):
+
+```bash
+git clone https://github.com/onicai/llama_cpp_canister.git
+cd llama_cpp_canister
+git checkout v0.17.0-repro         # commit 2e568e5
+make docker-build-base
+make docker-build-wasm             # must print 4f89aa1564470574acc5ae78e5b5f49f78d4f188c252760fa399e726e72d8820
+```
+
+To re-derive the pinned Rust locks yourself (from the checkout above, after
+`make docker-build-base`; needs network access to crates.io):
+
+```bash
+docker run --rm --platform linux/amd64 -v "$PWD":/repo llama-cpp-canister-build:icpp-6.0.0-locked bash -c 'export RUSTUP_HOME=/root/.icpp/rust/1.93.0 CARGO_HOME=/root/.icpp/rust/1.93.0; for d in ic-wasi-polyfill wasi2ic; do cd /root/.icpp/rust/1.93.0/$d && rm -f Cargo.lock && cargo generate-lockfile -q && python /repo/scripts/time_lock.py 2026-09-18T02:55:10Z . >/dev/null && cmp Cargo.lock /repo/docker/locks/$d.Cargo.lock && echo "$d: identical"; done'
+```
 
 ### D. Token Ledger & Index
 
