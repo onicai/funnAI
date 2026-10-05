@@ -32,12 +32,9 @@ DFINITY release tag for group D, and the outer `funnAI` repo for group E.
 
 **Verification status (2026-10-05):** group A (7), group B (ShareService controller, plus
 the fleet build), group C (9 LLMs), group D (Token Ledger + Index) and
-the Backend (group E) were
+group E (Frontend + Backend) were
 **reproduced and confirmed**: the build/artifact hash equals the deployed module hash.
-Remaining gap:
-- **Frontend** (group E): the Docker build of `funnAI` `master` @ `274e912` does **not**
-  match the live assets (45 of 48 files match; `index.html`, `index-*.js` and
-  `QrScanner-*.js` differ). See group E (⚠️).
+There are no remaining gaps.
 
 Reproducibility note: the base images for **release-10 … release-13** no longer build
 as-pinned (their `Dockerfile.base` pins exact apt patch versions of curl/ca-certificates/git
@@ -163,26 +160,19 @@ live HTTPS bodies with `make docker-verify-frontend`, not `dfx canister info`.
 
 | role     | canister-id                   | source (funnAI) | verified                | deployed module hash                                             |
 | -------- | ----------------------------- | --------------- | ----------------------- | ---------------------------------------------------------------- |
-| Frontend | `vizih-uiaaa-aaaaa-qavaa-cai` | `274e912` ⚠️    | 2026-10-05: ❌ MISMATCH | 423f20ee4e5daf8f76d6bb2b4a87440227f15b26cf874c132fd75d83e252c8f6 |
+| Frontend | `vizih-uiaaa-aaaaa-qavaa-cai` | `274e912`       | 2026-10-05: ✅ MATCH    | 423f20ee4e5daf8f76d6bb2b4a87440227f15b26cf874c132fd75d83e252c8f6 |
 | Backend  | `6wp2z-paaaa-aaaaa-qau7q-cai` | `274e912`       | 2026-10-05: ✅ MATCH    | 9fca8da6b78fe5c4aa0957596c28c32ebe90bdb16573c64880809577aca688cb |
 
 **Backend**: `make docker-verify-wasm VERIFY_NETWORK=prd` at `master` @ `274e912` reported
 ✅ MATCH on 2026-10-05.
 
-**⚠️ Frontend**: the module hash above is the stock asset runtime; the UI artifact is the
+**Frontend**: the module hash above is the stock asset runtime; the UI artifact is the
 fingerprint. `make docker-verify-frontend VERIFY_NETWORK=prd` at `master` @ `274e912`
 produced `out/dist.fingerprint` =
-`f8dfce727583ed9800e0c8c63770e2be7e5caf6fa0b94271e14d2fa8dd77f8c0` and reported
-**MISMATCH** on 2026-10-05: 45 of 48 files match, but the live `index.html` loads
-`assets/index-DjeGQ_vG.js` where the Docker build has `assets/index-CQc5e98w.js` (and
-the dependent `QrScanner-*.js` chunk). The live bundle's Candid IDLs contain methods that
-the committed `src/declarations/` at `274e912` lack, namely GameState
-`isCallerMainerOwnedBy` and mAIner `getMinCyclesBalanceAdmin` /
-`getCyclesToSendToGameStateAdmin`. Those methods are in the current PoAIW canisters, so the
-deployed frontend appears to have been built from declarations regenerated from PoAIW, not the
-committed ones. No pushed commit reproduces it. To fix, either redeploy the Docker-built
-`dist/` from `master`, or commit the regenerated declarations and redeploy from that
-commit's Docker build.
+`f8dfce727583ed9800e0c8c63770e2be7e5caf6fa0b94271e14d2fa8dd77f8c0`. All 48 files in
+`dist/` are served bit-for-bit (✅ MATCH, 2026-10-05). An earlier deploy that day had been
+built from locally regenerated declarations and matched only 45 of 48 files. It was
+redeployed from the Docker build of `274e912`.
 
 ## Reproducible build & verification
 
