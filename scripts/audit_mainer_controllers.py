@@ -33,6 +33,9 @@ VERDICTS, on two independent axes
         MIGRATED       owner is not an extra controller and holds #AdminQuery
         ANOMALY        shadow controller, missing required controller, #AdminUpdate
                        granted, or a module-hash outlier
+        UNREADABLE     getAdminRoles answers #Unauthorized: the identity running the
+                       audit is neither a controller nor an #AdminQuery holder, which is
+                       the normal state once the mAIner is SNS_READY
 
     SNS controller state, ShareAgents only
         PRE_SNS        both maintainers are still controllers
@@ -141,6 +144,9 @@ def get_info(network: str, canister_id: str):
     return controllers, module_hash
 
 
+ROLES_UNAUTHORIZED = "UNAUTHORIZED"
+
+
 def get_admin_roles_readonly(network: str, canister_id: str):
     """Admin roles on a mAIner. Forced query - never an update call."""
     try:
@@ -148,7 +154,10 @@ def get_admin_roles_readonly(network: str, canister_id: str):
             "dfx", "canister", "--network", network, "call", "--query",
             canister_id, "getAdminRoles", "--output", "json",
         ], retry_on_transient_errors=True, max_retries=3, retry_delay=2.0)
-        return json.loads(result.stdout).get("Ok")
+        reply = json.loads(result.stdout)
+        if "Unauthorized" in (reply.get("Err") or {}):
+            return ROLES_UNAUTHORIZED
+        return reply.get("Ok")
     except subprocess.CalledProcessError as e:
         stderr = e.stderr or ""
         if "getAdminRoles" in stderr or "IC0536" in stderr:
@@ -230,8 +239,9 @@ def audit_one(network: str, mainer: dict, creator: str, check_log_viewers: bool 
     if extra:
         findings.append(f"SHADOW controller(s): {sorted(extra)}")
 
+    roles_unreadable = roles == ROLES_UNAUTHORIZED
     owner_role = None
-    if roles:
+    if roles and not roles_unreadable:
         for r in roles:
             if r.get("principal") == owner:
                 owner_role = list(r.get("role", {}).keys())[0] if isinstance(r.get("role"), dict) else r.get("role")
@@ -252,6 +262,8 @@ def audit_one(network: str, mainer: dict, creator: str, check_log_viewers: bool 
 
     if findings:
         verdict = "ANOMALY"
+    elif roles_unreadable:
+        verdict = "UNREADABLE"
     elif owner_is_extra_controller:
         verdict = "PRE_MIGRATION"
     elif owner_role == "AdminQuery":
@@ -387,7 +399,7 @@ def main():
         print()
         rbac.log_message(f"Audited {len(results)} mAIner(s) on '{args.network}'", "INFO")
         rbac.log_message("Owner access:", "INFO")
-        for v in ("PRE_MIGRATION", "MIGRATED", "ANOMALY"):
+        for v in ("PRE_MIGRATION", "MIGRATED", "UNREADABLE", "ANOMALY"):
             if counts.get(v):
                 rbac.log_message(f"  {v}: {counts[v]}", "ERROR" if v == "ANOMALY" else "SUCCESS")
         rbac.log_message("SNS controller state:", "INFO")
