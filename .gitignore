@@ -121,7 +121,6 @@ dist
 
 # Docker reproducible build output
 src/funnai_backend/out/
-src/funnai_frontend/out/
 
 .DS_Store
 dist-ssr
@@ -184,3 +183,12 @@ scripts/burn_tokens_cache.json
 scripts/burn_tokens_prd.json
 
 scripts/mint_tokens_ic.json
+
+# Cross-agent handoff documents. Local-only: one Claude Code session writes a
+# task here for the session that owns another repo, which reports back in the
+# same file. In-flight coordination, never repo state.
+_handoff/
+
+# The IC identity to deploy this repo to mainnet as. Per developer, per
+# machine - which is exactly why it is not committed.
+.icp-identity
