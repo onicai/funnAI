@@ -3,6 +3,7 @@
 # Default network type is local
 NETWORK_TYPE="local"
 CANISTER_TYPES="protocol"
+EXTRA_ARGS=""
 
 # Parse command line arguments for network type
 while [ $# -gt 0 ]; do
@@ -27,9 +28,18 @@ while [ $# -gt 0 ]; do
             fi
             shift
             ;;
+        --principal)
+            shift
+            EXTRA_ARGS="$EXTRA_ARGS --principal $1"
+            shift
+            ;;
+        --dry-run)
+            EXTRA_ARGS="$EXTRA_ARGS --dry-run"
+            shift
+            ;;
         *)
             echo "Unknown argument: $1"
-            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --canister-types [all|protocol|mainers]"
+            echo "Usage: $0 --network [local|ic|testing|development|demo|prd] --canister-types [all|protocol|mainers] [--principal P ...] [--dry-run]"
             exit 1
             ;;
     esac
@@ -37,4 +47,4 @@ done
 
 echo "Using network type: $NETWORK_TYPE"
 
-python -m scripts.add_controllers --network $NETWORK_TYPE --canister-types $CANISTER_TYPES
+python -m scripts.add_controllers --network $NETWORK_TYPE --canister-types $CANISTER_TYPES $EXTRA_ARGS

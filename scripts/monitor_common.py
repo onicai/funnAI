@@ -11,6 +11,13 @@ from dotenv import dotenv_values
 # Get the directory of this script
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
+# Must match MAINTAINER_PRINCIPAL_1 / _2 in PoAIW/src/mAInerCreator/src/Main.mo.
+# Same on all networks.
+MAINTAINER_PRINCIPALS = [
+    "cda4n-7jjpo-s4eus-yjvy7-o6qjc-vrueo-xd2hh-lh5v2-k7fpf-hwu5o-yqe",  # MAINTAINER_PRINCIPAL_1, dev2
+    "chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae",  # MAINTAINER_PRINCIPAL_2, dev1
+]
+
 # max_tokens for the LLM canisters (query & update), set via set_max_tokens by
 # deploy_llm.py and upgrade_llms.py. Requires llama_cpp_canister >= v0.16.x.
 # 20 is the upstream README's own value for qwen2.5-0.5b-instruct-q8_0: its
